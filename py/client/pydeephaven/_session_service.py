@@ -39,8 +39,8 @@ class SessionService:
         except Exception as e:
             raise DHError("failed to close the session.") from e
 
-    def release(self, ticket: Ticket):
-        """Releases an exported ticket."""
+    def release(self, ticket: ExportTicket) -> None:
+        """Releases an export ticket."""
         try:
             self.session.wrap_rpc(
                 self._grpc_session_stub.Release,

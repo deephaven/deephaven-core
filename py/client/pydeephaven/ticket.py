@@ -114,6 +114,41 @@ class ScopeTicket(Ticket):
         return cls(ticket_bytes=f's/{name}'.encode(encoding='ascii'))
 
 
+class ApplicationTicket(Ticket):
+    """An ApplicationTicket is a ticket that references a field of an application on the server. """
+
+    def __init__(self, ticket_bytes: bytes):
+        """Initializes an ApplicationTicket object
+
+        Args:
+            ticket_bytes (bytes): the raw bytes for the ticket
+        """
+        if not ticket_bytes:
+            raise DHError('ApplicationTicket: ticket is None')
+        elif not ticket_bytes.startswith(b'a/'):
+            raise DHError(f'ApplicationTicket: ticket {ticket_bytes} is not an application ticket')
+        elif len(ticket_bytes.split(b'/')) != 3:
+            raise DHError(f'ApplicationTicket: ticket {ticket_bytes} is not in the correct format')
+
+        self.app_id = ticket_bytes.split(b'/')[1].decode(encoding='ascii')
+        self.field = ticket_bytes.split(b'/')[2].decode(encoding='ascii')
+
+        super().__init__(ticket_bytes)
+
+    @classmethod
+    def app_ticket(cls, app_id: str, field: str) -> ApplicationTicket:
+        """Creates an application ticket that references a field of an application.
+
+        Args:
+            app_id (str): the application id
+            field (str): the name of the application field
+
+        Returns:
+            an ApplicationTicket object
+        """
+        return cls(ticket_bytes=f'a/{app_id}/{field}'.encode(encoding='ascii'))
+
+
 def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
     """Creates a Ticket object from a gRPC protobuf ticket object.
 
@@ -133,6 +168,8 @@ def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
         return ExportTicket(ticket_bytes)
     elif ticket_bytes.startswith(b's/'):
         return ScopeTicket(ticket_bytes)
+    elif ticket_bytes.startswith(b'a/'):
+        return ApplicationTicket(ticket_bytes)
     else:
         raise DHError(f'Unknown ticket type: {ticket_bytes}')
 

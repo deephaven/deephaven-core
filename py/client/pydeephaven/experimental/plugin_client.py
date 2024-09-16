@@ -53,7 +53,8 @@ class Fetchable(ServerObject):
     """
 
     def __init__(self, session, typed_ticket: ticket_pb2.TypedTicket):
-        super().__init__(type=typed_ticket.type, ticket=_ticket_from_proto(typed_ticket.ticket))
+        export_ticket = ExportTicket(typed_ticket.ticket.ticket)
+        super().__init__(type=typed_ticket.type, ticket=export_ticket)
         self.session = session
 
     def fetch(self) -> Union[Table, PluginClient]:
