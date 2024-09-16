@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class S3ParquetRemoteTest {
 
     // The following tests are disabled by default, and should be run manually.
-    private static final boolean ENABLE_REMOTE_S3_TESTING = true;
+    private static final boolean ENABLE_REMOTE_S3_TESTING = false;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
