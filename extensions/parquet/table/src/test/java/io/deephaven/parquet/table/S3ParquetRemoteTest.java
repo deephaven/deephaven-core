@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class S3ParquetRemoteTest {
 
     // The following tests are disabled by default, and should be run manually.
-    private static final boolean ENABLE_REMOTE_S3_TESTING = false;
+    private static final boolean ENABLE_REMOTE_S3_TESTING = true;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -162,6 +162,21 @@ public class S3ParquetRemoteTest {
             assertEquals(50, tableWithoutEndpointOverride.size());
         }
         assertTableEquals(tableWithEndpointOverride, tableWithoutEndpointOverride);
+
+        final Table tableWithNoRegionAndCredentials;
+        {
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(S3Instructions.builder()
+                            .readTimeout(Duration.ofSeconds(60))
+                            .endpointOverride("https://storage.googleapis.com")
+                            .build())
+                    .build();
+            tableWithNoRegionAndCredentials = ParquetTools.readTable(
+                    "gs://cloud-samples-data/bigquery/us-states/us-states.parquet", readInstructions).select();
+            assertEquals(2, tableWithNoRegionAndCredentials.numColumns());
+            assertEquals(50, tableWithNoRegionAndCredentials.size());
+        }
+        assertTableEquals(tableWithEndpointOverride, tableWithNoRegionAndCredentials);
     }
 
     @Test

@@ -46,7 +46,7 @@ class S3AsyncClientFactory {
             if (instructions.regionName().isEmpty() && e.getMessage().contains("region")) {
                 // We might have failed because region was not provided and could not be determined by the SDK.
                 // We will try again with a default region.
-                s3AsyncClient = getAsyncClientBuilder(instructions).region(Region.US_EAST_2).build();
+                s3AsyncClient = getAsyncClientBuilder(instructions).region(Region.US_EAST_1).build();
             } else {
                 throw e;
             }
