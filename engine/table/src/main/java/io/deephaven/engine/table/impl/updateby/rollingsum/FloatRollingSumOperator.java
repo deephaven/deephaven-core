@@ -14,6 +14,8 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -105,7 +107,7 @@ public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
 
     public FloatRollingSumOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits) {

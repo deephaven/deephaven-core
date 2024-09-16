@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Collection;
 
 public final class BigDecimalRollingProductOperator extends BaseObjectUpdateByOperator<BigDecimal> {
 
@@ -117,7 +118,7 @@ public final class BigDecimalRollingProductOperator extends BaseObjectUpdateByOp
 
     public BigDecimalRollingProductOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

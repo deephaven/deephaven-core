@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.*;
 
 public class CharEMOperator extends BasePrimitiveEMOperator {
@@ -122,7 +124,7 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
      */
     public CharEMOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

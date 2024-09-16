@@ -16,6 +16,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class ShortFillByOperator extends BaseShortUpdateByOperator {
@@ -50,7 +52,7 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
             // region extra-constructor-args
             // endregion extra-constructor-args
             ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, Collections.singleton(pair.rightColumn));
         // region constructor
         // endregion constructor
     }

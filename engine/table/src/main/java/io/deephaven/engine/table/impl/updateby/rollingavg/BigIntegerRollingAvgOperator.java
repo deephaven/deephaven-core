@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.Collection;
 
 /**
  * NOTE: The output column for RollingAvg(BigInteger) is BigDecimal
@@ -110,7 +111,7 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
 
     public BigIntegerRollingAvgOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Collection;
 
 public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
@@ -101,7 +102,7 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
     public BigDecimalRollingSumOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.*;
 
 /***
@@ -179,7 +181,7 @@ public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
      */
     public DoubleEmStdOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits) {

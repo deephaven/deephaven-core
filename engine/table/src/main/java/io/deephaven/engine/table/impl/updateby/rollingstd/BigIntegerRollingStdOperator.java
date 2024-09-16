@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.util.Collection;
 
 public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
@@ -149,7 +150,7 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
 
     public BigIntegerRollingStdOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

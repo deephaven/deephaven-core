@@ -14,6 +14,8 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends BaseObjectUpdateByOperator<T> {
     private final boolean isMax;
     private static final int BUFFER_INITIAL_CAPACITY = 128;
@@ -126,7 +128,7 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
     }
 
     public ComparableRollingMinMaxOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

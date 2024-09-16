@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Collections;
 
 public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     @NotNull
@@ -53,7 +54,7 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
     public BigDecimalCumSumOperator(
             @NotNull final MatchPair inputPair,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, BigDecimal.class);
+        super(inputPair, Collections.singleton(inputPair.rightColumn), BigDecimal.class);
         this.mathContext = mathContext;
     }
 

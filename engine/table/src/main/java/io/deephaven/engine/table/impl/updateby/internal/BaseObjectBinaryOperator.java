@@ -10,6 +10,8 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+
 public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOperator<T> {
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
         public ObjectChunk<T, ? extends Values> objectValueChunk;
@@ -43,7 +45,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     }
 
     public BaseObjectBinaryOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final Class<T> type) {
         super(pair, affectingColumns, type);
     }

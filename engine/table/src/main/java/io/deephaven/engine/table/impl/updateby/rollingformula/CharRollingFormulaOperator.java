@@ -26,6 +26,7 @@ import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
@@ -153,7 +154,7 @@ public class CharRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     public CharRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -173,7 +174,7 @@ public class CharRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     protected CharRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

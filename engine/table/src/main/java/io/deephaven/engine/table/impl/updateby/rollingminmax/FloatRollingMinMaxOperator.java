@@ -18,6 +18,8 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperato
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
@@ -141,7 +143,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
 
     public FloatRollingMinMaxOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

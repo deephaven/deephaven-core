@@ -18,6 +18,8 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteRollingMinMaxOperator extends BaseByteUpdateByOperator {
@@ -141,7 +143,7 @@ public class ByteRollingMinMaxOperator extends BaseByteUpdateByOperator {
 
     public ByteRollingMinMaxOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

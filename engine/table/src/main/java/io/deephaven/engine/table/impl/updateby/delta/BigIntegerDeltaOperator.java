@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigInteger;
+import java.util.Collections;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -66,7 +67,7 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
     }
 
     public BigIntegerDeltaOperator(@NotNull final MatchPair pair, @NotNull final DeltaControl control) {
-        super(pair, new String[] {pair.rightColumn}, BigInteger.class);
+        super(pair, Collections.singleton(pair.rightColumn), BigInteger.class);
         this.control = control;
     }
 

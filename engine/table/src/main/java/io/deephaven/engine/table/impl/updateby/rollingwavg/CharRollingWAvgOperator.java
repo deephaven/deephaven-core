@@ -11,6 +11,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -62,7 +64,7 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
 
     public CharRollingWAvgOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

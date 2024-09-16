@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collection;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -109,7 +110,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
      */
     public BigIntegerEMOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

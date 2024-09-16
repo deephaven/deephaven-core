@@ -13,6 +13,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public class CharFillByOperator extends BaseCharUpdateByOperator {
@@ -47,7 +49,7 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
             // region extra-constructor-args
             // endregion extra-constructor-args
             ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, Collections.singleton(pair.rightColumn));
         // region constructor
         // endregion constructor
     }

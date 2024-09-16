@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An operator that performs a specific computation for {@link Table#updateBy}. When adding implementations of this
@@ -40,7 +40,9 @@ import java.util.Map;
  */
 public abstract class UpdateByOperator {
     protected final MatchPair pair;
-    protected final String[] affectingColumns;
+
+    // Input columns for this operator. Must be dynamic to support discovery (e.g. formula columns).
+    protected final Collection<String> affectingColumns;
 
     protected final long reverseWindowScaleUnits;
     protected final long forwardWindowScaleUnits;
@@ -131,13 +133,14 @@ public abstract class UpdateByOperator {
     }
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isWindowed) {
         this.pair = pair;
-        this.affectingColumns = affectingColumns;
+        // Create a mutable copy of the provided collection
+        this.affectingColumns = new ArrayList<>(affectingColumns);
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;
         this.forwardWindowScaleUnits = forwardWindowScaleUnits;
@@ -210,13 +213,22 @@ public abstract class UpdateByOperator {
     }
 
     /**
-     * Get an array of column names that, when modified, affect the result of this computation.
+     * Get an unmodifiable collection of column names that, when modified, affect the result of this computation.
      *
      * @return an array of column names that affect this operator.
      */
     @NotNull
-    protected String[] getAffectingColumnNames() {
-        return affectingColumns;
+    protected Collection<String> getAffectingColumnNames() {
+        return Collections.unmodifiableCollection(affectingColumns);
+    }
+
+    /**
+     * Add to the list of columns that affect the operator results
+     *
+     * @param names the names of additional columns that affect this operator
+     */
+    protected void addAffectingColumnNames(final String... names) {
+        affectingColumns.addAll(Arrays.asList(names));
     }
 
     /**
@@ -275,7 +287,7 @@ public abstract class UpdateByOperator {
      * Create the modified column set for the input columns of this operator.
      */
     protected void createInputModifiedColumnSet(@NotNull final QueryTable source) {
-        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
+        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames().toArray(new String[0]));
     }
 
     /**

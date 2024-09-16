@@ -22,6 +22,8 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -95,7 +97,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
      *        this is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BasePrimitiveEmStdOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits) {

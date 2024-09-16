@@ -17,6 +17,8 @@ import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperator {
@@ -104,7 +106,7 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
 
     public BasePrimitiveRollingWAvgOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

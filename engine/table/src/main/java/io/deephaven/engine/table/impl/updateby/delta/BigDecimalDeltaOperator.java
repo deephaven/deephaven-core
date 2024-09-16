@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
@@ -65,7 +66,7 @@ public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecim
     }
 
     public BigDecimalDeltaOperator(@NotNull final MatchPair pair, @NotNull final DeltaControl control) {
-        super(pair, new String[] {pair.rightColumn}, BigDecimal.class);
+        super(pair, Collections.singleton(pair.rightColumn), BigDecimal.class);
         this.control = control;
     }
 

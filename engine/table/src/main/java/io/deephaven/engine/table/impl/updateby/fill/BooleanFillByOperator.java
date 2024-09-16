@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 public class BooleanFillByOperator extends BaseByteUpdateByOperator {
@@ -57,7 +59,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
             // region extra-constructor-args
             // endregion extra-constructor-args
             ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, Collections.singleton(pair.rightColumn));
         // region constructor
         // endregion constructor
     }

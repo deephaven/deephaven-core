@@ -12,6 +12,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+
 import static io.deephaven.util.QueryConstants.*;
 
 public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
@@ -55,7 +57,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, new String[] {pair.rightColumn});
+        super(pair, Collections.singleton(pair.rightColumn));
         this.isMax = isMax;
         // region constructor
         // endregion constructor

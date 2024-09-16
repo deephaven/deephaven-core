@@ -16,6 +16,8 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 import static io.deephaven.util.QueryConstants.*;
 
 public class FloatEMOperator extends BasePrimitiveEMOperator {
@@ -125,7 +127,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
      *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public FloatEMOperator(@NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

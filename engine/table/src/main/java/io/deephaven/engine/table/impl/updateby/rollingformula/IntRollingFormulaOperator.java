@@ -30,6 +30,7 @@ import io.deephaven.vector.IntVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
@@ -157,7 +158,7 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     public IntRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -177,7 +178,7 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     protected IntRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
+            @NotNull final Collection<String> affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

@@ -40,7 +40,6 @@ import java.math.MathContext;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -552,12 +551,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (spec.windowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (spec.windowScale().timestampCol() != null) {
+                affectingColumns.add(spec.windowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
             final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
@@ -611,12 +609,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (spec.windowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (spec.windowScale().timestampCol() != null) {
+                affectingColumns.add(spec.windowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             // use the correct units from the EmsSpec (depending on if Time or Tick based)
             final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
@@ -670,12 +667,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (spec.windowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (spec.windowScale().timestampCol() != null) {
+                affectingColumns.add(spec.windowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             // use the correct units from the EmMinMaxSpec (depending on if Time or Tick based)
             final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
@@ -747,12 +743,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (spec.windowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {spec.windowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (spec.windowScale().timestampCol() != null) {
+                affectingColumns.add(spec.windowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
             final double timeScaleUnits = spec.windowScale().getFractionalTimeScaleUnits();
@@ -928,12 +923,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -987,12 +981,11 @@ public class UpdateByOperatorFactory {
                 @NotNull final TableDefinition tableDef,
                 @NotNull final RollingGroupSpec rg) {
 
-            Stream<String> inputColumnStream = Arrays.stream(pairs).map(MatchPair::rightColumn);
+            final Collection<String> affectingColumns = new ArrayList<>();
             if (rg.revWindowScale().timestampCol() != null) {
-                // Include the timestamp column in the affecting list
-                inputColumnStream = Stream.concat(Stream.of(rg.revWindowScale().timestampCol()), inputColumnStream);
+                affectingColumns.add(rg.revWindowScale().timestampCol());
             }
-            final String[] affectingColumns = inputColumnStream.toArray(String[]::new);
+            Arrays.asList(pairs).forEach(p -> affectingColumns.add(p.rightColumn()));
 
             final long prevWindowScaleUnits = rg.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rg.fwdWindowScale().getTimeScaleUnits();
@@ -1008,12 +1001,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -1069,12 +1061,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rmm.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rmm.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rmm.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rmm.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rmm.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rmm.fwdWindowScale().getTimeScaleUnits();
@@ -1122,12 +1113,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -1179,12 +1169,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -1234,12 +1223,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -1302,12 +1290,11 @@ public class UpdateByOperatorFactory {
                 throw new IllegalArgumentException("Can not perform RollingWAvg on weight column type " + weightCsType);
             }
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn, rs.weightCol()};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn, rs.weightCol()};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
@@ -1361,12 +1348,11 @@ public class UpdateByOperatorFactory {
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 
-            final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
-            } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            final Collection<String> affectingColumns = new ArrayList<>();
+            if (rs.revWindowScale().timestampCol() != null) {
+                affectingColumns.add(rs.revWindowScale().timestampCol());
             }
+            affectingColumns.add(pair.rightColumn);
 
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
