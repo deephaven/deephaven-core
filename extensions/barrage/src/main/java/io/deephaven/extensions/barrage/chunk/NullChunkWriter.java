@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,16 +14,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class NullChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseChunkWriter<SourceChunkType> {
+    public static final NullChunkWriter<Chunk<Values>> INSTANCE = new NullChunkWriter<>();
 
     public NullChunkWriter() {
-        super(() -> null, 0, true);
+        super((chunk, idx) -> true, () -> null, 0, true);
     }
 
     @Override
     public DrainableColumn getInputStream(
             @NotNull final Context<SourceChunkType> chunk,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new NullDrainableColumn();
     }
 

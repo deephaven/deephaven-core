@@ -12,7 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.IntChunk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,38 +21,39 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-public class IntChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseChunkWriter<SourceChunkType> {
+public class IntChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "IntChunkWriter";
-    public static final IntChunkWriter<IntChunk<Values>> INSTANCE = new IntChunkWriter<>(
-            IntChunk::getEmptyChunk, IntChunk::get);
+    public static final IntChunkWriter<IntChunk<Values>> IDENTITY_INSTANCE = new IntChunkWriter<>(
+            IntChunk::isNull, IntChunk::getEmptyChunk, IntChunk::get);
 
     @FunctionalInterface
     public interface ToIntTransformFunction<SourceChunkType extends Chunk<Values>> {
         int get(SourceChunkType sourceValues, int offset);
     }
 
-    private final ToIntTransformFunction<SourceChunkType> transform;
+    private final ToIntTransformFunction<SOURCE_CHUNK_TYPE> transform;
 
     public IntChunkWriter(
-            @NotNull final Supplier<SourceChunkType> emptyChunkSupplier,
-            @Nullable final ToIntTransformFunction<SourceChunkType> transform) {
-        super(emptyChunkSupplier, Integer.BYTES, true);
+            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
+            @Nullable final ToIntTransformFunction<SOURCE_CHUNK_TYPE> transform) {
+        super(isRowNullProvider, emptyChunkSupplier, Integer.BYTES, true);
         this.transform = transform;
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SourceChunkType> context,
+            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new IntChunkInputStream(context, subset, options);
     }
 
-    private class IntChunkInputStream extends BaseChunkInputStream<Context<SourceChunkType>> {
+    private class IntChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
         private IntChunkInputStream(
-                @NotNull final Context<SourceChunkType> context,
+                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             super(context, subset, options);
         }
 
@@ -66,8 +67,7 @@ public class IntChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseC
             // validity
             listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
             // payload
-            long length = elementSize * subset.size();
-            listener.noteLogicalBuffer(padBufferSize(length));
+            listener.noteLogicalBuffer(padBufferSize(elementSize * subset.size()));
         }
 
         @Override

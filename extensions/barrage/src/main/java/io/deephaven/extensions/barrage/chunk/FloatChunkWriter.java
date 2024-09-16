@@ -12,7 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.FloatChunk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,38 +21,39 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-public class FloatChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseChunkWriter<SourceChunkType> {
+public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FloatChunkWriter";
-    public static final FloatChunkWriter<FloatChunk<Values>> INSTANCE = new FloatChunkWriter<>(
-            FloatChunk::getEmptyChunk, FloatChunk::get);
+    public static final FloatChunkWriter<FloatChunk<Values>> IDENTITY_INSTANCE = new FloatChunkWriter<>(
+            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get);
 
     @FunctionalInterface
     public interface ToFloatTransformFunction<SourceChunkType extends Chunk<Values>> {
         float get(SourceChunkType sourceValues, int offset);
     }
 
-    private final ToFloatTransformFunction<SourceChunkType> transform;
+    private final ToFloatTransformFunction<SOURCE_CHUNK_TYPE> transform;
 
     public FloatChunkWriter(
-            @NotNull final Supplier<SourceChunkType> emptyChunkSupplier,
-            @Nullable final ToFloatTransformFunction<SourceChunkType> transform) {
-        super(emptyChunkSupplier, Float.BYTES, true);
+            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
+            @Nullable final ToFloatTransformFunction<SOURCE_CHUNK_TYPE> transform) {
+        super(isRowNullProvider, emptyChunkSupplier, Float.BYTES, true);
         this.transform = transform;
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SourceChunkType> context,
+            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new FloatChunkInputStream(context, subset, options);
     }
 
-    private class FloatChunkInputStream extends BaseChunkInputStream<Context<SourceChunkType>> {
+    private class FloatChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
         private FloatChunkInputStream(
-                @NotNull final Context<SourceChunkType> context,
+                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             super(context, subset, options);
         }
 
@@ -66,8 +67,7 @@ public class FloatChunkWriter<SourceChunkType extends Chunk<Values>> extends Bas
             // validity
             listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
             // payload
-            long length = elementSize * subset.size();
-            listener.noteLogicalBuffer(padBufferSize(length));
+            listener.noteLogicalBuffer(padBufferSize(elementSize * subset.size()));
         }
 
         @Override

@@ -8,6 +8,7 @@ import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.util.Float16;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -39,11 +40,11 @@ public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>
     }
 
     private final short precisionFlatBufId;
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
 
     public FloatChunkReader(
             final short precisionFlatbufId,
-            final ChunkReader.Options options) {
+            final BarrageOptions options) {
         this.precisionFlatBufId = precisionFlatbufId;
         this.options = options;
     }
@@ -116,13 +117,17 @@ public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>
                 throw new IllegalStateException("Cannot use Deephaven nulls with half-precision floats");
             case Precision.SINGLE:
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    // region PrecisionSingleDhNulls
                     chunk.set(offset + ii, is.readFloat());
+                    // endregion PrecisionSingleDhNulls
                 }
                 break;
             case Precision.DOUBLE:
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    // region PrecisionDoubleDhNulls
                     final double v = is.readDouble();
-                    chunk.set(offset + ii, v == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_FLOAT : (float) v);
+                    chunk.set(offset + ii, floatCast(v));
+                    // endregion PrecisionDoubleDhNulls
                 }
                 break;
             default:
@@ -135,9 +140,11 @@ public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>
         float next() throws IOException;
     }
 
+    // region FPCastHelper
     private static float floatCast(double a) {
         return a == QueryConstants.NULL_DOUBLE ? QueryConstants.NULL_FLOAT : (float) a;
     }
+    // endregion FPCastHelper
 
     private static void useValidityBuffer(
             final short precisionFlatBufId,
@@ -160,12 +167,16 @@ public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>
                 supplier = () -> Float16.toFloat(is.readShort());
                 break;
             case Precision.SINGLE:
+                // region PrecisionSingleValidityBuffer
                 elementSize = Float.BYTES;
                 supplier = is::readFloat;
+                // endregion PrecisionSingleValidityBuffer
                 break;
             case Precision.DOUBLE:
                 elementSize = Double.BYTES;
+                // region PrecisionDoubleValidityBuffer
                 supplier = () -> floatCast(is.readDouble());
+                // endregion PrecisionDoubleValidityBuffer
                 break;
             default:
                 throw new IllegalStateException("Unsupported floating point precision: " + precisionFlatBufId);

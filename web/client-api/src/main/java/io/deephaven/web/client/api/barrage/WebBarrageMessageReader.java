@@ -11,6 +11,8 @@ import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
@@ -56,7 +58,7 @@ public class WebBarrageMessageReader {
     private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     public WebBarrageMessage parseFrom(
-            final ChunkReader.Options options,
+            final BarrageOptions options,
             ChunkType[] columnChunkTypes,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,
@@ -155,7 +157,7 @@ public class WebBarrageMessageReader {
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
                 readers.add(chunkReaderFactory.newReader(
-                        ChunkReader.typeInfo(columnTypes[i], componentTypes[i], field), options));
+                        BarrageTypeInfo.make(columnTypes[i], componentTypes[i], field), options));
             }
             return null;
         }

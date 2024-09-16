@@ -6,6 +6,8 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -16,10 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-public interface ChunkWriter<SourceChunkType extends Chunk<Values>> {
-    long MS_PER_DAY = 24 * 60 * 60 * 1000L;
-    long NS_PER_MS = 1_000_000L;
-    long NS_PER_DAY = MS_PER_DAY * NS_PER_MS;
+public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
 
     /**
      * Creator of {@link ChunkWriter} instances.
@@ -28,50 +27,58 @@ public interface ChunkWriter<SourceChunkType extends Chunk<Values>> {
      */
     interface Factory {
         /**
-         * Returns a {@link ChunkReader} for the specified arguments.
+         * Returns a {@link ChunkWriter} for the specified arguments.
          *
-         * @param typeInfo the type of data to read into a chunk
-         * @return a ChunkReader based on the given options, factory, and type to read
+         * @param typeInfo the type of data to write into a chunk
+         * @return a ChunkWriter based on the given options, factory, and type to write
          */
         <T extends Chunk<Values>> ChunkWriter<T> newWriter(
-                @NotNull ChunkReader.TypeInfo typeInfo);
+                @NotNull BarrageTypeInfo typeInfo);
     }
 
     /**
      * Create a context for the given chunk.
      *
      * @param chunk the chunk of data to be written
-     * @param rowOffset the number of rows that were sent before the first row in this logical message
+     * @param rowOffset the offset into the logical message potentially spread over multiple chunks
      * @return a context for the given chunk
      */
-    Context<SourceChunkType> makeContext(final SourceChunkType chunk, final long rowOffset);
+    Context<SOURCE_CHUNK_TYPE> makeContext(
+            @NotNull SOURCE_CHUNK_TYPE chunk,
+            long rowOffset);
 
     /**
      * Get an input stream optionally position-space filtered using the provided RowSet.
      *
      * @param context the chunk writer context holding the data to be drained to the client
      * @param subset if provided, is a position-space filter of source data
-     * @param options options for reading the stream
+     * @param options options for writing to the stream
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
     DrainableColumn getInputStream(
-            @NotNull Context<SourceChunkType> context,
+            @NotNull Context<SOURCE_CHUNK_TYPE> context,
             @Nullable RowSet subset,
-            @NotNull ChunkReader.Options options) throws IOException;
+            @NotNull BarrageOptions options) throws IOException;
 
     /**
      * Get an input stream representing the empty wire payload for this writer.
      *
-     * @param options options for reading the stream
+     * @param options options for writing to the stream
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
     DrainableColumn getEmptyInputStream(
-            @NotNull ChunkReader.Options options) throws IOException;
+            @NotNull BarrageOptions options) throws IOException;
 
     class Context<T extends Chunk<Values>> extends ReferenceCounted implements SafeCloseable {
         private final T chunk;
         private final long rowOffset;
 
+        /**
+         * Create a new context for the given chunk.
+         *
+         * @param chunk the chunk of data to be written
+         * @param rowOffset the offset into the logical message potentially spread over multiple chunks
+         */
         public Context(final T chunk, final long rowOffset) {
             super(1);
             this.chunk = chunk;
@@ -86,7 +93,7 @@ public interface ChunkWriter<SourceChunkType extends Chunk<Values>> {
         }
 
         /**
-         * @return the number of rows that were sent before the first row in this writer.
+         * @return the offset into the logical message potentially spread over multiple chunks
          */
         public long getRowOffset() {
             return rowOffset;

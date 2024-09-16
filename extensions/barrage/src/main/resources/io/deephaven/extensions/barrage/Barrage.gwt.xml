@@ -2,7 +2,7 @@
     <inherits name="io.deephaven.chunk.Chunk" />
     <inherits name="io.deephaven.engine.primitive.function.Function" />
     <inherits name="io.grpc.Grpc" />
-    <source path="" includes="BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java,DrainableByteArrayInputStream.java" />
+    <source path="" includes="BarrageOptions.java,BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,BarrageTypeInfo.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java,DrainableByteArrayInputStream.java" />
     <source path="util" includes="Float16.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
     <source path="chunk">
         <exclude name="vector/*" />

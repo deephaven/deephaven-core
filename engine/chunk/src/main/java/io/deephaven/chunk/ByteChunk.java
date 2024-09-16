@@ -79,9 +79,11 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return data[offset + index];
     }
 
-    public final boolean isNullAt(int index) {
+    // region isNull
+    public final boolean isNull(int index) {
         return data[offset + index] == QueryConstants.NULL_BYTE;
     }
+    // endregion isNull
 
     @Override
     public ByteChunk<ATTR> slice(int offset, int capacity) {

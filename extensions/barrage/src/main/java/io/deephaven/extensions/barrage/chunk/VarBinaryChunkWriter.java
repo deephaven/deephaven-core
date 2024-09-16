@@ -9,6 +9,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.rowset.RowSet;
@@ -33,7 +34,7 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
 
     public VarBinaryChunkWriter(
             final Appender<T> appendItem) {
-        super(ObjectChunk::getEmptyChunk, 0, false);
+        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false);
         this.appendItem = appendItem;
     }
 
@@ -41,7 +42,7 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
     public DrainableColumn getInputStream(
             @NotNull final ChunkWriter.Context<ObjectChunk<T, Values>> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new ObjectChunkInputStream((Context) context, subset, options);
     }
 
@@ -67,17 +68,22 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             }
 
             for (int ii = 0; ii < chunk.size(); ++ii) {
-                if (chunk.isNullAt(ii)) {
-                    continue;
-                }
-                try {
-                    appendItem.append(byteStorage, chunk.get(ii));
-                } catch (final IOException ioe) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", ioe);
+                if (!chunk.isNull(ii)) {
+                    try {
+                        appendItem.append(byteStorage, chunk.get(ii));
+                    } catch (final IOException ioe) {
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", ioe);
+                    }
                 }
                 byteStorage.offsets.set(ii + 1, byteStorage.size());
             }
+        }
+
+        @Override
+        protected void onReferenceCountAtZero() {
+            super.onReferenceCountAtZero();
+            byteStorage.close();
         }
     }
 
@@ -88,7 +94,7 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
         private ObjectChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) throws IOException {
+                @NotNull final BarrageOptions options) throws IOException {
             super(context, subset, options);
         }
 
@@ -154,11 +160,11 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             }
 
             read = true;
-            long bytesWritten = 0;
+            final MutableLong bytesWritten = new MutableLong();
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
 
             // write the validity buffer
-            bytesWritten += writeValidityBuffer(dos);
+            bytesWritten.add(writeValidityBuffer(dos));
 
             // write offsets array
             dos.writeInt(0);
@@ -173,17 +179,23 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                 }
             });
-            bytesWritten += Integer.BYTES * (subset.size() + 1);
+            bytesWritten.add(Integer.BYTES * (subset.size() + 1));
 
             if ((subset.size() & 0x1) == 0) {
                 // then we must pad to align next buffer
                 dos.writeInt(0);
-                bytesWritten += Integer.BYTES;
+                bytesWritten.add(Integer.BYTES);
             }
 
-            bytesWritten += context.byteStorage.writePayload(dos, 0, subset.intSize() - 1);
-            bytesWritten += writePadBuffer(dos, bytesWritten);
-            return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);
+            subset.forAllRowKeyRanges((s, e) -> {
+                try {
+                    bytesWritten.add(context.byteStorage.writePayload(dos, (int) s, (int) e));
+                } catch (IOException ex) {
+                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", ex);
+                }
+            });
+            bytesWritten.add(writePadBuffer(dos, bytesWritten.get()));
+            return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten.get());
         }
     }
 

@@ -5,7 +5,7 @@ package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.BarrageOptions;
 
 import java.io.InputStream;
 
@@ -24,7 +24,7 @@ public interface BarrageMessageReader {
      * @param stream the input stream that holds the message to be parsed
      * @return a BarrageMessage filled out by the stream's payload
      */
-    BarrageMessage safelyParseFrom(final ChunkReader.Options options,
+    BarrageMessage safelyParseFrom(final BarrageOptions options,
             ChunkType[] columnChunkTypes,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,

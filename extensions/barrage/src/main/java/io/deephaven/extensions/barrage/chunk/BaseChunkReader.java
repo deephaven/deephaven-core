@@ -10,8 +10,8 @@ import io.deephaven.chunk.attributes.Values;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-public abstract class BaseChunkReader<ReadChunkType extends WritableChunk<Values>>
-        implements ChunkReader<ReadChunkType> {
+public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>>
+        implements ChunkReader<READ_CHUNK_TYPE> {
 
     protected static <T extends WritableChunk<Values>> T castOrCreateChunk(
             final WritableChunk<Values> outChunk,

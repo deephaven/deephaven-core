@@ -265,6 +265,7 @@ public class ReinterpretUtils {
         }
         if (dataType == Instant.class) {
             // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return ChunkType.Long;
         }
         return ChunkType.fromElementType(dataType);
@@ -284,6 +285,7 @@ public class ReinterpretUtils {
         }
         if (dataType == Instant.class || dataType == ZonedDateTime.class) {
             // Note: not all ZonedDateTime sources are convertible to long, so this doesn't match column source behavior
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return long.class;
         }
         return dataType;

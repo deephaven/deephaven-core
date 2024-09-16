@@ -7,6 +7,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,13 +27,13 @@ public class FixedWidthChunkReader<T> extends BaseChunkReader<WritableObjectChun
 
     private final boolean useDeephavenNulls;
     private final int elementSize;
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final TypeConversion<T> conversion;
 
     public FixedWidthChunkReader(
             final int elementSize,
             final boolean dhNullable,
-            final ChunkReader.Options options,
+            final BarrageOptions options,
             final TypeConversion<T> conversion) {
         this.elementSize = elementSize;
         this.options = options;

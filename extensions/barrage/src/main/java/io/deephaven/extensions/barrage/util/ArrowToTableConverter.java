@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
@@ -35,7 +36,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 /**
@@ -158,7 +158,7 @@ public class ArrowToTableConverter {
         componentTypes = result.computeWireComponentTypes();
         for (int i = 0; i < schema.fieldsLength(); i++) {
             readers.add(DefaultChunkReaderFactory.INSTANCE.newReader(
-                    typeInfo(columnTypes[i], componentTypes[i], schema.fields(i)), options));
+                    BarrageTypeInfo.make(columnTypes[i], componentTypes[i], schema.fields(i)), options));
         }
 
         // retain reference until the resultTable can be sealed

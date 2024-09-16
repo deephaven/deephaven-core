@@ -12,6 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +34,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
             final int fixedSizeLength,
             final ExpansionKernel<ListType> kernel,
             final ChunkWriter<ComponentChunkType> componentWriter) {
-        super(ObjectChunk::getEmptyChunk, 0, false);
+        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false);
         this.mode = mode;
         this.fixedSizeLength = fixedSizeLength;
         this.kernel = kernel;
@@ -69,8 +70,8 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
         }
 
         @Override
-        public void close() {
-            super.close();
+        protected void onReferenceCountAtZero() {
+            super.onReferenceCountAtZero();
             offsets.close();
             innerContext.close();
         }
@@ -80,7 +81,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
     public DrainableColumn getInputStream(
             @NotNull final ChunkWriter.Context<ObjectChunk<ListType, Values>> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new ListChunkInputStream((Context) context, subset, options);
     }
 
@@ -93,7 +94,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
         private ListChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final ChunkReader.Options options) throws IOException {
+                @NotNull final BarrageOptions options) throws IOException {
             super(context, mySubset, options);
 
             if (subset == null || subset.size() == context.size()) {

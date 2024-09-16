@@ -15,6 +15,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableByteChunk;
@@ -26,6 +27,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.proto.flight.util.SchemaHelper;
@@ -56,8 +58,6 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.LongStream;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
-
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT_DH_NULLS =
@@ -73,7 +73,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     };
 
     private static WritableChunk<Values> readChunk(
-            final ChunkReader.Options options,
+            final BarrageOptions options,
             final Class<?> type,
             final Class<?> componentType,
             final Field field,
@@ -84,7 +84,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final int offset,
             final int totalRows) throws IOException {
         return DefaultChunkReaderFactory.INSTANCE
-                .newReader(typeInfo(type, componentType, field), options)
+                .newReader(BarrageTypeInfo.make(type, componentType, field), options)
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
     }
 
@@ -661,6 +661,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     private static <T> void testRoundTripSerialization(
             final BarrageSubscriptionOptions options, final Class<T> type,
             final Consumer<WritableChunk<Values>> initData, final Validator validator) throws IOException {
+        final int NUM_ROWS = 8;
         final ChunkType chunkType;
         if (type == Boolean.class || type == boolean.class) {
             chunkType = ChunkType.Byte;
@@ -680,15 +681,15 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         Schema schema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
         Field field = schema.fields(0);
 
-        final WritableChunk<Values> srcData = chunkType.makeWritableChunk(4096);
+        final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS);
         initData.accept(srcData);
 
         // The writer owns data; it is allowed to close it prematurely if the data needs to be converted to primitive
-        final WritableChunk<Values> data = chunkType.makeWritableChunk(4096);
+        final WritableChunk<Values> data = chunkType.makeWritableChunk(NUM_ROWS);
         data.copyFromChunk(srcData, 0, 0, srcData.size());
 
         final ChunkWriter<Chunk<Values>> writer = DefaultChunkWriterFactory.INSTANCE
-                .newWriter(ChunkReader.typeInfo(type, type.getComponentType(), field));
+                .newWriter(BarrageTypeInfo.make(type, type.getComponentType(), field));
         try (SafeCloseable ignored = srcData;
                 final ChunkWriter.Context<Chunk<Values>> context = writer.makeContext(data, 0)) {
             // full sub logic
@@ -700,7 +701,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
                 final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
+                final int startSize = baos.size();
+                final int available = column.available();
                 column.drainTo(baos);
+                if (available != baos.size() - startSize) {
+                    throw new IllegalStateException("available=" + available + ", baos.size()=" + baos.size());
+                }
+
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),

@@ -78,9 +78,11 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
         return data[offset + index];
     }
 
-    public final boolean isNullAt(int index) {
+    // region isNull
+    public final boolean isNull(int index) {
         return data[offset + index] == null;
     }
+    // endregion isNull
 
     @Override
     public ObjectChunk<T, ATTR> slice(int offset, int capacity) {

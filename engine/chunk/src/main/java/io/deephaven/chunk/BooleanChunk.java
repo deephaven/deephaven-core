@@ -75,9 +75,11 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return data[offset + index];
     }
 
-    public final boolean isNullAt(int index) {
-        return data[offset + index] == QueryConstants.NULL_BOOLEAN;
+    // region isNull
+    public final boolean isNull(int index) {
+        return false;
     }
+    // endregion isNull
 
     @Override
     public BooleanChunk<ATTR> slice(int offset, int capacity) {

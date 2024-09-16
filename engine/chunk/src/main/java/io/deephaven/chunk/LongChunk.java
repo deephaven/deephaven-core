@@ -78,9 +78,11 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return data[offset + index];
     }
 
-    public final boolean isNullAt(int index) {
+    // region isNull
+    public final boolean isNull(int index) {
         return data[offset + index] == QueryConstants.NULL_LONG;
     }
+    // endregion isNull
 
     @Override
     public LongChunk<ATTR> slice(int offset, int capacity) {

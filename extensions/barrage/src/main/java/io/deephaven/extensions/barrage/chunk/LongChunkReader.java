@@ -10,10 +10,9 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,13 +28,13 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
     private static final String DEBUG_NAME = "LongChunkReader";
 
     @FunctionalInterface
-    public interface ToLongTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        long get(WireChunkType wireValues, int wireOffset);
+    public interface ToLongTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        long get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableLongChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableLongChunk<Values>> transformTo(
             final T wireReader,
-            final ToLongTransformFunction<WireChunkType> wireTransform) {
+            final ToLongTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableLongChunk::makeWritableChunk,
@@ -44,7 +43,7 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
                         outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final LongConversion conversion;
 
     @FunctionalInterface
@@ -54,11 +53,11 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
         LongConversion IDENTITY = (long a) -> a;
     }
 
-    public LongChunkReader(ChunkReader.Options options) {
+    public LongChunkReader(BarrageOptions options) {
         this(options, LongConversion.IDENTITY);
     }
 
-    public LongChunkReader(ChunkReader.Options options, LongConversion conversion) {
+    public LongChunkReader(BarrageOptions options, LongConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }

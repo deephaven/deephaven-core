@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,13 +29,13 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
     private static final String DEBUG_NAME = "ByteChunkReader";
 
     @FunctionalInterface
-    public interface ToByteTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        byte get(WireChunkType wireValues, int wireOffset);
+    public interface ToByteTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        byte get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableByteChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableByteChunk<Values>> transformTo(
             final T wireReader,
-            final ToByteTransformFunction<WireChunkType> wireTransform) {
+            final ToByteTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableByteChunk::makeWritableChunk,
@@ -44,7 +44,7 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
                         outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final ByteConversion conversion;
 
     @FunctionalInterface
@@ -54,11 +54,11 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
-    public ByteChunkReader(ChunkReader.Options options) {
+    public ByteChunkReader(BarrageOptions options) {
         this(options, ByteConversion.IDENTITY);
     }
 
-    public ByteChunkReader(ChunkReader.Options options, ByteConversion conversion) {
+    public ByteChunkReader(BarrageOptions options, ByteConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }

@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,48 +18,59 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-public abstract class BaseChunkWriter<SourceChunkType extends Chunk<Values>> implements ChunkWriter<SourceChunkType> {
+public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
+        implements ChunkWriter<SOURCE_CHUNK_TYPE> {
+    @FunctionalInterface
+    public interface IsRowNullProvider<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
+        boolean isRowNull(SOURCE_CHUNK_TYPE chunk, int idx);
+    }
 
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
 
-    protected final Supplier<SourceChunkType> emptyChunkSupplier;
+    protected final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider;
+    protected final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier;
     protected final int elementSize;
+    /** whether we can use the wire value as a deephaven null for clients that support dh nulls */
     protected final boolean dhNullable;
 
     BaseChunkWriter(
-            final Supplier<SourceChunkType> emptyChunkSupplier,
+            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
             final boolean dhNullable) {
+        this.isRowNullProvider = isRowNullProvider;
         this.emptyChunkSupplier = emptyChunkSupplier;
         this.elementSize = elementSize;
         this.dhNullable = dhNullable;
     }
 
     @Override
-    public final DrainableColumn getEmptyInputStream(final @NotNull ChunkReader.Options options) throws IOException {
-        return getInputStream(makeContext(emptyChunkSupplier.get(), 0), null, options);
+    public final DrainableColumn getEmptyInputStream(final @NotNull BarrageOptions options) throws IOException {
+        try (Context<SOURCE_CHUNK_TYPE> context = makeContext(emptyChunkSupplier.get(), 0)) {
+            return getInputStream(context, null, options);
+        }
     }
 
     @Override
-    public Context<SourceChunkType> makeContext(
-            @NotNull final SourceChunkType chunk,
+    public Context<SOURCE_CHUNK_TYPE> makeContext(
+            @NotNull final SOURCE_CHUNK_TYPE chunk,
             final long rowOffset) {
         return new Context<>(chunk, rowOffset);
     }
 
-    abstract class BaseChunkInputStream<ContextType extends Context<SourceChunkType>> extends DrainableColumn {
-        protected final ContextType context;
+    abstract class BaseChunkInputStream<CONTEXT_TYPE extends Context<SOURCE_CHUNK_TYPE>> extends DrainableColumn {
+        protected final CONTEXT_TYPE context;
         protected final RowSequence subset;
-        protected final ChunkReader.Options options;
+        protected final BarrageOptions options;
 
         protected boolean read = false;
-        private int cachedNullCount = -1;
+        private int nullCount;
 
         BaseChunkInputStream(
-                @NotNull final ContextType context,
+                @NotNull final CONTEXT_TYPE context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             this.context = context;
             context.incrementReferenceCount();
             this.options = options;
@@ -72,6 +84,16 @@ public abstract class BaseChunkWriter<SourceChunkType extends Chunk<Values>> imp
             if (context.size() > 0 && this.subset.lastRowKey() >= context.size()) {
                 throw new IllegalStateException(
                         "Subset " + this.subset + " is out of bounds for context of size " + context.size());
+            }
+
+            if (dhNullable && options.useDeephavenNulls()) {
+                nullCount = 0;
+            } else {
+                this.subset.forAllRowKeys(row -> {
+                    if (isRowNullProvider.isRowNull(context.getChunk(), (int) row)) {
+                        ++nullCount;
+                    }
+                });
             }
         }
 
@@ -110,19 +132,7 @@ public abstract class BaseChunkWriter<SourceChunkType extends Chunk<Values>> imp
 
         @Override
         public int nullCount() {
-            if (dhNullable && options.useDeephavenNulls()) {
-                return 0;
-            }
-            if (cachedNullCount == -1) {
-                cachedNullCount = 0;
-                final SourceChunkType chunk = context.getChunk();
-                subset.forAllRowKeys(row -> {
-                    if (chunk.isNullAt((int) row)) {
-                        ++cachedNullCount;
-                    }
-                });
-            }
-            return cachedNullCount;
+            return nullCount;
         }
 
         protected long writeValidityBuffer(final DataOutput dos) {
@@ -130,26 +140,26 @@ public abstract class BaseChunkWriter<SourceChunkType extends Chunk<Values>> imp
                 return 0;
             }
 
-            final SerContext context = new SerContext();
+            final SerContext serContext = new SerContext();
             final Runnable flush = () -> {
                 try {
-                    dos.writeLong(context.accumulator);
+                    dos.writeLong(serContext.accumulator);
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException(
                             "Unexpected exception while draining data to OutputStream: ", e);
                 }
-                context.accumulator = 0;
-                context.count = 0;
+                serContext.accumulator = 0;
+                serContext.count = 0;
             };
             subset.forAllRowKeys(row -> {
-                if (!this.context.getChunk().isNullAt((int) row)) {
-                    context.accumulator |= 1L << context.count;
+                if (!isRowNullProvider.isRowNull(context.getChunk(), (int) row)) {
+                    serContext.accumulator |= 1L << serContext.count;
                 }
-                if (++context.count == 64) {
+                if (++serContext.count == 64) {
                     flush.run();
                 }
             });
-            if (context.count > 0) {
+            if (serContext.count > 0) {
                 flush.run();
             }
 

@@ -19,6 +19,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
@@ -35,7 +37,6 @@ import org.apache.arrow.flatbuf.Schema;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -43,8 +44,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
-
-import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
@@ -70,7 +69,7 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     }
 
     @Override
-    public BarrageMessage safelyParseFrom(final ChunkReader.Options options,
+    public BarrageMessage safelyParseFrom(final BarrageOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
@@ -301,7 +300,8 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                     Field field = schema.fields(i);
 
                     final Class<?> columnType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnTypes[i]);
-                    readers.add(chunkReaderFactory.newReader(typeInfo(columnType, componentTypes[i], field), options));
+                    readers.add(chunkReaderFactory.newReader(
+                            BarrageTypeInfo.make(columnType, componentTypes[i], field), options));
                 }
                 return null;
             }

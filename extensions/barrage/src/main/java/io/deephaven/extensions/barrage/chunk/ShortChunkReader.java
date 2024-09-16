@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,13 +29,13 @@ public class ShortChunkReader extends BaseChunkReader<WritableShortChunk<Values>
     private static final String DEBUG_NAME = "ShortChunkReader";
 
     @FunctionalInterface
-    public interface ToShortTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        short get(WireChunkType wireValues, int wireOffset);
+    public interface ToShortTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        short get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableShortChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableShortChunk<Values>> transformTo(
             final T wireReader,
-            final ToShortTransformFunction<WireChunkType> wireTransform) {
+            final ToShortTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableShortChunk::makeWritableChunk,
@@ -44,7 +44,7 @@ public class ShortChunkReader extends BaseChunkReader<WritableShortChunk<Values>
                         outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final ShortConversion conversion;
 
     @FunctionalInterface
@@ -54,11 +54,11 @@ public class ShortChunkReader extends BaseChunkReader<WritableShortChunk<Values>
         ShortConversion IDENTITY = (short a) -> a;
     }
 
-    public ShortChunkReader(ChunkReader.Options options) {
+    public ShortChunkReader(BarrageOptions options) {
         this(options, ShortConversion.IDENTITY);
     }
 
-    public ShortChunkReader(ChunkReader.Options options, ShortConversion conversion) {
+    public ShortChunkReader(BarrageOptions options, ShortConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }

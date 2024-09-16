@@ -12,7 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.DoubleChunk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,38 +21,39 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-public class DoubleChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseChunkWriter<SourceChunkType> {
+public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "DoubleChunkWriter";
-    public static final DoubleChunkWriter<DoubleChunk<Values>> INSTANCE = new DoubleChunkWriter<>(
-            DoubleChunk::getEmptyChunk, DoubleChunk::get);
+    public static final DoubleChunkWriter<DoubleChunk<Values>> IDENTITY_INSTANCE = new DoubleChunkWriter<>(
+            DoubleChunk::isNull, DoubleChunk::getEmptyChunk, DoubleChunk::get);
 
     @FunctionalInterface
     public interface ToDoubleTransformFunction<SourceChunkType extends Chunk<Values>> {
         double get(SourceChunkType sourceValues, int offset);
     }
 
-    private final ToDoubleTransformFunction<SourceChunkType> transform;
+    private final ToDoubleTransformFunction<SOURCE_CHUNK_TYPE> transform;
 
     public DoubleChunkWriter(
-            @NotNull final Supplier<SourceChunkType> emptyChunkSupplier,
-            @Nullable final ToDoubleTransformFunction<SourceChunkType> transform) {
-        super(emptyChunkSupplier, Double.BYTES, true);
+            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
+            @Nullable final ToDoubleTransformFunction<SOURCE_CHUNK_TYPE> transform) {
+        super(isRowNullProvider, emptyChunkSupplier, Double.BYTES, true);
         this.transform = transform;
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SourceChunkType> context,
+            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new DoubleChunkInputStream(context, subset, options);
     }
 
-    private class DoubleChunkInputStream extends BaseChunkInputStream<Context<SourceChunkType>> {
+    private class DoubleChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
         private DoubleChunkInputStream(
-                @NotNull final Context<SourceChunkType> context,
+                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             super(context, subset, options);
         }
 
@@ -66,8 +67,7 @@ public class DoubleChunkWriter<SourceChunkType extends Chunk<Values>> extends Ba
             // validity
             listener.noteLogicalBuffer(sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize()) : 0);
             // payload
-            long length = elementSize * subset.size();
-            listener.noteLogicalBuffer(padBufferSize(length));
+            listener.noteLogicalBuffer(padBufferSize(elementSize * subset.size()));
         }
 
         @Override

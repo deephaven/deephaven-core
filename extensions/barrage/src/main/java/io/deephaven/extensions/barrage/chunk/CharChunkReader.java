@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,13 +26,13 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
     private static final String DEBUG_NAME = "CharChunkReader";
 
     @FunctionalInterface
-    public interface ToCharTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        char get(WireChunkType wireValues, int wireOffset);
+    public interface ToCharTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        char get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableCharChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableCharChunk<Values>> transformTo(
             final T wireReader,
-            final ToCharTransformFunction<WireChunkType> wireTransform) {
+            final ToCharTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableCharChunk::makeWritableChunk,
@@ -40,7 +41,7 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
                         outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final CharConversion conversion;
 
     @FunctionalInterface
@@ -50,11 +51,11 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
         CharConversion IDENTITY = (char a) -> a;
     }
 
-    public CharChunkReader(ChunkReader.Options options) {
+    public CharChunkReader(BarrageOptions options) {
         this(options, CharConversion.IDENTITY);
     }
 
-    public CharChunkReader(ChunkReader.Options options, CharConversion conversion) {
+    public CharChunkReader(BarrageOptions options, CharConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }

@@ -5,7 +5,6 @@ package io.deephaven.extensions.barrage;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +40,7 @@ public class ChunkListWriter<SourceChunkType extends Chunk<Values>> implements S
         return contexts;
     }
 
-    public ChunkWriter.DrainableColumn empty(@NotNull final ChunkReader.Options options) throws IOException {
+    public ChunkWriter.DrainableColumn empty(@NotNull final BarrageOptions options) throws IOException {
         return writer.getEmptyInputStream(options);
     }
 

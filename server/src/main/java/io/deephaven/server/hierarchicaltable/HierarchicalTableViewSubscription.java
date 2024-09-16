@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.*;
-import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -363,7 +362,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             }
             barrageMessage.addColumnData[ci] = addColumnData;
 
-            chunkWriters[ci] = DefaultChunkWriterFactory.INSTANCE.newWriter(ChunkReader.typeInfo(
+            chunkWriters[ci] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                     ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType()),
                     columnDefinition.getComponentType(),
                     BarrageUtil.flatbufFieldFor(columnDefinition, Map.of())));

@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,13 +29,13 @@ public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
     private static final String DEBUG_NAME = "IntChunkReader";
 
     @FunctionalInterface
-    public interface ToIntTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        int get(WireChunkType wireValues, int wireOffset);
+    public interface ToIntTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        int get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableIntChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableIntChunk<Values>> transformTo(
             final T wireReader,
-            final ToIntTransformFunction<WireChunkType> wireTransform) {
+            final ToIntTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableIntChunk::makeWritableChunk,
@@ -44,7 +44,7 @@ public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
                         outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    private final ChunkReader.Options options;
+    private final BarrageOptions options;
     private final IntConversion conversion;
 
     @FunctionalInterface
@@ -54,11 +54,11 @@ public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
         IntConversion IDENTITY = (int a) -> a;
     }
 
-    public IntChunkReader(ChunkReader.Options options) {
+    public IntChunkReader(BarrageOptions options) {
         this(options, IntConversion.IDENTITY);
     }
 
-    public IntChunkReader(ChunkReader.Options options, IntConversion conversion) {
+    public IntChunkReader(BarrageOptions options, IntConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }

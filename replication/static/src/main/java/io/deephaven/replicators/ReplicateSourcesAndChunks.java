@@ -597,6 +597,10 @@ public class ReplicateSourcesAndChunks {
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
         classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
+        classLines = ReplicationUtils.replaceRegion(classLines, "isNull", Arrays.asList(
+                "    public final boolean isNull(int index) {",
+                "        return false;",
+                "    }"));
         FileUtils.writeLines(classFile, classLines);
     }
 

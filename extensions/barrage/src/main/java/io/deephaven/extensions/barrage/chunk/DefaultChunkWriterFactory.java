@@ -18,6 +18,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.ArrayPreview;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
+import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.extensions.barrage.util.Float16;
@@ -46,6 +47,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,14 +61,18 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
     public static final Logger log = LoggerFactory.getLogger(DefaultChunkWriterFactory.class);
     public static final ChunkWriter.Factory INSTANCE = new DefaultChunkWriterFactory();
 
-    protected interface ChunkWriterFactory {
+    /**
+     * This supplier interface simplifies the cost to operate off of the ArrowType directly since the Arrow POJO is not
+     * yet supported over GWT.
+     */
+    protected interface ArrowTypeChunkWriterSupplier {
         ChunkWriter<? extends Chunk<Values>> make(
                 final ArrowType arrowType,
-                final ChunkReader.TypeInfo typeInfo);
+                final BarrageTypeInfo typeInfo);
     }
 
-    private final Map<ArrowType.ArrowTypeID, Map<Class<?>, ChunkWriterFactory>> registeredFactories =
-            new HashMap<>();
+    private final Map<ArrowType.ArrowTypeID, Map<Class<?>, ArrowTypeChunkWriterSupplier>> registeredFactories =
+            new EnumMap<>(ArrowType.ArrowTypeID.class);
 
     protected DefaultChunkWriterFactory() {
         register(ArrowType.ArrowTypeID.Timestamp, long.class, DefaultChunkWriterFactory::timestampFromLong);
@@ -124,7 +130,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     @Override
     public <T extends Chunk<Values>> ChunkWriter<T> newWriter(
-            @NotNull final ChunkReader.TypeInfo typeInfo) {
+            @NotNull final BarrageTypeInfo typeInfo) {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
@@ -143,7 +149,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     typeInfo.type().getCanonicalName()));
         }
 
-        final Map<Class<?>, ChunkWriterFactory> knownWriters = registeredFactories.get(typeId);
+        final Map<Class<?>, ArrowTypeChunkWriterSupplier> knownWriters = registeredFactories.get(typeId);
         if (knownWriters == null && !isSpecialType) {
             throw new UnsupportedOperationException(String.format(
                     "No known ChunkWriter for arrow type %s from %s.",
@@ -151,14 +157,17 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     typeInfo.type().getCanonicalName()));
         }
 
-        final ChunkWriterFactory chunkWriterFactory = knownWriters == null ? null : knownWriters.get(typeInfo.type());
+        final ArrowTypeChunkWriterSupplier chunkWriterFactory =
+                knownWriters == null ? null : knownWriters.get(typeInfo.type());
         if (chunkWriterFactory != null) {
             // noinspection unchecked
             final ChunkWriter<T> writer = (ChunkWriter<T>) chunkWriterFactory.make(field.getType(), typeInfo);
             if (writer != null) {
                 return writer;
             }
-        } else if (!isSpecialType) {
+        }
+
+        if (!isSpecialType) {
             throw new UnsupportedOperationException(String.format(
                     "No known ChunkWriter for arrow type %s from %s. Supported types: %s",
                     field.getType().toString(),
@@ -167,7 +176,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Null) {
-            return new NullChunkWriter<>();
+            // noinspection unchecked
+            return (ChunkWriter<T>) NullChunkWriter.INSTANCE;
         }
 
         if (typeId == ArrowType.ArrowTypeID.List
@@ -183,19 +193,19 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
             }
 
-            final ChunkReader.TypeInfo componentTypeInfo;
+            final BarrageTypeInfo componentTypeInfo;
             final boolean useVectorKernels = Vector.class.isAssignableFrom(typeInfo.type());
             if (useVectorKernels) {
                 final Class<?> componentType =
                         VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
-                componentTypeInfo = new ChunkReader.TypeInfo(
+                componentTypeInfo = new BarrageTypeInfo(
                         componentType,
                         componentType.getComponentType(),
                         typeInfo.arrowField().children(0));
             } else if (typeInfo.type().isArray()) {
                 final Class<?> componentType = typeInfo.componentType();
                 // noinspection DataFlowIssue
-                componentTypeInfo = new ChunkReader.TypeInfo(
+                componentTypeInfo = new BarrageTypeInfo(
                         componentType,
                         componentType.getComponentType(),
                         typeInfo.arrowField().children(0));
@@ -260,7 +270,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
     protected void register(
             final ArrowType.ArrowTypeID arrowType,
             final Class<?> deephavenType,
-            final ChunkWriterFactory chunkWriterFactory) {
+            final ArrowTypeChunkWriterSupplier chunkWriterFactory) {
         registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                 .put(deephavenType, chunkWriterFactory);
 
@@ -268,31 +278,38 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         if (deephavenType == byte.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Byte.class, (at, typeInfo) -> new ByteChunkWriter<ObjectChunk<Byte, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == short.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Short.class, (at, typeInfo) -> new ShortChunkWriter<ObjectChunk<Short, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == int.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Integer.class, (at, typeInfo) -> new IntChunkWriter<ObjectChunk<Integer, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == long.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Long.class, (at, typeInfo) -> new LongChunkWriter<ObjectChunk<Long, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == char.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Character.class, (at, typeInfo) -> new CharChunkWriter<ObjectChunk<Character, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == float.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Float.class, (at, typeInfo) -> new FloatChunkWriter<ObjectChunk<Float, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         } else if (deephavenType == double.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Double.class, (at, typeInfo) -> new DoubleChunkWriter<ObjectChunk<Double, Values>>(
-                            ObjectChunk::getEmptyChunk, (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
+                            ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                            (chunk, ii) -> TypeUtils.unbox(chunk.get(ii))));
         }
     }
 
@@ -313,26 +330,36 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<Chunk<Values>> timestampFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Timestamp tsType = (ArrowType.Timestamp) arrowType;
         final long factor = factorForTimeUnit(tsType.getUnit());
-        return new LongChunkWriter<>(LongChunk::getEmptyChunk, (Chunk<Values> source, int offset) -> {
-            // unfortunately we do not know whether ReinterpretUtils can convert the column source to longs or not
-            if (source instanceof LongChunk) {
-                final long value = source.asLongChunk().get(offset);
-                return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
-            }
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
+        // we do not know whether the incoming chunk source is a LongChunk or ObjectChunk<ZonedDateTime>
+        return new LongChunkWriter<>(
+                (Chunk<Values> source, int offset) -> {
+                    if (source instanceof LongChunk) {
+                        return source.asLongChunk().isNull(offset);
+                    }
 
-            final ZonedDateTime value = source.<ZonedDateTime>asObjectChunk().get(offset);
-            return value == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(value) / factor;
-        });
+                    return source.asObjectChunk().isNull(offset);
+                },
+                LongChunk::getEmptyChunk,
+                (Chunk<Values> source, int offset) -> {
+                    if (source instanceof LongChunk) {
+                        final long value = source.asLongChunk().get(offset);
+                        return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
+                    }
+
+                    final ZonedDateTime value = source.<ZonedDateTime>asObjectChunk().get(offset);
+                    return value == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(value) / factor;
+                });
     }
 
     private static ChunkWriter<ObjectChunk<Instant, Values>> timestampFromInstant(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final long factor = factorForTimeUnit(((ArrowType.Timestamp) arrowType).getUnit());
-        return new LongChunkWriter<>(ObjectChunk::getEmptyChunk, (source, offset) -> {
+        return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (source, offset) -> {
             final Instant value = source.get(offset);
             return value == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(value) / factor;
         });
@@ -340,10 +367,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<ZonedDateTime, Values>> timestampFromZonedDateTime(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Timestamp tsType = (ArrowType.Timestamp) arrowType;
         final long factor = factorForTimeUnit(tsType.getUnit());
-        return new LongChunkWriter<>(ObjectChunk::getEmptyChunk, (source, offset) -> {
+        return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (source, offset) -> {
             final ZonedDateTime value = source.get(offset);
             return value == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(value) / factor;
         });
@@ -351,23 +378,23 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<String, Values>> utf8FromString(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>((out, item) -> out.write(item.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static ChunkWriter<ObjectChunk<Object, Values>> utf8FromObject(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>((out, item) -> out.write(item.toString().getBytes(StandardCharsets.UTF_8)));
     }
 
     private static ChunkWriter<LongChunk<Values>> durationFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
         return factor == 1
-                ? LongChunkWriter.INSTANCE
-                : new LongChunkWriter<>(LongChunk::getEmptyChunk, (source, offset) -> {
+                ? LongChunkWriter.IDENTITY_INSTANCE
+                : new LongChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, (source, offset) -> {
                     final long value = source.get(offset);
                     return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
                 });
@@ -375,9 +402,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<Duration, Values>> durationFromDuration(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
-        return new LongChunkWriter<>(ObjectChunk::getEmptyChunk, (source, offset) -> {
+        return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (source, offset) -> {
             final Duration value = source.get(offset);
             return value == null ? QueryConstants.NULL_LONG : value.toNanos() / factor;
         });
@@ -385,11 +412,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<FloatChunk<Values>> floatingPointFromFloat(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) arrowType;
         switch (fpType.getPrecision()) {
             case HALF:
-                return new ShortChunkWriter<>(FloatChunk::getEmptyChunk, (source, offset) -> {
+                return new ShortChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk, (source, offset) -> {
                     final double value = source.get(offset);
                     return value == QueryConstants.NULL_FLOAT
                             ? QueryConstants.NULL_SHORT
@@ -397,10 +424,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 });
 
             case SINGLE:
-                return FloatChunkWriter.INSTANCE;
+                return FloatChunkWriter.IDENTITY_INSTANCE;
 
             case DOUBLE:
-                return new DoubleChunkWriter<>(FloatChunk::getEmptyChunk,
+                return new DoubleChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk,
                         (source, offset) -> QueryLanguageFunctionUtils.doubleCast(source.get(offset)));
 
             default:
@@ -410,11 +437,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<DoubleChunk<Values>> floatingPointFromDouble(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) arrowType;
         switch (fpType.getPrecision()) {
             case HALF:
-                return new ShortChunkWriter<>(DoubleChunk::getEmptyChunk, (source, offset) -> {
+                return new ShortChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk, (source, offset) -> {
                     final double value = source.get(offset);
                     return value == QueryConstants.NULL_DOUBLE
                             ? QueryConstants.NULL_SHORT
@@ -422,10 +449,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 });
 
             case SINGLE:
-                return new FloatChunkWriter<>(DoubleChunk::getEmptyChunk,
+                return new FloatChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk,
                         (source, offset) -> QueryLanguageFunctionUtils.floatCast(source.get(offset)));
             case DOUBLE:
-                return DoubleChunkWriter.INSTANCE;
+                return DoubleChunkWriter.IDENTITY_INSTANCE;
 
             default:
                 throw new IllegalArgumentException("Unexpected floating point precision: " + fpType.getPrecision());
@@ -434,11 +461,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<BigDecimal, Values>> floatingPointFromBigDecimal(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) arrowType;
         switch (fpType.getPrecision()) {
             case HALF:
-                return new ShortChunkWriter<>(ObjectChunk::getEmptyChunk, (source, offset) -> {
+                return new ShortChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (source, offset) -> {
                     final BigDecimal value = source.get(offset);
                     return value == null
                             ? QueryConstants.NULL_SHORT
@@ -446,11 +473,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 });
 
             case SINGLE:
-                return new FloatChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new FloatChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (source, offset) -> QueryLanguageFunctionUtils.floatCast(source.get(offset)));
 
             case DOUBLE:
-                return new DoubleChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new DoubleChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (source, offset) -> QueryLanguageFunctionUtils.doubleCast(source.get(offset)));
 
             default:
@@ -460,19 +487,19 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<byte[], Values>> binaryFromByteArray(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>(OutputStream::write);
     }
 
     private static ChunkWriter<ObjectChunk<BigInteger, Values>> binaryFromBigInt(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>((out, item) -> out.write(item.toByteArray()));
     }
 
     private static ChunkWriter<ObjectChunk<BigDecimal, Values>> binaryFromBigDecimal(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>((out, item) -> {
             final BigDecimal normal = item.stripTrailingZeros();
             final int v = normal.scale();
@@ -487,14 +514,14 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<LongChunk<Values>> timeFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // See timeFromLocalTime's comment for more information on wire format.
         final ArrowType.Time timeType = (ArrowType.Time) arrowType;
         final int bitWidth = timeType.getBitWidth();
         final long factor = factorForTimeUnit(timeType.getUnit());
         switch (bitWidth) {
             case 32:
-                return new IntChunkWriter<>(LongChunk::getEmptyChunk, (chunk, ii) -> {
+                return new IntChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, (chunk, ii) -> {
                     // note: do math prior to truncation
                     long value = chunk.get(ii);
                     value = value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
@@ -502,7 +529,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 });
 
             case 64:
-                return new LongChunkWriter<>(LongChunk::getEmptyChunk, (chunk, ii) -> {
+                return new LongChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, (chunk, ii) -> {
                     long value = chunk.get(ii);
                     return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
                 });
@@ -514,7 +541,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<LocalTime, Values>> timeFromLocalTime(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         /*
          * Time is either a 32-bit or 64-bit signed integer type representing an elapsed time since midnight, stored in
          * either of four units: seconds, milliseconds, microseconds or nanoseconds.
@@ -536,7 +563,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         final long factor = factorForTimeUnit(timeType.getUnit());
         switch (bitWidth) {
             case 32:
-                return new IntChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                return new IntChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     // note: do math prior to truncation
                     final LocalTime lt = chunk.get(ii);
                     final long value = lt == null ? QueryConstants.NULL_LONG : lt.toNanoOfDay() / factor;
@@ -544,7 +571,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 });
 
             case 64:
-                return new LongChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     final LocalTime lt = chunk.get(ii);
                     return lt == null ? QueryConstants.NULL_LONG : lt.toNanoOfDay() / factor;
                 });
@@ -556,7 +583,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ByteChunk<Values>> decimalFromByte(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -566,20 +593,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(ByteChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            byte value = chunk.get(offset);
-            if (value == QueryConstants.NULL_BYTE) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(ByteChunk::isNull, ByteChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    byte value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_BYTE) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<CharChunk<Values>> decimalFromChar(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -589,20 +617,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(CharChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            char value = chunk.get(offset);
-            if (value == QueryConstants.NULL_CHAR) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(CharChunk::isNull, CharChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    char value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_CHAR) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<ShortChunk<Values>> decimalFromShort(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -612,20 +641,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(ShortChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            short value = chunk.get(offset);
-            if (value == QueryConstants.NULL_SHORT) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(ShortChunk::isNull, ShortChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    short value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_SHORT) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<IntChunk<Values>> decimalFromInt(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -635,20 +665,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(IntChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            int value = chunk.get(offset);
-            if (value == QueryConstants.NULL_INT) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    int value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_INT) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<LongChunk<Values>> decimalFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -658,20 +689,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(LongChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            long value = chunk.get(offset);
-            if (value == QueryConstants.NULL_LONG) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    long value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_LONG) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<ObjectChunk<BigInteger, Values>> decimalFromBigInteger(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -681,20 +713,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            BigInteger value = chunk.get(offset);
-            if (value == null) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    BigInteger value = chunk.get(offset);
+                    if (value == null) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, new BigDecimal(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, new BigDecimal(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<FloatChunk<Values>> decimalFromFloat(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -704,20 +737,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(FloatChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            float value = chunk.get(offset);
-            if (value == QueryConstants.NULL_FLOAT) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    float value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_FLOAT) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<DoubleChunk<Values>> decimalFromDouble(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -727,20 +761,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(DoubleChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            double value = chunk.get(offset);
-            if (value == QueryConstants.NULL_DOUBLE) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    double value = chunk.get(offset);
+                    if (value == QueryConstants.NULL_DOUBLE) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, BigDecimal.valueOf(value), byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static ChunkWriter<ObjectChunk<BigDecimal, Values>> decimalFromBigDecimal(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
@@ -750,15 +785,16 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 .subtract(BigInteger.ONE)
                 .negate();
 
-        return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, byteWidth, false, (out, chunk, offset) -> {
-            BigDecimal value = chunk.get(offset);
-            if (value == null) {
-                out.write(nullValue);
-                return;
-            }
+        return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, byteWidth, false,
+                (out, chunk, offset) -> {
+                    BigDecimal value = chunk.get(offset);
+                    if (value == null) {
+                        out.write(nullValue);
+                        return;
+                    }
 
-            writeBigDecimal(out, value, byteWidth, scale, truncationMask, nullValue);
-        });
+                    writeBigDecimal(out, value, byteWidth, scale, truncationMask, nullValue);
+                });
     }
 
     private static void writeBigDecimal(
@@ -783,21 +819,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ByteChunk<Values>> intFromByte(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return ByteChunkWriter.INSTANCE;
+                return ByteChunkWriter.IDENTITY_INSTANCE;
             case 16:
-                return new ShortChunkWriter<>(ByteChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(ByteChunk::isNull, ByteChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return new IntChunkWriter<>(ByteChunk::getEmptyChunk,
+                return new IntChunkWriter<>(ByteChunk::isNull, ByteChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(ByteChunk::getEmptyChunk,
+                return new LongChunkWriter<>(ByteChunk::isNull, ByteChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -806,21 +842,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ShortChunk<Values>> intFromShort(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(ShortChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(ShortChunk::isNull, ShortChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return ShortChunkWriter.INSTANCE;
+                return ShortChunkWriter.IDENTITY_INSTANCE;
             case 32:
-                return new IntChunkWriter<>(ShortChunk::getEmptyChunk,
+                return new IntChunkWriter<>(ShortChunk::isNull, ShortChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(ShortChunk::getEmptyChunk,
+                return new LongChunkWriter<>(ShortChunk::isNull, ShortChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -829,21 +865,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<IntChunk<Values>> intFromInt(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(IntChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(IntChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return IntChunkWriter.INSTANCE;
+                return IntChunkWriter.IDENTITY_INSTANCE;
             case 64:
-                return new LongChunkWriter<>(IntChunk::getEmptyChunk,
+                return new LongChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -852,22 +888,22 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<LongChunk<Values>> intFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(LongChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(LongChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return new IntChunkWriter<>(LongChunk::getEmptyChunk,
+                return new IntChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return LongChunkWriter.INSTANCE;
+                return LongChunkWriter.IDENTITY_INSTANCE;
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
         }
@@ -875,22 +911,22 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<BigInteger, Values>> intFromObject(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return new IntChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new IntChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(ObjectChunk::getEmptyChunk,
+                return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -899,22 +935,27 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<CharChunk<Values>> intFromChar(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
+        final boolean unsigned = !intType.getIsSigned();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(CharChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(CharChunk::isNull, CharChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(CharChunk::getEmptyChunk,
-                        (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                if (unsigned) {
+                    return CharChunkWriter.IDENTITY_INSTANCE;
+                } else {
+                    return new ShortChunkWriter<>(CharChunk::isNull, CharChunk::getEmptyChunk,
+                            (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                }
             case 32:
-                return new IntChunkWriter<>(CharChunk::getEmptyChunk,
+                return new IntChunkWriter<>(CharChunk::isNull, CharChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(CharChunk::getEmptyChunk,
+                return new LongChunkWriter<>(CharChunk::isNull, CharChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -923,22 +964,22 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<FloatChunk<Values>> intFromFloat(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(FloatChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(FloatChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return new IntChunkWriter<>(FloatChunk::getEmptyChunk,
+                return new IntChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(FloatChunk::getEmptyChunk,
+                return new LongChunkWriter<>(FloatChunk::isNull, FloatChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -947,22 +988,22 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<DoubleChunk<Values>> intFromDouble(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
 
         switch (bitWidth) {
             case 8:
-                return new ByteChunkWriter<>(DoubleChunk::getEmptyChunk,
+                return new ByteChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 16:
-                return new ShortChunkWriter<>(DoubleChunk::getEmptyChunk,
+                return new ShortChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 32:
-                return new IntChunkWriter<>(DoubleChunk::getEmptyChunk,
+                return new IntChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
             case 64:
-                return new LongChunkWriter<>(DoubleChunk::getEmptyChunk,
+                return new LongChunkWriter<>(DoubleChunk::isNull, DoubleChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
             default:
                 throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
@@ -971,16 +1012,16 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ByteChunk<Values>> boolFromBoolean(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         return new BooleanChunkWriter();
     }
 
     private static ChunkWriter<ObjectChunk<byte[], Values>> fixedSizeBinaryFromByteArray(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         final ArrowType.FixedSizeBinary fixedSizeBinary = (ArrowType.FixedSizeBinary) arrowType;
         final int elementWidth = fixedSizeBinary.getByteWidth();
-        return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, elementWidth, false,
+        return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, elementWidth, false,
                 (out, chunk, offset) -> {
                     final byte[] data = chunk.get(offset);
                     if (data.length != elementWidth) {
@@ -994,20 +1035,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<IntChunk<Values>> dateFromInt(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // see dateFromLocalDate's comment for more information on wire format
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
         switch (dateType.getUnit()) {
             case DAY:
-                return new IntChunkWriter<>(IntChunk::getEmptyChunk,
+                return new IntChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
 
             case MILLISECOND:
-                return new LongChunkWriter<>(IntChunk::getEmptyChunk, (chunk, ii) -> {
+                final long factor = Duration.ofDays(1).toMillis();
+                return new LongChunkWriter<>(IntChunk::isNull, IntChunk::getEmptyChunk, (chunk, ii) -> {
                     final long value = QueryLanguageFunctionUtils.longCast(chunk.get(ii));
                     return value == QueryConstants.NULL_LONG
                             ? QueryConstants.NULL_LONG
-                            : (value * ChunkWriter.MS_PER_DAY);
+                            : (value * factor);
                 });
             default:
                 throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
@@ -1016,20 +1058,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<LongChunk<Values>> dateFromLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // see dateFromLocalDate's comment for more information on wire format
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
         switch (dateType.getUnit()) {
             case DAY:
-                return new IntChunkWriter<>(LongChunk::getEmptyChunk,
+                return new IntChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk,
                         (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
 
             case MILLISECOND:
-                return new LongChunkWriter<>(LongChunk::getEmptyChunk, (chunk, ii) -> {
+                final long factor = Duration.ofDays(1).toMillis();
+                return new LongChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, (chunk, ii) -> {
                     final long value = chunk.get(ii);
                     return value == QueryConstants.NULL_LONG
                             ? QueryConstants.NULL_LONG
-                            : (value * ChunkWriter.MS_PER_DAY);
+                            : (value * factor);
                 });
             default:
                 throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
@@ -1038,7 +1081,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<LocalDate, Values>> dateFromLocalDate(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         /*
          * Date is either a 32-bit or 64-bit signed integer type representing an elapsed time since UNIX epoch
          * (1970-01-01), stored in either of two units:
@@ -1053,14 +1096,15 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
         switch (dateType.getUnit()) {
             case DAY:
-                return new IntChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                return new IntChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     final LocalDate value = chunk.get(ii);
                     return value == null ? QueryConstants.NULL_INT : (int) value.toEpochDay();
                 });
             case MILLISECOND:
-                return new LongChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                final long factor = Duration.ofDays(1).toMillis();
+                return new LongChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     final LocalDate value = chunk.get(ii);
-                    return value == null ? QueryConstants.NULL_LONG : value.toEpochDay() * ChunkWriter.MS_PER_DAY;
+                    return value == null ? QueryConstants.NULL_LONG : value.toEpochDay() * factor;
                 });
             default:
                 throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
@@ -1069,7 +1113,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<LongChunk<Values>> intervalFromDurationLong(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // See intervalFromPeriod's comment for more information on wire format.
 
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
@@ -1080,7 +1124,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                         "Do not support %s interval from duration as long conversion", intervalType));
 
             case DAY_TIME:
-                return new FixedWidthChunkWriter<>(LongChunk::getEmptyChunk, Integer.BYTES * 2, false,
+                final long nsPerDay = Duration.ofDays(1).toNanos();
+                final long nsPerMs = Duration.ofMillis(1).toNanos();
+                return new FixedWidthChunkWriter<>(LongChunk::isNull, LongChunk::getEmptyChunk, Integer.BYTES * 2,
+                        false,
                         (out, source, offset) -> {
                             final long value = source.get(offset);
                             if (value == QueryConstants.NULL_LONG) {
@@ -1088,8 +1135,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                                 out.writeInt(0);
                             } else {
                                 // days then millis
-                                out.writeInt((int) (value / ChunkWriter.NS_PER_DAY));
-                                out.writeInt((int) ((value % ChunkWriter.NS_PER_DAY) / ChunkWriter.NS_PER_MS));
+                                out.writeInt((int) (value / nsPerDay));
+                                out.writeInt((int) ((value % nsPerDay) / nsPerMs));
                             }
                         });
 
@@ -1100,7 +1147,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<Duration, Values>> intervalFromDuration(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // See intervalFromPeriod's comment for more information on wire format.
 
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
@@ -1111,7 +1158,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                         "Do not support %s interval from duration as long conversion", intervalType));
 
             case DAY_TIME:
-                return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, Integer.BYTES * 2, false,
+                final long nsPerMs = Duration.ofMillis(1).toNanos();
+                return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, Integer.BYTES * 2,
+                        false,
                         (out, source, offset) -> {
                             final Duration value = source.get(offset);
                             if (value == null) {
@@ -1120,7 +1169,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             } else {
                                 // days then millis
                                 out.writeInt((int) value.toDays());
-                                out.writeInt((int) (value.getNano() / ChunkWriter.NS_PER_MS));
+                                out.writeInt((int) (value.getNano() / nsPerMs));
                             }
                         });
 
@@ -1131,7 +1180,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<Period, Values>> intervalFromPeriod(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         /*
          * A "calendar" interval which models types that don't necessarily have a precise duration without the context
          * of a base timestamp (e.g. days can differ in length during day light savings time transitions). All integers
@@ -1157,12 +1206,13 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
-                return new IntChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                return new IntChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     final Period value = chunk.get(ii);
                     return value == null ? QueryConstants.NULL_INT : value.getMonths() + value.getYears() * 12;
                 });
             case DAY_TIME:
-                return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, Integer.BYTES * 2, false,
+                return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, Integer.BYTES * 2,
+                        false,
                         (out, chunk, offset) -> {
                             final Period value = chunk.get(offset);
                             if (value == null) {
@@ -1175,7 +1225,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             }
                         });
             case MONTH_DAY_NANO:
-                return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, Integer.BYTES * 2 + Long.BYTES, false,
+                return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                        Integer.BYTES * 2 + Long.BYTES, false,
                         (out, chunk, offset) -> {
                             final Period value = chunk.get(offset);
                             if (value == null) {
@@ -1195,18 +1246,19 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
 
     private static ChunkWriter<ObjectChunk<PeriodDuration, Values>> intervalFromPeriodDuration(
             final ArrowType arrowType,
-            final ChunkReader.TypeInfo typeInfo) {
+            final BarrageTypeInfo typeInfo) {
         // See intervalToPeriod's comment for more information on wire format.
 
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
-                return new IntChunkWriter<>(ObjectChunk::getEmptyChunk, (chunk, ii) -> {
+                return new IntChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, (chunk, ii) -> {
                     final Period value = chunk.get(ii).getPeriod();
                     return value == null ? QueryConstants.NULL_INT : value.getMonths() + value.getYears() * 12;
                 });
             case DAY_TIME:
-                return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, Integer.BYTES * 2, false,
+                return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, Integer.BYTES * 2,
+                        false,
                         (out, chunk, offset) -> {
                             final PeriodDuration value = chunk.get(offset);
                             if (value == null) {
@@ -1219,7 +1271,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             }
                         });
             case MONTH_DAY_NANO:
-                return new FixedWidthChunkWriter<>(ObjectChunk::getEmptyChunk, Integer.BYTES * 2 + Long.BYTES, false,
+                return new FixedWidthChunkWriter<>(ObjectChunk::isNull, ObjectChunk::getEmptyChunk,
+                        Integer.BYTES * 2 + Long.BYTES, false,
                         (out, chunk, offset) -> {
                             final PeriodDuration value = chunk.get(offset);
                             if (value == null) {

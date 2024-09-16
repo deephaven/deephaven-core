@@ -8,6 +8,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-public class FixedWidthChunkWriter<SourceChunkType extends Chunk<Values>> extends BaseChunkWriter<SourceChunkType> {
+public class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FixedWidthChunkWriter";
 
     @FunctionalInterface
@@ -25,30 +26,31 @@ public class FixedWidthChunkWriter<SourceChunkType extends Chunk<Values>> extend
         void append(@NotNull DataOutput os, @NotNull SourceChunkType sourceValues, int offset) throws IOException;
     }
 
-    private final Appender<SourceChunkType> appendItem;
+    private final Appender<SOURCE_CHUNK_TYPE> appendItem;
 
     public FixedWidthChunkWriter(
-            @NotNull final Supplier<SourceChunkType> emptyChunkSupplier,
+            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
             final boolean dhNullable,
-            final Appender<SourceChunkType> appendItem) {
-        super(emptyChunkSupplier, elementSize, dhNullable);
+            final Appender<SOURCE_CHUNK_TYPE> appendItem) {
+        super(isRowNullProvider, emptyChunkSupplier, elementSize, dhNullable);
         this.appendItem = appendItem;
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SourceChunkType> context,
+            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new FixedWidthChunkInputStream(context, subset, options);
     }
 
-    private class FixedWidthChunkInputStream extends BaseChunkInputStream<Context<SourceChunkType>> {
+    private class FixedWidthChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
         private FixedWidthChunkInputStream(
-                @NotNull final Context<SourceChunkType> context,
+                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             super(context, subset, options);
         }
 

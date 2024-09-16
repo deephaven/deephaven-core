@@ -25,7 +25,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
@@ -75,7 +74,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     public interface RecordBatchMessageView extends MessageView {
         boolean isViewport();
 
-        ChunkReader.Options options();
+        BarrageOptions options();
 
         RowSet addRowOffsets();
 
@@ -354,7 +353,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         }
 
         @Override
-        public ChunkReader.Options options() {
+        public BarrageOptions options() {
             return options;
         }
 
@@ -533,7 +532,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         }
 
         @Override
-        public ChunkReader.Options options() {
+        public BarrageOptions options() {
             return options;
         }
 

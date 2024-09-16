@@ -2613,7 +2613,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                     new ListenerRecorder("snapshotIncremental (triggerTable)", this, resultTable);
             addUpdateListener(triggerListenerRecorder);
 
-            dropColumns(getColumnSourceMap().keySet());
             final SnapshotIncrementalListener listener =
                     new SnapshotIncrementalListener(this, resultTable, resultColumns,
                             baseListenerRecorder, triggerListenerRecorder, baseTable, triggerColumns);

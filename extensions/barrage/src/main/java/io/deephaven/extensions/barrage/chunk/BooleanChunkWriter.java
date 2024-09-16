@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,14 +23,14 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
     public static final BooleanChunkWriter INSTANCE = new BooleanChunkWriter();
 
     public BooleanChunkWriter() {
-        super(ByteChunk::getEmptyChunk, 0, false);
+        super(ByteChunk::isNull, ByteChunk::getEmptyChunk, 0, false);
     }
 
     @Override
     public DrainableColumn getInputStream(
             @NotNull final Context<ByteChunk<Values>> context,
             @Nullable final RowSet subset,
-            @NotNull final ChunkReader.Options options) throws IOException {
+            @NotNull final BarrageOptions options) throws IOException {
         return new BooleanChunkInputStream(context, subset, options);
     }
 
@@ -37,7 +38,7 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
         private BooleanChunkInputStream(
                 @NotNull final Context<ByteChunk<Values>> context,
                 @Nullable final RowSet subset,
-                @NotNull final ChunkReader.Options options) {
+                @NotNull final BarrageOptions options) {
             super(context, subset, options);
         }
 
@@ -79,28 +80,28 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer
-            final SerContext context = new SerContext();
+            final SerContext serContext = new SerContext();
             final Runnable flush = () -> {
                 try {
-                    dos.writeLong(context.accumulator);
+                    dos.writeLong(serContext.accumulator);
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ",
                             e);
                 }
-                context.accumulator = 0;
-                context.count = 0;
+                serContext.accumulator = 0;
+                serContext.count = 0;
             };
 
             subset.forAllRowKeys(row -> {
-                final byte byteValue = this.context.getChunk().get((int) row);
+                final byte byteValue = context.getChunk().get((int) row);
                 if (byteValue != NULL_BYTE) {
-                    context.accumulator |= (byteValue > 0 ? 1L : 0L) << context.count;
+                    serContext.accumulator |= (byteValue > 0 ? 1L : 0L) << serContext.count;
                 }
-                if (++context.count == 64) {
+                if (++serContext.count == 64) {
                     flush.run();
                 }
             });
-            if (context.count > 0) {
+            if (serContext.count > 0) {
                 flush.run();
             }
             bytesWritten += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES;
