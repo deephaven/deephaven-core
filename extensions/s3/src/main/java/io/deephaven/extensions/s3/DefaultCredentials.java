@@ -12,6 +12,8 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 /**
  * Default AWS credentials provider that looks for credentials at a number of locations as described in
  * {@link DefaultCredentialsProvider} and falls back to anonymous credentials if no credentials are found.
+ *
+ * @see DefaultCredentialsProvider
  */
 enum DefaultCredentials implements AwsSdkV2Credentials, AwsCredentialsProvider {
     DEFAULT_CREDENTIALS;

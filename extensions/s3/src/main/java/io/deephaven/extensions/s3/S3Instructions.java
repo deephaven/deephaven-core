@@ -53,7 +53,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
      * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
      * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from
-     * the above chain or the derived region name derived is incorrect for the bucket accessed, the correct region name
+     * the above chain or derived the region name derived is incorrect for the bucket accessed, the correct region name
      * will be derived internally, at the cost of one additional request.
      */
     public abstract Optional<String> regionName();
