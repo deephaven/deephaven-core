@@ -516,6 +516,18 @@ class TableFactoryTestCase(BaseTestCase):
             while success_count < 5:
                 sleep(0.1)
             self.assertEqual(keyed_input_table.size, 0)
+            t1 = t.drop_columns("String")
+
+        with self.subTest("schema mismatch"):
+            error_count = 0
+            def on_error(e: Exception):
+                nonlocal error_count
+                error_count += 1
+
+            append_only_input_table = input_table(col_defs=t1.definition)
+            with self.assertRaises(DHError) as cm:
+                append_only_input_table.add_async(t, on_success=on_success, on_error=on_error)
+            self.assertEqual(error_count, 0)
 
 
 if __name__ == '__main__':
