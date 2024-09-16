@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jpy.PyListWrapper;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Function;
@@ -159,6 +161,7 @@ public class ColumnPreviewManager {
                 || io.deephaven.util.type.TypeUtils.isString(type)
                 || NumericTypeUtils.isBigNumeric(type)
                 || Instant.class == type || ZonedDateTime.class == type
+                || LocalDate.class == type || LocalTime.class == type
                 || isOnWhiteList(type);
     }
 

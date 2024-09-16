@@ -3,13 +3,12 @@
 //
 package io.deephaven.web.client.api.widget.plot;
 
-import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.LongWrapper;
-import io.deephaven.web.client.api.subscription.SubscriptionTableData;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.fu.JsLog;
 
@@ -259,8 +258,8 @@ public final class FigureSubscription {
             this.currentData = new ChartData(table);
             sub.addEventListener(TableSubscription.EVENT_UPDATED, e -> {
                 // refire with specifics for the columns that we're watching here, after updating data arrays
-                SubscriptionTableData.UpdateEventData subscriptionUpdateData =
-                        (SubscriptionTableData.UpdateEventData) ((CustomEvent) e).detail;
+                AbstractTableSubscription.UpdateEventData subscriptionUpdateData =
+                        (AbstractTableSubscription.UpdateEventData) e.detail;
                 currentData.update(subscriptionUpdateData);
 
                 CustomEventInit event = CustomEventInit.create();

@@ -1,0 +1,6 @@
+<module>
+    <inherits name="io.deephaven.base.Base" />
+    <inherits name="io.deephaven.Util" />
+    <source path="" />
+    <source path="util/pools" excludes="ChunkPoolReleaseTracking.java" />
+</module>
