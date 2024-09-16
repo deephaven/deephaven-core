@@ -8,6 +8,7 @@ import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -21,6 +22,10 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.*;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -38,6 +43,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
@@ -54,7 +60,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     public interface Factory {
         HierarchicalTableViewSubscription create(
                 HierarchicalTableView view,
-                StreamObserver<BarrageStreamGenerator.MessageView> listener,
+                StreamObserver<BarrageMessageWriter.MessageView> listener,
                 BarrageSubscriptionOptions subscriptionOptions,
                 long intervalMillis);
     }
@@ -63,10 +69,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
-    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+    private final BarrageMessageWriter.Factory streamGeneratorFactory;
 
     private final HierarchicalTableView view;
-    private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
+    private final StreamObserver<BarrageMessageWriter.MessageView> listener;
     private final BarrageSubscriptionOptions subscriptionOptions;
     private final long intervalDurationNanos;
 
@@ -105,9 +111,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     public HierarchicalTableViewSubscription(
             @NotNull final Scheduler scheduler,
             @NotNull final SessionService.ErrorTransformer errorTransformer,
-            @NotNull final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            @NotNull final BarrageMessageWriter.Factory streamGeneratorFactory,
             @Assisted @NotNull final HierarchicalTableView view,
-            @Assisted @NotNull final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            @Assisted @NotNull final StreamObserver<BarrageMessageWriter.MessageView> listener,
             @Assisted @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @Assisted final long intervalDurationMillis) {
         this.scheduler = scheduler;
@@ -213,7 +219,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
 
         @Override
-        protected void onFailureInternal(@NotNull final Throwable originalException, @NotNull final Entry sourceEntry) {
+        protected void onFailureInternal(
+                @NotNull final Throwable originalException,
+                @Nullable final Entry sourceEntry) {
             if (state != State.Active) {
                 return;
             }
@@ -292,8 +300,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private static long buildAndSendSnapshot(
-            @NotNull final BarrageStreamGenerator.Factory streamGeneratorFactory,
-            @NotNull final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            @NotNull final BarrageMessageWriter.Factory streamGeneratorFactory,
+            @NotNull final StreamObserver<BarrageMessageWriter.MessageView> listener,
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @NotNull final HierarchicalTableView view,
             @NotNull final LongConsumer snapshotNanosConsumer,
@@ -336,6 +344,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         barrageMessage.shifted = RowSetShiftData.EMPTY;
 
         barrageMessage.addColumnData = new BarrageMessage.AddColumnData[numAvailableColumns];
+        // noinspection unchecked
+        final ChunkWriter<Chunk<Values>>[] chunkWriters =
+                (ChunkWriter<Chunk<Values>>[]) new ChunkWriter[numAvailableColumns];
         for (int ci = 0, di = 0; ci < numAvailableColumns; ++ci) {
             final BarrageMessage.AddColumnData addColumnData = new BarrageMessage.AddColumnData();
             final ColumnDefinition<?> columnDefinition = columnDefinitions.get(ci);
@@ -351,12 +362,17 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                         ReinterpretUtils.maybeConvertToPrimitiveChunkType(columnDefinition.getDataType());
             }
             barrageMessage.addColumnData[ci] = addColumnData;
+
+            chunkWriters[ci] = DefaultChunkWriterFactory.INSTANCE.newWriter(ChunkReader.typeInfo(
+                    ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType()),
+                    columnDefinition.getComponentType(),
+                    BarrageUtil.flatbufFieldFor(columnDefinition, Map.of())));
         }
         barrageMessage.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
 
         // 5. Send the BarrageMessage
-        final BarrageStreamGenerator streamGenerator =
-                streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer);
+        final BarrageMessageWriter streamGenerator =
+                streamGeneratorFactory.newMessageWriter(barrageMessage, chunkWriters, writeMetricsConsumer);
         // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
         // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
         // (2) we're relying on added rows to signal the full expanded size to the client.
@@ -477,7 +493,6 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (logger) {
                 flush(now, logger, snapshotNanos, "SnapshotMillis");
                 flush(now, logger, writeNanos, "WriteMillis");

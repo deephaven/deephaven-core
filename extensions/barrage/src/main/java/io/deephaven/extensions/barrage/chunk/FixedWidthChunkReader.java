@@ -7,51 +7,48 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-public class FixedWidthChunkInputStreamGenerator {
-    private static final String DEBUG_NAME = "FixedWidthChunkInputStreamGenerator";
+public class FixedWidthChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
+    private static final String DEBUG_NAME = "FixedWidthWriter";
 
     @FunctionalInterface
     public interface TypeConversion<T> {
         T apply(DataInput in) throws IOException;
     }
 
-    /**
-     * Generic input stream reading from arrow's buffer and convert directly to java type.
-     *
-     * If useDeephavenNulls is enabled, then the conversion method must properly return a null value.
-     *
-     * @param elementSize the number of bytes per element (element size is fixed)
-     * @param options the stream reader options
-     * @param conversion the conversion method from input stream to the result type
-     * @param fieldNodeIter arrow field node iterator
-     * @param bufferInfoIter arrow buffer info iterator
-     * @param outChunk the returned chunk from an earlier record batch
-     * @param outOffset the offset to start writing into {@code outChunk}
-     * @param totalRows the total known rows for this column; if known (else 0)
-     * @param is data input stream
-     * @param <T> the result type
-     * @return the resulting chunk of the buffer that is read
-     */
-    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
+    private final boolean useDeephavenNulls;
+    private final int elementSize;
+    private final ChunkReader.Options options;
+    private final TypeConversion<T> conversion;
+
+    public FixedWidthChunkReader(
             final int elementSize,
-            final StreamReaderOptions options,
-            final TypeConversion<T> conversion,
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk,
+            final boolean dhNullable,
+            final ChunkReader.Options options,
+            final TypeConversion<T> conversion) {
+        this.elementSize = elementSize;
+        this.options = options;
+        this.conversion = conversion;
+        this.useDeephavenNulls = dhNullable && options.useDeephavenNulls();
+    }
+
+    @Override
+    public WritableObjectChunk<T, Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
-
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
@@ -70,9 +67,6 @@ public class FixedWidthChunkInputStreamGenerator {
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls() && validityBuffer != 0) {
-                throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
-            }
             int jj = 0;
             final long numValidityLongsPresent = Math.min(numValidityLongs, validityBuffer / 8);
             for (; jj < numValidityLongsPresent; ++jj) {
@@ -93,7 +87,7 @@ public class FixedWidthChunkInputStreamGenerator {
                 throw new IllegalStateException("payload buffer is too short for expected number of elements");
             }
 
-            if (options.useDeephavenNulls()) {
+            if (useDeephavenNulls) {
                 for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
                     chunk.set(outOffset + ii, conversion.apply(is));
                 }
@@ -114,7 +108,7 @@ public class FixedWidthChunkInputStreamGenerator {
             final int elementSize,
             final TypeConversion<T> conversion,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableObjectChunk<T, Values> chunk,
             final int outOffset,
             final WritableLongChunk<Values> isValid) throws IOException {

@@ -13,6 +13,8 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,9 +29,12 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -216,7 +221,7 @@ public class BarrageUtil {
 
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
-            @NotNull final StreamReaderOptions options,
+            @NotNull final ChunkReader.Options options,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
@@ -381,31 +386,8 @@ public class BarrageUtil {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
-    private static boolean maybeConvertForTimeUnit(
-            final TimeUnit unit,
-            final ConvertedArrowSchema result,
-            final int columnOffset) {
-        switch (unit) {
-            case NANOSECOND:
-                return true;
-            case MICROSECOND:
-                setConversionFactor(result, columnOffset, 1000);
-                return true;
-            case MILLISECOND:
-                setConversionFactor(result, columnOffset, 1000 * 1000);
-                return true;
-            case SECOND:
-                setConversionFactor(result, columnOffset, 1000 * 1000 * 1000);
-                return true;
-            default:
-                return false;
-        }
-    }
-
     private static Class<?> getDefaultType(
             final ArrowType arrowType,
-            final ConvertedArrowSchema result,
-            final int columnOffset,
             final Class<?> explicitType) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
@@ -432,6 +414,8 @@ public class BarrageUtil {
                             return int.class;
                         case 32:
                             return long.class;
+                        case 64:
+                            return BigInteger.class;
                     }
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -439,19 +423,12 @@ public class BarrageUtil {
             case Bool:
                 return Boolean.class;
             case Duration:
-                final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
-                final TimeUnit durationUnit = durationType.getUnit();
-                if (maybeConvertForTimeUnit(durationUnit, result, columnOffset)) {
-                    return long.class;
-                }
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of durationType(unit=" + durationUnit.toString() + ")");
+                return long.class;
             case Timestamp:
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
                 final String tz = timestampType.getTimezone();
                 final TimeUnit timestampUnit = timestampType.getUnit();
-                boolean conversionSuccess = maybeConvertForTimeUnit(timestampUnit, result, columnOffset);
-                if ((tz == null || "UTC".equals(tz)) && conversionSuccess) {
+                if ((tz == null || "UTC".equals(tz))) {
                     return Instant.class;
                 }
                 if (explicitType != null) {
@@ -486,9 +463,6 @@ public class BarrageUtil {
     public static class ConvertedArrowSchema {
         public final int nCols;
         public TableDefinition tableDef;
-        // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for Instant.
-        public int[] conversionFactors;
         public Map<String, Object> attributes;
 
         public ConvertedArrowSchema(final int nCols) {
@@ -503,24 +477,16 @@ public class BarrageUtil {
         }
 
         public Class<?>[] computeWireTypes() {
-            return tableDef.getColumnStream().map(ColumnDefinition::getDataType).toArray(Class[]::new);
+            return tableDef.getColumnStream()
+                    .map(ColumnDefinition::getDataType)
+                    .map(ReinterpretUtils::maybeConvertToPrimitiveDataType)
+                    .toArray(Class[]::new);
         }
 
         public Class<?>[] computeWireComponentTypes() {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
-    }
-
-    private static void setConversionFactor(
-            final ConvertedArrowSchema result,
-            final int columnOffset,
-            final int factor) {
-        if (result.conversionFactors == null) {
-            result.conversionFactors = new int[result.nCols];
-            Arrays.fill(result.conversionFactors, 1);
-        }
-        result.conversionFactors[columnOffset] = factor;
     }
 
     public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
@@ -598,8 +564,8 @@ public class BarrageUtil {
                 }
             });
 
-            // this has side effects such as setting the conversion factor; must call even if dest type is well known
-            Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i, type.getValue());
+            // this has side effects such as type validation; must call even if dest type is well known
+            Class<?> defaultType = getDefaultType(getArrowType.apply(i), type.getValue());
 
             if (type.getValue() == null) {
                 type.setValue(defaultType);
@@ -691,13 +657,16 @@ public class BarrageUtil {
         return false;
     }
 
-    private static Field arrowFieldFor(
-            final String name, final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+    public static Field arrowFieldFor(
+            final String name,
+            final Class<?> type,
+            final Class<?> componentType,
+            final Map<String, String> metadata) {
         List<Field> children = Collections.emptyList();
 
         final FieldType fieldType = arrowFieldTypeFor(type, metadata);
         if (fieldType.getType().isComplex()) {
-            if (type.isArray()) {
+            if (type.isArray() || Vector.class.isAssignableFrom(type)) {
                 children = Collections.singletonList(arrowFieldFor(
                         "", componentType, componentType.getComponentType(), Collections.emptyMap()));
             } else {
@@ -706,6 +675,27 @@ public class BarrageUtil {
         }
 
         return new Field(name, fieldType, children);
+    }
+
+    public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
+            final ColumnDefinition<?> columnDefinition,
+            final Map<String, String> metadata) {
+        return flatbufFieldFor(
+                columnDefinition.getName(),
+                columnDefinition.getDataType(),
+                columnDefinition.getComponentType(),
+                metadata);
+    }
+
+    public static org.apache.arrow.flatbuf.Field flatbufFieldFor(
+            final String name,
+            final Class<?> type,
+            final Class<?> componentType,
+            final Map<String, String> metadata) {
+        final Field field = arrowFieldFor(name, type, componentType, metadata);
+        final FlatBufferBuilder builder = new FlatBufferBuilder();
+        builder.finish(field.getField(builder));
+        return org.apache.arrow.flatbuf.Field.getRootAsField(builder.dataBuffer());
     }
 
     private static FieldType arrowFieldTypeFor(final Class<?> type, final Map<String, String> metadata) {
@@ -736,6 +726,12 @@ public class BarrageUtil {
                 return Types.MinorType.FLOAT8.getType();
             case Object:
                 if (type.isArray()) {
+                    if (type.getComponentType() == byte.class) {
+                        return Types.MinorType.VARBINARY.getType();
+                    }
+                    return Types.MinorType.LIST.getType();
+                }
+                if (Vector.class.isAssignableFrom(type)) {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
@@ -772,17 +768,25 @@ public class BarrageUtil {
     }
 
     public static void createAndSendStaticSnapshot(
-            BarrageStreamGenerator.Factory streamGeneratorFactory,
+            BarrageMessageWriter.Factory messageWriterFactory,
             BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
+
+        // noinspection unchecked
+        final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
+                .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(ChunkReader.typeInfo(
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getComponentType(),
+                        flatbufFieldFor(cd, Map.of()))))
+                .toArray(ChunkWriter[]::new);
 
         final long columnCount =
                 Math.max(1, columns != null ? columns.cardinality() : table.getDefinition().getColumns().size());
@@ -825,7 +829,8 @@ public class BarrageUtil {
                     // send out the data. Note that although a `BarrageUpdateMetaData` object will
                     // be provided with each unique snapshot, vanilla Flight clients will ignore
                     // these and see only an incoming stream of batches
-                    try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics)) {
+                    try (final BarrageMessageWriter bsg =
+                            messageWriterFactory.newMessageWriter(msg, chunkWriters, metrics)) {
                         if (rsIt.hasMore()) {
                             listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
@@ -866,20 +871,28 @@ public class BarrageUtil {
     }
 
     public static void createAndSendSnapshot(
-            BarrageStreamGenerator.Factory streamGeneratorFactory,
+            BarrageMessageWriter.Factory streamWriterFactory,
             BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
-            createAndSendStaticSnapshot(streamGeneratorFactory, table, columns, viewport, reverseViewport,
+            createAndSendStaticSnapshot(streamWriterFactory, table, columns, viewport, reverseViewport,
                     snapshotRequestOptions, listener, metrics);
             return;
         }
+
+        // noinspection unchecked
+        final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
+                .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(ChunkReader.typeInfo(
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getComponentType(),
+                        flatbufFieldFor(cd, Map.of()))))
+                .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client
         final BarrageMessage msg;
@@ -897,7 +910,7 @@ public class BarrageUtil {
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
 
         // translate the viewport to keyspace and make the call
-        try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics);
+        try (final BarrageMessageWriter bsg = streamWriterFactory.newMessageWriter(msg, chunkWriters, metrics);
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {

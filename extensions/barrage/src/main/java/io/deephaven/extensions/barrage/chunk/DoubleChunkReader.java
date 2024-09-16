@@ -1,83 +1,63 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharChunkReader and run "./gradlew replicateBarrageUtils" to regenerate
-//
-// @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.extensions.barrage.util.Float16;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.apache.arrow.flatbuf.Precision;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-
-public class DoubleChunkReader implements ChunkReader {
+public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Values>> {
     private static final String DEBUG_NAME = "DoubleChunkReader";
-    private final StreamReaderOptions options;
-    private final DoubleConversion conversion;
 
-    @FunctionalInterface
-    public interface DoubleConversion {
-        double apply(double in);
-
-        DoubleConversion IDENTITY = (double a) -> a;
+    public interface ToDoubleTransformFunction<WireChunkType extends WritableChunk<Values>> {
+        double get(WireChunkType wireValues, int wireOffset);
     }
 
-    public DoubleChunkReader(StreamReaderOptions options) {
-        this(options, DoubleConversion.IDENTITY);
+    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableDoubleChunk<Values>> transformTo(
+            final T wireReader,
+            final ToDoubleTransformFunction<WireChunkType> wireTransform) {
+        return new TransformingChunkReader<>(
+                wireReader,
+                WritableDoubleChunk::makeWritableChunk,
+                WritableChunk::asWritableDoubleChunk,
+                (wireValues, outChunk, wireOffset, outOffset) -> outChunk.set(
+                        outOffset, wireTransform.get(wireValues, wireOffset)));
     }
 
-    public DoubleChunkReader(StreamReaderOptions options, DoubleConversion conversion) {
+    private final short precisionFlatbufId;
+    private final ChunkReader.Options options;
+
+    public DoubleChunkReader(
+            final short precisionFlatbufId,
+            final ChunkReader.Options options) {
+        this.precisionFlatbufId = precisionFlatbufId;
         this.options = options;
-        this.conversion = conversion;
-    }
-
-    public <T> ChunkReader transform(Function<Double, T> transform) {
-        return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
-            try (final WritableDoubleChunk<Values> inner = DoubleChunkReader.this.readChunk(
-                    fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
-
-                final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
-                        outChunk,
-                        Math.max(totalRows, inner.size()),
-                        WritableObjectChunk::makeWritableChunk,
-                        WritableChunk::asWritableObjectChunk);
-
-                if (outChunk == null) {
-                    // if we're not given an output chunk then we better be writing at the front of the new one
-                    Assert.eqZero(outOffset, "outOffset");
-                }
-
-                for (int ii = 0; ii < inner.size(); ++ii) {
-                    double value = inner.get(ii);
-                    chunk.set(outOffset + ii, transform.apply(value));
-                }
-
-                return chunk;
-            }
-        };
     }
 
     @Override
-    public WritableDoubleChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
-            int totalRows) throws IOException {
+    public WritableDoubleChunk<Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
 
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
@@ -93,9 +73,6 @@ public class DoubleChunkReader implements ChunkReader {
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls() && validityBuffer != 0) {
-                throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
-            }
             int jj = 0;
             for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
                 isValid.set(jj, is.readLong());
@@ -114,9 +91,9 @@ public class DoubleChunkReader implements ChunkReader {
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
 
             if (options.useDeephavenNulls()) {
-                useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
+                useDeephavenNulls(precisionFlatbufId, is, nodeInfo, chunk, outOffset);
             } else {
-                useValidityBuffer(conversion, is, nodeInfo, chunk, outOffset, isValid);
+                useValidityBuffer(precisionFlatbufId, is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -128,42 +105,44 @@ public class DoubleChunkReader implements ChunkReader {
         return chunk;
     }
 
-    private static <T extends WritableChunk<Values>> T castOrCreateChunk(
-            final WritableChunk<Values> outChunk,
-            final int numRows,
-            final IntFunction<T> chunkFactory,
-            final Function<WritableChunk<Values>, T> castFunction) {
-        if (outChunk != null) {
-            return castFunction.apply(outChunk);
-        }
-        final T newChunk = chunkFactory.apply(numRows);
-        newChunk.setSize(numRows);
-        return newChunk;
-    }
-
     private static void useDeephavenNulls(
-            final DoubleConversion conversion,
+            final short precisionFlatbufId,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableDoubleChunk<Values> chunk,
             final int offset) throws IOException {
-        if (conversion == DoubleConversion.IDENTITY) {
-            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                chunk.set(offset + ii, is.readDouble());
-            }
-        } else {
-            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                final double in = is.readDouble();
-                final double out = in == NULL_DOUBLE ? in : conversion.apply(in);
-                chunk.set(offset + ii, out);
-            }
+        switch (precisionFlatbufId) {
+            case Precision.HALF:
+                throw new IllegalStateException("Cannot use Deephaven nulls with half-precision floats");
+            case Precision.SINGLE:
+                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    final float v = is.readFloat();
+                    chunk.set(offset + ii, v == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : v);
+                }
+                break;
+            case Precision.DOUBLE:
+                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+                    chunk.set(offset + ii, is.readDouble());
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unsupported floating point precision: " + precisionFlatbufId);
         }
+    }
+
+    @FunctionalInterface
+    private interface DoubleSupplier {
+        double next() throws IOException;
+    }
+
+    private static double doubleCast(float a) {
+        return a == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : (double) a;
     }
 
     private static void useValidityBuffer(
-            final DoubleConversion conversion,
+            final short precisionFlatbufId,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableDoubleChunk<Values> chunk,
             final int offset,
             final WritableLongChunk<Values> isValid) throws IOException {
@@ -173,18 +152,37 @@ public class DoubleChunkReader implements ChunkReader {
         int ei = 0;
         int pendingSkips = 0;
 
+        final int elementSize;
+        final DoubleSupplier supplier;
+        switch (precisionFlatbufId) {
+            case Precision.HALF:
+                elementSize = Short.BYTES;
+                supplier = () -> Float16.toFloat(is.readShort());
+                break;
+            case Precision.SINGLE:
+                elementSize = Float.BYTES;
+                supplier = () -> doubleCast(is.readFloat());
+                break;
+            case Precision.DOUBLE:
+                elementSize = Double.BYTES;
+                supplier = is::readDouble;
+                break;
+            default:
+                throw new IllegalStateException("Unsupported floating point precision: " + precisionFlatbufId);
+        }
+
         for (int vi = 0; vi < numValidityWords; ++vi) {
             int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
             long validityWord = isValid.get(vi);
             do {
                 if ((validityWord & 1) == 1) {
                     if (pendingSkips > 0) {
-                        is.skipBytes(pendingSkips * Double.BYTES);
+                        is.skipBytes(pendingSkips * elementSize);
                         chunk.fillWithNullValue(offset + ei, pendingSkips);
                         ei += pendingSkips;
                         pendingSkips = 0;
                     }
-                    chunk.set(offset + ei++, conversion.apply(is.readDouble()));
+                    chunk.set(offset + ei++, supplier.next());
                     validityWord >>= 1;
                     bitsLeftInThisWord--;
                 } else {
@@ -197,7 +195,7 @@ public class DoubleChunkReader implements ChunkReader {
         }
 
         if (pendingSkips > 0) {
-            is.skipBytes(pendingSkips * Double.BYTES);
+            is.skipBytes(pendingSkips * elementSize);
             chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }

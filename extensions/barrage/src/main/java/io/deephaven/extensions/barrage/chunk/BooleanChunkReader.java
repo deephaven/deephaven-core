@@ -9,15 +9,17 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.getNumLongsForBitPackOfSize;
+import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.getNumLongsForBitPackOfSize;
 
-public class BooleanChunkReader implements ChunkReader {
+public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values>> {
     private static final String DEBUG_NAME = "BooleanChunkReader";
 
     @FunctionalInterface
@@ -38,10 +40,14 @@ public class BooleanChunkReader implements ChunkReader {
     }
 
     @Override
-    public WritableChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
-            int totalRows) throws IOException {
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+    public WritableByteChunk<Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
@@ -97,7 +103,7 @@ public class BooleanChunkReader implements ChunkReader {
     private static void useValidityBuffer(
             final ByteConversion conversion,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableByteChunk<Values> chunk,
             final int offset,
             final WritableLongChunk<Values> isValid) throws IOException {

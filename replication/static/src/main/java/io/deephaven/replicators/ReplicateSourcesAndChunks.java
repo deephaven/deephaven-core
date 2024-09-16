@@ -612,7 +612,8 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<ATTR", "ObjectChunk<T, ATTR",
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "ObjectChunk<Any> EMPTY", "ObjectChunk<Object, Any> EMPTY",
-                "static T\\[\\] makeArray", "static <T> T[] makeArray");
+                "static T\\[\\] makeArray", "static <T> T[] makeArray",
+                "QueryConstants.NULL_OBJECT", "null");
 
         lines = replaceRegion(lines, "makeArray", Arrays.asList(
                 "    public static <T> T[] makeArray(int capacity) {",

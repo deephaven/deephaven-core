@@ -5,17 +5,17 @@ package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
 
 import java.io.InputStream;
-import java.util.BitSet;
 
 /**
- * Thread safe re-usable reader that converts an InputStreams to BarrageMessages.
- *
+ * A gRPC streaming reader that keeps stream specific context and converts {@link InputStream}s to
+ * {@link BarrageMessage}s.
  */
-public interface StreamReader {
+public interface BarrageMessageReader {
     /**
-     * Converts an InputStream to a BarrageMessage in the context of the provided parameters.
+     * Converts an {@link InputStream} to a {@link BarrageMessage} in the context of the provided parameters.
      *
      * @param options the options related to parsing this message
      * @param columnChunkTypes the types to use for each column chunk
@@ -24,10 +24,9 @@ public interface StreamReader {
      * @param stream the input stream that holds the message to be parsed
      * @return a BarrageMessage filled out by the stream's payload
      */
-    BarrageMessage safelyParseFrom(final StreamReaderOptions options,
+    BarrageMessage safelyParseFrom(final ChunkReader.Options options,
             ChunkType[] columnChunkTypes,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,
             InputStream stream);
-
 }

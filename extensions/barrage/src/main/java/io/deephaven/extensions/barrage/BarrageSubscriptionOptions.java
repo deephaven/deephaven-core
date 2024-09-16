@@ -6,13 +6,13 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class BarrageSubscriptionOptions implements StreamReaderOptions {
+public abstract class BarrageSubscriptionOptions implements ChunkReader.Options {
 
     public static Builder builder() {
         return ImmutableBarrageSubscriptionOptions.builder();

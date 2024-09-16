@@ -17,10 +17,11 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
@@ -34,6 +35,7 @@ import org.apache.arrow.flatbuf.Schema;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -44,9 +46,9 @@ import java.util.function.LongConsumer;
 
 import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
-public class BarrageStreamReader implements StreamReader {
+public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
-    private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
+    private static final Logger log = LoggerFactory.getLogger(BarrageMessageReaderImpl.class);
 
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     private static final int MAX_CHUNK_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
@@ -60,15 +62,15 @@ public class BarrageStreamReader implements StreamReader {
 
     private BarrageMessage msg = null;
 
-    private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReadingFactory.INSTANCE;
-    private final List<ChunkReader> readers = new ArrayList<>();
+    private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReaderFactory.INSTANCE;
+    private final List<ChunkReader<?>> readers = new ArrayList<>();
 
-    public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
+    public BarrageMessageReaderImpl(final LongConsumer deserializeTmConsumer) {
         this.deserializeTmConsumer = deserializeTmConsumer;
     }
 
     @Override
-    public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
+    public BarrageMessage safelyParseFrom(final ChunkReader.Options options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
@@ -200,12 +202,11 @@ public class BarrageStreamReader implements StreamReader {
                 final RecordBatch batch = (RecordBatch) header.header(new RecordBatch());
                 msg.length = batch.length();
 
-                // noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois =
                         new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
-                    final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                    final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                                    i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                                    i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
                     final long[] bufferInfo = new long[batch.buffersLength()];
                     for (int bi = 0; bi < batch.buffersLength(); ++bi) {
@@ -298,9 +299,9 @@ public class BarrageStreamReader implements StreamReader {
                 header.header(schema);
                 for (int i = 0; i < schema.fieldsLength(); i++) {
                     Field field = schema.fields(i);
-                    ChunkReader chunkReader = chunkReaderFactory.getReader(options,
-                            typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], field));
-                    readers.add(chunkReader);
+
+                    final Class<?> columnType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnTypes[i]);
+                    readers.add(chunkReaderFactory.newReader(typeInfo(columnType, componentTypes[i], field), options));
                 }
                 return null;
             }
@@ -328,7 +329,6 @@ public class BarrageStreamReader implements StreamReader {
         if (bb == null) {
             return RowSetFactory.empty();
         }
-        // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
             return ExternalizableRowSetUtils.readExternalCompressedDelta(is);
@@ -343,7 +343,6 @@ public class BarrageStreamReader implements StreamReader {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
 
         final RowSet sRowSet, eRowSet, dRowSet;
-        // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
             sRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);

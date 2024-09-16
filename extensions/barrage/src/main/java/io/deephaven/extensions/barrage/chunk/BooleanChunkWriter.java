@@ -3,17 +3,13 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
-import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.ByteChunk;
-import io.deephaven.chunk.WritableByteChunk;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -21,51 +17,28 @@ import java.io.OutputStream;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Values>> {
-    private static final String DEBUG_NAME = "BooleanChunkInputStreamGenerator";
+public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
+    private static final String DEBUG_NAME = "BooleanChunkWriter";
+    public static final BooleanChunkWriter INSTANCE = new BooleanChunkWriter();
 
-    public static BooleanChunkInputStreamGenerator convertBoxed(
-            final ObjectChunk<Boolean, Values> inChunk, final long rowOffset) {
-        // This code path is utilized for arrays / vectors, which cannot be reinterpreted.
-        WritableByteChunk<Values> outChunk = WritableByteChunk.makeWritableChunk(inChunk.size());
-        for (int i = 0; i < inChunk.size(); ++i) {
-            final Boolean value = inChunk.get(i);
-            outChunk.set(i, BooleanUtils.booleanAsByte(value));
-        }
-        if (inChunk instanceof PoolableChunk) {
-            ((PoolableChunk) inChunk).close();
-        }
-        return new BooleanChunkInputStreamGenerator(outChunk, rowOffset);
-    }
-
-    BooleanChunkInputStreamGenerator(final ByteChunk<Values> chunk, final long rowOffset) {
-        // note: element size is zero here to indicate that we cannot use the element size as it is in bytes per row
-        super(chunk, 0, rowOffset);
+    public BooleanChunkWriter() {
+        super(ByteChunk::getEmptyChunk, 0, false);
     }
 
     @Override
-    public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) {
-        return new BooleanChunkInputStream(options, subset);
+    public DrainableColumn getInputStream(
+            @NotNull final Context<ByteChunk<Values>> context,
+            @Nullable final RowSet subset,
+            @NotNull final ChunkReader.Options options) throws IOException {
+        return new BooleanChunkInputStream(context, subset, options);
     }
 
-    private class BooleanChunkInputStream extends BaseChunkInputStream {
-        private BooleanChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
-            super(chunk, options, subset);
-        }
-
-        private int cachedNullCount = -1;
-
-        @Override
-        public int nullCount() {
-            if (cachedNullCount == -1) {
-                cachedNullCount = 0;
-                subset.forAllRowKeys(row -> {
-                    if (chunk.get((int) row) == NULL_BYTE) {
-                        ++cachedNullCount;
-                    }
-                });
-            }
-            return cachedNullCount;
+    private class BooleanChunkInputStream extends BaseChunkInputStream<Context<ByteChunk<Values>>> {
+        private BooleanChunkInputStream(
+                @NotNull final Context<ByteChunk<Values>> context,
+                @Nullable final RowSet subset,
+                @NotNull final ChunkReader.Options options) {
+            super(context, subset, options);
         }
 
         @Override
@@ -93,7 +66,6 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
         }
 
         @Override
-        @SuppressWarnings("UnstableApiUsage")
         public int drainTo(final OutputStream outputStream) throws IOException {
             if (read || subset.isEmpty()) {
                 return 0;
@@ -102,7 +74,11 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             long bytesWritten = 0;
             read = true;
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
-            // write the validity array with LSB indexing
+
+            // write the validity buffer
+            bytesWritten += writeValidityBuffer(dos);
+
+            // write the payload buffer
             final SerContext context = new SerContext();
             final Runnable flush = () -> {
                 try {
@@ -115,24 +91,8 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
                 context.count = 0;
             };
 
-            if (sendValidityBuffer()) {
-                subset.forAllRowKeys(row -> {
-                    if (chunk.get((int) row) != NULL_BYTE) {
-                        context.accumulator |= 1L << context.count;
-                    }
-                    if (++context.count == 64) {
-                        flush.run();
-                    }
-                });
-                if (context.count > 0) {
-                    flush.run();
-                }
-                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
-            }
-
-            // write the included values
             subset.forAllRowKeys(row -> {
-                final byte byteValue = chunk.get((int) row);
+                final byte byteValue = this.context.getChunk().get((int) row);
                 if (byteValue != NULL_BYTE) {
                     context.accumulator |= (byteValue > 0 ? 1L : 0L) << context.count;
                 }

@@ -110,6 +110,12 @@ public interface Chunk<ATTR extends Any> {
     int size();
 
     /**
+     * @return whether The value offset is null
+     * @param index The index to check
+     */
+    boolean isNullAt(int index);
+
+    /**
      * @return The underlying chunk type
      */
     ChunkType getChunkType();

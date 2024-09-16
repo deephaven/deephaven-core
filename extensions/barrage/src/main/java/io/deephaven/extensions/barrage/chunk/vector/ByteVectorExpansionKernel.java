@@ -16,42 +16,51 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
-import io.deephaven.vector.Vector;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.vector.ByteVectorDirect.ZERO_LENGTH_VECTOR;
 
-public class ByteVectorExpansionKernel implements VectorExpansionKernel {
+public class ByteVectorExpansionKernel implements VectorExpansionKernel<ByteVector> {
     public final static ByteVectorExpansionKernel INSTANCE = new ByteVectorExpansionKernel();
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
-            final ObjectChunk<Vector<?>, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+            @NotNull final ObjectChunk<ByteVector, A> source,
+            @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
-            perElementLengthDest.setSize(0);
+            if (offsetsDest != null) {
+                offsetsDest.setSize(0);
+            }
             return WritableByteChunk.makeWritableChunk(0);
         }
 
         final ObjectChunk<ByteVector, A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final ByteVector row = typedSource.get(i);
+        for (int ii = 0; ii < typedSource.size(); ++ii) {
+            final ByteVector row = typedSource.get(ii);
             totalSize += row == null ? 0 : row.size();
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
         result.setSize(0);
 
-        perElementLengthDest.setSize(source.size() + 1);
-        for (int i = 0; i < typedSource.size(); ++i) {
-            final ByteVector row = typedSource.get(i);
-            perElementLengthDest.set(i, result.size());
+        if (offsetsDest != null) {
+            offsetsDest.setSize(source.size() + 1);
+        }
+        for (int ii = 0; ii < typedSource.size(); ++ii) {
+            final ByteVector row = typedSource.get(ii);
+            if (offsetsDest != null) {
+                offsetsDest.set(ii, result.size());
+            }
             if (row == null) {
                 continue;
             }
@@ -60,25 +69,34 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel {
                 iter.forEachRemaining(consumer);
             }
         }
-        perElementLengthDest.set(typedSource.size(), result.size());
+        if (offsetsDest != null) {
+            offsetsDest.set(typedSource.size(), result.size());
+        }
 
         return result;
     }
 
     @Override
-    public <A extends Any> WritableObjectChunk<Vector<?>, A> contract(
-            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest,
-            final WritableChunk<A> outChunk, final int outOffset, final int totalRows) {
-        if (perElementLengthDest.size() == 0) {
+    public <A extends Any> WritableObjectChunk<ByteVector, A> contract(
+            @NotNull final Chunk<A> source,
+            final int sizePerElement,
+            @Nullable final IntChunk<ChunkPositions> offsets,
+            @Nullable final IntChunk<ChunkLengths> lengths,
+            @Nullable final WritableChunk<A> outChunk,
+            final int outOffset,
+            final int totalRows) {
+        if (source.size() == 0) {
             if (outChunk != null) {
                 return outChunk.asWritableObjectChunk();
             }
             return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
-        final int itemsInBatch = perElementLengthDest.size() - 1;
+        final int itemsInBatch = offsets == null
+                ? source.size() / sizePerElement
+                : (offsets.size() - (lengths == null ? 1 : 0));
         final ByteChunk<A> typedSource = source.asByteChunk();
-        final WritableObjectChunk<Vector<?>, A> result;
+        final WritableObjectChunk<ByteVector, A> result;
         if (outChunk != null) {
             result = outChunk.asWritableObjectChunk();
         } else {
@@ -88,15 +106,15 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel {
         }
 
         int lenRead = 0;
-        for (int i = 0; i < itemsInBatch; ++i) {
-            final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
+        for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
-                result.set(outOffset + i, ZERO_LENGTH_VECTOR);
+                result.set(outOffset + ii, ZERO_LENGTH_VECTOR);
             } else {
                 final byte[] row = new byte[rowLen];
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
-                result.set(outOffset + i, new ByteVectorDirect(row));
+                result.set(outOffset + ii, new ByteVectorDirect(row));
             }
         }
 

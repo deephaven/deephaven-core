@@ -25,7 +25,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.ArrowToTableConverter;
@@ -61,14 +61,14 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
-    private static class MessageViewAdapter implements StreamObserver<BarrageStreamGenerator.MessageView> {
+    private static class MessageViewAdapter implements StreamObserver<BarrageMessageWriter.MessageView> {
         private final StreamObserver<InputStream> delegate;
 
         private MessageViewAdapter(StreamObserver<InputStream> delegate) {
             this.delegate = delegate;
         }
 
-        public void onNext(BarrageStreamGenerator.MessageView value) {
+        public void onNext(BarrageMessageWriter.MessageView value) {
             synchronized (delegate) {
                 try {
                     value.forEachStream(delegate::onNext);
@@ -97,7 +97,7 @@ public class ArrowFlightUtil {
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     public static void DoGetCustom(
-            final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
             final SessionState session,
             final TicketRouter ticketRouter,
             final Flight.Ticket request,
@@ -135,7 +135,7 @@ public class ArrowFlightUtil {
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                         // create an adapter for the response observer
-                        final StreamObserver<BarrageStreamGenerator.MessageView> listener =
+                        final StreamObserver<BarrageMessageWriter.MessageView> listener =
                                 new MessageViewAdapter(observer);
 
                         // push the schema to the listener
@@ -357,14 +357,14 @@ public class ArrowFlightUtil {
         private final String myPrefix;
         private final SessionState session;
 
-        private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
+        private final StreamObserver<BarrageMessageWriter.MessageView> listener;
 
         private boolean isClosed = false;
 
         private boolean isFirstMsg = true;
 
         private final TicketRouter ticketRouter;
-        private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        private final BarrageMessageWriter.Factory streamGeneratorFactory;
         private final BarrageMessageProducer.Operation.Factory bmpOperationFactory;
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
@@ -383,7 +383,7 @@ public class ArrowFlightUtil {
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
                 final BarrageMessageProducer.Operation.Factory bmpOperationFactory,
                 final HierarchicalTableViewSubscription.Factory htvsFactory,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,

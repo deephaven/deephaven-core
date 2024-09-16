@@ -20,12 +20,9 @@ public class ReplicateBarrageUtils {
 
     public static void main(final String[] args) throws IOException {
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
-                CHUNK_PACKAGE + "/CharChunkInputStreamGenerator.java");
-        fixupChunkInputStreamGen(CHUNK_PACKAGE + "/IntChunkInputStreamGenerator.java", "Int");
-        fixupChunkInputStreamGen(CHUNK_PACKAGE + "/LongChunkInputStreamGenerator.java", "Long");
-        fixupChunkInputStreamGen(CHUNK_PACKAGE + "/DoubleChunkInputStreamGenerator.java", "Double");
+                CHUNK_PACKAGE + "/CharChunkWriter.java");
 
-        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBooleanAndFloats("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharChunkReader.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
@@ -50,7 +47,7 @@ public class ReplicateBarrageUtils {
         FileUtils.writeLines(file, lines);
     }
 
-    private static void fixupChunkInputStreamGen(final @NotNull String path, final @NotNull String type)
+    private static void fixupChunkWriterGen(final @NotNull String path, final @NotNull String type)
             throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());

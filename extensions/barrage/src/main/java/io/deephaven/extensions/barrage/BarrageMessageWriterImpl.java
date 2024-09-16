@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -24,13 +25,12 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkInputStreamGeneratorFactory;
-import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
@@ -52,41 +52,43 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
-import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
+import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.PADDING_BUFFER;
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
-public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
+public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
-    private static final Logger log = LoggerFactory.getLogger(BarrageStreamGeneratorImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(BarrageMessageWriterImpl.class);
     // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
     // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "batchSize", Integer.MAX_VALUE);
+            .getIntegerForClassWithDefault(BarrageMessageWriterImpl.class, "batchSize", Integer.MAX_VALUE);
 
     // defaults to a small value that is likely to succeed and provide data for following batches
     private static final int DEFAULT_INITIAL_BATCH_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "initialBatchSize", 4096);
+            .getIntegerForClassWithDefault(BarrageMessageWriterImpl.class, "initialBatchSize", 4096);
 
     // default to 100MB to match 100MB java-client and w2w default incoming limits
     private static final int DEFAULT_MESSAGE_SIZE_LIMIT = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "maxOutboundMessageSize",
+            .getIntegerForClassWithDefault(BarrageMessageWriterImpl.class, "maxOutboundMessageSize",
                     100 * 1024 * 1024);
 
     public interface RecordBatchMessageView extends MessageView {
         boolean isViewport();
 
-        StreamReaderOptions options();
+        ChunkReader.Options options();
 
         RowSet addRowOffsets();
 
         RowSet modRowOffsets(int col);
     }
 
-    public static class Factory implements BarrageStreamGenerator.Factory {
+    public static class Factory implements BarrageMessageWriter.Factory {
         @Override
-        public BarrageStreamGenerator newGenerator(
-                final BarrageMessage message, final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
-            return new BarrageStreamGeneratorImpl(message, metricsConsumer);
+        public BarrageMessageWriter newMessageWriter(
+                @NotNull final BarrageMessage message,
+                @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
+                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+            return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer);
         }
 
         @Override
@@ -104,9 +106,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
      */
     public static class ArrowFactory extends Factory {
         @Override
-        public BarrageStreamGenerator newGenerator(
-                BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
-            return new BarrageStreamGeneratorImpl(message, metricsConsumer) {
+        public BarrageMessageWriter newMessageWriter(
+                @NotNull final BarrageMessage message,
+                @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
+                @NotNull final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
+            return new BarrageMessageWriterImpl(message, chunkWriters, metricsConsumer) {
                 @Override
                 protected void writeHeader(
                         ByteBuffer metadata,
@@ -119,20 +123,20 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    public static class ModColumnGenerator implements SafeCloseable {
-        private final RowSetGenerator rowsModified;
-        private final ChunkListInputStreamGenerator data;
+    public static class ModColumnWriter implements SafeCloseable {
+        private final RowSetWriter rowsModified;
+        private final ChunkListWriter<Chunk<Values>> chunkListWriter;
 
-        ModColumnGenerator(ChunkInputStreamGenerator.Factory factory, final BarrageMessage.ModColumnData col)
+        ModColumnWriter(final ChunkWriter<Chunk<Values>> writer, final BarrageMessage.ModColumnData col)
                 throws IOException {
-            rowsModified = new RowSetGenerator(col.rowsModified);
-            data = new ChunkListInputStreamGenerator(factory, col.type, col.componentType, col.data, col.chunkType);
+            rowsModified = new RowSetWriter(col.rowsModified);
+            chunkListWriter = new ChunkListWriter<>(writer, col.data);
         }
 
         @Override
         public void close() {
             rowsModified.close();
-            data.close();
+            chunkListWriter.close();
         }
     }
 
@@ -144,22 +148,25 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private final boolean isSnapshot;
 
-    private final RowSetGenerator rowsAdded;
-    private final RowSetGenerator rowsIncluded;
-    private final RowSetGenerator rowsRemoved;
-    private final RowSetShiftDataGenerator shifted;
+    private final RowSetWriter rowsAdded;
+    private final RowSetWriter rowsIncluded;
+    private final RowSetWriter rowsRemoved;
+    private final RowSetShiftDataWriter shifted;
 
-    private final ChunkListInputStreamGenerator[] addColumnData;
-    private final ModColumnGenerator[] modColumnData;
+    private final ChunkListWriter<Chunk<Values>>[] addColumnData;
+    private final ModColumnWriter[] modColumnData;
 
     /**
-     * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
+     * Create a barrage stream writer that can slice and dice the barrage message for delivery to clients.
      *
-     * @param message the generator takes ownership of the message and its internal objects
+     * @param message the writer takes ownership of the message and its internal objects
+     * @param chunkWriters the chunk chunkWriters
      * @param writeConsumer a method that can be used to record write time
      */
-    public BarrageStreamGeneratorImpl(final BarrageMessage message,
-            final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
+    public BarrageMessageWriterImpl(
+            @NotNull final BarrageMessage message,
+            @NotNull final ChunkWriter<Chunk<Values>>[] chunkWriters,
+            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeConsumer) {
         this.message = message;
         this.writeConsumer = writeConsumer;
         try {
@@ -167,23 +174,23 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             lastSeq = message.lastSeq;
             isSnapshot = message.isSnapshot;
 
-            rowsAdded = new RowSetGenerator(message.rowsAdded);
-            rowsIncluded = new RowSetGenerator(message.rowsIncluded);
-            rowsRemoved = new RowSetGenerator(message.rowsRemoved);
-            shifted = new RowSetShiftDataGenerator(message.shifted);
+            rowsAdded = new RowSetWriter(message.rowsAdded);
+            rowsIncluded = new RowSetWriter(message.rowsIncluded);
+            rowsRemoved = new RowSetWriter(message.rowsRemoved);
+            shifted = new RowSetShiftDataWriter(message.shifted);
 
-            addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
+            // noinspection unchecked
+            addColumnData = (ChunkListWriter<Chunk<Values>>[]) new ChunkListWriter[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 BarrageMessage.AddColumnData columnData = message.addColumnData[i];
-                addColumnData[i] = new ChunkListInputStreamGenerator(DefaultChunkInputStreamGeneratorFactory.INSTANCE,
-                        columnData.type, columnData.componentType,
-                        columnData.data, columnData.chunkType);
+                // noinspection resource
+                addColumnData[i] = new ChunkListWriter<>(chunkWriters[i], columnData.data);
             }
 
-            modColumnData = new ModColumnGenerator[message.modColumnData.length];
+            modColumnData = new ModColumnWriter[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
-                modColumnData[i] = new ModColumnGenerator(DefaultChunkInputStreamGeneratorFactory.INSTANCE,
-                        message.modColumnData[i]);
+                // noinspection resource
+                modColumnData[i] = new ModColumnWriter(chunkWriters[i], message.modColumnData[i]);
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
@@ -213,19 +220,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewport is the key-space viewport
-     * @param subscribedColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
-    public MessageView getSubView(final BarrageSubscriptionOptions options,
+    public MessageView getSubView(
+            final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final RowSet viewport,
             final boolean reverseViewport,
@@ -235,13 +232,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 subscribedColumns);
     }
 
-    /**
-     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, null, false, null, null);
@@ -282,7 +272,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // precompute the modified column indexes, and calculate total rows needed
             long numModRows = 0;
             for (int ii = 0; ii < modColumnData.length; ++ii) {
-                final ModColumnGenerator mcd = modColumnData[ii];
+                final ModColumnWriter mcd = modColumnData[ii];
 
                 if (keyspaceViewport != null) {
                     try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
@@ -324,7 +314,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             if (numAddRows == 0 && numModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 final DefensiveDrainable is = getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns);
+                        BarrageMessageWriterImpl.this::appendAddColumns);
                 bytesWritten.add(is.available());
                 visitor.accept(is);
                 writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
@@ -333,11 +323,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             // send the add batches (if any)
             processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
-                    BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+                    BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
 
             // send the mod batches (if any) but don't send metadata twice
             processBatches(visitor, this, numModRows, maxBatchSize, numAddRows > 0 ? null : metadata,
-                    BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
+                    BarrageMessageWriterImpl.this::appendModColumns, bytesWritten);
 
             // clean up the helper indexes
             addRowOffsets.close();
@@ -364,7 +354,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public StreamReaderOptions options() {
+        public ChunkReader.Options options() {
             return options;
         }
 
@@ -386,20 +376,20 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             int effectiveViewportOffset = 0;
             if (isSnapshot && isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+                try (final RowSetWriter viewportGen = new RowSetWriter(viewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
 
             int effectiveColumnSetOffset = 0;
             if (isSnapshot && subscribedColumns != null) {
-                effectiveColumnSetOffset = new BitSetGenerator(subscribedColumns).addToFlatBuffer(metadata);
+                effectiveColumnSetOffset = new BitSetWriter(subscribedColumns).addToFlatBuffer(metadata);
             }
 
             final int rowsAddedOffset;
             if (isSnapshot && !isInitialSnapshot) {
                 // client's don't need/want to receive the full RowSet on every snapshot
-                rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
+                rowsAddedOffset = EmptyRowSetWriter.INSTANCE.addToFlatBuffer(metadata);
             } else {
                 rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
             }
@@ -417,7 +407,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             // now add mod-column streams, and write the mod column indexes
             TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
-            for (final ModColumnGenerator mcd : modColumnData) {
+            for (final ModColumnWriter mcd : modColumnData) {
                 final int myModRowOffset;
                 if (keyspaceViewport != null) {
                     myModRowOffset = mcd.rowsModified.addToFlatBuffer(keyspaceViewport, metadata);
@@ -460,16 +450,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewport is the key-space viewport
-     * @param snapshotColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
@@ -479,12 +459,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
     }
 
-    /**
-     * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(BarrageSnapshotOptions options) {
         return getSnapshotView(options, null, false, null, null);
@@ -534,11 +508,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             if (numAddRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns));
+                        BarrageMessageWriterImpl.this::appendAddColumns));
             } else {
                 // send the add batches
                 processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+                        BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
             }
             addRowOffsets.close();
             addRowKeys.close();
@@ -559,7 +533,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public StreamReaderOptions options() {
+        public ChunkReader.Options options() {
             return options;
         }
 
@@ -578,14 +552,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             int effectiveViewportOffset = 0;
             if (isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+                try (final RowSetWriter viewportGen = new RowSetWriter(viewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
 
             int effectiveColumnSetOffset = 0;
             if (subscribedColumns != null) {
-                effectiveColumnSetOffset = new BitSetGenerator(subscribedColumns).addToFlatBuffer(metadata);
+                effectiveColumnSetOffset = new BitSetWriter(subscribedColumns).addToFlatBuffer(metadata);
             }
 
             final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
@@ -646,8 +620,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     private interface ColumnVisitor {
         int visit(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
                 final Consumer<DefensiveDrainable> addStream,
-                final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-                final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
+                final ChunkWriter.FieldNodeListener fieldNodeListener,
+                final ChunkWriter.BufferListener bufferListener) throws IOException;
     }
 
     /**
@@ -706,14 +680,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             bufferInfos.get().setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
-            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
+            final ChunkWriter.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> {
                         nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
                         nodeOffsets.get().asWritableObjectChunk()
-                                .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                                .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount));
                     };
 
-            final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
+            final ChunkWriter.BufferListener bufferListener = (length) -> {
                 totalBufferLength.add(length);
                 bufferInfos.ensureCapacityPreserve(bufferInfos.get().size() + 1);
                 bufferInfos.get().add(length);
@@ -725,8 +699,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final WritableChunk<Values> noChunk = nodeOffsets.get();
             RecordBatch.startNodesVector(header, noChunk.size());
             for (int i = noChunk.size() - 1; i >= 0; --i) {
-                final ChunkInputStreamGenerator.FieldNodeInfo node =
-                        (ChunkInputStreamGenerator.FieldNodeInfo) noChunk.asObjectChunk().get(i);
+                final ChunkWriter.FieldNodeInfo node =
+                        (ChunkWriter.FieldNodeInfo) noChunk.asObjectChunk().get(i);
                 FieldNode.createFieldNode(header, node.numElements, node.nullCount);
             }
             nodesOffset = header.endVector();
@@ -833,39 +807,39 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     batchSize = Math.min(maxBatchSize, Math.max(1, (int) ((double) rowLimit * 0.9)));
                 }
             } catch (SizeException ex) {
-                // was an overflow in the ChunkInputStream generator (probably VarBinary). We can't compute the
+                // was an overflow in the ChunkInputStream writer (probably VarBinary). We can't compute the
                 // correct number of rows from this failure, so cut batch size in half and try again. This may
                 // occur multiple times until the size is restricted properly
                 if (batchSize == 1) {
                     // this row exceeds internal limits and can never be sent
                     throw (new UncheckedDeephavenException(
-                            "BarrageStreamGenerator - single row (" + offset + ") exceeds transmissible size", ex));
+                            "BarrageStreamWriterImpl - single row (" + offset + ") exceeds transmissible size", ex));
                 }
                 final int maximumSize = LongSizedDataStructure.intSize(
-                        "BarrageStreamGenerator", ex.getMaximumSize());
+                        "BarrageStreamWriterImpl", ex.getMaximumSize());
                 batchSize = maximumSize >= batchSize ? batchSize / 2 : maximumSize;
             }
         }
     }
 
-    private static int findGeneratorForOffset(final List<ChunkInputStreamGenerator> generators, final long offset) {
+    private static int findWriterForOffset(final ChunkWriter.Context<?>[] chunks, final long offset) {
         // fast path for smaller updates
-        if (generators.size() <= 1) {
+        if (chunks.length <= 1) {
             return 0;
         }
 
         int low = 0;
-        int high = generators.size();
+        int high = chunks.length;
 
         while (low + 1 < high) {
             int mid = (low + high) / 2;
-            int cmp = Long.compare(generators.get(mid).getRowOffset(), offset);
+            int cmp = Long.compare(chunks[mid].getRowOffset(), offset);
 
             if (cmp < 0) {
-                // the generator's first key is low enough
+                // the writer's first key is low enough
                 low = mid;
             } else if (cmp > 0) {
-                // the generator's first key is too high
+                // the writer's first key is too high
                 high = mid;
             } else {
                 // first key matches
@@ -873,21 +847,21 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             }
         }
 
-        // desired generator is at low as the high is exclusive
+        // desired writer is at low as the high is exclusive
         return low;
     }
 
     private int appendAddColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
             final Consumer<DefensiveDrainable> addStream,
-            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-            final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+            final ChunkWriter.FieldNodeListener fieldNodeListener,
+            final ChunkWriter.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
             return view.addRowOffsets().intSize();
         }
 
-        // find the generator for the initial position-space key
+        // find the writer for the initial position-space key
         long startPos = view.addRowOffsets().get(startRange);
-        int chunkIdx = findGeneratorForOffset(addColumnData[0].generators(), startPos);
+        int chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
 
         // adjust the batch size if we would cross a chunk boundary
         long shift = 0;
@@ -895,45 +869,44 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         if (endPos == RowSet.NULL_ROW_KEY) {
             endPos = Long.MAX_VALUE;
         }
-        if (!addColumnData[0].generators().isEmpty()) {
-            final ChunkInputStreamGenerator tmpGenerator = addColumnData[0].generators().get(chunkIdx);
-            endPos = Math.min(endPos, tmpGenerator.getLastRowOffset());
-            shift = -tmpGenerator.getRowOffset();
+        if (addColumnData[0].chunks().length != 0) {
+            final ChunkWriter.Context<?> writer = addColumnData[0].chunks()[chunkIdx];
+            endPos = Math.min(endPos, writer.getLastRowOffset());
+            shift = -writer.getRowOffset();
         }
 
-        // all column generators have the same boundaries, so we can re-use the offsets internal to this chunkIdx
+        // all column writers have the same boundaries, so we can re-use the offsets internal to this chunkIdx
         try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
                 final WritableRowSet myAddedOffsets = view.addRowOffsets().intersect(allowedRange);
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
-            for (final ChunkListInputStreamGenerator data : addColumnData) {
-                final int numElements = data.generators().isEmpty()
+            for (final ChunkListWriter<Chunk<Values>> chunkListWriter : addColumnData) {
+                final int numElements = chunkListWriter.chunks().length == 0
                         ? 0
-                        : myAddedOffsets.intSize("BarrageStreamGenerator");
+                        : myAddedOffsets.intSize("BarrageStreamWriterImpl");
                 if (view.options().columnsAsList()) {
                     // if we are sending columns as a list, we need to add the list buffers before each column
-                    final SingleElementListHeaderInputStreamGenerator listHeader =
-                            new SingleElementListHeaderInputStreamGenerator(numElements);
+                    final SingleElementListHeaderWriter listHeader =
+                            new SingleElementListHeaderWriter(numElements);
                     listHeader.visitFieldNodes(fieldNodeListener);
                     listHeader.visitBuffers(bufferListener);
                     addStream.accept(listHeader);
                 }
 
                 if (numElements == 0) {
-                    // use an empty generator to publish the column data
-                    try (final RowSet empty = RowSetFactory.empty()) {
-                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                data.empty(view.options(), empty);
-                        drainableColumn.visitFieldNodes(fieldNodeListener);
-                        drainableColumn.visitBuffers(bufferListener);
+                    // use an empty writer to publish the column data
+                    final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.empty(view.options());
+                    drainableColumn.visitFieldNodes(fieldNodeListener);
+                    drainableColumn.visitBuffers(bufferListener);
 
-                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
-                        addStream.accept(drainableColumn);
-                    }
+                    // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                    addStream.accept(drainableColumn);
                 } else {
-                    final ChunkInputStreamGenerator generator = data.generators().get(chunkIdx);
-                    final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                            generator.getInputStream(view.options(), shift == 0 ? myAddedOffsets : adjustedOffsets);
+                    final ChunkWriter.Context<Chunk<Values>> chunk = chunkListWriter.chunks()[chunkIdx];
+                    final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.writer().getInputStream(
+                            chunk,
+                            shift == 0 ? myAddedOffsets : adjustedOffsets,
+                            view.options());
                     drainableColumn.visitFieldNodes(fieldNodeListener);
                     drainableColumn.visitBuffers(bufferListener);
                     // Add the drainable last as it is allowed to immediately close a row set the visitors need
@@ -946,8 +919,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private int appendModColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
             final Consumer<DefensiveDrainable> addStream,
-            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-            final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+            final ChunkWriter.FieldNodeListener fieldNodeListener,
+            final ChunkWriter.BufferListener bufferListener) throws IOException {
         int[] columnChunkIdx = new int[modColumnData.length];
 
         // for each column identify the chunk that holds this startRange
@@ -955,9 +928,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         // adjust the batch size if we would cross a chunk boundary
         for (int ii = 0; ii < modColumnData.length; ++ii) {
-            final ModColumnGenerator mcd = modColumnData[ii];
-            final List<ChunkInputStreamGenerator> generators = mcd.data.generators();
-            if (generators.isEmpty()) {
+            final ModColumnWriter mcd = modColumnData[ii];
+            final ChunkWriter.Context<?>[] chunks = mcd.chunkListWriter.chunks();
+            if (chunks.length == 0) {
                 continue;
             }
 
@@ -965,9 +938,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // if all mods are being sent, then offsets yield an identity mapping
             final long startPos = modOffsets != null ? modOffsets.get(startRange) : startRange;
             if (startPos != RowSet.NULL_ROW_KEY) {
-                final int chunkIdx = findGeneratorForOffset(generators, startPos);
-                if (chunkIdx < generators.size() - 1) {
-                    maxLength = Math.min(maxLength, generators.get(chunkIdx).getLastRowOffset() + 1 - startPos);
+                final int chunkIdx = findWriterForOffset(chunks, startPos);
+                if (chunkIdx < chunks.length - 1) {
+                    maxLength = Math.min(maxLength, chunks[chunkIdx].getLastRowOffset() + 1 - startPos);
                 }
                 columnChunkIdx[ii] = chunkIdx;
             }
@@ -976,10 +949,10 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (int ii = 0; ii < modColumnData.length; ++ii) {
-            final ModColumnGenerator mcd = modColumnData[ii];
-            final ChunkInputStreamGenerator generator = mcd.data.generators().isEmpty()
+            final ModColumnWriter mcd = modColumnData[ii];
+            final ChunkWriter.Context<Chunk<Values>> chunk = mcd.chunkListWriter.chunks().length == 0
                     ? null
-                    : mcd.data.generators().get(columnChunkIdx[ii]);
+                    : mcd.chunkListWriter.chunks()[columnChunkIdx[ii]];
 
             final RowSet modOffsets = view.modRowOffsets(ii);
             long startPos, endPos;
@@ -994,8 +967,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 // if all mods are being sent, then offsets yield an identity mapping
                 startPos = startRange;
                 endPos = startRange + maxLength - 1;
-                if (generator != null) {
-                    endPos = Math.min(endPos, generator.getLastRowOffset());
+                if (chunk != null) {
+                    endPos = Math.min(endPos, chunk.getLastRowOffset());
                 }
             }
 
@@ -1013,32 +986,30 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             numRows = Math.max(numRows, myModOffsets.size());
 
             try {
-                final int numElements = generator == null ? 0 : myModOffsets.intSize("BarrageStreamGenerator");
+                final int numElements = chunk == null ? 0 : myModOffsets.intSize("BarrageStreamWriterImpl");
                 if (view.options().columnsAsList()) {
                     // if we are sending columns as a list, we need to add the list buffers before each column
-                    final SingleElementListHeaderInputStreamGenerator listHeader =
-                            new SingleElementListHeaderInputStreamGenerator(numElements);
+                    final SingleElementListHeaderWriter listHeader =
+                            new SingleElementListHeaderWriter(numElements);
                     listHeader.visitFieldNodes(fieldNodeListener);
                     listHeader.visitBuffers(bufferListener);
                     addStream.accept(listHeader);
                 }
 
                 if (numElements == 0) {
-                    // use the empty generator to publish the column data
-                    try (final RowSet empty = RowSetFactory.empty()) {
-                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                mcd.data.empty(view.options(), empty);
-                        drainableColumn.visitFieldNodes(fieldNodeListener);
-                        drainableColumn.visitBuffers(bufferListener);
-                        // Add the drainable last as it is allowed to immediately close a row set the visitors need
-                        addStream.accept(drainableColumn);
-                    }
+                    // use the empty writer to publish the column data
+                    final ChunkWriter.DrainableColumn drainableColumn =
+                            mcd.chunkListWriter.empty(view.options());
+                    drainableColumn.visitFieldNodes(fieldNodeListener);
+                    drainableColumn.visitBuffers(bufferListener);
+                    // Add the drainable last as it is allowed to immediately close a row set the visitors need
+                    addStream.accept(drainableColumn);
                 } else {
-                    final long shift = -generator.getRowOffset();
+                    final long shift = -chunk.getRowOffset();
                     // normalize to the chunk offsets
                     try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
-                        final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                                generator.getInputStream(view.options(), shift == 0 ? myModOffsets : adjustedOffsets);
+                        final ChunkWriter.DrainableColumn drainableColumn = mcd.chunkListWriter.writer().getInputStream(
+                                chunk, shift == 0 ? myModOffsets : adjustedOffsets, view.options());
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
                         // Add the drainable last as it is allowed to immediately close a row set the visitors need
@@ -1052,7 +1023,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         return Math.toIntExact(numRows);
     }
 
-    public static abstract class ByteArrayGenerator {
+    public static abstract class ByteArrayWriter {
         protected int len;
         protected byte[] raw;
 
@@ -1061,12 +1032,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    public static class RowSetGenerator extends ByteArrayGenerator implements SafeCloseable {
+    public static class RowSetWriter extends ByteArrayWriter implements SafeCloseable {
         private final RowSet original;
 
-        public RowSetGenerator(final RowSet rowSet) throws IOException {
+        public RowSetWriter(final RowSet rowSet) throws IOException {
             this.original = rowSet.copy();
-            // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                 ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
@@ -1099,7 +1069,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int nlen;
             final byte[] nraw;
-            // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
                     final RowSet viewOfOriginal = original.intersect(viewport)) {
@@ -1113,8 +1082,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    public static class BitSetGenerator extends ByteArrayGenerator {
-        public BitSetGenerator(final BitSet bitset) {
+    public static class BitSetWriter extends ByteArrayWriter {
+        public BitSetWriter(final BitSet bitset) {
             BitSet original = bitset == null ? new BitSet() : bitset;
             this.raw = original.toByteArray();
             final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
@@ -1122,8 +1091,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    public static class RowSetShiftDataGenerator extends ByteArrayGenerator {
-        public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
+    public static class RowSetShiftDataWriter extends ByteArrayWriter {
+        public RowSetShiftDataWriter(final RowSetShiftData shifted) throws IOException {
             final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
@@ -1143,7 +1112,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 }
             }
 
-            // noinspection UnstableApiUsage
             try (final RowSet sRange = sRangeBuilder.build();
                     final RowSet eRange = eRangeBuilder.build();
                     final RowSet dest = destBuilder.build();
@@ -1159,17 +1127,17 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    private static final class EmptyRowSetGenerator extends RowSetGenerator {
-        public static final EmptyRowSetGenerator INSTANCE;
+    private static final class EmptyRowSetWriter extends RowSetWriter {
+        public static final EmptyRowSetWriter INSTANCE;
         static {
             try {
-                INSTANCE = new EmptyRowSetGenerator();
+                INSTANCE = new EmptyRowSetWriter();
             } catch (final IOException ioe) {
                 throw new UncheckedDeephavenException(ioe);
             }
         }
 
-        EmptyRowSetGenerator() throws IOException {
+        EmptyRowSetWriter() throws IOException {
             super(RowSetFactory.empty());
         }
 

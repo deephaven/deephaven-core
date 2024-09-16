@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.chunk;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
 
@@ -75,6 +76,10 @@ public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
     public final float get(int index) {
         return data[offset + index];
+    }
+
+    public final boolean isNullAt(int index) {
+        return data[offset + index] == QueryConstants.NULL_FLOAT;
     }
 
     @Override

@@ -283,6 +283,7 @@ public class ReinterpretUtils {
             return byte.class;
         }
         if (dataType == Instant.class || dataType == ZonedDateTime.class) {
+            // Note: not all ZonedDateTime sources are convertible to long, so this doesn't match column source behavior
             return long.class;
         }
         return dataType;

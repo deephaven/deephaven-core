@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.ByteString;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -27,7 +28,6 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.BooleanUtils;
@@ -67,31 +67,30 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
             .build();
 
-    private static final BarrageSubscriptionOptions[] options = new BarrageSubscriptionOptions[] {
+    private static final BarrageSubscriptionOptions[] OPTIONS = new BarrageSubscriptionOptions[] {
             OPT_DEFAULT_DH_NULLS,
             OPT_DEFAULT
     };
 
     private static WritableChunk<Values> readChunk(
-            final StreamReaderOptions options,
-            final ChunkType chunkType,
+            final ChunkReader.Options options,
             final Class<?> type,
             final Class<?> componentType,
             final Field field,
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+            final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int offset,
             final int totalRows) throws IOException {
-        return DefaultChunkReadingFactory.INSTANCE
-                .getReader(options, typeInfo(chunkType, type, componentType, field))
+        return DefaultChunkReaderFactory.INSTANCE
+                .newReader(typeInfo(type, componentType, field), options)
                 .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, offset, totalRows);
     }
 
     public void testCharChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, char.class, (utO) -> {
                 final WritableCharChunk<Values> chunk = utO.asWritableCharChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -117,7 +116,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testBooleanChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, boolean.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -143,7 +142,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testByteChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, byte.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -169,7 +168,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testShortChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, short.class, (utO) -> {
                 final WritableShortChunk<Values> chunk = utO.asWritableShortChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -195,7 +194,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testIntChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, int.class, (utO) -> {
                 final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -221,7 +220,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testLongChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, long.class, (utO) -> {
                 final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -247,7 +246,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testFloatChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, float.class, (utO) -> {
                 final WritableFloatChunk<Values> chunk = utO.asWritableFloatChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -273,7 +272,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testDoubleChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, double.class, (utO) -> {
                 final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -299,7 +298,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
     public void testInstantChunkSerialization() throws IOException {
         final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, Instant.class, (utO) -> {
                 final WritableObjectChunk<Instant, Values> chunk = utO.asWritableObjectChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
@@ -325,12 +324,12 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testUniqueToStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, Unique.class, initObjectChunk(Unique::new),
+        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
     public void testUniqueToStringSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Unique.class, initObjectChunk(Unique::new),
+        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Unique::new),
                 new ObjectToStringValidator<>());
     }
 
@@ -668,35 +667,43 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         } else {
             chunkType = ChunkType.fromElementType(type);
         }
+        final Class<T> readType;
+        if (type == Object.class) {
+            // noinspection unchecked
+            readType = (Class<T>) String.class;
+        } else {
+            readType = type;
+        }
+
         ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
-                TableDefinition.of(ColumnDefinition.of("col", Type.find(type))), Collections.emptyMap(), false);
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(readType))), Collections.emptyMap(), false);
         Schema schema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
         Field field = schema.fields(0);
 
         final WritableChunk<Values> srcData = chunkType.makeWritableChunk(4096);
         initData.accept(srcData);
 
-        // The generator owns data; it is allowed to close it prematurely if the data needs to be converted to primitive
+        // The writer owns data; it is allowed to close it prematurely if the data needs to be converted to primitive
         final WritableChunk<Values> data = chunkType.makeWritableChunk(4096);
         data.copyFromChunk(srcData, 0, 0, srcData.size());
 
-        try (SafeCloseable ignored = data;
-                ChunkInputStreamGenerator generator = DefaultChunkInputStreamGeneratorFactory.INSTANCE
-                        .makeInputStreamGenerator(chunkType, type, type.getComponentType(), srcData, 0)) {
+        final ChunkWriter<Chunk<Values>> writer = DefaultChunkWriterFactory.INSTANCE
+                .newWriter(ChunkReader.typeInfo(type, type.getComponentType(), field));
+        try (SafeCloseable ignored = srcData;
+                final ChunkWriter.Context<Chunk<Values>> context = writer.makeContext(data, 0)) {
             // full sub logic
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null)) {
+                    final ChunkWriter.DrainableColumn column = writer.getInputStream(context, null, options)) {
 
-
-                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
-                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                        .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
                 final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                try (final WritableChunk<Values> rtData = readChunk(options, chunkType, type, type.getComponentType(),
+                try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), bufferNodes.build().iterator(), dis, null, 0, 0)) {
                     Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, null, 0);
@@ -705,18 +712,18 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // empty subset
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, RowSetFactory.empty())) {
+                    final ChunkWriter.DrainableColumn column =
+                            writer.getInputStream(context, RowSetFactory.empty(), options)) {
 
-                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
-                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                        .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
                 final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                try (final WritableChunk<Values> rtData = readChunk(options, chunkType, type, type.getComponentType(),
+                try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), bufferNodes.build().iterator(), dis, null, 0, 0)) {
                     Assert.eq(rtData.size(), "rtData.size()", 0);
                 }
@@ -732,18 +739,18 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final RowSet subset = builder.build();
-                    final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, subset)) {
+                    final ChunkWriter.DrainableColumn column =
+                            writer.getInputStream(context, subset, options)) {
 
-                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
-                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                        .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
                 final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                try (final WritableChunk<Values> rtData = readChunk(options, chunkType, type, type.getComponentType(),
+                try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), bufferNodes.build().iterator(), dis, null, 0, 0)) {
                     Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
                     validator.assertExpected(data, rtData, subset, 0);
@@ -752,12 +759,12 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // test append to existing chunk logic
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, null)) {
+                    final ChunkWriter.DrainableColumn column =
+                            writer.getInputStream(context, null, options)) {
 
-                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                final ArrayList<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
-                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                        .add(new ChunkWriter.FieldNodeInfo(numElements, nullCount)));
                 final LongStream.Builder bufferNodes = LongStream.builder();
                 column.visitBuffers(bufferNodes::add);
                 final long[] buffers = bufferNodes.build().toArray();
@@ -766,13 +773,13 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 // first message
                 DataInput dis = new LittleEndianDataInputStream(
                         new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                try (final WritableChunk<Values> rtData = readChunk(options, chunkType, type, type.getComponentType(),
+                try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, null, 0,
                         data.size() * 2)) {
                     // second message
                     dis = new LittleEndianDataInputStream(
                             new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                    final WritableChunk<Values> rtData2 = readChunk(options, chunkType, type, type.getComponentType(),
+                    final WritableChunk<Values> rtData2 = readChunk(options, readType, readType.getComponentType(),
                             field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, rtData, data.size(),
                             data.size() * 2);
                     Assert.eq(rtData, "rtData", rtData2, "rtData2");

@@ -93,7 +93,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
                         schema.computeWireComponentTypes(),
-                        new BarrageStreamReader(resultTable.getDeserializationTmConsumer()));
+                        new BarrageMessageReaderImpl(resultTable.getDeserializationTmConsumer()));
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -299,7 +299,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final StreamReader streamReader) {
+            final BarrageMessageReader streamReader) {
         final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
                 ProtoUtils.marshaller(FlightData.getDefaultInstance());
         final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
@@ -320,14 +320,14 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final StreamReader streamReader;
+        private final BarrageMessageReader streamReader;
 
         public BarrageDataMarshaller(
                 final BarrageSnapshotOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final StreamReader streamReader) {
+                final BarrageMessageReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;

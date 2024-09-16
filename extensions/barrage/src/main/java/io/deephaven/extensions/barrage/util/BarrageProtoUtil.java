@@ -43,7 +43,6 @@ public class BarrageProtoUtil {
     private static final Logger log = LoggerFactory.getLogger(BarrageProtoUtil.class);
 
     public static ByteBuffer toByteBuffer(final RowSet rowSet) {
-        // noinspection UnstableApiUsage
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
             ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
@@ -55,7 +54,6 @@ public class BarrageProtoUtil {
     }
 
     public static RowSet toRowSet(final ByteBuffer string) {
-        // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
                 final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
             return ExternalizableRowSetUtils.readExternalCompressedDelta(ois);
@@ -137,7 +135,6 @@ public class BarrageProtoUtil {
         /** the parsed protobuf from the flight descriptor embedded in app_metadata */
         public Flight.FlightDescriptor descriptor = null;
         /** the payload beyond the header metadata */
-        @SuppressWarnings("UnstableApiUsage")
         public LittleEndianDataInputStream inputStream = null;
     }
 
@@ -173,7 +170,6 @@ public class BarrageProtoUtil {
                     // at this point, we're in the body, we will read it and then break, the rest of the payload should
                     // be the body
                     size = decoder.readRawVarint32();
-                    // noinspection UnstableApiUsage
                     mi.inputStream = new LittleEndianDataInputStream(
                             new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
                     // we do not actually remove the content from our stream; prevent reading the next tag via a labeled
@@ -187,7 +183,6 @@ public class BarrageProtoUtil {
         }
 
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
-            // noinspection UnstableApiUsage
             mi.inputStream =
                     new LittleEndianDataInputStream(new ByteArrayInputStream(ArrayTypeUtils.EMPTY_BYTE_ARRAY));
         }

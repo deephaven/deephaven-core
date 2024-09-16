@@ -13,7 +13,7 @@ import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -44,7 +44,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
     private final ScheduledExecutorService executorService;
-    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+    private final BarrageMessageWriter.Factory streamGeneratorFactory;
     private final SessionService sessionService;
     private final SessionService.ErrorTransformer errorTransformer;
     private final TicketRouter ticketRouter;
@@ -55,7 +55,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Inject
     public FlightServiceGrpcImpl(
             @Nullable final ScheduledExecutorService executorService,
-            final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
             final SessionService sessionService,
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,

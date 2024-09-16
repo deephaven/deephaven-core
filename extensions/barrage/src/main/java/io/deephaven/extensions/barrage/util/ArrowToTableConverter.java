@@ -7,14 +7,15 @@ import com.google.common.io.LittleEndianDataInputStream;
 import com.google.protobuf.CodedInputStream;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
@@ -47,7 +48,7 @@ public class ArrowToTableConverter {
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
     protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
-    private final List<ChunkReader> readers = new ArrayList<>();
+    private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     private volatile boolean completed = false;
 
@@ -64,7 +65,6 @@ public class ArrowToTableConverter {
             final ByteBuffer bodyBB = bb.slice();
             final ByteBufferInputStream bbis = new ByteBufferInputStream(bodyBB);
             final CodedInputStream decoder = CodedInputStream.newInstance(bbis);
-            // noinspection UnstableApiUsage
             mi.inputStream = new LittleEndianDataInputStream(
                     new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, bodyBB.remaining()));
         }
@@ -154,14 +154,11 @@ public class ArrowToTableConverter {
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
-        ChunkType[] columnChunkTypes = result.computeWireChunkTypes();
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
         for (int i = 0; i < schema.fieldsLength(); i++) {
-            final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
-            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(options, factor,
-                    typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
-            readers.add(reader);
+            readers.add(DefaultChunkReaderFactory.INSTANCE.newReader(
+                    typeInfo(columnTypes[i], componentTypes[i], schema.fields(i)), options));
         }
 
         // retain reference until the resultTable can be sealed
@@ -175,9 +172,9 @@ public class ArrowToTableConverter {
         final BarrageMessage msg = new BarrageMessage();
         final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
 
-        final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                        i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                        i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
         final long[] bufferInfo = new long[batch.buffersLength()];
         for (int bi = 0; bi < batch.buffersLength(); ++bi) {
@@ -205,7 +202,8 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
             try {
-                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0,
+                        LongSizedDataStructure.intSize("ArrowToTableConverter", batch.length())));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }

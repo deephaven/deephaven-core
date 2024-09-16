@@ -11,10 +11,9 @@ import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -41,7 +40,7 @@ import java.util.PrimitiveIterator;
  * Consumes FlightData fields from Flight/Barrage producers and builds browser-compatible WebBarrageMessage payloads
  * that can be used to maintain table data.
  */
-public class WebBarrageStreamReader {
+public class WebBarrageMessageReader {
     private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
 
     // record progress in reading
@@ -54,10 +53,10 @@ public class WebBarrageStreamReader {
     private WebBarrageMessage msg;
 
     private final WebChunkReaderFactory chunkReaderFactory = new WebChunkReaderFactory();
-    private final List<ChunkReader> readers = new ArrayList<>();
+    private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     public WebBarrageMessage parseFrom(
-            final StreamReaderOptions options,
+            final ChunkReader.Options options,
             ChunkType[] columnChunkTypes,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,
@@ -155,10 +154,8 @@ public class WebBarrageStreamReader {
             header.header(schema);
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
-                ChunkReader chunkReader = chunkReaderFactory.getReader(options,
-                        ChunkReader.typeInfo(columnChunkTypes[i], columnTypes[i],
-                                componentTypes[i], field));
-                readers.add(chunkReader);
+                readers.add(chunkReaderFactory.newReader(
+                        ChunkReader.typeInfo(columnTypes[i], componentTypes[i], field), options));
             }
             return null;
         }
@@ -178,9 +175,9 @@ public class WebBarrageStreamReader {
         ByteBuffer body = TypedArrayHelper.wrap(flightData.getDataBody_asU8());
         final LittleEndianDataInputStream ois =
                 new LittleEndianDataInputStream(new ByteBufferInputStream(body));
-        final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+        final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter =
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
-                        i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                        i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
         final long[] bufferInfo = new long[batch.buffersLength()];
         for (int bi = 0; bi < batch.buffersLength(); ++bi) {
