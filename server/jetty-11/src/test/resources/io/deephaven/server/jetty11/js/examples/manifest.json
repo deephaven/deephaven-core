@@ -1,0 +1,19 @@
+{
+  "plugins": [
+    {
+      "name": "@deephaven_test/example1",
+      "main": "dist/index.js",
+      "version": "0.1.0"
+    },
+    {
+      "name": "@deephaven_test/example2",
+      "main": "dist/index.js",
+      "version": "0.2.0"
+    },
+    {
+      "name": "@deephaven_test/example3",
+      "main": "index.js",
+      "version": "0.3.0"
+    }
+  ]
+}
