@@ -34,8 +34,8 @@ def _legalize_column(s: str) -> str:
 #TODO: redo all parameter names
 #TODO: pydoc
 
-def _do_multijoin(partitions_table: PartitionedTable, row_column_names: list[str], col_column_name: str,
-                  value_column_name: str) -> Table:
+def _do_multijoin(partitions_table: PartitionedTable, row_cols: list[str], column_col: str,
+                  value_col: str) -> Table:
     # Define the columns for a multi-join
 
     #TODO: this stuff is not synchronized
@@ -44,24 +44,24 @@ def _do_multijoin(partitions_table: PartitionedTable, row_column_names: list[str
     with auto_locking_ctx(partitions_table):
         #TODO: this does not handle key changes in the constituent tables.  It should.
         keys = partitions_table.keys()
-        key_values = to_numpy(table=keys, cols=[col_column_name])
+        key_values = to_numpy(table=keys, cols=[column_col])
 
         if len(key_values) == 0:
             return empty_table(0)
 
         tables = [
-            con.view(row_column_names + [f"{_legalize_column(str(key_values[ki][0]))}={value_column_name}"])
+            con.view(row_cols + [f"{_legalize_column(str(key_values[ki][0]))}={value_col}"])
                 for ki, con in enumerate(partitions_table.constituent_tables)
         ]
 
-    return multi_join(input=tables, on=row_column_names).table()
+    return multi_join(input=tables, on=row_cols).table()
 
 
 #TODO: handle list or value for row_column_names
-def pivot(source: Table, row_column_names: list[str], col_column_name: str, value_column_name: str) -> Table:
+def pivot(source: Table, row_cols: list[str], column_col: str, value_col: str) -> Table:
     # Partition the source by column
-    partitioned_source = source.partition_by(col_column_name)
-    pvt = _do_multijoin(partitioned_source, row_column_names, col_column_name, value_column_name)
+    partitioned_source = source.partition_by(column_col)
+    pvt = _do_multijoin(partitioned_source, row_cols, column_col, value_col)
     return pvt
 
 
