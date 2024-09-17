@@ -1,6 +1,6 @@
 """This module defines functions for creating pivot tables."""
 
-from typing import Sequence, List, Union, Protocol
+from typing import Sequence, List, Union, Protocol, Optional, Callable
 import random
 import re
 import jpy
@@ -12,7 +12,8 @@ from deephaven.jcompat import to_sequence
 
 
 def _legalize_column(s: str) -> str:
-    """Legalize a column name.
+    """Legalize a column name.  Invalid characters are replaced with underscores.
+    The legalized column name is not guaranteed to be unique.
 
     Args:
         s (str): The column name to legalize.
@@ -23,12 +24,6 @@ def _legalize_column(s: str) -> str:
     Raises:
         ValueError: If the column name is empty.
     """
-
-    # TODO: This is not a good way to legalize a column name.  It is not guaranteed to be unique.
-    # Instead of legalizing the column name, it would be preferable to assign known names, and index them by the names table;
-    # using some kind of display name.  We don't know that we'll actually replace stuff to be unique here,
-    # which means this is not actually correct.
-
     if re.match("^[_a-zA-Z][_a-zA-Z0-9]*$", s):
         return s
     if re.match("^[_a-zA-Z].*$", s):
@@ -36,7 +31,8 @@ def _legalize_column(s: str) -> str:
     return "_" + re.sub("[^_a-zA-Z0-9]", "_", s)
 
 
-def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str) -> Table:
+def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str,
+          val_to_col_name: Optional[Callable[[Any], str]] = None) -> Table:
     """ Create a pivot table from the input table.
     
     Args:
@@ -44,6 +40,9 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
         row_cols (Union[str, Sequence[str]]): The row columns in the input table.
         column_col (str): The column column in the input table.
         value_col (str): The value column in the input table.
+        val_to_col_name (Optional[Callable[[Any],str]]): A function that converts a value to a column name.  
+            If None (default), a string representation of the value is used as the column name, with some effort made to replace 
+            invalid characters.
         
     Returns:
         Table: The pivot table.
@@ -54,6 +53,9 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
     """
     row_cols = list(to_sequence(row_cols))
     ptable = table.partition_by(column_col)
+    
+    if not val_to_col_name:
+        val_to_col_name = lambda x: _legalize_column(str(x))
 
     # Locking to ensure that the partitioned table doesn't change while creating the query
     with auto_locking_ctx(ptable):
@@ -65,8 +67,8 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
             return empty_table(0)
 
         tables = [
-            con.view(row_cols + [f"{_legalize_column(str(key_values[ki][0]))}={value_col}"])
-            for ki, con in enumerate(ptable.constituent_tables)
+            con.view(row_cols + [f"{val_to_col_name(key[0])}={value_col}"])
+            for key, con in zip(key_values, ptable.constituent_tables)
         ]
 
     return multi_join(input=tables, on=row_cols).table()
