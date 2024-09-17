@@ -334,7 +334,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     @TsIgnore
     public static class ViewportEventData extends SubscriptionEventData {
         public ViewportEventData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
-                                     RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+                RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
             super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
         }
 
