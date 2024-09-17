@@ -3,9 +3,10 @@
 #
 
 from tests.testbase import BaseTestCase
-from deephaven import new_table
+from deephaven import DHError, new_table
 from deephaven.column import int_col
 from deephaven.experimental.pivot import pivot
+from deephaven.table import table_diff
 
 
 class PivotTestCase(BaseTestCase):
