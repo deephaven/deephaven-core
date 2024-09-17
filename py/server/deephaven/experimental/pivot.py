@@ -6,6 +6,7 @@ from deephaven import time_table, empty_table
 from deephaven.table import Table, PartitionedTable, multi_join
 from deephaven.numpy import to_numpy
 from deephaven.update_graph import auto_locking_ctx
+from deephaven.jcompat import to_sequence
 
 def _legalize_column(s: str) -> str:
     """Legalize a column name.
@@ -57,10 +58,10 @@ def _do_multijoin(partitions_table: PartitionedTable, row_cols: list[str], colum
     return multi_join(input=tables, on=row_cols).table()
 
 
-#TODO: handle list or value for row_column_names
-def pivot(source: Table, row_cols: list[str], column_col: str, value_col: str) -> Table:
+def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str) -> Table:
     # Partition the source by column
-    partitioned_source = source.partition_by(column_col)
+    row_cols = list(to_sequence(row_cols))
+    partitioned_source = table.partition_by(column_col)
     pvt = _do_multijoin(partitioned_source, row_cols, column_col, value_col)
     return pvt
 
