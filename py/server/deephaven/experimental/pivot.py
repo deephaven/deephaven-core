@@ -6,9 +6,24 @@ from deephaven import time_table, empty_table, numpy as dhnp
 from deephaven.table import Table, multi_join, MultiJoinTable
 
 
-# Instead of legalizing the column name, it would be preferable to assign known names, and index them by the names table; using some kind of display name.
-# We don't know that we'll actually replace stuff to be unique here, which means this is not actually correct.
 def _legalize_column(s: str) -> str:
+    """Legalize a column name.
+
+    Args:
+        s (str): The column name to legalize.
+
+    Returns:
+        str: The legalized column name.
+
+    Raises:
+        ValueError: If the column name is empty.
+    """
+
+    #TODO: This is not a good way to legalize a column name.  It is not guaranteed to be unique.
+    # Instead of legalizing the column name, it would be preferable to assign known names, and index them by the names table;
+    # using some kind of display name.  We don't know that we'll actually replace stuff to be unique here,
+    # which means this is not actually correct.
+
     if re.match("^[_a-zA-Z][_a-zA-Z0-9]*$", s):
         return s
     if re.match("^[_a-zA-Z].*$", s):
@@ -20,20 +35,21 @@ def _do_multijoin(partitions_table, row_column_names: list[str], col_column_name
                   value_column_name: str) -> MultiJoinTable:
     # Define the columns for a multi-join
 
-    keys = partitions_table.keys()
+    #TODO: this stuff is not synchronized
 
+    #TODO: this does not handle key changes in the constituent tables.  It should.
+    keys = partitions_table.keys()
     key_values = dhnp.to_numpy(table=keys, cols=[col_column_name])
 
     if len(key_values) == 0:
         return empty_table(0)
 
     tables = []
-    ki = 0
 
-    for con in partitions_table.constituent_tables:
+    for ki, con in enumerate(partitions_table.constituent_tables):
         tables.append(
-            con.view(row_column_names + ["%s=%s" % (_legalize_column(str(key_values[ki][0])), value_column_name)]))
-        ki = ki + 1
+            con.view(row_column_names + [f"{_legalize_column(str(key_values[ki][0]))}={value_column_name}"])
+        )
 
     return multi_join(input=tables, on=row_column_names).table()
 
@@ -43,6 +59,9 @@ def pivot(source: Table, row_column_names: list[str], col_column_name: str, valu
     partitioned_source = source.partition_by(col_column_name)
     pvt = _do_multijoin(partitioned_source, row_column_names, col_column_name, value_column_name)
     return pvt
+
+
+#TODO: delete below here
 
 # # Java wrappers
 random_class = jpy.get_type("java.util.Random")
