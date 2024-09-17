@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+#
+
 """This module defines functions for creating pivot tables."""
 
 from typing import Sequence, Union, Optional, Callable, Any
@@ -69,7 +73,7 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
     """
     row_cols = list(to_sequence(row_cols))
     ptable = table.partition_by(column_col)
-    
+
     if not value_to_col_name:
         value_to_col_name = lambda x: _legalize_column(str(x))
 
@@ -88,6 +92,10 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
         for key, con in zip(key_values, ptable.constituent_tables):
             col_name = value_to_col_name(key[0])
 
+            if not isinstance(col_name, str):
+                raise DHError(
+                    f"Value does not map to a string: value={key[0]} col_name={col_name} col_type={type(col_name)}")
+
             if not _is_legal_column(col_name):
                 raise DHError(f"Value maps to an invalid column name: value={key[0]} col_name={col_name}")
 
@@ -98,35 +106,3 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
             tables.append(con.view(row_cols + [f"{col_name}={value_col}"]))
 
     return multi_join(input=tables, on=row_cols).table()
-
-
-# TODO: delete below here
-
-import random
-import jpy
-
-# # Java wrappers
-random_class = jpy.get_type("java.util.Random")
-random_inst = random_class(0)
-
-y = empty_table(1000).select(["Row=ii%10", "Col=(int)((ii/10) % 30)", "Sentinel=random_inst.nextDouble()"]).where(
-    "Sentinel > 0.3")
-
-# first part of the pivot is getting unique row and column values
-ys = y.sum_by(["Row", "Col"])
-
-pvt = pivot(ys, ["Row"], "Col", "Sentinel")
-pvt2 = pivot(ys, "Row", "Col", "Sentinel", lambda x: f"Col_{x}")
-
-# 
-# # we have no real sector data, but it is nice for an example
-# #sectors = ["Apples", "Bananas", "Carrots", "Eggplant", "Fig"]
-# #sec_map = dict()
-# #def get_sector(sym : str) -> str:
-#     #if not sym in sec_map:
-#         #sec_map[sym] = sectors[random.randint(0, 2)]
-#     #return sec_map[sym]
-# 
-# feedos=db.live_table("FeedOS", "EquityTradeL1").where("Date=today()")
-# feedos_agg=feedos.view(["LocalCodeStr", "Dollars=Price*Size", "Size", "MarketId"]).sum_by(["LocalCodeStr", "MarketId"])#.update("Sector=get_sector(LocalCodeStr)")
-# fp = pivot(feedos_agg, ["MarketId"], "LocalCodeStr", "Dollars")
