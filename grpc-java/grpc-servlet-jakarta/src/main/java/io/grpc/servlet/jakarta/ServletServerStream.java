@@ -223,7 +223,7 @@ final class ServletServerStream extends AbstractServerStream {
         final TrailerSupplier trailerSupplier = new TrailerSupplier();
 
         @Override
-        public void writeHeaders(Metadata headers) {
+        public void writeHeaders(Metadata headers, boolean ignored) {
             writeHeadersToServletResponse(headers);
             try {
                 resp.setTrailerFields(trailerSupplier);

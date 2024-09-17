@@ -12,6 +12,7 @@ dependencies {
   api platform(libs.grpc.bom)
   api libs.grpc.api
   implementation libs.grpc.core
+  implementation libs.grpc.inprocess
   implementation libs.grpc.netty
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
