@@ -80,7 +80,7 @@ connect a server when you want to run them.
    export DHCPP=$HOME/dhcpp
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
-   cp build-dependencies.sh $DHCPP
+   cp $DHSRC/build-dependencies.sh $DHCPP
    cd $DHCPP
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,

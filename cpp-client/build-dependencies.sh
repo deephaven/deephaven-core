@@ -562,7 +562,7 @@ if [ "$CLONE_PROTOBUF" = "yes" ]; then
   echo
   echo "*** Cloning protobuf"
   cd $SRC
-  # Previously used version: v25.4
+  # Previously used version: v25.3
   git clone $GIT_FLAGS -b v28.1 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
   echo "*** Cloning protobuf DONE"
 fi
