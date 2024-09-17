@@ -32,19 +32,32 @@ def _legalize_column(s: str) -> str:
         return re.sub("[^_a-zA-Z0-9]", "_", s)
     return "_" + re.sub("[^_a-zA-Z0-9]", "_", s)
 
-#TODO: redo all parameter names
 #TODO: pydoc
 
-def _do_multijoin(partitions_table: PartitionedTable, row_cols: list[str], column_col: str,
-                  value_col: str) -> Table:
-    # Define the columns for a multi-join
 
-    #TODO: this stuff is not synchronized
+def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str) -> Table:
+    """ Create a pivot table from the input table.
+    
+    Args:
+        table (Table): The input table.
+        row_cols (Union[str, Sequence[str]]): The row columns in the input table.
+        column_col (str): The column column in the input table.
+        value_col (str): The value column in the input table.
+        
+    Returns:
+        Table: The pivot table.
+        
+    Raises:
+        ValueError: If the input table is empty.
+        DHError: If an error occurs while creating the pivot table.
+    """
+    row_cols = list(to_sequence(row_cols))
+    ptable = table.partition_by(column_col)
 
-    # Locking to ensure that the partitioned table doesn't change while we're working with it
-    with auto_locking_ctx(partitions_table):
+    # Locking to ensure that the partitioned table doesn't change while creating the query
+    with auto_locking_ctx(ptable):
         #TODO: this does not handle key changes in the constituent tables.  It should.
-        keys = partitions_table.keys()
+        keys = ptable.keys()
         key_values = to_numpy(table=keys, cols=[column_col])
 
         if len(key_values) == 0:
@@ -52,18 +65,10 @@ def _do_multijoin(partitions_table: PartitionedTable, row_cols: list[str], colum
 
         tables = [
             con.view(row_cols + [f"{_legalize_column(str(key_values[ki][0]))}={value_col}"])
-                for ki, con in enumerate(partitions_table.constituent_tables)
+                for ki, con in enumerate(ptable.constituent_tables)
         ]
 
     return multi_join(input=tables, on=row_cols).table()
-
-
-def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str) -> Table:
-    # Partition the source by column
-    row_cols = list(to_sequence(row_cols))
-    partitioned_source = table.partition_by(column_col)
-    pvt = _do_multijoin(partitioned_source, row_cols, column_col, value_col)
-    return pvt
 
 
 #TODO: delete below here
