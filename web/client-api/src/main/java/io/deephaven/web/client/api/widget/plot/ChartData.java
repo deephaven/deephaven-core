@@ -5,13 +5,12 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
-import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
-import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.Range;
+import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
@@ -29,118 +28,51 @@ import java.util.Map.Entry;
 public class ChartData {
     private final JsTable table;
 
-    private final long[] indexes = new long[0];// in the browser, this array can grow
+    private RangeSet prevRanges;
     private final Map<String, Map<JsFunction<Any, Any>, JsArray<Any>>> cachedData = new HashMap<>();
 
     public ChartData(JsTable table) {
         this.table = table;
     }
 
-    public void update(AbstractTableSubscription.UpdateEventData tableData) {
-        SubscriptionTableData data = (SubscriptionTableData) tableData;
-        Iterator<Range> addedIterator = data.getAdded().getRange().rangeIterator();
-        Iterator<Range> removedIterator = data.getRemoved().getRange().rangeIterator();
-        Iterator<Range> modifiedIterator = data.getModified().getRange().rangeIterator();
-
-        Range nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
-        Range nextRemoved = removedIterator.hasNext() ? removedIterator.next() : null;
-        Range nextModified = modifiedIterator.hasNext() ? modifiedIterator.next() : null;
-        int i = 0;
-
-        // not useful for adding/modifying data, but fast and easy to use when removing rows
-        JsArray<Any>[] allColumns;
-        if (nextRemoved != null) {
+    public void update(AbstractTableSubscription.SubscriptionEventData tableData) {
+        RangeSet positionsForAddedKeys = tableData.getFullIndex().getRange().invert(tableData.getAdded().getRange());
+        RangeSet positionsForRemovedKeys = prevRanges.invert(tableData.getRemoved().getRange());
+        RangeSet positionsForModifiedKeys =
+                tableData.getFullIndex().getRange().invert(tableData.getModified().getRange());
+        prevRanges = tableData.getFullIndex().getRange().copy();
+        // removes first from the previous set of ranges
+        Iterator<Range> removedPositions = positionsForRemovedKeys.reverseRangeIterator();
+        JsArray<Any>[] allColumns = null;
+        if (removedPositions.hasNext()) {
             // noinspection unchecked
             allColumns = cachedData.values().stream().flatMap(m -> m.values().stream()).toArray(JsArray[]::new);
-        } else {
-            allColumns = null;
         }
 
-        while (nextAdded != null || nextRemoved != null || nextModified != null) {
-            if (i >= indexes.length) {
-                // We're past the end, nothing possibly left to remove, just append all the new items
-                // Note that this is the first case we'll hit on initial snapshot
-                assert nextRemoved == null;
-                assert nextModified == null;
-                while (nextAdded != null) {
-                    insertDataRange(tableData, nextAdded, i);
-
-                    // increment i past these new items so our offset is correct if there is a next block
-                    i += nextAdded.size();
-
-                    // not bothering with i or lastIndexSeen since we will break after this while loop
-                    nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
-                }
-                break;
-            }
-
-            long nextIndex = indexes[i];
-
-            // check for added items first, since we will insert items just before the current
-            // index, while the other two start at the current index
-            if (nextAdded != null && nextAdded.getFirst() < nextIndex) {
-                assert nextAdded.getLast() < nextIndex;// the whole range should be there if any is
-
-                // update the index array and insert the actual data into our mapped columns
-                insertDataRange(tableData, nextAdded, i);
-
-                // increment i past these new items, so that our "next" is actually next
-                i += nextAdded.size();
-
-                nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
-            } else if (nextModified != null && nextModified.getFirst() == nextIndex) {
-                assert nextModified.getLast() >= nextIndex; // somehow being asked to update an item which wasn't
-                                                            // present
-
-                // the updated block is contiguous, make sure there are at least that many items to tweak
-                assert indexes.length - i >= nextModified.size();
-
-                replaceDataRange(tableData, nextModified, i);
-
-                // advance i past this section, since no other change can happen to these rows
-                i += nextModified.size();
-
-                nextModified = modifiedIterator.hasNext() ? modifiedIterator.next() : null;
-            } else if (nextRemoved != null && nextRemoved.getFirst() == nextIndex) {
-                assert nextRemoved.getLast() >= nextIndex; // somehow being asked to remove an item which wasn't present
-
-                // the block being removed is contiguous, so make sure there are at least that many and splice them out
-                assert indexes.length - i >= nextRemoved.size();
-
-                // splice out the indexes
-                asArray(indexes).splice(i, (int) nextRemoved.size());
-
-                // splice out the data itself
-                assert allColumns != null;
-                for (JsArray<Any> column : allColumns) {
-                    column.splice(i, (int) nextRemoved.size());
-                }
-
-                // don't in/decrement i, we'll just keep going
-                nextRemoved = removedIterator.hasNext() ? removedIterator.next() : null;
-            } else {
-
-                // no match, keep reading
-                i++;
+        while (removedPositions.hasNext()) {
+            Range nextRemoved = removedPositions.next();
+            for (JsArray<Any> column : allColumns) {
+                column.splice((int) nextRemoved.getFirst(), (int) nextRemoved.size());
             }
         }
 
-        if (JsSettings.isDevMode()) {
-            assert tableData.getRows().length == indexes.length;
-            assert cachedData.values().stream().flatMap(m -> m.values().stream())
-                    .allMatch(arr -> arr.length == indexes.length);
-            assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr
-                    .reduce((Object val, Any p1, int p2) -> ((Integer) val) + 1, 0) == indexes.length);
+        // then adds
+        Iterator<Range> addedPositions = positionsForAddedKeys.rangeIterator();
+        while (addedPositions.hasNext()) {
+            Range nextAdded = addedPositions.next();
+            insertDataRange(tableData, nextAdded);
+        }
 
-            JsRangeSet fullIndex = ((SubscriptionTableData) tableData).getFullIndex();
-            PrimitiveIterator.OfLong iter = fullIndex.getRange().indexIterator();
-            for (int j = 0; j < indexes.length; j++) {
-                assert indexes[j] == iter.nextLong();
-            }
+        Iterator<Range> modifiedPositions = positionsForModifiedKeys.rangeIterator();
+        while (modifiedPositions.hasNext()) {
+            Range nextModified = modifiedPositions.next();
+            replaceDataRange(tableData, nextModified);
         }
     }
 
-    private void replaceDataRange(AbstractTableSubscription.UpdateEventData tableData, Range range, int offset) {
+    private void replaceDataRange(SubscriptionTableData tableData, Range positions) {
+        RangeSet keys = tableData.getFullIndex().getRange()
+                .subsetForPositions(RangeSet.ofRange(positions.getFirst(), positions.getLast()), true);
         // we don't touch the indexes at all, only need to walk each column and replace values in this range
         for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             Column col = table.findColumn(columnMap.getKey());
@@ -149,23 +81,27 @@ public class ChartData {
                 JsArray<Any> arr = mapFuncAndArray.getValue();
 
                 // rather than getting a slice and splicing it in, just update each value
+                PrimitiveIterator.OfLong iter = keys.indexIterator();
+                int i = 0;
                 if (func == null) {
-                    for (int i = 0; i < range.size(); i++) {
-                        arr.setAt(offset + i, tableData.getData(range.getFirst() + i, col));
+                    while (iter.hasNext()) {
+                        arr.setAt(i++, tableData.getData(iter.next(), col));
                     }
                 } else {
-                    for (int i = 0; i < range.size(); i++) {
-                        arr.setAt(offset + i, func.apply(tableData.getData(range.getFirst() + i, col)));
+                    while (iter.hasNext()) {
+                        arr.setAt(i++, tableData.getData(iter.next(), col));
                     }
                 }
             }
         }
     }
 
-    private void insertDataRange(AbstractTableSubscription.UpdateEventData tableData, Range range, int offset) {
-        // splice in the new indexes
-        batchSplice(offset, asArray(indexes), longs(range));
-
+    /**
+     * From the event data, insert a contiguous range of rows to each column.
+     */
+    private void insertDataRange(SubscriptionTableData tableData, Range positions) {
+        RangeSet keys = tableData.getFullIndex().getRange()
+                .subsetForPositions(RangeSet.ofRange(positions.getFirst(), positions.getLast()), false);
         // splice in data to each column
         for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             String columnName = columnMap.getKey();
@@ -176,13 +112,13 @@ public class ChartData {
 
                 // here we create a new array and splice it in, to avoid slowly growing the data array in the case
                 // of many rows being added
-                Any[] values = values(tableData, func, col, range);
-                batchSplice(offset, arr, values);
+                Any[] values = values(tableData, func, col, keys);
+                batchSplice((int) positions.getFirst(), arr, values);
             }
         }
     }
 
-    private Any[] batchSplice(int offset, JsArray<Any> existingData, Any[] dataToInsert) {
+    private void batchSplice(int offset, JsArray<Any> existingData, Any[] dataToInsert) {
         int lengthToInsert = dataToInsert.length;
         JsArray<Any> jsArrayToInsert = Js.uncheckedCast(dataToInsert);
 
@@ -193,40 +129,24 @@ public class ChartData {
             existingData.splice(offset + i, 0,
                     jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)).asArray(new Any[0]));
         }
-
-        return Js.uncheckedCast(existingData);
     }
 
-    private Any[] values(AbstractTableSubscription.UpdateEventData tableData, JsFunction<Any, Any> mapFunc, Column col,
-            Range insertedRange) {
+    private Any[] values(SubscriptionTableData tableData, JsFunction<Any, Any> mapFunc, Column col,
+            RangeSet keys) {
         JsArray<Any> result = new JsArray<>();
 
+        PrimitiveIterator.OfLong iter = keys.indexIterator();
         if (mapFunc == null) {
-            for (int i = 0; i < insertedRange.size(); i++) {
-                result.push(tableData.getData(insertedRange.getFirst() + i, col));
+            while (iter.hasNext()) {
+                result.push(tableData.getData(iter.next(), col));
             }
         } else {
-            for (int i = 0; i < insertedRange.size(); i++) {
-                result.push(mapFunc.apply(tableData.getData(insertedRange.getFirst() + i, col)));
+            while (iter.hasNext()) {
+                result.push(mapFunc.apply(tableData.getData(iter.next(), col)));
             }
         }
 
         return Js.uncheckedCast(result);
-
-    }
-
-    private static JsArray<Any> asArray(Object obj) {
-        return Js.uncheckedCast(obj);
-    }
-
-    private static Any[] longs(Range range) {
-        long[] longs = new long[(int) range.size()];
-
-        for (int i = 0; i < longs.length; i++) {
-            longs[i] = range.getFirst() + i;
-        }
-
-        return Js.uncheckedCast(longs);
     }
 
     public JsArray<Any> getColumn(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
