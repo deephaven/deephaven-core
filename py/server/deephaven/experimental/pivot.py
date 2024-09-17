@@ -1,3 +1,5 @@
+"""This module defines functions for creating pivot tables."""
+
 from typing import Sequence, List, Union, Protocol
 import random
 import re
@@ -7,6 +9,7 @@ from deephaven.table import Table, PartitionedTable, multi_join
 from deephaven.numpy import to_numpy
 from deephaven.update_graph import auto_locking_ctx
 from deephaven.jcompat import to_sequence
+
 
 def _legalize_column(s: str) -> str:
     """Legalize a column name.
@@ -21,7 +24,7 @@ def _legalize_column(s: str) -> str:
         ValueError: If the column name is empty.
     """
 
-    #TODO: This is not a good way to legalize a column name.  It is not guaranteed to be unique.
+    # TODO: This is not a good way to legalize a column name.  It is not guaranteed to be unique.
     # Instead of legalizing the column name, it would be preferable to assign known names, and index them by the names table;
     # using some kind of display name.  We don't know that we'll actually replace stuff to be unique here,
     # which means this is not actually correct.
@@ -31,8 +34,6 @@ def _legalize_column(s: str) -> str:
     if re.match("^[_a-zA-Z].*$", s):
         return re.sub("[^_a-zA-Z0-9]", "_", s)
     return "_" + re.sub("[^_a-zA-Z0-9]", "_", s)
-
-#TODO: pydoc
 
 
 def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str) -> Table:
@@ -56,7 +57,7 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
 
     # Locking to ensure that the partitioned table doesn't change while creating the query
     with auto_locking_ctx(ptable):
-        #TODO: this does not handle key changes in the constituent tables.  It should.
+        # TODO: this does not handle key changes in the constituent tables.  It should.
         keys = ptable.keys()
         key_values = to_numpy(table=keys, cols=[column_col])
 
@@ -65,24 +66,25 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
 
         tables = [
             con.view(row_cols + [f"{_legalize_column(str(key_values[ki][0]))}={value_col}"])
-                for ki, con in enumerate(ptable.constituent_tables)
+            for ki, con in enumerate(ptable.constituent_tables)
         ]
 
     return multi_join(input=tables, on=row_cols).table()
 
 
-#TODO: delete below here
+# TODO: delete below here
 
 # # Java wrappers
 random_class = jpy.get_type("java.util.Random")
 random_inst = random_class(0)
 
-y=empty_table(1000).select(["Row=ii%10", "Col=(int)((ii/10) % 30)", "Sentinel=random_inst.nextDouble()"]).where("Sentinel > 0.3")
+y = empty_table(1000).select(["Row=ii%10", "Col=(int)((ii/10) % 30)", "Sentinel=random_inst.nextDouble()"]).where(
+    "Sentinel > 0.3")
 
 # first part of the pivot is getting unique row and column values
 ys = y.sum_by(["Row", "Col"])
 
-pvt=pivot(ys, ["Row"], "Col", "Sentinel")
+pvt = pivot(ys, ["Row"], "Col", "Sentinel")
 # 
 # # we have no real sector data, but it is nice for an example
 # #sectors = ["Apples", "Bananas", "Carrots", "Eggplant", "Fig"]
