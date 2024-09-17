@@ -6,7 +6,7 @@
 
 from typing import Sequence, Union, Optional, Callable, Any
 import re
-from deephaven import empty_table
+from deephaven import DHError, empty_table
 from deephaven.table import Table, PartitionedTable, multi_join
 from deephaven.numpy import to_numpy
 from deephaven.update_graph import auto_locking_ctx
