@@ -2,9 +2,10 @@ from typing import Sequence, List, Union, Protocol
 import random
 import re
 import jpy
-from deephaven import time_table, empty_table, numpy as dhnp
-from deephaven.table import Table, multi_join, MultiJoinTable
-
+from deephaven import time_table, empty_table
+from deephaven.table import Table, PartitionedTable, multi_join
+from deephaven.numpy import to_numpy
+from deephaven.update_graph import auto_locking_ctx
 
 def _legalize_column(s: str) -> str:
     """Legalize a column name.
@@ -30,31 +31,34 @@ def _legalize_column(s: str) -> str:
         return re.sub("[^_a-zA-Z0-9]", "_", s)
     return "_" + re.sub("[^_a-zA-Z0-9]", "_", s)
 
+#TODO: redo all parameter names
+#TODO: pydoc
 
-def _do_multijoin(partitions_table, row_column_names: list[str], col_column_name: str,
-                  value_column_name: str) -> MultiJoinTable:
+def _do_multijoin(partitions_table: PartitionedTable, row_column_names: list[str], col_column_name: str,
+                  value_column_name: str) -> Table:
     # Define the columns for a multi-join
 
     #TODO: this stuff is not synchronized
 
-    #TODO: this does not handle key changes in the constituent tables.  It should.
-    keys = partitions_table.keys()
-    key_values = dhnp.to_numpy(table=keys, cols=[col_column_name])
+    # Locking to ensure that the partitioned table doesn't change while we're working with it
+    with auto_locking_ctx(partitions_table):
+        #TODO: this does not handle key changes in the constituent tables.  It should.
+        keys = partitions_table.keys()
+        key_values = to_numpy(table=keys, cols=[col_column_name])
 
-    if len(key_values) == 0:
-        return empty_table(0)
+        if len(key_values) == 0:
+            return empty_table(0)
 
-    tables = []
-
-    for ki, con in enumerate(partitions_table.constituent_tables):
-        tables.append(
+        tables = [
             con.view(row_column_names + [f"{_legalize_column(str(key_values[ki][0]))}={value_column_name}"])
-        )
+                for ki, con in enumerate(partitions_table.constituent_tables)
+        ]
 
     return multi_join(input=tables, on=row_column_names).table()
 
 
-def pivot(source: Table, row_column_names: list[str], col_column_name: str, value_column_name: str) -> MultiJoinTable:
+#TODO: handle list or value for row_column_names
+def pivot(source: Table, row_column_names: list[str], col_column_name: str, value_column_name: str) -> Table:
     # Partition the source by column
     partitioned_source = source.partition_by(col_column_name)
     pvt = _do_multijoin(partitioned_source, row_column_names, col_column_name, value_column_name)
