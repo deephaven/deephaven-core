@@ -22,6 +22,7 @@ from tests.testbase import BaseTestCase
 
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
+
 class TableUpdateRecorder:
     def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
         self.table = table
@@ -104,7 +105,7 @@ class TableListenerTestCase(BaseTestCase):
         for change in changes:
             self.assertTrue(isinstance(change, dict))
             if not cols:
-                cols = [col.name for col in self.test_table.columns]
+                cols = self.test_table.column_names
             for col in cols:
                 self.assertIn(col, change.keys())
                 self.assertTrue(isinstance(change[col], numpy.ndarray))
@@ -266,6 +267,8 @@ class TableListenerTestCase(BaseTestCase):
                                        has_added=True, has_removed=True, has_modified=False)
             self.assertTrue(all([len(ja) > 0 for ja in j_arrays]))
 
+        dep_table = dep_table_2 = None
+
 
     def test_listener_func_with_deps(self):
         cols = [
@@ -274,8 +277,7 @@ class TableListenerTestCase(BaseTestCase):
         ]
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
-        col_defs = {c.name: c.data_type for c in t.columns}
-        dep_table = input_table(col_defs=col_defs)
+        dep_table = input_table(col_defs=t.definition)
 
         def listener_func(update, is_replay):
             table_update_recorder.record(update, is_replay)
@@ -363,6 +365,8 @@ class TableListenerTestCase(BaseTestCase):
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
 
+        t1 = t2 = t3 = None
+
     def test_merged_listener_func(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
         t2 = time_table("PT2s").update(["Y=i % 8"])
@@ -392,6 +396,8 @@ class TableListenerTestCase(BaseTestCase):
             ensure_ugp_cycles(tur, cycles=6)
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
+
+        t1 = t2 = t3 = None
 
     def test_merged_listener_with_deps(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
@@ -423,6 +429,8 @@ class TableListenerTestCase(BaseTestCase):
         self.assertGreaterEqual(len(tur.replays), 6)
         self.assertTrue(len(j_arrays) > 0 and all([len(ja) > 0 for ja in j_arrays]))
 
+        t1 = t2 = t3 = None
+
     def test_merged_listener_error(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
 
@@ -437,6 +445,8 @@ class TableListenerTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             mlh = merged_listen([t1, et], test_ml_func)
         self.assertIn("must be a refreshing table", str(cm.exception))
+
+        t1 = et = None
 
     def test_merged_listener_replay(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
@@ -477,6 +487,277 @@ class TableListenerTestCase(BaseTestCase):
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
             self.assertEqual(tur.replays.count(True), 2)
+
+        t1 = t2 = t3 = None
+
+    def test_on_error_listener_func(self):
+        t = time_table("PT1S").update("X = i")
+        with self.subTest("Bad Listener Good Error Callback"):
+            def bad_listner_func(table_udpate, is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            tlh = listen(t, bad_listner_func, on_error=on_error)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+
+        with self.subTest("Good Listener Good Error Callback"):
+            def good_listner_func(table_udpate, is_replay: bool) -> None:
+                pass
+
+            error_caught = False
+            tlh = listen(t, good_listner_func, on_error=on_error)
+            t.await_update()
+            self.assertFalse(error_caught)
+            self.assertFalse(tlh.j_object.isFailed())
+
+        with self.subTest("Bad Listener Bad Error Callback"):
+            error_caught: bool = False
+
+            def bad_listner_func(table_udpate, is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+                raise ValueError("reraise the exception") from e
+
+            tlh = listen(t, bad_listner_func, on_error=on_error)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+
+        t = None
+
+    def test_on_error_listener_obj(self):
+        test_self = self
+        t = time_table("PT1S").update("X = i")
+
+        with self.subTest("Bad Listener Good Error Callback"):
+            class BadListener(TableListener):
+                def on_update(self, update: TableUpdate, is_replay: bool) -> None:
+                    raise ValueError("invalid value")
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            bad_listener_obj = BadListener()
+            tlh = listen(t, bad_listener_obj)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+
+            with self.assertRaises(DHError):
+                def on_error(e: Exception) -> None:
+                    ...
+                tlh = listen(t, bad_listener_obj, on_error=on_error)
+
+        with self.subTest("Good Listener Good Error Callback"):
+            class GoodListener(TableListener):
+                def on_update(self, update: TableUpdate, is_replay: bool) -> None:
+                    ...
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            good_listener_obj = GoodListener()
+            tlh = listen(t, good_listener_obj)
+            t.await_update()
+            self.assertFalse(error_caught)
+            self.assertFalse(tlh.j_object.isFailed())
+
+        with self.subTest("Bad Listener Bad Error Callback"):
+            class GoodListener(TableListener):
+                def on_update(self, update: TableUpdate, is_replay: bool) -> None:
+                    raise ValueError("invalid value")
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+                    raise ValueError("reraise the exception") from e
+
+            error_caught = False
+
+            good_listener_obj = GoodListener()
+            tlh = listen(t, good_listener_obj)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+
+        t = None
+
+    def test_on_error_merged_listener_func(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        with self.subTest("Bad Listener Good Error Callback"):
+            def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            mlh = merged_listen([t1, t2, t3], bad_listner_func, on_error=on_error)
+            t1.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(mlh.j_object.isFailed())
+
+        with self.subTest("Good Listener Good Error Callback"):
+            def good_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                pass
+
+            error_caught = False
+            mlh = merged_listen([t1, t2, t3], good_listner_func, on_error=on_error)
+            t1.await_update()
+            self.assertFalse(error_caught)
+            self.assertFalse(mlh.j_object.isFailed())
+
+        with self.subTest("Bad Listener Bad Error Callback"):
+            def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def bad_on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+                raise ValueError("reraise the exception") from e
+
+            error_caught = False
+            mlh = merged_listen([t1, t2, t3], bad_listner_func, on_error=bad_on_error)
+            t1.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(mlh.j_object.isFailed())
+
+        t1 = t2 = t3 = None
+
+    def test_on_error_merged_listener_obj(self):
+        test_self = self
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        with self.subTest("Bad Listener Good Error Callback"):
+            class BadListener(MergedListener):
+                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                    raise ValueError("invalid value")
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            bad_listener_obj = BadListener()
+            mlh = merged_listen([t1, t2, t3], bad_listener_obj)
+            t1.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(mlh.j_object.isFailed())
+
+            with self.assertRaises(DHError):
+                def on_error(e: Exception) -> None:
+                    ...
+                tlh = merged_listen([t1, t2, t3], bad_listener_obj, on_error=on_error)
+
+
+        with self.subTest("Good Listener Good Error Callback"):
+            class GoodListener(MergedListener):
+                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                    ...
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            good_listener_obj = GoodListener()
+            mlh = merged_listen([t1, t2, t3], good_listener_obj)
+            t1.await_update()
+            self.assertFalse(error_caught)
+            self.assertFalse(mlh.j_object.isFailed())
+
+        with self.subTest("Bad Listener Bad Error Callback"):
+            class BadListener(MergedListener):
+                def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                    raise ValueError("invalid value")
+
+                def on_error(self, e: Exception) -> None:
+                    nonlocal error_caught
+                    error_caught = True
+                    test_self.assertIn("invalid value", str(e))
+                    raise ValueError("reraise the exception") from e
+
+            error_caught = False
+            bad_listener_obj = BadListener()
+            mlh = merged_listen([t1, t2, t3], bad_listener_obj)
+            t1.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(mlh.j_object.isFailed())
+
+        t1 = t2 = t3 = None
+
+    def test_default_on_error(self):
+        t = time_table("PT1S").update("X = i")
+
+        def bad_listner_func(table_udpate, is_replay: bool) -> None:
+            raise ValueError("invalid value")
+
+        error_caught = False
+        tlh = listen(t, bad_listner_func)
+        t.await_update()
+        # the default on_error only logs the error
+        self.assertFalse(error_caught)
+        self.assertTrue(tlh.j_object.isFailed())
+
+        class BadListener(TableListener):
+            def on_update(self, update, is_replay):
+                raise ValueError("invalid value")
+
+        tlh = listen(t, BadListener())
+        t.await_update()
+        # the default on_error only logs the error
+        self.assertFalse(error_caught)
+        self.assertTrue(tlh.j_object.isFailed())
+
+        t2 = time_table("PT1S").update("X = i")
+        def bad_listner_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            raise ValueError("invalid value")
+
+        mlh = merged_listen([t, t2], bad_listner_func)
+        t.await_update()
+        # the default on_error only logs the error
+        self.assertFalse(error_caught)
+        self.assertTrue(mlh.j_object.isFailed())
+
+        class BadListener(MergedListener):
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+        mlh = merged_listen([t, t2], BadListener())
+        t.await_update()
+        # the default on_error only logs the error
+        self.assertFalse(error_caught)
+        self.assertTrue(mlh.j_object.isFailed())
+
+        t = t2 = None
 
 
 if __name__ == "__main__":

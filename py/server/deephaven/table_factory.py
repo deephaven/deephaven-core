@@ -4,20 +4,19 @@
 
 """ This module provides various ways to make a Deephaven table. """
 
-import datetime
-from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping, Optional
 
 import jpy
-import numpy as np
 import pandas as pd
 
-from deephaven import execution_context, DHError, time
+from deephaven import execution_context, DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import InputColumn, Column
-from deephaven.dtypes import DType, Duration, Instant
+from deephaven.column import InputColumn
+from deephaven.dtypes import DType
 from deephaven.execution_context import ExecutionContext
 from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
-from deephaven.table import Table
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
+from deephaven.time import DurationLike, InstantLike, to_j_duration, to_j_instant
 from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -53,16 +52,16 @@ def empty_table(size: int) -> Table:
         raise DHError(e, "failed to create an empty table.") from e
 
 
-def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
-               start_time: Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp] = None,
+def time_table(period: DurationLike,
+               start_time: Optional[InstantLike] = None,
                blink_table: bool = False) -> Table:
     """Creates a table that adds a new row on a regular interval.
 
     Args:
-        period (Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+        period (DurationLike):
             time interval between new row additions, can be expressed as an integer in nanoseconds,
             a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time duration types.
-        start_time (Union[None, Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp], optional):
+        start_time (Optional[InstantLike]):
             start time for adding new rows, defaults to None which means use the current time
             as the start time.
         blink_table (bool, optional): if the time table should be a blink table, defaults to False
@@ -76,14 +75,13 @@ def time_table(period: Union[Duration, int, str, datetime.timedelta, np.timedelt
     try:
         builder = _JTableTools.timeTableBuilder()
 
-        if not isinstance(period, str) and not isinstance(period, int):
-            period = time.to_j_duration(period)
+        if period is None:
+            raise ValueError("period must be specified")
 
-        builder.period(period)
+        builder.period(to_j_duration(period))
 
         if start_time:
-            start_time = time.to_j_instant(start_time)
-            builder.startTime(start_time)
+            builder.startTime(to_j_instant(start_time))
 
         if blink_table:
             builder.blinkTable(blink_table)
@@ -285,7 +283,7 @@ class InputTable(Table):
         return j_list_to_list(self.j_input_table.getValueNames())
 
 
-def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
+def input_table(col_defs: Optional[TableDefinitionLike] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
     """Creates an in-memory InputTable from either column definitions or an initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
@@ -298,7 +296,7 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
     The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
-        col_defs (Dict[str, DType]): the column definitions
+        col_defs (Optional[TableDefinitionLike]): the table definition
         init_table (Table): the initial table
         key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
 
@@ -316,8 +314,7 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
             raise ValueError("both column definitions and init table are provided.")
 
         if col_defs:
-            j_arg_1 = _JTableDefinition.of(
-                [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
+            j_arg_1 = TableDefinition(col_defs).j_table_definition
         else:
             j_arg_1 = init_table.j_table
 

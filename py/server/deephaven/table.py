@@ -11,11 +11,13 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
+from functools import cached_property
 from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
-from typing import Sequence, List, Union, Protocol
+from typing import Sequence, List, Union, Protocol, Mapping, Iterable
 
 import jpy
 import numpy as np
+import sys
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -23,7 +25,7 @@ from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
-from deephaven.column import Column, ColumnType
+from deephaven.column import col_def, ColumnDefinition
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -407,19 +409,133 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-def _td_to_columns(table_definition):
-    cols = []
-    j_cols = table_definition.getColumnsArray()
-    for j_col in j_cols:
-        cols.append(
-            Column(
-                name=j_col.getName(),
-                data_type=dtypes.from_jtype(j_col.getDataType()),
-                component_type=dtypes.from_jtype(j_col.getComponentType()),
-                column_type=ColumnType(j_col.getColumnType()),
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias # novermin
+
+    TableDefinitionLike: TypeAlias = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
+    """A Union representing objects that can be coerced into a TableDefinition."""
+else:
+    TableDefinitionLike = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
+    """A Union representing objects that can be coerced into a TableDefinition."""
+
+
+class TableDefinition(JObjectWrapper, Mapping):
+    """A Deephaven table definition, as a mapping from column name to ColumnDefinition."""
+
+    j_object_type = _JTableDefinition
+
+    @staticmethod
+    def _to_j_table_definition(table_definition: TableDefinitionLike) -> jpy.JType:
+        if isinstance(table_definition, TableDefinition):
+            return table_definition.j_table_definition
+        if isinstance(table_definition, _JTableDefinition):
+            return table_definition
+        if isinstance(table_definition, Mapping):
+            for name in table_definition.keys():
+                if not isinstance(name, str):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain str keys, found type {type(name)}"
+                    )
+            for data_type in table_definition.values():
+                if not isinstance(data_type, dtypes.DType):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain DType values, found type {type(data_type)}"
+                    )
+            column_definitions = [
+                col_def(name, data_type) for name, data_type in table_definition.items()
+            ]
+        elif isinstance(table_definition, Iterable):
+            for column_definition in table_definition:
+                if not isinstance(column_definition, ColumnDefinition):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type {type(column_definition)}"
+                    )
+            column_definitions = table_definition
+        else:
+            raise DHError(
+                f"Unexpected TableDefinitionLike type: {type(table_definition)}"
             )
+        return _JTableDefinition.of(
+            [col.j_column_definition for col in column_definitions]
         )
-    return cols
+
+    def __init__(self, table_definition: TableDefinitionLike):
+        """Construct a TableDefinition.
+
+        Args:
+            table_definition (TableDefinitionLike): The table definition like object
+
+        Returns:
+            A new TableDefinition
+
+        Raises:
+            DHError
+        """
+        self.j_table_definition = TableDefinition._to_j_table_definition(
+            table_definition
+        )
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_definition
+
+    @property
+    def table(self) -> Table:
+        """This table definition as a table."""
+        return Table(_JTableTools.metaTable(self.j_table_definition))
+
+    def keys(self):
+        """The column names as a dictview."""
+        return self._dict.keys()
+
+    def items(self):
+        """The column name, column definition tuples as a dictview."""
+        return self._dict.items()
+
+    def values(self):
+        """The column definitions as a dictview."""
+        return self._dict.values()
+
+    @cached_property
+    def _dict(self) -> Dict[str, ColumnDefinition]:
+        return {
+            col.name: col
+            for col in [
+                ColumnDefinition(j_col)
+                for j_col in self.j_table_definition.getColumnsArray()
+            ]
+        }
+
+    def __getitem__(self, key) -> ColumnDefinition:
+        return self._dict[key]
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __contains__(self, item):
+        return item in self._dict
+
+    def __eq__(self, other):
+        return JObjectWrapper.__eq__(self, other)
+
+    def __ne__(self, other):
+        return JObjectWrapper.__ne__(self, other)
+
+    def __hash__(self):
+        return JObjectWrapper.__hash__(self)
 
 
 class Table(JObjectWrapper):
@@ -435,11 +551,7 @@ class Table(JObjectWrapper):
         self.j_table = jpy.cast(j_table, self.j_object_type)
         if self.j_table is None:
             raise DHError("j_table type is not io.deephaven.engine.table.Table")
-        self._definition = self.j_table.getDefinition()
-        self._schema = None
-        self._is_refreshing = None
-        self._update_graph = None
-        self._is_flat = None
+        self._definition = TableDefinition(self.j_table.getDefinition())
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -465,37 +577,37 @@ class Table(JObjectWrapper):
     @property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.j_table.isRefreshing()
-        return self._is_refreshing
+        return self.j_table.isRefreshing()
 
     @property
     def is_blink(self) -> bool:
         """Whether this table is a blink table."""
         return _JBlinkTableTools.isBlink(self.j_table)
 
-    @property
+    @cached_property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""
-        if self._update_graph is None:
-            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
-        return self._update_graph
+        return UpdateGraph(self.j_table.getUpdateGraph())
 
     @property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
-        if self._is_flat is None:
-            self._is_flat = self.j_table.isFlat()
-        return self._is_flat
+        return self.j_table.isFlat()
 
     @property
-    def columns(self) -> List[Column]:
-        """The column definitions of the table."""
-        if self._schema:
-            return self._schema
+    def definition(self) -> TableDefinition:
+        """The table definition."""
+        return self._definition
 
-        self._schema = _td_to_columns(self._definition)
-        return self._schema
+    @property
+    def column_names(self) -> List[str]:
+        """The column names of the table."""
+        return list(self.definition.keys())
+
+    @property
+    def columns(self) -> List[ColumnDefinition]:
+        """The column definitions of the table."""
+        return list(self.definition.values())
 
     @property
     def meta_table(self) -> Table:
@@ -703,6 +815,10 @@ class Table(JObjectWrapper):
     def flatten(self) -> Table:
         """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
         return Table(j_table=self.j_table.flatten())
+
+    def remove_blink(self) -> Table:
+        """Returns a non-blink child table, or this table if it is not a blink table."""
+        return Table(j_table=self.j_table.removeBlink())
 
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
@@ -2338,13 +2454,8 @@ class PartitionedTable(JObjectWrapper):
 
     def __init__(self, j_partitioned_table):
         self.j_partitioned_table = j_partitioned_table
-        self._schema = None
+        self._definition = None
         self._table = None
-        self._key_columns = None
-        self._unique_keys = None
-        self._constituent_column = None
-        self._constituent_changes_permitted = None
-        self._is_refreshing = None
 
     @classmethod
     def from_partitioned_table(cls,
@@ -2352,18 +2463,18 @@ class PartitionedTable(JObjectWrapper):
                                key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
-                               constituent_table_columns: List[Column] = None,
+                               constituent_table_columns: Optional[TableDefinitionLike] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
-        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+        Note: key_cols, unique_keys, constituent_column, constituent_table_definition,
         constituent_changes_permitted must either be all None or all have values. When they are None, their values will
         be inferred as follows:
 
         |    * key_cols: the names of all columns with a non-Table data type
         |    * unique_keys: False
         |    * constituent_column: the name of the first column with a Table data type
-        |    * constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+        |    * constituent_table_definition: the table definitions of the first cell (constituent table) in the constituent
             column. Consequently, the constituent column can't be empty.
         |    * constituent_changes_permitted: the value of table.is_refreshing
 
@@ -2373,7 +2484,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (List[Column]): the column definitions of the constituent table
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2390,7 +2501,7 @@ class PartitionedTable(JObjectWrapper):
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
 
             if all([arg is not None for arg in none_args]):
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
                                                                    j_array_list(to_sequence(key_cols)),
                                                                    unique_keys,
@@ -2407,18 +2518,18 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(cls,
                                 tables: List[Table],
-                                constituent_table_columns: List[Column] = None) -> PartitionedTable:
+                                constituent_table_columns: Optional[TableDefinitionLike] = None) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
         The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
-        properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
+        properties are set to False. When constituent_table_definition isn't provided, it will be set to the table
         definitions of the first table in the provided constituent tables.
 
         Args:
             tables (List[Table]): the constituent tables
-            constituent_table_columns (List[Column]): a list of column definitions compatible with all the constituent
-                tables, default is None
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definition compatible with all the
+                constituent tables, default is None
 
         Returns:
             a PartitionedTable
@@ -2430,37 +2541,31 @@ class PartitionedTable(JObjectWrapper):
             if not constituent_table_columns:
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
                                                                                                to_sequence(tables)))
         except Exception as e:
             raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
-    @property
+    @cached_property
     def table(self) -> Table:
         """The underlying partitioned table."""
-        if self._table is None:
-            self._table = Table(j_table=self.j_partitioned_table.table())
-        return self._table
+        return Table(j_table=self.j_partitioned_table.table())
 
     @property
     def update_graph(self) -> UpdateGraph:
         """The underlying partitioned table's update graph."""
         return self.table.update_graph
 
-    @property
+    @cached_property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.table.is_refreshing
-        return self._is_refreshing
+        return self.table.is_refreshing
 
-    @property
+    @cached_property
     def key_columns(self) -> List[str]:
         """The partition key column names."""
-        if self._key_columns is None:
-            self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
-        return self._key_columns
+        return list(self.j_partitioned_table.keyColumnNames().toArray())
 
     def keys(self) -> Table:
         """Returns a Table containing all the keys of the underlying partitioned table."""
@@ -2469,32 +2574,31 @@ class PartitionedTable(JObjectWrapper):
         else:
             return self.table.select_distinct(self.key_columns)
 
-    @property
+    @cached_property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
         that self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always
         produce equivalent tables."""
-        if self._unique_keys is None:
-            self._unique_keys = self.j_partitioned_table.uniqueKeys()
-        return self._unique_keys
+        return self.j_partitioned_table.uniqueKeys()
 
-    @property
+    @cached_property
     def constituent_column(self) -> str:
         """The name of the column containing constituent tables."""
-        if self._constituent_column is None:
-            self._constituent_column = self.j_partitioned_table.constituentColumnName()
-        return self._constituent_column
+        return self.j_partitioned_table.constituentColumnName()
+
+    @cached_property
+    def constituent_table_definition(self) -> TableDefinition:
+        """The table definitions for constituent tables. All constituent tables in a partitioned table have the
+        same table definitions."""
+        return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
-    def constituent_table_columns(self) -> List[Column]:
+    def constituent_table_columns(self) -> List[ColumnDefinition]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
-        if not self._schema:
-            self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
+        return list(self.constituent_table_definition.values())
 
-        return self._schema
-
-    @property
+    @cached_property
     def constituent_changes_permitted(self) -> bool:
         """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the
         constituent column change?
@@ -2509,9 +2613,7 @@ class PartitionedTable(JObjectWrapper):
         if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
         refreshing if it contains any refreshing constituents.
         """
-        if self._constituent_changes_permitted is None:
-            self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
-        return self._constituent_changes_permitted
+        return self.j_partitioned_table.constituentChangesPermitted()
 
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,

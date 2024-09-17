@@ -234,7 +234,7 @@ class VectorizationTestCase(BaseTestCase):
 
         source = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
         result = source.update(f"X = my_sum({','.join(cols)})")
-        self.assertEqual(len(cols) + 1, len(result.columns))
+        self.assertEqual(len(cols) + 1, len(result.definition))
         self.assertEqual(_udf.vectorized_count, 0)
 
     def test_enclosed_by_parentheses(self):

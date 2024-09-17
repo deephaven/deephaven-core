@@ -14,7 +14,7 @@ from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, SearchDisplayMode, table_diff
+from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -84,9 +84,19 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
 
+    def test_definition(self):
+        expected = TableDefinition({
+            "a": dtypes.int32,
+            "b": dtypes.int32,
+            "c": dtypes.int32,
+            "d": dtypes.int32,
+            "e": dtypes.int32
+        })
+        self.assertEquals(expected, self.test_table.definition)
+
     def test_meta_table(self):
         t = self.test_table.meta_table
-        self.assertEqual(len(self.test_table.columns), t.size)
+        self.assertEqual(len(self.test_table.definition), t.size)
 
     def test_coalesce(self):
         t = self.test_table.update_view(["A = a * b"])
@@ -100,45 +110,45 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(ct.is_flat)
 
     def test_drop_columns(self):
-        column_names = [f.name for f in self.test_table.columns]
+        column_names = self.test_table.column_names
         result_table = self.test_table.drop_columns(cols=column_names[:-1])
-        self.assertEqual(1, len(result_table.columns))
+        self.assertEqual(1, len(result_table.definition))
         result_table = self.test_table.drop_columns(cols=column_names[-1])
-        self.assertEqual(1, len(self.test_table.columns) - len(result_table.columns))
+        self.assertEqual(1, len(self.test_table.definition) - len(result_table.definition))
 
     def test_move_columns(self):
-        column_names = [f.name for f in self.test_table.columns]
+        column_names = self.test_table.column_names
         cols_to_move = column_names[::2]
 
         with self.subTest("move-columns"):
             result_table = self.test_table.move_columns(1, cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual(cols_to_move, result_cols[1: len(cols_to_move) + 1])
 
         with self.subTest("move-columns-up"):
             result_table = self.test_table.move_columns_up(cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual(cols_to_move, result_cols[: len(cols_to_move)])
 
         with self.subTest("move-columns-down"):
             result_table = self.test_table.move_columns_down(cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual(cols_to_move, result_cols[-len(cols_to_move):])
 
         cols_to_move = column_names[-1]
         with self.subTest("move-column"):
             result_table = self.test_table.move_columns(1, cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual([cols_to_move], result_cols[1: len(cols_to_move) + 1])
 
         with self.subTest("move-column-up"):
             result_table = self.test_table.move_columns_up(cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual([cols_to_move], result_cols[: len(cols_to_move)])
 
         with self.subTest("move-column-down"):
             result_table = self.test_table.move_columns_down(cols_to_move)
-            result_cols = [f.name for f in result_table.columns]
+            result_cols = result_table.column_names
             self.assertEqual([cols_to_move], result_cols[-len(cols_to_move):])
 
     def test_rename_columns(self):
@@ -147,10 +157,10 @@ class TableTestCase(BaseTestCase):
         ]
         new_names = [cn.split("=")[0].strip() for cn in cols_to_rename]
         result_table = self.test_table.rename_columns(cols_to_rename)
-        result_cols = [f.name for f in result_table.columns]
+        result_cols = result_table.column_names
         self.assertEqual(new_names, result_cols[::2])
         result_table = self.test_table.rename_columns(cols_to_rename[0])
-        result_cols = [f.name for f in result_table.columns]
+        result_cols = result_table.column_names
         self.assertEqual(new_names[0], result_cols[::2][0])
 
     def test_update_error(self):
@@ -174,14 +184,14 @@ class TableTestCase(BaseTestCase):
                 result_table = op(
                     self.test_table, formulas=["a", "c", "Sum = a + b + c + d"])
                 self.assertIsNotNone(result_table)
-                self.assertTrue(len(result_table.columns) >= 3)
+                self.assertTrue(len(result_table.definition) >= 3)
                 self.assertLessEqual(result_table.size, self.test_table.size)
 
         for op in ops:
             with self.subTest(op=op):
                 result_table = op(self.test_table, formulas="Sum = a + b + c + d")
                 self.assertIsNotNone(result_table)
-                self.assertTrue(len(result_table.columns) >= 1)
+                self.assertTrue(len(result_table.definition) >= 1)
                 self.assertLessEqual(result_table.size, self.test_table.size)
 
     def test_select_distinct(self):
@@ -430,10 +440,10 @@ class TableTestCase(BaseTestCase):
         for wop in wops:
             with self.subTest(wop):
                 result_table = wop(self.test_table, wcol='e', by=["a", "b"])
-                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
+                self.assertEqual(len(result_table.definition), len(self.test_table.definition) - 1)
 
                 result_table = wop(self.test_table, wcol='e')
-                self.assertEqual(len(result_table.columns), len(self.test_table.columns) - 1)
+                self.assertEqual(len(result_table.definition), len(self.test_table.definition) - 1)
 
     def test_count_by(self):
         num_distinct_a = self.test_table.select_distinct(formulas=["a"]).size
@@ -530,26 +540,26 @@ class TableTestCase(BaseTestCase):
             snapshot = self.test_table.snapshot_when(t)
             self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
             self.assertEqual(self.test_table.size, snapshot.size)
-            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
+            self.assertEqual(len(t.definition) + len(self.test_table.definition), len(snapshot.definition))
 
         with self.subTest("initial=True"):
             snapshot = self.test_table.snapshot_when(t, initial=True)
             self.assertEqual(self.test_table.size, snapshot.size)
-            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
+            self.assertEqual(len(t.definition) + len(self.test_table.definition), len(snapshot.definition))
 
         with self.subTest("stamp_cols=\"X\""):
             snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
-            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
+            self.assertEqual(len(snapshot.definition), len(self.test_table.definition) + 1)
 
         with self.subTest("stamp_cols=[\"X\", \"Y\"]"):
             snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
-            self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
+            self.assertEqual(len(snapshot.definition), len(self.test_table.definition) + 2)
 
     def test_snapshot_when_with_history(self):
         t = time_table("PT00:00:01")
         snapshot_hist = self.test_table.snapshot_when(t, history=True)
         self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
-        self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
+        self.assertEqual(1 + len(self.test_table.definition), len(snapshot_hist.definition))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 
         t = time_table("PT0.1S").update("X = i % 2 == 0 ? i : i - 1").sort("X").tail(10)
@@ -920,6 +930,12 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
+    def test_remove_blink(self):
+        t_blink = time_table("PT1s", blink_table=True)
+        t_no_blink = t_blink.remove_blink()
+        self.assertEqual(t_blink.is_blink, True)
+        self.assertEqual(t_no_blink.is_blink, False)
+
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
             ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(
@@ -1020,7 +1036,7 @@ class TableTestCase(BaseTestCase):
         right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
         result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
         self.assertEqual(result_table.size, left_table.size)
-        self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
+        self.assertEqual(len(result_table.definition), len(left_table.definition) + len(aggs))
 
         with self.assertRaises(DHError):
             time_table("PT00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)

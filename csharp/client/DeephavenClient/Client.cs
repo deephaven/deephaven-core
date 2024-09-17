@@ -17,13 +17,13 @@ public class Client : IDisposable {
     return new Client(clientResult, manager);
   }
 
-  private Client(NativePtr<NativeClient> self, TableHandleManager manager) {
+  private protected Client(NativePtr<NativeClient> self, TableHandleManager manager) {
     Self = self;
     Manager = manager;
   }
 
   ~Client() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
   }
 
   public void Close() {
@@ -31,12 +31,15 @@ public class Client : IDisposable {
   }
 
   public void Dispose() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
     GC.SuppressFinalize(this);
   }
 
-  private void ReleaseUnmanagedResources() {
+  protected virtual void ReleaseUnmanagedResources(bool destructSelf) {
     if (!Self.TryRelease(out var old)) {
+      return;
+    }
+    if (!destructSelf) {
       return;
     }
     NativeClient.deephaven_client_Client_dtor(old);

@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
@@ -12,34 +13,20 @@ import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Buffer;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Field;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.KeyValue;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.MetadataVersion;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.UnaryOutput;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigService;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
@@ -69,16 +56,15 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_serv
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
-import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.api.barrage.stream.HandshakeStreamFactory;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.grpc.UnaryWithHeaders;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -94,22 +80,25 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.RangeSet;
-import io.deephaven.web.shared.data.TableSnapshot;
-import io.deephaven.web.shared.data.TableSubscriptionRequest;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.apache.arrow.flatbuf.Buffer;
+import org.apache.arrow.flatbuf.Field;
+import org.apache.arrow.flatbuf.FieldNode;
+import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.MetadataVersion;
+import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
 
 import javax.annotation.Nullable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -121,12 +110,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.typedArrayToLittleEndianByteBuffer;
 import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
@@ -203,7 +186,6 @@ public class WorkerConnection {
     private final Set<ClientTableState> flushable = new HashSet<>();
     private final JsSet<JsConsumer<LogItem>> logCallbacks = new JsSet<>();
 
-    private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
     private JsSet<HasLifecycle> simpleReconnectableInstances = new JsSet<>();
@@ -217,6 +199,8 @@ public class WorkerConnection {
     private final JsSet<JsConsumer<JsVariableChanges>> fieldUpdatesCallback = new JsSet<>();
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
     private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
+
+    private ConfigurationConstantsResponse constants;
 
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
@@ -304,7 +288,6 @@ public class WorkerConnection {
                         ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
                                 .peek(cts -> {
                                     cts.getHandle().setConnected(false);
-                                    cts.setSubscribed(false);
                                     cts.forActiveLifecycles(item -> {
                                         assert !(item instanceof JsTable) ||
                                                 ((JsTable) item).state() == cts
@@ -479,54 +462,58 @@ public class WorkerConnection {
             DomGlobal.clearTimeout(scheduledAuthUpdate);
             scheduledAuthUpdate = null;
         }
-        return new Promise<>((resolve, reject) -> {
-            // the streamfactory will automatically reference our existing metadata, but we can listen to update it
-            BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
-            handshake.onHeaders(headers -> {
-                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
-                // Metadata
-                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
-                if (authorization.length > 0) {
-                    JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
-                    if (!existing.getAt(0).equals(authorization.getAt(0))) {
-                        // use this new token
-                        metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                        CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
-                        init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
-                        info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+        return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(
+                this, ConfigService.GetConfigurationConstants, new ConfigurationConstantsRequest())
+                .then(result -> {
+                    BrowserHeaders headers = result.getHeaders();
+                    // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
+                    // Metadata
+                    JsArray<String> authorization =
+                            Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
+                    if (authorization.length > 0) {
+                        JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
+                        if (!existing.getAt(0).equals(authorization.getAt(0))) {
+                            // use this new token
+                            metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
+                            CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
+                            init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
+                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                        }
                     }
-                }
-                handshake.end();
-            });
-            handshake.onStatus(status -> {
-                if (status.isOk()) {
+
+                    // Read the timeout from the server, we'll refresh at less than that
+                    constants = result.getMessage();
+                    ConfigValue sessionDuration = constants.getConfigValuesMap().get("http.session.durationMs");
+                    if (sessionDuration != null && sessionDuration.hasStringValue()) {
+                        sessionTimeoutMs = Double.parseDouble(sessionDuration.getStringValue());
+                    }
+
                     // schedule an update based on our currently configured delay
                     scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
                         authUpdate();
                     }, sessionTimeoutMs / 2);
 
-                    resolve.onInvoke((Void) null);
-                } else {
-                    if (status.getCode() == Code.Unauthenticated) {
+                    return Promise.resolve((Void) null);
+                }).catch_(err -> {
+                    UnaryOutput<?> result = (UnaryOutput<?>) err;
+                    if (result.getStatus() == Code.Unauthenticated) {
                         // explicitly clear out any metadata for authentication, and signal that auth failed
                         metadata.delete(FLIGHT_AUTH_HEADER_NAME);
 
                         // Fire an event for the UI to attempt to re-auth
                         info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-                        return;
-                    }
-                    // TODO deephaven-core#2564 fire an event for the UI to re-auth
-                    checkStatus(status);
-                    if (status.getDetails() == null || status.getDetails().isEmpty()) {
-                        reject.onInvoke("Error occurred while authenticating, gRPC status " + status.getCode());
-                    } else {
-                        reject.onInvoke(status.getDetails());
-                    }
-                }
-            });
 
-            handshake.send(new HandshakeRequest());
-        });
+                        // We return here rather than continue and call checkStatus()
+                        return Promise.reject("Authentication failed, please reconnect");
+                    }
+                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getMessage().toString(),
+                            result.getTrailers()));
+                    if (result.getMessage() == null || result.getMessage().toString().isEmpty()) {
+                        return Promise.reject(result.getMessage());
+                    } else {
+                        return Promise.reject("Error occurred while authenticating, gRPC status " + result.getStatus());
+                    }
+                });
     }
 
     private void subscribeToTerminationNotification() {
@@ -558,51 +545,9 @@ public class WorkerConnection {
     }
 
     // @Override
-    public void initialSnapshot(TableTicket handle, TableSnapshot snapshot) {
-        LazyPromise.runLater(() -> {
-            // notify table that it has a snapshot available to replace viewport rows
-            // TODO looping in this way is not ideal, means that we're roughly O(n*m), where
-            // n is the number of rows, and m the number of tables with viewports.
-            // Instead, we should track all rows here in WorkerConnection, and then
-            // tell every table who might be interested about the rows it is interested in.
-            if (!cache.get(handle).isPresent()) {
-                JsLog.debug("Discarding snapshot for ", handle, " : ", snapshot);
-            }
-            cache.get(handle).ifPresent(s -> {
-                s.setSize(snapshot.getTableSize());
-                s.forActiveTables(table -> {
-                    table.handleSnapshot(handle, snapshot);
-                });
-            });
-        });
-    }
-
-    // @Override
-    public void incrementalUpdates(TableTicket tableHandle, DeltaUpdates updates) {
-        LazyPromise.runLater(() -> {
-            // notify table that it has individual row updates
-            final Optional<ClientTableState> cts = cache.get(tableHandle);
-            if (!cts.isPresent()) {
-                JsLog.debug("Discarding delta for disconnected state ", tableHandle, " : ", updates);
-            }
-            JsLog.debug("Delta received", tableHandle, updates);
-            cts.ifPresent(s -> {
-                if (!s.isSubscribed()) {
-                    JsLog.debug("Discarding delta for unsubscribed table", tableHandle, updates);
-                    return;
-                }
-                s.handleDelta(updates);
-            });
-        });
-    }
-
-    // @Override
     public void exportedTableUpdateMessage(TableTicket clientId, long size) {
         cache.get(clientId).ifPresent(state -> {
-            if (!state.isSubscribed()) {
-                // not presently subscribed so this is the only way to be informed of size changes
-                state.setSize(size);
-            }
+            state.setSize(size);
         });
     }
 
@@ -1074,12 +1019,12 @@ public class WorkerConnection {
             dataRef[0] = null;
 
             // make a schema that we can embed in the first DoPut message
-            Builder schema = new Builder(1024);
+            FlatBufferBuilder schema = new FlatBufferBuilder(1024);
 
             // while we're examining columns, build the copiers for data
             List<JsDataHandler> columns = new ArrayList<>();
 
-            double[] fields = new double[columnNames.length];
+            int[] fields = new int[columnNames.length];
             for (int i = 0; i < columnNames.length; i++) {
                 String columnName = columnNames[i];
                 String columnType = types[i];
@@ -1087,9 +1032,9 @@ public class WorkerConnection {
                 JsDataHandler writer = JsDataHandler.getHandler(columnType);
                 columns.add(writer);
 
-                double nameOffset = schema.createString(columnName);
-                double typeOffset = writer.writeType(schema);
-                double metadataOffset = Field.createCustomMetadataVector(schema, new double[] {
+                int nameOffset = schema.createString(columnName);
+                int typeOffset = writer.writeType(schema);
+                int metadataOffset = Field.createCustomMetadataVector(schema, new int[] {
                         KeyValue.createKeyValue(schema, schema.createString("deephaven:type"),
                                 schema.createString(writer.deephavenType()))
                 });
@@ -1104,7 +1049,7 @@ public class WorkerConnection {
 
                 fields[i] = Field.endField(schema);
             }
-            double fieldsOffset = Schema.createFieldsVector(schema, fields);
+            int fieldsOffset = Schema.createFieldsVector(schema, fields);
 
             Schema.startSchema(schema);
             Schema.addFields(schema, fieldsOffset);
@@ -1146,7 +1091,7 @@ public class WorkerConnection {
             FlightData bodyMessage = new FlightData();
             bodyMessage.setAppMetadata(WebBarrageUtils.emptyMessage());
 
-            Builder bodyData = new Builder(1024);
+            FlatBufferBuilder bodyData = new FlatBufferBuilder(1024);
 
             // iterate each column, building buffers and fieldnodes, as well as building the actual payload
             List<Uint8Array> buffers = new ArrayList<>();
@@ -1170,25 +1115,25 @@ public class WorkerConnection {
             for (int i = buffers.size() - 1; i >= 0; i--) {
                 Uint8Array buffer = buffers.get(i);
                 cumulativeOffset -= buffer.byteLength;
-                Buffer.createBuffer(bodyData, Long.create(cumulativeOffset, 0), Long.create(buffer.byteLength, 0));
+                Buffer.createBuffer(bodyData, cumulativeOffset, buffer.byteLength);
             }
             assert cumulativeOffset == 0;
-            double buffersOffset = bodyData.endVector();
+            int buffersOffset = bodyData.endVector();
 
             RecordBatch.startNodesVector(bodyData, nodes.size());
             for (int i = nodes.size() - 1; i >= 0; i--) {
                 JsDataHandler.Node node = nodes.get(i);
-                FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0), Long.create(node.nullCount(), 0));
+                FieldNode.createFieldNode(bodyData, node.length(), node.nullCount());
             }
-            double nodesOffset = bodyData.endVector();
+            int nodesOffset = bodyData.endVector();
 
             RecordBatch.startRecordBatch(bodyData);
 
             RecordBatch.addBuffers(bodyData, buffersOffset);
             RecordBatch.addNodes(bodyData, nodesOffset);
-            RecordBatch.addLength(bodyData, Long.create(data[0].length, 0));
+            RecordBatch.addLength(bodyData, data[0].length);
 
-            double recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
+            int recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
             bodyMessage.setDataHeader(createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0));
             bodyMessage.setDataBody(padAndConcat(buffers, length));
 
@@ -1209,11 +1154,11 @@ public class WorkerConnection {
         return all;
     }
 
-    private static Uint8Array createMessage(Builder payload, int messageHeaderType, double messageHeaderOffset,
-            int bodyLength, double customMetadataOffset) {
+    private static Uint8Array createMessage(FlatBufferBuilder payload, byte messageHeaderType, int messageHeaderOffset,
+            int bodyLength, int customMetadataOffset) {
         payload.finish(Message.createMessage(payload, MetadataVersion.V5, messageHeaderType, messageHeaderOffset,
-                Long.create(bodyLength, 0), customMetadataOffset));
-        return payload.asUint8Array();
+                bodyLength, customMetadataOffset));
+        return WebBarrageUtils.bbToUint8ArrayView(payload.dataBuffer());
     }
 
     public Promise<JsTable> mergeTables(JsTable[] tables, HasEventHandling failHandler) {
@@ -1317,7 +1262,7 @@ public class WorkerConnection {
     }
 
     /**
-     * Schedules a deferred command to check the given state for active tables and adjust viewports accordingly.
+     * Schedules a deferred command to check the given state for active tables.
      */
     public void scheduleCheck(ClientTableState state) {
         if (flushable.isEmpty()) {
@@ -1342,209 +1287,23 @@ public class WorkerConnection {
         sessionServiceClient.release(releaseRequest, metadata, null);
     }
 
-
-    /**
-     * For those calls where we don't really care what happens
-     */
-    private static final Callback<Void, String> DONOTHING_CALLBACK = new Callback<Void, String>() {
-        @Override
-        public void onSuccess(Void value) {
-            // Do nothing.
-        }
-
-        @Override
-        public void onFailure(String error) {
-            JsLog.error("Callback failed: " + error);
-        }
-    };
-
     private void flush() {
-        // LATER: instead of running a bunch of serial operations,
-        // condense these all into a single batch operation.
-        // All three server calls made by this method are _only_ called by this method,
-        // so we can reasonably merge all three into a single batched operation.
         ArrayList<ClientTableState> statesToFlush = new ArrayList<>(flushable);
         flushable.clear();
 
-
         for (ClientTableState state : statesToFlush) {
-            if (state.hasNoSubscriptions()) {
-                // state may be retained if it is held by at least one paused binding;
-                // it is either an unsubscribed active table, an interim state for an
-                // active table, or a pending rollback for an operation that has not
-                // yet completed (we leave orphaned nodes paused until a request completes).
-                if (state.isSubscribed()) {
-                    state.setSubscribed(false);
+            if (state.isEmpty()) {
+                // completely empty; perform release
+                final ClientTableState.ResolutionState previousState = state.getResolution();
+                state.setResolution(ClientTableState.ResolutionState.RELEASED);
+                if (previousState != ClientTableState.ResolutionState.RELEASED) {
+                    cache.release(state);
+
+                    JsLog.debug("Releasing state", state, LazyString.of(state.getHandle()));
+                    // don't send a release message to the server if the table isn't really there
                     if (state.getHandle().isConnected()) {
-                        BiDiStream<FlightData, FlightData> stream = subscriptionStreams.remove(state);
-                        if (stream != null) {
-                            stream.end();
-                            stream.cancel();
-                        }
+                        releaseHandle(state.getHandle());
                     }
-                }
-
-                if (state.isEmpty()) {
-                    // completely empty; perform release
-                    final ClientTableState.ResolutionState previousState = state.getResolution();
-                    state.setResolution(ClientTableState.ResolutionState.RELEASED);
-                    state.setSubscribed(false);
-                    if (previousState != ClientTableState.ResolutionState.RELEASED) {
-                        cache.release(state);
-
-                        JsLog.debug("Releasing state", state, LazyString.of(state.getHandle()));
-                        // don't send a release message to the server if the table isn't really there
-                        if (state.getHandle().isConnected()) {
-                            releaseHandle(state.getHandle());
-                        }
-                    }
-                }
-            } else if (state.isRunning()) {
-                List<TableSubscriptionRequest> vps = new ArrayList<>();
-                state.forActiveSubscriptions((table, subscription) -> {
-                    assert table.isActive(state) : "Inactive table has a viewport still attached";
-                    vps.add(new TableSubscriptionRequest(table.getSubscriptionId(), subscription.getRows(),
-                            subscription.getColumns()));
-                });
-
-                boolean isViewport = vps.stream().allMatch(req -> req.getRows() != null);
-                assert isViewport || vps.stream().noneMatch(req -> req.getRows() != null)
-                        : "All subscriptions to a given handle must be consistently viewport or non-viewport";
-
-
-                BitSet includedColumns = vps.stream().map(TableSubscriptionRequest::getColumns).reduce((bs1, bs2) -> {
-                    BitSet result = new BitSet();
-                    result.or(bs1);
-                    result.or(bs2);
-                    return result;
-                }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
-                String[] columnTypes = Arrays.stream(state.getTableDef().getColumns())
-                        .map(ColumnDefinition::getType)
-                        .toArray(String[]::new);
-
-                state.setSubscribed(true);
-
-                Builder subscriptionReq = new Builder(1024);
-
-                double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(subscriptionReq,
-                        makeUint8ArrayFromBitset(includedColumns));
-                double viewportOffset = 0;
-                if (isViewport) {
-                    viewportOffset = BarrageSubscriptionRequest.createViewportVector(subscriptionReq, serializeRanges(
-                            vps.stream().map(TableSubscriptionRequest::getRows).collect(Collectors.toSet())));
-                }
-                // TODO #188 support minUpdateIntervalMs
-                double serializationOptionsOffset = BarrageSubscriptionOptions
-                        .createBarrageSubscriptionOptions(subscriptionReq, ColumnConversionMode.Stringify, true, 1000,
-                                0, 0);
-                double tableTicketOffset =
-                        BarrageSubscriptionRequest.createTicketVector(subscriptionReq, state.getHandle().getTicket());
-                BarrageSubscriptionRequest.startBarrageSubscriptionRequest(subscriptionReq);
-                BarrageSubscriptionRequest.addColumns(subscriptionReq, columnsOffset);
-                BarrageSubscriptionRequest.addSubscriptionOptions(subscriptionReq, serializationOptionsOffset);
-                BarrageSubscriptionRequest.addViewport(subscriptionReq, viewportOffset);
-                BarrageSubscriptionRequest.addTicket(subscriptionReq, tableTicketOffset);
-                subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
-
-                FlightData request = new FlightData();
-                request.setAppMetadata(
-                        WebBarrageUtils.wrapMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest));
-
-                BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
-                        headers -> flightServiceClient.doExchange(headers),
-                        (first, headers) -> browserFlightServiceClient.openDoExchange(first, headers),
-                        (next, headers, c) -> browserFlightServiceClient.nextDoExchange(next, headers, c::apply),
-                        new FlightData());
-
-                stream.send(request);
-                stream.onData(new JsConsumer<FlightData>() {
-                    @Override
-                    public void apply(FlightData data) {
-                        ByteBuffer body = typedArrayToLittleEndianByteBuffer(data.getDataBody_asU8());
-                        Message headerMessage = Message
-                                .getRootAsMessage(new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                        data.getDataHeader_asU8()));
-                        if (body.limit() == 0 && headerMessage.headerType() != MessageHeader.RecordBatch) {
-                            // a subscription stream presently ignores schemas and other message types
-                            // TODO hang on to the schema to better handle the now-Utf8 columns
-                            return;
-                        }
-                        RecordBatch header = headerMessage.header(new RecordBatch());
-                        BarrageMessageWrapper barrageMessageWrapper =
-                                BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                        new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                                data.getAppMetadata_asU8()));
-                        if (barrageMessageWrapper.msgType() == BarrageMessageType.None) {
-                            // continue previous message, just read RecordBatch
-                            appendAndMaybeFlush(header, body);
-                        } else {
-                            assert barrageMessageWrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata;
-                            BarrageUpdateMetadata barrageUpdate = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                                    new io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer(
-                                            new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
-                            startAndMaybeFlush(barrageUpdate.isSnapshot(), header, body, barrageUpdate, isViewport,
-                                    columnTypes);
-                        }
-                    }
-
-                    private DeltaUpdatesBuilder nextDeltaUpdates;
-                    private DeltaUpdates deferredDeltaUpdates;
-
-                    private void appendAndMaybeFlush(RecordBatch header, ByteBuffer body) {
-                        // using existing barrageUpdate, append to the current snapshot/delta
-                        assert nextDeltaUpdates != null;
-                        boolean shouldFlush = nextDeltaUpdates.appendRecordBatch(header, body);
-                        if (shouldFlush) {
-                            DeltaUpdates updates = nextDeltaUpdates.build();
-                            nextDeltaUpdates = null;
-
-                            if (state.getTableDef().getAttributes().isBlinkTable()) {
-                                // blink tables remove all rows from the previous step, if there are no adds this step
-                                // then defer removal until new data arrives -- this makes blink tables GUI friendly
-                                if (updates.getAdded().isEmpty()) {
-                                    if (deferredDeltaUpdates != null) {
-                                        final RangeSet removed = deferredDeltaUpdates.getRemoved();
-                                        updates.getRemoved().rangeIterator().forEachRemaining(removed::addRange);
-                                    } else {
-                                        deferredDeltaUpdates = updates;
-                                    }
-                                    return;
-                                } else if (deferredDeltaUpdates != null) {
-                                    assert updates.getRemoved().isEmpty()
-                                            : "Blink table received two consecutive remove rowsets";
-                                    updates.setRemoved(deferredDeltaUpdates.getRemoved());
-                                    deferredDeltaUpdates = null;
-                                }
-                            }
-                            incrementalUpdates(state.getHandle(), updates);
-                        }
-                    }
-
-                    private void startAndMaybeFlush(boolean isSnapshot, RecordBatch header, ByteBuffer body,
-                            BarrageUpdateMetadata barrageUpdate, boolean isViewport, String[] columnTypes) {
-                        if (isSnapshot) {
-                            TableSnapshot snapshot =
-                                    createSnapshot(header, body, barrageUpdate, isViewport, columnTypes);
-
-                            // for now we always expect snapshots to arrive in a single payload
-                            initialSnapshot(state.getHandle(), snapshot);
-                        } else {
-                            nextDeltaUpdates = deltaUpdates(barrageUpdate, isViewport, columnTypes);
-                            appendAndMaybeFlush(header, body);
-                        }
-                    }
-                });
-                stream.onStatus(err -> {
-                    checkStatus(err);
-                    if (!err.isOk() && !err.isTransportError()) {
-                        state.setResolution(ClientTableState.ResolutionState.FAILED, err.getDetails());
-                    }
-                });
-                BiDiStream<FlightData, FlightData> oldStream = subscriptionStreams.put(state, stream);
-                if (oldStream != null) {
-                    // cancel any old stream, we presently expect a fresh instance
-                    oldStream.end();
-                    oldStream.cancel();
                 }
             }
         }
@@ -1568,6 +1327,10 @@ public class WorkerConnection {
 
     public ClientConfiguration getConfig() {
         return config;
+    }
+
+    public ConfigValue getServerConfigValue(String key) {
+        return constants.getConfigValuesMap().get(key);
     }
 
     public void onOpen(BiConsumer<Void, String> callback) {

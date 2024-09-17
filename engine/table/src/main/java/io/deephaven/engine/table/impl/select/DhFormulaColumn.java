@@ -34,8 +34,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.Vector;
+import io.deephaven.vector.VectorFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
@@ -161,21 +160,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     public static Class<?> getVectorType(Class<?> declaredType) {
-        if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
-                || declaredType == Boolean.class) {
-            return ObjectVector.class;
-        } else {
-            final String declaredTypeSimpleName =
-                    io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName();
-            try {
-                return Class.forName(Vector.class.getPackage().getName() + '.'
-                        + Character.toUpperCase(declaredTypeSimpleName.charAt(0))
-                        + declaredTypeSimpleName.substring(1)
-                        + "Vector");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Unexpected exception for type " + declaredType, e);
-            }
-        }
+        return VectorFactory.forElementType(declaredType).vectorType();
     }
 
     @Override
@@ -195,7 +180,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         try {
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
                     formulaString, columnDefinitionMap, Collections.emptyMap(),
-                    compilationRequestProcessor.getQueryScopeVariables());
+                    compilationRequestProcessor.getFormulaImports());
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
             formulaShiftColPair = result.getFormulaShiftColPair();

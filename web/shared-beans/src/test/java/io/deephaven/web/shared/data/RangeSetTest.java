@@ -128,21 +128,24 @@ public class RangeSetTest {
     @Test
     public void testOverlappingRangesInDifferentOrder() {
 
-        // add three items in each possible order to a rangeset, ensure results are always the same
+        // add five ranges, where some overlap others, in each possible order to a rangeset, ensure results are always
+        // the same
         Range rangeA = new Range(100, 108);
         Range rangeB = new Range(105, 112);
         Range rangeC = new Range(110, 115);
-        Collections2.permutations(Arrays.asList(rangeA, rangeB, rangeC)).forEach(list -> {
+        Range rangeD = new Range(100, 113);
+        Range rangeE = new Range(101, 115);
+        Collections2.permutations(Arrays.asList(rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 
-            assertEquals(16, rangeSet.size());
+            assertEquals(list.toString(), 16, rangeSet.size());
             assertEquals(list.toString(), Collections.singletonList(new Range(100, 115)), asList(rangeSet));
         });
 
-        // same three items, but with another before that will not overlap with them
+        // same five items, but with another before that will not overlap with them
         Range before = new Range(0, 4);
-        Collections2.permutations(Arrays.asList(before, rangeA, rangeB, rangeC)).forEach(list -> {
+        Collections2.permutations(Arrays.asList(before, rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 
@@ -150,9 +153,9 @@ public class RangeSetTest {
             assertEquals(list.toString(), Arrays.asList(new Range(0, 4), new Range(100, 115)), asList(rangeSet));
         });
 
-        // same three items, but with another following that will not overlap with them
+        // same five items, but with another following that will not overlap with them
         Range after = new Range(200, 204);
-        Collections2.permutations(Arrays.asList(after, rangeA, rangeB, rangeC)).forEach(list -> {
+        Collections2.permutations(Arrays.asList(after, rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 
@@ -212,6 +215,41 @@ public class RangeSetTest {
         assertFalse(rangeSet.includesAllOf(RangeSet.ofRange(54, 60)));
     }
 
+    @Test
+    public void testIncludesAnyOf() {
+        RangeSet rangeSet = new RangeSet();
+        rangeSet.addRange(new Range(0, 19));
+        rangeSet.addRange(new Range(50, 54));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(0, 19)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 54)));
+
+        rangeSet.indexIterator().forEachRemaining((LongConsumer) l -> {
+            assertTrue(rangeSet.includesAnyOf(new Range(l, l)));
+        });
+
+        assertTrue(rangeSet.includesAnyOf(new Range(0, 20)));
+        assertTrue(rangeSet.includesAnyOf(new Range(10, 20)));
+        assertTrue(rangeSet.includesAnyOf(new Range(19, 20)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(19, 30)));
+        assertFalse(rangeSet.includesAnyOf(new Range(20, 30)));
+        assertFalse(rangeSet.includesAnyOf(new Range(21, 30)));
+
+        assertFalse(rangeSet.includesAnyOf(new Range(30, 40)));
+
+        assertFalse(rangeSet.includesAnyOf(new Range(40, 49)));
+        assertTrue(rangeSet.includesAnyOf(new Range(40, 50)));
+        assertFalse(rangeSet.includesAnyOf(new Range(40, 41)));
+        assertTrue(rangeSet.includesAnyOf(new Range(40, 54)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(49, 54)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 55)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 60)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(54, 60)));
+        assertFalse(rangeSet.includesAnyOf(new Range(55, 60)));
+    }
 
     @Test
     public void testRemove() {
@@ -475,4 +513,123 @@ public class RangeSetTest {
         assertEquals(RangeSet.ofItems(largeA, largeB), rangeSet);
     }
 
+    @Test
+    public void testSubsetForPostions() {
+        RangeSet initialRange = RangeSet.ofItems(2, 4, 6, 8);
+        assertEquals(RangeSet.ofItems(4, 8), initialRange.subsetForPositions(RangeSet.ofItems(1, 3), false));
+        assertEquals(RangeSet.ofItems(4, 8), initialRange.subsetForPositions(RangeSet.ofItems(1, 3, 4), false));
+        assertEquals(RangeSet.ofItems(4, 8), initialRange.subsetForPositions(RangeSet.ofItems(1, 3, 5), false));
+        assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 2, 3, 4, 5, 100), false));
+        assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 2, 3, 100), false));
+
+        assertEquals(RangeSet.ofItems(4, 6, 8), initialRange.subsetForPositions(RangeSet.ofRange(1, 3), false));
+        assertEquals(RangeSet.ofItems(2, 4, 6), initialRange.subsetForPositions(RangeSet.ofRange(0, 2), false));
+        assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofRange(0, 3), false));
+        assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofRange(0, 9), false));
+
+        initialRange = RangeSet.ofRange(10, 109);
+        assertEquals(RangeSet.ofItems(12, 14), initialRange.subsetForPositions(RangeSet.ofItems(2, 4), false));
+        assertEquals(RangeSet.ofItems(12, 14), initialRange.subsetForPositions(RangeSet.ofItems(2, 4, 101), false));
+
+        assertEquals(RangeSet.empty(), RangeSet.empty().subsetForPositions(RangeSet.ofItems(0), false));
+        assertEquals(RangeSet.ofItems(99),
+                RangeSet.ofRange(0, 99).subsetForPositions(RangeSet.ofRange(100, 104), false));
+
+        initialRange = RangeSet.empty();
+        assertEquals(0, initialRange.size());
+        initialRange.addRange(new Range(0, 1));
+        assertEquals(2, initialRange.size());
+        initialRange.addRange(new Range(2, 3));
+        assertEquals(4, initialRange.size());
+        initialRange.removeRange(new Range(0, 3));
+        assertEquals(0, initialRange.size());
+        initialRange.addRange(new Range(0, 1));
+        assertEquals(2, initialRange.size());
+
+        initialRange = RangeSet.ofItems(1, 4, 5, 6);
+        assertEquals(RangeSet.ofItems(1, 4, 5, 6), initialRange.subsetForPositions(RangeSet.ofRange(0, 3), false));
+        assertEquals(RangeSet.ofItems(1, 5, 6), initialRange.subsetForPositions(RangeSet.ofItems(0, 2, 3), false));
+        assertEquals(RangeSet.ofItems(1, 4, 6), initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 3), false));
+        assertEquals(RangeSet.ofItems(1, 4, 5), initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 2), false));
+        assertEquals(RangeSet.ofItems(1, 5), initialRange.subsetForPositions(RangeSet.ofItems(0, 2), false));
+        assertEquals(RangeSet.ofItems(4, 5), initialRange.subsetForPositions(RangeSet.ofRange(1, 2), false));
+        assertEquals(RangeSet.ofItems(4, 5, 6), initialRange.subsetForPositions(RangeSet.ofRange(1, 3), false));
+        assertEquals(RangeSet.ofItems(5, 6), initialRange.subsetForPositions(RangeSet.ofRange(2, 3), false));
+    }
+
+    @Test
+    public void testGet() {
+        long[] rows = {0, 1, 4, 5, 7, 9};
+        RangeSet initialRange = RangeSet.ofItems(rows);
+
+        for (int i = 0; i < rows.length; i++) {
+            assertEquals("i=" + i, rows[i], initialRange.get(i));
+        }
+
+        initialRange.removeRange(new Range(0, 1));
+    }
+
+    @Test
+    public void testShift() {
+        RangeSet r = RangeSet.ofRange(0, 2);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(0, 2), 2)
+        });
+        assertEquals(RangeSet.ofRange(2, 4), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(2, 6), -2)
+        });
+        assertEquals(RangeSet.ofRange(0, 2), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(1, 2), 3)
+        });
+        assertEquals(RangeSet.ofItems(0, 4, 5), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(4, 4), -1)
+        });
+        assertEquals(RangeSet.ofItems(0, 3, 5), r);
+
+        r = RangeSet.ofItems(0, 3, 4, 5, 6, 10);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(4, 4), 2),
+                new ShiftedRange(new Range(5, 6), 3),
+        });
+        assertEquals(RangeSet.ofItems(0, 3, 6, 8, 9, 10), r);
+
+
+        r = RangeSet.fromSortedRanges(new Range[] {
+                new Range(0, 1),
+                new Range(3, 5),
+                new Range(7, 13),
+                new Range(15, 19),
+        });
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(3, 4), -1),
+                new ShiftedRange(new Range(7, 13), -1),
+                new ShiftedRange(new Range(15, 17), -2),
+        });
+        assertEquals(RangeSet.fromSortedRanges(new Range[] {
+                new Range(0, 3),
+                new Range(5, 15),
+                new Range(18, 19),
+        }), r);
+
+
+        r = RangeSet.fromSortedRanges(new Range[] {
+                new Range(28972, 28987),
+                new Range(28989, 29003),
+                new Range(29005, 29011),
+                new Range(29013, 29013),
+                new Range(29015, 29018),
+                new Range(29020, 29020),
+                new Range(29022, 29024),
+                new Range(29026, 29039),
+        });
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(28989, 29011), 2),
+                new ShiftedRange(new Range(29013, 29013), 1),
+                new ShiftedRange(new Range(29022, 29024), -1),
+                new ShiftedRange(new Range(29026, 29026), -2),
+        });
+    }
 }

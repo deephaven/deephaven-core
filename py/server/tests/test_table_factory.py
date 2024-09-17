@@ -41,7 +41,7 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_empty_table(self):
         t = empty_table(10)
-        self.assertEqual(0, len(t.columns))
+        self.assertEqual(0, len(t.definition))
 
     def test_empty_table_error(self):
         with self.assertRaises(DHError) as cm:
@@ -52,22 +52,22 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table(self):
         t = time_table("PT00:00:01")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
                                                         time.to_j_time_zone('ET')))
 
         t = time_table(1000_000_000)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
@@ -75,12 +75,12 @@ class TableFactoryTestCase(BaseTestCase):
 
         p = time.to_timedelta(time.to_j_duration("PT1s"))
         t = time_table(p)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         st = time.to_datetime(time.to_j_instant("2021-11-06T13:21:00 ET"))
         t = time_table(p, start_time=st)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
@@ -88,14 +88,17 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_blink)
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
-            t = time_table("PT00:0a:01")
+            time_table("PT00:0a:01")
 
         self.assertIn("DateTimeParseException", cm.exception.root_cause)
+
+        with self.assertRaises(DHError):
+            time_table(None)
 
     def test_merge(self):
         t1 = self.test_table.update(formulas=["Timestamp=epochNanosToInstant(0L)"])
@@ -325,19 +328,18 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
-        col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
-            append_only_input_table = input_table(col_defs=col_defs)
+            append_only_input_table = input_table(col_defs=t.definition)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
-            keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
+            keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
@@ -346,14 +348,14 @@ class TableFactoryTestCase(BaseTestCase):
         with self.subTest("from init table"):
             append_only_input_table = input_table(init_table=t)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(init_table=t, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -368,7 +370,7 @@ class TableFactoryTestCase(BaseTestCase):
 
             keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
             self.assertEqual(keyed_input_table.key_names, ["String", "Double"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String" and col.name != "Double"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String" and col._column_definition.name != "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
@@ -449,7 +451,7 @@ class TableFactoryTestCase(BaseTestCase):
 
         with cm:
             t = time_table("PT1s", blink_table=True)
-            it = input_table({c.name: c.data_type for c in t.columns}, key_cols="Timestamp")
+            it = input_table(t.definition, key_cols="Timestamp")
             it.add(t)
             self.assertEqual(it.size, 0)
             it.delete(t)
@@ -467,8 +469,7 @@ class TableFactoryTestCase(BaseTestCase):
             string_col(name="String", data=["foo", "bar"]),
         ]
         t = new_table(cols=cols)
-        col_defs = {c.name: c.data_type for c in t.columns}
-        append_only_input_table = input_table(col_defs=col_defs)
+        append_only_input_table = input_table(col_defs=t.definition)
 
         it = _wrapper.wrap_j_object(append_only_input_table.j_table)
         self.assertTrue(isinstance(it, InputTable))

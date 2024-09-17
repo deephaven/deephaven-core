@@ -20,8 +20,7 @@ class CsvTestCase(BaseTestCase):
         col_types = [dtypes.string, dtypes.long, dtypes.float64]
         table_header = {k: v for k, v in zip(col_names, col_types)}
         t = read_csv('tests/data/test_csv.csv', header=table_header)
-        t_col_names = [col.name for col in t.columns]
-        self.assertEqual(col_names, t_col_names)
+        self.assertEqual(col_names, t.column_names)
 
     def test_read_error_col_type(self):
         col_names = ["Strings", "Longs", "Floats"]
@@ -44,9 +43,9 @@ class CsvTestCase(BaseTestCase):
     def test_write(self):
         t = read_csv("tests/data/small_sample.csv")
         write_csv(t, "./test_write.csv")
-        t_cols = [col.name for col in t.columns]
+        t_cols = t.column_names
         t = read_csv("./test_write.csv")
-        self.assertEqual(t_cols, [col.name for col in t.columns])
+        self.assertEqual(t_cols, t.column_names)
 
         col_names = ["Strings", "Longs", "Floats"]
         col_types = [dtypes.string, dtypes.long, dtypes.float64]
@@ -54,7 +53,7 @@ class CsvTestCase(BaseTestCase):
         t = read_csv('tests/data/test_csv.csv', header=table_header)
         write_csv(t, "./test_write.csv", cols=col_names)
         t = read_csv('./test_write.csv')
-        self.assertEqual(col_names, [c.name for c in t.columns])
+        self.assertEqual(col_names, t.column_names)
 
         import os
         os.remove("./test_write.csv")

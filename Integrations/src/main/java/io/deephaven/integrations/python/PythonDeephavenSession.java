@@ -57,7 +57,24 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
             .getStringWithDefault("PythonDeephavenSession.defaultScriptPath", ".");
 
+    /**
+     * This is following the convention set by io.deephaven.server.config.ConfigServiceGrpcImpl / dh-defaults.prop of
+     * relaying version information to the client via Configuration properties.
+     */
+    private static final String PYTHON_VERSION_PROPERTY = "python.version";
+
     public static String SCRIPT_TYPE = "Python";
+
+    private static void setPythonVersion(Configuration configuration) {
+        final String pythonVersion;
+        try (final PyModule platformModule = PyModule.importModule("platform")) {
+            pythonVersion = platformModule.call(String.class, "python_version", new Class[0], new Object[0]);
+        } catch (RuntimeException e) {
+            log.warn(e).append("Unable to retrieve python version").endl();
+            return;
+        }
+        configuration.setProperty(PYTHON_VERSION_PROPERTY, pythonVersion);
+    }
 
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
@@ -66,6 +83,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     /**
      * Create a Python ScriptSession.
+     *
+     * <p>
+     * Sets the configuration property {@value PYTHON_VERSION_PROPERTY} to the value returned from the python code
+     * {@code platform.python_version()}.
      *
      * @param updateGraph the default update graph to install for the repl
      * @param operationInitializer the default operation initializer to install for the repl
@@ -96,16 +117,19 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
         registerJavaExecutor(threadInitializationFactory);
         publishInitial();
+
+        final Configuration configuration = Configuration.getInstance();
         /*
          * And now the user-defined initialization scripts, if any.
          */
         if (runInitScripts) {
-            String[] scripts = Configuration.getInstance().getProperty("PythonDeephavenSession.initScripts").split(",");
+            String[] scripts = configuration.getProperty("PythonDeephavenSession.initScripts").split(",");
 
             for (String script : scripts) {
                 runScript(script);
             }
         }
+        setPythonVersion(configuration);
     }
 
     /**

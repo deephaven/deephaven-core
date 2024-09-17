@@ -22,6 +22,7 @@ import java.time.Duration;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * These tests verify the behavior of Parquet implementation when reading against remote S3 servers.
@@ -87,6 +88,73 @@ public class S3ParquetRemoteTest {
     }
 
     @Test
+    public void readSampleParquetFilesFromPublicS3Part3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        readTable("s3://redshift-downloads/redset/serverless/full.parquet", readInstructions).head(10).select();
+    }
+
+    @Test
+    public void readSampleParquetFromPublicGCS() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
+        final Table tableWithEndpointOverride;
+        {
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(S3Instructions.builder()
+                            .readTimeout(Duration.ofSeconds(60))
+                            .credentials(Credentials.anonymous())
+                            .regionName("us-east-1")
+                            .endpointOverride("https://storage.googleapis.com")
+                            .build())
+                    .build();
+            tableWithEndpointOverride = ParquetTools.readTable(
+                    "s3://cloud-samples-data/bigquery/us-states/us-states.parquet", readInstructions).select();
+            assertEquals(2, tableWithEndpointOverride.numColumns());
+            assertEquals(50, tableWithEndpointOverride.size());
+        }
+
+        final Table tableWithoutEndpointOverride;
+        {
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(S3Instructions.builder()
+                            .readTimeout(Duration.ofSeconds(60))
+                            .regionName("us-east-1")
+                            .credentials(Credentials.anonymous())
+                            .build())
+                    .build();
+            tableWithoutEndpointOverride = ParquetTools.readTable(
+                    "gs://cloud-samples-data/bigquery/us-states/us-states.parquet", readInstructions).select();
+            assertEquals(2, tableWithoutEndpointOverride.numColumns());
+            assertEquals(50, tableWithoutEndpointOverride.size());
+        }
+        assertTableEquals(tableWithEndpointOverride, tableWithoutEndpointOverride);
+    }
+
+    @Test
+    public void testReadFromGCSFailure() {
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(S3Instructions.builder()
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.anonymous())
+                        .endpointOverride("https://storage.com")
+                        .build())
+                .build();
+        try {
+            ParquetTools.readTable(
+                    "gs://cloud-samples-data/bigquery/us-states/us-states.parquet", readInstructions).select();
+        } catch (final IllegalArgumentException e) {
+            assertTrue(e.toString().contains("endpoint override"));
+        }
+    }
+
+    @Test
     public void readKeyValuePartitionedParquetFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
@@ -106,6 +174,9 @@ public class S3ParquetRemoteTest {
         assertEquals(2, table.numColumns());
     }
 
+    /**
+     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up.
+     */
     @Test
     public void readMetadataPartitionedParquetFromS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
