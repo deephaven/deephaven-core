@@ -565,6 +565,9 @@ public class RangeSetTest {
         for (int i = 0; i < rows.length; i++) {
             assertEquals("i=" + i, rows[i], initialRange.get(i));
         }
+        assertEquals(-1, initialRange.get(rows.length));
+        assertEquals(-1, initialRange.get(rows.length + 1));
+        assertEquals(-1, initialRange.get(rows.length + 100));
 
         initialRange.removeRange(new Range(0, 1));
     }

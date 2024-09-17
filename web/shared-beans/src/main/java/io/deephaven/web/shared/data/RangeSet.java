@@ -668,6 +668,9 @@ public class RangeSet {
         if (key == 0) {
             return getFirstRow();
         }
+        if (key >= size()) {
+            return -1;
+        }
         ensureCardinalityCache();
 
         int pos = Arrays.binarySearch(cardinality, key);
