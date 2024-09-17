@@ -1,14 +1,24 @@
 """This module defines functions for creating pivot tables."""
 
-from typing import Sequence, List, Union, Protocol, Optional, Callable
-import random
+from typing import Sequence, Union, Optional, Callable, Any
 import re
-import jpy
-from deephaven import time_table, empty_table
+from deephaven import empty_table
 from deephaven.table import Table, PartitionedTable, multi_join
 from deephaven.numpy import to_numpy
 from deephaven.update_graph import auto_locking_ctx
 from deephaven.jcompat import to_sequence
+
+
+def _is_legal_column(s: str) -> bool:
+    """Check if a column name is legal.
+
+    Args:
+        s (str): The column name to check.
+
+    Returns:
+        bool: True if the column name is legal, False otherwise.
+    """
+    return re.match("^[_a-zA-Z][_a-zA-Z0-9]*$", s) is not None
 
 
 def _legalize_column(s: str) -> str:
@@ -32,17 +42,23 @@ def _legalize_column(s: str) -> str:
 
 
 def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, value_col: str,
-          val_to_col_name: Optional[Callable[[Any], str]] = None) -> Table:
+          value_to_col_name: Optional[Callable[[Any], str]] = None) -> Table:
     """ Create a pivot table from the input table.
-    
+
+    NOTE: The schema of the pivot table is frozen at the time of creation.  As a result, columns in the output table
+    will not change after the pivot table is created.  If the input table changes, the pivot table may not reflect the
+    changes.
+
     Args:
         table (Table): The input table.
         row_cols (Union[str, Sequence[str]]): The row columns in the input table.
         column_col (str): The column column in the input table.
         value_col (str): The value column in the input table.
-        val_to_col_name (Optional[Callable[[Any],str]]): A function that converts a value to a column name.  
-            If None (default), a string representation of the value is used as the column name, with some effort made to replace 
-            invalid characters.
+        value_to_col_name (Optional[Callable[[Any],str]]): A function that converts a value to a column name.
+            The function should return a string that is a valid column name.
+            If None (default), a string representation of the value is used as the column name, with invalid
+            characters replaced by underscores.  The character replacement is not guaranteed to produce unique
+            column names.
         
     Returns:
         Table: The pivot table.
@@ -54,8 +70,8 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
     row_cols = list(to_sequence(row_cols))
     ptable = table.partition_by(column_col)
     
-    if not val_to_col_name:
-        val_to_col_name = lambda x: _legalize_column(str(x))
+    if not value_to_col_name:
+        value_to_col_name = lambda x: _legalize_column(str(x))
 
     # Locking to ensure that the partitioned table doesn't change while creating the query
     with auto_locking_ctx(ptable):
@@ -66,15 +82,28 @@ def pivot(table: Table, row_cols: Union[str, Sequence[str]], column_col: str, va
         if len(key_values) == 0:
             return empty_table(0)
 
-        tables = [
-            con.view(row_cols + [f"{val_to_col_name(key[0])}={value_col}"])
-            for key, con in zip(key_values, ptable.constituent_tables)
-        ]
+        tables = []
+        col_names = set()
+
+        for key, con in zip(key_values, ptable.constituent_tables):
+            col_name = value_to_col_name(key[0])
+
+            if not _is_legal_column(col_name):
+                raise DHError(f"Value maps to an invalid column name: value={key[0]} col_name={col_name}")
+
+            if col_name in col_names:
+                raise DHError(f"Value maps to a duplicate column name: value={key[0]} col_name={col_name}")
+
+            col_names.add(col_name)
+            tables.append(con.view(row_cols + [f"{col_name}={value_col}"]))
 
     return multi_join(input=tables, on=row_cols).table()
 
 
 # TODO: delete below here
+
+import random
+import jpy
 
 # # Java wrappers
 random_class = jpy.get_type("java.util.Random")
@@ -87,6 +116,8 @@ y = empty_table(1000).select(["Row=ii%10", "Col=(int)((ii/10) % 30)", "Sentinel=
 ys = y.sum_by(["Row", "Col"])
 
 pvt = pivot(ys, ["Row"], "Col", "Sentinel")
+pvt2 = pivot(ys, "Row", "Col", "Sentinel", lambda x: f"Col_{x}")
+
 # 
 # # we have no real sector data, but it is nice for an example
 # #sectors = ["Apples", "Bananas", "Carrots", "Eggplant", "Fig"]
