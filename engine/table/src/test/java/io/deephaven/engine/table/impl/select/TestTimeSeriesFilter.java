@@ -42,7 +42,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final TestClock testClock = new TestClock().setMillis(startTime);
 
-        final TimeSeriesFilter timeSeriesFilter = new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), false, testClock);
+        final TimeSeriesFilter timeSeriesFilter =
+                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), false, testClock);
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);

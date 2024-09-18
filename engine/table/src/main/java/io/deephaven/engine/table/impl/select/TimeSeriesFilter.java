@@ -119,13 +119,15 @@ public class TimeSeriesFilter
             while (table.getDefinition().getColumnNames().contains(windowSourceName)) {
                 windowSourceName = "_" + windowSourceName;
             }
-            final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock, (QueryTable) table, columnName, periodNanos + 1, windowSourceName, true);
-            tableWithWindow = (QueryTable)pair.first;
+            final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
+                    (QueryTable) table, columnName, periodNanos + 1, windowSourceName, true);
+            tableWithWindow = (QueryTable) pair.first;
             refreshFunctionForUnitTests = pair.second;
 
             manage(tableWithWindow);
             windowDependency.add(tableWithWindow);
-            final ListenerRecorder recorder = new ListenerRecorder("TimeSeriesFilter-ListenerRecorder", tableWithWindow, null);
+            final ListenerRecorder recorder =
+                    new ListenerRecorder("TimeSeriesFilter-ListenerRecorder", tableWithWindow, null);
             tableWithWindow.addUpdateListener(recorder);
             recorder.setMergedListener(mergedListener);
 
@@ -205,7 +207,8 @@ public class TimeSeriesFilter
         }
 
         private void insertMatched(final RowSet rowSet) {
-            try (final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false, null, rowSet, Boolean.TRUE)) {
+            try (final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
+                    null, rowSet, Boolean.TRUE)) {
                 inWindowRowset.insert(matched);
             }
         }

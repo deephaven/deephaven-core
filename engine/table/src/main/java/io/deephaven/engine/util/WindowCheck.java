@@ -130,6 +130,7 @@ public class WindowCheck {
     @InternalUseOnly
     public interface TimeWindowListener extends Runnable {
         void validateQueue();
+
         void dumpQueue();
     }
 
@@ -210,7 +211,7 @@ public class WindowCheck {
          * @param result our initialized result table
          */
         private TimeWindowListenerImpl(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
-                                       final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
+                final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
             super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
@@ -1059,17 +1060,18 @@ public class WindowCheck {
         }
 
         @Override
-        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
+        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
+                @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
             final boolean includeNull = Arrays.asList(keys).contains(null) ^ invertMatch;
             final boolean includeTrue = Arrays.asList(keys).contains(true) ^ invertMatch;
             final boolean includeFalse = Arrays.asList(keys).contains(false) ^ invertMatch;
 
-            final int getSize = (int)Math.min(4096, mapper.size());
+            final int getSize = (int) Math.min(4096, mapper.size());
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
             try (final GetContext getContext = timeStampSource.makeGetContext(getSize);
-                final RowSequence.Iterator rsit = mapper.getRowSequenceIterator()) {
+                    final RowSequence.Iterator rsit = mapper.getRowSequenceIterator()) {
                 while (rsit.hasMore()) {
                     final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(getSize);
                     final LongChunk<OrderedRowKeys> rowKeys = chunkRs.asRowKeyChunk();

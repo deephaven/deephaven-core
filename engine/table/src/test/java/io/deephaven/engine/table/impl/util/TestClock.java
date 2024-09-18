@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
@@ -13,6 +16,7 @@ public class TestClock implements Clock {
 
     /**
      * Set the time.
+     * 
      * @param epochNanos the time to set in nanos since the epoch
      * @return this clock
      */
@@ -23,6 +27,7 @@ public class TestClock implements Clock {
 
     /**
      * Set the time.
+     * 
      * @param epochMillis the time to set in millis since the epoch
      * @return this clock
      */
@@ -33,6 +38,7 @@ public class TestClock implements Clock {
 
     /**
      * Add millis to the current time.
+     * 
      * @param millis the number of millis to add
      * @return this clock
      */
