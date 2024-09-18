@@ -1815,6 +1815,15 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorMod(){
+        assertEquals(Math.floorMod(7, 2), floorMod((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
+
     </#if>
     </#list>
 }

@@ -3501,7 +3501,7 @@ public class Numeric {
      * Returns the hyperbolic cosine.
      *
      * @param x the value
-     * @returns the hyperbolic cosine of the value.  If the value is null, returns null.
+     * @return the hyperbolic cosine of the value.  If the value is null, returns null.
      */
     static public double cosh(${pt.primitive} x) {
         if(isNull(x)) {
@@ -3515,7 +3515,7 @@ public class Numeric {
      * Returns e^x -1.
      *
      * @param x the value
-     * @returns e^x-1.  If the value is null, returns null.
+     * @return e^x-1.  If the value is null, returns null.
      */
      static public double expm1(${pt.primitive} x) {
         if(isNull(x)) {
@@ -3532,7 +3532,7 @@ public class Numeric {
       *
       * @param x the dividend.
       * @param y the divisor.
-      * @returns the largest (closest to positive infinity) int value that is less than or equal to the
+      * @return the largest (closest to positive infinity) int value that is less than or equal to the
       *    algebraic quotient.  If either value is null, returns null.
       */
     static public ${pt.primitive} floorDiv(${pt.primitive} x, ${pt.primitive} y) {
@@ -3544,7 +3544,24 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  floorMod
+    <#if pt.valueType.isInteger>
+     /**
+      * Returns the floor modulus of the arguments.
+      *
+      * @param x the dividend.
+      * @param y the divisor.
+      * @return the floor modulus x.  If either value is null, returns null.
+      */
+    static public ${pt.primitive} floorMod(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.floorMod(x, y);
+    }
+    </#if>
+
+
         //TODO:  getExponent
         //TODO:  hypot
         //TODO:  IEEEremainder
