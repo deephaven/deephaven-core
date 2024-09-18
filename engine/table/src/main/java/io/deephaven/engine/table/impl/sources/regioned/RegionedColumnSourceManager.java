@@ -205,11 +205,11 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
 
         invalidateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
-                (ignored) -> {
-                    synchronized (this) {
+                (instance) -> {
+                    synchronized (instance) {
                         invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
                         invalidatedLocations.clear();
-                        releasedLocations.forEach(this::unmanage);
+                        releasedLocations.forEach(instance::unmanage);
                         releasedLocations.clear();
                     }
                 });
@@ -253,7 +253,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     }
 
     @Override
-    public synchronized boolean removeLocationKey(final @NotNull TrackedTableLocationKey locationKey) {
+    public synchronized void removeLocationKey(final @NotNull ImmutableTableLocationKey locationKey) {
         final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
         final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
 
@@ -272,10 +272,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 releasedLocations.add((AbstractTableLocation) includedLocation.location);
             }
             invalidateCommitter.maybeActivate();
-            return true;
         }
-
-        return false;
     }
 
     @Override
@@ -283,8 +280,8 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
         Assert.assertion(includedLocationsTable.isEmpty(), "includedLocationsTable.isEmpty()");
 
         // Do our first pass over the locations to include as many as possible and build the initial row set
-        // noinspection resource
         final TableUpdateImpl update = update(true);
+        // noinspection resource
         final TrackingWritableRowSet initialRowSet = update.added().writableCast().toTracking();
         update.added = null;
         update.release();
@@ -360,7 +357,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
         removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
         for (final IncludedTableLocationEntry removedLocation : removedTableLocations) {
             final long regionFirstKey = RegionedColumnSource.getFirstRowKey(removedLocation.regionIndex);
-            removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.location.getRowSet(), regionFirstKey);
+            removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.rowSetAtLastUpdate, regionFirstKey);
             removedRegionBuilder.appendKey(removedLocation.regionIndex);
         }
 

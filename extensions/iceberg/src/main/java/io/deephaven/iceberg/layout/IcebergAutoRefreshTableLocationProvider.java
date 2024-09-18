@@ -89,8 +89,7 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
     private void refreshSnapshot() {
         beginTransaction(this);
         final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>();
-        getTableLocationKeys(ttlk -> missedKeys.add(ttlk.getKey()));
-
+        getTableLocationKeys(ttlk -> missedKeys.add(ttlk.get()));
         locationKeyFinder.findKeys(tableLocationKey -> {
             missedKeys.remove(tableLocationKey);
             handleTableLocationKeyAdded(tableLocationKey, this);

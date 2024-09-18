@@ -254,5 +254,8 @@ public abstract class AbstractTableLocation
     private void destroy() {
         handleUpdate(null, System.currentTimeMillis());
         clearColumnLocations();
+
+        // The key may be holding resources that can be cleared.
+        tableLocationKey.clear();
     }
 }

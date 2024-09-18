@@ -178,4 +178,10 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     public synchronized void setRowGroupIndices(final int[] rowGroupIndices) {
         this.rowGroupIndices = rowGroupIndices;
     }
+
+    @Override
+    public void clear() {
+        metadata = null;
+        fileReader = null;
+    }
 }

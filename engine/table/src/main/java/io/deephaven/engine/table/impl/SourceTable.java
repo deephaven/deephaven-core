@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.TableDefinition;
@@ -148,33 +149,40 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
-                    final Collection<TrackedTableLocationKey> tableLocationKeys = new ArrayList<>();
-                    locationProvider.getTableLocationKeys(tableLocationKeys::add);
-                    maybeAddLocations(tableLocationKeys);
+                    final Collection<LiveSupplier<ImmutableTableLocationKey>> keySuppliers = new ArrayList<>();
+                    // Manage each of the location keys as we see them (since the TLP is not guaranteeing them outside
+                    // the callback)
+                    locationProvider.getTableLocationKeys(ttlk -> {
+                        manage(ttlk);
+                        keySuppliers.add(ttlk);
+                    });
+                    maybeAddLocations(keySuppliers);
+                    // Now we can un-manage the location keys
+                    keySuppliers.forEach(this::unmanage);
                 }
             });
             locationsInitialized = true;
         }
     }
 
-    private void maybeAddLocations(@NotNull final Collection<TrackedTableLocationKey> locationKeys) {
+    private void maybeAddLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> locationKeys) {
         if (locationKeys.isEmpty()) {
             return;
         }
         filterLocationKeys(locationKeys)
                 .parallelStream()
-                .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.getKey())));
+                .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.get())));
     }
 
-    private TrackedTableLocationKey[] maybeRemoveLocations(
-            @NotNull final Collection<TrackedTableLocationKey> removedKeys) {
+    private void maybeRemoveLocations(
+            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
         if (removedKeys.isEmpty()) {
-            return TrackedTableLocationKey.ZERO_LENGTH_TRACKED_TABLE_LOCATION_KEY_ARRAY;
+            return;
         }
 
-        return filterLocationKeys(removedKeys).stream()
-                .filter(columnSourceManager::removeLocationKey)
-                .toArray(TrackedTableLocationKey[]::new);
+        filterLocationKeys(removedKeys).stream()
+                .map(LiveSupplier::get)
+                .forEach(columnSourceManager::removeLocationKey);
     }
 
     private void initializeLocationSizes() {
@@ -255,8 +263,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
      *        {@link TableLocationProvider}, but not yet incorporated into the table
      * @return A sub-collection of the input
      */
-    protected Collection<TrackedTableLocationKey> filterLocationKeys(
-            @NotNull final Collection<TrackedTableLocationKey> foundLocationKeys) {
+    protected Collection<LiveSupplier<ImmutableTableLocationKey>> filterLocationKeys(
+            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> foundLocationKeys) {
         return foundLocationKeys;
     }
 

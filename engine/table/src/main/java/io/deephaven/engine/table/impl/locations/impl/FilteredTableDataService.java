@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.reference.WeakReferenceWrapper;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -126,7 +127,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public void getTableLocationKeys(
-                final Consumer<TrackedTableLocationKey> consumer,
+                final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
                 final Predicate<ImmutableTableLocationKey> filter) {
             inputProvider.getTableLocationKeys(consumer, filter);
         }
@@ -177,27 +178,29 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKeyAdded(@NotNull final TrackedTableLocationKey tableLocationKey) {
+        public void handleTableLocationKeyAdded(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.getKey())) {
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.get())) {
                 outputListener.handleTableLocationKeyAdded(tableLocationKey);
             }
         }
 
         @Override
-        public void handleTableLocationKeyRemoved(@NotNull final TrackedTableLocationKey tableLocationKey) {
+        public void handleTableLocationKeyRemoved(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.getKey())) {
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.get())) {
                 outputListener.handleTableLocationKeyRemoved(tableLocationKey);
             }
         }
 
         @Override
         public void handleTableLocationKeysUpdate(
-                @NotNull Collection<TrackedTableLocationKey> addedKeys,
-                @NotNull Collection<TrackedTableLocationKey> removedKeys) {
+                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
+                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
                 outputListener.handleTableLocationKeysUpdate(addedKeys, removedKeys);

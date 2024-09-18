@@ -56,4 +56,9 @@ public interface TableLocationKey extends Comparable<TableLocationKey>, NamedImp
      * @return An immutable version of this key
      */
     ImmutableTableLocationKey makeImmutable();
+
+    /**
+     * Release any cached data associated with this key. This would only be called at EOL for this key.
+     */
+    default void clear() {}
 }

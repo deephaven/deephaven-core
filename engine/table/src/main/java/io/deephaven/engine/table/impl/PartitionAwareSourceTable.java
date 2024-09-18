@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.locations.TrackedTableLocationKey;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -222,14 +222,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final Collection<TrackedTableLocationKey> filterLocationKeys(
-            @NotNull final Collection<TrackedTableLocationKey> foundLocationKeys) {
+    protected final Collection<LiveSupplier<ImmutableTableLocationKey>> filterLocationKeys(
+            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> foundLocationKeys) {
         if (partitioningColumnFilters.length == 0) {
             return foundLocationKeys;
         }
 
         final Collection<ImmutableTableLocationKey> immutableTableLocationKeys = foundLocationKeys.stream()
-                .map(TrackedTableLocationKey::getKey)
+                .map(LiveSupplier::get)
                 .collect(Collectors.toList());
 
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
@@ -242,8 +242,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
         // Add the tracked keys to the table
-        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
-                TrackedTableLocationKey.class, null));
+        // TODO: figure out how to do this
+        // partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(
+        // foundLocationKeys,
+        // LiveSupplier<ImmutableTableLocationKey>.class,
+        // null));
 
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
@@ -253,7 +256,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
 
         // Return the filtered keys
-        final Iterable<TrackedTableLocationKey> iterable =
+        final Iterable<LiveSupplier<ImmutableTableLocationKey>> iterable =
                 () -> filteredColumnPartitionTable.columnIterator(TRACKED_KEY_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
     }

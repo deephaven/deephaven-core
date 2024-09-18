@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.util.Formatter;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -144,15 +145,18 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
         @Override
         public void getTableLocationKeys(
-                final Consumer<TrackedTableLocationKey> consumer,
+                final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
                 final Predicate<ImmutableTableLocationKey> filter) {
-            final Set<TrackedTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
+            final Set<LiveSupplier<ImmutableTableLocationKey>> locationKeys =
+                    new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
                 // Add all the location keys from the providers to the set, throw an exception if there are duplicates
                 inputProviders.forEach(p -> p.getTableLocationKeys(tlk -> {
-                    if (filter.test(tlk.getKey()) && !locationKeys.add(tlk)) {
+                    if (!locationKeys.add(tlk)) {
+                        // Consume the key immediately (while the key is still managed by the input provider)
+                        consumer.accept(tlk);
                         final String overlappingProviders = inputProviders.stream()
-                                .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.getKey()))
+                                .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.get()))
                                 .map(TableLocationProvider::getName)
                                 .collect(Collectors.joining(","));
                         throw new TableDataException(
@@ -164,9 +168,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
                                                 .formatTableDataService(CompositeTableDataService.this.toString()));
 
                     }
-                }));
-                // Consume all the location keys
-                locationKeys.forEach(consumer);
+                }, filter));
             }
         }
 
@@ -228,16 +230,17 @@ public class CompositeTableDataService extends AbstractTableDataService {
     // ------------------------------------------------------------------------------------------------------------------
 
     private static final class KeyKeyDefinition
-            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, TrackedTableLocationKey> {
+            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> {
 
-        private static final KeyedObjectKey<ImmutableTableLocationKey, TrackedTableLocationKey> INSTANCE =
+        private static final KeyedObjectKey<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> INSTANCE =
                 new KeyKeyDefinition();
 
         private KeyKeyDefinition() {}
 
         @Override
-        public ImmutableTableLocationKey getKey(@NotNull final TrackedTableLocationKey tableLocationKey) {
-            return tableLocationKey.getKey();
+        public ImmutableTableLocationKey getKey(
+                @NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
+            return tableLocationKey.get();
         }
     }
 }

@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,10 +16,24 @@ import java.util.function.Predicate;
  * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}.
  */
 public final class SingleTableLocationProvider implements TableLocationProvider {
-
     private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();
 
-    private final TrackedTableLocationKey trackedTableLocationKey;
+    private static class TrackedKeySupplier extends ReferenceCountedLivenessNode
+            implements LiveSupplier<ImmutableTableLocationKey> {
+        final ImmutableTableLocationKey key;
+
+        protected TrackedKeySupplier(final ImmutableTableLocationKey key) {
+            super(false);
+            this.key = key;
+        }
+
+        @Override
+        public ImmutableTableLocationKey get() {
+            return key;
+        }
+    }
+
+    private final TrackedKeySupplier immutableKeySupplier;
     private final TableLocation tableLocation;
 
     /**
@@ -25,9 +41,8 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
      */
     public SingleTableLocationProvider(@NotNull final TableLocation tableLocation) {
         this.tableLocation = tableLocation;
-        trackedTableLocationKey = new TrackedTableLocationKey(tableLocation.getKey(), ttlk -> {
-            // TODO: I don't think we need to do anything here, but need to think more about it
-        });
+        // TODO: it seems like we should manage this, but SingleTableLocationProvider isn't a LivenessManager.
+        immutableKeySupplier = new TrackedKeySupplier(tableLocation.getKey());
     }
 
     @Override
@@ -65,10 +80,10 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     @Override
     public void getTableLocationKeys(
-            final Consumer<TrackedTableLocationKey> consumer,
+            final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
             final Predicate<ImmutableTableLocationKey> filter) {
-        if (filter.test(trackedTableLocationKey.getKey())) {
-            consumer.accept(trackedTableLocationKey);
+        if (filter.test(immutableKeySupplier.get())) {
+            consumer.accept(immutableKeySupplier);
         }
     }
 

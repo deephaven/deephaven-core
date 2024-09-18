@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
@@ -75,6 +76,63 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
+    private static class TrackedKeySupplier extends ReferenceCountedLivenessNode
+            implements LiveSupplier<ImmutableTableLocationKey> {
+        enum State {
+            /** The key is included in the live set for new subscribers. */
+            ACTIVE,
+            /** The key was removed from the live list and will not be provided to new subscribers */
+            INACTIVE
+        }
+
+        private final ImmutableTableLocationKey key;
+        private final Consumer<TrackedKeySupplier> zeroCountConsumer;
+
+        private TableLocation tableLocation;
+        private State state;
+
+        TrackedKeySupplier(
+                final ImmutableTableLocationKey key,
+                final Consumer<TrackedKeySupplier> zeroCountConsumer) {
+            super(false);
+            this.key = key;
+            this.zeroCountConsumer = zeroCountConsumer;
+            state = State.ACTIVE;
+        }
+
+        @Override
+        public ImmutableTableLocationKey get() {
+            return key;
+        }
+
+        /**
+         * This {@link TrackedKeySupplier} should manage the given {@link TableLocation} and store a reference to it.
+         *
+         * @param tableLocation The {@link TableLocation} to manage.
+         */
+        public synchronized void setTableLocation(final TableLocation tableLocation) {
+            Assert.eqNull(this.tableLocation, "this.tableLocation");
+            manage(tableLocation);
+            this.tableLocation = tableLocation;
+        }
+
+        /**
+         * Change the state of this object to {@link State#INACTIVE}, indicates that this key is not included in the
+         * live set for new subscribers.
+         */
+        public synchronized void deactivate() {
+            this.state = State.INACTIVE;
+        }
+
+        @Override
+        protected synchronized void destroy() {
+            super.destroy();
+            tableLocation = null;
+            state = State.INACTIVE;
+            zeroCountConsumer.accept(this);
+        }
+    }
+
     private final ImmutableTableKey tableKey;
     private final ReferenceCountedLivenessNode livenessNode;
 
@@ -82,26 +140,14 @@ public abstract class AbstractTableLocationProvider
     private final Map<Object, Transaction> transactions = Collections.synchronizedMap(new HashMap<>());
 
     /**
-     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are {@link TableLocation}s
-     * if:
-     * <ol>
-     * <li>The location has been requested via {@link #getTableLocation(TableLocationKey)} or
-     * {@link #getTableLocationIfPresent(TableLocationKey)}</li>
-     * <li>The {@link TableLocationKey} <em>is</em> a {@link TableLocation}</li>
-     * </ol>
+     * Map from {@link TableLocationKey} to a {@link TrackedKeySupplier}.
      *
      * These values will not be cleared until all references to the {@link TableLocation} have been released by its
      * managers (i.e. {@link TableLocationSubscriptionBuffer subscriptions} and
      * {@link io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager column source managers}).
      */
-    private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations =
-            new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
-
-    /**
-     * The set of active location keys that will be returned to new subscribers.
-     */
-    private final KeyedObjectHashSet<ImmutableTableLocationKey, TrackedTableLocationKey> liveLocationKeys =
-            new KeyedObjectHashSet<>(ImmutableTableLocationKeyDefinition.INSTANCE);
+    private final KeyedObjectHashMap<TableLocationKey, TrackedKeySupplier> tableLocationKeyMap =
+            new KeyedObjectHashMap<>(TableLocationKeyDefinition.INSTANCE);
 
     private volatile boolean initialized;
 
@@ -153,9 +199,13 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        // Lock the live set and deliver a copy to the listener
-        synchronized (liveLocationKeys) {
-            listener.handleTableLocationKeysUpdate(liveLocationKeys, List.of());
+        // Lock on the map and deliver a copy to the listener
+        synchronized (tableLocationKeyMap) {
+            final List<LiveSupplier<ImmutableTableLocationKey>> keySuppliers =
+                    tableLocationKeyMap.values().stream()
+                            .filter(iks -> iks.state == TrackedKeySupplier.State.ACTIVE)
+                            .collect(Collectors.toList());
+            listener.handleTableLocationKeysUpdate(keySuppliers, List.of());
         }
     }
 
@@ -187,33 +237,35 @@ public abstract class AbstractTableLocationProvider
         }
 
         // Return early if there are no changes to process
-        if (transaction.locationsAdded == EMPTY_TABLE_LOCATION_KEYS
-                && transaction.locationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
+        if (transaction.locationsAdded.isEmpty() && transaction.locationsRemoved.isEmpty()) {
             return;
         }
 
-        final Collection<TrackedTableLocationKey> addedKeys =
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys =
                 new ArrayList<>(transaction.locationsAdded.size());
-        final Collection<TrackedTableLocationKey> removedKeys =
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys =
                 new ArrayList<>(transaction.locationsRemoved.size());
 
-        synchronized (tableLocations) {
+        synchronized (tableLocationKeyMap) {
             for (ImmutableTableLocationKey locationKey : transaction.locationsRemoved) {
-                // Remove this from the live set.
-                final TrackedTableLocationKey trackedKey = liveLocationKeys.get(locationKey);
-                Assert.neqNull(trackedKey, "trackedKey");
-                liveLocationKeys.remove(trackedKey);
+                final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
+                if (trackedKey == null) {
+                    // Not an error to remove a key multiple times (or a keu that was never added)
+                    continue;
+                }
+                trackedKey.deactivate();
+
                 // Pass this removed key to the subscribers
                 removedKeys.add(trackedKey);
             }
 
             for (ImmutableTableLocationKey locationKey : transaction.locationsAdded) {
                 locationCreatedRecorder = false;
-                final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
+                final TrackedKeySupplier result = tableLocationKeyMap.putIfAbsent(locationKey, this::observeInsert);
                 visitLocationKey(locationKey);
                 if (locationCreatedRecorder) {
                     verifyPartitionKeys(locationKey);
-                    addedKeys.add((TrackedTableLocationKey) result);
+                    addedKeys.add(result);
                 }
             }
         }
@@ -228,7 +280,7 @@ public abstract class AbstractTableLocationProvider
                         true)) {
                     onEmpty();
                 }
-                // Release the keys that were removed only after we have delivered the notifications and the
+                // Release the keys that were removed after we have delivered the notifications and the
                 // subscribers have had a chance to process them
                 removedKeys.forEach(livenessNode::unmanage);
             }
@@ -255,7 +307,6 @@ public abstract class AbstractTableLocationProvider
     protected final void handleTableLocationKeyAdded(
             @NotNull final TableLocationKey locationKey,
             @Nullable final Object transactionToken) {
-
         if (transactionToken != null) {
             final Transaction transaction = transactions.get(transactionToken);
             if (transaction == null) {
@@ -263,12 +314,12 @@ public abstract class AbstractTableLocationProvider
                         "No transaction with token " + transactionToken + " is currently open.");
             }
             // Store an immutable key
-            transaction.addLocationKey(toKeyImmutable(locationKey));
+            transaction.addLocationKey(locationKey.makeImmutable());
             return;
         }
 
         if (!supportsSubscriptions()) {
-            tableLocations.putIfAbsent(locationKey, this::observeInsert);
+            tableLocationKeyMap.putIfAbsent(locationKey, this::observeInsert);
             visitLocationKey(locationKey);
             return;
         }
@@ -280,13 +331,13 @@ public abstract class AbstractTableLocationProvider
             // as it minimizes lock duration for tableLocations, exemplifies correct use of putIfAbsent, and keeps
             // observeInsert out of the business of subscription processing.
             locationCreatedRecorder = false;
-            final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
+            final TrackedKeySupplier result = tableLocationKeyMap.putIfAbsent(locationKey, this::observeInsert);
             visitLocationKey(locationKey);
             if (locationCreatedRecorder) {
-                verifyPartitionKeys(locationKey);
+                verifyPartitionKeys(result.get());
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyAdded,
-                        (TrackedTableLocationKey) result,
+                        (LiveSupplier<ImmutableTableLocationKey>) result,
                         true)) {
                     onEmpty();
                 }
@@ -310,29 +361,25 @@ public abstract class AbstractTableLocationProvider
                 throw new IllegalStateException(
                         "No transaction with token " + transactionToken + " is currently open.");
             }
-            transaction.removeLocationKey(toKeyImmutable(locationKey));
+            transaction.removeLocationKey(locationKey.makeImmutable());
             return;
         }
 
         if (!supportsSubscriptions()) {
-            // Remove this from the live set and un-manage it.
-            final TrackedTableLocationKey trackedKey = liveLocationKeys.get(locationKey);
-            liveLocationKeys.remove(trackedKey);
+            final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
+            trackedKey.deactivate();
             livenessNode.unmanage(trackedKey);
             return;
         }
 
         // If we're not in a transaction, we should push this key immediately.
         synchronized (subscriptions) {
-            final Object removedLocation = tableLocations.remove(locationKey);
-            if (removedLocation != null) {
-                final TrackedTableLocationKey trackedKey = liveLocationKeys.get(locationKey);
-                Assert.neqNull(trackedKey, "trackedKey");
-                // Remove this from the live set and un-manage it.
-                liveLocationKeys.remove(trackedKey);
+            final TrackedKeySupplier trackedKey = tableLocationKeyMap.removeKey(locationKey);
+            if (trackedKey != null) {
+                trackedKey.deactivate();
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
-                        trackedKey,
+                        (LiveSupplier<ImmutableTableLocationKey>) trackedKey,
                         true)) {
                     onEmpty();
                 }
@@ -352,15 +399,13 @@ public abstract class AbstractTableLocationProvider
     protected void visitLocationKey(@NotNull final TableLocationKey locationKey) {}
 
     @NotNull
-    private Object observeInsert(@NotNull final TableLocationKey locationKey) {
+    private TrackedKeySupplier observeInsert(@NotNull final TableLocationKey locationKey) {
         // NB: This must only be called while the lock on subscriptions is held.
         locationCreatedRecorder = true;
 
-        final TrackedTableLocationKey trackedKey = toTrackedKey(locationKey);
+        final TrackedKeySupplier trackedKey = toTrackedKey(locationKey);
         livenessNode.manage(trackedKey);
 
-        // Add this to the live set.
-        liveLocationKeys.add(trackedKey);
         return trackedKey;
     }
 
@@ -410,51 +455,46 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     public void getTableLocationKeys(
-            final Consumer<TrackedTableLocationKey> consumer,
+            final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
             final Predicate<ImmutableTableLocationKey> filter) {
         // Lock the live set and deliver a copy to the listener after filtering.
-        synchronized (liveLocationKeys) {
-            liveLocationKeys.stream().filter(ttlk -> filter.test(ttlk.getKey())).forEach(consumer);
+        synchronized (tableLocationKeyMap) {
+            tableLocationKeyMap.values().stream()
+                    .filter(ttlk -> ttlk.state == TrackedKeySupplier.State.ACTIVE)
+                    .filter(ttlk -> filter.test(ttlk.get())).forEach(consumer);
         }
     }
 
     @Override
     public final boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
-        return tableLocations.containsKey(tableLocationKey);
+        return tableLocationKeyMap.containsKey(tableLocationKey);
     }
 
     @Override
     @Nullable
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-        Object current = tableLocations.get(tableLocationKey);
-        if (current == null) {
+        TrackedKeySupplier trackedKey = tableLocationKeyMap.get(tableLocationKey);
+        if (trackedKey == null) {
             return null;
         }
         // See JavaDoc on tableLocations for background.
-        // The intent is to create a TableLocation exactly once to replace the TableLocationKey placeholder that was
-        // added in handleTableLocationKey.
-        if (!(current instanceof TableLocation)) {
-            final TrackedTableLocationKey trackedKey = (TrackedTableLocationKey) current;
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        if (trackedKey.tableLocation == null) {
             synchronized (trackedKey) {
-                current = tableLocations.get(trackedKey);
-                if (trackedKey == current) {
-                    // Make a new location, have the tracked key manage it, then replace the key with the
-                    // new location in the map and return it. Note, this may contend for the lock on tableLocations
-                    final TableLocation newLocation = makeTableLocation(trackedKey.getKey());
-                    trackedKey.manageTableLocation(newLocation);
-                    tableLocations.add(current = newLocation);
+                if (trackedKey.tableLocation == null) {
+                    // Make a new location, have the tracked key manage it, then store the location in the tracked key.
+                    final TableLocation newLocation = makeTableLocation(trackedKey.get());
+                    trackedKey.setTableLocation(newLocation);
                 }
             }
         }
-        return (TableLocation) current;
+        return trackedKey.tableLocation;
     }
 
     /**
      * Remove a {@link TableLocationKey} and its corresponding {@link TableLocation} (if it was created). All
      * subscribers to this TableLocationProvider will be
-     * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(TrackedTableLocationKey) notified}. If the
-     * TableLocation was created, all of its subscribers will additionally be
+     * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(LiveSupplier<ImmutableTableLocationKey>)
+     * notified}. If the TableLocation was created, all of its subscribers will additionally be
      * {@link TableLocation.Listener#handleUpdate() notified} that it no longer exists. This TableLocationProvider will
      * continue to update other locations and will no longer provide or request information about the removed location.
      *
@@ -489,59 +529,25 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.
+     * Key definition for {@link LiveSupplier<ImmutableTableLocationKey>} lookup by {@link ImmutableTableLocationKey}.
      */
-    private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, Object> {
+    private static final class TableLocationKeyDefinition
+            extends KeyedObjectKey.Basic<TableLocationKey, TrackedKeySupplier> {
 
-        private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE = new LocationKeyDefinition();
+        private static final KeyedObjectKey<TableLocationKey, TrackedKeySupplier> INSTANCE =
+                new TableLocationKeyDefinition();
 
-        private LocationKeyDefinition() {}
+        private TableLocationKeyDefinition() {}
 
         @Override
-        public TableLocationKey getKey(@NotNull final Object keyOrLocation) {
-            return toKey(keyOrLocation);
+        public TableLocationKey getKey(TrackedKeySupplier immutableKeySupplier) {
+            return immutableKeySupplier.get();
         }
     }
 
-    /**
-     * Key definition for {@link TrackedTableLocationKey} lookup by {@link ImmutableTableLocationKey}.
-     */
-    private static final class ImmutableTableLocationKeyDefinition
-            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, TrackedTableLocationKey> {
-
-        private static final KeyedObjectKey<ImmutableTableLocationKey, TrackedTableLocationKey> INSTANCE =
-                new ImmutableTableLocationKeyDefinition();
-
-        private ImmutableTableLocationKeyDefinition() {}
-
-        @Override
-        public ImmutableTableLocationKey getKey(TrackedTableLocationKey trackedTableLocationKey) {
-            return trackedTableLocationKey.getKey();
-        }
+    private TrackedKeySupplier toTrackedKey(@NotNull final TableLocationKey locationKey) {
+        return new TrackedKeySupplier(locationKey.makeImmutable(), this::releaseLocationKey);
     }
-
-    private static TableLocationKey toKey(@NotNull final Object keyOrLocation) {
-        if (keyOrLocation instanceof TableLocation) {
-            return ((TableLocation) keyOrLocation).getKey();
-        }
-        if (keyOrLocation instanceof TrackedTableLocationKey) {
-            return (((TrackedTableLocationKey) keyOrLocation).getKey());
-        }
-        if (keyOrLocation instanceof TableLocationKey) {
-            return ((TableLocationKey) keyOrLocation);
-        }
-        throw new IllegalArgumentException(
-                "toKey expects a TableLocation or a TableLocationKey, instead received a " + keyOrLocation.getClass());
-    }
-
-    private static ImmutableTableLocationKey toKeyImmutable(@NotNull final Object keyOrLocation) {
-        return (ImmutableTableLocationKey) toKey(keyOrLocation);
-    }
-
-    private TrackedTableLocationKey toTrackedKey(@NotNull final TableLocationKey locationKey) {
-        return new TrackedTableLocationKey(locationKey.makeImmutable(), this::releaseLocationKey);
-    }
-
 
     private static <T> boolean equals(Collection<T> c1, Collection<T> c2) {
         final Iterator<T> i2 = c2.iterator();
@@ -557,13 +563,13 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Called when every reference to the {@link TrackedTableLocationKey key} has been released.
+     * Called when every reference to the {@link LiveSupplier<ImmutableTableLocationKey> key} has been released.
      *
      * @param locationKey the key to release
      */
-    private void releaseLocationKey(@NotNull final TrackedTableLocationKey locationKey) {
+    private void releaseLocationKey(@NotNull final TrackedKeySupplier locationKey) {
         // We can now remove the key from the tableLocations map
-        tableLocations.remove(locationKey.getKey());
+        tableLocationKeyMap.removeKey(locationKey.get());
     }
 
     private void destroy() {
