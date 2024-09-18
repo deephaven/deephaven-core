@@ -1783,6 +1783,20 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
     }
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}DecrementExact(){
+        assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, decrementExact(${pt.null}));
+
+        try {
+            decrementExact((${pt.primitive})${pt.minValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
     </#if>
     </#list>
 }

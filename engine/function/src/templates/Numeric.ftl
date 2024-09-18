@@ -3464,8 +3464,40 @@ public class Numeric {
         </#if>
     }
 
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument decremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to decrement.
+     * @return the result of decrementing by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} decrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
 
-        //TODO:  decrementExact
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.decrementExact(x);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            //TODO: Should overflows return NULL or throw an exception?
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        //TODO: Should overflows return NULL or throw an exception?
+        return Math.decrementExact(x);
+        </#if>
+    }
+    </#if>
+
+
         //TODO:  expm2
         //TODO:  floorDiv
         //TODO:  floorMod
