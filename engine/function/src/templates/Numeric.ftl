@@ -3511,8 +3511,20 @@ public class Numeric {
         return Math.cosh(x);
     }
 
+    /**
+     * Returns e^x -1.
+     *
+     * @param x the value
+     * @returns e^x-1.  If the value is null, returns null.
+     */
+     static public double expm1(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
 
-        //TODO:  expm2
+        return Math.expm1(x);
+     }
+
         //TODO:  floorDiv
         //TODO:  floorMod
         //TODO:  getExponent

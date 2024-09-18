@@ -1802,6 +1802,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cosh(${pt.null}));
     }
 
+    public void test${pt.boxed}Expm1(){
+        assertEquals(Math.expm1((${pt.primitive})2), expm1((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, expm1(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
