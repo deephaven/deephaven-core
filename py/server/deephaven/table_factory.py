@@ -255,8 +255,7 @@ class InputTable(Table):
 
     def add(self, table: Table) -> None:
         """Synchronously writes rows from the provided table to this input table. If this is a keyed input table,
-        added rows with keys
-        that match existing rows will replace those rows.
+        added rows with keys that match existing rows will replace those rows.
 
         Args:
             table (Table): the table that provides the rows to write
@@ -271,8 +270,7 @@ class InputTable(Table):
 
     def delete(self, table: Table) -> None:
         """Synchronously  deletes the keys contained in the provided table from this keyed input table. If this
-        method is called on an
-        append-only input table, an error will be raised.
+        method is called on an append-only input table, an error will be raised.
 
         Args:
             table (Table): the table with the keys to delete
@@ -292,6 +290,9 @@ class InputTable(Table):
         waiting for the operation to complete. If the operation succeeds, the optional on_success callback if provided
         will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
         is not provided, a default callback function will be called that simply prints out the received exception.
+
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
 
         Args:
             table (Table): the table that provides the rows to write
@@ -325,6 +326,9 @@ class InputTable(Table):
         the operation to complete. If the operation succeeds, the optional on_success callback if provided
         will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
         is not provided, a default callback function will be called that simply prints out the received exception.
+
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
 
         Args:
             table (Table): the table with the keys to delete

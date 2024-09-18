@@ -8,57 +8,52 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Objects;
 
 @ScriptApi
 public class PythonInputTableStatusListenerAdapter implements InputTableStatusListener {
 
     private static final Logger log = LoggerFactory.getLogger(PythonInputTableStatusListenerAdapter.class);
-    private final PyObject pyOnSuccessCallable;
+    private final PyObject pyOnSuccessCallback;
     private final PyObject pyOnErrorCallback;
 
     /**
      * Create a Python InputTable status listener.
      *
-     * @param pyOnSuccessListener The Python onSuccess callback function.
-     * @param pyOnErrorCallback The Python onError callback function.
+     * @param pyOnSuccessCallback The Python onSuccess callback function.
+     * @param pyOnErrorCallback   The Python onError callback function.
      */
-    private PythonInputTableStatusListenerAdapter(@Nullable PyObject pyOnSuccessListener,
-            @Nonnull PyObject pyOnErrorCallback) {
-        this.pyOnSuccessCallable = pyOnSuccessListener;
+    private PythonInputTableStatusListenerAdapter(@Nullable PyObject pyOnSuccessCallback,
+                                                  @NotNull PyObject pyOnErrorCallback) {
+        this.pyOnSuccessCallback = pyOnSuccessCallback;
         this.pyOnErrorCallback = pyOnErrorCallback;
     }
 
-    public static PythonInputTableStatusListenerAdapter create(@Nullable PyObject pyOnSuccessListener,
-            @Nonnull PyObject pyOnErrorCallback) {
-        return new PythonInputTableStatusListenerAdapter(pyOnSuccessListener,
+    public static PythonInputTableStatusListenerAdapter create(@Nullable PyObject pyOnSuccessCallback,
+                                                               @NotNull PyObject pyOnErrorCallback) {
+        return new PythonInputTableStatusListenerAdapter(pyOnSuccessCallback,
                 Objects.requireNonNull(pyOnErrorCallback, "Python on_error callback cannot be None"));
     }
 
     @Override
     public void onError(Throwable originalException) {
-        if (!pyOnErrorCallback.isNone()) {
-            try {
-                pyOnErrorCallback.call("__call__", ExceptionUtils.getStackTrace(originalException));
-            } catch (Throwable e) {
-                // If the Python onFailure callback fails, log the new exception
-                // and continue with the original exception.
-                log.error().append("Python on_error callback failed: ").append(e).endl();
-            }
-        } else {
-            log.error().append("Python on_error callback is None: ")
-                    .append(ExceptionUtils.getStackTrace(originalException)).endl();
+        try {
+            pyOnErrorCallback.call("__call__", ExceptionUtils.getStackTrace(originalException));
+        } catch (Throwable e) {
+            // If the Python onFailure callback fails, log the new exception
+            // and continue with the original exception.
+            log.error().append("Python on_error callback failed: ").append(e).endl();
         }
     }
 
     @Override
     public void onSuccess() {
-        if (pyOnSuccessCallable != null && !pyOnSuccessCallable.isNone()) {
-            pyOnSuccessCallable.call("__call__");
+        if (pyOnSuccessCallback != null && !pyOnSuccessCallback.isNone()) {
+            pyOnSuccessCallback.call("__call__");
         } else {
             InputTableStatusListener.super.onSuccess();
         }
