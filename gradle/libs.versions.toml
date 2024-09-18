@@ -61,7 +61,7 @@ mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "5.8.3"
 pac4j = "5.7.0"
-parquet = "1.14.0"
+parquet = "1.14.1"
 picocli = "4.7.6"
 postgresql = "42.7.3"
 protobuf = "3.25.3"
@@ -76,7 +76,8 @@ tdunning = "3.2"
 trove = "3.0.3"
 undercouch = "2.15.1"
 univocity = "2.6.0"
-vertispan-nio = "1.0-alpha-1"
+vertispan-nio = "1.0-alpha-2"
+vertispan-flatbuffers-gwt = "1.12.0-1"
 vertispan-ts-defs = "1.0.0-RC4"
 
 # test versions
@@ -286,6 +287,8 @@ undercouch-bson4jackson = { module = "de.undercouch:bson4jackson", version.ref =
 univocity-parsers = { module = "com.univocity:univocity-parsers", version.ref = "univocity" }
 
 vertispan-nio-gwt = { module = "com.vertispan.nio:gwt-nio", version.ref = "vertispan-nio" }
+
+vertispan-flatbuffers-gwt = { module = "com.vertispan.flatbuffers:flatbuffers-gwt", version.ref = "vertispan-flatbuffers-gwt" }
 
 vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-annotations", version.ref = "vertispan-ts-defs" }
 vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }

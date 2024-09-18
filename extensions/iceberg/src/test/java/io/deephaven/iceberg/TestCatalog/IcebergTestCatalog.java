@@ -10,7 +10,7 @@ import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.exceptions.NoSuchNamespaceException;
-import org.apache.iceberg.io.FileIO;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
@@ -19,7 +19,7 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
     private final Map<Namespace, Map<TableIdentifier, Table>> namespaceTableMap;
     private final Map<TableIdentifier, Table> tableMap;
 
-    private IcebergTestCatalog(final String path, final FileIO fileIO) {
+    private IcebergTestCatalog(final String path, @NotNull final Map<String, String> properties) {
         namespaceTableMap = new HashMap<>();
         tableMap = new HashMap<>();
 
@@ -33,7 +33,7 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
                     if (tableFile.isDirectory()) {
                         // Second level is table name.
                         final TableIdentifier tableId = TableIdentifier.of(namespace, tableFile.getName());
-                        final Table table = IcebergTestTable.loadFromMetadata(tableFile.getAbsolutePath(), fileIO);
+                        final Table table = IcebergTestTable.loadFromMetadata(tableFile.getAbsolutePath(), properties);
 
                         // Add it to the maps.
                         namespaceTableMap.get(namespace).put(tableId, table);
@@ -44,8 +44,8 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
         }
     }
 
-    public static IcebergTestCatalog create(final String path, final FileIO fileIO) {
-        return new IcebergTestCatalog(path, fileIO);
+    public static IcebergTestCatalog create(final String path, @NotNull final Map<String, String> properties) {
+        return new IcebergTestCatalog(path, properties);
     }
 
     @Override

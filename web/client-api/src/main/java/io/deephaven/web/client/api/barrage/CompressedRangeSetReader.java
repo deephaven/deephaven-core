@@ -175,7 +175,7 @@ public class CompressedRangeSetReader {
                     if (pending >= 0) {
                         append(pending);
                     }
-                    return RangeSet.fromSortedRanges(sortedRanges.toArray(new Range[0]));
+                    return RangeSet.fromSortedRanges(sortedRanges);
                 default:
                     throw new IllegalStateException("Bad command: " + command + " at position " + data.position());
             }

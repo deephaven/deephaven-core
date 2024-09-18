@@ -15,6 +15,7 @@ import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 
 import java.util.*;
 
@@ -33,11 +34,24 @@ public class IcebergCatalogAdapter {
 
     private final Catalog catalog;
 
+    private final DataInstructionsProviderLoader dataInstructionsProvider;
+
     /**
-     * Construct an IcebergCatalogAdapter from a catalog and file IO.
+     * Construct an IcebergCatalogAdapter from a catalog.
      */
     IcebergCatalogAdapter(@NotNull final Catalog catalog) {
+        this(catalog, Map.of());
+    }
+
+    /**
+     * Construct an IcebergCatalogAdapter from a catalog and property collection.
+     */
+    IcebergCatalogAdapter(
+            @NotNull final Catalog catalog,
+            @NotNull final Map<String, String> properties) {
         this.catalog = catalog;
+
+        dataInstructionsProvider = DataInstructionsProviderLoader.create(Map.copyOf(properties));
     }
 
 
@@ -187,7 +201,7 @@ public class IcebergCatalogAdapter {
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
         }
-        return new IcebergTableAdapter(tableIdentifier, table);
+        return new IcebergTableAdapter(tableIdentifier, table, dataInstructionsProvider);
     }
 
     /**

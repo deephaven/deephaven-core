@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import java.util.Map;
+
 public class IcebergMinIOTest extends IcebergToolsTest {
 
     @BeforeClass
@@ -29,4 +31,10 @@ public class IcebergMinIOTest extends IcebergToolsTest {
     public S3AsyncClient s3AsyncClient() {
         return SingletonContainers.MinIO.s3AsyncClient();
     }
+
+    @Override
+    public Map<String, String> s3Properties() {
+        return SingletonContainers.MinIO.s3Properties();
+    }
+
 }

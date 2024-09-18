@@ -1,139 +1,101 @@
-﻿using Deephaven.DeephavenClient.ExcelAddIn.Util;
-using Deephaven.ExcelAddIn.Factories;
+﻿using Deephaven.ExcelAddIn.Factories;
 using Deephaven.ExcelAddIn.Models;
 using Deephaven.ExcelAddIn.Util;
-using System.Net;
 
 namespace Deephaven.ExcelAddIn.Providers;
 
-internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr<SessionBase>>, IObservable<StatusOr<CredentialsBase>>, IDisposable {
-  private StatusOr<CredentialsBase> _credentials = StatusOr<CredentialsBase>.OfStatus("[Not set]");
+internal class SessionProvider : IObserver<StatusOr<CredentialsBase>>, IObservable<StatusOr<SessionBase>> {
+  private readonly StateManager _stateManager;
+  private readonly WorkerThread _workerThread;
+  private readonly EndpointId _endpointId;
+  private Action? _onDispose;
+  private IDisposable? _upstreamSubscriptionDisposer = null;
   private StatusOr<SessionBase> _session = StatusOr<SessionBase>.OfStatus("[Not connected]");
-  private readonly ObserverContainer<StatusOr<CredentialsBase>> _credentialsObservers = new();
-  private readonly ObserverContainer<StatusOr<SessionBase>> _sessionObservers = new();
-  /// <summary>
-  /// This is used to ignore the results from multiple invocations of "SetCredentials".
-  /// </summary>
-  private readonly SimpleAtomicReference<object> _sharedSetCredentialsCookie = new(new object());
+  private readonly ObserverContainer<StatusOr<SessionBase>> _observers = new();
+  private readonly VersionTracker _versionTracker = new();
 
-  public void Dispose() {
-    // Get on the worker thread if not there already.
-    if (workerThread.InvokeIfRequired(Dispose)) {
-      return;
-    }
-
-    // TODO(kosak)
-    // I feel like we should send an OnComplete to any remaining observers
-
-    if (!_session.GetValueOrStatus(out var sess, out _)) {
-      return;
-    }
-
-    _sessionObservers.SetAndSendStatus(ref _session, "Disposing");
-    sess.Dispose();
+  public SessionProvider(StateManager stateManager, EndpointId endpointId, Action onDispose) {
+    _stateManager = stateManager;
+    _workerThread = stateManager.WorkerThread;
+    _endpointId = endpointId;
+    _onDispose = onDispose;
   }
 
-  /// <summary>
-  /// Subscribe to credentials changes
-  /// </summary>
-  /// <param name="observer"></param>
-  /// <returns></returns>
-  public IDisposable Subscribe(IObserver<StatusOr<CredentialsBase>> observer) {
-    workerThread.Invoke(() => {
-      // New observer gets added to the collection and then notified of the current status.
-      _credentialsObservers.Add(observer, out _);
-      observer.OnNext(_credentials);
-    });
-
-    return ActionAsDisposable.Create(() => {
-      workerThread.Invoke(() => {
-        _credentialsObservers.Remove(observer, out _);
-      });
-    });
+  public void Init() {
+    _upstreamSubscriptionDisposer = _stateManager.SubscribeToCredentials(_endpointId, this);
   }
 
   /// <summary>
   /// Subscribe to session changes
   /// </summary>
-  /// <param name="observer"></param>
-  /// <returns></returns>
   public IDisposable Subscribe(IObserver<StatusOr<SessionBase>> observer) {
-    workerThread.Invoke(() => {
-      // New observer gets added to the collection and then notified of the current status.
-      _sessionObservers.Add(observer, out _);
+    _workerThread.EnqueueOrRun(() => {
+      _observers.Add(observer, out _);
       observer.OnNext(_session);
     });
 
-    return ActionAsDisposable.Create(() => {
-      workerThread.Invoke(() => {
-        _sessionObservers.Remove(observer, out _);
-      });
+    return _workerThread.EnqueueOrRunWhenDisposed(() => {
+      _observers.Remove(observer, out var isLast);
+      if (!isLast) {
+        return;
+      }
+
+      Utility.Exchange(ref _upstreamSubscriptionDisposer, null)?.Dispose();
+      Utility.Exchange(ref _onDispose, null)?.Invoke();
+      DisposeSessionState();
     });
   }
 
-  public void SetCredentials(CredentialsBase credentials) {
-    // Get on the worker thread if not there already.
-    if (workerThread.InvokeIfRequired(() => SetCredentials(credentials))) {
+  public void OnNext(StatusOr<CredentialsBase> credentials) {
+    if (_workerThread.EnqueueOrNop(() => OnNext(credentials))) {
       return;
     }
 
-    // Dispose existing session
-    if (_session.GetValueOrStatus(out var sess, out _)) {
-      _sessionObservers.SetAndSendStatus(ref _session, "Disposing session");
-      sess.Dispose();
+    DisposeSessionState();
+
+    if (!credentials.GetValueOrStatus(out var cbase, out var status)) {
+      _observers.SetAndSendStatus(ref _session, status);
+      return;
     }
 
-    _credentialsObservers.SetAndSendValue(ref _credentials, credentials);
+    _observers.SetAndSendStatus(ref _session, "Trying to connect");
 
-    _sessionObservers.SetAndSendStatus(ref _session, "Trying to connect");
-
-    Utility.RunInBackground(() => CreateSessionBaseInSeparateThread(credentials));
+    var cookie = _versionTracker.SetNewVersion();
+    Utility.RunInBackground(() => CreateSessionBaseInSeparateThread(cbase, cookie));
   }
 
-  void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
-    // Make a unique sentinel object to indicate that this thread should be
-    // the one privileged to provide the system with the Session corresponding
-    // to the credentials. If SetCredentials isn't called in the meantime,
-    // we will go ahead and provide our answer to the system. However, if
-    // SetCredentials is called again, triggering a new thread, then that
-    // new thread will usurp our privilege and it will be the one to provide
-    // the answer.
-    var localLatestCookie = new object();
-    _sharedSetCredentialsCookie.Value = localLatestCookie;
-
+  private void CreateSessionBaseInSeparateThread(CredentialsBase credentials, VersionTrackerCookie versionCookie) {
+    SessionBase? sb = null;
     StatusOr<SessionBase> result;
     try {
       // This operation might take some time.
-      var sb = SessionBaseFactory.Create(credentials, workerThread);
+      sb = SessionBaseFactory.Create(credentials, _workerThread);
       result = StatusOr<SessionBase>.OfValue(sb);
     } catch (Exception ex) {
       result = StatusOr<SessionBase>.OfStatus(ex.Message);
     }
 
-    // If sharedTestCredentialsCookie is still the same, then our privilege
-    // has not been usurped and we can provide our answer to the system.
-    // On the other hand, if it has changed, then we will just throw away our work.
-    if (!ReferenceEquals(localLatestCookie, _sharedSetCredentialsCookie.Value)) {
-      // Our results are moot. Dispose of them.
-      if (result.GetValueOrStatus(out var sb, out _)) {
-        sb.Dispose();
-      }
+    // Some time has passed. It's possible that the VersionTracker has been reset
+    // with a newer version. If so, we should throw away our work and leave.
+    if (!versionCookie.IsCurrent) {
+      sb?.Dispose();
       return;
     }
 
     // Our results are valid. Keep them and tell everyone about it (on the worker thread).
-    workerThread.Invoke(() => _sessionObservers.SetAndSend(ref _session, result));
+    _workerThread.EnqueueOrRun(() => _observers.SetAndSend(ref _session, result));
   }
 
-  public void Reconnect() {
-    // Get on the worker thread if not there already.
-    if (workerThread.InvokeIfRequired(Reconnect)) {
+  private void DisposeSessionState() {
+    if (_workerThread.EnqueueOrNop(DisposeSessionState)) {
       return;
     }
 
-    // We implement this as a SetCredentials call, with credentials we already have.
-    if (_credentials.GetValueOrStatus(out var creds, out _)) {
-      SetCredentials(creds);
+    _ = _session.GetValueOrStatus(out var oldSession, out _);
+    _observers.SetAndSendStatus(ref _session, "Disposing Session");
+
+    if (oldSession != null) {
+      Utility.RunInBackground(oldSession.Dispose);
     }
   }
 

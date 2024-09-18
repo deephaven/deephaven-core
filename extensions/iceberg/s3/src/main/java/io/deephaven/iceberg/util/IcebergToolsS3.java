@@ -6,11 +6,9 @@ package io.deephaven.iceberg.util;
 import com.google.common.base.Strings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
-import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
-import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,7 +71,7 @@ public class IcebergToolsS3 extends IcebergTools {
         catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
-        return new IcebergCatalogAdapter(catalog);
+        return new IcebergCatalogAdapter(catalog, properties);
     }
 
     /**
@@ -105,6 +103,6 @@ public class IcebergToolsS3 extends IcebergTools {
         catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
-        return new IcebergCatalogAdapter(catalog);
+        return new IcebergCatalogAdapter(catalog, properties);
     }
 }

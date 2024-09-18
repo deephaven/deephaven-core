@@ -145,6 +145,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     public abstract Optional<URI> endpointOverride();
 
+    public abstract S3Instructions withEndpointOverride(final URI endpointOverride);
+
     public interface Builder {
         Builder regionName(String regionName);
 

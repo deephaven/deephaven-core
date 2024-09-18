@@ -2,74 +2,72 @@
 
 namespace Deephaven.ExcelAddIn.Views;
 
+using SelectedRowsAction = Action<ConnectionManagerDialogRow[]>;
+
 public partial class ConnectionManagerDialog : Form {
-  private const string IsDefaultColumnName = "IsDefault";
-  private const string SettingsButtonColumnName = "settings_button_column";
-  private const string ReconnectButtonColumnName = "reconnect_button_column";
-  private readonly Action _onNewButtonClicked;
+  public event Action? OnNewButtonClicked;
+  public event SelectedRowsAction? OnDeleteButtonClicked;
+  public event SelectedRowsAction? OnReconnectButtonClicked;
+  public event SelectedRowsAction? OnMakeDefaultButtonClicked;
+  public event SelectedRowsAction? OnEditButtonClicked;
+
   private readonly BindingSource _bindingSource = new();
 
-  public ConnectionManagerDialog(Action onNewButtonClicked) {
-    _onNewButtonClicked = onNewButtonClicked;
-
+  public ConnectionManagerDialog() {
     InitializeComponent();
 
     _bindingSource.DataSource = typeof(ConnectionManagerDialogRow);
     dataGridView1.DataSource = _bindingSource;
-
-    var settingsButtonColumn = new DataGridViewButtonColumn {
-      Name = SettingsButtonColumnName,
-      HeaderText = "Credentials",
-      Text = "Edit",
-      UseColumnTextForButtonValue = true
-    };
-
-    var reconnectButtonColumn = new DataGridViewButtonColumn {
-      Name = ReconnectButtonColumnName,
-      HeaderText = "Reconnect",
-      Text = "Reconnect",
-      UseColumnTextForButtonValue = true
-    };
-
-    dataGridView1.Columns.Add(settingsButtonColumn);
-    dataGridView1.Columns.Add(reconnectButtonColumn);
-
-    dataGridView1.CellClick += DataGridView1_CellClick;
   }
 
   public void AddRow(ConnectionManagerDialogRow row) {
+    if (InvokeRequired) {
+      Invoke(() => AddRow(row));
+      return;
+    }
     _bindingSource.Add(row);
+    dataGridView1.ClearSelection();
   }
 
-  private void DataGridView1_CellClick(object? sender, DataGridViewCellEventArgs e) {
-    if (e.RowIndex < 0) {
+  public void RemoveRow(ConnectionManagerDialogRow row) {
+    if (InvokeRequired) {
+      Invoke(() => RemoveRow(row));
       return;
     }
-
-    if (_bindingSource[e.RowIndex] is not ConnectionManagerDialogRow row) {
-      return;
-    }
-    var name = dataGridView1.Columns[e.ColumnIndex].Name;
-
-    switch (name) {
-      case SettingsButtonColumnName: {
-        row.SettingsClicked();
-        break;
-      }
-
-      case ReconnectButtonColumnName: {
-        row.ReconnectClicked();
-        break;
-      }
-
-      case IsDefaultColumnName: {
-        row.IsDefaultClicked();
-        break;
-      }
-    }
+    _bindingSource.Remove(row);
   }
 
   private void newButton_Click(object sender, EventArgs e) {
-    _onNewButtonClicked();
+    OnNewButtonClicked?.Invoke();
+  }
+
+  private void reconnectButton_Click(object sender, EventArgs e) {
+    var selections = GetSelectedRows();
+    OnReconnectButtonClicked?.Invoke(selections);
+  }
+
+  private void editButton_Click(object sender, EventArgs e) {
+    var selections = GetSelectedRows();
+    OnEditButtonClicked?.Invoke(selections);
+  }
+
+  private void deleteButton_Click(object sender, EventArgs e) {
+    var selections = GetSelectedRows();
+    OnDeleteButtonClicked?.Invoke(selections);
+  }
+
+  private void makeDefaultButton_Click(object sender, EventArgs e) {
+    var selections = GetSelectedRows();
+    OnMakeDefaultButtonClicked?.Invoke(selections);
+  }
+
+  private ConnectionManagerDialogRow[] GetSelectedRows() {
+    var result = new List<ConnectionManagerDialogRow>();
+    var sr = dataGridView1.SelectedRows;
+    var count = sr.Count;
+    for (var i = 0; i != count; ++i) {
+      result.Add((ConnectionManagerDialogRow)sr[i].DataBoundItem);
+    }
+    return result.ToArray();
   }
 }

@@ -201,12 +201,15 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     return array
 
 
-def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
+def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = True) -> Table:
     """Creates a new table from a pandas DataFrame.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
         cols (List[str]): the dataframe column names, default is None which means including all columns in the DataFrame
+        infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
+            DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
+            perform the conversion. Note that any conversion will make a copy of the data.
 
     Returns:
         a Deephaven table
@@ -222,11 +225,19 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
         if diff_set:
             raise DHError(message=f"columns - {list(diff_set)} not found")
 
+    # if infer_objects is True, convert object dtypes to the best possible types supporting pd.NA
+    converted_df = df
+    if infer_objects:
+        converted_df = df[cols]
+        for col in cols:
+            if df.dtypes[col] == object:
+                converted_df[col] = df[col].convert_dtypes()
+
     # if any arrow backed column is present, create a pyarrow table first, then upload to DH, if error occurs, fall
     # back to the numpy-array based approach
-    if _is_dtype_backend_supported and any(isinstance(df[col].dtype, pd.ArrowDtype) for col in cols):
+    if _is_dtype_backend_supported and any(isinstance(converted_df[col].dtype, pd.ArrowDtype) for col in cols):
         try:
-            pa_table = pa.Table.from_pandas(df=df, columns=cols)
+            pa_table = pa.Table.from_pandas(df=converted_df, columns=cols)
             dh_table = arrow.to_table(pa_table)
             return dh_table
         except:
@@ -235,9 +246,9 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
     try:
         input_cols = []
         for col in cols:
-            np_array = df.get(col).values
-            if isinstance(df.dtypes[col], pd.CategoricalDtype):
-                dtype = df.dtypes[col].categories.dtype
+            np_array = converted_df.get(col).values
+            if isinstance(converted_df.dtypes[col], pd.CategoricalDtype):
+                dtype = converted_df.dtypes[col].categories.dtype
             else:
                 dtype = np_array.dtype
             dh_dtype = dtypes.from_np_dtype(dtype)

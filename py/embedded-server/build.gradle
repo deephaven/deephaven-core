@@ -27,7 +27,7 @@ dependencies {
     }
 }
 
-def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
+def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer') {
     copyIn {
         from('tests') {
             into 'project/tests'
@@ -62,4 +62,4 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     }
 }
 
-tasks.getByName('check').dependsOn(testPyClient)
+tasks.getByName('check').dependsOn(testEmbeddedServer)

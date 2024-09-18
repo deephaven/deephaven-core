@@ -12,6 +12,7 @@ import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +51,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     Snapshot snapshot;
 
     /**
+     * The data instructions provider for creating instructions from URI and user-supplied properties.
+     */
+    final DataInstructionsProviderLoader dataInstructionsProvider;
+
+    /**
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
      * accessed while synchronized on {@code this}.
      */
@@ -75,8 +81,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     }
                 }
 
-                // Add the data instructions.
-                instructions.dataInstructions().ifPresent(builder::setSpecialInstructions);
+                // Add the data instructions if provided as part of the IcebergInstructions.
+                if (instructions.dataInstructions().isPresent()) {
+                    builder.setSpecialInstructions(instructions.dataInstructions().get());
+                } else {
+                    // Attempt to create data instructions from the properties collection and URI.
+                    final Object dataInstructions = dataInstructionsProvider.fromServiceLoader(fileUri);
+                    if (dataInstructions != null) {
+                        builder.setSpecialInstructions(dataInstructions);
+                    }
+                }
 
                 parquetInstructions = builder.build();
             }
@@ -94,10 +108,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final Snapshot tableSnapshot,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
         this.snapshot = tableSnapshot;
         this.instructions = instructions;
+        this.dataInstructionsProvider = dataInstructionsProvider;
 
         this.tableDef = tableAdapter.definition(tableSnapshot, instructions);
 

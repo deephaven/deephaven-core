@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
@@ -47,8 +48,9 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergInstructions instructions) {
-        super(tableAdapter, tableSnapshot, instructions);
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
+        super(tableAdapter, tableSnapshot, instructions, dataInstructionsProvider);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.

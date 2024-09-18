@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
@@ -53,12 +54,15 @@ public class IcebergTableAdapter {
 
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
+    private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
     public IcebergTableAdapter(
             final TableIdentifier tableIdentifier,
-            final org.apache.iceberg.Table table) {
+            final org.apache.iceberg.Table table,
+            final DataInstructionsProviderLoader dataInstructionsProviderLoader) {
         this.table = table;
         this.tableIdentifier = tableIdentifier;
+        this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
     }
 
     /**
@@ -356,11 +360,10 @@ public class IcebergTableAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, snapshot, userInstructions);
+            keyFinder = new IcebergFlatLayout(this, snapshot, userInstructions, dataInstructionsProviderLoader);
         } else {
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec,
-                    userInstructions);
+            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec, userInstructions, dataInstructionsProviderLoader);
         }
 
         if (instructions == null
