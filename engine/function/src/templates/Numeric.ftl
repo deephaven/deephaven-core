@@ -3497,6 +3497,14 @@ public class Numeric {
     }
     </#if>
 
+    static public double cosh(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.cosh(x);
+    }
+
 
         //TODO:  expm2
         //TODO:  floorDiv

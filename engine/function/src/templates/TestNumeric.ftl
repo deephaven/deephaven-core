@@ -1797,6 +1797,11 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    public void test${pt.boxed}Cosh(){
+        assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cosh(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
