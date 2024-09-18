@@ -3525,7 +3525,25 @@ public class Numeric {
         return Math.expm1(x);
      }
 
-        //TODO:  floorDiv
+    <#if pt.valueType.isInteger>
+     /**
+      * Returns the largest (closest to positive infinity) int value that is less than or equal to the
+      * algebraic quotient.
+      *
+      * @param x the dividend.
+      * @param y the divisor.
+      * @returns the largest (closest to positive infinity) int value that is less than or equal to the
+      *    algebraic quotient.  If either value is null, returns null.
+      */
+    static public ${pt.primitive} floorDiv(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.floorDiv(x, y);
+    }
+    </#if>
+
         //TODO:  floorMod
         //TODO:  getExponent
         //TODO:  hypot

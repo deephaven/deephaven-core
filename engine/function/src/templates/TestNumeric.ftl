@@ -1807,6 +1807,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, expm1(${pt.null}));
     }
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorDiv(){
+        assertEquals(Math.floorDiv(7, 2), floorDiv((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
     </#if>
     </#list>
 }
