@@ -99,7 +99,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
-        return rawColumnSource.cast(clazz);
+        return rawColumnSource.cast(clazz, sourceName);
     }
 
     @Override
@@ -108,13 +108,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             @Nullable Class<?> componentType) {
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
-        try {
-            // noinspection unchecked
-            return rawColumnSource.cast(clazz, componentType);
-        } catch (ClassCastException ex) {
-            throw new RuntimeException(
-                    "Error retrieving ColumnSource with type " + clazz.getName() + " for column " + sourceName, ex);
-        }
+        // noinspection unchecked
+        return rawColumnSource.cast(clazz, componentType, sourceName);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
