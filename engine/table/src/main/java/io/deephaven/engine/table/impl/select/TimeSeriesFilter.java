@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -122,6 +123,7 @@ public class TimeSeriesFilter
             final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
                     (QueryTable) table, columnName, periodNanos + 1, windowSourceName, true);
             tableWithWindow = (QueryTable) pair.first;
+            mergedListener.windowColumnSet = tableWithWindow.newModifiedColumnSet(windowSourceName);
             refreshFunctionForUnitTests = pair.second;
 
             manage(tableWithWindow);
@@ -159,7 +161,7 @@ public class TimeSeriesFilter
 
     @Override
     public boolean satisfied(long step) {
-        return updateGraph.satisfied(step);
+        return mergedListener.satisfied(step);
     }
 
     @Override
@@ -184,6 +186,7 @@ public class TimeSeriesFilter
 
     private class TimeSeriesFilterMergedListener extends MergedListener {
         final WritableRowSet inWindowRowset = RowSetFactory.empty();
+        private ModifiedColumnSet windowColumnSet;
 
         protected TimeSeriesFilterMergedListener(String listenerDescription) {
             super(windowListenerRecorder, windowDependency, listenerDescription, null);
@@ -192,12 +195,18 @@ public class TimeSeriesFilter
         @Override
         protected void process() {
             synchronized (TimeSeriesFilter.this) {
-                final TableUpdate update = windowListenerRecorder.get(0).getUpdate().acquire();
+                final ListenerRecorder recorder = windowListenerRecorder.get(0);
+                Assert.assertion(recorder.recordedVariablesAreValid(), "recorder.recordedVariablesAreValid()");
+                final TableUpdate update = recorder.getUpdate().acquire();
 
                 inWindowRowset.remove(update.removed());
-                if (update.modifiedColumnSet().containsAll(tableWithWindow.newModifiedColumnSet(windowSourceName))) {
+                final boolean windowModified = update.modifiedColumnSet().containsAny(windowColumnSet);
+                if (windowModified) {
                     // we need to check on the modified rows; they may be in the window,
                     inWindowRowset.remove(update.getModifiedPreShift());
+                }
+                update.shifted().apply(inWindowRowset);
+                if (windowModified) {
                     insertMatched(update.modified());
                 }
                 insertMatched(update.added());
@@ -211,7 +220,9 @@ public class TimeSeriesFilter
         }
 
         private void insertMatched(final RowSet rowSet) {
-            // TODO: should we include nulls here?
+            // The original filter did not include nulls for a regular filter, so we do not include them here either to
+            // maintain compatibility.  That also means the inverted filter is going to include nulls (as the null is
+            // less than the current time using Deephaven long comparisons).
             try (final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
                     null, rowSet, Boolean.TRUE)) {
                 inWindowRowset.insert(matched);

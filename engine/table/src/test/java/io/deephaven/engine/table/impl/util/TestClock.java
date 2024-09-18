@@ -7,6 +7,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.Instant;
+import java.time.ZoneId;
 
 /**
  * A clock that has a fixed time for use in unit tests.
@@ -74,6 +75,6 @@ public class TestClock implements Clock {
 
     @Override
     public String toString() {
-        return "TestClock{" + DateTimeUtils.epochNanosToInstant(nanos) + "}";
+        return "TestClock{" + DateTimeUtils.epochNanosToInstant(nanos).atZone(ZoneId.systemDefault()) + "}";
     }
 }

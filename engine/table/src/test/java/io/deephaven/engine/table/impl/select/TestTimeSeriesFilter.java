@@ -6,15 +6,12 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.TestClock;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.time.DateTimeUtils;
 
 import java.lang.ref.WeakReference;
