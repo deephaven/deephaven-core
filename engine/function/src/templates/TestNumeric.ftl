@@ -1772,6 +1772,17 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
     }
 
+    public void test${pt.boxed}CopySign() {
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
+        assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
+        assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
+    }
+
     </#if>
     </#list>
 }

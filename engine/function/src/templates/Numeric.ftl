@@ -3444,10 +3444,27 @@ public class Numeric {
         return Math.cbrt(x);
     }
 
+    /**
+     * Returns the first argument with the sign of the second argument.
+     *
+     * @param magnitude the value to return
+     * @param sign the sign for the return value
+     * @return the value with the magnitude of the first argument and the sign of the second argument.
+     *    If either value is null, returns null.
+     */
+    static public ${pt.primitive} copySign(${pt.primitive} magnitude, ${pt.primitive} sign) {
+        if (isNull(magnitude) || isNull(sign)) {
+            return ${pt.null};
+        }
+
+        <#if pt.valueType.isFloat >
+        return Math.copySign(magnitude, sign);
+        <#else>
+        return (${pt.primitive}) ((magnitude < 0 ? -magnitude : magnitude) * (sign < 0 ? -1 : 1));
+        </#if>
+    }
 
 
-        //TODO:  cbrt
-        //TODO:  copySign
         //TODO:  decrementExact
         //TODO:  expm2
         //TODO:  floorDiv
