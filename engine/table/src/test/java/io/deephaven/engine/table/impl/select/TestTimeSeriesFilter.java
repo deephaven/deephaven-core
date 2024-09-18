@@ -133,4 +133,5 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     // TODO: test inverted filters
     // TODO: test actual modifications and additions to the table
     // TODO: test when nothing actually changes from the window check perspective
+    // TODO: test that we are not causing more refiltering than necessary (with some counting filters before and after)
 }

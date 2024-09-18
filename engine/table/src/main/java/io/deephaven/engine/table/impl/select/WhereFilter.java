@@ -58,8 +58,8 @@ public interface WhereFilter extends Filter {
         void requestRecompute();
 
         /**
-         * Notify that something about the filters has changed such that all unmatched rows of the source table should be
-         * re-evaluated.
+         * Notify that something about the filters has changed such that all unmatched rows of the source table should
+         * be re-evaluated.
          */
         void requestRecomputeUnmatched();
 
