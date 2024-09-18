@@ -108,8 +108,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             @Nullable Class<?> componentType) {
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
-        // noinspection unchecked
-        return rawColumnSource.cast(clazz, componentType);
+        try {
+            // noinspection unchecked
+            return rawColumnSource.cast(clazz, componentType);
+        } catch (ClassCastException ex) {
+            throw new RuntimeException(
+                    "Error retrieving ColumnSource with type " + clazz.getName() + " for column " + sourceName, ex);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
