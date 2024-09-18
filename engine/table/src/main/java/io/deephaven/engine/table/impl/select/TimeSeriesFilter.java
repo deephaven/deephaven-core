@@ -17,10 +17,12 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This will filter a table for the most recent N nanoseconds (must be on an {@link Instant} column).
@@ -33,19 +35,31 @@ import java.util.List;
 public class TimeSeriesFilter
         extends WhereFilterLivenessArtifactImpl
         implements Runnable, NotificationQueue.Dependency {
-    protected final String columnName;
-    protected final long nanos;
+    private final String columnName;
+    private final long nanos;
+    private final Clock clock;
+
     private RecomputeListener listener;
 
     @SuppressWarnings("UnusedDeclaration")
-    public TimeSeriesFilter(String columnName, String period) {
+    public TimeSeriesFilter(final String columnName,
+                            final String period) {
         this(columnName, DateTimeUtils.parseDurationNanos(period));
     }
 
-    public TimeSeriesFilter(String columnName, long nanos) {
-        Require.gtZero(nanos, "nanos");
+    // TODO: invert
+    public TimeSeriesFilter(final String columnName,
+                            final long nanos) {
+        this(columnName, nanos, null);
+    }
+
+    public TimeSeriesFilter(final String columnName,
+                            final long periodNanos,
+                            @Nullable final Clock clock) {
+        Require.gtZero(periodNanos, "periodNanos");
         this.columnName = columnName;
-        this.nanos = nanos;
+        this.nanos = periodNanos;
+        this.clock = clock;
     }
 
     @Override
@@ -72,6 +86,7 @@ public class TimeSeriesFilter
             throw new PreviousFilteringNotSupported();
         }
 
+        // TODO: reinterpret this appropriately, or maybe delegate to the window checking stuff
         ColumnSource<Instant> dateColumn = table.getColumnSource(columnName);
         if (!Instant.class.isAssignableFrom(dateColumn.getType())) {
             throw new RuntimeException(columnName + " is not an Instant column!");
@@ -93,7 +108,7 @@ public class TimeSeriesFilter
     }
 
     protected long getNowNanos() {
-        return Clock.system().currentTimeNanos();
+        return Objects.requireNonNullElseGet(clock, DateTimeUtils::currentClock).currentTimeNanos();
     }
 
     @Override
@@ -122,7 +137,7 @@ public class TimeSeriesFilter
 
     @Override
     public TimeSeriesFilter copy() {
-        return new TimeSeriesFilter(columnName, nanos);
+        return new TimeSeriesFilter(columnName, nanos, clock);
     }
 
     @Override

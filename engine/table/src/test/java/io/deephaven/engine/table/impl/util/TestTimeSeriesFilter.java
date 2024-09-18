@@ -40,7 +40,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
         TableTools.show(source);
 
-        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "PT00:00:05");
+        final TestClock testClock = new TestClock().setMillis(startTime);
+
+        final TimeSeriesFilter timeSeriesFilter = new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), testClock);
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);
@@ -48,7 +50,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
-            timeSeriesFilter.incrementNow(5000);
+            testClock.addMillis(5000);
             timeSeriesFilter.run();
         });
 
@@ -56,15 +58,17 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(10, filtered.size());
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            timeSeriesFilter.incrementNow(5000);
+            testClock.addMillis(5000);
             timeSeriesFilter.run();
         });
+
+        System.out.println(testClock);
 
         TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            timeSeriesFilter.incrementNow(2000);
+            testClock.addMillis(2000);
             timeSeriesFilter.run();
         });
 
@@ -85,15 +89,16 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 new DateGenerator(startDate, endDate),
                 new IntGenerator(1, 100)));
 
-        final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
-                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "PT01:00:00");
-        final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
+        final TestClock testClock = new TestClock().setMillis(startDate.getTime());
+
+        final TimeSeriesFilter unitTestTimeSeriesFilter =
+                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), testClock);
+        final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> {
-                    UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
-                            new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
+                    TimeSeriesFilter unitTestTimeSeriesFilter1 = unitTestTimeSeriesFilter.copy();
                     filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
                     return updateGraph.exclusiveLock().computeLocked(
                             () -> table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
@@ -108,15 +113,14 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
                 updateGraph.runWithinUnitTestCycle(() -> {
-                    unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
+                    testClock.addMillis(3600 * 1000);
 
-                    final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
-                    for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
-                        final UnitTestTimeSeriesFilter refreshFilter = ref.get();
+                    final ArrayList<WeakReference<TimeSeriesFilter>> collectedRefs = new ArrayList<>();
+                    for (WeakReference<TimeSeriesFilter> ref : filtersToRefresh) {
+                        final TimeSeriesFilter refreshFilter = ref.get();
                         if (refreshFilter == null) {
                             collectedRefs.add(ref);
                         } else {
-                            refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
                             refreshFilter.run();
                         }
                     }
@@ -126,40 +130,4 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             }
         }
     }
-
-    private static class UnitTestTimeSeriesFilter extends TimeSeriesFilter {
-        long now;
-
-        public UnitTestTimeSeriesFilter(long startTime, String timestamp, String period) {
-            super(timestamp, period);
-            now = startTime;
-        }
-
-        public UnitTestTimeSeriesFilter(long startTime, String timestamp, long period) {
-            super(timestamp, period);
-            now = startTime;
-        }
-
-        public UnitTestTimeSeriesFilter(UnitTestTimeSeriesFilter other) {
-            this(other.now, other.columnName, other.nanos);
-        }
-
-        @Override
-        protected long getNowNanos() {
-            return now * 1000000L;
-        }
-
-        long getNowLong() {
-            return now;
-        }
-
-        void incrementNow(long increment) {
-            now += increment;
-        }
-
-        void setNow(long newValue) {
-            now = newValue;
-        }
-    }
-
 }
