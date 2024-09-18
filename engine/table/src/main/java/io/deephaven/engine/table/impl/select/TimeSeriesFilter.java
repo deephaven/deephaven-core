@@ -211,6 +211,7 @@ public class TimeSeriesFilter
         }
 
         private void insertMatched(final RowSet rowSet) {
+            // TODO: should we include nulls here?
             try (final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
                     null, rowSet, Boolean.TRUE)) {
                 inWindowRowset.insert(matched);
