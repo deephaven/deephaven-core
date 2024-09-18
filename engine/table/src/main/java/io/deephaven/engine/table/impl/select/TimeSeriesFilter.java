@@ -137,7 +137,11 @@ public class TimeSeriesFilter
             mergedListener.insertMatched(fullSet);
         }
 
-        return selection.intersect(mergedListener.inWindowRowset);
+        if (invert) {
+            return selection.minus(mergedListener.inWindowRowset);
+        } else {
+            return selection.intersect(mergedListener.inWindowRowset);
+        }
     }
 
     @Override
