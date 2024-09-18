@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 /**
  * {@link ReleasableLivenessManager} to manage exactly one object, passed at construction time or managed later.
@@ -59,6 +60,18 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
             throw new UnsupportedOperationException("SingletonLivenessManager can only manage one referent");
         }
         return true;
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        throw new UnsupportedOperationException(
+                "SingletonLivenessManager should call release() instead of tryUnmanage()");
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        throw new UnsupportedOperationException(
+                "SingletonLivenessManager should call release() instead of tryUnmanage()");
     }
 
     @Override

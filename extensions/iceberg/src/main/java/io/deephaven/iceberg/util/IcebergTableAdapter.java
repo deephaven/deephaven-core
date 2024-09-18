@@ -363,7 +363,8 @@ public class IcebergTableAdapter {
             keyFinder = new IcebergFlatLayout(this, snapshot, userInstructions, dataInstructionsProviderLoader);
         } else {
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec, userInstructions, dataInstructionsProviderLoader);
+            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec, userInstructions,
+                    dataInstructionsProviderLoader);
         }
 
         if (instructions == null

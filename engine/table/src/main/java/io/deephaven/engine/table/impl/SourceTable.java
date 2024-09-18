@@ -98,6 +98,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
             );
             if (isRefreshing) {
+                // TODO: managing doesn't work here because columnSourceManager is at zero right now.
                 manage(columnSourceManager);
             }
         }

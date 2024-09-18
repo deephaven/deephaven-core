@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
-import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -134,7 +134,6 @@ public abstract class AbstractTableLocationProvider
     }
 
     private final ImmutableTableKey tableKey;
-    private final ReferenceCountedLivenessNode livenessNode;
 
     // Open transactions that are being accumulated
     private final Map<Object, Transaction> transactions = Collections.synchronizedMap(new HashMap<>());
@@ -148,6 +147,13 @@ public abstract class AbstractTableLocationProvider
      */
     private final KeyedObjectHashMap<TableLocationKey, TrackedKeySupplier> tableLocationKeyMap =
             new KeyedObjectHashMap<>(TableLocationKeyDefinition.INSTANCE);
+
+    /**
+     * TLP are (currently) outside of liveness scopes, but they need to manage liveness referents to prevent them from
+     * going out of scope. The {@link StandaloneLivenessManager manager} will maintain the references until GC'd or the
+     * referents are not needed byt the TLP.
+     */
+    private final StandaloneLivenessManager livenessManager;
 
     private volatile boolean initialized;
 
@@ -165,14 +171,7 @@ public abstract class AbstractTableLocationProvider
         this.tableKey = tableKey.makeImmutable();
         this.partitionKeys = null;
 
-        livenessNode = new ReferenceCountedLivenessNode(false) {
-            @Override
-            protected void destroy() {
-                AbstractTableLocationProvider.this.destroy();
-            }
-        };
-        // TODO: understand why this seems to be needed
-        LivenessScopeStack.peek().manage(livenessNode);
+        livenessManager = new StandaloneLivenessManager(false);
     }
 
     /**
@@ -282,7 +281,7 @@ public abstract class AbstractTableLocationProvider
                 }
                 // Release the keys that were removed after we have delivered the notifications and the
                 // subscribers have had a chance to process them
-                removedKeys.forEach(livenessNode::unmanage);
+                removedKeys.forEach(livenessManager::unmanage);
             }
         }
     }
@@ -368,7 +367,7 @@ public abstract class AbstractTableLocationProvider
         if (!supportsSubscriptions()) {
             final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
             trackedKey.deactivate();
-            livenessNode.unmanage(trackedKey);
+            livenessManager.unmanage(trackedKey);
             return;
         }
 
@@ -383,7 +382,7 @@ public abstract class AbstractTableLocationProvider
                         true)) {
                     onEmpty();
                 }
-                livenessNode.unmanage(trackedKey);
+                livenessManager.unmanage(trackedKey);
             }
         }
     }
@@ -404,7 +403,7 @@ public abstract class AbstractTableLocationProvider
         locationCreatedRecorder = true;
 
         final TrackedKeySupplier trackedKey = toTrackedKey(locationKey);
-        livenessNode.manage(trackedKey);
+        livenessManager.manage(trackedKey);
 
         return trackedKey;
     }
@@ -570,10 +569,5 @@ public abstract class AbstractTableLocationProvider
     private void releaseLocationKey(@NotNull final TrackedKeySupplier locationKey) {
         // We can now remove the key from the tableLocations map
         tableLocationKeyMap.removeKey(locationKey.get());
-    }
-
-    private void destroy() {
-        // TODO: release all the TTLK references. Or does that happen automatically?
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

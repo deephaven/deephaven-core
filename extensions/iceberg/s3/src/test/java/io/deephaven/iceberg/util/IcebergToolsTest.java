@@ -985,7 +985,8 @@ public abstract class IcebergToolsTest {
                 (IcebergTestTable) resourceCatalog.loadTable(tableId));
         final DataInstructionsProviderLoader dataInstructionsProvider =
                 DataInstructionsProviderLoader.create(Map.of());
-        final IcebergTableAdapter tableAdapter = new IcebergTableAdapter(tableId, icebergTable, dataInstructionsProvider);
+        final IcebergTableAdapter tableAdapter =
+                new IcebergTableAdapter(tableId, icebergTable, dataInstructionsProvider);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
