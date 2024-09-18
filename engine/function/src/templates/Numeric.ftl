@@ -10,6 +10,7 @@ import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
+import java.lang.Math;
 
 import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
@@ -3378,6 +3379,73 @@ public class Numeric {
         return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
     }
 
+
+
+    //////////////////////////////// NEW //////////////////////////////////////
+    // TODO: document these
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the sum of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of adding the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} addExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.addExact(x, y);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            //TODO: Should overflows return NULL or throw an exception?
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        //TODO: Should overflows return NULL or throw an exception?
+        return Math.addExact(x, y);
+        </#if>
+    }
+    </#if>
+
+
+
+        //TODO:  atan2
+        //TODO:  cbrt
+        //TODO:  copySign
+        //TODO:  decrementExact
+        //TODO:  expm2
+        //TODO:  floorDiv
+        //TODO:  floorMod
+        //TODO:  getExponent
+        //TODO:  hypot
+        //TODO:  IEEEremainder
+        //TODO:  incrementExact
+        //TODO:  log10
+        //TODO:  log1p
+        //TODO:  multiplyExact
+        //TODO:  negateExact
+        //TODO:  nextAfter
+        //TODO:  nextDown
+        //TODO:  nextUp
+        //TODO:  scalb
+        //TODO:  sinh
+        //TODO:  subtractExact
+        //TODO:  tanh
+        //TODO:  toDegrees
+        //TODO:  toIntExact
+        //TODO:  toRadians
+        //TODO:  ulp
+        //TODO:  E (constant)
+        //TODO:  PI (constant)
+        
+        
     </#if>
     </#list>
 }
