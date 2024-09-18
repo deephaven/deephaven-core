@@ -1,10 +1,11 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.util;
+package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.TestClock;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.generator.DateGenerator;
@@ -14,7 +15,6 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.time.DateTimeUtils;
 
 import java.lang.ref.WeakReference;
@@ -42,7 +42,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final TestClock testClock = new TestClock().setMillis(startTime);
 
-        final TimeSeriesFilter timeSeriesFilter = new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), testClock);
+        final TimeSeriesFilter timeSeriesFilter = new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), false, testClock);
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);
@@ -51,7 +51,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             testClock.addMillis(5000);
-            timeSeriesFilter.run();
+            timeSeriesFilter.runForUnitTests();
         });
 
         TableTools.show(filtered);
@@ -59,7 +59,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         updateGraph.runWithinUnitTestCycle(() -> {
             testClock.addMillis(5000);
-            timeSeriesFilter.run();
+            timeSeriesFilter.runForUnitTests();
         });
 
         System.out.println(testClock);
@@ -69,7 +69,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         updateGraph.runWithinUnitTestCycle(() -> {
             testClock.addMillis(2000);
-            timeSeriesFilter.run();
+            timeSeriesFilter.runForUnitTests();
         });
 
         TableTools.show(filtered);
@@ -92,7 +92,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TestClock testClock = new TestClock().setMillis(startDate.getTime());
 
         final TimeSeriesFilter unitTestTimeSeriesFilter =
-                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), testClock);
+                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), false, testClock);
         final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -121,7 +121,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                         if (refreshFilter == null) {
                             collectedRefs.add(ref);
                         } else {
-                            refreshFilter.run();
+                            refreshFilter.runForUnitTests();
                         }
                     }
                     filtersToRefresh.removeAll(collectedRefs);
@@ -130,4 +130,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             }
         }
     }
+
+    // TODO: test in a sequence of filters, with a dynamic where filter in front of us
+    // TODO: test inverted filters
+    // TODO: test actual modifications and additions to the table
+    // TODO: test when nothing actually changes from the window check perspective
 }
