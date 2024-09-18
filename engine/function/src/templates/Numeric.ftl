@@ -3430,6 +3430,21 @@ public class Numeric {
         return Math.atan2(y, x);
     }
 
+    /**
+     * Returns the cube root of a value.
+     *
+     * @param x the value
+     * @return the cube root of the value.  If the value is null, returns null.
+     */
+    static public double cbrt(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.cbrt(x);
+    }
+
+
 
         //TODO:  cbrt
         //TODO:  copySign

@@ -1767,6 +1767,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
     }
 
+    public void test${pt.boxed}Cbrt(){
+        assertEquals(Math.cbrt((${pt.primitive})2), cbrt((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
