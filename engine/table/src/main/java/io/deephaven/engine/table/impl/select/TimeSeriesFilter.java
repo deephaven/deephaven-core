@@ -21,22 +21,25 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.WindowCheck;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * This will filter a table for the most recent N nanoseconds (must be on an {@link Instant} column).
+ * TimeSeriesFilter filters a timestamp colum within the table for recent rows.
  *
  * <p>
- * Note, this filter rescans the source table. You should prefer to use {@link io.deephaven.engine.util.WindowCheck}
- * instead.
+ * The filtered column must be an Instant or long containing nanoseconds since the epoch. The computation of recency is
+ * delegated to {@link io.deephaven.engine.util.WindowCheck}.
+ * </p>
+ *
+ * <p>
+ * When the filter is not inverted, null rows are not accepted and rows that match the window exactly are accepted.
  * </p>
  */
 public class TimeSeriesFilter
@@ -48,18 +51,13 @@ public class TimeSeriesFilter
     private final Clock clock;
 
     private RecomputeListener listener;
-    // this table contains our window
-    private QueryTable tableWithWindow;
-    private String windowSourceName;
     private Runnable refreshFunctionForUnitTests;
 
     /**
      * We create the merged listener so that we can participate in dependency resolution, but the dependencies are not
      * actually known until the first call to filter().
      */
-    private final List<ListenerRecorder> windowListenerRecorder = new CopyOnWriteArrayList<>();
-    private final List<NotificationQueue.Dependency> windowDependency = new CopyOnWriteArrayList<>();
-    private final TimeSeriesFilterMergedListener mergedListener;
+    private TimeSeriesFilterMergedListener mergedListener;
 
     @SuppressWarnings("UnusedDeclaration")
     public TimeSeriesFilter(final String columnName,
@@ -87,8 +85,6 @@ public class TimeSeriesFilter
         this.periodNanos = periodNanos;
         this.invert = invert;
         this.clock = clock;
-        this.mergedListener = new TimeSeriesFilterMergedListener(
-                "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")");
     }
 
     @Override
@@ -115,34 +111,12 @@ public class TimeSeriesFilter
             throw new PreviousFilteringNotSupported();
         }
 
-        if (tableWithWindow == null) {
-            windowSourceName = "__Window_" + columnName;
-            while (table.getDefinition().getColumnNames().contains(windowSourceName)) {
-                windowSourceName = "_" + windowSourceName;
-            }
-            final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
-                    (QueryTable) table, columnName, periodNanos + 1, windowSourceName, true);
-            tableWithWindow = (QueryTable) pair.first;
-            mergedListener.windowColumnSet = tableWithWindow.newModifiedColumnSet(windowSourceName);
-            refreshFunctionForUnitTests = pair.second;
-
-            manage(tableWithWindow);
-            windowDependency.add(tableWithWindow);
-            final ListenerRecorder recorder =
-                    new ListenerRecorder("TimeSeriesFilter-ListenerRecorder", tableWithWindow, null);
-            tableWithWindow.addUpdateListener(recorder);
-            recorder.setMergedListener(mergedListener);
-
-            windowListenerRecorder.add(recorder);
-
-            // we are doing the first match, which is based on the entire set of values in the table
-            mergedListener.insertMatched(fullSet);
-        }
+        Assert.neqNull(mergedListener, "mergedListener");
 
         if (invert) {
-            return selection.minus(mergedListener.inWindowRowset);
+            return selection.minus(mergedListener.inWindowRowSet);
         } else {
-            return selection.intersect(mergedListener.inWindowRowset);
+            return selection.intersect(mergedListener.inWindowRowSet);
         }
     }
 
@@ -185,53 +159,102 @@ public class TimeSeriesFilter
     }
 
     private class TimeSeriesFilterMergedListener extends MergedListener {
-        final WritableRowSet inWindowRowset = RowSetFactory.empty();
-        private ModifiedColumnSet windowColumnSet;
+        // the list of rows that exist within our window
+        final WritableRowSet inWindowRowSet = RowSetFactory.empty();
 
-        protected TimeSeriesFilterMergedListener(String listenerDescription) {
-            super(windowListenerRecorder, windowDependency, listenerDescription, null);
+        // this table contains our window
+        private final QueryTable tableWithWindow;
+        // this is our listener recorder for tableWithWindow
+        private final ListenerRecorder windowRecorder;
+
+        // the name of the window column
+        private final String windowSourceName;
+
+        private final ModifiedColumnSet windowColumnSet;
+
+        protected TimeSeriesFilterMergedListener(String listenerDescription, QueryTable tableWithWindow,
+                final ListenerRecorder windowRecorder, final String windowSourceName) {
+            super(Collections.singleton(windowRecorder), Collections.singleton(tableWithWindow), listenerDescription,
+                    null);
+            this.tableWithWindow = tableWithWindow;
+            this.windowRecorder = windowRecorder;
+            this.windowSourceName = windowSourceName;
+            this.windowColumnSet = tableWithWindow.newModifiedColumnSet(windowSourceName);
         }
 
         @Override
         protected void process() {
             synchronized (TimeSeriesFilter.this) {
-                final ListenerRecorder recorder = windowListenerRecorder.get(0);
-                Assert.assertion(recorder.recordedVariablesAreValid(), "recorder.recordedVariablesAreValid()");
-                final TableUpdate update = recorder.getUpdate().acquire();
+                Assert.assertion(windowRecorder.recordedVariablesAreValid(),
+                        "windowRecorder.recordedVariablesAreValid()");
+                final TableUpdate update = windowRecorder.getUpdate();
 
-                inWindowRowset.remove(update.removed());
+                inWindowRowSet.remove(update.removed());
                 final boolean windowModified = update.modifiedColumnSet().containsAny(windowColumnSet);
                 if (windowModified) {
                     // we need to check on the modified rows; they may be in the window,
-                    inWindowRowset.remove(update.getModifiedPreShift());
+                    inWindowRowSet.remove(update.getModifiedPreShift());
                 }
-                update.shifted().apply(inWindowRowset);
+                update.shifted().apply(inWindowRowSet);
                 if (windowModified) {
-                    insertMatched(update.modified());
+                    final RowSet newlyMatched = insertMatched(update.modified());
+                    if (invert) {
+                        if (newlyMatched.isNonempty()) {
+                            listener.requestRecompute(newlyMatched);
+                        }
+                    } else if (newlyMatched.size() != update.modified().size()) {
+                        listener.requestRecompute(update.modified().minus(newlyMatched));
+                    }
                 }
                 insertMatched(update.added());
-
-                if (invert) {
-                    listener.requestRecomputeUnmatched();
-                } else {
-                    listener.requestRecomputeMatched();
-                }
             }
         }
 
-        private void insertMatched(final RowSet rowSet) {
+        private RowSet insertMatched(final RowSet rowSet) {
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
-            // maintain compatibility.  That also means the inverted filter is going to include nulls (as the null is
+            // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            try (final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
-                    null, rowSet, Boolean.TRUE)) {
-                inWindowRowset.insert(matched);
-            }
+            final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
+                null, rowSet, Boolean.TRUE);
+            inWindowRowSet.insert(matched);
+            return matched;
         }
     }
 
     @TestUseOnly
     void runForUnitTests() {
         refreshFunctionForUnitTests.run();
+    }
+
+    @Override
+    public SafeCloseable beginOperation(@NotNull Table sourceTable) {
+        String windowSourceName = "__Window_" + columnName;
+        while (sourceTable.getDefinition().getColumnNames().contains(windowSourceName)) {
+            windowSourceName = "_" + windowSourceName;
+        }
+
+        final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
+                (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
+        final QueryTable tableWithWindow = (QueryTable) pair.first;
+        refreshFunctionForUnitTests = pair.second;
+
+        manage(tableWithWindow);
+
+        final ListenerRecorder recorder =
+                new ListenerRecorder("TimeSeriesFilter-ListenerRecorder", tableWithWindow, null);
+        tableWithWindow.addUpdateListener(recorder);
+
+        mergedListener = new TimeSeriesFilterMergedListener(
+                "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
+                tableWithWindow, recorder, windowSourceName);
+        manage(mergedListener);
+
+        recorder.setMergedListener(mergedListener);
+
+        // we are doing the first match, which is based on the entire set of values in the table
+        mergedListener.insertMatched(sourceTable.getRowSet());
+
+        // the only thing we hold is our mergedListener, which in turn holds the recorder and the windowed table
+        return null;
     }
 }

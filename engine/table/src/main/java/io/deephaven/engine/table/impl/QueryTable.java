@@ -974,6 +974,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         private final QueryTable source;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
+        private WritableRowSet refilterRequestedRowset = null;
         private MergedListener whereListener;
 
         @ReferentialIntegrity
@@ -1006,6 +1007,16 @@ public class QueryTable extends BaseTable<QueryTable> {
             Require.neqNull(whereListener, "whereListener").notifyChanges();
         }
 
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            if (refilterRequestedRowset == null) {
+                refilterRequestedRowset = rowSet.copy();
+            } else {
+                refilterRequestedRowset.insert(rowSet);
+            }
+            Require.neqNull(whereListener, "whereListener").notifyChanges();
+        }
+
         /**
          * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
          * the public API.
@@ -1014,7 +1025,7 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         @InternalUseOnly
         boolean refilterRequested() {
-            return refilterUnmatchedRequested || refilterMatchedRequested;
+            return refilterUnmatchedRequested || refilterMatchedRequested || refilterRequestedRowset != null;
         }
 
         @NotNull
@@ -1068,12 +1079,17 @@ public class QueryTable extends BaseTable<QueryTable> {
                         (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
+                refilterRequestedRowset = null;
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
                 final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
                 // we must check rows that have been modified instead of just preserving them
                 if (upstream != null) {
                     unmatchedRows.insert(upstream.modified());
+                }
+                if (refilterRequestedRowset != null) {
+                    unmatchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset = null;
                 }
                 final RowSet unmatched = unmatchedRows.copy();
                 final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
@@ -1098,6 +1114,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     matchedRows.insert(upstream.added());
                     matchedRows.insert(upstream.modified());
                 }
+                if (refilterRequestedRowset != null) {
+                    matchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset = null;
+                }
                 final RowSet matchedClone = matchedRows.copy();
 
                 final WhereListener.ListenerFilterExecution filterExecution =
@@ -1106,6 +1126,28 @@ public class QueryTable extends BaseTable<QueryTable> {
                         (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
+            } else if (refilterRequestedRowset != null) {
+                final WritableRowSet rowsToFilter = refilterRequestedRowset.copy();
+                if (upstream != null) {
+                    rowsToFilter.insert(upstream.added());
+                    rowsToFilter.insert(upstream.modified());
+                }
+
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeRefilterExecution(rowsToFilter);
+
+                filterExecution.scheduleCompletion((adds, mods) -> {
+                    final WritableRowSet newMapping = adds.writableCast();
+                    // add back what we previously matched, but for modifications and removals
+                    try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
+                        previouslyMatched.remove(rowsToFilter);
+                        newMapping.insert(previouslyMatched);
+                    }
+                    completeRefilterUpdate(listener, upstream, update, adds);
+                }, exception -> errorRefilterUpdate(listener, exception, upstream));
+
+
+                refilterRequestedRowset = null;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
             }

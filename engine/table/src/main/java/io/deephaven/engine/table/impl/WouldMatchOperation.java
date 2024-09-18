@@ -444,6 +444,13 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }
 
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            // TODO: No need to recompute the remaining rows
+            doRecompute = true;
+            Require.neqNull(mergedListener, "mergedListener").notifyChanges();
+        }
+
         @NotNull
         @Override
         public QueryTable getTable() {
