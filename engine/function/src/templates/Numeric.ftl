@@ -3561,8 +3561,23 @@ public class Numeric {
     }
     </#if>
 
+    <#if pt.valueType.isFloat>
+     /**
+      * Returns the unbiased exponent used in the representation of the argument.
+      *
+      * @param x the value.
+      * @param y the divisor.
+      * @return the unbiased exponent used in the representation of the argument.  If the value is null, returns null.
+      */
+    static public int getExponent(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_INT;
+        }
 
-        //TODO:  getExponent
+        return Math.getExponent(x);
+    }
+    </#if>
+
         //TODO:  hypot
         //TODO:  IEEEremainder
         //TODO:  incrementExact

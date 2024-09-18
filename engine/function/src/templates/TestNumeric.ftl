@@ -1823,6 +1823,12 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}GetExponent(){
+        assertEquals(Math.getExponent(7), getExponent((${pt.primitive})7));
+        assertEquals(NULL_INT, getExponent(${pt.null}));
+    }
+    </#if>
 
     </#if>
     </#list>
