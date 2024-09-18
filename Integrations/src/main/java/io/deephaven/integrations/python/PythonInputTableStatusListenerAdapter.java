@@ -25,16 +25,16 @@ public class PythonInputTableStatusListenerAdapter implements InputTableStatusLi
      * Create a Python InputTable status listener.
      *
      * @param pyOnSuccessCallback The Python onSuccess callback function.
-     * @param pyOnErrorCallback   The Python onError callback function.
+     * @param pyOnErrorCallback The Python onError callback function.
      */
     private PythonInputTableStatusListenerAdapter(@Nullable PyObject pyOnSuccessCallback,
-                                                  @NotNull PyObject pyOnErrorCallback) {
+            @NotNull PyObject pyOnErrorCallback) {
         this.pyOnSuccessCallback = pyOnSuccessCallback;
         this.pyOnErrorCallback = pyOnErrorCallback;
     }
 
     public static PythonInputTableStatusListenerAdapter create(@Nullable PyObject pyOnSuccessCallback,
-                                                               @NotNull PyObject pyOnErrorCallback) {
+            @NotNull PyObject pyOnErrorCallback) {
         return new PythonInputTableStatusListenerAdapter(pyOnSuccessCallback,
                 Objects.requireNonNull(pyOnErrorCallback, "Python on_error callback cannot be None"));
     }
