@@ -262,7 +262,8 @@ public interface ColumnSource<T>
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
     @FinalDefault
-    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType, @Nullable String colName) {
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType,
+            @Nullable String colName) {
         Require.neqNull(clazz, "clazz");
         final String castCheckPrefix = colName == null ? "ColumnSource" : "ColumnSource[" + colName + ']';
         TypeHelper.checkCastTo(castCheckPrefix, getType(), getComponentType(), clazz, componentType);
