@@ -3497,6 +3497,12 @@ public class Numeric {
     }
     </#if>
 
+    /**
+     * Returns the hyperbolic cosine.
+     *
+     * @param x the value
+     * @returns the hyperbolic cosine of the value.  If the value is null, returns null.
+     */
     static public double cosh(${pt.primitive} x) {
         if(isNull(x)) {
             return NULL_DOUBLE;
