@@ -3414,9 +3414,23 @@ public class Numeric {
     }
     </#if>
 
+    /**
+     * Returns the arc tangent of a value; the returned angle is in the range -pi/2 through pi/2.
+     *
+     * @param y the ordinate coordinate
+     * @param x the abscissa coordinate
+     * @return the theta component of the point (r, theta) in polar coordinates that corresponds to the point (x, y) in
+     *    Cartesian coordinates.  If either value is null, returns null.
+     */
+    static public double atan2(${pt.primitive} y, ${pt.primitive} x) {
+        if (isNull(x) || isNull(y)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.atan2(y, x);
+    }
 
 
-        //TODO:  atan2
         //TODO:  cbrt
         //TODO:  copySign
         //TODO:  decrementExact

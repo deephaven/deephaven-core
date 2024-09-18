@@ -1761,6 +1761,12 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    public void test${pt.boxed}Atan2(){
+        assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
+    }
+
     </#if>
     </#list>
 }
