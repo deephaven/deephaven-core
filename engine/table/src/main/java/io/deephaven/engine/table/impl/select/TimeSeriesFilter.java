@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
-import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -41,6 +40,107 @@ import java.util.List;
 public class TimeSeriesFilter
         extends WhereFilterLivenessArtifactImpl
         implements NotificationQueue.Dependency {
+    /**
+     * A builder to create a TimeSeriesFilter.
+     */
+    public static class Builder {
+        private String columnName;
+        private long periodNanos;
+        private boolean invert;
+        private Clock clock;
+
+        private Builder() {
+            // use newBuilder
+        }
+
+        /**
+         * Set the column name to filter on.
+         * 
+         * @param columnName the column name to filter on, required
+         * @return this builder
+         */
+        public Builder columnName(String columnName) {
+            this.columnName = columnName;
+            return this;
+        }
+
+        /**
+         * Set an optional Clock to use for this filter. When not specified, the clock is determined by
+         * {@link DateTimeUtils#currentClock()}.
+         * 
+         * @param clock the clock to use for the filter
+         * @return this builder
+         */
+        public Builder clock(Clock clock) {
+            this.clock = clock;
+            return this;
+        }
+
+        /**
+         * Set the period for this filter.
+         * 
+         * @param period the period as a string for the filter
+         * @return this builder
+         */
+        public Builder period(final String period) {
+            return period(DateTimeUtils.parseDurationNanos(period));
+        }
+
+        /**
+         * Set the period for this filter.
+         * 
+         * @param period the period as a Duration for the filter
+         * @return this builder
+         */
+        public Builder period(Duration period) {
+            return period(period.toNanos());
+        }
+
+        /**
+         * Set the period for this filter.
+         * 
+         * @param period the period in nanoseconds for the filter
+         * @return this builder
+         */
+        public Builder period(long period) {
+            this.periodNanos = period;
+            return this;
+        }
+
+        /**
+         * Set whether this filter should be inverted. An inverted filter accepts only rows that have null timestamps or
+         * timestamps older than the period.
+         * 
+         * @param invert true if the filter should be inverted.
+         * @return this builder
+         */
+        public Builder invert(boolean invert) {
+            this.invert = invert;
+            return this;
+        }
+
+        /**
+         * Create the TimeSeriesFilter described by this builder.
+         * 
+         * @return a TimeSeriesFilter using the options from this builder.
+         */
+        public TimeSeriesFilter build() {
+            if (columnName == null) {
+                throw new IllegalArgumentException("Column name is required");
+            }
+            return new TimeSeriesFilter(columnName, periodNanos, invert, clock);
+        }
+    }
+
+    /**
+     * Create a builder for a time series filter.
+     * 
+     * @return a Builder object to configure a TimeSeriesFilter
+     */
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
     private final String columnName;
     private final long periodNanos;
     private final boolean invert;
@@ -54,8 +154,8 @@ public class TimeSeriesFilter
     private Runnable refreshFunctionForUnitTests;
 
     /**
-     * The listener is responsible for listening to the WindowCheck result, updating our RowSet that contains the
-     * rows in our window, and then notifying the WhereListener that we are requesting recomputation.
+     * The listener is responsible for listening to the WindowCheck result, updating our RowSet that contains the rows
+     * in our window, and then notifying the WhereListener that we are requesting recomputation.
      */
     private TimeSeriesFilterWindowListener windowListener;
 
@@ -79,62 +179,19 @@ public class TimeSeriesFilter
      */
     public TimeSeriesFilter(final String columnName,
             final long periodNanos) {
-        this(columnName, periodNanos, false);
+        this(columnName, periodNanos, false, null);
     }
-
-    // TODO: USE A BUILDER FOR THE CONSTRUCTOR
 
     /**
      * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
-     *
-     * <p>
-     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
-     * includes rows outside the window or that are null.
-     * </p>
      *
      * @param columnName the name of the timestamp column
      * @param periodNanos the duration of the window in nanoseconds
-     * @param invert true if only rows outside the window should be included in the result
-     */
-    public TimeSeriesFilter(final String columnName,
-            final long periodNanos,
-            final boolean invert) {
-        this(columnName, periodNanos, invert, null);
-    }
-
-    /**
-     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
-     *
-     * <p>
-     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
-     * includes rows outside the window.
-     * </p>
-     *
-     * @param columnName the name of the timestamp column
-     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String)}.
-     * @param invert true if only rows outside the window should be included in the result
-     */
-    public TimeSeriesFilter(final String columnName,
-            final String period,
-            final boolean invert) {
-        this(columnName, DateTimeUtils.parseDurationNanos(period), invert, null);
-    }
-
-    /**
-     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
-     *
-     * <p>
-     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
-     * includes rows outside the window.
-     * </p>
-     *
-     * @param columnName the name of the timestamp column
-     * @param periodNanos the duration of the window in nanoseconds
-     * @param invert true if only rows outside the window should be included in the result
+     * @param invert true if only rows outside the window (or with a null timestamp) should be included in the result
      * @param clock the Clock to use as a time source for this filter, when null the clock supplied by
      *        {@link DateTimeUtils#currentClock()} is used.
      */
-    public TimeSeriesFilter(final String columnName,
+    private TimeSeriesFilter(final String columnName,
             final long periodNanos,
             final boolean invert,
             @Nullable final Clock clock) {
@@ -236,7 +293,8 @@ public class TimeSeriesFilter
         // the column source containing the window; which we match on
         private final ColumnSource<Object> windowColumnSource;
 
-        protected TimeSeriesFilterWindowListener(String listenerDescription, QueryTable tableWithWindow, final String windowSourceName) {
+        protected TimeSeriesFilterWindowListener(String listenerDescription, QueryTable tableWithWindow,
+                final String windowSourceName) {
             super(listenerDescription, tableWithWindow, false);
             this.windowColumnSet = tableWithWindow.newModifiedColumnSet(windowSourceName);
             this.windowColumnSource = tableWithWindow.getColumnSource(windowSourceName);
@@ -293,7 +351,8 @@ public class TimeSeriesFilter
         final QueryTable tableWithWindow = (QueryTable) pair.first;
         refreshFunctionForUnitTests = pair.second;
 
-        windowListener = new TimeSeriesFilterWindowListener("TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
+        windowListener = new TimeSeriesFilterWindowListener(
+                "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
                 tableWithWindow, windowSourceName);
         tableWithWindow.addUpdateListener(windowListener);
         manage(windowListener);

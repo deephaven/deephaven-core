@@ -9,13 +9,13 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.util.TestClock;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.util.TestClock;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +49,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TestClock testClock = new TestClock().setMillis(startTime);
 
         final TimeSeriesFilter timeSeriesFilter =
-                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), false, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT00:00:05").clock(testClock).build();
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);
@@ -97,7 +97,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TestClock testClock = new TestClock().setMillis(startTime);
 
         final TimeSeriesFilter timeSeriesFilter =
-                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), true, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT00:00:05").clock(testClock).invert(true)
+                        .build();
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);
@@ -147,9 +148,11 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TestClock testClock = new TestClock().setMillis(startDate.getTime());
 
         final TimeSeriesFilter inclusionFilter =
-                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), false, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(false)
+                        .build();
         final TimeSeriesFilter exclusionFilter =
-                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), true, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
+                        .build();
         final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -184,9 +187,11 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final TimeSeriesFilter inclusionFilter =
-                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), false, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(false)
+                        .build();
         final TimeSeriesFilter exclusionFilter =
-                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), true, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
+                        .build();
         final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
@@ -303,9 +308,11 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final CountingFilter cfe2 = new CountingFilter();
 
         final TimeSeriesFilter inclusionFilter =
-                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT01:00:00"), false, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT01:00:00").clock(testClock)
+                        .invert(false).build();
         final TimeSeriesFilter exclusionFilter =
-                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT01:00:00"), true, testClock);
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT01:00:00").clock(testClock).invert(true)
+                        .build();
 
         final Table inclusion = source.where(Filter.and(cfi1, inclusionFilter, cfi2));
         final Table exclusion = source.where(Filter.and(cfe1, exclusionFilter, cfe2));

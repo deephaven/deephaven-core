@@ -1091,7 +1091,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     unmatchedRows.insert(refilterRequestedRowset);
                     refilterRequestedRowset = null;
                 }
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatchedRows);
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeRefilterExecution(unmatchedRows);
                 filterExecution.scheduleCompletion((adds, unusedMods) -> {
                     final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
