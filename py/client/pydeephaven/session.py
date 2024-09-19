@@ -27,8 +27,7 @@ from pydeephaven._plugin_obj_service import PluginObjService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
-from pydeephaven.ticket import SharedTicket, ExportTicket, ScopeTicket, Ticket
-from pydeephaven.server_object import ServerObject, _server_object_from_proto
+from pydeephaven.ticket import SharedTicket, ExportTicket, ScopeTicket, Ticket, ServerObject, _server_object_from_proto
 from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginClient
@@ -333,19 +332,18 @@ class Session:
                     self._plugin_obj_service = PluginObjService(self)
         return self._plugin_obj_service
 
-    def make_export_ticket(self, ticket_no=None) -> ExportTicket:
+    def make_export_ticket(self, ticket_no: int = None) -> ExportTicket:
         if not ticket_no:
             ticket_no = self.next_export_ticket_number()
-        ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)
-        return ExportTicket(ticket_bytes=b'e' + ticket_bytes)
+        return ExportTicket.export_ticket(ticket_no)
 
     def next_export_ticket_number(self) -> int:
         with self._r_lock:
-            self._last_ticket += 1
-            if self._last_ticket == 2 ** 31 - 1:
+            self._last_export_ticket_number += 1
+            if self._last_export_ticket_number == 2 ** 31 - 1:
                 raise DHError("fatal error: out of free internal ticket")
 
-            return self._last_ticket
+            return self._last_export_ticket_number
 
     def _fetch_fields(self):
         """Returns a list of available fields on the server.
@@ -484,7 +482,7 @@ class Session:
             self.session_service.close()
             self.grpc_channel.close()
             self.is_connected = False
-            self._last_ticket = 0
+            self._last_export_ticket_number = 0
             self._flight_client.close()
 
     def release(self, ticket: ExportTicket) -> None:

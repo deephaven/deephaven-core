@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Optional
 from uuid import uuid4
 
 from pydeephaven.dherror import DHError
@@ -25,7 +26,7 @@ class Ticket(ABC):
 
     @property
     def pb_ticket(self) -> ticket_pb2.Ticket:
-        """ Returns the ticket as a gRPC protobuf ticket object. """
+        """ Returns the ticket as a gRPC protobuf ticket. """
         return ticket_pb2.Ticket(ticket=self._ticket_bytes)
 
 
@@ -33,7 +34,7 @@ class SharedTicket(Ticket):
     """ A SharedTicket is a ticket that can be shared with other sessions. """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes a SharedTicket object.
+        """Initializes a SharedTicket.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -64,13 +65,13 @@ class ExportTicket(Ticket):
     export ticket. An export ticket can be published to a :class:`.SharedTicket` so that the exported server object can
     be shared with other sessions.
 
-    Note: Users should not create ExportTicket objects directly. They are managed by the Session object and are
-    automatically created when exporting objects from the server via. :meth:`.Session.open_table`, :meth:`.Session.fetch`,
-    and any operations that returns a Table object.
+    Note: Users should not create ExportTickets directly. They are managed by the Session and are automatically created
+    when exporting objects from the server via. :meth:`.Session.open_table`, :meth:`.Session.fetch`, and any operations
+    that returns a Table.
     """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes an ExportTicket object.
+        """Initializes an ExportTicket.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -82,6 +83,19 @@ class ExportTicket(Ticket):
 
         super().__init__(ticket_bytes)
 
+    @classmethod
+    def export_ticket(cls, ticket_no: int) -> ExportTicket:
+        """Creates an export ticket from a ticket number.
+
+        Args:
+            ticket_no (int): the export ticket number
+
+        Returns:
+            an ExportTicket
+        """
+        ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)
+        return cls(b'e' + ticket_bytes)
+
 
 class ScopeTicket(Ticket):
     """A ScopeTicket is a ticket that references a scope variable on the server. Scope variables are variables in the global
@@ -89,7 +103,7 @@ class ScopeTicket(Ticket):
     ticket or a Deephaven :class:`table.Table` that wraps the export ticket. """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes a ScopeTicket object.
+        """Initializes a ScopeTicket.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -115,10 +129,11 @@ class ScopeTicket(Ticket):
 
 
 class ApplicationTicket(Ticket):
-    """An ApplicationTicket is a ticket that references a field of an application on the server. """
+    """An ApplicationTicket is a ticket that references a field of an application on the server. Please refer to the
+    documentation on 'Application Mode' for detailed information on applications and their use cases."""
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes an ApplicationTicket object.
+        """Initializes an ApplicationTicket.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -174,3 +189,34 @@ def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
         raise DHError(f'Unknown ticket type: {ticket_bytes}')
 
 
+class ServerObject:
+    """ A ServerObject is a typed ticket that represents objects existing on the server that can be referenced by the
+    client. It is presently used to enable client API users to send and receive references to server-side plugins.
+    """
+    type: Optional[str]
+    """The type of the object. May be None, indicating that the instance cannot be connected to or otherwise directly
+    used from the client."""
+
+    ticket: Ticket
+    """The ticket that points to the object on the server."""
+
+    def __init__(self, type: Optional[str], ticket: Ticket):
+        self.type = type
+        self.ticket = ticket
+
+    @property
+    def pb_ticket(self) -> ticket_pb2.Ticket:
+        """Returns the ticket as a gRPC protobuf ticket object."""
+        return self.ticket.pb_ticket
+
+    @property
+    def pb_typed_ticket(self) -> ticket_pb2.TypedTicket:
+        """Returns a protobuf typed ticket, suitable for use in communicating with an ObjectType plugin on the server.
+        """
+        return ticket_pb2.TypedTicket(type=self.type, ticket=self.pb_ticket)
+
+
+def _server_object_from_proto(typed_ticket: ticket_pb2.TypedTicket) -> ServerObject:
+    """ Creates a ServerObject from a gRPC protobuf typed ticket object.
+    """
+    return ServerObject(type=typed_ticket.type, ticket=_ticket_from_proto(typed_ticket.ticket))

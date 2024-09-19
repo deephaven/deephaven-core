@@ -13,8 +13,7 @@ from pydeephaven.proto import object_pb2
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
-from pydeephaven.ticket import Ticket, _ticket_from_proto, ExportTicket
-from pydeephaven.server_object import ServerObject
+from pydeephaven.ticket import ExportTicket, ServerObject
 
 
 class PluginClient(ServerObject):
