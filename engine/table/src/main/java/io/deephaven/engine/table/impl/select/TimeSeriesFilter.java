@@ -10,10 +10,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -51,31 +48,91 @@ public class TimeSeriesFilter
     private final Clock clock;
 
     private RecomputeListener listener;
+
+    /**
+     * For unit tests, we must be able to cause the window check to update.
+     */
     private Runnable refreshFunctionForUnitTests;
 
     /**
-     * We create the merged listener so that we can participate in dependency resolution, but the dependencies are not
-     * actually known until the first call to filter().
+     * The merged listener is responsible for listening to the WindowCheck result, updating our rowset that contains the
+     * rows inside of our window, and then notifying the WhereListener that we are requesting recomputation.
      */
     private TimeSeriesFilterMergedListener mergedListener;
 
+    /**
+     * Create a TimeSeriesFilter on the given column for the given period
+     *
+     * @param columnName the name of the timestamp column
+     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String).
+     */
     @SuppressWarnings("UnusedDeclaration")
     public TimeSeriesFilter(final String columnName,
             final String period) {
         this(columnName, DateTimeUtils.parseDurationNanos(period));
     }
 
+    /**
+     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
+     *
+     * @param columnName the name of the timestamp column
+     * @param nanos the duration of the window in nanoseconds
+     */
     public TimeSeriesFilter(final String columnName,
             final long nanos) {
         this(columnName, nanos, false);
     }
 
+    /**
+     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
+     *
+     * <p>
+     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
+     * includes rows outside the window.
+     * </p>
+     *
+     * @param columnName the name of the timestamp column
+     * @param nanos the duration of the window in nanoseconds
+     * @param invert true if only rows outside the window should be included in the result
+     */
     public TimeSeriesFilter(final String columnName,
             final long nanos,
             final boolean invert) {
         this(columnName, nanos, invert, null);
     }
 
+    /**
+     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
+     *
+     * <p>
+     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
+     * includes rows outside the window.
+     * </p>
+     *
+     * @param columnName the name of the timestamp column
+     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String).
+     * @param invert true if only rows outside the window should be included in the result
+     */
+    public TimeSeriesFilter(final String columnName,
+            final String period,
+            final boolean invert) {
+        this(columnName, DateTimeUtils.parseDurationNanos(period), invert, null);
+    }
+
+    /**
+     * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
+     *
+     * <p>
+     * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
+     * includes rows outside the window.
+     * </p>
+     *
+     * @param columnName the name of the timestamp column
+     * @param periodNanos the duration of the window in nanoseconds
+     * @param invert true if only rows outside the window should be included in the result
+     * @param clock the Clock to use as a time source for this filter, when null the clock supplied by
+     *        {@link DateTimeUtils#currentClock()} is used.
+     */
     public TimeSeriesFilter(final String columnName,
             final long periodNanos,
             final boolean invert,
@@ -162,24 +219,22 @@ public class TimeSeriesFilter
         // the list of rows that exist within our window
         final WritableRowSet inWindowRowSet = RowSetFactory.empty();
 
-        // this table contains our window
-        private final QueryTable tableWithWindow;
         // this is our listener recorder for tableWithWindow
         private final ListenerRecorder windowRecorder;
 
-        // the name of the window column
-        private final String windowSourceName;
-
+        // the columnset that represents our window source
         private final ModifiedColumnSet windowColumnSet;
+
+        // the column source containing the window; which we match on
+        private final ColumnSource<Object> windowColumnSource;
 
         protected TimeSeriesFilterMergedListener(String listenerDescription, QueryTable tableWithWindow,
                 final ListenerRecorder windowRecorder, final String windowSourceName) {
             super(Collections.singleton(windowRecorder), Collections.singleton(tableWithWindow), listenerDescription,
                     null);
-            this.tableWithWindow = tableWithWindow;
             this.windowRecorder = windowRecorder;
-            this.windowSourceName = windowSourceName;
             this.windowColumnSet = tableWithWindow.newModifiedColumnSet(windowSourceName);
+            this.windowColumnSource = tableWithWindow.getColumnSource(windowSourceName);
         }
 
         @Override
@@ -212,13 +267,15 @@ public class TimeSeriesFilter
             // The original filter did not include nulls for a regular filter, so we do not include them here either to
             // maintain compatibility. That also means the inverted filter is going to include nulls (as the null is
             // less than the current time using Deephaven long comparisons).
-            final RowSet matched = tableWithWindow.getColumnSource(windowSourceName).match(false, false, false,
-                    null, rowSet, Boolean.TRUE);
+            final RowSet matched = windowColumnSource.match(false, false, false, null, rowSet, Boolean.TRUE);
             inWindowRowSet.insert(matched);
             return matched;
         }
     }
 
+    /**
+     * For test uses, causes the WindowCheck to update rows based on the current value of clock.
+     */
     @TestUseOnly
     void runForUnitTests() {
         refreshFunctionForUnitTests.run();
