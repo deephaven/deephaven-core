@@ -64,7 +64,7 @@ public class TimeSeriesFilter
      * Create a TimeSeriesFilter on the given column for the given period
      *
      * @param columnName the name of the timestamp column
-     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String).
+     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String)}.
      */
     @SuppressWarnings("UnusedDeclaration")
     public TimeSeriesFilter(final String columnName,
@@ -110,7 +110,7 @@ public class TimeSeriesFilter
      * </p>
      *
      * @param columnName the name of the timestamp column
-     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String).
+     * @param period the duration of the window as parsed by {@link DateTimeUtils#parseDurationNanos(String)}.
      * @param invert true if only rows outside the window should be included in the result
      */
     public TimeSeriesFilter(final String columnName,
