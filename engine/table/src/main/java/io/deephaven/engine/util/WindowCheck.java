@@ -117,7 +117,6 @@ public class WindowCheck {
         }
         timeWindowListenerImpl.addRowSequence(table.getRowSet(), false);
         result.addParentReference(timeWindowListenerImpl);
-        result.manage(table);
         if (addToMonitor) {
             result.getUpdateGraph().addSource(timeWindowListenerImpl);
         }
@@ -210,9 +209,10 @@ public class WindowCheck {
          * @param source the source table
          * @param result our initialized result table
          */
+
         private TimeWindowListenerImpl(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
                 final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
-            super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
+            super(Collections.singleton(recorder), List.of(), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
             this.inWindowColumnSource = inWindowColumnSource;
@@ -1062,9 +1062,10 @@ public class WindowCheck {
         @Override
         public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
                 @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
-            final boolean includeNull = Arrays.asList(keys).contains(null) ^ invertMatch;
-            final boolean includeTrue = Arrays.asList(keys).contains(true) ^ invertMatch;
-            final boolean includeFalse = Arrays.asList(keys).contains(false) ^ invertMatch;
+            final List<Object> keysList = Arrays.asList(keys);
+            final boolean includeNull = keysList.contains(null) ^ invertMatch;
+            final boolean includeTrue = keysList.contains(true) ^ invertMatch;
+            final boolean includeFalse = keysList.contains(false) ^ invertMatch;
 
             final int getSize = (int) Math.min(4096, mapper.size());
 
@@ -1081,18 +1082,20 @@ public class WindowCheck {
                     } else {
                         timeStamps = timeStampSource.getChunk(getContext, chunkRs).asLongChunk();
                     }
-                    for (int ii = 0; ii < rowKeys.size(); ++ii) {
+                    final int chunkSize = rowKeys.size();
+                    for (int ii = 0; ii < chunkSize; ++ii) {
                         final long rowKey = rowKeys.get(ii);
-                        if (timeStamps.get(ii) == QueryConstants.NULL_LONG) {
+                        final Boolean inWindow = computeInWindow(timeStamps.get(ii), currentTime);
+                        if (inWindow == null) {
                             if (includeNull) {
                                 builder.appendKey(rowKey);
                             }
-                        } else {
-                            final boolean inWindow = computeInWindowUnsafe(timeStamps.get(ii), currentTime);
-                            if (includeTrue && inWindow) {
+                        } else if (inWindow) {
+                            if (includeTrue) {
                                 builder.appendKey(rowKey);
                             }
-                            if (includeFalse && !inWindow) {
+                        } else {
+                            if (includeFalse) {
                                 builder.appendKey(rowKey);
                             }
                         }

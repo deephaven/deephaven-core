@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -56,7 +55,7 @@ public class TimeSeriesFilter
 
     /**
      * The merged listener is responsible for listening to the WindowCheck result, updating our rowset that contains the
-     * rows inside of our window, and then notifying the WhereListener that we are requesting recomputation.
+     * rows in our window, and then notifying the WhereListener that we are requesting recomputation.
      */
     private TimeSeriesFilterMergedListener mergedListener;
 
@@ -76,29 +75,31 @@ public class TimeSeriesFilter
      * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
      *
      * @param columnName the name of the timestamp column
-     * @param nanos the duration of the window in nanoseconds
+     * @param periodNanos the duration of the window in nanoseconds
      */
     public TimeSeriesFilter(final String columnName,
-            final long nanos) {
-        this(columnName, nanos, false);
+            final long periodNanos) {
+        this(columnName, periodNanos, false);
     }
+
+    // TODO: USE A BUILDER FOR THE CONSTRUCTOR
 
     /**
      * Create a TimeSeriesFilter on the given column for the given period in nanoseconds.
      *
      * <p>
      * The filter may be <i>inverted</i>, meaning that instead of including recent rows within the window it only
-     * includes rows outside the window.
+     * includes rows outside the window or that are null.
      * </p>
      *
      * @param columnName the name of the timestamp column
-     * @param nanos the duration of the window in nanoseconds
+     * @param periodNanos the duration of the window in nanoseconds
      * @param invert true if only rows outside the window should be included in the result
      */
     public TimeSeriesFilter(final String columnName,
-            final long nanos,
+            final long periodNanos,
             final boolean invert) {
-        this(columnName, nanos, invert, null);
+        this(columnName, periodNanos, invert, null);
     }
 
     /**
@@ -137,7 +138,6 @@ public class TimeSeriesFilter
             final long periodNanos,
             final boolean invert,
             @Nullable final Clock clock) {
-        Require.gtZero(periodNanos, "periodNanos");
         this.columnName = columnName;
         this.periodNanos = periodNanos;
         this.invert = invert;
@@ -159,7 +159,7 @@ public class TimeSeriesFilter
 
     @NotNull
     @Override
-    public synchronized WritableRowSet filter(
+    public WritableRowSet filter(
             @NotNull final RowSet selection,
             @NotNull final RowSet fullSet,
             @NotNull final Table table,
@@ -212,9 +212,21 @@ public class TimeSeriesFilter
 
     @Override
     public boolean permitParallelization() {
+        // there is no reason to parallelize this filter, because the actual filtering is only a simple rowset operation
+        // and parallelization would cost more than actually applying the rowset operation once
         return false;
     }
 
+    @Override
+    public String toString() {
+        return "TimeSeriesFilter{" +
+                "columnName='" + columnName + '\'' +
+                ", periodNanos=" + periodNanos +
+                ", invert=" + invert +
+                '}';
+    }
+
+    // TODO: we should be listener not a merged listener
     private class TimeSeriesFilterMergedListener extends MergedListener {
         // the list of rows that exist within our window
         final WritableRowSet inWindowRowSet = RowSetFactory.empty();
@@ -239,28 +251,26 @@ public class TimeSeriesFilter
 
         @Override
         protected void process() {
-            synchronized (TimeSeriesFilter.this) {
-                Assert.assertion(windowRecorder.recordedVariablesAreValid(),
-                        "windowRecorder.recordedVariablesAreValid()");
-                final TableUpdate update = windowRecorder.getUpdate();
+            Assert.assertion(windowRecorder.recordedVariablesAreValid(),
+                    "windowRecorder.recordedVariablesAreValid()");
+            final TableUpdate update = windowRecorder.getUpdate();
 
-                inWindowRowSet.remove(update.removed());
-                final boolean windowModified = update.modifiedColumnSet().containsAny(windowColumnSet);
-                if (windowModified) {
-                    // we need to check on the modified rows; they may be in the window,
-                    inWindowRowSet.remove(update.getModifiedPreShift());
-                }
-                update.shifted().apply(inWindowRowSet);
-                if (windowModified) {
-                    final RowSet newlyMatched = insertMatched(update.modified());
-                    try (final WritableRowSet movedOutOfWindow = update.modified().minus(newlyMatched)) {
-                        if (movedOutOfWindow.isNonempty()) {
-                            listener.requestRecompute(movedOutOfWindow);
-                        }
+            inWindowRowSet.remove(update.removed());
+            final boolean windowModified = update.modifiedColumnSet().containsAny(windowColumnSet);
+            if (windowModified) {
+                // we need to check on the modified rows; they may be in the window,
+                inWindowRowSet.remove(update.getModifiedPreShift());
+            }
+            update.shifted().apply(inWindowRowSet);
+            if (windowModified) {
+                final RowSet newlyMatched = insertMatched(update.modified());
+                try (final WritableRowSet movedOutOfWindow = update.modified().minus(newlyMatched)) {
+                    if (movedOutOfWindow.isNonempty()) {
+                        listener.requestRecompute(movedOutOfWindow);
                     }
                 }
-                insertMatched(update.added());
             }
+            insertMatched(update.added());
         }
 
         private RowSet insertMatched(final RowSet rowSet) {
@@ -284,7 +294,7 @@ public class TimeSeriesFilter
     @Override
     public SafeCloseable beginOperation(@NotNull Table sourceTable) {
         String windowSourceName = "__Window_" + columnName;
-        while (sourceTable.getDefinition().getColumnNames().contains(windowSourceName)) {
+        while (sourceTable.hasColumns(windowSourceName)) {
             windowSourceName = "_" + windowSourceName;
         }
 
@@ -292,8 +302,6 @@ public class TimeSeriesFilter
                 (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
         final QueryTable tableWithWindow = (QueryTable) pair.first;
         refreshFunctionForUnitTests = pair.second;
-
-        manage(tableWithWindow);
 
         final ListenerRecorder recorder =
                 new ListenerRecorder("TimeSeriesFilter-ListenerRecorder", tableWithWindow, null);

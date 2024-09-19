@@ -1076,7 +1076,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeRefilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        (matchedRows, unusedMods) -> completeRefilterUpdate(listener, upstream, update, matchedRows),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
                 refilterRequestedRowset = null;
@@ -1091,9 +1091,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     unmatchedRows.insert(refilterRequestedRowset);
                     refilterRequestedRowset = null;
                 }
-                final RowSet unmatched = unmatchedRows.copy();
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
-                filterExecution.scheduleCompletion((adds, mods) -> {
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatchedRows);
+                filterExecution.scheduleCompletion((adds, unusedMods) -> {
                     final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
@@ -1118,16 +1117,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                     matchedRows.insert(refilterRequestedRowset);
                     refilterRequestedRowset = null;
                 }
-                final RowSet matchedClone = matchedRows.copy();
 
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeRefilterExecution(matchedClone);
+                        listener.makeRefilterExecution(matchedRows);
                 filterExecution.scheduleCompletion(
-                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        (adds, unusedMods) -> completeRefilterUpdate(listener, upstream, update, adds),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
             } else if (refilterRequestedRowset != null) {
-                final WritableRowSet rowsToFilter = refilterRequestedRowset.copy();
+                final WritableRowSet rowsToFilter = refilterRequestedRowset;
                 if (upstream != null) {
                     rowsToFilter.insert(upstream.added());
                     rowsToFilter.insert(upstream.modified());
@@ -1136,9 +1134,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeRefilterExecution(rowsToFilter);
 
-                filterExecution.scheduleCompletion((adds, mods) -> {
+                filterExecution.scheduleCompletion((adds, unusedMods) -> {
                     final WritableRowSet newMapping = adds.writableCast();
-                    // add back what we previously matched, but for modifications and removals
+                    // add back what we previously matched, except for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         previouslyMatched.remove(rowsToFilter);
                         newMapping.insert(previouslyMatched);
@@ -1162,20 +1160,18 @@ public class QueryTable extends BaseTable<QueryTable> {
             update.added = newMapping.minus(getRowSet());
             final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
-            // Update our index in post-shift keyspace.
-            getRowSet().writableCast().remove(postShiftRemovals);
-            getRowSet().writableCast().insert(update.added);
+            getRowSet().writableCast().resetTo(newMapping);
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
             if (upstream != null) {
                 upstream.shifted().unapply(postShiftRemovals);
             }
-            update.removed.writableCast().insert(postShiftRemovals);
+            update.removed = postShiftRemovals;
 
             if (upstream == null || upstream.modified().isEmpty()) {
                 update.modified = RowSetFactory.empty();
             } else {
-                update.modified = upstream.modified().intersect(newMapping);
+                update.modified = upstream.modified().intersect(getRowSet());
                 update.modified.writableCast().remove(update.added);
             }
 

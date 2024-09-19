@@ -71,7 +71,7 @@ public interface WhereFilter extends Filter {
 
         /**
          * Notify that something about the filters has changed such that the following rows of the source table should
-         * be re-evaluated.
+         * be re-evaluated.  The rowSet ownership is not taken by requestRecompute.
          */
         void requestRecompute(RowSet rowSet);
 
