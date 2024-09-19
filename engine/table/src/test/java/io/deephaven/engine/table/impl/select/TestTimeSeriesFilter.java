@@ -74,6 +74,54 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(3, filtered.size());
     }
 
+    public void testInverted() {
+        Instant[] times = new Instant[10];
+
+        final long startTime = System.currentTimeMillis() - (10 * times.length);
+        for (int ii = 0; ii < times.length; ++ii) {
+            times[ii] = DateTimeUtils.epochNanosToInstant((startTime + (ii * 1000)) * 1000000L);
+        }
+
+        Table source = TableTools.newTable(TableTools.col("Timestamp", times));
+        TableTools.show(source);
+
+        final TestClock testClock = new TestClock().setMillis(startTime);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                new TimeSeriesFilter("Timestamp", DateTimeUtils.parseDurationNanos("PT00:00:05"), true, testClock);
+        Table filtered = source.where(timeSeriesFilter);
+
+        TableTools.show(filtered);
+        assertEquals(0, filtered.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.addMillis(5000);
+            timeSeriesFilter.runForUnitTests();
+        });
+
+        TableTools.show(filtered);
+        assertEquals(0, filtered.size());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.addMillis(5000);
+            timeSeriesFilter.runForUnitTests();
+        });
+
+        System.out.println(testClock);
+
+        TableTools.show(filtered);
+        assertEquals(5, filtered.size());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.addMillis(2000);
+            timeSeriesFilter.runForUnitTests();
+        });
+
+        TableTools.show(filtered);
+        assertEquals(7, filtered.size());
+    }
+
     public void testIncremental() throws ParseException {
         Random random = new Random(0);
 
@@ -89,18 +137,24 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final TestClock testClock = new TestClock().setMillis(startDate.getTime());
 
-        final TimeSeriesFilter unitTestTimeSeriesFilter =
+        final TimeSeriesFilter inclusionFilter =
                 new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), false, testClock);
+        final TimeSeriesFilter exclusionFilter =
+                new TimeSeriesFilter("Date", DateTimeUtils.parseDurationNanos("PT01:00:00"), true, testClock);
         final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Table withInstant = table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)");
         EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> {
-                    TimeSeriesFilter unitTestTimeSeriesFilter1 = unitTestTimeSeriesFilter.copy();
-                    filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                    return updateGraph.exclusiveLock().computeLocked(
-                            () -> table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
-                                    .where(unitTestTimeSeriesFilter1));
+                    final TimeSeriesFilter inclusionCopy = inclusionFilter.copy();
+                    filtersToRefresh.add(new WeakReference<>(inclusionCopy));
+                    return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(inclusionCopy));
+                }),
+                EvalNugget.from(() -> {
+                    final TimeSeriesFilter exclusionCopy = exclusionFilter.copy();
+                    filtersToRefresh.add(new WeakReference<>(exclusionCopy));
+                    return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(exclusionCopy));
                 }),
         };
 
@@ -130,7 +184,6 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     // TODO: test in a sequence of filters, with a dynamic where filter in front of us
-    // TODO: test inverted filters
     // TODO: test actual modifications and additions to the table
     // TODO: test when nothing actually changes from the window check perspective
     // TODO: test that we are not causing more refiltering than necessary (with some counting filters before and after)

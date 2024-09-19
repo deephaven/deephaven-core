@@ -198,12 +198,10 @@ public class TimeSeriesFilter
                 update.shifted().apply(inWindowRowSet);
                 if (windowModified) {
                     final RowSet newlyMatched = insertMatched(update.modified());
-                    if (invert) {
-                        if (newlyMatched.isNonempty()) {
-                            listener.requestRecompute(newlyMatched);
+                    try (final WritableRowSet movedOutOfWindow = update.modified().minus(newlyMatched)) {
+                        if (movedOutOfWindow.isNonempty()) {
+                            listener.requestRecompute(movedOutOfWindow);
                         }
-                    } else if (newlyMatched.size() != update.modified().size()) {
-                        listener.requestRecompute(update.modified().minus(newlyMatched));
                     }
                 }
                 insertMatched(update.added());
