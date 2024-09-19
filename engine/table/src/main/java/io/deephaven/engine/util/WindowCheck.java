@@ -209,7 +209,6 @@ public class WindowCheck {
          * @param source the source table
          * @param result our initialized result table
          */
-
         private TimeWindowListenerImpl(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
                 final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
             super(Collections.singleton(recorder), List.of(), "WindowCheck", result);

@@ -1158,15 +1158,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final RowSet newMapping) {
             // Compute added/removed in post-shift keyspace.
             update.added = newMapping.minus(getRowSet());
-            final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
-            getRowSet().writableCast().resetTo(newMapping);
+            try (final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping)) {
+                getRowSet().writableCast().resetTo(newMapping);
 
-            // Note that removed must be propagated to listeners in pre-shift keyspace.
-            if (upstream != null) {
-                upstream.shifted().unapply(postShiftRemovals);
+                // Note that removed must be propagated to listeners in pre-shift keyspace.
+                if (upstream != null) {
+                    upstream.shifted().unapply(postShiftRemovals);
+                }
+                update.removed.writableCast().insert(postShiftRemovals);
             }
-            update.removed = postShiftRemovals;
 
             if (upstream == null || upstream.modified().isEmpty()) {
                 update.modified = RowSetFactory.empty();
