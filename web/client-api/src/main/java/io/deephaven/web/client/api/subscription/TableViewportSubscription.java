@@ -139,7 +139,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
             fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
         }
-        UpdateEventData detail = new SubscriptionEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+        UpdateEventData detail = new ViewportEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
 
         detail.setOffset(this.viewportRowSet.getFirstRow());

@@ -258,11 +258,11 @@ public final class FigureSubscription {
             this.currentData = new ChartData(table);
             sub.addEventListener(TableSubscription.EVENT_UPDATED, e -> {
                 // refire with specifics for the columns that we're watching here, after updating data arrays
-                AbstractTableSubscription.UpdateEventData subscriptionUpdateData =
-                        (AbstractTableSubscription.UpdateEventData) e.detail;
+                AbstractTableSubscription.SubscriptionEventData subscriptionUpdateData =
+                        (AbstractTableSubscription.SubscriptionEventData) e.detail;
                 currentData.update(subscriptionUpdateData);
 
-                CustomEventInit event = CustomEventInit.create();
+                CustomEventInit<DataUpdateEvent> event = CustomEventInit.create();
                 event.setDetail(new DataUpdateEvent(includedSeries.toArray(new JsSeries[0]), currentData,
                         subscriptionUpdateData));
                 figure.fireEvent(JsFigure.EVENT_UPDATED, event);
@@ -271,7 +271,7 @@ public final class FigureSubscription {
                     firstEventFired = true;
 
                     if (downsampleAxisRange != null) {
-                        CustomEventInit successInit = CustomEventInit.create();
+                        CustomEventInit<Object[]> successInit = CustomEventInit.create();
                         successInit.setDetail(includedSeries.toArray());
                         figure.fireEvent(JsFigure.EVENT_DOWNSAMPLEFINISHED, successInit);
                     }

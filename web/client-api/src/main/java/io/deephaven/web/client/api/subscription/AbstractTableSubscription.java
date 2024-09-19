@@ -298,7 +298,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     /**
-     * TableData type for both viewports and full table subscriptions.
+     * TableData type for full table subscriptions.
      */
     @TsIgnore
     public static class SubscriptionEventData extends UpdateEventData implements ViewportData, SubscriptionTableData {
@@ -327,6 +327,28 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return fullRowSet;
         }
     }
+
+    /**
+     * TableData type for viewport subscriptions.
+     */
+    @TsIgnore
+    public static class ViewportEventData extends SubscriptionEventData {
+        public ViewportEventData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
+                RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+            super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
+        }
+
+        @Override
+        public Any getData(long key, Column column) {
+            return super.getData(fullRowSet.getRange().get(key), column);
+        }
+
+        @Override
+        public Format getFormat(long index, Column column) {
+            return super.getFormat(fullRowSet.getRange().get(index), column);
+        }
+    }
+
 
     /**
      * Base type to allow trees to extend from here separately from tables.
@@ -403,7 +425,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Any getData(long key, Column column) {
-            return subscription.getData(fullRowSet.getRange().get(key), column.getIndex());
+            return subscription.getData(key, column.getIndex());
         }
 
         @Override
@@ -413,24 +435,23 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Format getFormat(long index, Column column) {
-            long key = fullRowSet.getRange().get(index);
             long cellColors = 0;
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
             if (column.getStyleColumnIndex() != null) {
-                LongWrapper wrapper = subscription.getData(key, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
                 cellColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-                LongWrapper wrapper = subscription.getData(key, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
                 rowColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                numberFormat = subscription.getData(key, column.getFormatStringColumnIndex()).uncheckedCast();
+                numberFormat = subscription.getData(index, column.getFormatStringColumnIndex()).uncheckedCast();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                formatString = subscription.getData(key, column.getFormatStringColumnIndex()).uncheckedCast();
+                formatString = subscription.getData(index, column.getFormatStringColumnIndex()).uncheckedCast();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }
