@@ -10,8 +10,8 @@ from pydeephaven.ticket import Ticket, _ticket_from_proto
 
 
 class ServerObject:
-    """ A ServerObject is a typed ticket tha represents objects that exist on the server which can be referenced by the
-    client. It is presently used to enable the client API users to send and receive references to server-side plugins.
+    """ A ServerObject is a typed ticket that represents objects existing on the server that can be referenced by the
+    client. It is presently used to enable client API users to send and receive references to server-side plugins.
     """
     type: Optional[str]
     """The type of the object. May be None, indicating that the instance cannot be connected to or otherwise directly
