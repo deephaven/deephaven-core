@@ -88,7 +88,7 @@ _NotBidiRpc = NewType(
 
 
 class Session:
-    """A Session object represents a connection to the Deephaven data server. It contains a number of convenience
+    """A Session represents a connection to the Deephaven data server. It contains a number of convenience
     methods for asking the server to create tables, import Arrow data into tables, merge tables, run Python scripts, and
     execute queries.
 
@@ -149,7 +149,7 @@ class Session:
         _trace('Session.__init__')
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
-        self._last_ticket: int = 0
+        self._last_export_ticket_number: int = 0
         self._ticket_bitarray = BitArray(1024)
 
         self.host = host

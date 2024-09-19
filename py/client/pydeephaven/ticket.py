@@ -11,7 +11,7 @@ from pydeephaven.proto import ticket_pb2
 
 
 class Ticket(ABC):
-    """A Ticket object references an object on the server. """
+    """A Ticket references an object on the server. """
     _ticket_bytes: bytes
 
     @abstractmethod
@@ -30,10 +30,10 @@ class Ticket(ABC):
 
 
 class SharedTicket(Ticket):
-    """ A SharedTicket object represents a ticket that can be shared with other sessions. """
+    """ A SharedTicket is a ticket that can be shared with other sessions. """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes a SharedTicket object
+        """Initializes a SharedTicket object.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -50,7 +50,7 @@ class SharedTicket(Ticket):
         generated UUID.
 
         Returns:
-            a SharedTicket object
+            a SharedTicket
         """
         bytes_ = uuid4().int.to_bytes(16, byteorder='little', signed=False)
         return cls(ticket_bytes=b'h' + bytes_)
@@ -60,7 +60,7 @@ class ExportTicket(Ticket):
     """An ExportTicket is a ticket that references an object exported from the server such as a table or a plugin widget.
     An exported server object will remain available on the server until the ticket is released or the session is
     closed. Many types of server objects are exportable and can be fetched to the client as an export ticket or as an
-    instance of wrapper class (such as :class:`table.Table`, :class:`plugin_client.PluginClient`，etc. that wraps the
+    instance of wrapper class (such as :class:`table.Table`, :class:`plugin_client.PluginClient`, etc.) that wraps the
     export ticket. An export ticket can be published to a :class:`.SharedTicket` so that the exported server object can
     be shared with other sessions.
 
@@ -70,7 +70,7 @@ class ExportTicket(Ticket):
     """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes an ExportTicket object
+        """Initializes an ExportTicket object.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -84,12 +84,12 @@ class ExportTicket(Ticket):
 
 
 class ScopeTicket(Ticket):
-    """A ScopeTicket is a ticket that references a scope variable on the server. Scope variables are ones in the global
+    """A ScopeTicket is a ticket that references a scope variable on the server. Scope variables are variables in the global
     scope of the server and are accessible to all sessions. Scope variables can be fetched to the client as an export
     ticket or a Deephaven :class:`table.Table` that wraps the export ticket. """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes a ScopeTicket object
+        """Initializes a ScopeTicket object.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -109,7 +109,7 @@ class ScopeTicket(Ticket):
             name (str): the name of the scope variable
 
         Returns:
-            a ScopeTicket object
+            a ScopeTicket
         """
         return cls(ticket_bytes=f's/{name}'.encode(encoding='ascii'))
 
@@ -118,7 +118,7 @@ class ApplicationTicket(Ticket):
     """An ApplicationTicket is a ticket that references a field of an application on the server. """
 
     def __init__(self, ticket_bytes: bytes):
-        """Initializes an ApplicationTicket object
+        """Initializes an ApplicationTicket object.
 
         Args:
             ticket_bytes (bytes): the raw bytes for the ticket
@@ -144,19 +144,19 @@ class ApplicationTicket(Ticket):
             field (str): the name of the application field
 
         Returns:
-            an ApplicationTicket object
+            an ApplicationTicket
         """
         return cls(ticket_bytes=f'a/{app_id}/{field}'.encode(encoding='ascii'))
 
 
 def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
-    """Creates a Ticket object from a gRPC protobuf ticket object.
+    """Creates a Ticket from a gRPC protobuf ticket.
 
     Args:
-        ticket (ticket_pb2.Ticket): the gRPC protobuf ticket object
+        ticket (ticket_pb2.Ticket): the gRPC protobuf ticket
 
     Returns:
-        a Ticket object
+        a Ticket
 
     Raises:
         DHError: if the ticket type is unknown
