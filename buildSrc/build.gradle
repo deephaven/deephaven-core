@@ -26,7 +26,7 @@ dependencies {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 
-    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.17.7') {
+    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.17.8') {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
