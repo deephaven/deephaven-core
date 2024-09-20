@@ -3497,6 +3497,39 @@ public class Numeric {
     }
     </#if>
 
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument incremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to increment.
+     * @return the result of increment by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} incrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.incrementExact(x);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            //TODO: Should overflows return NULL or throw an exception?
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        //TODO: Should overflows return NULL or throw an exception?
+        return Math.incrementExact(x);
+        </#if>
+    }
+    </#if>
+
     /**
      * Returns the hyperbolic cosine.
      *
@@ -3610,8 +3643,6 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  IEEEremainder
-        //TODO:  incrementExact
         //TODO:  log10
         //TODO:  log1p
         //TODO:  multiplyExact

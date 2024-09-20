@@ -1797,6 +1797,20 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}IncrementExact(){
+        assertEquals((${pt.primitive})3, incrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, incrementExact(${pt.null}));
+
+        try {
+            incrementExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
     public void test${pt.boxed}Cosh(){
         assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
         assertEquals(NULL_DOUBLE, cosh(${pt.null}));
