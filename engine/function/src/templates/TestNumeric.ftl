@@ -1890,6 +1890,30 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextAfter(){
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})8), nextAfter((${pt.primitive})7, (${pt.primitive})8));
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})-8), nextAfter((${pt.primitive})7, (${pt.primitive})-8));
+        assertEquals(${pt.null}, nextAfter(${pt.null}, (${pt.primitive})8));
+        assertEquals(${pt.null}, nextAfter((${pt.primitive}) 7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextUp(){
+        assertEquals(Math.nextUp((${pt.primitive})7), nextUp((${pt.primitive})7));
+        assertEquals(Math.nextUp(${pt.null}), nextUp(Math.nextDown(${pt.null})));
+        assertEquals(${pt.null}, nextUp(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextDown(){
+        assertEquals(Math.nextDown((${pt.primitive})7), nextDown((${pt.primitive})7));
+        assertEquals(Math.nextDown(${pt.null}), nextDown(Math.nextUp(${pt.null})));
+        assertEquals(${pt.null}, nextDown(${pt.null}));
+    }
+    </#if>
 
     </#if>
     </#list>

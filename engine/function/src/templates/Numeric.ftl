@@ -3726,7 +3726,62 @@ public class Numeric {
      }
      </#if>
 
-        //TODO:  nextAfter
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the first argument in the direction of the second argument.
+      *
+      * @param start the starting value.
+      * @param direction the direction.
+      * @return the floating-point number adjacent to the first argument in the direction of the second argument.
+      *    If either value is null, returns null.
+      */
+     static public ${pt.primitive} nextAfter(${pt.primitive} start, ${pt.primitive} direction) {
+        if (isNull(start) || isNull(direction)) {
+            return ${pt.null};
+        }
+
+        return Math.nextAfter(start, direction);
+     }
+     </#if>
+
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the argument in the direction of positive infinity.
+      *
+      * @param x the value.
+      * @return the floating-point number adjacent to the argument in the direction of positive infinity.
+      *    If the value is null, returns null.
+      */
+     static public ${pt.primitive} nextUp(${pt.primitive} x) {
+        if(isNull(x)) {
+            return ${pt.null};
+        }
+
+        // skip over nulls
+        ${pt.primitive} next = Math.nextUp(x);
+        return isNull(next) ? Math.nextUp(next) : next;
+     }
+     </#if>
+
+     <#if pt.valueType.isFloat>
+     /**
+      * Returns the floating-point number adjacent to the argument in the direction of negative infinity.
+      *
+      * @param x the value.
+      * @return the floating-point number adjacent to the argument in the direction of negative infinity.
+      *    If the value is null, returns null.
+      */
+     static public ${pt.primitive} nextDown(${pt.primitive} x) {
+        if(isNull(x)) {
+            return ${pt.null};
+        }
+
+        // skip over nulls
+        ${pt.primitive} next = Math.nextDown(x);
+        return isNull(next) ? Math.nextDown(next) : next;
+     }
+     </#if>
+
         //TODO:  nextDown
         //TODO:  nextUp
         //TODO:  scalb
