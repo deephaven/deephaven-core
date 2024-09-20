@@ -3782,9 +3782,25 @@ public class Numeric {
      }
      </#if>
 
-        //TODO:  nextDown
-        //TODO:  nextUp
-        //TODO:  scalb
+     <#if pt.valueType.isFloat >
+     /**
+      * Returns x × 2^scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      * member of the ${pt.primitive} value set.
+      *
+      * @param x the value.
+      * @param scaleFactor the scale factor.
+      * @return x × 2scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      *     member of the double value set.  If the either value is null, returns null.
+      */
+     static public ${pt.primitive} scalb(${pt.primitive} x, int scaleFactor) {
+        if(isNull(x) || isNull(scaleFactor)) {
+            return ${pt.null};
+        }
+
+        return Math.scalb(x, scaleFactor);
+     }
+     </#if>
+
         //TODO:  sinh
         //TODO:  subtractExact
         //TODO:  tanh

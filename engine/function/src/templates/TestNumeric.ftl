@@ -1915,6 +1915,14 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Scalb(){
+        assertEquals(Math.scalb((${pt.primitive})7, 3), scalb((${pt.primitive})7, 3));
+        assertEquals(${pt.null}, scalb(${pt.null}, 3));
+        assertEquals(${pt.null}, scalb((${pt.primitive})7, NULL_INT));
+    }
+    </#if>
+
     </#if>
     </#list>
 }
