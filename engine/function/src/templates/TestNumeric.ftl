@@ -1943,6 +1943,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, sinh(${pt.null}));
     }
 
+    public void test${pt.boxed}Tanh(){
+        assertEquals(Math.tanh((${pt.primitive})7), tanh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, tanh(${pt.null}));
+    }
+
     </#if>
     </#list>
 }

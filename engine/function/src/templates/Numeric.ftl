@@ -3853,7 +3853,20 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  tanh
+     /**
+      * Returns the hyperbolic tangent of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic tangent of the value.  If the value is null, returns null.
+      */
+     static public double tanh(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.tanh(x);
+     }
+
         //TODO:  toDegrees
         //TODO:  toIntExact
         //TODO:  toRadians
