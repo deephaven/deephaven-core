@@ -1868,6 +1868,21 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, log1p(${pt.null}));
     }
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}MultiplyExact(){
+        assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+            multiplyExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})2);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
     </#if>
     </#list>
 }

@@ -3663,15 +3663,42 @@ public class Numeric {
       * @param x the value.
       * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
       */
-      static public double log1p(${pt.primitive} x) {
+     static public double log1p(${pt.primitive} x) {
         if(isNull(x)) {
             return NULL_DOUBLE;
         }
 
         return Math.log1p(x);
-      }
+     }
 
-        //TODO:  multiplyExact
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the product of the arguments, throwing an exception if the result overflows.
+      *
+      * @param x the first value.
+      * @param y the second value.
+      * @return the result of multiplying the arguments.  If either value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     static public ${pt.primitive} multiplyExact(${pt.primitive} x, ${pt.primitive} y) {
+         if (isNull(x) || isNull(y)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.multiplyExact(x, y);
+
+         if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+         return Math.multiplyExact(x, y);
+         </#if>
+     }
+     </#if>
+
         //TODO:  negateExact
         //TODO:  nextAfter
         //TODO:  nextDown
