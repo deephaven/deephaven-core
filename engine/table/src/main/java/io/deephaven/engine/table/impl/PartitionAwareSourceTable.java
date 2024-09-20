@@ -242,11 +242,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
         // Add the tracked keys to the table
-        // TODO: figure out how to do this
-        // partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(
-        // foundLocationKeys,
-        // LiveSupplier<ImmutableTableLocationKey>.class,
-        // null));
+        // noinspection unchecked,rawtypes
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(
+                (Collection<LiveSupplier>) (Collection) foundLocationKeys,
+                LiveSupplier.class,
+                null));
 
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)

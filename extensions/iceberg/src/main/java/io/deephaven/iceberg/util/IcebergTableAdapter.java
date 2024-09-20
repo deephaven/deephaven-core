@@ -300,12 +300,35 @@ public class IcebergTableAdapter {
     /**
      * Read the latest snapshot of an Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
      *
+     * @return The loaded table
+     */
+    public IcebergTable table() {
+        return table(null, null);
+    }
+
+    /**
+     * Read the latest snapshot of an Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
+     *
      * @param instructions The instructions for customizations while reading (or null for default instructions)
      * @return The loaded table
      */
-    @SuppressWarnings("unused")
     public IcebergTable table(@Nullable final IcebergInstructions instructions) {
         return table(null, instructions);
+    }
+
+    /**
+     * Read a snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableSnapshotId The snapshot id to load
+     * @return The loaded table
+     */
+    public IcebergTable table(final long tableSnapshotId) {
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot =
+                snapshot(tableSnapshotId).orElseThrow(() -> new IllegalArgumentException(
+                        "Snapshot with id " + tableSnapshotId + " not found for table " + tableIdentifier));
+
+        return table(tableSnapshot, null);
     }
 
     /**
@@ -315,7 +338,6 @@ public class IcebergTableAdapter {
      * @param instructions The instructions for customizations while reading (or null for default instructions)
      * @return The loaded table
      */
-    @SuppressWarnings("unused")
     public IcebergTable table(final long tableSnapshotId, @Nullable final IcebergInstructions instructions) {
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot =

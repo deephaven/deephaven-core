@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
-        implements TableLocation, DelegatingLivenessNode {
+        implements TableLocation, DelegatingLivenessReferent {
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -36,7 +36,7 @@ public abstract class AbstractTableLocation
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
-    private final ReferenceCountedLivenessNode livenessNode;
+    private final ReferenceCountedLivenessReferent livenessReferent;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<AbstractTableLocation, KeyedObjectHashMap> CACHED_DATA_INDEXES_UPDATER =
@@ -62,7 +62,7 @@ public abstract class AbstractTableLocation
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
 
-        livenessNode = new ReferenceCountedLivenessNode(false) {
+        livenessReferent = new ReferenceCountedLivenessNode(false) {
             @Override
             protected void destroy() {
                 AbstractTableLocation.this.destroy();
@@ -76,8 +76,8 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public LivenessNode asLivenessNode() {
-        return livenessNode;
+    public LivenessReferent asLivenessReferent() {
+        return livenessReferent;
     }
 
     // ------------------------------------------------------------------------------------------------------------------

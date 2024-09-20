@@ -5,8 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
@@ -38,9 +37,14 @@ import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSour
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode implements ColumnSourceManager {
+public class RegionedColumnSourceManager implements ColumnSourceManager, DelegatingLivenessNode {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
+
+    /**
+     * Whether this column source manager is serving a refreshing dynamic table.
+     */
+    private final LivenessNode livenessNode;
 
     /**
      * Whether this column source manager is serving a refreshing dynamic table.
@@ -105,6 +109,11 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     private final Collection<DataIndex> retainedDataIndexes = new ArrayList<>();
 
     /**
+     * List of tracked location keys to release at the end of the cycle.
+     */
+    private final List<AbstractTableLocation> releasedLocations = new ArrayList<>();
+
+    /**
      * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
      */
     @SuppressWarnings("unused")
@@ -130,11 +139,6 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     private List<IncludedTableLocationEntry> invalidatedLocations = new ArrayList<>();
 
     /**
-     * List of tracked location keys to release at the end of the cycle.
-     */
-    private List<AbstractTableLocation> releasedLocations = new ArrayList<>();
-
-    /**
      * Will invalidate the locations at the end of the cycle after all downstream updates are complete.
      */
     final UpdateCommitter<?> invalidateCommitter;
@@ -151,7 +155,6 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             @NotNull final RegionedTableComponentFactory componentFactory,
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
-        super(false);
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
@@ -177,6 +180,15 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 ? SIMPLE_LOCATION_TABLE_DEFINITION
                 : TableDefinition.inferFrom(columnSourceMap);
 
+        if (isRefreshing) {
+            livenessNode = new LivenessArtifact() {};
+        } else {
+            // This RCSM wil be managing table locations to prevent them from being de-scoped but will not otherwise
+            // participate in the liveness management process.
+            livenessNode = new ReferenceCountedLivenessNode(false) {};
+            livenessNode.retainReference();
+        }
+
         try (final SafeCloseable ignored = isRefreshing ? LivenessScopeStack.open() : null) {
             includedLocationsTable = new QueryTable(
                     locationTableDefinition,
@@ -191,9 +203,8 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 }
             };
             if (isRefreshing) {
+                livenessNode.manage(includedLocationsTable);
                 rowSetModifiedColumnSet = includedLocationsTable.newModifiedColumnSet(ROWS_SET_COLUMN_NAME);
-                // TODO: managing doesn't work here because we are at zero right now.
-                manage(includedLocationsTable);
             } else {
                 rowSetModifiedColumnSet = null;
             }
@@ -212,12 +223,6 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
-        // TODO: do I need to explicitly release the managed locations or does it happen automatically?
-    }
-
-    @Override
     public synchronized void addLocation(@NotNull final TableLocation tableLocation) {
         final IncludedTableLocationEntry includedLocation = includedTableLocations.get(tableLocation.getKey());
         final EmptyTableLocationEntry emptyLocation = emptyTableLocations.get(tableLocation.getKey());
@@ -227,7 +232,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
             // Hold on to this table location.
-            manage(tableLocation);
+            livenessNode.manage(tableLocation);
             emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
         } else {
             // Duplicate location - not allowed
@@ -289,7 +294,7 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
                         new PartitioningColumnDataIndex<>(cd.getName(), columnSources.get(cd.getName()), this);
                 retainedDataIndexes.add(partitioningIndex);
                 if (isRefreshing) {
-                    manage(partitioningIndex);
+                    livenessNode.manage(partitioningIndex);
                 }
                 DataIndexer.of(initialRowSet).addDataIndex(partitioningIndex);
             }
@@ -509,6 +514,11 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
     @Override
     public final Map<String, ? extends ColumnSource<?>> getColumnSources() {
         return sharedColumnSources;
+    }
+
+    @Override
+    public LivenessNode asLivenessNode() {
+        return livenessNode;
     }
 
     /**
