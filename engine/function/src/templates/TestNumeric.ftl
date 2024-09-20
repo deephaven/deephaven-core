@@ -1953,6 +1953,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, toDegrees(${pt.null}));
     }
 
+    public void test${pt.boxed}ToRadians(){
+        assertEquals(Math.toRadians((${pt.primitive})7), toRadians((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toRadians(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
