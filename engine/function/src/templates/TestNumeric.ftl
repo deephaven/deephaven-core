@@ -1883,6 +1883,14 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}NegateExact(){
+        assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
+        assertEquals(${pt.null}, negateExact(${pt.null}));
+    }
+    </#if>
+
+
     </#if>
     </#list>
 }

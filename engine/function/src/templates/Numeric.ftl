@@ -3699,7 +3699,33 @@ public class Numeric {
      }
      </#if>
 
-        //TODO:  negateExact
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the negation of the argument, throwing an exception if the result overflows.
+      *
+      * @param x the value to negate.
+      * @return the negation of the argument.  If the value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     public static ${pt.primitive} negateExact(${pt.primitive} x) {
+         if (isNull(x)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.negateExact(x);
+
+         if( val > ${pt.maxValue} || val < ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: -" + x);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+         return Math.negateExact(x);
+         </#if>
+     }
+     </#if>
+
         //TODO:  nextAfter
         //TODO:  nextDown
         //TODO:  nextUp
