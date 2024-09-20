@@ -1761,6 +1761,21 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}SubtractExact(){
+        assertEquals((${pt.primitive})1, subtractExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+        subtractExact((${pt.primitive})${pt.minValue}, (${pt.primitive})1);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
     public void test${pt.boxed}Atan2(){
         assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
         assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));

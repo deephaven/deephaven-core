@@ -3383,6 +3383,7 @@ public class Numeric {
 
     //////////////////////////////// NEW //////////////////////////////////////
     // TODO: document these
+    //TODO: group similar methods
 
     <#if pt.valueType.isInteger>
     /**
@@ -3815,7 +3816,43 @@ public class Numeric {
         return Math.sinh(x);
      }
 
-        //TODO:  subtractExact
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the difference of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of subtracting the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} subtractExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+            int val = Math.subtractExact(x, y);
+
+            if( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
+            //TODO: Should overflows return NULL or throw an exception?
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        ${pt.primitive} val = Math.subtractExact(x, y);
+
+        if( isNull(val) ) {
+            //TODO: Should overflows return NULL or throw an exception?
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        //TODO: Should overflows return NULL or throw an exception?
+        return val;
+        </#if>
+    }
+    </#if>
+
         //TODO:  tanh
         //TODO:  toDegrees
         //TODO:  toIntExact
