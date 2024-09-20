@@ -3657,7 +3657,20 @@ public class Numeric {
         return Math.log10(x);
      }
 
-        //TODO:  log1p
+     /**
+      * Returns the natural logarithm of the sum of the argument and 1.
+      *
+      * @param x the value.
+      * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
+      */
+      static public double log1p(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log1p(x);
+      }
+
         //TODO:  multiplyExact
         //TODO:  negateExact
         //TODO:  nextAfter
