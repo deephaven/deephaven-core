@@ -3867,7 +3867,20 @@ public class Numeric {
         return Math.tanh(x);
      }
 
-        //TODO:  toDegrees
+    /**
+     * Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
+     *
+     * @param x the angle in radians
+     * @return the measurement of the angle x in degrees.  If the value is null, returns null.
+     */
+    static public double toDegrees(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.toDegrees(x);
+    }
+
         //TODO:  toIntExact
         //TODO:  toRadians
         //TODO:  ulp

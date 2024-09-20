@@ -1948,6 +1948,11 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, tanh(${pt.null}));
     }
 
+    public void test${pt.boxed}ToDegrees(){
+        assertEquals(Math.toDegrees((${pt.primitive})7), toDegrees((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toDegrees(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
