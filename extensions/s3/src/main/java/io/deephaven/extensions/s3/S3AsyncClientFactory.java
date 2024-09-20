@@ -8,6 +8,7 @@ import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
@@ -42,8 +43,8 @@ class S3AsyncClientFactory {
         S3AsyncClient s3AsyncClient;
         try {
             s3AsyncClient = getAsyncClientBuilder(instructions).build();
-        } catch (final RuntimeException e) {
-            if (instructions.regionName().isEmpty() && e.getMessage().contains("region")) {
+        } catch (final SdkClientException e) {
+            if (instructions.regionName().isEmpty() && e.getMessage().contains("Unable to load region")) {
                 // We might have failed because region was not provided and could not be determined by the SDK.
                 // We will try again with a default region.
                 s3AsyncClient = getAsyncClientBuilder(instructions).region(Region.US_EAST_1).build();

@@ -165,6 +165,8 @@ public class S3ParquetRemoteTest {
 
         final Table tableWithNoRegionAndCredentials;
         {
+            // Note that this assumes that credentials are not present in the credentials file. If they are, this test
+            // will fail.
             final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                     .setSpecialInstructions(S3Instructions.builder()
                             .readTimeout(Duration.ofSeconds(60))
@@ -217,7 +219,7 @@ public class S3ParquetRemoteTest {
     }
 
     /**
-     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up.
+     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up, else will fail.
      */
     @Test
     public void readMetadataPartitionedParquetFromS3() {
