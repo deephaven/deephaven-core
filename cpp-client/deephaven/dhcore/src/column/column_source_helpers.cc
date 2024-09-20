@@ -14,4 +14,6 @@ const char HumanReadableTypeNames::kDoubleName[] = "double";
 const char HumanReadableTypeNames::kBoolName[] = "bool";
 const char HumanReadableTypeNames::kStringName[] = "string";
 const char HumanReadableTypeNames::kDateTimeName[] = "DateTime";
+const char HumanReadableTypeNames::kLocalDateName[] = "LocalDate";
+const char HumanReadableTypeNames::kLocalTimeName[] = "LocalTime";
 }  // namespace deephaven::dhcore::column::internal

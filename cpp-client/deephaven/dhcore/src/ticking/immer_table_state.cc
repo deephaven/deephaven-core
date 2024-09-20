@@ -281,6 +281,14 @@ struct FlexVectorFromSourceMaker final : public ColumnSourceVisitor {
     result_ = std::make_unique<GenericAbstractFlexVector<DateTime>>();
   }
 
+  void Visit(const column::LocalDateColumnSource &/*source*/) final {
+    result_ = std::make_unique<GenericAbstractFlexVector<LocalDate>>();
+  }
+
+  void Visit(const column::LocalTimeColumnSource &/*source*/) final {
+    result_ = std::make_unique<GenericAbstractFlexVector<LocalTime>>();
+  }
+
   std::unique_ptr<AbstractFlexVectorBase> result_;
 };
 
