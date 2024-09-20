@@ -3643,7 +3643,20 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  log10
+    /**
+     * Returns the base 10 logarithm of a double value.
+     *
+     * @param x the value.
+     * @return the base 10 logarithm of the value.  If the value is null, returns null.
+     */
+     static public double log10(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log10(x);
+     }
+
         //TODO:  log1p
         //TODO:  multiplyExact
         //TODO:  negateExact

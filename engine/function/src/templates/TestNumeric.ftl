@@ -1858,6 +1858,11 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    public void test${pt.boxed}Log10(){
+        assertEquals(Math.log10(7), log10((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log10(${pt.null}));
+    }
+
     </#if>
     </#list>
 }
