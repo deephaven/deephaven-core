@@ -3578,7 +3578,21 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  hypot
+    /**
+     * Returns the hypotenuse of a right-angled triangle, sqrt(x2 +y2), without intermediate overflow or underflow.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the hypotenuse of a right-angled triangle.  If either value is null, returns null.
+     */
+    static public double hypot(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.hypot(x, y);
+    }
+
         //TODO:  IEEEremainder
         //TODO:  incrementExact
         //TODO:  log10

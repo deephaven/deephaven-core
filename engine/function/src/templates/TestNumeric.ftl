@@ -1830,6 +1830,12 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    public void test${pt.boxed}Hypot(){
+        assertEquals(Math.hypot(7, 3), hypot((${pt.primitive})7, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot(${pt.null}, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
+    }
+
     </#if>
     </#list>
 }
