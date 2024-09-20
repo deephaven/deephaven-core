@@ -3593,6 +3593,23 @@ public class Numeric {
         return Math.hypot(x, y);
     }
 
+    <#if pt.valueType.isFloat>
+    /**
+     * Returns the IEEE 754 remainder of the division of the arguments.
+     *
+     * @param x the dividend.
+     * @param y the divisor.
+     * @return the IEEE 754 remainder of the division of the arguments.  If either value is null, returns null.
+     */
+    static public ${pt.primitive} IEEEremainder(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        return (${pt.primitive}) Math.IEEEremainder(x, y);
+    }
+    </#if>
+
         //TODO:  IEEEremainder
         //TODO:  incrementExact
         //TODO:  log10

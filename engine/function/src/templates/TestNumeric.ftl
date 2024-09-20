@@ -1836,6 +1836,14 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
     }
 
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}IEEEremainder(){
+        assertEquals((${pt.primitive}) Math.IEEEremainder(71, 3), IEEEremainder((${pt.primitive})71, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder(${pt.null}, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder((${pt.primitive})71, ${pt.null}));
+    }
+    </#if>
+
     </#if>
     </#list>
 }
