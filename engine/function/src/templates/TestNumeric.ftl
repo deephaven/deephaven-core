@@ -1923,6 +1923,11 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    public void test${pt.boxed}Sinh(){
+        assertEquals(Math.sinh((${pt.primitive})7), sinh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, sinh(${pt.null}));
+    }
+
     </#if>
     </#list>
 }

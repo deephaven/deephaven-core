@@ -3801,7 +3801,20 @@ public class Numeric {
      }
      </#if>
 
-        //TODO:  sinh
+     /**
+      * Returns the hyperbolic sine of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic sine of the value.  If the value is null, returns null.
+      */
+     static public double sinh(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.sinh(x);
+     }
+
         //TODO:  subtractExact
         //TODO:  tanh
         //TODO:  toDegrees
