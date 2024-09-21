@@ -342,6 +342,21 @@ struct DeephavenTraits<LocalTime> {
  */
 class DateTime {
 public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<DateTime> &&
+        std::has_unique_object_representations_v<DateTime> &&
+        std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
   /**
    * Converts nanoseconds-since-UTC-epoch to DateTime. The Deephaven null value sentinel is
    * turned into DateTime(0).
@@ -431,6 +446,21 @@ private:
  */
 class LocalDate {
 public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalDate> &&
+            std::has_unique_object_representations_v<LocalDate> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
   /**
    * Creates an instance of LocalDate from the specified year, month, and day.
    */
@@ -488,6 +518,21 @@ private:
  */
 class LocalTime {
 public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalTime> &&
+            std::has_unique_object_representations_v<LocalTime> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
   /**
    * Creates an instance of LocalTime from the specified hour, minute, and second.
    */
