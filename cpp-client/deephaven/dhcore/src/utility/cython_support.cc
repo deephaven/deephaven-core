@@ -15,6 +15,8 @@ using deephaven::dhcore::column::BooleanArrayColumnSource;
 using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::column::ColumnSourceVisitor;
 using deephaven::dhcore::column::DateTimeArrayColumnSource;
+using deephaven::dhcore::column::LocalDateArrayColumnSource;
+using deephaven::dhcore::column::LocalTimeArrayColumnSource;
 using deephaven::dhcore::column::StringArrayColumnSource;
 
 namespace deephaven::dhcore::utility {
@@ -63,6 +65,34 @@ CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64
   }
   populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
   return DateTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
+}
+
+std::shared_ptr<ColumnSource>
+CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int64_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<LocalDate[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
+
+  for (size_t i = 0; i != num_elements; ++i) {
+    elements[i] = LocalDate(data_begin[i]);
+  }
+  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return LocalDateArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
+}
+
+std::shared_ptr<ColumnSource>
+CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<LocalTime[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
+
+  for (size_t i = 0; i != num_elements; ++i) {
+    elements[i] = LocalTime(data_begin[i]);
+  }
+  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  return LocalTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
       num_elements);
 }
 
