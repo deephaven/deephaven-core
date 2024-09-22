@@ -61,13 +61,13 @@ class ExportTicket(Ticket):
     """An ExportTicket is a ticket that references an object exported from the server such as a table or a plugin widget.
     An exported server object will remain available on the server until the ticket is released or the session is
     closed. Many types of server objects are exportable and can be fetched to the client as an export ticket or as an
-    instance of wrapper class (such as :class:`table.Table`, :class:`plugin_client.PluginClient`, etc.) that wraps the
+    instance of wrapper class (such as :class:`~.table.Table`, :class:`~.plugin_client.PluginClient`, etc.) that wraps the
     export ticket. An export ticket can be published to a :class:`.SharedTicket` so that the exported server object can
     be shared with other sessions.
 
     Note: Users should not create ExportTickets directly. They are managed by the Session and are automatically created
     when exporting objects from the server via. :meth:`.Session.open_table`, :meth:`.Session.fetch`, and any operations
-    that returns a Table.
+    that return a Table.
     """
 
     def __init__(self, ticket_bytes: bytes):
@@ -100,7 +100,7 @@ class ExportTicket(Ticket):
 class ScopeTicket(Ticket):
     """A ScopeTicket is a ticket that references a scope variable on the server. Scope variables are variables in the global
     scope of the server and are accessible to all sessions. Scope variables can be fetched to the client as an export
-    ticket or a Deephaven :class:`table.Table` that wraps the export ticket. """
+    ticket or a Deephaven :class:`~.table.Table` that wraps the export ticket. """
 
     def __init__(self, ticket_bytes: bytes):
         """Initializes a ScopeTicket.
@@ -125,6 +125,9 @@ class ScopeTicket(Ticket):
         Returns:
             a ScopeTicket
         """
+        if not name:
+            raise DHError('scope_ticket: name must be a non-empty string')
+
         return cls(ticket_bytes=f's/{name}'.encode(encoding='ascii'))
 
 
@@ -161,6 +164,11 @@ class ApplicationTicket(Ticket):
         Returns:
             an ApplicationTicket
         """
+        if not app_id:
+            raise DHError('app_ticket: app_id must be a non-empty string')
+        if not field:
+            raise DHError('app_ticket: field must be a non-empty string')
+
         return cls(ticket_bytes=f'a/{app_id}/{field}'.encode(encoding='ascii'))
 
 

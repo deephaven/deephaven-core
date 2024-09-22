@@ -551,7 +551,7 @@ class Session:
     def publish(self, source_ticket: Ticket, result_ticket: Ticket) -> None:
         """ Publishes a source ticket to the result ticket.
 
-        This is low-level method that should be used mostly to publish non-Table server objects that are previously
+        This is low-level method that can be used to publish non-Table server objects that are previously
         fetched from the server. The source ticket represents the previously fetched server object to be published, and
         the result ticket, which should normally be a SharedTicket, is the ticket to publish to. The result ticket can
         then be fetched by other sessions to access the object as long as the object is not released. This method is
@@ -569,8 +569,8 @@ class Session:
     def fetch(self, ticket: Ticket) -> ExportTicket:
         """Fetches a server object by ticket.
 
-        This is low-level method that should be used mostly to fetch non-Table server objects from the server. The ticket
-        represents a fetchable server object, e.g :class:`plugin_client.PluginClient`, :class:`plugin_client.Fetchable`.
+        This is low-level method that can be used to fetch non-Table server objects. The ticket represents a
+        fetchable server object, e.g :class:`~.plugin_client.PluginClient`, :class:`~.plugin_client.Fetchable`.
         This method is used together with the :meth:`.publish` method to share server objects between sessions.
 
         Args:
@@ -600,7 +600,7 @@ class Session:
         Raises:
             DHError
         """
-        self.publish(table, ticket)
+        self.publish(table.ticket, ticket)
 
     def fetch_table(self, ticket: SharedTicket) -> Table:
         """Fetches a table by ticket.
