@@ -350,7 +350,7 @@ cdef class ColumnSource:
     # fill_chunk helper method for LocalDate. In this case we shamelessly treat the Python timestamp
     # type as an int64, and then further shamelessly pretend that it's a Deephaven LocalDate type.
     cdef _fill_localdate_chunk(self, rows: RowSequence, int64_t[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
-        cdef extern from *:
+        cdef extern from "<type_traits>":
             """
             static_assert(deephaven::dhcore::LocalDate::IsBlittableToInt64());
             """
@@ -361,7 +361,7 @@ cdef class ColumnSource:
     # fill_chunk helper method for LocalTime. In this case we shamelessly treat the Python timestamp
     # type as an int64, and then further shamelessly pretend that it's a Deephaven LocalTime type.
     cdef _fill_localtime_chunk(self, rows: RowSequence, int64_t[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
-        cdef extern from *:
+        cdef extern from "<type_traits>":
             """
             static_assert(deephaven::dhcore::LocalTime::IsBlittableToInt64());
             """
