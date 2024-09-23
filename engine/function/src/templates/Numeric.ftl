@@ -3792,8 +3792,6 @@ public class Numeric {
     }
     </#if>
 
-
-
     <#if pt.valueType.isFloat>
     /**
      * Returns the IEEE 754 remainder of the division of the arguments.
