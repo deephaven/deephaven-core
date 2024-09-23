@@ -6,15 +6,26 @@ package io.deephaven.extensions.s3;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
+import software.amazon.awssdk.awscore.AwsClient;
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.core.client.builder.SdkAsyncClientBuilder;
+import software.amazon.awssdk.core.client.builder.SdkClientBuilder;
+import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
+import software.amazon.awssdk.core.client.config.ClientAsyncConfiguration;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryMode;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
+import software.amazon.awssdk.services.s3.S3BaseClientBuilder;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 import java.time.Duration;
@@ -23,68 +34,121 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 
 import static io.deephaven.util.thread.ThreadHelpers.getOrComputeThreadCountProperty;
 
-class S3AsyncClientFactory {
+final class S3ClientFactory {
 
     private static final int NUM_FUTURE_COMPLETION_THREADS =
             getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
 
-    private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(S3ClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
 
     private static volatile Executor futureCompletionExecutor;
     private static volatile ScheduledExecutorService scheduledExecutor;
 
     static S3AsyncClient getAsyncClient(@NotNull final S3Instructions instructions) {
-        S3AsyncClient s3AsyncClient;
+        return buildForS3(S3ClientFactory::getAsyncClientBuilder, instructions, S3AsyncClient.class);
+    }
+
+    static S3Client getSyncClient(@NotNull final S3Instructions instructions) {
+        return buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class);
+    }
+
+    static <C extends AwsClient, B extends S3BaseClientBuilder<B, C>> C buildForS3(
+            Function<S3Instructions, B> builderFactory,
+            S3Instructions instructions,
+            Class<C> clientClass) {
+        if (log.isDebugEnabled()) {
+            log.debug().append("Building ").append(clientClass.getSimpleName()).append(" with instructions: ")
+                    .append(instructions).endl();
+        }
         try {
-            s3AsyncClient = getAsyncClientBuilder(instructions).build();
+            return builderFactory.apply(instructions).build();
         } catch (final SdkClientException e) {
-            if (instructions.regionName().isEmpty() && e.getMessage().contains("Unable to load region")) {
+            if (instructions.crossRegionAccessEnabled() && e.getMessage().contains("Unable to load region")) {
                 // We might have failed because region was not provided and could not be determined by the SDK.
                 // We will try again with a default region.
-                s3AsyncClient = getAsyncClientBuilder(instructions).region(Region.US_EAST_1).build();
+                return builderFactory.apply(instructions).region(Region.US_EAST_1).build();
             } else {
                 throw e;
             }
         }
-        if (log.isDebugEnabled()) {
-            log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
-        }
-        return s3AsyncClient;
     }
 
-    private static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
-        final S3AsyncClientBuilder builder = S3AsyncClient.builder()
-                .asyncConfiguration(
-                        b -> b.advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
-                                ensureAsyncFutureCompletionExecutor()))
-                .httpClient(getOrBuildHttpAsyncClient(instructions))
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        // If we find that the STANDARD retry policy does not work well in all situations, we might
-                        // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
-                        // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                        .retryPolicy(RetryMode.STANDARD)
-                        .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
-                        .apiCallTimeout(instructions.readTimeout())
-                        // Adding a metrics publisher may be useful for debugging, but it's very verbose.
-                        // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
-                        .scheduledExecutorService(ensureScheduledExecutor())
-                        .build())
-                .credentialsProvider(instructions.awsV2CredentialsProvider());
-        if (instructions.regionName().isPresent()) {
-            builder.region(Region.of(instructions.regionName().get()));
-        } else {
+    static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
+        return S3AsyncClient.builder()
+                .applyMutation(b -> applyAsyncConfiguration(b, instructions))
+                .applyMutation(b -> applyAsyncHttpClient(b, instructions))
+                .applyMutation(b -> applyOverrideConfiguration(b, instructions))
+                .applyMutation(b -> applyCredentialsProvider(b, instructions))
+                .applyMutation(b -> applyRegion(b, instructions))
+                .applyMutation(b -> applyCrossRegionAccess(b, instructions))
+                .applyMutation(b -> applyEndpointOverride(b, instructions));
+    }
+
+    static S3ClientBuilder getSyncClientBuilder(@NotNull final S3Instructions instructions) {
+        return S3Client.builder()
+                .applyMutation(b -> applySyncHttpClient(b, instructions))
+                .applyMutation(b -> applyOverrideConfiguration(b, instructions))
+                .applyMutation(b -> applyCredentialsProvider(b, instructions))
+                .applyMutation(b -> applyRegion(b, instructions))
+                .applyMutation(b -> applyCrossRegionAccess(b, instructions))
+                .applyMutation(b -> applyEndpointOverride(b, instructions));
+    }
+
+    static void applyAsyncConfiguration(SdkAsyncClientBuilder<?, ?> builder,
+            @SuppressWarnings("unused") S3Instructions instructions) {
+        builder.asyncConfiguration(ClientAsyncConfiguration.builder()
+                .advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
+                        ensureAsyncFutureCompletionExecutor())
+                .build());
+    }
+
+    static void applySyncHttpClient(SdkSyncClientBuilder<?, ?> builder, S3Instructions instructions) {
+        builder.httpClient(buildHttpSyncClient(instructions));
+    }
+
+    static void applyAsyncHttpClient(SdkAsyncClientBuilder<?, ?> builder, S3Instructions instructions) {
+        builder.httpClient(getOrBuildHttpAsyncClient(instructions));
+    }
+
+    static void applyOverrideConfiguration(SdkClientBuilder<?, ?> builder, S3Instructions instructions) {
+        builder.overrideConfiguration(ClientOverrideConfiguration.builder()
+                // If we find that the STANDARD retry policy does not work well in all situations, we might
+                // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
+                // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
+                .retryPolicy(RetryMode.STANDARD)
+                .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
+                .apiCallTimeout(instructions.readTimeout())
+                // Adding a metrics publisher may be useful for debugging, but it's very verbose.
+                // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
+                .scheduledExecutorService(ensureScheduledExecutor())
+                .build());
+    }
+
+    static void applyCredentialsProvider(AwsClientBuilder<?, ?> builder, S3Instructions instructions) {
+        builder.credentialsProvider(instructions.awsV2CredentialsProvider());
+    }
+
+    static void applyRegion(AwsClientBuilder<?, ?> builder, S3Instructions instructions) {
+        instructions.regionName().map(Region::of).ifPresent(builder::region);
+    }
+
+    static void applyCrossRegionAccess(S3BaseClientBuilder<?, ?> builder, S3Instructions instructions) {
+        if (instructions.crossRegionAccessEnabled()) {
             // If region is not provided, we enable cross-region access to allow the SDK to determine the region
             // based on the bucket location and cache it for future requests.
             builder.crossRegionAccessEnabled(true);
         }
+    }
+
+    static void applyEndpointOverride(SdkClientBuilder<?, ?> builder, S3Instructions instructions) {
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        return builder;
     }
 
     private static class HttpClientConfig {
@@ -134,6 +198,14 @@ class S3AsyncClientFactory {
                 .build());
     }
 
+    private static SdkHttpClient buildHttpSyncClient(@NotNull final S3Instructions instructions) {
+        // TODO: cache?
+        return AwsCrtHttpClient.builder()
+                .maxConcurrency(instructions.maxConcurrentRequests())
+                .connectionTimeout(instructions.connectionTimeout())
+                .build();
+    }
+
     /**
      * The following executor will be used to complete the futures returned by the async client. This is a shared
      * executor across all clients with fixed number of threads. This pattern is inspired by the default executor used
@@ -143,7 +215,7 @@ class S3AsyncClientFactory {
      */
     private static Executor ensureAsyncFutureCompletionExecutor() {
         if (futureCompletionExecutor == null) {
-            synchronized (S3AsyncClientFactory.class) {
+            synchronized (S3ClientFactory.class) {
                 if (futureCompletionExecutor == null) {
                     futureCompletionExecutor = Executors.newFixedThreadPool(NUM_FUTURE_COMPLETION_THREADS,
                             new ThreadFactoryBuilder().threadNamePrefix("s3-async-future-completion").build());
@@ -161,7 +233,7 @@ class S3AsyncClientFactory {
      */
     private static ScheduledExecutorService ensureScheduledExecutor() {
         if (scheduledExecutor == null) {
-            synchronized (S3AsyncClientFactory.class) {
+            synchronized (S3ClientFactory.class) {
                 if (scheduledExecutor == null) {
                     scheduledExecutor = Executors.newScheduledThreadPool(NUM_SCHEDULED_EXECUTOR_THREADS,
                             new ThreadFactoryBuilder().threadNamePrefix("s3-scheduled-executor").build());

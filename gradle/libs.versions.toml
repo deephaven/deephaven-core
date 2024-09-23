@@ -110,6 +110,8 @@ awssdk-glue = { module = "software.amazon.awssdk:glue" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 awssdk-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager" }
 awssdk-sts = { module = "software.amazon.awssdk:sts" }
+awssdk-dynamodb = { module = "software.amazon.awssdk:dynamodb" }
+awssdk-kms = { module = "software.amazon.awssdk:kms" }
 
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 

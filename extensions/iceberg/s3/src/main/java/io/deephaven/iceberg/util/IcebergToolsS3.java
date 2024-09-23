@@ -4,8 +4,12 @@
 package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
+import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
+import io.deephaven.extensions.s3.S3Instructions;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
+import org.apache.iceberg.aws.AwsProperties;
+import org.apache.iceberg.aws.HttpClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.rest.RESTCatalog;
@@ -101,5 +105,35 @@ public class IcebergToolsS3 extends IcebergTools {
         catalog.initialize(catalogName, properties);
 
         return new IcebergCatalogAdapter(catalog, properties);
+    }
+
+    /**
+     * Create an Iceberg catalog adapter. Instead of the AWS clients being configured via the various Iceberg-specific
+     * properties (found amongst {@link S3FileIOProperties}, {@link HttpClientProperties}, and {@link AwsProperties}),
+     * the clients are created in the same way that Deephaven's AWS clients are configured with respect to
+     * {@code instructions}. This ensures, amongst other things, that Iceberg's AWS configuration and credentials are
+     * in-sync with Deephaven's AWS configuration and credentials for S3 access.
+     *
+     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
+     * @param properties a map containing the Iceberg catalog properties to use
+     * @param hadoopConfig a map containing Hadoop configuration properties to use
+     * @param instructions the s3 instructions
+     * @return the Iceberg catalog adapter
+     *
+     * @see DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)
+     * @see #createAdapter(String, Map, Map)
+     */
+    public static IcebergCatalogAdapter createAdapter(
+            @Nullable final String name,
+            @NotNull final Map<String, String> properties,
+            @NotNull final Map<String, String> hadoopConfig,
+            @NotNull final S3Instructions instructions) {
+        final HashMap<String, String> newProperties = new HashMap<>(properties);
+        final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
+        try {
+            return createAdapter(name, properties, hadoopConfig);
+        } finally {
+            cleanup.run();
+        }
     }
 }

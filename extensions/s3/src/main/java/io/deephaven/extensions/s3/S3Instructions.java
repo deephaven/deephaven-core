@@ -248,6 +248,11 @@ public abstract class S3Instructions implements LogOutputAppendable {
         return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider();
     }
 
+    final boolean crossRegionAccessEnabled() {
+        // Note: this can be elevated to user-level control (with the same default) in the future if necessary
+        return regionName().isEmpty();
+    }
+
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style
     // requests via software.amazon.awssdk.services.s3.S3BaseClientBuilder.forcePathStyle. Originally, AWS planned to
     // deprecate path-style requests, but that has been delayed an indefinite amount of time. In the meantime, we'll
