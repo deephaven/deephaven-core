@@ -9,15 +9,15 @@ from __future__ import annotations
 from typing import List, Union
 
 import pyarrow as pa
+
 from pydeephaven._utils import to_list
 
 from pydeephaven._table_ops import MetaTableOp, SortDirection
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
+from pydeephaven.ticket import Ticket, ServerObject
 from pydeephaven.updateby import UpdateByOperation
-
-from pydeephaven.experimental.server_object import ServerObject
 
 
 class Table(TableInterface, ServerObject):
@@ -35,12 +35,11 @@ class Table(TableInterface, ServerObject):
     def table_op_handler(self, table_op):
         return self.session.table_service.grpc_table_op(self, table_op)
 
-    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
-        ServerObject.__init__(self, type_="Table", ticket=ticket)
+    def __init__(self, session: 'Session', ticket: Ticket, schema_header: bytes = b'', size: int = None, is_static: bool = None, schema: pa.Schema = None):
+        ServerObject.__init__(self, type="Table", ticket=ticket)
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
-        self.ticket = ticket
         self.schema = schema
         self.is_static = is_static
         self.size = size
@@ -74,7 +73,7 @@ class Table(TableInterface, ServerObject):
         Raises:
             DHError
         """
-        self.session.release(self.ticket)
+        self.session.release(self)
         self.ticket = None
 
     def _parse_schema(self, schema_header):
