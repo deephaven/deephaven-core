@@ -1933,8 +1933,6 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-
-
     <#if pt.valueType.isFloat >
     public void test${pt.boxed}NextAfter(){
         assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})8), nextAfter((${pt.primitive})7, (${pt.primitive})8));
