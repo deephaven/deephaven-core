@@ -19,6 +19,16 @@ import static io.deephaven.function.Numeric.*;
 @SuppressWarnings({"RedundantCast", "RedundantArrayCreation", "PointlessArithmeticExpression", "ConstantConditions", "SimplifiableAssertion", "Convert2Diamond"})
 public class TestNumeric extends BaseArrayTestCase {
 
+    //////////////////////////// Constants ////////////////////////////
+
+    public void testE() {
+        assertEquals(Math.E, E, 0.0);
+    }
+
+    public void testPI() {
+        assertEquals(Math.PI, PI, 0.0);
+    }
+
     //////////////////////////// Object ////////////////////////////
 
     public void testObjMin() {

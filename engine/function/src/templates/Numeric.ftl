@@ -24,6 +24,17 @@ import static io.deephaven.function.Cast.castDouble;
 @SuppressWarnings({"RedundantCast", "unused", "ManualMinMaxCalculation"})
 public class Numeric {
 
+    //////////////////////////// Constants ////////////////////////////
+
+    /**
+     * The double value that is closer than any other to e, the base of the natural logarithms.
+     */
+    static public final double E = Math.E;
+
+    /**
+     * The double value that is closer than any other to pi, the ratio of the circumference of a circle to its diameter.
+     */
+    static public final double PI = Math.PI;
 
     //////////////////////////// Object ////////////////////////////
 
