@@ -18,6 +18,7 @@ configurations {
   python {}
   go {}
   cpp {}
+  protoDocs {}
 }
 
 dependencies {
@@ -86,6 +87,9 @@ artifacts {
     builtBy generateProtobuf
   }
   cpp(layout.buildDirectory.dir('generated/source/proto/main/cpp')) {
+    builtBy generateProtobuf
+  }
+  protoDocs(layout.buildDirectory.dir('generated/source/proto/main/proto-doc')) {
     builtBy generateProtobuf
   }
 }

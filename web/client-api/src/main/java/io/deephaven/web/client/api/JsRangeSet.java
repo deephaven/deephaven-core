@@ -24,6 +24,9 @@ public class JsRangeSet {
     private final RangeSet range;
 
     public static JsRangeSet ofRange(double first, double last) {
+        if (first > last) {
+            throw new IllegalStateException(first + " > " + last);
+        }
         return new JsRangeSet(RangeSet.ofRange((long) first, (long) last));
     }
 

@@ -38,6 +38,9 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
     }
     generateTask.set ':cpp-client:updateProtobuf'
 }
+// Need to disable until the proto base image can catch up to protobuf 28.2
+tasks.getByName('compareProtobuf').enabled = false
+
 // fail a "check" build if these are out of date
 tasks.getByName('quick').dependsOn(compare)
 

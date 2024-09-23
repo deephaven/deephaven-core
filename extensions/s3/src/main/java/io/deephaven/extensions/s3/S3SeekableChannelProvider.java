@@ -51,7 +51,7 @@ import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
  */
-final class S3SeekableChannelProvider implements SeekableChannelsProvider {
+class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final int MAX_KEYS_PER_BATCH = 1000;
     private static final int UNKNOWN_SIZE = -1;
@@ -97,7 +97,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+    public SeekableByteChannel getReadChannel(
+            @NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
@@ -140,7 +141,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, false);
+        return createStream(directory, false, S3_URI_SCHEME);
     }
 
     @Override
@@ -148,10 +149,20 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, true);
+        return createStream(directory, true, S3_URI_SCHEME);
     }
 
-    private Stream<URI> createStream(@NotNull final URI directory, final boolean isRecursive) {
+    /**
+     * Create a stream of URIs, the elements of which are the entries in the directory.
+     *
+     * @param directory The parent directory to list.
+     * @param isRecursive Whether to list the entries recursively.
+     * @param childScheme The scheme to apply to the children URIs in the returned stream.
+     */
+    Stream<URI> createStream(
+            @NotNull final URI directory,
+            final boolean isRecursive,
+            @NotNull final String childScheme) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
             private final String bucketName;
@@ -222,7 +233,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                             }
                             final URI uri;
                             try {
-                                uri = new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),
+                                uri = new URI(childScheme, directory.getUserInfo(), directory.getHost(),
                                         directory.getPort(), path, null, null);
                             } catch (final URISyntaxException e) {
                                 throw new UncheckedDeephavenException("Failed to create URI for S3 object with key: "

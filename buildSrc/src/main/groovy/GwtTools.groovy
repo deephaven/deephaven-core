@@ -63,6 +63,7 @@ class GwtTools {
                 generateJsInteropExports = true
                 // TODO move this down a line when we want to give clients js that is not super strict / rigged to blow
                 checkAssertions = true
+                setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
                 if (gwtDev) {
                     saveSource = true
                     extra = extras

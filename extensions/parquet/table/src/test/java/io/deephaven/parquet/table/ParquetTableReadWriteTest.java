@@ -1833,29 +1833,6 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void testBigDecimalArrayColumn() {
-        final Table bdArrayTable = TableTools.emptyTable(10000).select(Selectable.from(List.of(
-                "someBigDecimalArrayColumn = new java.math.BigDecimal[] {i % 10 == 0 ? null : " +
-                        "java.math.BigDecimal.valueOf(ii).stripTrailingZeros()}")));
-        final File dest = new File(rootFile + File.separator + "testBigDecimalArrayColumn.parquet");
-        try {
-            ParquetTools.writeTable(bdArrayTable, dest.getPath());
-            fail("Expected exception because writing arrays of big decimal column types is not supported");
-        } catch (final RuntimeException e) {
-            assertTrue(e.getCause() instanceof UnsupportedOperationException);
-        }
-
-        // Convert array to vector table
-        final Table bdVectorTable = arrayToVectorTable(bdArrayTable);
-        try {
-            ParquetTools.writeTable(bdVectorTable, dest.getPath());
-            fail("Expected exception because writing vectors of big decimal column types is not supported");
-        } catch (final RuntimeException e) {
-            assertTrue(e.getCause() instanceof UnsupportedOperationException);
-        }
-    }
-
-    @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
@@ -1869,6 +1846,7 @@ public final class ParquetTableReadWriteTest {
                         "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
                         "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
                         "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
+                        "someBigDecimalArrayColumn = new java.math.BigDecimal[] {i % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii).stripTrailingZeros()}",
                         "someBiArrayColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
                         "someDateArrayColumn = new java.time.LocalDate[] {i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)}",
                         "someTimeArrayColumn = new java.time.LocalTime[] {i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)}",
