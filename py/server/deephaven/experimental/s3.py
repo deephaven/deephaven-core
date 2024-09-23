@@ -51,10 +51,13 @@ class S3Instructions(JObjectWrapper):
             region_name (str): the region name for reading parquet files. If not provided, the default region will be
                 picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
                 {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running
-                in EC2.
+                in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
+                the bucket accessed, the correct region name will be derived internally, at the cost of one additional
+                request.
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
-            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
-                fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
+            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
+                current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
+                current fragment.
             fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
                 remaining in the file, the fetched fragment can be smaller.
             connection_timeout (DurationLike):
@@ -65,8 +68,8 @@ class S3Instructions(JObjectWrapper):
                 the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
-            access_key_id (str): the access key for reading files. Both access key and secret access key must be provided
-                to use static credentials, else default credentials will be used.
+            access_key_id (str): the access key for reading files. Both access key and secret access key must be
+                provided to use static credentials, else default credentials will be used.
             secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
                 provided to use static credentials, else default credentials will be used.
             anonymous_access (bool): use anonymous credentials, this is useful when the S3 policy has been set to allow
