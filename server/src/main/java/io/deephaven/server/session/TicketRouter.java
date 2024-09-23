@@ -16,10 +16,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.arrow.flight.impl.Flight.Action;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
-import org.apache.arrow.flight.impl.Flight.Result;
-import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -314,29 +311,6 @@ public class TicketRouter {
      */
     public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
-    }
-
-    public void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor) {
-        final String type = request.getType();
-        TicketResolver doActionResolver = null;
-        for (TicketResolver resolver : resolvers) {
-            if (!resolver.supportsDoActionType(type)) {
-                continue;
-            }
-            if (doActionResolver != null) {
-                throw Exceptions.statusRuntimeException(Code.INTERNAL,
-                        String.format("Found multiple doAction resolvers for action type '%s'", type));
-            }
-            doActionResolver = resolver;
-        }
-        if (doActionResolver == null) {
-            // Similar to the default unimplemented message from
-            // org.apache.arrow.flight.impl.FlightServiceGrpc.AsyncService.doAction
-            throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
-                    String.format("Method %s is unimplemented, no doAction resolver found for for action type '%s'",
-                            FlightServiceGrpc.getDoActionMethod(), type));
-        }
-        doActionResolver.doAction(session, request, visitor);
     }
 
     public static Flight.FlightInfo getFlightInfo(final Table table,

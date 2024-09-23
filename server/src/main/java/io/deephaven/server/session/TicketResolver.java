@@ -198,12 +198,4 @@ public interface TicketResolver {
         // requires non-trivial parsing to determine whether the command is supported or not.
         return false;
     }
-
-    default boolean supportsDoActionType(String type) {
-        return false;
-    }
-
-    default void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor) {
-        throw new UnsupportedOperationException();
-    }
 }

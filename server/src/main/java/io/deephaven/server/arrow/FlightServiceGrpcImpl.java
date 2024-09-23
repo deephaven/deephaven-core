@@ -21,6 +21,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.session.ActionRouter;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
@@ -48,6 +49,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private final SessionService sessionService;
     private final SessionService.ErrorTransformer errorTransformer;
     private final TicketRouter ticketRouter;
+    private final ActionRouter actionRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
@@ -59,6 +61,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionService sessionService,
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
+            final ActionRouter actionRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
@@ -66,6 +69,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         this.sessionService = sessionService;
         this.errorTransformer = errorTransformer;
         this.ticketRouter = ticketRouter;
+        this.actionRouter = actionRouter;
         this.doExchangeFactory = doExchangeFactory;
         this.authRequestHandlers = authRequestHandlers;
     }
@@ -162,7 +166,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
     @Override
     public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
-        ticketRouter.doAction(sessionService.getOptionalSession(), request, responseObserver::onNext);
+        actionRouter.doAction(sessionService.getOptionalSession(), request, responseObserver::onNext);
         responseObserver.onCompleted();
     }
 

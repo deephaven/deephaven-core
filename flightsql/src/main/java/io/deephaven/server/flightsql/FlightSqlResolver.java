@@ -23,6 +23,7 @@ import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
+import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketResolverBase;
@@ -72,7 +73,7 @@ import static io.deephaven.server.flightsql.FlightSqlTicketHelper.FLIGHT_DESCRIP
 import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
 
 @Singleton
-public final class FlightSqlTicketResolver extends TicketResolverBase {
+public final class FlightSqlResolver extends TicketResolverBase implements ActionResolver {
 
     @VisibleForTesting
     static final String CREATE_PREPARED_STATEMENT_ACTION_TYPE = "CreatePreparedStatement";
@@ -199,7 +200,7 @@ public final class FlightSqlTicketResolver extends TicketResolverBase {
     private final ScopeTicketResolver scopeTicketResolver;
 
     @Inject
-    public FlightSqlTicketResolver(final AuthorizationProvider authProvider,
+    public FlightSqlResolver(final AuthorizationProvider authProvider,
             final ScopeTicketResolver scopeTicketResolver) {
         super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
         this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);

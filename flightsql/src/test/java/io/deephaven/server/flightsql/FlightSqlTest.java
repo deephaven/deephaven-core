@@ -41,7 +41,9 @@ import io.grpc.*;
 import io.grpc.MethodDescriptor;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.sql.FlightSqlClient;
+import org.apache.arrow.flight.sql.FlightSqlClient.Transaction;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
+import org.apache.arrow.flight.sql.impl.FlightSql.SubstraitPlan;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
@@ -60,6 +62,7 @@ import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.time.Instant;
 import java.util.*;
@@ -713,6 +716,37 @@ public abstract class FlightSqlTest {
                 }
             }
         }
+    }
+
+    @Test
+    void preparedStatement() throws Exception {
+        try (final FlightSqlClient.PreparedStatement preparedStatement =
+                flightSqlClient.prepare("SELECT * FROM crypto")) {
+            final FlightInfo info = preparedStatement.execute();
+            try (final FlightStream stream = flightSqlClient.getStream(info.getEndpoints().get(0).getTicket())) {
+                Schema schema = stream.getSchema();
+                assertEquals(5, schema.getFields().size());
+                List<List<String>> results = FlightSqlTest.getResults(stream);
+                assertFalse(results.isEmpty());
+            }
+        }
+    }
+
+    @Test
+    void beginTransaction() {
+        assertThrows(FlightRuntimeException.class, () -> flightSqlClient.beginTransaction());
+    }
+
+    @Test
+    void beginSavepoint() {
+        final Transaction txn = new Transaction("fake".getBytes(StandardCharsets.UTF_8));
+        assertThrows(FlightRuntimeException.class, () -> flightSqlClient.beginSavepoint(txn, "my_savepoint"));
+    }
+
+    @Test
+    void prepareSubstraitPlan() {
+        assertThrows(FlightRuntimeException.class, () -> flightSqlClient
+                .prepare(new FlightSqlClient.SubstraitPlan("fake".getBytes(StandardCharsets.UTF_8), "1")));
     }
 }
 
