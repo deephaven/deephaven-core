@@ -3995,10 +3995,6 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  E (constant)
-        //TODO:  PI (constant)
-        
-        
     </#if>
     </#list>
 }
