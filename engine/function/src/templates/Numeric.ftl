@@ -3895,7 +3895,77 @@ public class Numeric {
         return Math.toRadians(x);
     }
 
-        //TODO:  toIntExact
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as an int, throwing an exception if the value overflows an int.
+     *
+     * @param x the value.
+     * @return the value as an int.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public int toIntExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_INT;
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short" || pt.primitive == "int" >
+        return x;
+        <#else>
+        return Math.toIntExact(x);
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as a short, throwing an exception if the value overflows a short.
+     *
+     * @param x the value.
+     * @return the value as a short.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public short toShortExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_SHORT;
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short" >
+        return x;
+        <#else>
+        if (x > Short.MAX_VALUE || x < Short.MIN_VALUE) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a short" + x);
+        }
+
+        return (short) x;
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the value of the argument as a byte, throwing an exception if the value overflows a byte.
+     *
+     * @param x the value.
+     * @return the value as a byte.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public short toByteExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return NULL_BYTE;
+        }
+
+        <#if pt.primitive == "byte" >
+        return x;
+        <#else>
+        if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a byte" + x);
+        }
+
+        return (byte) x;
+        </#if>
+    }
+    </#if>
+
         //TODO:  ulp
         //TODO:  E (constant)
         //TODO:  PI (constant)

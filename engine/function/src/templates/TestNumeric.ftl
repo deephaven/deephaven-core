@@ -1958,6 +1958,54 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_DOUBLE, toRadians(${pt.null}));
     }
 
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToIntExact(){
+        assertEquals(Math.toIntExact((${pt.primitive})7), toIntExact((${pt.primitive})7));
+        assertEquals(NULL_INT, toIntExact(${pt.null}));
+
+        <#if pt.primitive == "long" >
+        try{
+            toIntExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToShortExact(){
+        assertEquals((short)7, toShortExact((${pt.primitive})7));
+        assertEquals(NULL_SHORT, toShortExact(${pt.null}));
+
+        <#if pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toShortExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToByteExact(){
+        assertEquals((byte)3, toByteExact((${pt.primitive})3));
+        assertEquals(NULL_BYTE, toByteExact(${pt.null}));
+
+        <#if pt.primitive == "short" || pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toByteExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
     </#if>
     </#list>
 }
