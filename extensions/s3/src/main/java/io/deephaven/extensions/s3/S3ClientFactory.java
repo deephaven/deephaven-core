@@ -7,7 +7,9 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.awscore.AwsClient;
+import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.awscore.client.builder.AwsSyncClientBuilder;
 import software.amazon.awssdk.core.client.builder.SdkAsyncClientBuilder;
 import software.amazon.awssdk.core.client.builder.SdkClientBuilder;
 import software.amazon.awssdk.core.client.builder.SdkSyncClientBuilder;
@@ -59,7 +61,7 @@ final class S3ClientFactory {
         return buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class);
     }
 
-    static <C extends AwsClient, B extends S3BaseClientBuilder<B, C>> C buildForS3(
+    static <B extends S3BaseClientBuilder<B, C>, C extends AwsClient> C buildForS3(
             Function<S3Instructions, B> builderFactory,
             S3Instructions instructions,
             Class<C> clientClass) {
@@ -82,26 +84,49 @@ final class S3ClientFactory {
 
     static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
         return S3AsyncClient.builder()
-                .applyMutation(b -> applyAsyncConfiguration(b, instructions))
-                .applyMutation(b -> applyAsyncHttpClient(b, instructions))
-                .applyMutation(b -> applyOverrideConfiguration(b, instructions))
-                .applyMutation(b -> applyCredentialsProvider(b, instructions))
-                .applyMutation(b -> applyRegion(b, instructions))
-                .applyMutation(b -> applyCrossRegionAccess(b, instructions))
-                .applyMutation(b -> applyEndpointOverride(b, instructions));
+                .applyMutation(b -> applyAllSharedAsync(b, instructions))
+                .applyMutation(b -> applyCrossRegionAccess(b, instructions));
     }
 
     static S3ClientBuilder getSyncClientBuilder(@NotNull final S3Instructions instructions) {
         return S3Client.builder()
+                .applyMutation(b -> applyAllSharedSync(b, instructions))
+                .applyMutation(b -> applyCrossRegionAccess(b, instructions));
+    }
+
+    static <B extends AwsSyncClientBuilder<B, C> & AwsClientBuilder<B, C>, C> void applyAllSharedSync(B builder,
+            S3Instructions instructions) {
+        builder
                 .applyMutation(b -> applySyncHttpClient(b, instructions))
+                .applyMutation(b -> applyAllSharedCommon(b, instructions));
+    }
+
+    static <B extends AwsAsyncClientBuilder<B, C> & AwsClientBuilder<B, C>, C> void applyAllSharedAsync(B builder,
+            S3Instructions instructions) {
+        builder
+                .applyMutation(b -> applyAsyncHttpClient(b, instructions))
+                .applyMutation(b -> applyAsyncConfiguration(b, instructions))
+                .applyMutation(b -> applyAllSharedCommon(b, instructions));
+    }
+
+    static <B extends AwsClientBuilder<B, C>, C> void applyAllSharedCommon(B builder, S3Instructions instructions) {
+        builder
                 .applyMutation(b -> applyOverrideConfiguration(b, instructions))
                 .applyMutation(b -> applyCredentialsProvider(b, instructions))
                 .applyMutation(b -> applyRegion(b, instructions))
-                .applyMutation(b -> applyCrossRegionAccess(b, instructions))
                 .applyMutation(b -> applyEndpointOverride(b, instructions));
     }
 
-    static void applyAsyncConfiguration(SdkAsyncClientBuilder<?, ?> builder,
+    static <B extends SdkSyncClientBuilder<B, C>, C> void applySyncHttpClient(B builder, S3Instructions instructions) {
+        builder.httpClient(buildHttpSyncClient(instructions));
+    }
+
+    static <B extends SdkAsyncClientBuilder<B, C>, C> void applyAsyncHttpClient(B builder,
+            S3Instructions instructions) {
+        builder.httpClient(getOrBuildHttpAsyncClient(instructions));
+    }
+
+    static <B extends SdkAsyncClientBuilder<B, C>, C> void applyAsyncConfiguration(B builder,
             @SuppressWarnings("unused") S3Instructions instructions) {
         builder.asyncConfiguration(ClientAsyncConfiguration.builder()
                 .advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
@@ -109,15 +134,8 @@ final class S3ClientFactory {
                 .build());
     }
 
-    static void applySyncHttpClient(SdkSyncClientBuilder<?, ?> builder, S3Instructions instructions) {
-        builder.httpClient(buildHttpSyncClient(instructions));
-    }
-
-    static void applyAsyncHttpClient(SdkAsyncClientBuilder<?, ?> builder, S3Instructions instructions) {
-        builder.httpClient(getOrBuildHttpAsyncClient(instructions));
-    }
-
-    static void applyOverrideConfiguration(SdkClientBuilder<?, ?> builder, S3Instructions instructions) {
+    static <B extends SdkClientBuilder<B, C>, C> void applyOverrideConfiguration(B builder,
+            S3Instructions instructions) {
         builder.overrideConfiguration(ClientOverrideConfiguration.builder()
                 // If we find that the STANDARD retry policy does not work well in all situations, we might
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
@@ -131,15 +149,16 @@ final class S3ClientFactory {
                 .build());
     }
 
-    static void applyCredentialsProvider(AwsClientBuilder<?, ?> builder, S3Instructions instructions) {
+    static <B extends AwsClientBuilder<B, C>, C> void applyCredentialsProvider(B builder, S3Instructions instructions) {
         builder.credentialsProvider(instructions.awsV2CredentialsProvider());
     }
 
-    static void applyRegion(AwsClientBuilder<?, ?> builder, S3Instructions instructions) {
+    static <B extends AwsClientBuilder<B, C>, C> void applyRegion(B builder, S3Instructions instructions) {
         instructions.regionName().map(Region::of).ifPresent(builder::region);
     }
 
-    static void applyCrossRegionAccess(S3BaseClientBuilder<?, ?> builder, S3Instructions instructions) {
+    static <B extends S3BaseClientBuilder<B, C>, C> void applyCrossRegionAccess(B builder,
+            S3Instructions instructions) {
         if (instructions.crossRegionAccessEnabled()) {
             // If region is not provided, we enable cross-region access to allow the SDK to determine the region
             // based on the bucket location and cache it for future requests.
@@ -147,7 +166,7 @@ final class S3ClientFactory {
         }
     }
 
-    static void applyEndpointOverride(SdkClientBuilder<?, ?> builder, S3Instructions instructions) {
+    static <B extends SdkClientBuilder<B, C>, C> void applyEndpointOverride(B builder, S3Instructions instructions) {
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
     }
 

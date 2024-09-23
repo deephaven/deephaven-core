@@ -70,36 +70,21 @@ public class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsC
     @Override
     public GlueClient glue() {
         return GlueClient.builder()
-                .applyMutation(b -> S3ClientFactory.applySyncHttpClient(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyOverrideConfiguration(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyCredentialsProvider(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyRegion(b, instructions))
-                // .applyMutation(b -> AwsClientFactory.applyCrossRegionAccess(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyEndpointOverride(b, instructions))
+                .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();
     }
 
     @Override
     public KmsClient kms() {
         return KmsClient.builder()
-                .applyMutation(b -> S3ClientFactory.applySyncHttpClient(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyOverrideConfiguration(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyCredentialsProvider(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyRegion(b, instructions))
-                // .applyMutation(b -> AwsClientFactory.applyCrossRegionAccess(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyEndpointOverride(b, instructions))
+                .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();
     }
 
     @Override
     public DynamoDbClient dynamo() {
         return DynamoDbClient.builder()
-                .applyMutation(b -> S3ClientFactory.applySyncHttpClient(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyOverrideConfiguration(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyCredentialsProvider(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyRegion(b, instructions))
-                // .applyMutation(b -> AwsClientFactory.applyCrossRegionAccess(b, instructions))
-                .applyMutation(b -> S3ClientFactory.applyEndpointOverride(b, instructions))
+                .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();
     }
 
