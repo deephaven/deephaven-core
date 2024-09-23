@@ -1756,6 +1756,72 @@ public class TestNumeric extends BaseArrayTestCase {
 
     </#if>
 
+    public void test${pt.boxed}Atan2(){
+        assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Cbrt(){
+        assertEquals(Math.cbrt((${pt.primitive})2), cbrt((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
+    }
+
+    public void test${pt.boxed}Cosh(){
+        assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cosh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Expm1(){
+        assertEquals(Math.expm1((${pt.primitive})2), expm1((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, expm1(${pt.null}));
+    }
+
+    public void test${pt.boxed}Hypot(){
+        assertEquals(Math.hypot(7, 3), hypot((${pt.primitive})7, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot(${pt.null}, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Log10(){
+        assertEquals(Math.log10(7), log10((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log10(${pt.null}));
+    }
+
+    public void test${pt.boxed}Log1p(){
+        assertEquals(Math.log1p(7), log1p((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log1p(${pt.null}));
+    }
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Scalb(){
+        assertEquals(Math.scalb((${pt.primitive})7, 3), scalb((${pt.primitive})7, 3));
+        assertEquals(${pt.null}, scalb(${pt.null}, 3));
+        assertEquals(${pt.null}, scalb((${pt.primitive})7, NULL_INT));
+    }
+    </#if>
+
+    public void test${pt.boxed}Sinh(){
+        assertEquals(Math.sinh((${pt.primitive})7), sinh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, sinh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Tanh(){
+        assertEquals(Math.tanh((${pt.primitive})7), tanh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, tanh(${pt.null}));
+    }
+
+    public void test${pt.boxed}CopySign() {
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
+        assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
+        assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
+    }
+
     <#if pt.valueType.isInteger >
     public void test${pt.boxed}AddExact(){
         assertEquals((${pt.primitive})3, addExact((${pt.primitive})1, (${pt.primitive})2));
@@ -1786,35 +1852,14 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    public void test${pt.boxed}Atan2(){
-        assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
-        assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));
-        assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
-    }
-
-    public void test${pt.boxed}Cbrt(){
-        assertEquals(Math.cbrt((${pt.primitive})2), cbrt((${pt.primitive})2));
-        assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
-    }
-
-    public void test${pt.boxed}CopySign() {
-        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
-        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
-        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
-        assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
-        assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
-    }
-
     <#if pt.valueType.isInteger >
-    public void test${pt.boxed}DecrementExact(){
-        assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
-        assertEquals(${pt.null}, decrementExact(${pt.null}));
+    public void test${pt.boxed}MultiplyExact(){
+        assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact((${pt.primitive})2, ${pt.null}));
 
         try {
-            decrementExact((${pt.primitive})${pt.minValue});
+            multiplyExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})2);
             fail("Overflow");
         } catch(ArithmeticException e){
             // pass
@@ -1836,15 +1881,26 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    public void test${pt.boxed}Cosh(){
-        assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
-        assertEquals(NULL_DOUBLE, cosh(${pt.null}));
-    }
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}DecrementExact(){
+        assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, decrementExact(${pt.null}));
 
-    public void test${pt.boxed}Expm1(){
-        assertEquals(Math.expm1((${pt.primitive})2), expm1((${pt.primitive})2));
-        assertEquals(NULL_DOUBLE, expm1(${pt.null}));
+        try {
+            decrementExact((${pt.primitive})${pt.minValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
     }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}NegateExact(){
+        assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
+        assertEquals(${pt.null}, negateExact(${pt.null}));
+    }
+    </#if>
 
     <#if pt.valueType.isInteger >
     public void test${pt.boxed}FloorDiv(){
@@ -1869,12 +1925,6 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    public void test${pt.boxed}Hypot(){
-        assertEquals(Math.hypot(7, 3), hypot((${pt.primitive})7, (${pt.primitive})3));
-        assertEquals(NULL_DOUBLE, hypot(${pt.null}, (${pt.primitive})3));
-        assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
-    }
-
     <#if pt.valueType.isFloat >
     public void test${pt.boxed}IEEEremainder(){
         assertEquals((${pt.primitive}) Math.IEEEremainder(71, 3), IEEEremainder((${pt.primitive})71, (${pt.primitive})3));
@@ -1883,37 +1933,7 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
-    public void test${pt.boxed}Log10(){
-        assertEquals(Math.log10(7), log10((${pt.primitive})7));
-        assertEquals(NULL_DOUBLE, log10(${pt.null}));
-    }
 
-    public void test${pt.boxed}Log1p(){
-        assertEquals(Math.log1p(7), log1p((${pt.primitive})7));
-        assertEquals(NULL_DOUBLE, log1p(${pt.null}));
-    }
-
-    <#if pt.valueType.isInteger >
-    public void test${pt.boxed}MultiplyExact(){
-        assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
-        assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
-        assertEquals(${pt.null}, multiplyExact((${pt.primitive})2, ${pt.null}));
-
-        try {
-            multiplyExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})2);
-            fail("Overflow");
-        } catch(ArithmeticException e){
-            // pass
-        }
-    }
-    </#if>
-
-    <#if pt.valueType.isInteger >
-    public void test${pt.boxed}NegateExact(){
-        assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
-        assertEquals(${pt.null}, negateExact(${pt.null}));
-    }
-    </#if>
 
     <#if pt.valueType.isFloat >
     public void test${pt.boxed}NextAfter(){
@@ -1939,24 +1959,6 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(${pt.null}, nextDown(${pt.null}));
     }
     </#if>
-
-    <#if pt.valueType.isFloat >
-    public void test${pt.boxed}Scalb(){
-        assertEquals(Math.scalb((${pt.primitive})7, 3), scalb((${pt.primitive})7, 3));
-        assertEquals(${pt.null}, scalb(${pt.null}, 3));
-        assertEquals(${pt.null}, scalb((${pt.primitive})7, NULL_INT));
-    }
-    </#if>
-
-    public void test${pt.boxed}Sinh(){
-        assertEquals(Math.sinh((${pt.primitive})7), sinh((${pt.primitive})7));
-        assertEquals(NULL_DOUBLE, sinh(${pt.null}));
-    }
-
-    public void test${pt.boxed}Tanh(){
-        assertEquals(Math.tanh((${pt.primitive})7), tanh((${pt.primitive})7));
-        assertEquals(NULL_DOUBLE, tanh(${pt.null}));
-    }
 
     public void test${pt.boxed}ToDegrees(){
         assertEquals(Math.toDegrees((${pt.primitive})7), toDegrees((${pt.primitive})7));

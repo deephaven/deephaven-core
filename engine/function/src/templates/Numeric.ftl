@@ -3390,41 +3390,7 @@ public class Numeric {
         return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
     }
 
-
-
-    //////////////////////////////// NEW //////////////////////////////////////
-    // TODO: document these
-    //TODO: group similar methods
-
-    <#if pt.valueType.isInteger>
-    /**
-     * Returns the sum of its arguments, throwing an exception if the result overflows.
-     *
-     * @param x the first value.
-     * @param y the second value.
-     * @return the result of adding the arguments.  If either value is null, returns null.
-     * @throws ArithmeticException if the result overflows.
-     */
-    static public ${pt.primitive} addExact(${pt.primitive} x, ${pt.primitive} y) {
-        if (isNull(x) || isNull(y)) {
-            return ${pt.null};
-        }
-
-        <#if pt.primitive == "byte" || pt.primitive == "short">
-        int val = Math.addExact(x, y);
-
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
-            //TODO: Should overflows return NULL or throw an exception?
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
-        }
-
-        return (${pt.primitive}) val;
-        <#else>
-        //TODO: Should overflows return NULL or throw an exception?
-        return Math.addExact(x, y);
-        </#if>
-    }
-    </#if>
+    //TODO NEW STUFF --- delete this line
 
     /**
      * Returns the arc tangent of a value; the returned angle is in the range -pi/2 through pi/2.
@@ -3457,92 +3423,6 @@ public class Numeric {
     }
 
     /**
-     * Returns the first argument with the sign of the second argument.
-     *
-     * @param magnitude the value to return
-     * @param sign the sign for the return value
-     * @return the value with the magnitude of the first argument and the sign of the second argument.
-     *    If either value is null, returns null.
-     */
-    static public ${pt.primitive} copySign(${pt.primitive} magnitude, ${pt.primitive} sign) {
-        if (isNull(magnitude) || isNull(sign)) {
-            return ${pt.null};
-        }
-
-        <#if pt.valueType.isFloat >
-        return Math.copySign(magnitude, sign);
-        <#else>
-        return (${pt.primitive}) ((magnitude < 0 ? -magnitude : magnitude) * (sign < 0 ? -1 : 1));
-        </#if>
-    }
-
-    <#if pt.valueType.isInteger>
-    /**
-     * Returns the argument decremented by one, throwing an exception if the result overflows.
-     *
-     * @param x the value to decrement.
-     * @return the result of decrementing by one.  If the value is null, returns null.
-     * @throws ArithmeticException if the result overflows.
-     */
-    static public ${pt.primitive} decrementExact(${pt.primitive} x) {
-        if (isNull(x)) {
-            return ${pt.null};
-        }
-
-        <#if pt.primitive == "byte" || pt.primitive == "short">
-        int val = Math.decrementExact(x);
-
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
-            //TODO: Should overflows return NULL or throw an exception?
-            throw new ArithmeticException("Overflow: " + x);
-        }
-
-        return (${pt.primitive}) val;
-        <#else>
-        if (x == ${pt.minValue}) {
-            throw new ArithmeticException("Overflow: " + x);
-        }
-
-        //TODO: Should overflows return NULL or throw an exception?
-        return Math.decrementExact(x);
-        </#if>
-    }
-    </#if>
-
-    <#if pt.valueType.isInteger>
-    /**
-     * Returns the argument incremented by one, throwing an exception if the result overflows.
-     *
-     * @param x the value to increment.
-     * @return the result of increment by one.  If the value is null, returns null.
-     * @throws ArithmeticException if the result overflows.
-     */
-    static public ${pt.primitive} incrementExact(${pt.primitive} x) {
-        if (isNull(x)) {
-            return ${pt.null};
-        }
-
-        <#if pt.primitive == "byte" || pt.primitive == "short">
-        int val = Math.incrementExact(x);
-
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
-            //TODO: Should overflows return NULL or throw an exception?
-            throw new ArithmeticException("Overflow: " + x);
-        }
-
-        return (${pt.primitive}) val;
-        <#else>
-        if (x == ${pt.minValue}) {
-            throw new ArithmeticException("Overflow: " + x);
-        }
-
-        //TODO: Should overflows return NULL or throw an exception?
-        return Math.incrementExact(x);
-        </#if>
-    }
-    </#if>
-
-    /**
      * Returns the hyperbolic cosine.
      *
      * @param x the value
@@ -3569,6 +3449,295 @@ public class Numeric {
 
         return Math.expm1(x);
      }
+
+    /**
+     * Returns the hypotenuse of a right-angled triangle, sqrt(x2 +y2), without intermediate overflow or underflow.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the hypotenuse of a right-angled triangle.  If either value is null, returns null.
+     */
+    static public double hypot(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.hypot(x, y);
+    }
+
+    /**
+     * Returns the base 10 logarithm of a double value.
+     *
+     * @param x the value.
+     * @return the base 10 logarithm of the value.  If the value is null, returns null.
+     */
+     static public double log10(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log10(x);
+     }
+
+     /**
+      * Returns the natural logarithm of the sum of the argument and 1.
+      *
+      * @param x the value.
+      * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
+      */
+     static public double log1p(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.log1p(x);
+     }
+
+     <#if pt.valueType.isFloat >
+     /**
+      * Returns x × 2^scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      * member of the ${pt.primitive} value set.
+      *
+      * @param x the value.
+      * @param scaleFactor the scale factor.
+      * @return x × 2scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
+      *     member of the double value set.  If the either value is null, returns null.
+      */
+     static public ${pt.primitive} scalb(${pt.primitive} x, int scaleFactor) {
+        if(isNull(x) || isNull(scaleFactor)) {
+            return ${pt.null};
+        }
+
+        return Math.scalb(x, scaleFactor);
+     }
+     </#if>
+
+     /**
+      * Returns the hyperbolic sine of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic sine of the value.  If the value is null, returns null.
+      */
+     static public double sinh(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.sinh(x);
+     }
+
+     /**
+      * Returns the hyperbolic tangent of a value.
+      *
+      * @param x the value
+      * @return the hyperbolic tangent of the value.  If the value is null, returns null.
+      */
+     static public double tanh(${pt.primitive} x) {
+        if(isNull(x)) {
+            return NULL_DOUBLE;
+        }
+
+        return Math.tanh(x);
+     }
+
+    /**
+     * Returns the first argument with the sign of the second argument.
+     *
+     * @param magnitude the value to return
+     * @param sign the sign for the return value
+     * @return the value with the magnitude of the first argument and the sign of the second argument.
+     *    If either value is null, returns null.
+     */
+    static public ${pt.primitive} copySign(${pt.primitive} magnitude, ${pt.primitive} sign) {
+        if (isNull(magnitude) || isNull(sign)) {
+            return ${pt.null};
+        }
+
+        <#if pt.valueType.isFloat >
+        return Math.copySign(magnitude, sign);
+        <#else>
+        return (${pt.primitive}) ((magnitude < 0 ? -magnitude : magnitude) * (sign < 0 ? -1 : 1));
+        </#if>
+    }
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the sum of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of adding the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} addExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.addExact(x, y);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        return Math.addExact(x, y);
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the difference of its arguments, throwing an exception if the result overflows.
+     *
+     * @param x the first value.
+     * @param y the second value.
+     * @return the result of subtracting the arguments.  If either value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} subtractExact(${pt.primitive} x, ${pt.primitive} y) {
+        if (isNull(x) || isNull(y)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+            int val = Math.subtractExact(x, y);
+
+            if( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        ${pt.primitive} val = Math.subtractExact(x, y);
+
+        if( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x + " + " + y);
+        }
+
+        return val;
+        </#if>
+    }
+    </#if>
+
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the product of the arguments, throwing an exception if the result overflows.
+      *
+      * @param x the first value.
+      * @param y the second value.
+      * @return the result of multiplying the arguments.  If either value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     static public ${pt.primitive} multiplyExact(${pt.primitive} x, ${pt.primitive} y) {
+         if (isNull(x) || isNull(y)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.multiplyExact(x, y);
+
+         if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            throw new ArithmeticException("Overflow: " + x + " * " + y);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+         return Math.multiplyExact(x, y);
+         </#if>
+     }
+     </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument incremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to increment.
+     * @return the result of increment by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} incrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.incrementExact(x);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return Math.incrementExact(x);
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger>
+    /**
+     * Returns the argument decremented by one, throwing an exception if the result overflows.
+     *
+     * @param x the value to decrement.
+     * @return the result of decrementing by one.  If the value is null, returns null.
+     * @throws ArithmeticException if the result overflows.
+     */
+    static public ${pt.primitive} decrementExact(${pt.primitive} x) {
+        if (isNull(x)) {
+            return ${pt.null};
+        }
+
+        <#if pt.primitive == "byte" || pt.primitive == "short">
+        int val = Math.decrementExact(x);
+
+        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return (${pt.primitive}) val;
+        <#else>
+        if (x == ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return Math.decrementExact(x);
+        </#if>
+    }
+    </#if>
+
+     <#if pt.valueType.isInteger>
+     /**
+      * Returns the negation of the argument, throwing an exception if the result overflows.
+      *
+      * @param x the value to negate.
+      * @return the negation of the argument.  If the value is null, returns null.
+      * @throws ArithmeticException if the result overflows.
+      */
+     public static ${pt.primitive} negateExact(${pt.primitive} x) {
+         if (isNull(x)) {
+             return ${pt.null};
+         }
+
+         <#if pt.primitive == "byte" || pt.primitive == "short">
+         int val = Math.negateExact(x);
+
+         if( val > ${pt.maxValue} || val < ${pt.minValue}) {
+            throw new ArithmeticException("Overflow: -" + x);
+         }
+
+         return (${pt.primitive}) val;
+         <#else>
+         return Math.negateExact(x);
+         </#if>
+     }
+     </#if>
 
     <#if pt.valueType.isInteger>
      /**
@@ -3623,20 +3792,7 @@ public class Numeric {
     }
     </#if>
 
-    /**
-     * Returns the hypotenuse of a right-angled triangle, sqrt(x2 +y2), without intermediate overflow or underflow.
-     *
-     * @param x the first value.
-     * @param y the second value.
-     * @return the hypotenuse of a right-angled triangle.  If either value is null, returns null.
-     */
-    static public double hypot(${pt.primitive} x, ${pt.primitive} y) {
-        if (isNull(x) || isNull(y)) {
-            return NULL_DOUBLE;
-        }
 
-        return Math.hypot(x, y);
-    }
 
     <#if pt.valueType.isFloat>
     /**
@@ -3655,88 +3811,9 @@ public class Numeric {
     }
     </#if>
 
-    /**
-     * Returns the base 10 logarithm of a double value.
-     *
-     * @param x the value.
-     * @return the base 10 logarithm of the value.  If the value is null, returns null.
-     */
-     static public double log10(${pt.primitive} x) {
-        if(isNull(x)) {
-            return NULL_DOUBLE;
-        }
 
-        return Math.log10(x);
-     }
 
-     /**
-      * Returns the natural logarithm of the sum of the argument and 1.
-      *
-      * @param x the value.
-      * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
-      */
-     static public double log1p(${pt.primitive} x) {
-        if(isNull(x)) {
-            return NULL_DOUBLE;
-        }
 
-        return Math.log1p(x);
-     }
-
-     <#if pt.valueType.isInteger>
-     /**
-      * Returns the product of the arguments, throwing an exception if the result overflows.
-      *
-      * @param x the first value.
-      * @param y the second value.
-      * @return the result of multiplying the arguments.  If either value is null, returns null.
-      * @throws ArithmeticException if the result overflows.
-      */
-     static public ${pt.primitive} multiplyExact(${pt.primitive} x, ${pt.primitive} y) {
-         if (isNull(x) || isNull(y)) {
-             return ${pt.null};
-         }
-
-         <#if pt.primitive == "byte" || pt.primitive == "short">
-         int val = Math.multiplyExact(x, y);
-
-         if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
-            throw new ArithmeticException("Overflow: " + x + " * " + y);
-         }
-
-         return (${pt.primitive}) val;
-         <#else>
-         return Math.multiplyExact(x, y);
-         </#if>
-     }
-     </#if>
-
-     <#if pt.valueType.isInteger>
-     /**
-      * Returns the negation of the argument, throwing an exception if the result overflows.
-      *
-      * @param x the value to negate.
-      * @return the negation of the argument.  If the value is null, returns null.
-      * @throws ArithmeticException if the result overflows.
-      */
-     public static ${pt.primitive} negateExact(${pt.primitive} x) {
-         if (isNull(x)) {
-             return ${pt.null};
-         }
-
-         <#if pt.primitive == "byte" || pt.primitive == "short">
-         int val = Math.negateExact(x);
-
-         if( val > ${pt.maxValue} || val < ${pt.minValue}) {
-            throw new ArithmeticException("Overflow: -" + x);
-         }
-
-         return (${pt.primitive}) val;
-         <#else>
-         return Math.negateExact(x);
-         </#if>
-     }
-     </#if>
 
      <#if pt.valueType.isFloat>
      /**
@@ -3793,90 +3870,6 @@ public class Numeric {
         return isNull(next) ? Math.nextDown(next) : next;
      }
      </#if>
-
-     <#if pt.valueType.isFloat >
-     /**
-      * Returns x × 2^scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
-      * member of the ${pt.primitive} value set.
-      *
-      * @param x the value.
-      * @param scaleFactor the scale factor.
-      * @return x × 2scaleFactor rounded as if performed by a single correctly rounded floating-point multiply to a
-      *     member of the double value set.  If the either value is null, returns null.
-      */
-     static public ${pt.primitive} scalb(${pt.primitive} x, int scaleFactor) {
-        if(isNull(x) || isNull(scaleFactor)) {
-            return ${pt.null};
-        }
-
-        return Math.scalb(x, scaleFactor);
-     }
-     </#if>
-
-     /**
-      * Returns the hyperbolic sine of a value.
-      *
-      * @param x the value
-      * @return the hyperbolic sine of the value.  If the value is null, returns null.
-      */
-     static public double sinh(${pt.primitive} x) {
-        if(isNull(x)) {
-            return NULL_DOUBLE;
-        }
-
-        return Math.sinh(x);
-     }
-
-    <#if pt.valueType.isInteger>
-    /**
-     * Returns the difference of its arguments, throwing an exception if the result overflows.
-     *
-     * @param x the first value.
-     * @param y the second value.
-     * @return the result of subtracting the arguments.  If either value is null, returns null.
-     * @throws ArithmeticException if the result overflows.
-     */
-    static public ${pt.primitive} subtractExact(${pt.primitive} x, ${pt.primitive} y) {
-        if (isNull(x) || isNull(y)) {
-            return ${pt.null};
-        }
-
-        <#if pt.primitive == "byte" || pt.primitive == "short">
-            int val = Math.subtractExact(x, y);
-
-            if( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
-            //TODO: Should overflows return NULL or throw an exception?
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
-        }
-
-        return (${pt.primitive}) val;
-        <#else>
-        ${pt.primitive} val = Math.subtractExact(x, y);
-
-        if( isNull(val) ) {
-            //TODO: Should overflows return NULL or throw an exception?
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
-        }
-
-        //TODO: Should overflows return NULL or throw an exception?
-        return val;
-        </#if>
-    }
-    </#if>
-
-     /**
-      * Returns the hyperbolic tangent of a value.
-      *
-      * @param x the value
-      * @return the hyperbolic tangent of the value.  If the value is null, returns null.
-      */
-     static public double tanh(${pt.primitive} x) {
-        if(isNull(x)) {
-            return NULL_DOUBLE;
-        }
-
-        return Math.tanh(x);
-     }
 
     /**
      * Converts an angle measured in radians to an approximately equivalent angle measured in degrees.
