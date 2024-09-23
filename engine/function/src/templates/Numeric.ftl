@@ -3966,7 +3966,24 @@ public class Numeric {
     }
     </#if>
 
-        //TODO:  ulp
+    <#if pt.valueType.isFloat>
+    /**
+     * Returns the size of an ulp of the argument. An ulp, unit in the last place, of a double value is the positive
+     * distance between this floating-point value and the double value next larger in magnitude.
+     * Note that for non-NaN x, ulp(-x) == ulp(x).
+     *
+     * @param x the value.
+     * @return the size of an ulp of the argument.  If the value is null, returns null.
+     */
+    static public ${pt.primitive} ulp(${pt.primitive} x) {
+        if(isNull(x)) {
+            return ${pt.null};
+        }
+
+        return Math.ulp(x);
+    }
+    </#if>
+
         //TODO:  E (constant)
         //TODO:  PI (constant)
         

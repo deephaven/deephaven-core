@@ -2006,6 +2006,13 @@ public class TestNumeric extends BaseArrayTestCase {
     }
     </#if>
 
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Ulp(){
+        assertEquals(Math.ulp((${pt.primitive})7), ulp((${pt.primitive})7));
+        assertEquals(${pt.null}, ulp(${pt.null}));
+    }
+    </#if>
+
     </#if>
     </#list>
 }
