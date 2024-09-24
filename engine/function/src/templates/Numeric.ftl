@@ -3809,10 +3809,6 @@ public class Numeric {
     }
     </#if>
 
-
-
-
-
      <#if pt.valueType.isFloat>
      /**
       * Returns the floating-point number adjacent to the first argument in the direction of the second argument.
@@ -3827,7 +3823,9 @@ public class Numeric {
             return ${pt.null};
         }
 
-        return Math.nextAfter(start, direction);
+        // skip over nulls
+        ${pt.primitive} next = Math.nextAfter(start, direction);
+        return isNull(next) ? Math.nextAfter(next, direction) : next;
      }
      </#if>
 

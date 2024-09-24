@@ -1937,6 +1937,10 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}NextAfter(){
         assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})8), nextAfter((${pt.primitive})7, (${pt.primitive})8));
         assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})-8), nextAfter((${pt.primitive})7, (${pt.primitive})-8));
+
+        assertEquals(Math.nextUp(${pt.null}), nextAfter(Math.nextDown(${pt.null}), (${pt.primitive})8));
+        assertEquals(Math.nextDown(${pt.null}), nextAfter(Math.nextUp(${pt.null}), ${pt.boxed}.NEGATIVE_INFINITY));
+
         assertEquals(${pt.null}, nextAfter(${pt.null}, (${pt.primitive})8));
         assertEquals(${pt.null}, nextAfter((${pt.primitive}) 7, ${pt.null}));
     }
