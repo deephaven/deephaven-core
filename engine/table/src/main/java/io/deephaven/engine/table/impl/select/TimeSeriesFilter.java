@@ -59,7 +59,7 @@ public class TimeSeriesFilter
          * @param columnName the column name to filter on, required
          * @return this builder
          */
-        public Builder columnName(String columnName) {
+        public Builder columnName(final String columnName) {
             this.columnName = columnName;
             return this;
         }
@@ -71,7 +71,7 @@ public class TimeSeriesFilter
          * @param clock the clock to use for the filter
          * @return this builder
          */
-        public Builder clock(Clock clock) {
+        public Builder clock(final Clock clock) {
             this.clock = clock;
             return this;
         }
@@ -92,7 +92,7 @@ public class TimeSeriesFilter
          * @param period the period as a Duration for the filter
          * @return this builder
          */
-        public Builder period(Duration period) {
+        public Builder period(final Duration period) {
             return period(period.toNanos());
         }
 
@@ -102,7 +102,7 @@ public class TimeSeriesFilter
          * @param period the period in nanoseconds for the filter
          * @return this builder
          */
-        public Builder period(long period) {
+        public Builder period(final long period) {
             this.periodNanos = period;
             return this;
         }
@@ -114,7 +114,7 @@ public class TimeSeriesFilter
          * @param invert true if the filter should be inverted.
          * @return this builder
          */
-        public Builder invert(boolean invert) {
+        public Builder invert(final boolean invert) {
             this.invert = invert;
             return this;
         }
