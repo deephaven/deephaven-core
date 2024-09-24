@@ -1162,6 +1162,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final TableUpdate upstream,
                 final TableUpdateImpl update,
                 final RowSet newMapping) {
+            // TODO: IS THIS CONSISTENT WITH THE REMOVAL PROCESSING?
+            
             // Compute added/removed in post-shift keyspace.
             update.added = newMapping.minus(getRowSet());
 
