@@ -1650,13 +1650,14 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testAddAndRemoveRefilter() {
-        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"), intCol("Sentinel", 10, 20, 30));
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
+                intCol("Sentinel", 10, 20, 30));
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final QueryTable setTable = testRefreshingTable(i(10, 30).toTracking(), stringCol("FV", "A", "C"));
 
         final Table result = source.whereIn(setTable, "FV");
-        final SimpleListener  listener = new SimpleListener(result);
+        final SimpleListener listener = new SimpleListener(result);
         result.addUpdateListener(listener);
 
         final PrintListener plResult = new PrintListener("testAddAndRemoveRefilter-result", result);
