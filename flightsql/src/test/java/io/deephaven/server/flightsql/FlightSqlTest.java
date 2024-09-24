@@ -41,9 +41,9 @@ import io.grpc.*;
 import io.grpc.MethodDescriptor;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.sql.FlightSqlClient;
+import org.apache.arrow.flight.sql.FlightSqlClient.SubstraitPlan;
 import org.apache.arrow.flight.sql.FlightSqlClient.Transaction;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
-import org.apache.arrow.flight.sql.impl.FlightSql.SubstraitPlan;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
@@ -745,8 +745,8 @@ public abstract class FlightSqlTest {
 
     @Test
     void prepareSubstraitPlan() {
-        assertThrows(FlightRuntimeException.class, () -> flightSqlClient
-                .prepare(new FlightSqlClient.SubstraitPlan("fake".getBytes(StandardCharsets.UTF_8), "1")));
+        final SubstraitPlan plan = new SubstraitPlan("fake".getBytes(StandardCharsets.UTF_8), "1");
+        assertThrows(FlightRuntimeException.class, () -> flightSqlClient.prepare(plan));
     }
 }
 
