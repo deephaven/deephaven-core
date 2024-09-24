@@ -1079,7 +1079,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                         (matchedRows, unusedMods) -> completeRefilterUpdate(listener, upstream, update, matchedRows),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
-                refilterRequestedRowset = null;
+                if (refilterRequestedRowset != null) {
+                    refilterRequestedRowset.close();
+                    refilterRequestedRowset = null;
+                }
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
                 final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
@@ -1089,6 +1092,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }
                 if (refilterRequestedRowset != null) {
                     unmatchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset.close();
                     refilterRequestedRowset = null;
                 }
                 final WhereListener.ListenerFilterExecution filterExecution =
@@ -1116,6 +1120,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 }
                 if (refilterRequestedRowset != null) {
                     matchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset.close();
                     refilterRequestedRowset = null;
                 }
 
