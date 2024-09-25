@@ -556,7 +556,7 @@ public class IcebergCatalogAdapter {
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
             final long snapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
 
         // Find the snapshot with the given snapshot id
@@ -581,7 +581,7 @@ public class IcebergCatalogAdapter {
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, tableSnapshot, instructions);
     }
@@ -628,7 +628,7 @@ public class IcebergCatalogAdapter {
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
             final long snapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
 
         // Find the snapshot with the given snapshot id
@@ -652,7 +652,7 @@ public class IcebergCatalogAdapter {
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, tableSnapshot, instructions);
         return TableTools.metaTable(definition);
     }
