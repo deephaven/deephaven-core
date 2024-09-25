@@ -184,7 +184,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * The aggregated profile file that combines the configuration and credentials files.
      */
     @Lazy
-    final Optional<ProfileFile> aggregatedProfileFile() {
+    Optional<ProfileFile> aggregatedProfileFile() {
         if (aggregatedProfileFile != null) {
             return aggregatedProfileFile;
         }
