@@ -46,12 +46,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
-    /**
-     * Used to cache the aggregated profile file when reading from a configuration file or credentials file. Initialized
-     * lazily to avoid unnecessary aggregation of profile files when not needed.
-     */
-    private Optional<ProfileFile> aggregatedProfileFile;
-
     static final S3Instructions DEFAULT = builder().build();
 
     public static Builder builder() {
@@ -185,15 +179,10 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     @Lazy
     Optional<ProfileFile> aggregatedProfileFile() {
-        if (aggregatedProfileFile != null) {
-            return aggregatedProfileFile;
-        }
         if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
-            aggregatedProfileFile = Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
-        } else {
-            aggregatedProfileFile = Optional.empty();
+            return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
         }
-        return aggregatedProfileFile;
+        return Optional.empty();
     }
 
     @Override
