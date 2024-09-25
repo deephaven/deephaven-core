@@ -97,4 +97,11 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
         return hasTableLocationKey(tableLocationKey) ? tableLocation : null;
     }
+
+    @Override
+    @NotNull
+    public UPDATE_TYPE getUpdateMode() {
+        // No additions or removals are possible from this provider
+        return UPDATE_TYPE.STATIC;
+    }
 }

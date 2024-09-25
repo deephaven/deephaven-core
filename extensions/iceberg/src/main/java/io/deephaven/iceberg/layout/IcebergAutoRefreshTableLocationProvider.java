@@ -121,4 +121,10 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
     protected final <T> boolean matchSubscriptionToken(final T token) {
         return token == subscriptionToken;
     }
+
+    @Override
+    @NotNull
+    public UPDATE_TYPE getUpdateMode() {
+        return UPDATE_TYPE.REFRESHING;
+    }
 }

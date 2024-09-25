@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -104,6 +105,15 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
+        // Propagate the TLP attribute to the table
+        switch (locationProvider.getUpdateMode()) {
+            case ADD_ONLY:
+                setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                break;
+            case APPEND_ONLY:
+                setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.FALSE);
+                break;
+        }
     }
 
     /**
@@ -225,6 +235,14 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
+                if (locationProvider.getUpdateMode() != TableLocationProvider.UPDATE_TYPE.REFRESHING
+                        && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
+                    // This TLP doesn't support removed locations, we need to throw an exception.
+                    final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
+                            .map(LiveSupplier::get).toArray(ImmutableTableLocationKey[]::new);
+                    throw new TableLocationRemovedException("Source table does not support removed locations", keys);
+                }
+
                 maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
             }

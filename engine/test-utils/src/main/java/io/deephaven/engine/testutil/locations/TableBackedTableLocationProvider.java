@@ -77,4 +77,10 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     protected @NotNull TableLocation makeTableLocation(@NotNull TableLocationKey locationKey) {
         return new TableBackedTableLocation(registrar, (TableBackedTableLocationKey) locationKey);
     }
+
+    @Override
+    @NotNull
+    public UPDATE_TYPE getUpdateMode() {
+        return UPDATE_TYPE.REFRESHING;
+    }
 }

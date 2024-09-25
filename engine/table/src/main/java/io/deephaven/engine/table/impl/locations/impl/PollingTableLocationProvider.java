@@ -77,4 +77,11 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     protected final <T> boolean matchSubscriptionToken(final T token) {
         return token == subscriptionToken;
     }
+
+    @Override
+    @NotNull
+    public UPDATE_TYPE getUpdateMode() {
+        // No removals are possible from this provider but newly discovered locations can be added
+        return UPDATE_TYPE.ADD_ONLY;
+    }
 }

@@ -91,7 +91,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 constituentDefinition,
                 refreshLocations);
 
-
         maintainer.assignLivenessManager(sourcePartitionedTable);
         return sourcePartitionedTable;
     }
@@ -206,13 +205,13 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         /**
-         * If we have a {@link TableLocationSubscriptionBuffer}, manage it with the given liveness manager.
+         * Manage ourselves with the provided liveness manager and cleanup the incremented reference count from the
+         * constructor.
          */
         private void assignLivenessManager(final LivenessManager manager) {
             manager.manage(this);
             dropReference();
         }
-
 
         private QueryTable result() {
             return result;

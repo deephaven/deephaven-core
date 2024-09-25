@@ -232,6 +232,28 @@ public class CompositeTableDataService extends AbstractTableDataService {
             }
             return location;
         }
+
+        @Override
+        @NotNull
+        public UPDATE_TYPE getUpdateMode() {
+            // Composite TLP logic:
+            // If any providers are REFRESHING, the overall provider is REFRESHING
+            // If any providers are ADD_ONLY or APPEND_ONLY, the overall provider is ADD_ONLY
+            // If all providers are STATIC, the overall provider is STATIC
+            boolean anyAdditions = false;
+            for (final TableLocationProvider provider : inputProviders) {
+                if (provider.getUpdateMode() == UPDATE_TYPE.REFRESHING) {
+                    return UPDATE_TYPE.REFRESHING;
+                } else if (provider.getUpdateMode() == UPDATE_TYPE.ADD_ONLY
+                        || provider.getUpdateMode() == UPDATE_TYPE.APPEND_ONLY) {
+                    anyAdditions = true;
+                }
+            }
+            if (anyAdditions) {
+                return UPDATE_TYPE.ADD_ONLY;
+            }
+            return UPDATE_TYPE.STATIC;
+        }
     }
 
     @Override

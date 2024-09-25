@@ -18,6 +18,9 @@ import java.util.function.Predicate;
  * Discovery utility for {@link TableLocation}s for a given table.
  */
 public interface TableLocationProvider extends NamedImplementation {
+    enum UPDATE_TYPE {
+        APPEND_ONLY, ADD_ONLY, STATIC, REFRESHING
+    }
 
     /**
      * Get the {@link TableKey} associated with this provider.
@@ -25,6 +28,15 @@ public interface TableLocationProvider extends NamedImplementation {
      * @return The associated {@link TableKey}
      */
     ImmutableTableKey getKey();
+
+    /**
+     * Get the {@link UPDATE_TYPE} of this provider.
+     *
+     * @return The associated {@link TableKey}
+     */
+    @NotNull
+    UPDATE_TYPE getUpdateMode();
+
 
     /**
      * ShiftObliviousListener interface for anything that wants to know about new table location keys.

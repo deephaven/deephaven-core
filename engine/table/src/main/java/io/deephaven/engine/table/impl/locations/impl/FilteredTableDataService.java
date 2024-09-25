@@ -161,6 +161,14 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public String getName() {
             return FilteredTableDataService.this.getName();
         }
+
+        @Override
+        @NotNull
+        public UPDATE_TYPE getUpdateMode() {
+            // Assuming a dynamic filter, locations could be added or removed at any time from the perspective of
+            // this filtered provider.
+            return UPDATE_TYPE.REFRESHING;
+        }
     }
 
     private class FilteringListener extends WeakReferenceWrapper<TableLocationProvider.Listener>

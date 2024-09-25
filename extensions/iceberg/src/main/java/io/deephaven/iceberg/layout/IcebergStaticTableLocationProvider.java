@@ -81,4 +81,10 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
     protected <T> boolean matchSubscriptionToken(final T token) {
         return false;
     }
+
+    @Override
+    @NotNull
+    public UPDATE_TYPE getUpdateMode() {
+        return UPDATE_TYPE.STATIC;
+    }
 }

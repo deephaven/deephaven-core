@@ -32,9 +32,6 @@ import java.util.Set;
 
 @Category(OutOfBandTest.class)
 public class AbstractTableLocationTest extends RefreshingTableTestCase {
-    private CapturingUpdateGraph updateGraph;
-    private SafeCloseable contextCloseable;
-
     private static class TestTableLocationProvider extends AbstractTableLocationProvider {
 
         public TestTableLocationProvider(final boolean supportsSubscriptions) {
@@ -74,6 +71,12 @@ public class AbstractTableLocationTest extends RefreshingTableTestCase {
 
         public void removeKey(@NotNull TableLocationKey locationKey, @NotNull Object token) {
             handleTableLocationKeyRemoved(locationKey, token);
+        }
+
+        @Override
+        @NotNull
+        public UPDATE_TYPE getUpdateMode() {
+            return UPDATE_TYPE.REFRESHING;
         }
     }
 
@@ -134,14 +137,10 @@ public class AbstractTableLocationTest extends RefreshingTableTestCase {
         }
         super.setUp();
         setExpectError(false);
-
-        updateGraph = new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
-        contextCloseable = updateGraph.getContext().open();
     }
 
     @Override
     public void tearDown() throws Exception {
-        contextCloseable.close();
         super.tearDown();
     }
 
