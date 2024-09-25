@@ -806,6 +806,18 @@ class InputTable(Table):
             raise DHError("delete data in the InputTable failed.") from e
 
 
+class MultiJoinTable:
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the table() method. """
+
+    def __init__(self, table: Table):
+        self._table = table
+
+    def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
+        return self._table
+
+
 class MultiJoinInput:
     """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
     natural join.
@@ -830,7 +842,7 @@ class MultiJoinInput:
 
 
 def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
-               on: Union[str, Sequence[str]] = None) -> Table:
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
     """ The multi_join method creates a new table by performing a multi-table natural join on the input tables. The
     result consists of the set of distinct keys from the input tables natural joined to each input table. Input
     tables need not have a matching row for each key, but they may not have multiple matching rows for a given key.
@@ -843,7 +855,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
             MultiJoinInput objects are supplied, this parameter must be omitted.
 
     Returns:
-        Table: the result of the multi-table natural join operation.
+        MultiJoinTable: the result of the multi-table natural join operation.
 
     Raises:
         DHError
@@ -867,4 +879,4 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
             message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
     table_op = MultijoinTablesOp(multi_join_inputs=multi_join_inputs)
-    return session.table_service.grpc_table_op(None, table_op, table_class=Table)
+    return MultiJoinTable(table = session.table_service.grpc_table_op(None, table_op, table_class=Table))
