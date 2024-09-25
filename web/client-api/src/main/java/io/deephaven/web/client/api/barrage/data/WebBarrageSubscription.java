@@ -366,7 +366,19 @@ public abstract class WebBarrageSubscription {
 
                 modifiedColumnSet.set(ii);
 
-                PrimitiveIterator.OfLong destIterator = column.rowsModified.indexIterator();
+                PrimitiveIterator.OfLong destIterator = new PrimitiveIterator.OfLong() {
+                    private final PrimitiveIterator.OfLong wrapped = column.rowsModified.indexIterator();
+
+                    @Override
+                    public long nextLong() {
+                        return redirectedIndexes.get(wrapped.next());
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return wrapped.hasNext();
+                    }
+                };
                 for (int j = 0; j < column.data.size(); j++) {
                     Chunk<Values> chunk = column.data.get(j);
                     destSources[ii].fillChunk(chunk, destIterator);
