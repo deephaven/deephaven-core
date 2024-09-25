@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
-from pydeephaven.session import SharedTicket
+from pydeephaven.ticket import SharedTicket
 from tests.testbase import BaseTestCase
 
 
@@ -339,7 +339,6 @@ t1 = empty_table(0) if t.size == 2 else None
                 with self.assertRaises(PermissionError):
                     blink_input_table.delete(dh_table.select(["f1"]))
 
-
     def test_publish_table(self):
         pub_session = Session()
         t = pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
@@ -363,6 +362,7 @@ t1 = empty_table(0) if t.size == 2 else None
             pub_session.close()
             with self.assertRaises(DHError):
                  sub_session2.fetch_table(shared_ticket)
+            sub_session2.close()
 
     # Note no 'test_' prefix; we don't want this to be picked up
     # on every run; you can still ask the test runner to run it by manually asking

@@ -531,8 +531,8 @@ if [ "$CLONE_ZLIB" = "yes" ]; then
   echo
   echo "*** Clone zlib"
   cd $SRC
-  # Previously used version: v1.2.13
-  git clone $GIT_FLAGS -b v1.3 --depth 1 "${GITHUB_BASE_URL}/madler/zlib"
+  # Previously used version: v1.3
+  git clone $GIT_FLAGS -b v1.3.1 --depth 1 "${GITHUB_BASE_URL}/madler/zlib"
   echo "*** Cloning zlib DONE"
 fi
 if [ "$BUILD_ZLIB" = "yes" ]; then
@@ -562,8 +562,8 @@ if [ "$CLONE_PROTOBUF" = "yes" ]; then
   echo
   echo "*** Cloning protobuf"
   cd $SRC
-  # Previously used version: v3.21.2
-  git clone $GIT_FLAGS -b v25.3 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
+  # Previously used version: v25.3
+  git clone $GIT_FLAGS -b v28.1 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
   echo "*** Cloning protobuf DONE"
 fi
 if [ "$BUILD_PROTOBUF" = "yes" ]; then
@@ -592,8 +592,8 @@ if [ "$CLONE_RE2" = "yes" ]; then
   echo
   echo "*** Cloning re2"
   cd $SRC
-  # Previously used version: 2022-04-01
-  git clone $GIT_FLAGS -b 2022-06-01 --depth 1 "${GITHUB_BASE_URL}/google/re2.git"
+  # Previously used version: 2022-06-01
+  git clone $GIT_FLAGS -b 2024-07-02 --depth 1 "${GITHUB_BASE_URL}/google/re2.git"
   echo "*** Cloning re2 DONE"
 fi
 if [ "$BUILD_RE2" = "yes" ]; then
@@ -690,8 +690,8 @@ if [ "$CLONE_CARES" = "yes" ]; then
   echo
   echo "*** Clone ares"
   cd $SRC
-  # Previously used version: cares-1_18_1
-  git clone $GIT_FLAGS -b cares-1_28_1 --depth 1 "${GITHUB_BASE_URL}/c-ares/c-ares.git"
+  # Previously used version: cares-1_28_1
+  git clone $GIT_FLAGS -b v1.33.1 --depth 1 "${GITHUB_BASE_URL}/c-ares/c-ares.git"
   echo "*** Cloning ares DONE"
 fi
 if [ "$BUILD_CARES" = "yes" ]; then
@@ -723,8 +723,8 @@ if [ "$CLONE_GRPC" = "yes" ]; then
   echo
   echo "*** Clone grpc"
   cd $SRC
-  # Previously used version: v1.46.7
-  git clone $GIT_FLAGS -b v1.63.0 --depth 1 "${GITHUB_BASE_URL}/grpc/grpc"
+  # Previously used version: v1.63.0
+  git clone $GIT_FLAGS -b v1.66.1 --depth 1 "${GITHUB_BASE_URL}/grpc/grpc"
   echo "*** Cloning grpc DONE"
 fi
 if [ "$BUILD_GRPC" = "yes" ]; then
@@ -758,8 +758,8 @@ if [ "$CLONE_ARROW" = "yes" ]; then
   echo
   echo "*** Cloning arrow"
   cd $SRC
-  # Previously used version: apache-arrow-13.0.0
-  git clone $GIT_FLAGS -b apache-arrow-16.0.0 --depth 1 "${GITHUB_BASE_URL}/apache/arrow"
+  # Previously used version: apache-arrow-16.0.0
+  git clone $GIT_FLAGS -b apache-arrow-16.1.0 --depth 1 "${GITHUB_BASE_URL}/apache/arrow"
   echo "*** Cloning arrow DONE"
 fi
 if [ "$BUILD_ARROW" = "yes" ]; then

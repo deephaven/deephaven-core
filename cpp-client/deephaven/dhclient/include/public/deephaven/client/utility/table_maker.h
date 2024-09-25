@@ -140,7 +140,7 @@ template<typename T>
 struct TypeConverterTraits {
   // The below assert fires when this class is instantiated; i.e. when none of the specializations
   // match. It needs to be written this way (with "is_same<T,T>") because for technical reasons it
-  // needso be dependent on T, even if degenerately so.
+  // needs to be dependent on T, even if degenerately so.
   static_assert(!std::is_same_v<T, T>, "TableMaker doesn't know how to work with this type");
 };
 
@@ -304,6 +304,38 @@ struct TypeConverterTraits<deephaven::dhcore::DateTime> {
   }
   static std::string_view GetDeephavenTypeName() {
     return "java.time.ZonedDateTime";
+  }
+};
+
+template<>
+struct TypeConverterTraits<deephaven::dhcore::LocalDate> {
+  static std::shared_ptr<arrow::DataType> GetDataType() {
+    return arrow::date64();
+  }
+  static arrow::Date64Builder GetBuilder() {
+    return arrow::Date64Builder();
+  }
+  static int64_t Reinterpret(const deephaven::dhcore::LocalDate &o) {
+    return o.Millis();
+  }
+  static std::string_view GetDeephavenTypeName() {
+    return "java.time.LocalDate";
+  }
+};
+
+template<>
+struct TypeConverterTraits<deephaven::dhcore::LocalTime> {
+  static std::shared_ptr<arrow::DataType> GetDataType() {
+    return arrow::time64(arrow::TimeUnit::NANO);
+  }
+  static arrow::Time64Builder GetBuilder() {
+    return arrow::Time64Builder(GetDataType(), arrow::default_memory_pool());
+  }
+  static int64_t Reinterpret(const deephaven::dhcore::LocalTime &o) {
+    return o.Nanos();
+  }
+  static std::string_view GetDeephavenTypeName() {
+    return "java.time.LocalTime";
   }
 };
 

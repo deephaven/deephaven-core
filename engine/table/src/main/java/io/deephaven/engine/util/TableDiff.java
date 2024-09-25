@@ -182,7 +182,7 @@ public class TableDiff {
          */
         DoublesExact,
         /**
-         * Columns that exist in both tables, but in diferent orders are not treated as differences.
+         * Columns that exist in both tables, but in different orders are not treated as differences.
          */
         ColumnsOrder,
         /**

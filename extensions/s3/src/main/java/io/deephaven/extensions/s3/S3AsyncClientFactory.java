@@ -8,11 +8,10 @@ import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
-import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
@@ -41,6 +40,25 @@ class S3AsyncClientFactory {
     private static volatile ScheduledExecutorService scheduledExecutor;
 
     static S3AsyncClient getAsyncClient(@NotNull final S3Instructions instructions) {
+        S3AsyncClient s3AsyncClient;
+        try {
+            s3AsyncClient = getAsyncClientBuilder(instructions).build();
+        } catch (final SdkClientException e) {
+            if (instructions.regionName().isEmpty() && e.getMessage().contains("Unable to load region")) {
+                // We might have failed because region was not provided and could not be determined by the SDK.
+                // We will try again with a default region.
+                s3AsyncClient = getAsyncClientBuilder(instructions).region(Region.US_EAST_1).build();
+            } else {
+                throw e;
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
+        }
+        return s3AsyncClient;
+    }
+
+    private static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
         final S3AsyncClientBuilder builder = S3AsyncClient.builder()
                 .asyncConfiguration(
                         b -> b.advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
@@ -58,13 +76,15 @@ class S3AsyncClientFactory {
                         .scheduledExecutorService(ensureScheduledExecutor())
                         .build())
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
-        instructions.regionName().map(Region::of).ifPresent(builder::region);
-        instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        final S3AsyncClient s3AsyncClient = builder.build();
-        if (log.isDebugEnabled()) {
-            log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
+        if (instructions.regionName().isPresent()) {
+            builder.region(Region.of(instructions.regionName().get()));
+        } else {
+            // If region is not provided, we enable cross-region access to allow the SDK to determine the region
+            // based on the bucket location and cache it for future requests.
+            builder.crossRegionAccessEnabled(true);
         }
-        return s3AsyncClient;
+        instructions.endpointOverride().ifPresent(builder::endpointOverride);
+        return builder;
     }
 
     private static class HttpClientConfig {

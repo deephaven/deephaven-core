@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -51,7 +52,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     /**
      * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
      * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
-     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2.
+     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. If no region name is derived from
+     * the above chain or derived the region name derived is incorrect for the bucket accessed, the correct region name
+     * will be derived internally, at the cost of one additional request.
      */
     public abstract Optional<String> regionName();
 
@@ -145,6 +148,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     public abstract Optional<URI> endpointOverride();
 
+    public abstract S3Instructions withEndpointOverride(final URI endpointOverride);
+
     public interface Builder {
         Builder regionName(String regionName);
 
@@ -174,6 +179,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     abstract S3Instructions withReadAheadCount(int readAheadCount);
+
+    @VisibleForTesting
+    public abstract S3Instructions withRegionName(Optional<String> regionName);
 
     @Lazy
     S3Instructions singleUse() {

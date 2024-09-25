@@ -1,16 +1,13 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-import datetime
 from typing import Optional, Union
 
 import jpy
-import numpy as np
-import pandas as pd
 
-from deephaven import time, DHError
+from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Duration
+from deephaven.time import DurationLike, to_j_duration
 
 # If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
 try:
@@ -38,10 +35,8 @@ class S3Instructions(JObjectWrapper):
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
-                 connection_timeout: Union[
-                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
-                 read_timeout: Union[
-                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
+                 connection_timeout: Optional[DurationLike] = None,
+                 read_timeout: Optional[DurationLike] = None,
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
@@ -54,24 +49,27 @@ class S3Instructions(JObjectWrapper):
 
         Args:
             region_name (str): the region name for reading parquet files. If not provided, the default region will be
-            picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
-            {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running in
-            EC2.
+                picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
+                {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running
+                in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
+                the bucket accessed, the correct region name will be derived internally, at the cost of one additional
+                request.
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
-            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
-                fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
+            read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
+                current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
+                current fragment.
             fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
                 remaining in the file, the fetched fragment can be smaller.
-            connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            connection_timeout (DurationLike):
                 the amount of time to wait when initially establishing a connection before giving up and timing out, can
                 be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
                 other time duration types. Default to 2 seconds.
-            read_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            read_timeout (DurationLike):
                 the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
-            access_key_id (str): the access key for reading files. Both access key and secret access key must be provided
-                to use static credentials, else default credentials will be used.
+            access_key_id (str): the access key for reading files. Both access key and secret access key must be
+                provided to use static credentials, else default credentials will be used.
             secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
                 provided to use static credentials, else default credentials will be used.
             anonymous_access (bool): use anonymous credentials, this is useful when the S3 policy has been set to allow
@@ -111,10 +109,10 @@ class S3Instructions(JObjectWrapper):
                 builder.fragmentSize(fragment_size)
 
             if connection_timeout is not None:
-                builder.connectionTimeout(time.to_j_duration(connection_timeout))
+                builder.connectionTimeout(to_j_duration(connection_timeout))
 
             if read_timeout is not None:
-                builder.readTimeout(time.to_j_duration(read_timeout))
+                builder.readTimeout(to_j_duration(read_timeout))
 
             if ((access_key_id is not None and secret_access_key is None) or
                     (access_key_id is None and secret_access_key is not None)):

@@ -15,6 +15,8 @@ using deephaven::dhcore::column::Int8ColumnSource;
 using deephaven::dhcore::column::Int16ColumnSource;
 using deephaven::dhcore::column::Int32ColumnSource;
 using deephaven::dhcore::column::Int64ColumnSource;
+using deephaven::dhcore::column::LocalDateColumnSource;
+using deephaven::dhcore::column::LocalTimeColumnSource;
 using deephaven::dhcore::column::StringColumnSource;
 
 namespace deephaven::dhcore::chunk {
@@ -60,6 +62,14 @@ struct Visitor final : ColumnSourceVisitor {
 
   void Visit(const DateTimeColumnSource &/*source*/) final {
     result_ = DateTimeChunk::Create(chunk_size_);
+  }
+
+  void Visit(const LocalDateColumnSource &/*source*/) final {
+    result_ = LocalDateChunk::Create(chunk_size_);
+  }
+
+  void Visit(const LocalTimeColumnSource &/*source*/) final {
+    result_ = LocalTimeChunk::Create(chunk_size_);
   }
 
   size_t chunk_size_;

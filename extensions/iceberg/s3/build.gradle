@@ -26,6 +26,12 @@ dependencies {
     runtimeOnly libs.awssdk.sts
     runtimeOnly libs.awssdk.glue
 
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
+    testImplementation libs.junit4
+    testImplementation project(':engine-test-utils')
+
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
     testImplementation libs.testcontainers.localstack
@@ -39,20 +45,10 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags("testcontainers")
-    }
-}
+TestTools.addEngineOutOfBandTest(project)
 
-tasks.register('testOutOfBand', Test) {
-    useJUnitPlatform {
-        includeTags("testcontainers")
-    }
+testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')
+testOutOfBand.systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
 
-    dependsOn Docker.registryTask(project, 'localstack')
-    systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
-
-    dependsOn Docker.registryTask(project, 'minio')
-    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
-}
+testOutOfBand.dependsOn Docker.registryTask(project, 'minio')
+testOutOfBand.systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
