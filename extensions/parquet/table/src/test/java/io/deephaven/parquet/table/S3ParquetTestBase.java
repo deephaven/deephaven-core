@@ -28,13 +28,20 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.merge;
+import static io.deephaven.extensions.s3.testlib.SingletonContainers.CLIENT_REGION;
+import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_ACCESS_KEY_ID;
+import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_SECRET_ACCESS_KEY;
+import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_ENDPOINT;
 import static io.deephaven.parquet.table.ParquetTableReadWriteTest.verifyIndexingInfoExists;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
@@ -50,6 +57,8 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
+
+    public abstract Map<String, String> s3Properties();
 
     @Before
     public void setUp() throws ExecutionException, InterruptedException, TimeoutException {
@@ -504,5 +513,83 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         verifyIndexingInfoExists(fromS3, "someLong");
         verifyIndexingInfoExists(fromS3, "someInt", "someLong");
         verifyIndexingInfoExists(fromS3, "someLong", "someInt");
+    }
+
+    @Test
+    public void testReadWriteUsingProfile() throws IOException {
+        final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
+
+        // Write credentials and region to profile files
+        final Map<String, String> properties = s3Properties();
+
+        // Try setting wrong credentials and region
+        Path tempConfigFile = null;
+        Path tempCredentialsFile = null;
+        try {
+            // Create temporary config and credentials file and write wrong credentials to them
+            tempConfigFile = Files.createTempFile("config", ".tmp");
+            final String configData = "[profile test-user]\nregion = wrong-region";
+            Files.write(tempConfigFile, configData.getBytes());
+
+            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
+            final String credentialsData = "[test-user]\naws_access_key_id = foo\naws_secret_access_key = bar";
+            Files.write(tempCredentialsFile, credentialsData.getBytes());
+
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .readTimeout(Duration.ofSeconds(3))
+                    .endpointOverride(properties.get(S3_ENDPOINT))
+                    .profileName("test-user")
+                    .credentialsFilePath(tempCredentialsFile.toString())
+                    .configFilePath(tempConfigFile.toString())
+                    .build();
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            try {
+                final URI uri = uri("table1.parquet");
+                ParquetTools.writeTable(table, uri.toString(), instructions);
+                fail("Expected exception");
+            } catch (final UncheckedDeephavenException expected) {
+            }
+        } finally {
+            // Delete the temporary files
+            if (tempConfigFile != null) {
+                Files.deleteIfExists(tempConfigFile);
+            }
+            if (tempCredentialsFile != null) {
+                Files.delete(tempCredentialsFile);
+            }
+        }
+
+        try {
+            // Create temporary config and credentials file and write correct credentials and region to them
+            tempConfigFile = Files.createTempFile("config", ".tmp");
+            final String configData = "[profile test-user]\nregion = " + properties.get(CLIENT_REGION);
+            Files.write(tempConfigFile, configData.getBytes());
+
+            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
+            final String credentialsData = "[test-user]\naws_access_key_id = " + properties.get(S3_ACCESS_KEY_ID) +
+                    "\naws_secret_access_key = " + properties.get(S3_SECRET_ACCESS_KEY);
+            Files.write(tempCredentialsFile, credentialsData.getBytes());
+
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .readTimeout(Duration.ofSeconds(3))
+                    .endpointOverride(properties.get(S3_ENDPOINT))
+                    .profileName("test-user")
+                    .credentialsFilePath(tempCredentialsFile.toString())
+                    .configFilePath(tempConfigFile.toString())
+                    .build();
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            final URI uri = uri("table2.parquet");
+            ParquetTools.writeTable(table, uri.toString(), instructions);
+            final Table fromS3 = ParquetTools.readTable(uri.toString(), instructions);
+            assertTableEquals(table, fromS3);
+        } finally {
+            // Delete the temporary files
+            Files.delete(tempConfigFile);
+            Files.delete(tempCredentialsFile);
+        }
     }
 }

@@ -12,6 +12,8 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.profiles.ProfileFile;
 
 import java.net.URI;
 import java.time.Duration;
@@ -42,6 +44,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
+
+    /**
+     * Used to cache the aggregated profile file when reading from a configuration file or credentials file. Initialized
+     * lazily to avoid unnecessary aggregation of profile files when not needed.
+     */
+    private Optional<ProfileFile> aggregatedProfileFile;
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -110,6 +118,19 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     @Default
     public Credentials credentials() {
+        if (profileName().isPresent() || configFilePath().isPresent() || credentialsFilePath().isPresent()) {
+            final ProfileCredentials.Builder builder = ProfileCredentials.builder();
+            profileName().ifPresent(builder::profileName);
+            if (aggregatedProfileFile != null && aggregatedProfileFile.isPresent()) {
+                builder.profileFile(aggregatedProfileFile.get());
+            }
+            if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
+                final ProfileFile result = S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath());
+                builder.profileFile(result);
+                aggregatedProfileFile = Optional.of(result);
+            }
+            return builder.build();
+        }
         return Credentials.defaultCredentials();
     }
 
@@ -133,6 +154,48 @@ public abstract class S3Instructions implements LogOutputAppendable {
     @Default
     public int numConcurrentWriteParts() {
         return DEFAULT_NUM_CONCURRENT_WRITE_PARTS;
+    }
+
+    /**
+     * The default profile name used for configuring the default region, credentials, etc., when reading or writing to
+     * S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile' system property, the "AWS_PROFILE"
+     * environment variable, or defaults to "default".
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileName(String)
+     */
+    public abstract Optional<String> profileName();
+
+    /**
+     * The path to the configuration file to use for configuring the default region, credentials, etc. when reading or
+     * writing to S3. If not provided, the AWS SDK picks the configuration file from the 'aws.configFile' system
+     * property, the "AWS_CONFIG_FILE" environment variable, or defaults to "{user.home}/.aws/config".
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
+     */
+    public abstract Optional<String> configFilePath();
+
+    /**
+     * The path to the credentials file to use for configuring the default region, credentials, etc. when reading or
+     * writing to S3. If not provided, the AWS SDK picks the credentials file from the 'aws.credentialsFile' system
+     * property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to "{user.home}/.aws/credentials".
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
+     */
+    public abstract Optional<String> credentialsFilePath();
+
+    /**
+     * The aggregated profile file that combines the configuration and credentials files.
+     */
+    final Optional<ProfileFile> aggregatedProfileFile() {
+        if (aggregatedProfileFile != null) {
+            return aggregatedProfileFile;
+        }
+        if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
+            aggregatedProfileFile = Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
+        } else {
+            aggregatedProfileFile = Optional.empty();
+        }
+        return aggregatedProfileFile;
     }
 
     @Override
@@ -170,6 +233,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
         Builder writePartSize(int writePartSize);
 
         Builder numConcurrentWriteParts(int numConcurrentWriteParts);
+
+        Builder configFilePath(String configFilePath);
+
+        Builder credentialsFilePath(String credentialsFilePath);
+
+        Builder profileName(String profileName);
 
         default Builder endpointOverride(String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));

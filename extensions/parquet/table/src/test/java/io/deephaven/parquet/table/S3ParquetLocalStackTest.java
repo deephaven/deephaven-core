@@ -5,9 +5,10 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
-import io.deephaven.extensions.s3.testlib.SingletonContainers;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+
+import java.util.Map;
 
 public class S3ParquetLocalStackTest extends S3ParquetTestBase {
 
@@ -23,7 +24,12 @@ public class S3ParquetLocalStackTest extends S3ParquetTestBase {
     }
 
     @Override
+    public Map<String, String> s3Properties() {
+        return LocalStack.s3Properties();
+    }
+
+    @Override
     public S3AsyncClient s3AsyncClient() {
-        return SingletonContainers.LocalStack.s3AsyncClient();
+        return LocalStack.s3AsyncClient();
     }
 }

@@ -42,7 +42,10 @@ class S3Instructions(JObjectWrapper):
                  anonymous_access: bool = False,
                  endpoint_override: Optional[str] = None,
                  write_part_size: Optional[int] = None,
-                 num_concurrent_write_parts: Optional[int] = None):
+                 num_concurrent_write_parts: Optional[int] = None,
+                 profile_name: Optional[str] = None,
+                 config_file_path: Optional[str] = None,
+                 credentials_file_path: Optional[str] = None):
 
         """
         Initializes the instructions.
@@ -84,6 +87,17 @@ class S3Instructions(JObjectWrapper):
             num_concurrent_write_parts (int): the maximum number of parts that can be uploaded concurrently when writing
                 to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but may also
                 increase memory usage.
+            profile_name (str): the default profile name used for configuring the default region, credentials, etc.,
+                when reading or writing to S3. If not provided, the AWS SDK picks the profile name from the
+                'aws.profile' system property, the "AWS_PROFILE" environment variable, or defaults to "default".
+            config_file_path (str): the path to the configuration file to use for configuring the default region,
+                credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
+                file from the 'aws.configFile' system property, the "AWS_CONFIG_FILE" environment variable, or defaults
+                to "{user.home}/.aws/config".
+            credentials_file_path (str): the path to the credentials file to use for configuring the default region,
+                credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file
+                from the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or
+                defaults to "{user.home}/.aws/credentials".
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -133,6 +147,15 @@ class S3Instructions(JObjectWrapper):
 
             if num_concurrent_write_parts is not None:
                 builder.numConcurrentWriteParts(num_concurrent_write_parts)
+
+            if profile_name is not None:
+                builder.profileName(profile_name)
+
+            if config_file_path is not None:
+                builder.configFilePath(config_file_path)
+
+            if credentials_file_path is not None:
+                builder.credentialsFilePath(credentials_file_path)
 
             self._j_object = builder.build()
         except Exception as e:
