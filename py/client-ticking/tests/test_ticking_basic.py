@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -11,8 +11,8 @@ import sys
 class TickingBasicTestCase(unittest.TestCase):
     def test_ticking_basic_time_table(self):
         session = dh.Session()
-        half_second_in_nanos = 200 * 1000 * 1000
-        table = session.time_table(period=half_second_in_nanos).update(formulas=["Col1 = i"])
+        fifth_second_in_nanos = 200 * 1000 * 1000
+        table = session.time_table(period=fifth_second_in_nanos).update(formulas=["Col1 = i"])
         session.bind_table(name="my_ticking_table", table=table)
         table_added_last_col1_seen = -1
         table_added_update_count = 0
