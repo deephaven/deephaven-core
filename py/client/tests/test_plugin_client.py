@@ -56,10 +56,14 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
             self.assertGreater(len(refs), 0)
             ref = refs[0]
             self.assertEqual(ref.type, "Table")
+            fetched = ref.fetch()
+            self.assertIsNotNone(fetched)
+            self.assertEqual(fetched.size, 30)
             sub_plugin_client.close()
             sub_session.close()
 
         with self.subTest("Fetchable in the Plugin object"):
+            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             payload, refs = next(plugin_client.resp_stream)
             self.assertGreater(len(payload), 0)
             self.assertGreater(len(refs), 0)
@@ -81,6 +85,7 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
             sub_session.close()
 
         with self.subTest("released Plugin object"):
+            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             sub_session = Session()
             server_obj = ServerObject(type="Figure", ticket=shared_ticket)
             sub_plugin_client = sub_session.plugin_client(server_obj)
