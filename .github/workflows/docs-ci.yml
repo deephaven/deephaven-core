@@ -16,7 +16,7 @@ jobs:
           cd tmp-deephaven-core-v2/${{ github.ref_name }}/
           mkdir -p javadoc pydoc client-api
           cd client-api
-          mkdir -p javascript python cpp-examples cpp r
+          mkdir -p javascript python cpp-examples cpp r protobuf
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
@@ -401,7 +401,7 @@ jobs:
     needs: [makedirs]
     runs-on: ubuntu-22.04
     concurrency:
-      group: protobufdoc-${{ github.workflow }}-${{ github.ref }}
+      group: protodoc-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
