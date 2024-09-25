@@ -808,7 +808,7 @@ class InputTable(Table):
 
 class MultiJoinTable:
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the :meth:`~MultiJoinTable.table` method. """
+    result Table, use the :meth:`.table` method. """
 
     def __init__(self, table: Table):
         self._table = table
@@ -880,4 +880,4 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
             message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
 
     table_op = MultijoinTablesOp(multi_join_inputs=multi_join_inputs)
-    return MultiJoinTable(table = session.table_service.grpc_table_op(None, table_op, table_class=Table))
+    return MultiJoinTable(table=session.table_service.grpc_table_op(None, table_op, table_class=Table))

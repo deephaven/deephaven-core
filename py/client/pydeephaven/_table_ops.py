@@ -700,7 +700,7 @@ class MultijoinTablesOp(TableOp):
     def make_grpc_request(self, result_id, source_id) -> Any:
         pb_inputs = []
         for mji in self.multi_join_inputs:
-            source_id = table_pb2.TableReference(ticket=mji.table.ticket)
+            source_id = table_pb2.TableReference(ticket=mji.table.ticket.pb_ticket)
             columns_to_match = mji.on
             columns_to_add = mji.joins
             pb_inputs.append(table_pb2.MultiJoinInput(source_id=source_id, columns_to_match=columns_to_match,

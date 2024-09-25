@@ -105,8 +105,9 @@ class MultiJoinTestCase(BaseTestCase):
             MultiJoinInput(table=self.ticking_tableA, on=["key1=a", "key2=b"], joins=["c1", "e1"]),
             MultiJoinInput(table=self.ticking_tableB, on=["key1=a", "key2=b"], joins=["d2"])
         ]
-        with self.assertRaises(DHError):
+        with self.assertRaises(DHError) as cm:
             mj_table = multi_join(mj_input, on=["key1=a", "key2=b"])
+        self.assertIn("on parameter is not permitted", str(cm.exception))
 
         session = Session()
         t = session.time_table("PT00:00:00.001").update(
