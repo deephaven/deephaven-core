@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
@@ -45,6 +47,37 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
 public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
+
+    private static class TestKeySupplier extends ReferenceCountedLivenessNode
+            implements LiveSupplier<ImmutableTableLocationKey> {
+
+        private final ImmutableTableLocationKey key;
+
+        private TableLocation tableLocation;
+
+        TestKeySupplier(
+                final ImmutableTableLocationKey key) {
+            super(false);
+            this.key = key;
+        }
+
+        @Override
+        public ImmutableTableLocationKey get() {
+            return key;
+        }
+
+        public synchronized void setTableLocation(final TableLocation tableLocation) {
+            Assert.eqNull(this.tableLocation, "this.tableLocation");
+            manage(tableLocation);
+            this.tableLocation = tableLocation;
+        }
+
+        @Override
+        protected synchronized void destroy() {
+            super.destroy();
+            tableLocation = null;
+        }
+    }
 
     private static final int NUM_COLUMNS = 5;
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =
@@ -247,7 +280,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     @Override
                     public Object invoke(Invocation invocation) {
                         subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
-                        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
+                        Arrays.stream(tableLocationKeys).map(TestKeySupplier::new)
+                                .forEach(subscriptionBuffer::handleTableLocationKeyAdded);
                         return null;
                     }
                 });
@@ -407,7 +441,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
             final Set<TableLocation> expectPassFilters) {
-        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
+        Arrays.stream(tableLocationKeys).map(TestKeySupplier::new)
+                .forEach(subscriptionBuffer::handleTableLocationKeyAdded);
 
         expectPassFilters.forEach(tl -> checking(new Expectations() {
             {

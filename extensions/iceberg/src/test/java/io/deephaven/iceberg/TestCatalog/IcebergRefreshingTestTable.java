@@ -13,6 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Test table wrapper that restricts available snapshots to a given sequence number which the user can advance using
+ * {@link #advanceSequenceNumber()}.
+ */
 public class IcebergRefreshingTestTable implements Table {
     private final IcebergTestTable testTable;
 

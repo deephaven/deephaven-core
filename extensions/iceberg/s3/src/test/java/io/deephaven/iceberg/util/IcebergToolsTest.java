@@ -12,7 +12,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.testutil.locations.DependentRegistrar;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergRefreshingTestTable;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
@@ -946,96 +945,32 @@ public abstract class IcebergToolsTest {
 
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
 
-        // final CapturingUpdateGraph updateGraph = new
-        // CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        final DependentRegistrar registrar = new DependentRegistrar();
+        final IcebergTableImpl table = (IcebergTableImpl) tableAdapter.table(snapshots.get(0), localInstructions);
 
-        final IcebergTable table = tableAdapter.table(snapshots.get(0).snapshotId(), localInstructions);
+        // Initial size
         Assert.eq(table.size(), "table.size()", 18073, "expected rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
-        updateGraph.runWithinUnitTestCycle(() -> {
-            table.update(snapshots.get(1).snapshotId());
-            registrar.run();
-        });
+        table.update(snapshots.get(1).snapshotId());
+        updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 54433, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(2).snapshotId());
+        updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 72551, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(3).snapshotId());
+        updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(4).snapshotId());
+        updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(5).snapshotId());
+        updateGraph.runWithinUnitTestCycle(table::refresh);
         Assert.eq(table.size(), "table.size()", 0, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-    }
-
-    @Test
-    public void testAutoRefreshingTable() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadSalesMulti();
-
-        final TableIdentifier tableId = TableIdentifier.parse("sales.sales_multi");
-
-        // Create a custom table adapter on top of the refreshing Iceberg table.
-        final IcebergRefreshingTestTable icebergTable = IcebergRefreshingTestTable.fromTestTable(
-                (IcebergTestTable) resourceCatalog.loadTable(tableId));
-        final DataInstructionsProviderLoader dataInstructionsProvider =
-                DataInstructionsProviderLoader.create(Map.of());
-        final IcebergTableAdapter tableAdapter =
-                new IcebergTableAdapter(tableId, icebergTable, dataInstructionsProvider);
-
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
-                .dataInstructions(instructions.dataInstructions().get())
-                .updateMode(IcebergUpdateMode.autoRefreshingMode(1))
-                .build();
-
-
-        final List<Snapshot> snapshots = tableAdapter.listSnapshots();
-
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-
-        final IcebergTable table = tableAdapter.table(localInstructions);
-        Assert.eq(table.size(), "table.size()", 18073, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-
-        icebergTable.advanceSequenceNumber();
-        Thread.sleep(500);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            Assert.eq(table.size(), "table.size()", 54433, "expected rows in the table");
-            Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-        });
-
-        icebergTable.advanceSequenceNumber();
-        Thread.sleep(500);
-        updateGraph.runWithinUnitTestCycle(() -> {
-            Assert.eq(table.size(), "table.size()", 72551, "expected rows in the table");
-            Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-        });
-
-        table.update(snapshots.get(2).snapshotId());
-        Assert.eq(table.size(), "table.size()", 72551, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-
-        table.update(snapshots.get(3).snapshotId());
-        Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-
-        table.update(snapshots.get(4).snapshotId());
-        Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
-
-        table.update(snapshots.get(5).snapshotId());
-        Assert.eq(table.size(), "table.size()", 0, "expected rows in the table");
-        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
     }
 }

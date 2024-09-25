@@ -62,7 +62,7 @@ public abstract class AbstractTableLocation
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
 
-        livenessReferent = new ReferenceCountedLivenessNode(false) {
+        livenessReferent = new ReferenceCountedLivenessReferent() {
             @Override
             protected void destroy() {
                 AbstractTableLocation.this.destroy();
@@ -251,7 +251,7 @@ public abstract class AbstractTableLocation
     /**
      * The reference count has reached zero or we are being GC'd, we can clear this location and release any resources.
      */
-    private void destroy() {
+    protected void destroy() {
         handleUpdate(null, System.currentTimeMillis());
         clearColumnLocations();
 

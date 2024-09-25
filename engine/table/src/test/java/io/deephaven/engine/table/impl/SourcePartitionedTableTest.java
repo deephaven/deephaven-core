@@ -6,11 +6,14 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
@@ -24,6 +27,9 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -92,7 +98,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                 true,
                 p1, p2);
 
-        return new SourcePartitionedTable(p1.getDefinition(),
+        return SourcePartitionedTable.create(p1.getDefinition(),
                 t -> t,
                 tlp,
                 true,
@@ -117,6 +123,14 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp.removeTableLocationKey(tlks[0]);
         tlp.refresh();
 
+        // We've removed location 0, should be gone from the location key list
+        Set<ImmutableTableLocationKey> activeSet = new HashSet<>(tlp.getTableLocationKeys());
+        assertFalse(activeSet.contains(tlks[0]));
+
+        // Since we haven't been through an update cycle, we should still be able to retrieve the location for this key.
+        assertTrue(tlp.hasTableLocationKey(tlks[0]));
+        assertNotNull(tlp.getTableLocation(tlks[0]));
+
         allowingError(() -> updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             updateGraph.markSourcesRefreshedForUnitTests();
@@ -130,8 +144,12 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             assertTableEquals(tableIt.next(), p2);
         }
 
+        // After the update cycle, the update committer should have triggered cleanup of this key and location.
+        assertFalse(tlp.hasTableLocationKey(tlks[0]));
+
         tlp.addPending(p3);
         tlp.refresh();
+
         updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
             updateGraph.refreshSources();
             registrar.run();
@@ -152,15 +170,83 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.refreshSources();
             updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
+
+            // flush the notifications and verify state
+            updateGraph.getDelegate().flushAllNormalNotificationsForUnitTests();
+            assertEquals(2, partitionTable.size());
+            try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+                assertTableEquals(tableIt.next(), p3);
+                assertTableEquals(tableIt.next(), p4);
+            }
         }, false), errors -> errors.size() == 1 &&
                 FindExceptionCause.isOrCausedBy(errors.get(0), TableLocationRemovedException.class).isPresent());
         getUpdateErrors().clear();
 
-        assertEquals(2, partitionTable.size());
-        try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
-            assertTableEquals(tableIt.next(), p3);
-            assertTableEquals(tableIt.next(), p4);
+        /**
+         * Set up a complicated table location management test, where we create a new table under a scope, add it to the
+         * SPT. Then drop the table and verify that the table location is destroyed only after the scope is released.
+         */
+        final TableLocation location5;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(), true)) {
+            final QueryTable p5 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                    stringCol("Sym", "gg", "hh", "gg", "hh"),
+                    intCol("intCol", 10000, 20000, 40000, 60000),
+                    doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
+            p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            tlp.addPending(p5);
+            tlp.refresh();
+
+            updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+                updateGraph.refreshSources();
+                registrar.run();
+            });
+
+            assertEquals(3, partitionTable.size());
+            try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+                assertTableEquals(tableIt.next(), p3);
+                assertTableEquals(tableIt.next(), p4);
+                assertTableEquals(tableIt.next(), p5);
+            }
+
+            tlks = tlp.getTableLocationKeys().stream().sorted().toArray(ImmutableTableLocationKey[]::new);
+            final ImmutableTableLocationKey tlk_p5 = tlks[2];
+            location5 = tlp.getTableLocation(tlk_p5);
+            assertTrue(location5.getRowSet() != null && location5.getRowSet().size() == 4);
+
+            // remove the p5 key from the SPT
+            tlp.removeTableLocationKey(tlk_p5);
+            tlp.refresh();
+
+            // We've removed location 5, should be gone from the location key list
+            activeSet = new HashSet<>(tlp.getTableLocationKeys());
+            assertFalse(activeSet.contains(tlk_p5));
+
+            // Since we haven't been through an update cycle, we can still retrieve the location for this key.
+            assertTrue(tlp.hasTableLocationKey(tlk_p5));
+            assertNotNull(tlp.getTableLocation(tlk_p5));
+
+            updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+                updateGraph.refreshSources();
+                registrar.run();
+
+            });
+
+            // After the cycle cleanup, this location should not be available
+            assertFalse(tlp.hasTableLocationKey(tlk_p5));
+
+            // The location associated with p5 should still be valid, because it is held by p5 RCSM and p5 is in scope
+            assertTrue(location5.getRowSet() != null && location5.getRowSet().size() == 4);
+
+            assertEquals(2, partitionTable.size());
+            try (final CloseableIterator<Table> tableIt = partitionTable.columnIterator("LocationTable")) {
+                assertTableEquals(tableIt.next(), p3);
+                assertTableEquals(tableIt.next(), p4);
+            }
         }
+
+        // The scope has been released, p5 should be dead so verify that the location associated with p5 has been
+        // cleaned up
+        assertNull(location5.getRowSet());
 
         // Prove that we propagate normal errors. This is a little tricky, we can't test for errors.size == 1 because
         // The TableBackedTableLocation has a copy() of the p3 table which is itself a leaf. Erroring P3 will

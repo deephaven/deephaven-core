@@ -212,14 +212,18 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
 
         invalidateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
-                (instance) -> {
-                    synchronized (instance) {
-                        invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
-                        invalidatedLocations.clear();
-                        releasedLocations.forEach(instance::unmanage);
-                        releasedLocations.clear();
-                    }
-                });
+                RegionedColumnSourceManager::invalidateAndRelease);
+    }
+
+    /**
+     * Activated by the invalidateCommitter to invalidate populated locations and to release all the managed locations
+     * that we no longer care about.
+     */
+    private synchronized void invalidateAndRelease() {
+        invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
+        invalidatedLocations.clear();
+        releasedLocations.forEach(this::unmanage);
+        releasedLocations.clear();
     }
 
     @Override

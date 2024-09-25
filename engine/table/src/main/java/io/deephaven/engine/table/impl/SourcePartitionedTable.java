@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -39,6 +39,26 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
     private static final String CONSTITUENT_COLUMN_NAME = "LocationTable";
 
     /**
+     * Private constructor for a {@link SourcePartitionedTable}.
+     *
+     * @param table the locations table to use for this {@link SourcePartitionedTable}
+     * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
+     * @param refreshLocations Whether the set of locations should be refreshed
+     */
+    private SourcePartitionedTable(
+            @NotNull final Table table,
+            @NotNull final TableDefinition constituentDefinition,
+            final boolean refreshLocations) {
+        super(table,
+                Set.of(KEY_COLUMN_NAME),
+                true,
+                CONSTITUENT_COLUMN_NAME,
+                constituentDefinition,
+                refreshLocations,
+                false);
+    }
+
+    /**
      * Construct a {@link SourcePartitionedTable} from the supplied parameters.
      * <p>
      * Note that refreshLocations and refreshSizes are distinct because there are use cases that supply an external
@@ -52,29 +72,31 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      * @param refreshSizes Whether the locations found should be refreshed
      * @param locationKeyMatcher Function to filter desired location keys
      */
-    public SourcePartitionedTable(
+    public static SourcePartitionedTable create(
             @NotNull final TableDefinition constituentDefinition,
             @NotNull final UnaryOperator<Table> applyTablePermissions,
             @NotNull final TableLocationProvider tableLocationProvider,
             final boolean refreshLocations,
             final boolean refreshSizes,
             @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
-        super(new UnderlyingTableMaintainer(
-                constituentDefinition,
+        final UnderlyingTableMaintainer maintainer = new UnderlyingTableMaintainer(constituentDefinition,
                 applyTablePermissions,
                 tableLocationProvider,
                 refreshLocations,
                 refreshSizes,
-                locationKeyMatcher).result(),
-                Set.of(KEY_COLUMN_NAME),
-                true,
-                CONSTITUENT_COLUMN_NAME,
+                locationKeyMatcher);
+
+        final SourcePartitionedTable sourcePartitionedTable = new SourcePartitionedTable(
+                maintainer.result(),
                 constituentDefinition,
-                refreshLocations,
-                false);
+                refreshLocations);
+
+
+        maintainer.assignLivenessManager(sourcePartitionedTable);
+        return sourcePartitionedTable;
     }
 
-    private static final class UnderlyingTableMaintainer {
+    private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode {
 
         private final TableDefinition constituentDefinition;
         private final UnaryOperator<Table> applyTablePermissions;
@@ -104,13 +126,17 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 final boolean refreshLocations,
                 final boolean refreshSizes,
                 @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
+            super(false);
+
+            // Increase the refcount of this liveness node to allow it to manage the subscription buffer.
+            retainReference();
+
             this.constituentDefinition = constituentDefinition;
             this.applyTablePermissions = applyTablePermissions;
             this.tableLocationProvider = tableLocationProvider;
             this.refreshSizes = refreshSizes;
             this.locationKeyMatcher = locationKeyMatcher;
 
-            // noinspection resource
             resultRows = RowSetFactory.empty().toTracking();
             resultTableLocationKeys = ArrayBackedColumnSource.getMemoryColumnSource(TableLocationKey.class, null);
             resultLocationTables = ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null);
@@ -131,6 +157,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (needToRefreshLocations) {
                 subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
+                manage(subscriptionBuffer);
                 pendingLocationStates = new IntrusiveDoublyLinkedQueue<>(
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
@@ -155,7 +182,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                             removedConstituents.forEach(result::unmanage);
                             removedConstituents = null;
                         });
-
                 processPendingLocations(false);
             } else {
                 subscriptionBuffer = null;
@@ -178,6 +204,15 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 refreshCombiner.install();
             }
         }
+
+        /**
+         * If we have a {@link TableLocationSubscriptionBuffer}, manage it with the given liveness manager.
+         */
+        private void assignLivenessManager(final LivenessManager manager) {
+            manager.manage(this);
+            dropReference();
+        }
+
 
         private QueryTable result() {
             return result;

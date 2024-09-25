@@ -279,11 +279,11 @@ public abstract class AbstractTableLocationProvider
                         true)) {
                     onEmpty();
                 }
-                // Release the keys that were removed after we have delivered the notifications and the
-                // subscribers have had a chance to process them
-                removedKeys.forEach(livenessManager::unmanage);
             }
         }
+        // Release the keys that were removed after we have delivered the notifications and the
+        // subscribers have had a chance to process them
+        removedKeys.forEach(livenessManager::unmanage);
     }
 
     /**
@@ -373,7 +373,7 @@ public abstract class AbstractTableLocationProvider
 
         // If we're not in a transaction, we should push this key immediately.
         synchronized (subscriptions) {
-            final TrackedKeySupplier trackedKey = tableLocationKeyMap.removeKey(locationKey);
+            final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
             if (trackedKey != null) {
                 trackedKey.deactivate();
                 if (subscriptions.deliverNotification(

@@ -49,6 +49,7 @@ public interface DelegatingLivenessNode extends LivenessNode {
 
     @Override
     default WeakReference<? extends LivenessReferent> getWeakReference() {
-        return asLivenessNode().getWeakReference();
+        // Must return a WeakReference to the DelegatingLivenessNode, not the underlying LivenessNode
+        return new WeakReference<>(this);
     }
 }

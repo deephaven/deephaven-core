@@ -8,7 +8,9 @@ import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -127,6 +129,17 @@ public interface TableLocationProvider extends NamedImplementation {
      * @return this, to allow method chaining.
      */
     TableLocationProvider ensureInitialized();
+
+    /**
+     * Get this provider's currently known location keys. The locations specified by the keys returned may have null
+     * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
+     * guaranteed to succeed for all results.
+     */
+    default Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+        final List<ImmutableTableLocationKey> keys = new ArrayList<>();
+        getTableLocationKeys(trackedKey -> keys.add(trackedKey.get()));
+        return keys;
+    }
 
     /**
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
