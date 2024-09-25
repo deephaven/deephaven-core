@@ -438,6 +438,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
     }
 
+    @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, clazz), getRowSet());
+    }
+
     // endregion Column Iterators
 
     /**
