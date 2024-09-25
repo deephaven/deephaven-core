@@ -31,17 +31,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.merge;
-import static io.deephaven.extensions.s3.testlib.SingletonContainers.CLIENT_REGION;
-import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_ACCESS_KEY_ID;
-import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_SECRET_ACCESS_KEY;
-import static io.deephaven.extensions.s3.testlib.SingletonContainers.S3_ENDPOINT;
 import static io.deephaven.parquet.table.ParquetTableReadWriteTest.verifyIndexingInfoExists;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
@@ -58,7 +53,13 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    public abstract Map<String, String> s3Properties();
+    public abstract String s3Endpoint();
+
+    public abstract String region();
+
+    public abstract String accessKey();
+
+    public abstract String secretAccessKey();
 
     @Before
     public void setUp() throws ExecutionException, InterruptedException, TimeoutException {
@@ -518,11 +519,6 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     @Test
     public void testReadWriteUsingProfile() throws IOException {
         final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
-
-        // Write credentials and region to profile files
-        final Map<String, String> properties = s3Properties();
-
-        // Try setting wrong credentials and region
         Path tempConfigFile = null;
         Path tempCredentialsFile = null;
         try {
@@ -537,7 +533,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
             final S3Instructions s3Instructions = S3Instructions.builder()
                     .readTimeout(Duration.ofSeconds(3))
-                    .endpointOverride(properties.get(S3_ENDPOINT))
+                    .endpointOverride(s3Endpoint())
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
                     .configFilePath(tempConfigFile.toString())
@@ -564,17 +560,17 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         try {
             // Create temporary config and credentials file and write correct credentials and region to them
             tempConfigFile = Files.createTempFile("config", ".tmp");
-            final String configData = "[profile test-user]\nregion = " + properties.get(CLIENT_REGION);
+            final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
 
             tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
-            final String credentialsData = "[test-user]\naws_access_key_id = " + properties.get(S3_ACCESS_KEY_ID) +
-                    "\naws_secret_access_key = " + properties.get(S3_SECRET_ACCESS_KEY);
+            final String credentialsData = "[test-user]\naws_access_key_id = " + accessKey() +
+                    "\naws_secret_access_key = " + secretAccessKey();
             Files.write(tempCredentialsFile, credentialsData.getBytes());
 
             final S3Instructions s3Instructions = S3Instructions.builder()
                     .readTimeout(Duration.ofSeconds(3))
-                    .endpointOverride(properties.get(S3_ENDPOINT))
+                    .endpointOverride(s3Endpoint())
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
                     .configFilePath(tempConfigFile.toString())

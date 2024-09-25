@@ -3,18 +3,37 @@
 //
 package io.deephaven.extensions.s3;
 
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 
 public interface Credentials {
 
     /**
-     * Default credentials provider that looks for credentials at a number of locations as described in
-     * {@link DefaultCredentialsProvider} and falls back to anonymous credentials if no credentials are found.
+     * Default AWS credentials provider that looks for credentials in the following order:
+     * <ol>
+     * <li>If a profile name, config file path, or credentials file path is provided, use
+     * {@link ProfileCredentialsProvider}</li>
+     * <li>If not, check all places mentioned in {@link DefaultCredentialsProvider} and fall back to
+     * {@link AnonymousCredentialsProvider}</li>
+     * </ol>
+     *
+     * @see ProfileCredentialsProvider
+     * @see DefaultCredentialsProvider
+     * @see AnonymousCredentialsProvider
+     */
+    static Credentials defaultCredentials() {
+        return DeephavenDefaultCredentials.INSTANCE;
+    }
+
+    /**
+     * Default AWS credentials provider that looks for credentials at a number of locations as described in
+     * {@link DefaultCredentialsProvider}
      *
      * @see DefaultCredentialsProvider
      */
-    static Credentials defaultCredentials() {
-        return DefaultCredentials.DEFAULT_CREDENTIALS;
+    static Credentials awsDefaultCredentials() {
+        return AWSDefaultCredentials.INSTANCE;
     }
 
     /**

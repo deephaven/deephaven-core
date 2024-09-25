@@ -16,6 +16,7 @@ import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.profiles.ProfileFile;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -118,19 +119,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     @Default
     public Credentials credentials() {
-        if (profileName().isPresent() || configFilePath().isPresent() || credentialsFilePath().isPresent()) {
-            final ProfileCredentials.Builder builder = ProfileCredentials.builder();
-            profileName().ifPresent(builder::profileName);
-            if (aggregatedProfileFile != null && aggregatedProfileFile.isPresent()) {
-                builder.profileFile(aggregatedProfileFile.get());
-            }
-            if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
-                final ProfileFile result = S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath());
-                builder.profileFile(result);
-                aggregatedProfileFile = Optional.of(result);
-            }
-            return builder.build();
-        }
         return Credentials.defaultCredentials();
     }
 
@@ -172,7 +160,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */
-    public abstract Optional<String> configFilePath();
+    public abstract Optional<Path> configFilePath();
 
     /**
      * The path to the credentials file to use for configuring the default region, credentials, etc. when reading or
@@ -181,7 +169,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */
-    public abstract Optional<String> credentialsFilePath();
+    public abstract Optional<Path> credentialsFilePath();
 
     /**
      * The aggregated profile file that combines the configuration and credentials files.
@@ -234,15 +222,23 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder numConcurrentWriteParts(int numConcurrentWriteParts);
 
-        Builder configFilePath(String configFilePath);
-
-        Builder credentialsFilePath(String credentialsFilePath);
-
         Builder profileName(String profileName);
 
-        default Builder endpointOverride(String endpointOverride) {
+        Builder configFilePath(Path configFilePath);
+
+        Builder credentialsFilePath(Path credentialsFilePath);
+
+        default Builder endpointOverride(final String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
         }
+
+        default Builder configFilePath(final String configFilePath) {
+            return configFilePath(Path.of(configFilePath));
+        }
+
+        default Builder credentialsFilePath(final String credentialsFilePath) {
+            return credentialsFilePath(Path.of(credentialsFilePath));
+        };
 
         S3Instructions build();
     }
@@ -314,7 +310,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     final AwsCredentialsProvider awsV2CredentialsProvider() {
-        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider();
+        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
     }
 
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style

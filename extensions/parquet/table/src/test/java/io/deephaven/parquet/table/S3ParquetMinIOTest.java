@@ -10,8 +10,6 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import java.util.Map;
-
 public class S3ParquetMinIOTest extends S3ParquetTestBase {
 
     @BeforeClass
@@ -28,8 +26,23 @@ public class S3ParquetMinIOTest extends S3ParquetTestBase {
     }
 
     @Override
-    public Map<String, String> s3Properties() {
-        return MinIO.s3Properties();
+    public String s3Endpoint() {
+        return MinIO.s3Endpoint();
+    }
+
+    @Override
+    public String region() {
+        return MinIO.region();
+    }
+
+    @Override
+    public String accessKey() {
+        return MinIO.accessKey();
+    }
+
+    @Override
+    public String secretAccessKey() {
+        return MinIO.secretAccessKey();
     }
 
     @Override

@@ -25,11 +25,6 @@ public final class SingletonContainers {
     // https://java.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
     // https://testcontainers.com/guides/testcontainers-container-lifecycle/#_using_singleton_containers
 
-    public static String S3_ENDPOINT = "s3.endpoint";
-    public static String CLIENT_REGION = "client.region";
-    public static String S3_ACCESS_KEY_ID = "s3.access-key-id";
-    public static String S3_SECRET_ACCESS_KEY = "s3.secret-access-key";
-
     public static final class LocalStack {
         private static final LocalStackContainer LOCALSTACK_S3 =
                 new LocalStackContainer(DockerImageName.parse(System.getProperty("testcontainers.localstack.image"))
@@ -60,12 +55,20 @@ public final class SingletonContainers {
                     .build();
         }
 
-        public static Map<String, String> s3Properties() {
-            return Map.of(
-                    S3_ENDPOINT, LOCALSTACK_S3.getEndpoint().toString(),
-                    CLIENT_REGION, LOCALSTACK_S3.getRegion(),
-                    S3_ACCESS_KEY_ID, LOCALSTACK_S3.getAccessKey(),
-                    S3_SECRET_ACCESS_KEY, LOCALSTACK_S3.getSecretKey());
+        public static String s3Endpoint() {
+            return LOCALSTACK_S3.getEndpoint().toString();
+        }
+
+        public static String region() {
+            return LOCALSTACK_S3.getRegion();
+        }
+
+        public static String accessKey() {
+            return LOCALSTACK_S3.getAccessKey();
+        }
+
+        public static String secretAccessKey() {
+            return LOCALSTACK_S3.getSecretKey();
         }
     }
 
@@ -102,12 +105,20 @@ public final class SingletonContainers {
                     .build();
         }
 
-        public static Map<String, String> s3Properties() {
-            return Map.of(
-                    S3_ENDPOINT, MINIO.getS3URL(),
-                    CLIENT_REGION, Region.AWS_GLOBAL.toString(),
-                    S3_ACCESS_KEY_ID, MINIO.getUserName(),
-                    S3_SECRET_ACCESS_KEY, MINIO.getPassword());
+        public static String s3Endpoint() {
+            return MINIO.getS3URL();
+        }
+
+        public static String region() {
+            return Region.AWS_GLOBAL.toString();
+        }
+
+        public static String accessKey() {
+            return MINIO.getUserName();
+        }
+
+        public static String secretAccessKey() {
+            return MINIO.getPassword();
         }
     }
 }

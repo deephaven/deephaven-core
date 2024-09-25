@@ -15,24 +15,22 @@ class S3Utils {
     /**
      * Aggregates the profile files for configuration and credentials files into a single {@link ProfileFile}.
      *
-     * @param configFilePathStr An {@link Optional} containing the path to the configuration file as a string.
-     * @param credentialsFilePathStr An {@link Optional} containing the path to the credentials file as a string.
+     * @param configFilePath An {@link Optional} containing the path to the configuration file.
+     * @param credentialsFilePath An {@link Optional} containing the path to the credentials file.
      *
      * @return A {@link ProfileFile} that aggregates the configuration and credentials files.
      */
     static ProfileFile aggregateProfileFile(
-            @NotNull final Optional<String> configFilePathStr,
-            @NotNull final Optional<String> credentialsFilePathStr) {
+            @NotNull Optional<Path> configFilePath,
+            @NotNull Optional<Path> credentialsFilePath) {
         final ProfileFile.Aggregator builder = ProfileFile.aggregator();
 
         // Add the configuration file
-        final Optional<Path> configFilePath =
-                configFilePathStr.map(Path::of).or(ProfileFileLocation::configurationFileLocation);
+        configFilePath = configFilePath.or(ProfileFileLocation::configurationFileLocation);
         configFilePath.ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CONFIGURATION, path));
 
         // Add the credentials file
-        final Optional<Path> credentialsFilePath =
-                credentialsFilePathStr.map(Path::of).or(ProfileFileLocation::credentialsFileLocation);
+        credentialsFilePath = credentialsFilePath.or(ProfileFileLocation::credentialsFileLocation);
         credentialsFilePath.ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CREDENTIALS, path));
 
         return builder.build();

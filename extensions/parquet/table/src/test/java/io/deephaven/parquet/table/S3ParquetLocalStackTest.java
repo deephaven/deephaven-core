@@ -8,8 +8,6 @@ import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import java.util.Map;
-
 public class S3ParquetLocalStackTest extends S3ParquetTestBase {
 
     @BeforeClass
@@ -24,8 +22,23 @@ public class S3ParquetLocalStackTest extends S3ParquetTestBase {
     }
 
     @Override
-    public Map<String, String> s3Properties() {
-        return LocalStack.s3Properties();
+    public String s3Endpoint() {
+        return LocalStack.s3Endpoint();
+    }
+
+    @Override
+    public String region() {
+        return LocalStack.region();
+    }
+
+    @Override
+    public String accessKey() {
+        return LocalStack.accessKey();
+    }
+
+    @Override
+    public String secretAccessKey() {
+        return LocalStack.secretAccessKey();
     }
 
     @Override

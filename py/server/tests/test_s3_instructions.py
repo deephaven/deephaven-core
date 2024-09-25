@@ -74,9 +74,9 @@ class S3InstructionTest(BaseTestCase):
     def test_set_config_file_path(self):
         with tempfile.NamedTemporaryFile() as temp_config_file:
             s3_instructions = s3.S3Instructions(config_file_path=temp_config_file.name)
-            self.assertEqual(s3_instructions.j_object.configFilePath().get(), temp_config_file.name)
+            self.assertEqual(s3_instructions.j_object.configFilePath().get().toString(), temp_config_file.name)
 
     def test_set_credentials_file_path(self):
         with tempfile.NamedTemporaryFile() as temp_credentials_file:
             s3_instructions = s3.S3Instructions(credentials_file_path=temp_credentials_file.name)
-            self.assertEqual(s3_instructions.j_object.credentialsFilePath().get(), temp_credentials_file.name)
+            self.assertEqual(s3_instructions.j_object.credentialsFilePath().get().toString(), temp_credentials_file.name)

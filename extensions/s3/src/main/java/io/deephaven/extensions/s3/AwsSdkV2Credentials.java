@@ -9,5 +9,8 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 @InternalUseOnly
 public interface AwsSdkV2Credentials extends Credentials {
 
-    AwsCredentialsProvider awsV2CredentialsProvider();
+    /**
+     * Get the AWS credentials provider based on the given instructions.
+     */
+    AwsCredentialsProvider awsV2CredentialsProvider(S3Instructions instructions);
 }
