@@ -148,6 +148,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * The default profile name used for configuring the default region, credentials, etc., when reading or writing to
      * S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile' system property, the "AWS_PROFILE"
      * environment variable, or defaults to "default".
+     * <p>
+     * Setting a profile name assumes that the credentials are provided via this profile; if that is not the case, you
+     * must explicitly set credentials.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileName(String)
      */
@@ -157,6 +160,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * The path to the configuration file to use for configuring the default region, credentials, etc. when reading or
      * writing to S3. If not provided, the AWS SDK picks the configuration file from the 'aws.configFile' system
      * property, the "AWS_CONFIG_FILE" environment variable, or defaults to "{user.home}/.aws/config".
+     * <p>
+     * Setting a configuration file path assumes that the credentials are provided via the configuration and credentials
+     * files; if that is not the case, you must explicitly set credentials.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */
@@ -166,6 +172,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * The path to the credentials file to use for configuring the default region, credentials, etc. when reading or
      * writing to S3. If not provided, the AWS SDK picks the credentials file from the 'aws.credentialsFile' system
      * property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to "{user.home}/.aws/credentials".
+     * <p>
+     * Setting a credentials file path assumes that the credentials are provided via the config and credentials files;
+     * if that is not the case, you must explicitly set credentials.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */
@@ -174,6 +183,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     /**
      * The aggregated profile file that combines the configuration and credentials files.
      */
+    @Lazy
     final Optional<ProfileFile> aggregatedProfileFile() {
         if (aggregatedProfileFile != null) {
             return aggregatedProfileFile;
@@ -238,7 +248,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         default Builder credentialsFilePath(final String credentialsFilePath) {
             return credentialsFilePath(Path.of(credentialsFilePath));
-        };
+        }
 
         S3Instructions build();
     }

@@ -21,17 +21,17 @@ class S3Utils {
      * @return A {@link ProfileFile} that aggregates the configuration and credentials files.
      */
     static ProfileFile aggregateProfileFile(
-            @NotNull Optional<Path> configFilePath,
-            @NotNull Optional<Path> credentialsFilePath) {
+            @NotNull final Optional<Path> configFilePath,
+            @NotNull final Optional<Path> credentialsFilePath) {
         final ProfileFile.Aggregator builder = ProfileFile.aggregator();
 
-        // Add the configuration file
-        configFilePath = configFilePath.or(ProfileFileLocation::configurationFileLocation);
-        configFilePath.ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CONFIGURATION, path));
-
         // Add the credentials file
-        credentialsFilePath = credentialsFilePath.or(ProfileFileLocation::credentialsFileLocation);
-        credentialsFilePath.ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CREDENTIALS, path));
+        credentialsFilePath.or(ProfileFileLocation::credentialsFileLocation)
+                .ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CREDENTIALS, path));
+
+        // Add the configuration file
+        configFilePath.or(ProfileFileLocation::configurationFileLocation)
+                .ifPresent(path -> addProfileFile(builder, ProfileFile.Type.CONFIGURATION, path));
 
         return builder.build();
     }
@@ -42,7 +42,7 @@ class S3Utils {
             @NotNull final Path path) {
         builder.addFile(ProfileFile.builder()
                 .type(type)
-                .content(path.toAbsolutePath())
+                .content(path)
                 .build());
     }
 }

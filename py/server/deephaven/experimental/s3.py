@@ -90,14 +90,20 @@ class S3Instructions(JObjectWrapper):
             profile_name (str): the default profile name used for configuring the default region, credentials, etc.,
                 when reading or writing to S3. If not provided, the AWS SDK picks the profile name from the
                 'aws.profile' system property, the "AWS_PROFILE" environment variable, or defaults to "default".
+                Setting a profile name assumes that the credentials are provided via this profile; if that is not the
+                case, you must explicitly set credentials.
             config_file_path (str): the path to the configuration file to use for configuring the default region,
                 credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
                 file from the 'aws.configFile' system property, the "AWS_CONFIG_FILE" environment variable, or defaults
                 to "{user.home}/.aws/config".
+                Setting a configuration file path assumes that the credentials are provided via the config and
+                credentials files; if that is not the case, you must explicitly set credentials.
             credentials_file_path (str): the path to the credentials file to use for configuring the default region,
                 credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file
                 from the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or
                 defaults to "{user.home}/.aws/credentials".
+                Setting a credentials file path assumes that the credentials are provided via the config and
+                credentials files; if that is not the case, you must explicitly set credentials.
 
         Raises:
             DHError: If unable to build the instructions object.
