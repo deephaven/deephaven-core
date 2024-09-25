@@ -31,7 +31,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
   symlink:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
-    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
+    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc, protodoc]
     runs-on: ubuntu-22.04
     steps:
       - name: Make Symlinks
