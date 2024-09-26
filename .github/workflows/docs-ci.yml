@@ -426,7 +426,7 @@ jobs:
           cat gradle.properties
 
       - name: Generate Protobuf Docs
-        run: ./gradlew generateProtobuf
+        run: ./gradlew --scan outputVersion :proto:proto-backplane-grpc:generateProtobuf
 
       - name: Get Deephaven Version
         id: dhc-version
