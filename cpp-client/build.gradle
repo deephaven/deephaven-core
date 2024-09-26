@@ -24,10 +24,6 @@ spotless {
 evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
 evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 
-configurations {
-    cpp {}
-}
-
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
