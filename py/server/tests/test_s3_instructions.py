@@ -89,9 +89,9 @@ class S3InstructionTest(BaseTestCase):
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(anonymous_access=True, aws_default_credentials=True)
+            s3.S3Instructions(anonymous_access=True, default_credentials=True)
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(profile_credentials=True, aws_default_credentials=True)
+            s3.S3Instructions(profile_credentials=True, default_credentials=True)
             self.fail("Expected ValueError")

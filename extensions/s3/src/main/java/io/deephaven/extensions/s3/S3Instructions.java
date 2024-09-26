@@ -109,11 +109,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#defaultCredentials()}.
+     * The credentials to use when reading or writing to S3. By default, uses
+     * {@link Credentials#resolvingCredentials()}.
      */
     @Default
     public Credentials credentials() {
-        return Credentials.defaultCredentials();
+        return Credentials.resolvingCredentials();
     }
 
     /**
@@ -144,7 +145,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * environment variable, or defaults to "default".
      * <p>
      * Setting a profile name assumes that the credentials are provided via this profile; if that is not the case, you
-     * must explicitly set credentials.
+     * must explicitly set {@link #credentials() credentials}.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileName(String)
      */
@@ -156,7 +157,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * property, the "AWS_CONFIG_FILE" environment variable, or defaults to "{user.home}/.aws/config".
      * <p>
      * Setting a configuration file path assumes that the credentials are provided via the configuration and credentials
-     * files; if that is not the case, you must explicitly set credentials.
+     * files; if that is not the case, you must explicitly set {@link #credentials() credentials}.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */
@@ -168,7 +169,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to "{user.home}/.aws/credentials".
      * <p>
      * Setting a credentials file path assumes that the credentials are provided via the config and credentials files;
-     * if that is not the case, you must explicitly set credentials.
+     * if that is not the case, you must explicitly set {@link #credentials() credentials}.
      *
      * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
      */

@@ -10,7 +10,7 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 public interface Credentials {
 
     /**
-     * Default AWS credentials provider that looks for credentials in the following order:
+     * Default credentials provider used by Deephaven which resolves credentials in the following order:
      * <ol>
      * <li>If a profile name, config file path, or credentials file path is provided, use
      * {@link ProfileCredentialsProvider}</li>
@@ -22,18 +22,18 @@ public interface Credentials {
      * @see DefaultCredentialsProvider
      * @see AnonymousCredentialsProvider
      */
-    static Credentials defaultCredentials() {
-        return DeephavenDefaultCredentials.INSTANCE;
+    static Credentials resolvingCredentials() {
+        return ResolvingCredentials.INSTANCE;
     }
 
     /**
-     * Default AWS credentials provider that looks for credentials at a number of locations as described in
-     * {@link DefaultCredentialsProvider}
+     * Default credentials provider used by the AWS SDK that looks for credentials at a number of locations as described
+     * in {@link DefaultCredentialsProvider}
      *
      * @see DefaultCredentialsProvider
      */
-    static Credentials awsDefaultCredentials() {
-        return AWSDefaultCredentials.INSTANCE;
+    static Credentials defaultCredentials() {
+        return DefaultCredentials.INSTANCE;
     }
 
     /**

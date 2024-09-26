@@ -47,7 +47,7 @@ class S3Instructions(JObjectWrapper):
                  config_file_path: Optional[str] = None,
                  credentials_file_path: Optional[str] = None,
                  profile_credentials: bool = False,
-                 aws_default_credentials: bool = False):
+                 default_credentials: bool = False):
 
         """
         Initializes the instructions.
@@ -108,7 +108,7 @@ class S3Instructions(JObjectWrapper):
                 credentials files; if that is not the case, you must explicitly set credentials.
             profile_credentials (bool): use the profile name to load the credentials from the config and credentials
                 file and fail if none found. Default is False. Cannot be combined with other credentials.
-            aws_default_credentials (bool): use the default AWS SDK behavior to load credentials  from the environment,
+            default_credentials (bool): use the default AWS SDK behavior to load credentials  from the environment,
                 system properties, or instance profile credentials. Default is False. Cannot be combined with other
                 credentials.
 
@@ -152,8 +152,8 @@ class S3Instructions(JObjectWrapper):
                 builder.credentials(_JCredentials.anonymous())
             if profile_credentials:
                 builder.credentials(_JCredentials.profile())
-            if aws_default_credentials:
-                builder.credentials(_JCredentials.awsDefaultCredentials())
+            if default_credentials:
+                builder.credentials(_JCredentials.defaultCredentials())
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)

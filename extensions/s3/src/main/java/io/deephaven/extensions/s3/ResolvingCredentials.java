@@ -11,7 +11,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 
 /**
- * Default AWS credentials provider used by Deephaven that looks for credentials in the following order:
+ * Default credentials provider used by Deephaven which resolves credentials in the following order:
  * <ol>
  * <li>If a profile name, config file path, or credentials file path is provided, use
  * {@link ProfileCredentialsProvider}</li>
@@ -23,11 +23,10 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
  * @see DefaultCredentialsProvider
  * @see AnonymousCredentialsProvider
  */
-enum DeephavenDefaultCredentials implements AwsSdkV2Credentials {
+enum ResolvingCredentials implements AwsSdkV2Credentials {
     INSTANCE;
 
     private static final AwsCredentialsProviderChain PROVIDER_CHAIN = AwsCredentialsProviderChain.builder()
-            .reuseLastProviderEnabled(true)
             .credentialsProviders(new AwsCredentialsProvider[] {
                     DefaultCredentialsProvider.create(),
                     AnonymousCredentialsProvider.create()
@@ -36,8 +35,9 @@ enum DeephavenDefaultCredentials implements AwsSdkV2Credentials {
 
     @Override
     public final AwsCredentialsProvider awsV2CredentialsProvider(@NotNull final S3Instructions instructions) {
-        if (instructions.profileName().isPresent() || instructions.configFilePath().isPresent() ||
-                instructions.credentialsFilePath().isPresent()) {
+        if (instructions.profileName().isPresent()
+                || instructions.configFilePath().isPresent()
+                || instructions.credentialsFilePath().isPresent()) {
             return ProfileCredentials.INSTANCE.awsV2CredentialsProvider(instructions);
         }
         return PROVIDER_CHAIN;

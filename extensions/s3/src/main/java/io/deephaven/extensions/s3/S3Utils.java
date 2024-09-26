@@ -22,6 +22,7 @@ class S3Utils {
      *
      * @return A {@link ProfileFile} that aggregates the configuration and credentials files.
      */
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     static ProfileFile aggregateProfileFile(
             @NotNull final Optional<Path> configFilePath,
             @NotNull final Optional<Path> credentialsFilePath) {
