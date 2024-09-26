@@ -31,8 +31,6 @@ foreach(PROTO_FILE ${PROTO_FILES})
   )
 endforeach()
 
-set(PROTOC_BIN "$ENV{DHCPP}/bin")
-
 add_custom_command(
   OUTPUT ${PROTO_GEN_FILES}
   COMMAND mkdir
