@@ -179,7 +179,10 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     @Lazy
     Optional<ProfileFile> aggregatedProfileFile() {
-        return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
+        if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
+            return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
+        }
+        return Optional.empty();
     }
 
     @Override

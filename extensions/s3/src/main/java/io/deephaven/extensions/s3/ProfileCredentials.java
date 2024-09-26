@@ -8,7 +8,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 
 /**
- * Profile specific credentials that uses a custom profile name or profile file.
+ * Profile specific credentials that uses a profile file.
  *
  * @see ProfileCredentialsProvider
  */

@@ -33,6 +33,7 @@ public class S3InstructionsTest {
         assertThat(instructions.profileName()).isEmpty();
         assertThat(instructions.configFilePath()).isEmpty();
         assertThat(instructions.credentialsFilePath()).isEmpty();
+        assertThat(instructions.aggregatedProfileFile()).isEmpty();
     }
 
     @Test

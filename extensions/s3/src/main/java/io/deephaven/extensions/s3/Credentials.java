@@ -54,7 +54,7 @@ public interface Credentials {
     }
 
     /**
-     * Profile specific credentials that uses a custom profile name, configuration file or credentials file.
+     * Profile specific credentials that uses configuration and credentials files.
      *
      * @see ProfileCredentialsProvider
      */

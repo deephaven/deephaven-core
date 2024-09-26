@@ -77,9 +77,7 @@ class S3AsyncClientFactory {
                 // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
                 .scheduledExecutorService(ensureScheduledExecutor());
         instructions.profileName().ifPresent(overrideConfiguration::defaultProfileName);
-        if (instructions.configFilePath().isPresent() || instructions.credentialsFilePath().isPresent()) {
-            overrideConfiguration.defaultProfileFile(instructions.aggregatedProfileFile().get());
-        }
+        instructions.aggregatedProfileFile().ifPresent(overrideConfiguration::defaultProfileFile);
         builder.overrideConfiguration(overrideConfiguration.build());
 
         if (instructions.regionName().isPresent()) {

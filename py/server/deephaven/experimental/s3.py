@@ -145,25 +145,15 @@ class S3Instructions(JObjectWrapper):
                     (access_key_id is None and secret_access_key is not None)):
                 raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
-            credentials_used = []
+            # Only one of the following credentials can be set, otherwise the builder will throw an exception
             if access_key_id is not None:
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
-                credentials_used.append("access_key_id")
-
             if anonymous_access:
                 builder.credentials(_JCredentials.anonymous())
-                credentials_used.append("anonymous_access")
-
             if profile_credentials:
                 builder.credentials(_JCredentials.profile())
-                credentials_used.append("profile_credentials")
-
             if aws_default_credentials:
                 builder.credentials(_JCredentials.awsDefaultCredentials())
-                credentials_used.append("aws_default_credentials")
-
-            if len(credentials_used) > 1:
-                raise DHError(f"Only one set of credentials may be used, requested {', '.join(credentials_used)}")
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
