@@ -79,6 +79,7 @@ univocity = "2.6.0"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "1.12.0-1"
 vertispan-ts-defs = "1.0.0-RC4"
+xerial = "3.46.1.3"
 
 # test versions
 assertj = "3.19.0"
@@ -292,6 +293,8 @@ vertispan-flatbuffers-gwt = { module = "com.vertispan.flatbuffers:flatbuffers-gw
 
 vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-annotations", version.ref = "vertispan-ts-defs" }
 vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }
+
+xerial-sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "xerial" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
