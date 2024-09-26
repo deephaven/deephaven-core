@@ -19,15 +19,27 @@ set(PROTO_GEN_DIR
   "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/proto")
 set(PROTO_OUT_DIR "${PROTO_GEN_DIR}/deephaven/proto")
 
-file(GLOB PROTO_FILES "${PROTO_SRC_DIR}/deephaven/proto/*.proto")
+set(PROTO_FILES
+    "${PROTO_SRC_DIR}/deephaven/proto/application.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/config.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/console.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/hierarchicaltable.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/inputtable.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/object.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/partitionedtable.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/session.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/storage.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/table.proto"
+    "${PROTO_SRC_DIR}/deephaven/proto/ticket.proto"
+)
 
 foreach(PROTO_FILE ${PROTO_FILES})
   get_filename_component(BASENAME ${PROTO_FILE} NAME_WLE)
   list(APPEND PROTO_GEN_FILES
-    "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.cc"
-    "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.h"
-    "${PROTO_OUT_DIR}/${BASENAME}.pb.cc"
-    "${PROTO_OUT_DIR}/${BASENAME}.pb.h"
+      "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.cc"
+      "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.h"
+      "${PROTO_OUT_DIR}/${BASENAME}.pb.cc"
+      "${PROTO_OUT_DIR}/${BASENAME}.pb.h"
   )
 endforeach()
 
