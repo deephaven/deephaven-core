@@ -52,4 +52,13 @@ public interface Credentials {
     static Credentials anonymous() {
         return AnonymousCredentials.ANONYMOUS_CREDENTIALS;
     }
+
+    /**
+     * Profile specific credentials that uses a custom profile name, configuration file or credentials file.
+     *
+     * @see ProfileCredentialsProvider
+     */
+    static Credentials profile() {
+        return ProfileCredentials.INSTANCE;
+    }
 }

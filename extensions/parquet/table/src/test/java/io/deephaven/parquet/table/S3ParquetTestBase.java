@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -537,6 +538,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
                     .configFilePath(tempConfigFile.toString())
+                    .credentials(Credentials.profile())
                     .build();
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .setSpecialInstructions(s3Instructions)
@@ -574,6 +576,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                     .profileName("test-user")
                     .credentialsFilePath(tempCredentialsFile.toString())
                     .configFilePath(tempConfigFile.toString())
+                    .credentials(Credentials.profile())
                     .build();
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .setSpecialInstructions(s3Instructions)

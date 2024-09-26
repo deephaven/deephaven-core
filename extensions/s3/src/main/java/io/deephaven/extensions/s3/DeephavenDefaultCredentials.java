@@ -37,10 +37,7 @@ enum DeephavenDefaultCredentials implements AwsSdkV2Credentials {
     @Override
     public final AwsCredentialsProvider awsV2CredentialsProvider(@NotNull final S3Instructions instructions) {
         if (instructions.profileName().isPresent() || instructions.aggregatedProfileFile().isPresent()) {
-            final ProfileCredentialsProvider.Builder builder = ProfileCredentialsProvider.builder();
-            instructions.profileName().ifPresent(builder::profileName);
-            instructions.aggregatedProfileFile().ifPresent(builder::profileFile);
-            return builder.build();
+            return ProfileCredentials.INSTANCE.awsV2CredentialsProvider(instructions);
         }
         return PROVIDER_CHAIN;
     }

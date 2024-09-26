@@ -308,6 +308,17 @@ public abstract class S3Instructions implements LogOutputAppendable {
         }
     }
 
+    @Check
+    final void profileCredentialsCheck() {
+        if (credentials() instanceof ProfileCredentials) {
+            if (profileName().isEmpty() && configFilePath().isEmpty() && credentialsFilePath().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Profile name, config file path or credentials file path must be provided for using profile " +
+                                "credentials");
+            }
+        }
+    }
+
     final AwsCredentialsProvider awsV2CredentialsProvider() {
         return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
     }

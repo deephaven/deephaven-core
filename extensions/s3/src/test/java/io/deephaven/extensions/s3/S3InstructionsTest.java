@@ -257,4 +257,16 @@ public class S3InstructionsTest {
             assertThat(e).hasMessageContaining("/some/random/path");
         }
     }
+
+    @Test
+    void testSetProfileCredentials() {
+        try {
+            S3Instructions.builder()
+                    .credentials(Credentials.profile())
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("profile credentials");
+        }
+    }
 }
