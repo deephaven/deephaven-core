@@ -276,7 +276,7 @@ def adapter(
     ```
     from deephaven.experimental import iceberg
 
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
+    adapter = iceberg.adapter(name="generic-adapter", properties={
         "type" : "rest",
         "uri" : "http://rest:8181",
         "client.region" : "us-east-1",
@@ -291,7 +291,7 @@ def adapter(
     from deephaven.experimental import iceberg
 
     ## Note: region and credential information are loaded by the catalog from the environment
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
+    adapter = iceberg.adapter(name="generic-adapter", properties={
         "type" : "glue",
         "uri" : "s3://lab-warehouse/sales",
     });
