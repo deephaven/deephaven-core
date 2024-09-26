@@ -23,7 +23,7 @@ file(GLOB PROTO_FILES "${PROTO_SRC_DIR}/deephaven/proto/*.proto")
 
 foreach(PROTO_FILE ${PROTO_FILES})
   get_filename_component(BASENAME ${PROTO_FILE} NAME_WLE)
-  list(APPEND PROTO_GEN_SOURCES
+  list(APPEND PROTO_GEN_FILES
     "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.cc"
     "${PROTO_OUT_DIR}/${BASENAME}.grpc.pb.h"
     "${PROTO_OUT_DIR}/${BASENAME}.pb.cc"
@@ -34,7 +34,7 @@ endforeach()
 set(PROTOC_BIN "$ENV{DHCPP}/bin")
 
 add_custom_command(
-  OUTPUT ${PROTO_GEN_SOURCES}
+  OUTPUT ${PROTO_GEN_FILES}
   COMMAND mkdir
   ARGS -p "${PROTO_OUT_DIR}"
   COMMAND protobuf::protoc
@@ -101,7 +101,7 @@ set(ALL_FILES
     include/public/deephaven/client/utility/table_maker.h
 )
 
-list(APPEND ALL_FILES ${PROTO_GEN_SOURCES})
+list(APPEND ALL_FILES ${PROTO_GEN_FILES})
 
 add_library(dhclient SHARED ${ALL_FILES})
 
