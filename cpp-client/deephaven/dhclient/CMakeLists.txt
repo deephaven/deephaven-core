@@ -99,43 +99,6 @@ set(ALL_FILES
     include/public/deephaven/client/utility/arrow_util.h
     include/public/deephaven/client/utility/misc_types.h
     include/public/deephaven/client/utility/table_maker.h
-
-    ${PROTO_OUT_DIR}/application.grpc.pb.cc
-    ${PROTO_OUT_DIR}/application.grpc.pb.h
-    ${PROTO_OUT_DIR}/application.pb.cc
-    ${PROTO_OUT_DIR}/application.pb.h
-    ${PROTO_OUT_DIR}/config.grpc.pb.cc
-    ${PROTO_OUT_DIR}/config.grpc.pb.h
-    ${PROTO_OUT_DIR}/config.pb.cc
-    ${PROTO_OUT_DIR}/config.pb.h
-    ${PROTO_OUT_DIR}/console.grpc.pb.cc
-    ${PROTO_OUT_DIR}/console.grpc.pb.h
-    ${PROTO_OUT_DIR}/console.pb.cc
-    ${PROTO_OUT_DIR}/console.pb.h
-    ${PROTO_OUT_DIR}/inputtable.grpc.pb.cc
-    ${PROTO_OUT_DIR}/inputtable.grpc.pb.h
-    ${PROTO_OUT_DIR}/inputtable.pb.cc
-    ${PROTO_OUT_DIR}/inputtable.pb.h
-    ${PROTO_OUT_DIR}/object.grpc.pb.cc
-    ${PROTO_OUT_DIR}/object.grpc.pb.h
-    ${PROTO_OUT_DIR}/object.pb.cc
-    ${PROTO_OUT_DIR}/object.pb.h
-    ${PROTO_OUT_DIR}/partitionedtable.grpc.pb.cc
-    ${PROTO_OUT_DIR}/partitionedtable.grpc.pb.h
-    ${PROTO_OUT_DIR}/partitionedtable.pb.cc
-    ${PROTO_OUT_DIR}/partitionedtable.pb.h
-    ${PROTO_OUT_DIR}/session.grpc.pb.cc
-    ${PROTO_OUT_DIR}/session.grpc.pb.h
-    ${PROTO_OUT_DIR}/session.pb.cc
-    ${PROTO_OUT_DIR}/session.pb.h
-    ${PROTO_OUT_DIR}/table.grpc.pb.cc
-    ${PROTO_OUT_DIR}/table.grpc.pb.h
-    ${PROTO_OUT_DIR}/table.pb.cc
-    ${PROTO_OUT_DIR}/table.pb.h
-    ${PROTO_OUT_DIR}/ticket.grpc.pb.cc
-    ${PROTO_OUT_DIR}/ticket.grpc.pb.h
-    ${PROTO_OUT_DIR}/ticket.pb.cc
-    ${PROTO_OUT_DIR}/ticket.pb.h
 )
 
 list(APPEND ALL_FILES ${PROTO_GEN_SOURCES})
