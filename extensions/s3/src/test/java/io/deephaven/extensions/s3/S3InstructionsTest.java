@@ -33,7 +33,6 @@ public class S3InstructionsTest {
         assertThat(instructions.profileName()).isEmpty();
         assertThat(instructions.configFilePath()).isEmpty();
         assertThat(instructions.credentialsFilePath()).isEmpty();
-        assertThat(instructions.aggregatedProfileFile()).isEmpty();
     }
 
     @Test
@@ -255,18 +254,6 @@ public class S3InstructionsTest {
             fail("Expected exception");
         } catch (IllegalStateException e) {
             assertThat(e).hasMessageContaining("/some/random/path");
-        }
-    }
-
-    @Test
-    void testSetProfileCredentials() {
-        try {
-            S3Instructions.builder()
-                    .credentials(Credentials.profile())
-                    .build();
-            fail("Expected exception");
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("profile credentials");
         }
     }
 }

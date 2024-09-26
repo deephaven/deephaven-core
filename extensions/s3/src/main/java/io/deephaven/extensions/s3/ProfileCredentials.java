@@ -17,9 +17,6 @@ enum ProfileCredentials implements AwsSdkV2Credentials {
 
     @Override
     public final AwsCredentialsProvider awsV2CredentialsProvider(@NotNull final S3Instructions instructions) {
-        if (instructions.profileName().isEmpty() && instructions.aggregatedProfileFile().isEmpty()) {
-            throw new IllegalArgumentException("Profile name or profile file must be provided for profile credentials");
-        }
         final ProfileCredentialsProvider.Builder builder = ProfileCredentialsProvider.builder();
         instructions.profileName().ifPresent(builder::profileName);
         instructions.aggregatedProfileFile().ifPresent(builder::profileFile);

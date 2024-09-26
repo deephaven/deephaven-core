@@ -45,7 +45,9 @@ class S3Instructions(JObjectWrapper):
                  num_concurrent_write_parts: Optional[int] = None,
                  profile_name: Optional[str] = None,
                  config_file_path: Optional[str] = None,
-                 credentials_file_path: Optional[str] = None):
+                 credentials_file_path: Optional[str] = None,
+                 profile_credentials: bool = False,
+                 aws_default_credentials: bool = False):
 
         """
         Initializes the instructions.
@@ -104,6 +106,11 @@ class S3Instructions(JObjectWrapper):
                 defaults to "{user.home}/.aws/credentials".
                 Setting a credentials file path assumes that the credentials are provided via the config and
                 credentials files; if that is not the case, you must explicitly set credentials.
+            profile_credentials (bool): use the profile name to load the credentials from the config and credentials
+                file and fail if none found. Default is False. Cannot be combined with other credentials.
+            aws_default_credentials (bool): use the default AWS SDK behavior to load credentials  from the environment,
+                system properties, or instance profile credentials. Default is False. Cannot be combined with other
+                credentials.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -138,12 +145,25 @@ class S3Instructions(JObjectWrapper):
                     (access_key_id is None and secret_access_key is not None)):
                 raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
+            credentials_used = []
             if access_key_id is not None:
-                if anonymous_access:
-                    raise DHError("Only one set of credentials may be used, requested both key and anonymous")
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
-            elif anonymous_access:
+                credentials_used.append("access_key_id")
+
+            if anonymous_access:
                 builder.credentials(_JCredentials.anonymous())
+                credentials_used.append("anonymous_access")
+
+            if profile_credentials:
+                builder.credentials(_JCredentials.profile())
+                credentials_used.append("profile_credentials")
+
+            if aws_default_credentials:
+                builder.credentials(_JCredentials.awsDefaultCredentials())
+                credentials_used.append("aws_default_credentials")
+
+            if len(credentials_used) > 1:
+                raise DHError(f"Only one set of credentials may be used, requested {', '.join(credentials_used)}")
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)

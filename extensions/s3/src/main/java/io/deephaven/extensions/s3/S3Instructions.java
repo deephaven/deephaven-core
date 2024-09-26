@@ -179,10 +179,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
      */
     @Lazy
     Optional<ProfileFile> aggregatedProfileFile() {
-        if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
-            return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
-        }
-        return Optional.empty();
+        return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
     }
 
     @Override
@@ -305,17 +302,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
             throw new IllegalArgumentException(
                     "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be <= " +
                             "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
-        }
-    }
-
-    @Check
-    final void profileCredentialsCheck() {
-        if (credentials() instanceof ProfileCredentials) {
-            if (profileName().isEmpty() && configFilePath().isEmpty() && credentialsFilePath().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Profile name, config file path or credentials file path must be provided for using profile " +
-                                "credentials");
-            }
         }
     }
 

@@ -4,6 +4,7 @@
 import tempfile
 
 from tests.testbase import BaseTestCase
+from deephaven import DHError
 from deephaven.experimental import s3
 
 class S3InstructionTest(BaseTestCase):
@@ -73,10 +74,24 @@ class S3InstructionTest(BaseTestCase):
 
     def test_set_config_file_path(self):
         with tempfile.NamedTemporaryFile() as temp_config_file:
-            s3_instructions = s3.S3Instructions(config_file_path=temp_config_file.name)
+            s3_instructions = s3.S3Instructions(config_file_path=temp_config_file.name, profile_credentials=True)
             self.assertEqual(s3_instructions.j_object.configFilePath().get().toString(), temp_config_file.name)
 
     def test_set_credentials_file_path(self):
         with tempfile.NamedTemporaryFile() as temp_credentials_file:
             s3_instructions = s3.S3Instructions(credentials_file_path=temp_credentials_file.name)
             self.assertEqual(s3_instructions.j_object.credentialsFilePath().get().toString(), temp_credentials_file.name)
+
+    def test_set_multiple_credentials(self):
+        # Only one set of credentials can be set
+        with self.assertRaises(DHError):
+            s3_instructions = s3.S3Instructions(anonymous_access=True, profile_credentials=True)
+            self.fail("Expected ValueError")
+
+        with self.assertRaises(DHError):
+            s3_instructions = s3.S3Instructions(anonymous_access=True, aws_default_credentials=True)
+            self.fail("Expected ValueError")
+
+        with self.assertRaises(DHError):
+            s3_instructions = s3.S3Instructions(profile_credentials=True, aws_default_credentials=True)
+            self.fail("Expected ValueError")

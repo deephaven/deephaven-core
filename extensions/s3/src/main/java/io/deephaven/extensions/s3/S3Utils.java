@@ -15,8 +15,10 @@ class S3Utils {
     /**
      * Aggregates the profile files for configuration and credentials files into a single {@link ProfileFile}.
      *
-     * @param configFilePath An {@link Optional} containing the path to the configuration file.
-     * @param credentialsFilePath An {@link Optional} containing the path to the credentials file.
+     * @param configFilePath An {@link Optional} containing the path to the configuration file. If empty, the aws sdk
+     *        default location is used.
+     * @param credentialsFilePath An {@link Optional} containing the path to the credentials file, If empty, the aws sdk
+     *        default location is used.
      *
      * @return A {@link ProfileFile} that aggregates the configuration and credentials files.
      */
