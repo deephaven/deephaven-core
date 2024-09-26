@@ -45,8 +45,8 @@ endforeach()
 
 add_custom_command(
   OUTPUT ${PROTO_GEN_FILES}
-  COMMAND mkdir
-  ARGS -p "${PROTO_OUT_DIR}"
+  COMMAND "${CMAKE_COMMAND}"
+  ARGS -E make_directory "${PROTO_OUT_DIR}"
   COMMAND protobuf::protoc
   ARGS "--plugin=protoc-gen-grpc=\$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
        "--cpp_out=${PROTO_GEN_DIR}"
