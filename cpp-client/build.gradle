@@ -27,28 +27,6 @@ evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 configurations {
     cpp {}
 }
-dependencies {
-    cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
-}
-def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
-def compare = tasks.register('compareProtobuf', DiffTask) {
-    expectedContents.set configurations.cpp
-    actualContents {
-        directory protoSourceDir
-    }
-    generateTask.set ':cpp-client:updateProtobuf'
-}
-// Need to disable until the proto base image can catch up to protobuf 28.2
-tasks.getByName('compareProtobuf').enabled = false
-
-// fail a "check" build if these are out of date
-tasks.getByName('quick').dependsOn(compare)
-
-tasks.register('updateProtobuf', Sync) {
-    finalizedBy compare
-    from configurations.cpp
-    into protoSourceDir
-}
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
