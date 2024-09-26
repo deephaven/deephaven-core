@@ -17,8 +17,6 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator {
@@ -65,7 +63,7 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
      */
     public BasePrimitiveEMOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

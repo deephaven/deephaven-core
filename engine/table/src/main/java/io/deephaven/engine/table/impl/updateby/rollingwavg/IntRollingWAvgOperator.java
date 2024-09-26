@@ -15,8 +15,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -68,7 +66,7 @@ public class IntRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
 
     public IntRollingWAvgOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -94,16 +92,5 @@ public class IntRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         // region extra-copy-args
         // endregion extra-copy-args
         );
-    }
-
-    /**
-     * Get the names of the input column(s) for this operator.
-     *
-     * @return the names of the input column
-     */
-    @NotNull
-    @Override
-    protected String[] getInputColumnNames() {
-        return new String[] {pair.rightColumn, weightColumnName};
     }
 }

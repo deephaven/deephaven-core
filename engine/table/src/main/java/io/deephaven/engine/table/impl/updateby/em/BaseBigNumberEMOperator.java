@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.util.Collection;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -84,7 +83,7 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
      */
     public BaseBigNumberEMOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

@@ -42,7 +42,7 @@ public abstract class UpdateByOperator {
     protected final MatchPair pair;
 
     // Input columns for this operator. Must be dynamic to support discovery (e.g. formula columns).
-    protected final Collection<String> affectingColumns;
+    protected final String[] affectingColumns;
 
     protected final long reverseWindowScaleUnits;
     protected final long forwardWindowScaleUnits;
@@ -132,15 +132,16 @@ public abstract class UpdateByOperator {
         protected abstract void reset();
     }
 
-    protected UpdateByOperator(@NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+    protected UpdateByOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final boolean isWindowed) {
         this.pair = pair;
         // Create a mutable copy of the provided collection
-        this.affectingColumns = new ArrayList<>(affectingColumns);
+        this.affectingColumns = affectingColumns;
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;
         this.forwardWindowScaleUnits = forwardWindowScaleUnits;
@@ -218,17 +219,8 @@ public abstract class UpdateByOperator {
      * @return an array of column names that affect this operator.
      */
     @NotNull
-    protected Collection<String> getAffectingColumnNames() {
-        return Collections.unmodifiableCollection(affectingColumns);
-    }
-
-    /**
-     * Add to the list of columns that affect the operator results
-     *
-     * @param names the names of additional columns that affect this operator
-     */
-    protected void addAffectingColumnNames(final String... names) {
-        affectingColumns.addAll(Arrays.asList(names));
+    protected String[] getAffectingColumnNames() {
+        return affectingColumns;
     }
 
     /**
@@ -287,7 +279,7 @@ public abstract class UpdateByOperator {
      * Create the modified column set for the input columns of this operator.
      */
     protected void createInputModifiedColumnSet(@NotNull final QueryTable source) {
-        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames().toArray(new String[0]));
+        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
     }
 
     /**

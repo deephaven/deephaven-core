@@ -45,7 +45,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
     }
 
     public BaseObjectBinaryOperator(@NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @NotNull final Class<T> type) {
         super(pair, affectingColumns, type);
     }

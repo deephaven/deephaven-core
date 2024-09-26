@@ -26,7 +26,6 @@ import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
@@ -155,7 +154,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     public BooleanRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -170,7 +169,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
 
     protected BooleanRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

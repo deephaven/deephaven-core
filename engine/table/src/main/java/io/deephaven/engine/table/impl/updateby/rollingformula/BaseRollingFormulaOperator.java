@@ -25,7 +25,6 @@ import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.IntConsumer;
@@ -90,7 +89,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
 
     public BaseRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -123,7 +122,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
 
     protected BaseRollingFormulaOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -173,8 +172,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
                     "Output chunk type should not be Boolean but should have been reinterpreted to byte");
         }
         if (chunkType == ChunkType.Byte) {
+            final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
             return i -> {
-                final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
                 writableChunk.set(i, formulaOutputSource.getByte(0));
             };
         }

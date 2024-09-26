@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
  * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
  * determination of storage indices through a mask operation.
  */
-public class DoubleRingBuffer implements Serializable {
+public class DoubleRingBuffer implements RingBuffer, Serializable {
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
     double[] storage;
@@ -99,26 +99,32 @@ public class DoubleRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
+    @Override
     public boolean isFull() {
         return size() == storage.length;
     }
 
+    @Override
     public boolean isEmpty() {
         return tail == head;
     }
 
+    @Override
     public int size() {
         return Math.toIntExact(tail - head);
     }
 
+    @Override
     public int capacity() {
         return storage.length;
     }
 
+    @Override
     public int remaining() {
         return storage.length - size();
     }
 
+    @Override
     public void clear() {
         tail = head = 0;
     }

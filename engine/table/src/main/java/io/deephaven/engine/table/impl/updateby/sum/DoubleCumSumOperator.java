@@ -16,8 +16,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -49,7 +47,7 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleCumSumOperator(@NotNull final MatchPair pair) {
-        super(pair, Collections.singleton(pair.rightColumn));
+        super(pair, new String[] {pair.rightColumn});
     }
 
     @Override

@@ -29,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -155,7 +154,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      */
     public BaseByteUpdateByOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns
+            @NotNull final String[] affectingColumns
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
@@ -177,7 +176,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      */
     public BaseByteUpdateByOperator(
             @NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

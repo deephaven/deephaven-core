@@ -22,7 +22,6 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -231,7 +230,7 @@ public class RollingGroupOperator extends UpdateByOperator {
     @SuppressWarnings("unused")
     public RollingGroupOperator(
             @NotNull final MatchPair[] pairs,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -251,7 +250,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     protected RollingGroupOperator(
             @NotNull final MatchPair[] pairs,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
@@ -471,7 +470,7 @@ public class RollingGroupOperator extends UpdateByOperator {
      */
     @Override
     protected void createInputModifiedColumnSet(@NotNull final QueryTable source) {
-        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames().toArray(new String[0]));
+        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
         // inputModifiedColumnSet needs to be set before we can create the transformer.
         createInputOutputTransformer();
     }

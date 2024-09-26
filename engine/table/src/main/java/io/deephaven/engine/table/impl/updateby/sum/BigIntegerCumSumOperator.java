@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigInteger;
-import java.util.Collections;
 
 public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<BigInteger> {
     protected class Context extends BaseObjectUpdateByOperator<BigInteger>.Context {
@@ -48,7 +47,7 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
 
     public BigIntegerCumSumOperator(
             @NotNull final MatchPair inputPair) {
-        super(inputPair, Collections.singleton(inputPair.rightColumn), BigInteger.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, BigInteger.class);
     }
 
     @Override

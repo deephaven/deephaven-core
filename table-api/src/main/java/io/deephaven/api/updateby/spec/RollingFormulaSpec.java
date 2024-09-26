@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /**
  * An {@link UpdateBySpec} for performing a windowed rolling formula operation.
@@ -18,7 +19,8 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
 
     public abstract String formula();
 
-    public abstract String paramToken();
+    // Continue single-parameter token support
+    public abstract Optional<String> paramToken();
 
     public static RollingFormulaSpec ofTicks(long revTicks, String formula, String paramToken) {
         return of(WindowScale.ofTicks(revTicks), formula, paramToken);
@@ -53,6 +55,39 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
                 formula, paramToken);
     }
 
+    // New methods for supporting the non-tokenized version (expects valid column names in the formula)
+
+    public static RollingFormulaSpec ofTicks(long revTicks, String formula) {
+        return of(WindowScale.ofTicks(revTicks), formula);
+    }
+
+    public static RollingFormulaSpec ofTicks(long revTicks, long fwdTicks, String formula) {
+        return of(WindowScale.ofTicks(revTicks), WindowScale.ofTicks(fwdTicks), formula);
+    }
+
+    public static RollingFormulaSpec ofTime(final String timestampCol, Duration revDuration, String formula) {
+        return of(WindowScale.ofTime(timestampCol, revDuration), formula);
+    }
+
+    public static RollingFormulaSpec ofTime(final String timestampCol, Duration revDuration, Duration fwdDuration,
+                                            String formula) {
+        return of(WindowScale.ofTime(timestampCol, revDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration),
+                formula);
+    }
+
+    public static RollingFormulaSpec ofTime(final String timestampCol, long revDuration, String formula) {
+        return of(WindowScale.ofTime(timestampCol, revDuration),
+                formula);
+    }
+
+    public static RollingFormulaSpec ofTime(final String timestampCol, long revDuration, long fwdDuration,
+                                            String formula) {
+        return of(WindowScale.ofTime(timestampCol, revDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration),
+                formula);
+    }
+
     public static RollingFormulaSpec of(WindowScale revWindowScale, String formula, String paramToken) {
         return ImmutableRollingFormulaSpec.builder()
                 .revWindowScale(revWindowScale)
@@ -71,6 +106,22 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
                 .build();
     }
 
+    public static RollingFormulaSpec of(WindowScale revWindowScale, String formula) {
+        return ImmutableRollingFormulaSpec.builder()
+                .revWindowScale(revWindowScale)
+                .formula(formula)
+                .build();
+    }
+
+    public static RollingFormulaSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, String formula) {
+        return ImmutableRollingFormulaSpec.builder()
+                .revWindowScale(revWindowScale)
+                .fwdWindowScale(fwdWindowScale)
+                .formula(formula)
+                .build();
+    }
+
+
     @Override
     public final boolean applicableTo(Class<?> inputType) {
         return true;
@@ -85,13 +136,6 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
     final void checkFormula() {
         if (formula().isEmpty()) {
             throw new IllegalArgumentException("formula must not be empty");
-        }
-    }
-
-    @Value.Check
-    final void checkParamToken() {
-        if (paramToken().isEmpty()) {
-            throw new IllegalArgumentException("paramToken must not be empty");
         }
     }
 }

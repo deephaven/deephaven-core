@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Collection;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -127,7 +126,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
      *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public BaseBigNumberEmStdOperator(@NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,

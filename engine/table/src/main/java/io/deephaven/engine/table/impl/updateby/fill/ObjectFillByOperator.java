@@ -18,8 +18,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-
 
 public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // region extra-fields
@@ -54,7 +52,7 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
             , final Class<T> colType
             // endregion extra-constructor-args
             ) {
-        super(pair, Collections.singleton(pair.rightColumn), colType);
+        super(pair, new String[] { pair.rightColumn }, colType);
         // region constructor
         // endregion constructor
     }

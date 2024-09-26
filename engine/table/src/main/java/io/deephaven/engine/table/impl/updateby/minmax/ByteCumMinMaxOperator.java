@@ -16,8 +16,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-
 import static io.deephaven.util.QueryConstants.*;
 
 public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
@@ -63,7 +61,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
             ,final byte nullValue
     // endregion extra-constructor-args
     ) {
-        super(pair, Collections.singleton(pair.rightColumn));
+        super(pair, new String[] {pair.rightColumn});
         this.isMax = isMax;
         // region constructor
         this.nullValue = nullValue;

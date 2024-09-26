@@ -20,8 +20,6 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
@@ -74,7 +72,7 @@ public class CharDeltaOperator extends BaseCharUpdateByOperator {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pair, Collections.singleton(pair.rightColumn));
+        super(pair, new String[] {pair.rightColumn});
         this.control = control;
         // region constructor
         // endregion constructor

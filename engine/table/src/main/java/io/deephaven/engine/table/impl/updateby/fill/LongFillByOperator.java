@@ -23,8 +23,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongFillByOperator extends BaseLongUpdateByOperator {
@@ -61,7 +59,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
             ,@NotNull final Class<?> type
             // endregion extra-constructor-args
             ) {
-        super(pair, Collections.singleton(pair.rightColumn));
+        super(pair, new String[] { pair.rightColumn });
         // region constructor
         this.type = type;
         // endregion constructor

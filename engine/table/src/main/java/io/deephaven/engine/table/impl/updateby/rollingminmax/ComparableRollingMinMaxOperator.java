@@ -128,7 +128,7 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
     }
 
     public ComparableRollingMinMaxOperator(@NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,

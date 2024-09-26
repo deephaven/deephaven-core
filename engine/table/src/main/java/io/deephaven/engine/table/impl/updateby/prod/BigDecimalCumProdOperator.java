@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.Collections;
 
 public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     @NotNull
@@ -52,7 +51,7 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
     public BigDecimalCumProdOperator(
             @NotNull final MatchPair inputPair,
             @NotNull final MathContext mathContext) {
-        super(inputPair, Collections.singleton(inputPair.rightColumn), BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, BigDecimal.class);
         this.mathContext = mathContext;
     }
 

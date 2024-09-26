@@ -131,7 +131,7 @@ public class DoubleEMOperator extends BasePrimitiveEMOperator {
      *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public DoubleEMOperator(@NotNull final MatchPair pair,
-            @NotNull final Collection<String> affectingColumns,
+            @NotNull final String[] affectingColumns,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final double windowScaleUnits,
