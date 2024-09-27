@@ -27,10 +27,10 @@ enum ResolvingCredentials implements AwsSdkV2Credentials {
     INSTANCE;
 
     private static final AwsCredentialsProviderChain PROVIDER_CHAIN = AwsCredentialsProviderChain.builder()
-            .credentialsProviders(new AwsCredentialsProvider[] {
+            .credentialsProviders(
                     DefaultCredentialsProvider.create(),
-                    AnonymousCredentialsProvider.create()
-            })
+                    AnonymousCredentialsProvider.create())
+            .reuseLastProviderEnabled(false) // Don't cache because this chain is a shared static instance
             .build();
 
     @Override
