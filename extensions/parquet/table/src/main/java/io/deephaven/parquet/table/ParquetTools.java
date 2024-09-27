@@ -822,8 +822,7 @@ public class ParquetTools {
         if (readInstructions.isRefreshing()) {
             throw new IllegalArgumentException("Unable to have a refreshing single parquet file");
         }
-        final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
-                () -> new IllegalArgumentException("Table definition must be provided"));
+        final TableDefinition tableDefinition = ParquetInstructions.ensureDefinition(readInstructions);
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
         final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),

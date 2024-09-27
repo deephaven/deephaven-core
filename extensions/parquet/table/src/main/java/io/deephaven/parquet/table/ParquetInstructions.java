@@ -41,10 +41,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @param parquetInstructions the parquet instructions
      * @throws IllegalArgumentException if there is not a table definition
      */
-    public static void ensureDefinition(ParquetInstructions parquetInstructions) {
+    public static TableDefinition ensureDefinition(ParquetInstructions parquetInstructions) {
         if (parquetInstructions.getTableDefinition().isEmpty()) {
             throw new IllegalArgumentException("Table definition must be provided");
         }
+        return parquetInstructions.getTableDefinition().get();
     }
 
     /**
