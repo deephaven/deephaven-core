@@ -31,7 +31,6 @@ import java.util.function.Function;
 @VisibleForTesting
 public final class RelativeFileIO implements HadoopConfigurable, DelegateFileIO {
     public static final String BASE_PATH = "relative.base-path";
-    private static final String IO_IMPL = "relative.io-impl";
     private static final String IO_DEFAULT_IMPL = ResolvingFileIO.class.getName();
 
     private String basePath;
@@ -79,8 +78,9 @@ public final class RelativeFileIO implements HadoopConfigurable, DelegateFileIO 
     @Override
     public void initialize(Map<String, String> properties) {
         this.basePath = StringUtils.appendIfMissing(properties.get(BASE_PATH), "/");
-        String impl = properties.getOrDefault(IO_IMPL, IO_DEFAULT_IMPL);
-        FileIO fileIO = CatalogUtil.loadFileIO(impl, properties, hadoopConf.get());
+        // We can add a property here later if we need to override the default
+        // final String impl = properties.getOrDefault(IO_IMPL, IO_DEFAULT_IMPL);
+        final FileIO fileIO = CatalogUtil.loadFileIO(IO_DEFAULT_IMPL, properties, hadoopConf.get());
         if (!(fileIO instanceof DelegateFileIO)) {
             throw new IllegalArgumentException("filoIO must be DelegateFileIO, " + fileIO.getClass());
         }

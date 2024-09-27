@@ -120,6 +120,6 @@ If we add a lot of catalogs to the database, we may want to look into vacuuming 
 
 `sqlite3 dh-iceberg-test.db 'VACUUM;'`
 
-Ideally, the sqlite database can be a small collection of catalogs that were created via external tooling to very that
+Ideally, the sqlite database can be a small collection of catalogs that were created via external tooling to verify that
 we can integrate with them successfully.
 
