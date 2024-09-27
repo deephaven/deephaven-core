@@ -242,7 +242,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     constituentDefinition,
                     "SingleLocationSourceTable-" + tableLocation,
                     RegionedTableComponentFactoryImpl.INSTANCE,
-                    new SingleTableLocationProvider(tableLocation),
+                    new SingleTableLocationProvider(tableLocation, TableLocationProvider.UpdateMode.ADD_REMOVE),
                     refreshSizes ? refreshCombiner : null);
 
             // Be careful to propagate the systemic attribute properly to child tables

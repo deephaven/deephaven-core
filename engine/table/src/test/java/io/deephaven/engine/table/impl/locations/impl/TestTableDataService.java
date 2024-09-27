@@ -56,7 +56,7 @@ public class TestTableDataService {
         @Override
         @NotNull
         protected TableLocationProvider makeTableLocationProvider(@NotNull TableKey tableKey) {
-            return new SingleTableLocationProvider(tableLocation);
+            return new SingleTableLocationProvider(tableLocation, TableLocationProvider.UpdateMode.ADD_REMOVE);
         }
     }
 

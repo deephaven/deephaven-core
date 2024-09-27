@@ -31,8 +31,10 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     public TableBackedTableLocationProvider(
             @NotNull final UpdateSourceRegistrar registrar,
             final boolean supportsSubscriptions,
+            final UpdateMode updateMode,
+            final UpdateMode locationUpdateMode,
             @NotNull final Table... tables) {
-        super(StandaloneTableKey.getInstance(), supportsSubscriptions);
+        super(StandaloneTableKey.getInstance(), supportsSubscriptions, updateMode, locationUpdateMode);
         this.registrar = registrar;
         processPending(Arrays.stream(tables));
     }
@@ -76,11 +78,5 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     @Override
     protected @NotNull TableLocation makeTableLocation(@NotNull TableLocationKey locationKey) {
         return new TableBackedTableLocation(registrar, (TableBackedTableLocationKey) locationKey);
-    }
-
-    @Override
-    @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        return UPDATE_TYPE.REFRESHING;
     }
 }

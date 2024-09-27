@@ -26,8 +26,15 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, false, null, tableIdentifier);
-    }
+        super(tableKey,
+                locationKeyFinder,
+                locationFactory,
+                false,
+                null,
+                tableIdentifier,
+                UpdateMode.STATIC, // The set of locations is static
+                UpdateMode.STATIC // Individual locations cannot add or remove rows
+        );    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // AbstractTableLocationProvider implementation
@@ -80,11 +87,5 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
     @Override
     protected <T> boolean matchSubscriptionToken(final T token) {
         return false;
-    }
-
-    @Override
-    @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        return UPDATE_TYPE.STATIC;
     }
 }

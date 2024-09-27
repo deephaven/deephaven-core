@@ -35,14 +35,18 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     private final TrackedKeySupplier immutableKeySupplier;
     private final TableLocation tableLocation;
+    private final UpdateMode locationUpdateMode;
 
     /**
      * @param tableLocation The only table location that this provider will ever provide
      */
-    public SingleTableLocationProvider(@NotNull final TableLocation tableLocation) {
+    public SingleTableLocationProvider(
+            @NotNull final TableLocation tableLocation,
+            final UpdateMode locationUpdateMode) {
         this.tableLocation = tableLocation;
         // TODO: it seems like we should manage this, but SingleTableLocationProvider isn't a LivenessManager.
         immutableKeySupplier = new TrackedKeySupplier(tableLocation.getKey());
+        this.locationUpdateMode = locationUpdateMode;
     }
 
     @Override
@@ -100,8 +104,14 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     @Override
     @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        // No additions or removals are possible from this provider
-        return UPDATE_TYPE.STATIC;
+    public TableLocationProvider.UpdateMode getUpdateMode() {
+        // No additions or removals are possible from this provider, it exists to serve
+        return UpdateMode.STATIC;
+    }
+
+    @Override
+    @NotNull
+    public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+        return locationUpdateMode;
     }
 }

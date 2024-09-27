@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.BasicDataIndex;
@@ -17,7 +16,6 @@ import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,11 +29,11 @@ import java.util.List;
 import java.util.Set;
 
 @Category(OutOfBandTest.class)
-public class AbstractTableLocationTest extends RefreshingTableTestCase {
+public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
     private static class TestTableLocationProvider extends AbstractTableLocationProvider {
 
         public TestTableLocationProvider(final boolean supportsSubscriptions) {
-            super(supportsSubscriptions);
+            super(supportsSubscriptions, UpdateMode.ADD_REMOVE, UpdateMode.ADD_REMOVE);
         }
 
         @Override
@@ -71,12 +69,6 @@ public class AbstractTableLocationTest extends RefreshingTableTestCase {
 
         public void removeKey(@NotNull TableLocationKey locationKey, @NotNull Object token) {
             handleTableLocationKeyRemoved(locationKey, token);
-        }
-
-        @Override
-        @NotNull
-        public UPDATE_TYPE getUpdateMode() {
-            return UPDATE_TYPE.REFRESHING;
         }
     }
 
@@ -133,7 +125,7 @@ public class AbstractTableLocationTest extends RefreshingTableTestCase {
     public void setUp() throws Exception {
         if (null == ProcessEnvironment.tryGet()) {
             ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
-                    "SourcePartitionedTableTest", new StreamLoggerImpl());
+                    "AbstractTableLocationProviderTest", new StreamLoggerImpl());
         }
         super.setUp();
         setExpectError(false);

@@ -27,8 +27,10 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     public PollingTableLocationProvider(@NotNull final TK tableKey,
             @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @Nullable final TableDataRefreshService refreshService) {
-        super(tableKey, refreshService != null);
+            @Nullable final TableDataRefreshService refreshService,
+            final UpdateMode updateMode,
+            final UpdateMode locationUpdateMode) {
+        super(tableKey, refreshService != null, updateMode, locationUpdateMode);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.refreshService = refreshService;
@@ -76,12 +78,5 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     @Override
     protected final <T> boolean matchSubscriptionToken(final T token) {
         return token == subscriptionToken;
-    }
-
-    @Override
-    @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        // No removals are possible from this provider but newly discovered locations can be added
-        return UPDATE_TYPE.ADD_ONLY;
     }
 }

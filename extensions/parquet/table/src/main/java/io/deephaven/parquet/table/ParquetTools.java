@@ -829,7 +829,9 @@ public class ParquetTools {
                 StandaloneTableKey.getInstance(),
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
-                null);
+                null,
+                TableLocationProvider.UpdateMode.STATIC, // exactly one location here
+                TableLocationProvider.UpdateMode.STATIC); // parquet files are static
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -890,7 +892,14 @@ public class ParquetTools {
                         StandaloneTableKey.getInstance(),
                         keyFinder,
                         new ParquetTableLocationFactory(useInstructions),
-                        refreshService),
+                        refreshService,
+                        // If refreshing, new locations can be discovered but they will be appended
+                        // to the locations list
+                        useInstructions.isRefreshing()
+                                ? TableLocationProvider.UpdateMode.APPEND_ONLY
+                                : TableLocationProvider.UpdateMode.STATIC,
+                        TableLocationProvider.UpdateMode.STATIC // parquet files are static
+                ),
                 updateSourceRegistrar);
     }
 

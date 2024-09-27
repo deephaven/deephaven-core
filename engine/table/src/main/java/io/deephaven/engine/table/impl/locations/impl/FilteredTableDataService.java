@@ -164,10 +164,16 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         @NotNull
-        public UPDATE_TYPE getUpdateMode() {
-            // Assuming a dynamic filter, locations could be added or removed at any time from the perspective of
-            // this filtered provider.
-            return UPDATE_TYPE.REFRESHING;
+        public TableLocationProvider.UpdateMode getUpdateMode() {
+            // TODO: I think locations can be added or removed at any time (with a dynamic filter)
+            return UpdateMode.ADD_REMOVE;
+        }
+
+        @Override
+        @NotNull
+        public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+            // TODO: this is defensive, individual location contents might be static (e.g. Parquet files)
+            return UpdateMode.ADD_REMOVE;
         }
     }
 

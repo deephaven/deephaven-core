@@ -118,12 +118,58 @@ public class CompositeTableDataService extends AbstractTableDataService {
         private final List<TableLocationProvider> inputProviders;
         private final String implementationName;
 
+        // What guarantees about added/removed locations can be made?
+        private final UpdateMode updateMode;
+        // What guarantees about added/removed rows within locations can be made?
+        private final UpdateMode locationUpdateMode;
+
         private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
                 @NotNull final TableKey tableKey) {
             this.tableKey = tableKey.makeImmutable();
             inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey))
                     .collect(Collectors.toList());
             implementationName = "Composite-" + inputProviders;
+
+            // Analyze the update modes of the input providers to determine the update mode of the composite provider.
+            // 1) If any providers are REFRESHING, the overall provider is REFRESHING
+            // 2) If any providers are ADD_ONLY or APPEND_ONLY, the overall provider is ADD_ONLY
+            // 3) If all providers are STATIC, the overall provider is STATIC
+            boolean anyAdditions = false;
+            UpdateMode tmpMode = UpdateMode.STATIC;
+            for (final TableLocationProvider provider : inputProviders) {
+                if (provider.getUpdateMode() == UpdateMode.ADD_REMOVE) {
+                    tmpMode = UpdateMode.ADD_REMOVE;
+                    break;
+                } else if (provider.getUpdateMode() == UpdateMode.ADD_ONLY
+                        || provider.getUpdateMode() == UpdateMode.APPEND_ONLY) {
+                    anyAdditions = true;
+                }
+            }
+            if (anyAdditions) {
+                tmpMode = UpdateMode.ADD_ONLY;
+            }
+            updateMode = tmpMode;
+
+            // Analyze the location update modes of the input providers to determine the location update mode
+            // of the composite provider.
+            // 1) If any provider locations are REFRESHING, the overall provider location mode is REFRESHING
+            // 2) If any provider locations are ADD_ONLY or APPEND_ONLY, the overall provider location mode is ADD_ONLY
+            // 3) If all provider locations are STATIC, the overall provider location mode is STATIC
+            anyAdditions = false;
+            tmpMode = UpdateMode.STATIC;
+            for (final TableLocationProvider provider : inputProviders) {
+                if (provider.getLocationUpdateMode() == UpdateMode.ADD_REMOVE) {
+                    tmpMode = UpdateMode.ADD_REMOVE;
+                    break;
+                } else if (provider.getLocationUpdateMode() == UpdateMode.ADD_ONLY
+                        || provider.getLocationUpdateMode() == UpdateMode.APPEND_ONLY) {
+                    anyAdditions = true;
+                }
+            }
+            if (anyAdditions) {
+                tmpMode = UpdateMode.ADD_ONLY;
+            }
+            locationUpdateMode = tmpMode;
         }
 
         @Override
@@ -235,24 +281,14 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
         @Override
         @NotNull
-        public UPDATE_TYPE getUpdateMode() {
-            // Composite TLP logic:
-            // If any providers are REFRESHING, the overall provider is REFRESHING
-            // If any providers are ADD_ONLY or APPEND_ONLY, the overall provider is ADD_ONLY
-            // If all providers are STATIC, the overall provider is STATIC
-            boolean anyAdditions = false;
-            for (final TableLocationProvider provider : inputProviders) {
-                if (provider.getUpdateMode() == UPDATE_TYPE.REFRESHING) {
-                    return UPDATE_TYPE.REFRESHING;
-                } else if (provider.getUpdateMode() == UPDATE_TYPE.ADD_ONLY
-                        || provider.getUpdateMode() == UPDATE_TYPE.APPEND_ONLY) {
-                    anyAdditions = true;
-                }
-            }
-            if (anyAdditions) {
-                return UPDATE_TYPE.ADD_ONLY;
-            }
-            return UPDATE_TYPE.STATIC;
+        public TableLocationProvider.UpdateMode getUpdateMode() {
+            return updateMode;
+        }
+
+        @Override
+        @NotNull
+        public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+            return locationUpdateMode;
         }
     }
 

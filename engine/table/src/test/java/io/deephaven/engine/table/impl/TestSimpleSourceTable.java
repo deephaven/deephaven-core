@@ -6,10 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -18,11 +17,15 @@ import io.deephaven.engine.table.impl.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import org.jmock.api.Invocation;
+import org.jmock.lib.action.CustomAction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,6 +58,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
     private TableLocationProvider locationProvider;
     private TableLocation tableLocation;
+    private LiveSupplier<ImmutableTableLocationKey> keySupplier;
 
     private WritableRowSet expectedRowSet;
 
@@ -88,12 +92,31 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
             });
             return mocked;
         }).toArray(ColumnSource[]::new);
+        keySupplier = mock(LiveSupplier.class);
         locationProvider = mock(TableLocationProvider.class);
         tableLocation = mock(TableLocation.class);
         checking(new Expectations() {
             {
+                allowing(keySupplier).get();
+                will(returnValue(StandaloneTableLocationKey.getInstance()));
+                allowing(keySupplier).tryRetainReference();
+                will(returnValue(true));
+                allowing(keySupplier).getWeakReference();
+                will(returnValue(new WeakReference<>(keySupplier)));
+                allowing(keySupplier).dropReference();
+
                 allowing(locationProvider).getTableLocationKeys();
                 will(returnValue(Collections.singleton(StandaloneTableLocationKey.getInstance())));
+                allowing(locationProvider).getTableLocationKeys(with(any(Consumer.class)));
+                will(new CustomAction("check added") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer =
+                                (Consumer<LiveSupplier<ImmutableTableLocationKey>>) invocation.getParameter(0);
+                        consumer.accept(keySupplier);
+                        return null;
+                    }
+                });
                 allowing(locationProvider).getTableLocation(with(StandaloneTableLocationKey.getInstance()));
                 will(returnValue(tableLocation));
                 allowing(tableLocation).supportsSubscriptions();
@@ -102,6 +125,8 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 will(returnValue(StandaloneTableLocationKey.getInstance()));
                 allowing(locationProvider).supportsSubscriptions();
                 will(returnValue(true));
+                allowing(locationProvider).getUpdateMode();
+                will(returnValue(TableLocationProvider.UpdateMode.ADD_REMOVE));
             }
         });
 

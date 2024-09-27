@@ -140,6 +140,13 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             return mocked;
         }).toArray(ColumnSource[]::new);
         locationProvider = mock(TableLocationProvider.class);
+        checking(new Expectations() {
+            {
+                allowing(locationProvider).getUpdateMode();
+                will(returnValue(TableLocationProvider.UpdateMode.ADD_REMOVE));
+            }
+        });
+
         tableLocationKeys = IntStream.range(0, 6).mapToObj(tlki -> {
             final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
             partitions.put(PARTITIONING_COLUMN_DEFINITION.getName(), COLUMN_PARTITIONS[tlki]);

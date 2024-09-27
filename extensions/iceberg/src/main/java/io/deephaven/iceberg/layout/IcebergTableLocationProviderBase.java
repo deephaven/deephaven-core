@@ -26,8 +26,10 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             final boolean isRefreshing,
             @Nullable final IcebergTableAdapter adapter,
-            @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, isRefreshing);
+            @NotNull final TableIdentifier tableIdentifier,
+            final UpdateMode updateMode,
+            final UpdateMode locationUpdateMode) {
+        super(tableKey, isRefreshing, updateMode, locationUpdateMode);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.adapter = adapter;

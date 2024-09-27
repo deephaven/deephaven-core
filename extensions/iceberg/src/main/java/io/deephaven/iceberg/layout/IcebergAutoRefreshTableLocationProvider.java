@@ -41,7 +41,15 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
             final long refreshIntervalMs,
             @NotNull final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
+        super(tableKey,
+                locationKeyFinder,
+                locationFactory,
+                true,
+                adapter,
+                tableIdentifier,
+                UpdateMode.ADD_REMOVE, // New locations can be added and removed
+                UpdateMode.STATIC // Individual locations cannot add or remove rows
+        );
 
         Assert.neqNull(refreshService, "refreshService");
         this.refreshService = refreshService;
@@ -115,16 +123,5 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
             subscriptionToken.cancel();
             subscriptionToken = null;
         }
-    }
-
-    @Override
-    protected final <T> boolean matchSubscriptionToken(final T token) {
-        return token == subscriptionToken;
-    }
-
-    @Override
-    @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        return UPDATE_TYPE.REFRESHING;
     }
 }

@@ -35,7 +35,15 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @NotNull final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
+        super(tableKey,
+                locationKeyFinder,
+                locationFactory,
+                true,
+                adapter,
+                tableIdentifier,
+                UpdateMode.ADD_REMOVE, // New locations can be added and removed
+                UpdateMode.STATIC // Individual locations cannot add or remove rows
+        );
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -128,11 +136,5 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
     @Override
     protected <T> boolean matchSubscriptionToken(T token) {
         return token == this;
-    }
-
-    @Override
-    @NotNull
-    public UPDATE_TYPE getUpdateMode() {
-        return UPDATE_TYPE.REFRESHING;
     }
 }

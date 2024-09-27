@@ -99,20 +99,23 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     definition.getColumns() // This is the *re-written* definition passed to the super-class constructor
             );
             if (isRefreshing) {
-                // TODO: managing doesn't work here because columnSourceManager is at zero right now.
                 manage(columnSourceManager);
             }
         }
 
-        setRefreshing(isRefreshing);
-        // Propagate the TLP attribute to the table
-        switch (locationProvider.getUpdateMode()) {
-            case ADD_ONLY:
+        if (isRefreshing) {
+            setRefreshing(true);
+            if (locationProvider.getUpdateMode() == TableLocationProvider.UpdateMode.APPEND_ONLY
+                    && locationProvider.getLocationUpdateMode() == TableLocationProvider.UpdateMode.STATIC) {
+                // This table is APPEND_ONLY IFF the set of locations is APPEND_ONLY
+                // and the location contents are STATIC
+                setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.FALSE);
+            } else if (locationProvider.getUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE
+                    && locationProvider.getLocationUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE) {
+                // This table is ADD_ONLY IFF the set of locations is not allowed to remove locations (!ADD_REMOVE)
+                // and the locations contents are not allowed to remove rows (!ADD_REMOVE)
                 setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-                break;
-            case APPEND_ONLY:
-                setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.FALSE);
-                break;
+            }
         }
     }
 
@@ -164,12 +167,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     // Manage each of the location keys as we see them (since the TLP is not guaranteeing them outside
                     // the callback)
                     locationProvider.getTableLocationKeys(ttlk -> {
-                        manage(ttlk);
+                        if (isRefreshing()) {
+                            manage(ttlk);
+                        }
                         keySuppliers.add(ttlk);
                     });
                     maybeAddLocations(keySuppliers);
-                    // Now we can un-manage the location keys
-                    keySuppliers.forEach(this::unmanage);
+                    if (isRefreshing()) {
+                        // Now we can un-manage the location keys
+                        keySuppliers.forEach(this::unmanage);
+                    }
                 }
             });
             locationsInitialized = true;
@@ -235,7 +242,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
-                if (locationProvider.getUpdateMode() != TableLocationProvider.UPDATE_TYPE.REFRESHING
+                if (locationProvider.getUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE
                         && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
                     // This TLP doesn't support removed locations, we need to throw an exception.
                     final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()

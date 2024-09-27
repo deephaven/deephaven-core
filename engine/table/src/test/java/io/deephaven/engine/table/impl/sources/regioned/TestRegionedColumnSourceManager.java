@@ -30,6 +30,7 @@ import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -150,6 +151,17 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         tableLocation1A = tableLocations[1];
         tableLocation0B = tableLocations[2];
         tableLocation1B = tableLocations[3];
+        checking(new Expectations() {
+            {
+                for (final TableLocation tl : tableLocations) {
+                    allowing(tl).tryRetainReference();
+                    will(returnValue(true));
+                    allowing(tl).getWeakReference();
+                    will(returnValue(new WeakReference<>(tl)));
+                    allowing(tl).dropReference();
+                }
+            }
+        });
 
         duplicateTableLocation0A = setUpTableLocation(0, "-duplicate");
 

@@ -18,8 +18,8 @@ import java.util.function.Predicate;
  * Discovery utility for {@link TableLocation}s for a given table.
  */
 public interface TableLocationProvider extends NamedImplementation {
-    enum UPDATE_TYPE {
-        APPEND_ONLY, ADD_ONLY, STATIC, REFRESHING
+    enum UpdateMode {
+        STATIC, APPEND_ONLY, ADD_ONLY, ADD_REMOVE
     }
 
     /**
@@ -30,13 +30,18 @@ public interface TableLocationProvider extends NamedImplementation {
     ImmutableTableKey getKey();
 
     /**
-     * Get the {@link UPDATE_TYPE} of this provider.
-     *
-     * @return The associated {@link TableKey}
+     * Get the {@link UpdateMode update guarantees} of this provider describing how this provider will add or remove
+     * table locations.
      */
     @NotNull
-    UPDATE_TYPE getUpdateMode();
+    TableLocationProvider.UpdateMode getUpdateMode();
 
+    /**
+     * Get the location {@link UpdateMode update guarantees} of this provider describing how individual locations will
+     * add or remove rows.
+     */
+    @NotNull
+    TableLocationProvider.UpdateMode getLocationUpdateMode();
 
     /**
      * ShiftObliviousListener interface for anything that wants to know about new table location keys.

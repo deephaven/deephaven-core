@@ -155,6 +155,16 @@ public abstract class AbstractTableLocationProvider
      */
     private final StandaloneLivenessManager livenessManager;
 
+    /**
+     * Records how the set of locations for this TLP can update
+     */
+    private final UpdateMode updateMode;
+
+    /**
+     * Records how the individual locations for this TLP can update (whether row can be added or removed)
+     */
+    private final UpdateMode locationUpdateMode;
+
     private volatile boolean initialized;
 
     private List<String> partitionKeys;
@@ -165,11 +175,19 @@ public abstract class AbstractTableLocationProvider
      *
      * @param tableKey A key that will be used by this provider
      * @param supportsSubscriptions Whether this provider should support subscriptions
+     * @param updateMode What updates to the set of locations are allowed
+     * @param locationUpdateMode What updates to the location rows are allowed
      */
-    protected AbstractTableLocationProvider(@NotNull final TableKey tableKey, final boolean supportsSubscriptions) {
+    protected AbstractTableLocationProvider(
+            @NotNull final TableKey tableKey,
+            final boolean supportsSubscriptions,
+            final UpdateMode updateMode,
+            final UpdateMode locationUpdateMode) {
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
         this.partitionKeys = null;
+        this.updateMode = updateMode;
+        this.locationUpdateMode = locationUpdateMode;
 
         livenessManager = new StandaloneLivenessManager(false);
     }
@@ -178,9 +196,14 @@ public abstract class AbstractTableLocationProvider
      * Construct a standalone provider.
      *
      * @param supportsSubscriptions Whether this provider should support subscriptions
+     * @param updateMode What updates to the set of locations are allowed
+     * @param locationUpdateMode What updates to the location rows are allowed
      */
-    protected AbstractTableLocationProvider(final boolean supportsSubscriptions) {
-        this(StandaloneTableKey.getInstance(), supportsSubscriptions);
+    protected AbstractTableLocationProvider(
+            final boolean supportsSubscriptions,
+            final UpdateMode updateMode,
+            final UpdateMode locationUpdateMode) {
+        this(StandaloneTableKey.getInstance(), supportsSubscriptions, updateMode, locationUpdateMode);
     }
 
     @Override
@@ -569,5 +592,17 @@ public abstract class AbstractTableLocationProvider
     private void releaseLocationKey(@NotNull final TrackedKeySupplier locationKey) {
         // We can now remove the key from the tableLocations map
         tableLocationKeyMap.removeKey(locationKey.get());
+    }
+
+    @Override
+    @NotNull
+    public TableLocationProvider.UpdateMode getUpdateMode() {
+        return updateMode;
+    }
+
+    @Override
+    @NotNull
+    public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+        return locationUpdateMode;
     }
 }
