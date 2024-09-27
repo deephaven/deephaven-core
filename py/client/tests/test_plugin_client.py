@@ -36,6 +36,7 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         self.assertGreater(len(refs), 0)
         ref = refs[0]
         self.assertEqual(ref.type, "Table")
+        plugin_client.close()
 
     def test_publish_fetch(self):
         plugin_client = self.session.plugin_client(self.session.exportable_objects["plot3"])
