@@ -43,6 +43,7 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         self.assertIsNotNone(plugin_client)
 
         with self.subTest("Plugin object"):
+            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             # First fetch the Plugin object, then publish it
             export_plugin_client = self.session.fetch(plugin_client)
             shared_ticket = SharedTicket.random_ticket()
