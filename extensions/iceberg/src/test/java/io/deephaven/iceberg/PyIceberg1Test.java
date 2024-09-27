@@ -8,6 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTools;
 import org.apache.iceberg.Snapshot;
@@ -16,20 +17,22 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * This test shows that we can integrate with data written by <a href="https://py.iceberg.apache.org/">pyiceberg</a>.
+ * See TESTING.md and generate-pyiceberg-1.py for more details.
+ */
 public class PyIceberg1Test {
     private static final Namespace NAMESPACE = Namespace.of("dh-default");
     private static final TableIdentifier CITIES_ID = TableIdentifier.of(NAMESPACE, "cities");
 
     // This will need to be updated if the data is regenerated
-    private static final long SNAPSHOT_1_ID = 8833084047573120270L;
-    private static final long SNAPSHOT_2_ID = 7895378999715099054L;
+    private static final long SNAPSHOT_1_ID = 1743193108934390753L;
+    private static final long SNAPSHOT_2_ID = 4630159959461529013L;
 
     private static final TableDefinition CITIES_1_TD = TableDefinition.of(
             ColumnDefinition.ofString("city"),
@@ -44,13 +47,8 @@ public class PyIceberg1Test {
     private IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
-    void setUp() throws IOException, URISyntaxException {
-        // Note: for some reason, the name must be the same name that was used to create the SqlCatalog. Potentially so
-        // a single DB file can support multiple catalogs?
-        catalogAdapter = IcebergTools.createAdapter(CatalogHelper.createJdbcCatalog(
-                "SqlCatalogName",
-                Path.of(PyIceberg1Test.class.getResource("pyiceberg-1").toURI()),
-                false));
+    void setUp() throws URISyntaxException {
+        catalogAdapter = IcebergTools.createAdapter(DbResource.openCatalog("pyiceberg-1"));
     }
 
     @Test

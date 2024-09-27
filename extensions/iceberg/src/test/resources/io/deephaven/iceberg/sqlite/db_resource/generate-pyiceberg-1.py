@@ -5,10 +5,10 @@ from pyiceberg.catalog.sql import SqlCatalog
 import pyarrow as pa
 
 catalog = SqlCatalog(
-    "SqlCatalogName",
+    "pyiceberg-1",
     **{
-        "uri": f"sqlite:///dh-test-catalog.db",
-        "warehouse": f"dh-test-warehouse",
+        "uri": f"sqlite:///dh-iceberg-test.db",
+        "warehouse": f"catalogs/pyiceberg-1",
     },
 )
 

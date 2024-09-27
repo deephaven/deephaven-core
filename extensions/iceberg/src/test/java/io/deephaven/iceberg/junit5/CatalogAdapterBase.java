@@ -3,9 +3,10 @@
 //
 package io.deephaven.iceberg.junit5;
 
-import io.deephaven.iceberg.CatalogHelper;
+import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTools;
+import org.apache.iceberg.catalog.Catalog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
@@ -19,9 +20,9 @@ public abstract class CatalogAdapterBase {
     protected IcebergCatalogAdapter catalogAdapter;
 
     @BeforeEach
-    void setUp(TestInfo testInfo, @TempDir Path catalogDir) throws IOException {
-        catalogAdapter =
-                IcebergTools
-                        .createAdapter(CatalogHelper.createJdbcCatalog(testInfo.getDisplayName(), catalogDir, true));
+    void setUp(TestInfo testInfo, @TempDir Path rootDir) throws IOException {
+        SqliteHelper.createJdbcDatabase(rootDir);
+        final Catalog catalog = SqliteHelper.createJdbcCatalog(rootDir, testInfo.getDisplayName(), false);
+        catalogAdapter = IcebergTools.createAdapter(catalog);
     }
 }
