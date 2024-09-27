@@ -6,7 +6,6 @@ package io.deephaven.iceberg;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.junit5.CatalogAdapterBase;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
