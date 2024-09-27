@@ -11,14 +11,21 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.HasEventHandling;
+import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static elemental2.dom.DomGlobal.console;
 
@@ -44,7 +51,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("growingBackward",
                     "growingForward.sort_descending(\"Timestamp\").format_columns(['I=I>2 ? GREEN : RED'])")
             .script("blinkOne",
-                    "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
+                    "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")")
+            .script("big", "empty_table(1_000_000).update_view(['I=i', 'Str=``+I']).where('I % 2 == 0')");
 
     public void testViewportOnStaticTable() {
         connect(tables)
@@ -424,6 +432,59 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     return helperForViewportWithNoInitialItems(table, new Column[] {i}, new JsArray<>(i));
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    public void testSnapshotFromViewport() {
+        connect(tables)
+                .then(table("big"))
+                .<Object>then(table -> {
+                    Column[] all = Js.uncheckedCast(table.getColumns());
+                    // This table is static and non-flat, to make sure our calls will make sense to get data.
+                    // Subscribe to a viewport, and grab some rows in a snapshot
+                    TableViewportSubscription tableViewportSubscription = table.setViewport(100, 109);
+
+                    List<Supplier<Promise<Object>>> tests = new ArrayList<>();
+                    // Data within the viewport
+                    JsRangeSet r = JsRangeSet.ofRange(101, 108);
+                    tests.add(() -> tableViewportSubscription.snapshot(r, all)
+                            .then(snapshot -> checkSnapshot(snapshot, r.getRange().size())));
+
+                    // Each row within the viewport
+                    tests.addAll(
+                            IntStream.range(100, 110)
+                                    .<Supplier<Promise<Object>>>mapToObj(row -> () -> tableViewportSubscription
+                                            .snapshot(JsRangeSet.ofRange(row, row), all)
+                                            .then(data -> checkSnapshot(data, 1)))
+                                    .collect(Collectors.toList()));
+
+                    // Data overlapping the viewport
+                    JsRangeSet r1 = JsRangeSet.ofRange(0, 120);
+                    tests.add(() -> tableViewportSubscription.snapshot(r1, all)
+                            .then(snapshot -> checkSnapshot(snapshot, r1.getRange().size())));
+
+                    // Empty snapshot
+                    tests.add(() -> tableViewportSubscription.snapshot(JsRangeSet.ofItems(new double[0]), all)
+                            .then(snapshot -> checkSnapshot(snapshot, 0)));
+
+
+                    // Run the tests serially
+                    return tests.stream().reduce((p1, p2) -> () -> p1.get().then(result -> p2.get())).get().get();
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private Promise<Object> checkSnapshot(TableData data, long expectedSize) {
+        Column intCol = data.getColumns().at(0);
+        Column strCol = data.getColumns().at(1);
+        assertEquals(expectedSize, data.getRows().length);
+        for (int i = 0; i < data.getRows().length; i++) {
+            Any intVal = data.getData(i, intCol);
+            assertNotNull(intVal);
+            Any strVal = data.getData(i, strCol);
+            assertNotNull(strVal);
+            assertEquals(intVal.toString(), strVal.asString());
+        }
+        return Promise.resolve(data);
     }
 
     private IThenable<JsTable> helperForViewportWithNoInitialItems(JsTable t, Column[] requestColumns,
