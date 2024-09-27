@@ -41,12 +41,12 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         self.assertEqual(ref.type, "Table")
         plugin_client.close()
 
+    @unittest.skip("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
     def test_publish_fetch_figure(self):
         plugin_client = self.session.plugin_client(self.session.exportable_objects["plot3"])
         self.assertIsNotNone(plugin_client)
 
         with self.subTest("Plugin object"):
-            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             # First fetch the Plugin object, then publish it
             export_plugin_client = self.session.fetch(plugin_client)
             shared_ticket = SharedTicket.random_ticket()
@@ -68,7 +68,6 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
             sub_session.close()
 
         with self.subTest("Fetchable in the Plugin object"):
-            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             payload, refs = next(plugin_client.resp_stream)
             self.assertGreater(len(payload), 0)
             self.assertGreater(len(refs), 0)
@@ -90,7 +89,6 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
             sub_session.close()
 
         with self.subTest("released Plugin object"):
-            self.skipTest("need to wait for https://github.com/deephaven/deephaven-core/issues/5996")
             sub_session = Session()
             server_obj = ServerObject(type="Figure", ticket=shared_ticket)
             sub_plugin_client = sub_session.plugin_client(server_obj)
