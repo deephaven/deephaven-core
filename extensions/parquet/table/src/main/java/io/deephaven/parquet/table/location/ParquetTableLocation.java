@@ -78,7 +78,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
-        this.readInstructions = readInstructions;
+        this.readInstructions = Objects.requireNonNull(readInstructions);
+        ParquetInstructions.ensureDefinition(readInstructions);
         final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {

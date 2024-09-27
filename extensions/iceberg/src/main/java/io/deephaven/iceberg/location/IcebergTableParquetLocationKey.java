@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
@@ -36,7 +37,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         super(fileUri, order, partitions, readInstructions);
-        this.readInstructions = readInstructions;
+        this.readInstructions = Objects.requireNonNull(readInstructions);
+        ParquetInstructions.ensureDefinition(readInstructions);
     }
 
     @Override

@@ -857,11 +857,10 @@ public class ParquetTools {
         if (readInstructions.getTableDefinition().isEmpty()) {
             // Infer the definition
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(locationKeyFinder);
-            final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
+            useInstructions = infer(inferenceKeys, readInstructions);
+            definition = useInstructions.getTableDefinition().orElseThrow();
             // In the case of a static output table, we can re-use the already fetched inference keys
-            useLocationKeyFinder = readInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
-            definition = inference.getFirst();
-            useInstructions = inference.getSecond();
+            useLocationKeyFinder = useInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
         } else {
             definition = readInstructions.getTableDefinition().get();
             useInstructions = readInstructions;
@@ -894,7 +893,12 @@ public class ParquetTools {
                 updateSourceRegistrar);
     }
 
-    private static Pair<TableDefinition, ParquetInstructions> infer(
+    /**
+     * Infers additional information regarding the parquet file(s) based on the inferenceKeys and returns a potentially
+     * updated parquet instructions. If the incoming {@code readInstructions} does not have a {@link TableDefinition},
+     * the returned instructions will have an inferred {@link TableDefinition}.
+     */
+    private static ParquetInstructions infer(
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
             final ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
@@ -929,7 +933,7 @@ public class ParquetTools {
         columnDefinitionsFromParquetFile.stream()
                 .filter(columnDefinition -> !partitionKeys.contains(columnDefinition.getName()))
                 .forEach(allColumns::add);
-        return new Pair<>(TableDefinition.of(allColumns), schemaInfo.getSecond());
+        return ensureTableDefinition(schemaInfo.getSecond(), TableDefinition.of(allColumns), true);
     }
 
     private static KnownLocationKeyFinder<ParquetTableLocationKey> toKnownKeys(
@@ -1044,11 +1048,7 @@ public class ParquetTools {
         }
         // Infer the table definition
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = new KnownLocationKeyFinder<>(locationKey);
-        final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
-        final TableDefinition inferredTableDefinition = inference.getFirst();
-        final ParquetInstructions inferredInstructions = inference.getSecond();
-        return readTable(inferenceKeys.getFirstKey().orElseThrow(),
-                ensureTableDefinition(inferredInstructions, inferredTableDefinition, true));
+        return readTable(inferenceKeys.getFirstKey().orElseThrow(), infer(inferenceKeys, readInstructions));
     }
 
     @VisibleForTesting

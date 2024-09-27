@@ -408,6 +408,7 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.ofString("someString"));
+        final ParquetInstructions instructions = EMPTY.withTableDefinition(definition);
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
                         .where("i % 2 == 0").groupBy("someString").ungroup("someInt")
@@ -431,8 +432,8 @@ public final class ParquetTableReadWriteTest {
                 StandaloneTableKey.getInstance(),
                 new ParquetTableLocationKey(
                         convertToURI(dest, false),
-                        0, Map.of(), EMPTY),
-                EMPTY);
+                        0, Map.of(), instructions),
+                instructions);
         assertEquals(tableLocation.getSortedColumns(), List.of(SortColumn.desc(ColumnName.of("someInt"))));
 
         final ParquetTableLocation index1Location = new ParquetTableLocation(
@@ -440,8 +441,8 @@ public final class ParquetTableReadWriteTest {
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
                                 ParquetTools.getRelativeIndexFilePath(dest.getName(), "someString")), false),
-                        0, Map.of(), EMPTY),
-                EMPTY);
+                        0, Map.of(), instructions),
+                instructions);
         assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
         final Table index1Table = DataIndexer.getDataIndex(fromDisk, "someString").table();
         assertTableEquals(index1Table, index1Table.sort("someString"));
@@ -451,8 +452,8 @@ public final class ParquetTableReadWriteTest {
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
                                 ParquetTools.getRelativeIndexFilePath(dest.getName(), "someInt", "someString")), false),
-                        0, Map.of(), EMPTY),
-                EMPTY);
+                        0, Map.of(), instructions),
+                instructions);
         assertEquals(index2Location.getSortedColumns(), List.of(
                 SortColumn.asc(ColumnName.of("someInt")),
                 SortColumn.asc(ColumnName.of("someString"))));

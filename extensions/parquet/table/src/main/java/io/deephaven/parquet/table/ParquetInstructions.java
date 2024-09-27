@@ -36,6 +36,18 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
 
     /**
+     * Throws an exception if {@link ParquetInstructions#getTableDefinition()} is empty.
+     *
+     * @param parquetInstructions the parquet instructions
+     * @throws IllegalArgumentException if there is not a table definition
+     */
+    public static void ensureDefinition(ParquetInstructions parquetInstructions) {
+        if (parquetInstructions.getTableDefinition().isEmpty()) {
+            throw new IllegalArgumentException("Table definition must be provided");
+        }
+    }
+
+    /**
      * Set the default for {@link #getCompressionCodecName()}.
      *
      * @deprecated Use {@link Builder#setCompressionCodecName(String)} instead.
