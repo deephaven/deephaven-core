@@ -41,8 +41,8 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
         "Bools = ii == 5 ? null : ((ii % 2) == 0)",
         "Strings = ii == 5 ? null : `hello ` + i",
         "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii",
-        "LocalDates = ii == 5 ? null : parseLocalDate(`2001-3-` + (ii + 1))",
-        "LocalTimes = ii == 5 ? null : parseLocalTime(`12:34:` + (46 + ii))"
+        "LocalDates = ii == 5 ? null : '2001-03-01' + ((int)ii * 'P1D')",
+        "LocalTimes = ii == 5 ? null : '12:34:46'.plus((int)ii * 'PT1S')"
       });
   std::cout << th.Stream(true) << '\n';
 
