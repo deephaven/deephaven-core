@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.stream.Stream;
 
 /**
- * {@link LivenessNode} implementation that relies on reference counting to determine its liveness.
+ * Simple {@link LivenessManager} implementation.
  */
 public class StandaloneLivenessManager implements LivenessManager, LogOutputAppendable {
 

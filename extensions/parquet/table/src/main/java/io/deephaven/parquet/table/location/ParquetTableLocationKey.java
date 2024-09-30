@@ -180,8 +180,10 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         metadata = null;
         fileReader = null;
+        rowGroupIndices = null;
+        channelsProvider = null;
     }
 }

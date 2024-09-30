@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import org.jetbrains.annotations.NotNull;
@@ -28,8 +29,8 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
             @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @Nullable final TableDataRefreshService refreshService,
-            final UpdateMode updateMode,
-            final UpdateMode locationUpdateMode) {
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode) {
         super(tableKey, refreshService != null, updateMode, locationUpdateMode);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;

@@ -205,7 +205,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 reference, null, viewColumns, null);
     }
 
-    private static final String TRACKED_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TrackedTableLocationKey__";
+    private static final String KEY_SUPPLIER_COLUMN_NAME = "__PartitionAwareSourceTable_KeySupplier__";
 
     private static <T> ColumnSource<? super T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
             @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
@@ -235,13 +235,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
-                Stream.of(TRACKED_KEY_COLUMN_NAME)).collect(Collectors.toList());
+                Stream.of(KEY_SUPPLIER_COLUMN_NAME)).collect(Collectors.toList());
         final List<ColumnSource<?>> partitionTableColumnSources =
                 new ArrayList<>(partitioningColumnDefinitions.size() + 1);
         for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
-        // Add the tracked keys to the table
+        // Add the key suppliers to the table
         // noinspection unchecked,rawtypes
         partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(
                 (Collection<LiveSupplier>) (Collection) foundLocationKeys,
@@ -257,7 +257,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         // Return the filtered keys
         final Iterable<LiveSupplier<ImmutableTableLocationKey>> iterable =
-                () -> filteredColumnPartitionTable.columnIterator(TRACKED_KEY_COLUMN_NAME);
+                () -> filteredColumnPartitionTable.columnIterator(KEY_SUPPLIER_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
     }
 

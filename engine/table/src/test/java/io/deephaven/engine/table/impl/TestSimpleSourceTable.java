@@ -126,7 +126,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 allowing(locationProvider).supportsSubscriptions();
                 will(returnValue(true));
                 allowing(locationProvider).getUpdateMode();
-                will(returnValue(TableLocationProvider.UpdateMode.ADD_REMOVE));
+                will(returnValue(TableUpdateMode.ADD_REMOVE));
             }
         });
 

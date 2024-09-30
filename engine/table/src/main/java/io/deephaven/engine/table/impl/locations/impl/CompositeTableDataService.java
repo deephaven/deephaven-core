@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.util.Formatter;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -119,9 +120,9 @@ public class CompositeTableDataService extends AbstractTableDataService {
         private final String implementationName;
 
         // What guarantees about added/removed locations can be made?
-        private final UpdateMode updateMode;
+        private final TableUpdateMode updateMode;
         // What guarantees about added/removed rows within locations can be made?
-        private final UpdateMode locationUpdateMode;
+        private final TableUpdateMode locationUpdateMode;
 
         private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
                 @NotNull final TableKey tableKey) {
@@ -135,18 +136,17 @@ public class CompositeTableDataService extends AbstractTableDataService {
             // 2) If any providers are ADD_ONLY or APPEND_ONLY, the overall provider is ADD_ONLY
             // 3) If all providers are STATIC, the overall provider is STATIC
             boolean anyAdditions = false;
-            UpdateMode tmpMode = UpdateMode.STATIC;
+            TableUpdateMode tmpMode = TableUpdateMode.STATIC;
             for (final TableLocationProvider provider : inputProviders) {
-                if (provider.getUpdateMode() == UpdateMode.ADD_REMOVE) {
-                    tmpMode = UpdateMode.ADD_REMOVE;
+                if (provider.getUpdateMode().removeAllowed()) {
+                    tmpMode = TableUpdateMode.ADD_REMOVE;
                     break;
-                } else if (provider.getUpdateMode() == UpdateMode.ADD_ONLY
-                        || provider.getUpdateMode() == UpdateMode.APPEND_ONLY) {
+                } else if (provider.getUpdateMode().addAllowed()) {
                     anyAdditions = true;
                 }
             }
             if (anyAdditions) {
-                tmpMode = UpdateMode.ADD_ONLY;
+                tmpMode = TableUpdateMode.ADD_ONLY;
             }
             updateMode = tmpMode;
 
@@ -156,18 +156,17 @@ public class CompositeTableDataService extends AbstractTableDataService {
             // 2) If any provider locations are ADD_ONLY or APPEND_ONLY, the overall provider location mode is ADD_ONLY
             // 3) If all provider locations are STATIC, the overall provider location mode is STATIC
             anyAdditions = false;
-            tmpMode = UpdateMode.STATIC;
+            tmpMode = TableUpdateMode.STATIC;
             for (final TableLocationProvider provider : inputProviders) {
-                if (provider.getLocationUpdateMode() == UpdateMode.ADD_REMOVE) {
-                    tmpMode = UpdateMode.ADD_REMOVE;
+                if (provider.getLocationUpdateMode().removeAllowed()) {
+                    tmpMode = TableUpdateMode.ADD_REMOVE;
                     break;
-                } else if (provider.getLocationUpdateMode() == UpdateMode.ADD_ONLY
-                        || provider.getLocationUpdateMode() == UpdateMode.APPEND_ONLY) {
+                } else if (provider.getLocationUpdateMode().addAllowed()) {
                     anyAdditions = true;
                 }
             }
             if (anyAdditions) {
-                tmpMode = UpdateMode.ADD_ONLY;
+                tmpMode = TableUpdateMode.ADD_ONLY;
             }
             locationUpdateMode = tmpMode;
         }
@@ -281,13 +280,13 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
         @Override
         @NotNull
-        public TableLocationProvider.UpdateMode getUpdateMode() {
+        public TableUpdateMode getUpdateMode() {
             return updateMode;
         }
 
         @Override
         @NotNull
-        public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+        public TableUpdateMode getLocationUpdateMode() {
             return locationUpdateMode;
         }
     }

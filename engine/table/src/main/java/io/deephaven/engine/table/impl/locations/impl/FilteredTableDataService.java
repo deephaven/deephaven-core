@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.base.reference.WeakReferenceWrapper;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -164,16 +165,16 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         @NotNull
-        public TableLocationProvider.UpdateMode getUpdateMode() {
+        public TableUpdateMode getUpdateMode() {
             // TODO: I think locations can be added or removed at any time (with a dynamic filter)
-            return UpdateMode.ADD_REMOVE;
+            return TableUpdateMode.ADD_REMOVE;
         }
 
         @Override
         @NotNull
-        public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+        public TableUpdateMode getLocationUpdateMode() {
             // TODO: this is defensive, individual location contents might be static (e.g. Parquet files)
-            return UpdateMode.ADD_REMOVE;
+            return TableUpdateMode.ADD_REMOVE;
         }
     }
 

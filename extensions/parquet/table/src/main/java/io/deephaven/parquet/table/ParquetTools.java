@@ -16,6 +16,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -830,8 +831,8 @@ public class ParquetTools {
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
                 null,
-                TableLocationProvider.UpdateMode.STATIC, // exactly one location here
-                TableLocationProvider.UpdateMode.STATIC); // parquet files are static
+                TableUpdateMode.STATIC, // exactly one location here
+                TableUpdateMode.STATIC); // parquet files are static
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -896,9 +897,9 @@ public class ParquetTools {
                         // If refreshing, new locations can be discovered but they will be appended
                         // to the locations list
                         useInstructions.isRefreshing()
-                                ? TableLocationProvider.UpdateMode.APPEND_ONLY
-                                : TableLocationProvider.UpdateMode.STATIC,
-                        TableLocationProvider.UpdateMode.STATIC // parquet files are static
+                                ? TableUpdateMode.APPEND_ONLY
+                                : TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC // parquet files are static
                 ),
                 updateSourceRegistrar);
     }

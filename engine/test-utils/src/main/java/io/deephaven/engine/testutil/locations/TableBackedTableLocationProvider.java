@@ -6,6 +6,7 @@ package io.deephaven.engine.testutil.locations;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
@@ -31,8 +32,8 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     public TableBackedTableLocationProvider(
             @NotNull final UpdateSourceRegistrar registrar,
             final boolean supportsSubscriptions,
-            final UpdateMode updateMode,
-            final UpdateMode locationUpdateMode,
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode,
             @NotNull final Table... tables) {
         super(StandaloneTableKey.getInstance(), supportsSubscriptions, updateMode, locationUpdateMode);
         this.registrar = registrar;

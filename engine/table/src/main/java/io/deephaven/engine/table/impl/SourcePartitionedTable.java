@@ -39,26 +39,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
     private static final String CONSTITUENT_COLUMN_NAME = "LocationTable";
 
     /**
-     * Private constructor for a {@link SourcePartitionedTable}.
-     *
-     * @param table the locations table to use for this {@link SourcePartitionedTable}
-     * @param constituentDefinition The {@link TableDefinition} expected of constituent {@link Table tables}
-     * @param refreshLocations Whether the set of locations should be refreshed
-     */
-    private SourcePartitionedTable(
-            @NotNull final Table table,
-            @NotNull final TableDefinition constituentDefinition,
-            final boolean refreshLocations) {
-        super(table,
-                Set.of(KEY_COLUMN_NAME),
-                true,
-                CONSTITUENT_COLUMN_NAME,
-                constituentDefinition,
-                refreshLocations,
-                false);
-    }
-
-    /**
      * Construct a {@link SourcePartitionedTable} from the supplied parameters.
      * <p>
      * Note that refreshLocations and refreshSizes are distinct because there are use cases that supply an external
@@ -72,27 +52,26 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
      * @param refreshSizes Whether the locations found should be refreshed
      * @param locationKeyMatcher Function to filter desired location keys
      */
-    public static SourcePartitionedTable create(
+    public SourcePartitionedTable(
             @NotNull final TableDefinition constituentDefinition,
             @NotNull final UnaryOperator<Table> applyTablePermissions,
             @NotNull final TableLocationProvider tableLocationProvider,
             final boolean refreshLocations,
             final boolean refreshSizes,
             @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
-        final UnderlyingTableMaintainer maintainer = new UnderlyingTableMaintainer(constituentDefinition,
+        super(new UnderlyingTableMaintainer(
+                constituentDefinition,
                 applyTablePermissions,
                 tableLocationProvider,
                 refreshLocations,
                 refreshSizes,
-                locationKeyMatcher);
-
-        final SourcePartitionedTable sourcePartitionedTable = new SourcePartitionedTable(
-                maintainer.result(),
+                locationKeyMatcher).result(),
+                Set.of(KEY_COLUMN_NAME),
+                true,
+                CONSTITUENT_COLUMN_NAME,
                 constituentDefinition,
-                refreshLocations);
-
-        maintainer.assignLivenessManager(sourcePartitionedTable);
-        return sourcePartitionedTable;
+                refreshLocations,
+                false);
     }
 
     private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode {
@@ -127,9 +106,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
             super(false);
 
-            // Increase the refcount of this liveness node to allow it to manage the subscription buffer.
-            retainReference();
-
             this.constituentDefinition = constituentDefinition;
             this.applyTablePermissions = applyTablePermissions;
             this.tableLocationProvider = tableLocationProvider;
@@ -149,14 +125,19 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             if (needToRefreshLocations || refreshSizes) {
                 result.setRefreshing(true);
                 refreshCombiner = new UpdateSourceCombiner(result.getUpdateGraph());
-                result.addParentReference(refreshCombiner);
+                manage(refreshCombiner);
+                result.addParentReference(this);
             } else {
                 refreshCombiner = null;
             }
 
             if (needToRefreshLocations) {
+                resultTableLocationKeys.startTrackingPrevValues();
+                resultLocationTables.startTrackingPrevValues();
+
                 subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
                 manage(subscriptionBuffer);
+
                 pendingLocationStates = new IntrusiveDoublyLinkedQueue<>(
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
@@ -170,7 +151,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         processPendingLocations(true);
                     }
                 };
-                result.addParentReference(processNewLocationsUpdateRoot);
                 refreshCombiner.addSource(processNewLocationsUpdateRoot);
 
                 this.removedLocationsComitter = new UpdateCommitter<>(
@@ -191,9 +171,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 tableLocationProvider.refresh();
 
                 final Collection<TableLocation> locations = new ArrayList<>();
-                tableLocationProvider.getTableLocationKeys(tlk -> {
-                    locations.add(tableLocationProvider.getTableLocation(tlk.get()));
-                }, locationKeyMatcher);
+                tableLocationProvider.getTableLocationKeys(
+                        tlk -> locations.add(tableLocationProvider.getTableLocation(tlk.get())),
+                        locationKeyMatcher);
                 try (final RowSet added = sortAndAddLocations(locations.stream())) {
                     resultRows.insert(added);
                 }
@@ -202,15 +182,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             if (refreshCombiner != null) {
                 refreshCombiner.install();
             }
-        }
-
-        /**
-         * Manage ourselves with the provided liveness manager and cleanup the incremented reference count from the
-         * constructor.
-         */
-        private void assignLivenessManager(final LivenessManager manager) {
-            manager.manage(this);
-            dropReference();
         }
 
         private QueryTable result() {
@@ -242,8 +213,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     constituentDefinition,
                     "SingleLocationSourceTable-" + tableLocation,
                     RegionedTableComponentFactoryImpl.INSTANCE,
-                    new SingleTableLocationProvider(tableLocation, TableLocationProvider.UpdateMode.ADD_REMOVE),
+                    new SingleTableLocationProvider(tableLocation, refreshSizes
+                            ? tableLocationProvider.getLocationUpdateMode()
+                            : TableUpdateMode.STATIC),
                     refreshSizes ? refreshCombiner : null);
+            // TODO: WE NEED TO TRANSFER TL REF FROM UTM TO CONSTITUENT RCSM
 
             // Be careful to propagate the systemic attribute properly to child tables
             constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
@@ -288,6 +262,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     .map(LiveSupplier::get)
                     .filter(locationKeyMatcher)
                     .map(tableLocationProvider::getTableLocation)
+                    .peek(this::manage)
                     .map(PendingLocationState::new)
                     .forEach(pendingLocationStates::offer);
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
@@ -304,6 +279,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+            // TODO: I THINK WE HAVE A BUG. WE AREN'T REMOVING REMOVED LOCATIONS FROM pendingLocationStates
             final Set<ImmutableTableLocationKey> relevantRemovedLocations =
                     locationUpdate.getPendingRemovedLocationKeys()
                             .stream()

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.engine.table.impl.DummyTableLocation;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableDataService;
 import io.deephaven.engine.table.impl.locations.TableKey;
@@ -56,7 +57,7 @@ public class TestTableDataService {
         @Override
         @NotNull
         protected TableLocationProvider makeTableLocationProvider(@NotNull TableKey tableKey) {
-            return new SingleTableLocationProvider(tableLocation, TableLocationProvider.UpdateMode.ADD_REMOVE);
+            return new SingleTableLocationProvider(tableLocation, TableUpdateMode.ADD_REMOVE);
         }
     }
 

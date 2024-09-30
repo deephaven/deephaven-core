@@ -115,4 +115,8 @@ public interface ColumnSourceManager extends LivenessReferent {
      * @param tableLocationKey the location key being removed
      */
     void removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+
+    Map<String, Object> getTableAttributes(
+            @NotNull TableUpdateMode tableUpdateMode,
+            @NotNull TableUpdateMode tableLocationUpdateMode);
 }

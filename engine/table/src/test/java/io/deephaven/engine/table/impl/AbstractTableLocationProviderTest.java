@@ -33,7 +33,7 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
     private static class TestTableLocationProvider extends AbstractTableLocationProvider {
 
         public TestTableLocationProvider(final boolean supportsSubscriptions) {
-            super(supportsSubscriptions, UpdateMode.ADD_REMOVE, UpdateMode.ADD_REMOVE);
+            super(supportsSubscriptions, TableUpdateMode.ADD_REMOVE, TableUpdateMode.ADD_REMOVE);
         }
 
         @Override

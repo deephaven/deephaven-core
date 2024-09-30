@@ -4,6 +4,7 @@
 package io.deephaven.iceberg.layout;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -47,8 +48,8 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
                 true,
                 adapter,
                 tableIdentifier,
-                UpdateMode.ADD_REMOVE, // New locations can be added and removed
-                UpdateMode.STATIC // Individual locations cannot add or remove rows
+                TableUpdateMode.ADD_REMOVE, // New locations can be added and removed
+                TableUpdateMode.STATIC // Individual locations cannot add or remove rows
         );
 
         Assert.neqNull(refreshService, "refreshService");

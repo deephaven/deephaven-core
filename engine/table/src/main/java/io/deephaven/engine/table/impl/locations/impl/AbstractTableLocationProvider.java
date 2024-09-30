@@ -8,6 +8,7 @@ import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -158,12 +159,12 @@ public abstract class AbstractTableLocationProvider
     /**
      * Records how the set of locations for this TLP can update
      */
-    private final UpdateMode updateMode;
+    private final TableUpdateMode updateMode;
 
     /**
      * Records how the individual locations for this TLP can update (whether row can be added or removed)
      */
-    private final UpdateMode locationUpdateMode;
+    private final TableUpdateMode locationUpdateMode;
 
     private volatile boolean initialized;
 
@@ -181,8 +182,8 @@ public abstract class AbstractTableLocationProvider
     protected AbstractTableLocationProvider(
             @NotNull final TableKey tableKey,
             final boolean supportsSubscriptions,
-            final UpdateMode updateMode,
-            final UpdateMode locationUpdateMode) {
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode) {
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
         this.partitionKeys = null;
@@ -201,8 +202,8 @@ public abstract class AbstractTableLocationProvider
      */
     protected AbstractTableLocationProvider(
             final boolean supportsSubscriptions,
-            final UpdateMode updateMode,
-            final UpdateMode locationUpdateMode) {
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode) {
         this(StandaloneTableKey.getInstance(), supportsSubscriptions, updateMode, locationUpdateMode);
     }
 
@@ -596,13 +597,13 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     @NotNull
-    public TableLocationProvider.UpdateMode getUpdateMode() {
+    public TableUpdateMode getUpdateMode() {
         return updateMode;
     }
 
     @Override
     @NotNull
-    public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+    public TableUpdateMode getLocationUpdateMode() {
         return locationUpdateMode;
     }
 }

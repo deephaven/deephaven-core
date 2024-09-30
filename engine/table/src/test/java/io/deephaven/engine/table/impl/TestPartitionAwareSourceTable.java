@@ -143,7 +143,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 allowing(locationProvider).getUpdateMode();
-                will(returnValue(TableLocationProvider.UpdateMode.ADD_REMOVE));
+                will(returnValue(TableUpdateMode.ADD_REMOVE));
             }
         });
 

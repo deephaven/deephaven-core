@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
@@ -27,8 +28,8 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
             final boolean isRefreshing,
             @Nullable final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier,
-            final UpdateMode updateMode,
-            final UpdateMode locationUpdateMode) {
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode) {
         super(tableKey, isRefreshing, updateMode, locationUpdateMode);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;

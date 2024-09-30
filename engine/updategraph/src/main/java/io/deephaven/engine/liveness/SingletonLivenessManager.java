@@ -62,16 +62,30 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         return true;
     }
 
+    /**
+     * @inheritDoc
+     * @implNote This is equivalent to {@link #release()} if {@code referent} is the one managed by this manager.
+     */
     @Override
     public boolean tryUnmanage(@NotNull LivenessReferent referent) {
-        throw new UnsupportedOperationException(
-                "SingletonLivenessManager should call release() instead of tryUnmanage()");
+        final WeakReference<? extends LivenessReferent> localRetainedReference;
+        if (!Liveness.REFERENCE_TRACKING_DISABLED
+                && (localRetainedReference = retainedReference) != null
+                && localRetainedReference.get() == referent) {
+            release();
+        }
+        return true;
     }
 
+    /**
+     * @inheritDoc
+     * @implNote This is equivalent to {@link #release()} if any element of {@code referents} is the one managed by this
+     *           manager.
+     */
     @Override
     public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
-        throw new UnsupportedOperationException(
-                "SingletonLivenessManager should call release() instead of tryUnmanage()");
+        referents.forEach(this::tryUnmanage);
+        return true;
     }
 
     @Override

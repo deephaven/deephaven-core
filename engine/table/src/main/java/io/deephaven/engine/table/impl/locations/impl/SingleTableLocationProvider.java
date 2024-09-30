@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,14 +36,14 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     private final TrackedKeySupplier immutableKeySupplier;
     private final TableLocation tableLocation;
-    private final UpdateMode locationUpdateMode;
+    private final TableUpdateMode locationUpdateMode;
 
     /**
      * @param tableLocation The only table location that this provider will ever provide
      */
     public SingleTableLocationProvider(
             @NotNull final TableLocation tableLocation,
-            final UpdateMode locationUpdateMode) {
+            final TableUpdateMode locationUpdateMode) {
         this.tableLocation = tableLocation;
         // TODO: it seems like we should manage this, but SingleTableLocationProvider isn't a LivenessManager.
         immutableKeySupplier = new TrackedKeySupplier(tableLocation.getKey());
@@ -104,14 +105,14 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     @Override
     @NotNull
-    public TableLocationProvider.UpdateMode getUpdateMode() {
+    public TableUpdateMode getUpdateMode() {
         // No additions or removals are possible from this provider, it exists to serve
-        return UpdateMode.STATIC;
+        return TableUpdateMode.STATIC;
     }
 
     @Override
     @NotNull
-    public TableLocationProvider.UpdateMode getLocationUpdateMode() {
+    public TableUpdateMode getLocationUpdateMode() {
         return locationUpdateMode;
     }
 }

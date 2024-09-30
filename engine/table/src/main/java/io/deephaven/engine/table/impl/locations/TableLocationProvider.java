@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,10 +19,6 @@ import java.util.function.Predicate;
  * Discovery utility for {@link TableLocation}s for a given table.
  */
 public interface TableLocationProvider extends NamedImplementation {
-    enum UpdateMode {
-        STATIC, APPEND_ONLY, ADD_ONLY, ADD_REMOVE
-    }
-
     /**
      * Get the {@link TableKey} associated with this provider.
      *
@@ -30,18 +27,18 @@ public interface TableLocationProvider extends NamedImplementation {
     ImmutableTableKey getKey();
 
     /**
-     * Get the {@link UpdateMode update guarantees} of this provider describing how this provider will add or remove
-     * table locations.
+     * Get the {@link TableUpdateMode update guarantees} of this provider describing how this provider will add or
+     * remove table locations.
      */
     @NotNull
-    TableLocationProvider.UpdateMode getUpdateMode();
+    TableUpdateMode getUpdateMode();
 
     /**
-     * Get the location {@link UpdateMode update guarantees} of this provider describing how individual locations will
-     * add or remove rows.
+     * Get the location {@link TableUpdateMode update guarantees} of this provider describing how individual locations
+     * will add or remove rows.
      */
     @NotNull
-    TableLocationProvider.UpdateMode getLocationUpdateMode();
+    TableUpdateMode getLocationUpdateMode();
 
     /**
      * ShiftObliviousListener interface for anything that wants to know about new table location keys.

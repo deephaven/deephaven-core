@@ -48,8 +48,7 @@ public interface LivenessManager {
     @FinalDefault
     default void unmanage(@NotNull LivenessReferent referent) {
         if (!tryUnmanage(referent)) {
-            throw new LivenessStateException(this + " is no longer live and cannot unmanage " +
-                    referent.getReferentDescription());
+            throw new LivenessStateException(this + " cannot unmanage " + referent.getReferentDescription());
         }
     }
 
@@ -58,14 +57,15 @@ public interface LivenessManager {
      * {@link LivenessReferent}, then this method is a no-op if {@code this} is not live.
      *
      * @param referent The referent to drop
-     * @return Whether this node was live and thus in fact tried to drop a reference
+     * @return If this node is also a {@link LivenessReferent}, whether this node was live and thus in fact tried to
+     *         drop a reference. Else always returns {@code true} if dropping a reference via this method is supported
+     *         by the implementation.
      */
     boolean tryUnmanage(@NotNull LivenessReferent referent);
 
     /**
      * For each referent in {@code referent}, if this manager manages referent one or more times, drop one such
      * reference. If this manager is also a {@link LivenessReferent}, then it must also be live.
-     *
      *
      * @param referents The referents to drop
      */
@@ -83,7 +83,9 @@ public interface LivenessManager {
      * this manager is also a {@link LivenessReferent}, then this method is a no-op if {@code this} is not live.
      *
      * @param referents The referents to drop
-     * @return Whether this node was live and thus in fact tried to drop a reference
+     * @return If this node is also a {@link LivenessReferent}, whether this node was live and thus in fact tried to
+     *         drop the references. Else always returns {@code true} if dropping a reference via this method is
+     *         supported by the implementation.
      */
     @SuppressWarnings("unused")
     boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents);

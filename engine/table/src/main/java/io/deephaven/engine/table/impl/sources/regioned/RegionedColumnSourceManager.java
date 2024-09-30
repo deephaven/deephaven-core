@@ -582,6 +582,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
+        // New regions indices are assigned in order of insertion, starting from 0 with no re-use of removed indices.
+        // If this logic changes, the `getTableAttributes()` logic needs to be updated.
         private final int regionIndex = nextRegionIndex++;
         private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
@@ -736,5 +738,26 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
             Assert.eq(regionIndex, "regionIndex", source.addRegion(definition, location),
                     "source.addRegion((definition, location)");
         }
+    }
+
+    public Map<String, Object> getTableAttributes(
+            @NotNull TableUpdateMode tableUpdateMode,
+            @NotNull TableUpdateMode tableLocationUpdateMode) {
+        final Map<String, Object> attributes = new LinkedHashMap<>();
+        // NOTE: Current RegionedColumnSourceManager implementation appends new locations and does not reuse
+        // region indices. This is important for the following attributes to be correct.
+
+        if (tableUpdateMode == TableUpdateMode.APPEND_ONLY
+                && tableLocationUpdateMode == TableUpdateMode.STATIC) {
+            // This table is APPEND_ONLY IFF the set of locations is APPEND_ONLY
+            // and the location contents are STATIC
+            attributes.put(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        } else if (!tableUpdateMode.removeAllowed()
+                && !tableLocationUpdateMode.removeAllowed()) {
+            // This table is ADD_ONLY IFF the set of locations is not allowed to remove locations
+            // and the locations contents are not allowed to remove rows
+            attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
+        return attributes;
     }
 }

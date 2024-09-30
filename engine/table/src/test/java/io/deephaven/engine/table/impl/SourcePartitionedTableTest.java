@@ -12,10 +12,7 @@ import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
@@ -98,9 +95,11 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         tlp = new TableBackedTableLocationProvider(
                 registrar,
                 true,
+                TableUpdateMode.ADD_REMOVE,
+                TableUpdateMode.ADD_REMOVE,
                 p1, p2);
 
-        return SourcePartitionedTable.create(p1.getDefinition(),
+        return new SourcePartitionedTable(p1.getDefinition(),
                 t -> t,
                 tlp,
                 true,

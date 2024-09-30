@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.layout;
 
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -32,9 +33,10 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
                 false,
                 null,
                 tableIdentifier,
-                UpdateMode.STATIC, // The set of locations is static
-                UpdateMode.STATIC // Individual locations cannot add or remove rows
-        );    }
+                TableUpdateMode.STATIC, // The set of locations is static
+                TableUpdateMode.STATIC // Individual locations cannot add or remove rows
+        );
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // AbstractTableLocationProvider implementation

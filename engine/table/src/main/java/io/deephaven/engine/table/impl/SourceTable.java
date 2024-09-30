@@ -6,13 +6,16 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -105,17 +108,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
         if (isRefreshing) {
             setRefreshing(true);
-            if (locationProvider.getUpdateMode() == TableLocationProvider.UpdateMode.APPEND_ONLY
-                    && locationProvider.getLocationUpdateMode() == TableLocationProvider.UpdateMode.STATIC) {
-                // This table is APPEND_ONLY IFF the set of locations is APPEND_ONLY
-                // and the location contents are STATIC
-                setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.FALSE);
-            } else if (locationProvider.getUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE
-                    && locationProvider.getLocationUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE) {
-                // This table is ADD_ONLY IFF the set of locations is not allowed to remove locations (!ADD_REMOVE)
-                // and the locations contents are not allowed to remove rows (!ADD_REMOVE)
-                setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-            }
+            // Given the location provider's update modes, retreive applicable table attributes from the column
+            // source manager.
+            columnSourceManager.getTableAttributes(
+                    locationProvider.getUpdateMode(),
+                    locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
         }
     }
 
@@ -164,18 +161,17 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 } else {
                     locationProvider.refresh();
                     final Collection<LiveSupplier<ImmutableTableLocationKey>> keySuppliers = new ArrayList<>();
-                    // Manage each of the location keys as we see them (since the TLP is not guaranteeing them outside
-                    // the callback)
-                    locationProvider.getTableLocationKeys(ttlk -> {
-                        if (isRefreshing()) {
-                            manage(ttlk);
-                        }
-                        keySuppliers.add(ttlk);
-                    });
-                    maybeAddLocations(keySuppliers);
-                    if (isRefreshing()) {
-                        // Now we can un-manage the location keys
-                        keySuppliers.forEach(this::unmanage);
+                    try {
+                        locationProvider.getTableLocationKeys(ttlk -> {
+                            // Retain each of the location key suppliers as we see them (since the TLP is not guaranteed
+                            // to retain them outside the callback).
+                            ttlk.retainReference();
+                            keySuppliers.add(ttlk);
+                        });
+                        maybeAddLocations(keySuppliers);
+                    } finally {
+                        // Now we can drop the location key supplier references.
+                        keySuppliers.forEach(LivenessReferent::dropReference);
                     }
                 }
             });
@@ -192,8 +188,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.get())));
     }
 
-    private void maybeRemoveLocations(
-            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
         if (removedKeys.isEmpty()) {
             return;
         }
@@ -242,7 +237,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
-                if (locationProvider.getUpdateMode() != TableLocationProvider.UpdateMode.ADD_REMOVE
+                if (!locationProvider.getUpdateMode().removeAllowed()
                         && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
                     // This TLP doesn't support removed locations, we need to throw an exception.
                     final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
