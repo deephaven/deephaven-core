@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
@@ -19,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -102,6 +105,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      *         non-String columns, defaults to false
      */
     public abstract boolean useDictionary(String columnName);
+
+    public abstract OptionalInt getFieldId(final String columnName);
 
     public abstract Object getSpecialInstructions();
 
@@ -248,6 +253,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public OptionalInt getFieldId(final String columnName) {
+            return OptionalInt.empty();
+        }
+
+        @Override
         @Nullable
         public Object getSpecialInstructions() {
             return null;
@@ -348,6 +358,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String codecName;
         private String codecArgs;
         private boolean useDictionary;
+        private int fieldId = Integer.MIN_VALUE;
 
         public ColumnInstructions(final String columnName) {
             this.columnName = columnName;
@@ -390,6 +401,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         public void useDictionary(final boolean useDictionary) {
             this.useDictionary = useDictionary;
+        }
+
+        public OptionalInt getFieldId() {
+            return fieldId == Integer.MIN_VALUE ? OptionalInt.empty() : OptionalInt.of(fieldId);
+        }
+
+        public void setFieldId(final int fieldId) {
+            this.fieldId = fieldId;
         }
     }
 
@@ -451,8 +470,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.completedWrites = completedWrites;
         }
 
-        private String getOrDefault(final String columnName, final String defaultValue,
-                final Function<ColumnInstructions, String> fun) {
+        private <VALUE_TYPE> VALUE_TYPE getOrDefault(final String columnName, final VALUE_TYPE defaultValue,
+                final Function<ColumnInstructions, VALUE_TYPE> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -505,6 +524,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean useDictionary(final String columnName) {
             return getOrDefault(columnName, false, ColumnInstructions::useDictionary);
+        }
+
+        @Override
+        public OptionalInt getFieldId(final String columnName) {
+            return getOrDefault(columnName, OptionalInt.empty(), ColumnInstructions::getFieldId);
         }
 
         @Override
@@ -660,6 +684,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
         private List<CompletedWrite> completedWrites;
+        private TIntObjectHashMap<String> usedFieldIdToColumn;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -788,6 +813,53 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             final ColumnInstructions ci = getColumnInstructions(columnName);
             ci.useDictionary(useDictionary);
             return this;
+        }
+
+        /**
+         * Add a mapping from field ID to column name. This field ID will be populated inside the parquet schema when
+         * writing the parquet file.
+         */
+        public Builder addFieldId(final String columnName, final int fieldId) {
+            if (usedFieldIdToColumn == null) {
+                usedFieldIdToColumn = new TIntObjectHashMap<>();
+                usedFieldIdToColumn.put(fieldId, columnName);
+                getColumnInstructions(columnName).setFieldId(fieldId);
+            } else {
+                addFieldIdHelper(fieldId, columnName);
+            }
+            return this;
+        }
+
+        /**
+         * Populate mapping from field ID to column name using the provided map. These field IDs will be populated
+         * inside the parquet schema when writing the parquet file.
+         *
+         * @param fieldIdToColumn A map from field ID to column name
+         */
+        public Builder addFieldIdMapping(final Map<Integer, String> fieldIdToColumn) {
+            if (usedFieldIdToColumn == null) {
+                usedFieldIdToColumn = new TIntObjectHashMap<>(fieldIdToColumn.size());
+                for (final Map.Entry<Integer, String> entry : fieldIdToColumn.entrySet()) {
+                    final int fieldId = entry.getKey();
+                    final String column = entry.getValue();
+                    usedFieldIdToColumn.put(fieldId, column);
+                    getColumnInstructions(column).setFieldId(fieldId);
+                }
+            } else {
+                for (final Map.Entry<Integer, String> entry : fieldIdToColumn.entrySet()) {
+                    addFieldIdHelper(entry.getKey(), entry.getValue());
+                }
+            }
+            return this;
+        }
+
+        private void addFieldIdHelper(final int fieldId, final String column) {
+            if (usedFieldIdToColumn.containsKey(fieldId)) {
+                throw new IllegalArgumentException("Field ID " + fieldId + " is already assigned to column "
+                        + usedFieldIdToColumn.get(fieldId) + " and cannot be assigned to column " + column);
+            }
+            usedFieldIdToColumn.put(fieldId, column);
+            getColumnInstructions(column).setFieldId(fieldId);
         }
 
         private ColumnInstructions getColumnInstructions(final String columnName) {

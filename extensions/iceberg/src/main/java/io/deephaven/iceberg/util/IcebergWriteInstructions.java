@@ -10,7 +10,7 @@ import org.immutables.value.Value.Default;
  * tables. The default values documented in this class may change in the future. As such, callers may wish to explicitly
  * set the values.
  */
-abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
+public abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
     /**
      * While appending a partition to an iceberg table, whether to create the iceberg table if it does not exist;
      * defaults to {@code false}.
@@ -21,8 +21,8 @@ abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
     }
 
     /**
-     * While appending a partition to an iceberg table, whether to verify that the schema of the table being appended is
-     * consistent with the iceberg table; defaults to {@code false}.
+     * While appending a partition to an iceberg table, whether to verify that the partition spec and schema of the
+     * table being appended is consistent with the iceberg table; defaults to {@code false}.
      */
     @Default
     public boolean verifySchema() {

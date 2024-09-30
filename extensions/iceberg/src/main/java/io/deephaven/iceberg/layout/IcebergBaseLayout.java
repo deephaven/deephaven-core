@@ -20,9 +20,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static io.deephaven.iceberg.base.IcebergUtils.getAllDataFiles;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -142,27 +144,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
-        try {
-            // Retrieve the manifest files from the snapshot
-            final List<ManifestFile> manifestFiles = snapshot.allManifests(fileIO);
-            for (final ManifestFile manifestFile : manifestFiles) {
-                // Currently only can process manifest files with DATA content type.
-                if (manifestFile.content() != ManifestContent.DATA) {
-                    throw new TableDataException(
-                            String.format("%s:%d - only DATA manifest files are currently supported, encountered %s",
-                                    table, snapshot.snapshotId(), manifestFile.content()));
+        try (final Stream<DataFile> dataFiles = getAllDataFiles(table, snapshot, fileIO)) {
+            dataFiles.forEach(df -> {
+                final URI fileUri = dataFileUri(df);
+                final IcebergTableLocationKey locationKey =
+                        cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
+                if (locationKey != null) {
+                    locationKeyObserver.accept(locationKey);
                 }
-                try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO)) {
-                    for (DataFile df : reader) {
-                        final URI fileUri = dataFileUri(df);
-                        final IcebergTableLocationKey locationKey =
-                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
-                        if (locationKey != null) {
-                            locationKeyObserver.accept(locationKey);
-                        }
-                    }
-                }
-            }
+            });
         } catch (final Exception e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", table, snapshot.snapshotId()), e);

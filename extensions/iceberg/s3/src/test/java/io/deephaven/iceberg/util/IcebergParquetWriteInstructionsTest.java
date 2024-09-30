@@ -4,14 +4,19 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.parquet.table.ParquetInstructions;
-import org.junit.jupiter.api.Test;
+import io.deephaven.test.types.OutOfBandTest;
+import org.junit.experimental.categories.Category;
+import org.junit.Test;
+
+import java.util.Map;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-class IcebergParquetWriteInstructionsTest {
+@Category(OutOfBandTest.class)
+public class IcebergParquetWriteInstructionsTest {
 
     @Test
-    void defaults() {
+    public void defaults() {
         final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder().build();
         assertThat(instructions.tableDefinition().isEmpty()).isTrue();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
@@ -24,7 +29,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetCreateTableIfNotExist() {
+    public void testSetCreateTableIfNotExist() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .createTableIfNotExist(true)
                 .build()
@@ -33,7 +38,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetVerifySchema() {
+    public void testSetVerifySchema() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .verifySchema(true)
                 .build()
@@ -42,7 +47,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetCompressionCodecName() {
+    public void testSetCompressionCodecName() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("GZIP")
                 .build()
@@ -51,7 +56,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetMaximumDictionaryKeys() {
+    public void testSetMaximumDictionaryKeys() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .maximumDictionaryKeys(100)
                 .build()
@@ -60,7 +65,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetMaximumDictionarySize() {
+    public void testSetMaximumDictionarySize() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .maximumDictionarySize(100)
                 .build()
@@ -69,7 +74,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testSetTargetPageSize() {
+    public void testSetTargetPageSize() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .targetPageSize(1024 * 1024)
                 .build()
@@ -78,7 +83,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testMinMaximumDictionaryKeys() {
+    public void testMinMaximumDictionaryKeys() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .maximumDictionaryKeys(-1)
@@ -89,7 +94,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testMinMaximumDictionarySize() {
+    public void testMinMaximumDictionarySize() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .maximumDictionarySize(-1)
@@ -100,7 +105,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void testMinTargetPageSize() {
+    public void testMinTargetPageSize() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .targetPageSize(1024)
@@ -111,18 +116,22 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    void toParquetInstructionTest() {
+    public void toParquetInstructionTest() {
         final IcebergParquetWriteInstructions icebergInstructions = IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("GZIP")
                 .maximumDictionaryKeys(100)
                 .maximumDictionarySize(200)
                 .targetPageSize(1024 * 1024)
                 .build();
-        final ParquetInstructions parquetInstructions = icebergInstructions.toParquetInstructions(null);
+        final Map<Integer, String> fieldIdToName = Map.of(2, "field2", 3, "field3");
+        final ParquetInstructions parquetInstructions = icebergInstructions.toParquetInstructions(
+                null, fieldIdToName);
         assertThat(parquetInstructions.getCompressionCodecName()).isEqualTo("GZIP");
         assertThat(parquetInstructions.getMaximumDictionaryKeys()).isEqualTo(100);
         assertThat(parquetInstructions.getMaximumDictionarySize()).isEqualTo(200);
         assertThat(parquetInstructions.getTargetPageSize()).isEqualTo(1024 * 1024);
-
+        assertThat(parquetInstructions.getFieldId("field1")).isEmpty();
+        assertThat(parquetInstructions.getFieldId("field2")).hasValue(2);
+        assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
     }
 }

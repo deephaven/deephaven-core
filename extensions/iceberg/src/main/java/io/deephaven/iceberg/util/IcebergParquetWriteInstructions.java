@@ -77,9 +77,11 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
      *
      * @param completedWrites List of completed writes to be set in the {@link ParquetInstructions}
+     * @param fieldIdToName Mapping of field id to field name, to be populated inside the parquet file's schema
      */
     ParquetInstructions toParquetInstructions(
-            @NotNull final List<ParquetInstructions.CompletedWrite> completedWrites) {
+            @NotNull final List<ParquetInstructions.CompletedWrite> completedWrites,
+            @NotNull final Map<Integer, String> fieldIdToName) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
         tableDefinition().ifPresent(builder::setTableDefinition);
@@ -93,6 +95,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         }
 
         // Add parquet writing specific instructions.
+        builder.addFieldIdMapping(fieldIdToName);
         builder.setCompressionCodecName(compressionCodecName());
         builder.setMaximumDictionaryKeys(maximumDictionaryKeys());
         builder.setMaximumDictionarySize(maximumDictionarySize());
@@ -102,13 +105,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         return builder.build();
     }
 
-    public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
-        @SuppressWarnings("unused")
-        Builder createTableIfNotExist(boolean createTableIfNotExist);
-
-        @SuppressWarnings("unused")
-        Builder verifySchema(boolean verifySchema);
-
+    public interface Builder extends IcebergWriteInstructions.Builder<Builder> {
         @SuppressWarnings("unused")
         Builder compressionCodecName(String compressionCodecName);
 

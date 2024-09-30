@@ -13,6 +13,7 @@ import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -474,10 +475,15 @@ public class TypeInfos {
                 builder = getBuilder(isRequired(columnDefinition), false, dataType);
                 isRepeating = false;
             }
+
             if (!isRepeating) {
+                instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
             }
-            return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
+            // For repeated fields (like lists), we need to wrap the field in a group
+            final Types.GroupBuilder<GroupType> groupBuilder = Types.buildGroup(Type.Repetition.OPTIONAL);
+            instructions.getFieldId(columnDefinition.getName()).ifPresent(groupBuilder::id);
+            return groupBuilder.addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
                             builder.named("item")).named(parquetColumnName))
                     .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
