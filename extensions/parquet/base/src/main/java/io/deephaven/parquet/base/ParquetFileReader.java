@@ -239,7 +239,6 @@ public class ParquetFileReader {
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootURI,
-                type,
                 getSchema(),
                 version);
     }

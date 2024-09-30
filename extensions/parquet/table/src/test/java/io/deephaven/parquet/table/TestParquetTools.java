@@ -21,6 +21,7 @@ import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -579,5 +580,190 @@ public class TestParquetTools {
         assertEquals(1698672050703000000L,
                 DateTimeUtils.epochNanos((Instant) withNullsAndMissingOffsets.getColumnSource("CREATE_DATE").get(0)));
         assertTableEquals(withNullsAndMissingOffsets, clean);
+    }
+
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * field_id = b"PARQUET:field_id"
+     * fields = [
+     *     pa.field(
+     *         "e0cf7927-45dc-4dfc-b4ef-36bf4b6ae463", pa.int64(), metadata={field_id: b"0"}
+     *     ),
+     *     pa.field(
+     *         "53f0de5a-e06f-476e-b82a-a3f9294fcd05", pa.string(), metadata={field_id: b"1"}
+     *     ),
+     * ]
+     * table = pa.table([[99, 101], ["Foo", "Bar"]], schema=pa.schema(fields))
+     * pq.write_table(table, "ReferenceSimpleParquetFieldIds.parquet")
+     * </pre>
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Test
+    public void testParquetFieldIds() {
+        final String file = TestParquetTools.class.getResource("/ReferenceSimpleParquetFieldIds.parquet").getFile();
+
+        // No instructions; will sanitize the names. Both columns get the "-" removed and the second column gets the
+        // "column_" prefix added because it starts with a digit.
+        {
+            final TableDefinition expectedInferredTD = TableDefinition.of(
+                    ColumnDefinition.ofLong("e0cf792745dc4dfcb4ef36bf4b6ae463"),
+                    ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
+            final Table table = ParquetTools.readTable(file);
+            assertEquals(expectedInferredTD, table.getDefinition());
+            assertTableEquals(newTable(expectedInferredTD,
+                    longCol("e0cf792745dc4dfcb4ef36bf4b6ae463", 99, 101),
+                    stringCol("column_53f0de5ae06f476eb82aa3f9294fcd05", "Foo", "Bar")), table);
+        }
+
+        final int ID_ID = 0;
+        final int NAME_ID = 1;
+        final ColumnDefinition<Long> idColumn = ColumnDefinition.ofLong("Id");
+        final ColumnDefinition<String> nameColumn = ColumnDefinition.ofString("Name");
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(idColumn.getName(), ID_ID)
+                .setFieldId(nameColumn.getName(), NAME_ID)
+                .build();
+
+        final TableDefinition td = TableDefinition.of(idColumn, nameColumn);
+
+        // It's enough to just provide the mapping based on field_id
+        {
+            final Table table = ParquetTools.readTable(file, instructions);
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol("Id", 99, 101),
+                    stringCol("Name", "Foo", "Bar")), table);
+        }
+
+        // But, the user can still provide a TableDefinition
+        {
+            final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(td));
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol("Id", 99, 101),
+                    stringCol("Name", "Foo", "Bar")), table);
+        }
+
+        // The user can provide the full mapping, but still a more limited definition
+        {
+            final TableDefinition justIdTD = TableDefinition.of(idColumn);
+            final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(justIdTD));
+            assertEquals(justIdTD, table.getDefinition());
+            assertTableEquals(newTable(justIdTD,
+                    longCol("Id", 99, 101)), table);
+        }
+
+        // TODO: file bug report
+        // If only a partial id mapping is provided, only that will be "properly" mapped
+        // {
+        // final TableDefinition partialTD = TableDefinition.of(
+        // ColumnDefinition.ofLong("Id"),
+        // ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
+        // final ParquetInstructions partialInstructions = ParquetInstructions.builder()
+        // .addFieldId(idColumn.getName(), ID_ID)
+        // .build();
+        // final Table table = ParquetTools.readTable(file, partialInstructions);
+        // assertEquals(partialTD, table.getDefinition());
+        // }
+
+        // There are no errors if a field ID is configured but not found; it won't be inferred.
+        {
+            final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
+                    .setFieldId(idColumn.getName(), ID_ID)
+                    .setFieldId(nameColumn.getName(), NAME_ID)
+                    .setFieldId("Fake", 99)
+                    .build());
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol("Id", 99, 101),
+                    stringCol("Name", "Foo", "Bar")), table);
+        }
+
+        // If it's explicitly asked for, like other columns, it will return an appropriate null value
+        {
+            final TableDefinition tdWithFake =
+                    TableDefinition.of(idColumn, nameColumn, ColumnDefinition.ofShort("Fake"));
+            final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
+                    .setFieldId(idColumn.getName(), ID_ID)
+                    .setFieldId(nameColumn.getName(), NAME_ID)
+                    .setFieldId("Fake", 99)
+                    .build()
+                    .withTableDefinition(tdWithFake));
+            assertEquals(tdWithFake, table.getDefinition());
+            assertTableEquals(newTable(tdWithFake,
+                    longCol("Id", 99, 101),
+                    stringCol("Name", "Foo", "Bar"),
+                    shortCol("Fake", QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)), table);
+        }
+
+    }
+
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import uuid
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     *
+     * def write_to(path: str):
+     *     field_id = b"PARQUET:field_id"
+     *     fields = [
+     *         pa.field(str(uuid.uuid4()), pa.int64(), metadata={field_id: b"42"}),
+     *         pa.field(str(uuid.uuid4()), pa.string(), metadata={field_id: b"43"}),
+     *     ]
+     *     table = pa.table([[] for _ in fields], schema=pa.schema(fields))
+     *     pq.write_table(table, path)
+     *
+     *
+     * write_to("/ReferencePartitionedFieldIds/Partition=0/table.parquet")
+     * write_to("/ReferencePartitionedFieldIds/Partition=1/table.parquet")
+     * </pre>
+     *
+     * It mimics the case of a higher-level schema management where the physical column names may be random.
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Test
+    public void testPartitionedParquetFieldIds() {
+        final String file = TestParquetTools.class.getResource("/ReferencePartitionedFieldIds").getFile();
+
+        final int ID_ID = 42;
+        final int NAME_ID = 43;
+        final ColumnDefinition<Integer> partitionColumn = ColumnDefinition.ofInt("Partition").withPartitioning();
+        final ColumnDefinition<Long> idColumn = ColumnDefinition.ofLong("Id");
+        final ColumnDefinition<String> nameColumn = ColumnDefinition.ofString("Name");
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(idColumn.getName(), ID_ID)
+                .setFieldId(nameColumn.getName(), NAME_ID)
+                .build();
+
+        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, idColumn, nameColumn);
+
+        final Table expected = newTable(expectedTd,
+                intCol("Partition", 0, 0, 1, 1),
+                longCol("Id", 99, 101, 99, 101),
+                stringCol("Name", "Foo", "Bar", "Foo", "Bar"));
+
+        {
+            final Table actual = ParquetTools.readTable(file, instructions);
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        {
+            final Table actual = ParquetTools.readTable(file, instructions.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
     }
 }

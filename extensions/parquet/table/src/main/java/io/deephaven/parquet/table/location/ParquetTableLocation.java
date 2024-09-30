@@ -181,12 +181,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
+        final OptionalInt fid = readInstructions.getFieldId(columnName);
+        final Integer fieldId = fid.isPresent() ? fid.getAsInt() : null;
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, nameList, fieldId)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);

@@ -14,15 +14,18 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 final class RowGroupReaderImpl implements RowGroupReader {
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
-    private final MessageType type;
-    private final Map<String, List<Type>> schemaMap = new HashMap<>();
-    private final Map<String, ColumnChunk> chunkMap = new HashMap<>();
+    private final MessageType schema;
+    private final Map<String, List<Type>> schemaMap;
+    private final Map<String, ColumnChunk> chunkMap;
+    private final Map<Integer, List<Type>> schemaMapByFieldId;
+    private final Map<Integer, ColumnChunk> chunkMapByFieldId;
 
     /**
      * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
@@ -34,14 +37,21 @@ final class RowGroupReaderImpl implements RowGroupReader {
             @NotNull final RowGroup rowGroup,
             @NotNull final SeekableChannelsProvider channelsProvider,
             @NotNull final URI rootURI,
-            @NotNull final MessageType type,
             @NotNull final MessageType schema,
             @Nullable final String version) {
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
         this.rootURI = rootURI;
-        this.type = type;
-        for (ColumnChunk column : rowGroup.columns) {
+        this.schema = schema;
+        schemaMap = new HashMap<>(schema.getFieldCount());
+        chunkMap = new HashMap<>(schema.getFieldCount());
+        schemaMapByFieldId = new HashMap<>(schema.getFieldCount());
+        chunkMapByFieldId = new HashMap<>(schema.getFieldCount());
+        final Iterator<Type> fieldsIt = schema.getFields().iterator();
+        final Iterator<ColumnChunk> colsIt = rowGroup.columns.iterator();
+        while (fieldsIt.hasNext() && colsIt.hasNext()) {
+            final Type ft = fieldsIt.next();
+            final ColumnChunk column = colsIt.next();
             List<String> path_in_schema = column.getMeta_data().path_in_schema;
             String key = path_in_schema.toString();
             chunkMap.put(key, column);
@@ -54,20 +64,42 @@ final class RowGroupReaderImpl implements RowGroupReader {
                 }
             }
             schemaMap.put(key, nonRequiredFields);
+            if (ft.getId() != null) {
+                chunkMapByFieldId.put(ft.getId().intValue(), column);
+                schemaMapByFieldId.put(ft.getId().intValue(), nonRequiredFields);
+            }
+        }
+        if (fieldsIt.hasNext() || colsIt.hasNext()) {
+            throw new IllegalStateException(
+                    "Expected schema fields to be the same size as the number of column chunks.");
         }
         this.version = version;
     }
 
     @Override
     @Nullable
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final String columnName, @NotNull final List<String> path) {
-        final String key = path.toString();
-        final ColumnChunk columnChunk = chunkMap.get(key);
-        final List<Type> fieldTypes = schemaMap.get(key);
-        if (columnChunk == null) {
-            return null;
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final String columnName, @NotNull final List<String> path,
+            @Nullable Integer fieldId) {
+        final ColumnChunk columnChunk;
+        final List<Type> nonRequiredFields;
+        PARTS: {
+            if (fieldId != null) {
+                final ColumnChunk cc = chunkMapByFieldId.get(fieldId);
+                if (cc != null) {
+                    columnChunk = cc;
+                    nonRequiredFields = schemaMapByFieldId.get(fieldId);
+                    break PARTS;
+                }
+            }
+            final String key = path.toString();
+            final ColumnChunk cc = chunkMap.get(key);
+            if (cc == null) {
+                return null;
+            }
+            columnChunk = cc;
+            nonRequiredFields = schemaMap.get(key);
         }
-        return new ColumnChunkReaderImpl(columnName, columnChunk, channelsProvider, rootURI, type, fieldTypes,
+        return new ColumnChunkReaderImpl(columnName, columnChunk, channelsProvider, rootURI, schema, nonRequiredFields,
                 numRows(), version);
     }
 

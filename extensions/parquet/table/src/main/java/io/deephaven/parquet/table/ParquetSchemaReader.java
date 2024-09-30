@@ -32,6 +32,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Type.ID;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -154,7 +155,7 @@ public class ParquetSchemaReader {
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
             final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
-
+            final ID fieldId = primitiveType.getId();
             final String parquetColumnName = column.getPath()[0];
             parquetColumnNameToFirstPath.compute(parquetColumnName, (final String pcn, final String[] oldPath) -> {
                 if (oldPath != null) {
@@ -166,10 +167,19 @@ public class ParquetSchemaReader {
                 return column.getPath();
             });
             final String colName;
-            final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
-            if (mappedName != null) {
-                colName = mappedName;
-            } else {
+            COL_NAME: {
+                if (fieldId != null) {
+                    final String mappedName = readInstructions.getColumnNameFromParquetFieldId(fieldId.intValue());
+                    if (mappedName != null) {
+                        colName = mappedName;
+                        break COL_NAME;
+                    }
+                }
+                final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
+                if (mappedName != null) {
+                    colName = mappedName;
+                    break COL_NAME;
+                }
                 final String legalized = legalizeColumnNameFunc.apply(
                         parquetColumnName,
                         (instructionsBuilder.getValue() == null)

@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
@@ -19,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -168,6 +171,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
 
+    public abstract String getColumnNameFromParquetFieldId(final int fieldId);
+
     @Override
     public abstract String getCodecName(final String columnName);
 
@@ -179,6 +184,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      *         non-String columns, defaults to false
      */
     public abstract boolean useDictionary(String columnName);
+
+    /**
+     * The field ID for the given {@code columnName}. Only applicable for reading (currently).
+     *
+     * @param columnName the column name
+     * @return the field id
+     */
+    public abstract OptionalInt getFieldId(final String columnName);
 
     public abstract Object getSpecialInstructions();
 
@@ -279,6 +292,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         @Nullable
+        public String getColumnNameFromParquetFieldId(int fieldId) {
+            return null;
+        }
+
+        @Override
+        @Nullable
         public String getCodecName(final String columnName) {
             return null;
         }
@@ -292,6 +311,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean useDictionary(final String columnName) {
             return false;
+        }
+
+        @Override
+        public OptionalInt getFieldId(String columnName) {
+            return OptionalInt.empty();
         }
 
         @Override
@@ -390,9 +414,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String codecName;
         private String codecArgs;
         private boolean useDictionary;
+        private Integer fieldId;
 
         public ColumnInstructions(final String columnName) {
-            this.columnName = columnName;
+            this.columnName = Objects.requireNonNull(columnName);
+            NameValidator.validateColumnName(columnName);
         }
 
         public String getColumnName() {
@@ -432,6 +458,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         public void useDictionary(final boolean useDictionary) {
             this.useDictionary = useDictionary;
+        }
+
+        public OptionalInt fieldId() {
+            return fieldId == null ? OptionalInt.empty() : OptionalInt.of(fieldId);
+        }
+
+        public void setFieldId(final int fieldId) {
+            this.fieldId = fieldId;
         }
     }
 
@@ -532,6 +566,20 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public String getColumnNameFromParquetFieldId(int fieldId) {
+            if (columnNameToInstructions == null) {
+                return null;
+            }
+            for (Entry<String, ColumnInstructions> e : columnNameToInstructions.entrySet()) {
+                final OptionalInt parquetFieldId = e.getValue().fieldId();
+                if (parquetFieldId.isPresent() && parquetFieldId.getAsInt() == fieldId) {
+                    return e.getKey();
+                }
+            }
+            return null;
+        }
+
+        @Override
         public String getCodecName(final String columnName) {
             return getOrDefault(columnName, null, ColumnInstructions::getCodecName);
         }
@@ -544,6 +592,18 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean useDictionary(final String columnName) {
             return getOrDefault(columnName, false, ColumnInstructions::useDictionary);
+        }
+
+        @Override
+        public OptionalInt getFieldId(String columnName) {
+            if (columnNameToInstructions == null) {
+                return OptionalInt.empty();
+            }
+            final ColumnInstructions ci = columnNameToInstructions.get(columnName);
+            if (ci == null) {
+                return OptionalInt.empty();
+            }
+            return ci.fieldId();
         }
 
         @Override
@@ -819,6 +879,35 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public Builder useDictionary(final String columnName, final boolean useDictionary) {
             final ColumnInstructions ci = getColumnInstructions(columnName);
             ci.useDictionary(useDictionary);
+            return this;
+        }
+
+        /**
+         * For reading, provides a mapping between a Deephaven column name and a parquet column by field id. This allows
+         * resolving a parquet column where the physical "parquet column name" may not be known apriori by the caller.
+         * This may happen in cases where the parquet file is managed by a higher-level schema that has the concept of a
+         * "field id"; for example, Iceberg. As <a href=
+         * "https://github.com/apache/parquet-format/blob/apache-parquet-format-2.10.0/src/main/thrift/parquet.thrift#L456-L459">documented
+         * in the parquet format</a>:
+         *
+         * <pre>
+         *     When the original schema supports field ids, this will save the original field id in the parquet schema
+         * </pre>
+         *
+         * In the case where a field id mapping is provided but no matching parquet column is found, the column will not
+         * be inferred; and in the case where it's explicitly included as part of a
+         * {@link #setTableDefinition(TableDefinition)}, the resulting column will contain the appropriate default
+         * ({@code null}) values.
+         *
+         * <p>
+         * This field is not typically configured by end users.
+         *
+         * <p>
+         * For writing, this is not currently supported.
+         */
+        public Builder setFieldId(final String columnName, final int fieldId) {
+            final ColumnInstructions ci = getColumnInstructions(columnName);
+            ci.setFieldId(fieldId);
             return this;
         }
 
