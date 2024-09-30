@@ -46,8 +46,8 @@ class S3Instructions(JObjectWrapper):
                  profile_name: Optional[str] = None,
                  config_file_path: Optional[str] = None,
                  credentials_file_path: Optional[str] = None,
-                 profile_credentials: bool = False,
-                 default_credentials: bool = False):
+                 use_profile_credentials: bool = False,
+                 use_default_credentials: bool = False):
 
         """
         Initializes the instructions.
@@ -74,9 +74,11 @@ class S3Instructions(JObjectWrapper):
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
             access_key_id (str): the access key for reading files. Both access key and secret access key must be
-                provided to use static credentials, else default credentials will be used.
+                provided to use static credentials. If you specify both access key and secret key, then you cannot
+                provide other credentials like anonymous_access or use_profile_credentials.
             secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
-                provided to use static credentials, else default credentials will be used.
+                provided to use static credentials.  If you specify both access key and secret key, then you cannot
+                provide other credentials like anonymous_access or use_profile_credentials.
             anonymous_access (bool): use anonymous credentials, this is useful when the S3 policy has been set to allow
                 anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
@@ -89,28 +91,36 @@ class S3Instructions(JObjectWrapper):
             num_concurrent_write_parts (int): the maximum number of parts that can be uploaded concurrently when writing
                 to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but may also
                 increase memory usage.
-            profile_name (str): the default profile name used for configuring the default region, credentials, etc.,
-                when reading or writing to S3. If not provided, the AWS SDK picks the profile name from the
-                'aws.profile' system property, the "AWS_PROFILE" environment variable, or defaults to "default".
+            profile_name (str): the profile name used for configuring the default region, credentials, etc., when
+                reading or writing to S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile'
+                system property, the "AWS_PROFILE" environment variable, or defaults to the string "default".
                 Setting a profile name assumes that the credentials are provided via this profile; if that is not the
-                case, you must explicitly set credentials.
+                case, you must explicitly set credentials using the access_key_id and secret_access_key.
             config_file_path (str): the path to the configuration file to use for configuring the default region,
-                credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
+                role_arn, output etc. when reading or writing to S3. If not provided, the AWS SDK picks the configuration
                 file from the 'aws.configFile' system property, the "AWS_CONFIG_FILE" environment variable, or defaults
                 to "{user.home}/.aws/config".
                 Setting a configuration file path assumes that the credentials are provided via the config and
-                credentials files; if that is not the case, you must explicitly set credentials.
-            credentials_file_path (str): the path to the credentials file to use for configuring the default region,
-                credentials, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file
-                from the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or
-                defaults to "{user.home}/.aws/credentials".
+                credentials files; if that is not the case, you must explicitly set credentials using the access_key_id
+                and secret_access_key.
+                For reference on the configuration file format, check
+                https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+            credentials_file_path (str): the path to the credentials file to use for configuring the credentials, etc.
+                when reading or writing to S3. If not provided, the AWS SDK picks the credentials file from the
+                'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to
+                "{user.home}/.aws/credentials".
                 Setting a credentials file path assumes that the credentials are provided via the config and
-                credentials files; if that is not the case, you must explicitly set credentials.
-            profile_credentials (bool): use the profile name to load the credentials from the config and credentials
-                file and fail if none found. Default is False. Cannot be combined with other credentials.
-            default_credentials (bool): use the default AWS SDK behavior to load credentials  from the environment,
-                system properties, or instance profile credentials. Default is False. Cannot be combined with other
-                credentials.
+                credentials files; if that is not the case, you must explicitly set credentials using the access_key_id
+                and secret_access_key.
+                For reference on the credentials file format, check
+                https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+            use_profile_credentials (bool): use the profile_name for loading the credentials from the config and
+                credentials file and fail if none found. Default is False. Cannot be combined with using other
+                credentials, like anonymous_access or use_default_credentials.
+            use_default_credentials (bool): use the default AWS SDK behavior for loading credentials from the
+                environment, system properties, or instance profile credentials. Default is False. Cannot be combined
+                with other credentials, like anonymous_access or use_default_credentials. For more details, check
+                https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/DefaultCredentialsProvider.html.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -150,9 +160,9 @@ class S3Instructions(JObjectWrapper):
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
             if anonymous_access:
                 builder.credentials(_JCredentials.anonymous())
-            if profile_credentials:
+            if use_profile_credentials:
                 builder.credentials(_JCredentials.profile())
-            if default_credentials:
+            if use_default_credentials:
                 builder.credentials(_JCredentials.defaultCredentials())
 
             if endpoint_override is not None:
