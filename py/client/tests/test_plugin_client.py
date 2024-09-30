@@ -90,7 +90,7 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
 
         with self.subTest("released Plugin object"):
             sub_session = Session()
-            # close top-level session's export to diable the shared ticket
+            # close top-level session's export to disable the shared ticket
             self.session.release(export_plugin_client)
             server_obj = ServerObject(type="Figure", ticket=shared_ticket)
             with self.assertRaises(Exception):
