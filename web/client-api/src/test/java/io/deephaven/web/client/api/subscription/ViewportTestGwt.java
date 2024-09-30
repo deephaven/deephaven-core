@@ -438,6 +438,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("big"))
                 .<Object>then(table -> {
+                    delayTestFinish(20_001);
+
                     Column[] all = Js.uncheckedCast(table.getColumns());
                     // This table is static and non-flat, to make sure our calls will make sense to get data.
                     // Subscribe to a viewport, and grab some rows in a snapshot
