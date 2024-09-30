@@ -80,9 +80,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The maximum byte size of each fragment to read from S3, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must be
-     * larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment can
-     * be smaller.
+     * The maximum byte size of each fragment to read from S3 in bytes, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must
+     * be larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment
+     * can be smaller.
      */
     @Default
     public int fragmentSize() {

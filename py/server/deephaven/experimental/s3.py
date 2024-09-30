@@ -63,16 +63,14 @@ class S3Instructions(JObjectWrapper):
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
                 current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
                 current fragment.
-            fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
-                remaining in the file, the fetched fragment can be smaller.
-            connection_timeout (DurationLike):
-                the amount of time to wait when initially establishing a connection before giving up and timing out, can
-                be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
-                other time duration types. Default to 2 seconds.
-            read_timeout (DurationLike):
-                the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
-                an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
-                duration types. Default to 2 seconds.
+            fragment_size (int): the maximum size of each fragment to read in bytes, defaults to 65536. If
+                there are fewer bytes remaining in the file, the fetched fragment can be smaller.
+            connection_timeout (DurationLike): the amount of time to wait when initially establishing a connection
+                before giving up and timing out. Can be expressed as an integer in nanoseconds, a time interval string,
+                e.g. "PT00:00:00.001" or "PT1s", or other time duration types. Default to 2 seconds.
+            read_timeout (DurationLike): the amount of time to wait when reading a fragment before giving up and timing
+                out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
+                "PT1s", or other time duration types. Default to 2 seconds.
             access_key_id (str): the access key for reading files. Both access key and secret access key must be
                 provided to use static credentials. If you specify both access key and secret key, then you cannot
                 provide other credentials like anonymous_access or use_profile_credentials.
@@ -83,14 +81,13 @@ class S3Instructions(JObjectWrapper):
                 anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
-            write_part_size (int): Writes to S3 are done in parts or chunks, and this value determines the size of each
-                part (in bytes). The default value is 10485760 (= 10 MiB) and minimum allowed part size is 5 MiB.
-                Setting a higher value may increase throughput, but may also increase memory usage.
-                Note that the maximum number of parts allowed for a single file is 10,000. Therefore, for 10 MiB part
-                size, the maximum size of a single file that can be written is roughly 100k MiB (or about 98 GiB).
-            num_concurrent_write_parts (int): the maximum number of parts that can be uploaded concurrently when writing
-                to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but may also
-                increase memory usage.
+            write_part_size (int): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
+                part size is 5242880. Higher part size may increase throughput but also increase memory usage. Writing
+                a single file to S3 can be done in a maximum of 10,000 parts, so the maximum size of a single file that
+                can be written is about 98 GiB for the default part size.
+            num_concurrent_write_parts (int): the maximum number of parts or chunks that can be uploaded concurrently
+                when writing to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but
+                may also increase memory usage.
             profile_name (str): the profile name used for configuring the default region, credentials, etc., when
                 reading or writing to S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile'
                 system property, the "AWS_PROFILE" environment variable, or defaults to the string "default".
