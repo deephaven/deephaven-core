@@ -155,15 +155,26 @@ class S3Instructions(JObjectWrapper):
                     (access_key_id is None and secret_access_key is not None)):
                 raise DHError("Either both access_key_id and secret_access_key must be provided or neither")
 
-            # Only one of the following credentials can be set, otherwise the builder will throw an exception
+            # Configure the credentials
+            credentials_configured = None
             if access_key_id is not None:
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
+                credentials_configured = "access_key_id"
             if anonymous_access:
+                if credentials_configured:
+                    self.throw_multiple_credentials_error(credentials_configured, "anonymous_access")
                 builder.credentials(_JCredentials.anonymous())
+                credentials_configured = "anonymous_access"
             if use_profile_credentials:
+                if credentials_configured:
+                    self.throw_multiple_credentials_error(credentials_configured, "use_profile_credentials")
                 builder.credentials(_JCredentials.profile())
+                credentials_configured = "use_profile_credentials"
             if use_default_credentials:
+                if credentials_configured:
+                    self.throw_multiple_credentials_error(credentials_configured, "use_default_credentials")
                 builder.credentials(_JCredentials.defaultCredentials())
+                credentials_configured = "use_default_credentials"
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
@@ -186,6 +197,11 @@ class S3Instructions(JObjectWrapper):
             self._j_object = builder.build()
         except Exception as e:
             raise DHError(e, "Failed to build S3 instructions") from e
+
+    def throw_multiple_credentials_error(self,
+                    credentials1: str,
+                    credentials2: str):
+        raise DHError(f"Only one set of credentials can be set, but found {credentials1} and {credentials2}")
 
     @property
     def j_object(self) -> jpy.JType:
