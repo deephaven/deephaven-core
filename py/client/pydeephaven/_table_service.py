@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-from typing import Union, List
+from typing import Union, List, Optional
 
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
@@ -38,7 +38,7 @@ class TableService:
         except Exception as e:
             raise DHError("failed to finish the table batch operation.") from e
 
-    def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table) -> Union[Table, InputTable]:
+    def grpc_table_op(self, table: Optional[Table], op: TableOp, table_class: type = Table) -> Union[Table, InputTable]:
         """Makes a single gRPC Table operation call and returns a new Table."""
         try:
             export_ticket = self.session.make_export_ticket()
