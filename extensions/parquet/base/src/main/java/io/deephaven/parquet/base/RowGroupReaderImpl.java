@@ -39,23 +39,28 @@ final class RowGroupReaderImpl implements RowGroupReader {
             @NotNull final URI rootURI,
             @NotNull final MessageType schema,
             @Nullable final String version) {
+        final int fieldCount = schema.getFieldCount();
+        if (rowGroup.getColumnsSize() != fieldCount) {
+            throw new IllegalStateException(String.format(
+                    "Expected schema fieldCount and row group columns siize to be equal, schema.getFieldCount()=%d, rowGroup.getColumnsSize()=%d, rootURI=%s",
+                    fieldCount, rowGroup.getColumnsSize(), rootURI));
+        }
         this.channelsProvider = channelsProvider;
         this.rowGroup = rowGroup;
         this.rootURI = rootURI;
         this.schema = schema;
-        schemaMap = new HashMap<>(schema.getFieldCount());
-        chunkMap = new HashMap<>(schema.getFieldCount());
-        schemaMapByFieldId = new HashMap<>(schema.getFieldCount());
-        chunkMapByFieldId = new HashMap<>(schema.getFieldCount());
+        schemaMap = new HashMap<>(fieldCount);
+        chunkMap = new HashMap<>(fieldCount);
+        schemaMapByFieldId = new HashMap<>(fieldCount);
+        chunkMapByFieldId = new HashMap<>(fieldCount);
         final Iterator<Type> fieldsIt = schema.getFields().iterator();
-        final Iterator<ColumnChunk> colsIt = rowGroup.columns.iterator();
+        final Iterator<ColumnChunk> colsIt = rowGroup.getColumnsIterator();
         while (fieldsIt.hasNext() && colsIt.hasNext()) {
             final Type ft = fieldsIt.next();
             final ColumnChunk column = colsIt.next();
-            List<String> path_in_schema = column.getMeta_data().path_in_schema;
-            String key = path_in_schema.toString();
-            chunkMap.put(key, column);
-            List<Type> nonRequiredFields = new ArrayList<>();
+            final List<String> path_in_schema = column.getMeta_data().path_in_schema;
+            final String key = path_in_schema.toString();
+            final List<Type> nonRequiredFields = new ArrayList<>();
             for (int indexInPath = 0; indexInPath < path_in_schema.size(); indexInPath++) {
                 Type fieldType = schema
                         .getType(path_in_schema.subList(0, indexInPath + 1).toArray(new String[0]));
@@ -63,6 +68,7 @@ final class RowGroupReaderImpl implements RowGroupReader {
                     nonRequiredFields.add(fieldType);
                 }
             }
+            chunkMap.put(key, column);
             schemaMap.put(key, nonRequiredFields);
             if (ft.getId() != null) {
                 chunkMapByFieldId.put(ft.getId().intValue(), column);
@@ -70,8 +76,7 @@ final class RowGroupReaderImpl implements RowGroupReader {
             }
         }
         if (fieldsIt.hasNext() || colsIt.hasNext()) {
-            throw new IllegalStateException(
-                    "Expected schema fields to be the same size as the number of column chunks.");
+            throw new IllegalStateException(String.format("Unexpected, iterators not exhausted, rootURI=%s", rootURI));
         }
         this.version = version;
     }

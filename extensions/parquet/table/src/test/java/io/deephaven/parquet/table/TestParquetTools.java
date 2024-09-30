@@ -621,25 +621,27 @@ public class TestParquetTools {
                     stringCol("column_53f0de5ae06f476eb82aa3f9294fcd05", "Foo", "Bar")), table);
         }
 
-        final int ID_ID = 0;
-        final int NAME_ID = 1;
-        final ColumnDefinition<Long> idColumn = ColumnDefinition.ofLong("Id");
-        final ColumnDefinition<String> nameColumn = ColumnDefinition.ofString("Name");
+        final int BAZ_ID = 0;
+        final int ZAP_ID = 1;
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
 
         final ParquetInstructions instructions = ParquetInstructions.builder()
-                .setFieldId(idColumn.getName(), ID_ID)
-                .setFieldId(nameColumn.getName(), NAME_ID)
+                .setFieldId(BAZ, BAZ_ID)
+                .setFieldId(ZAP, ZAP_ID)
                 .build();
 
-        final TableDefinition td = TableDefinition.of(idColumn, nameColumn);
+        final TableDefinition td = TableDefinition.of(bazCol, zapCol);
 
         // It's enough to just provide the mapping based on field_id
         {
             final Table table = ParquetTools.readTable(file, instructions);
             assertEquals(td, table.getDefinition());
             assertTableEquals(newTable(td,
-                    longCol("Id", 99, 101),
-                    stringCol("Name", "Foo", "Bar")), table);
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
         }
 
         // But, the user can still provide a TableDefinition
@@ -647,17 +649,17 @@ public class TestParquetTools {
             final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(td));
             assertEquals(td, table.getDefinition());
             assertTableEquals(newTable(td,
-                    longCol("Id", 99, 101),
-                    stringCol("Name", "Foo", "Bar")), table);
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
         }
 
         // The user can provide the full mapping, but still a more limited definition
         {
-            final TableDefinition justIdTD = TableDefinition.of(idColumn);
+            final TableDefinition justIdTD = TableDefinition.of(bazCol);
             final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(justIdTD));
             assertEquals(justIdTD, table.getDefinition());
             assertTableEquals(newTable(justIdTD,
-                    longCol("Id", 99, 101)), table);
+                    longCol(BAZ, 99, 101)), table);
         }
 
         // TODO: file bug report
@@ -667,7 +669,7 @@ public class TestParquetTools {
         // ColumnDefinition.ofLong("Id"),
         // ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
         // final ParquetInstructions partialInstructions = ParquetInstructions.builder()
-        // .addFieldId(idColumn.getName(), ID_ID)
+        // .addFieldId(bazCol.getName(), BAZ_ID)
         // .build();
         // final Table table = ParquetTools.readTable(file, partialInstructions);
         // assertEquals(partialTD, table.getDefinition());
@@ -676,33 +678,62 @@ public class TestParquetTools {
         // There are no errors if a field ID is configured but not found; it won't be inferred.
         {
             final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
-                    .setFieldId(idColumn.getName(), ID_ID)
-                    .setFieldId(nameColumn.getName(), NAME_ID)
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
                     .setFieldId("Fake", 99)
                     .build());
             assertEquals(td, table.getDefinition());
             assertTableEquals(newTable(td,
-                    longCol("Id", 99, 101),
-                    stringCol("Name", "Foo", "Bar")), table);
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
         }
 
         // If it's explicitly asked for, like other columns, it will return an appropriate null value
         {
             final TableDefinition tdWithFake =
-                    TableDefinition.of(idColumn, nameColumn, ColumnDefinition.ofShort("Fake"));
+                    TableDefinition.of(bazCol, zapCol, ColumnDefinition.ofShort("Fake"));
             final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
-                    .setFieldId(idColumn.getName(), ID_ID)
-                    .setFieldId(nameColumn.getName(), NAME_ID)
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
                     .setFieldId("Fake", 99)
                     .build()
                     .withTableDefinition(tdWithFake));
             assertEquals(tdWithFake, table.getDefinition());
             assertTableEquals(newTable(tdWithFake,
-                    longCol("Id", 99, 101),
-                    stringCol("Name", "Foo", "Bar"),
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar"),
                     shortCol("Fake", QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)), table);
         }
 
+        // You can even re-use IDs to get the same physical column out multiple times
+        {
+            final String BAZ_DUPE = "BazDupe";
+            final TableDefinition dupeTd =
+                    TableDefinition.of(bazCol, zapCol, ColumnDefinition.ofLong(BAZ_DUPE));
+            final ParquetInstructions dupeInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .setFieldId(BAZ_DUPE, BAZ_ID)
+                    .build();
+            {
+                final Table table = ParquetTools.readTable(file, dupeInstructions.withTableDefinition(dupeTd));
+                assertEquals(dupeTd, table.getDefinition());
+                assertTableEquals(newTable(dupeTd,
+                        longCol(BAZ, 99, 101),
+                        stringCol(ZAP, "Foo", "Bar"),
+                        longCol(BAZ_DUPE, 99, 101)), table);
+            }
+
+            // TODO: how should we handle this?
+            // {
+            // final Table table = ParquetTools.readTable(file, dupeInstructions);
+            // assertEquals(dupeTd, table.getDefinition());
+            // assertTableEquals(newTable(dupeTd,
+            // longCol(BAZ, 99, 101),
+            // stringCol(ZAP, "Foo", "Bar"),
+            // longCol(BAZ_DUPE, 99, 101)), table);
+            // }
+        }
     }
 
     /**
@@ -736,23 +767,25 @@ public class TestParquetTools {
     public void testPartitionedParquetFieldIds() {
         final String file = TestParquetTools.class.getResource("/ReferencePartitionedFieldIds").getFile();
 
-        final int ID_ID = 42;
-        final int NAME_ID = 43;
-        final ColumnDefinition<Integer> partitionColumn = ColumnDefinition.ofInt("Partition").withPartitioning();
-        final ColumnDefinition<Long> idColumn = ColumnDefinition.ofLong("Id");
-        final ColumnDefinition<String> nameColumn = ColumnDefinition.ofString("Name");
-
+        final int BAZ_ID = 42;
+        final int ZAP_ID = 43;
+        final String BAZ = "Id";
+        final String ZAP = "Name";
+        final String PARTITION = "Partition";
+        final ColumnDefinition<Integer> partitionColumn = ColumnDefinition.ofInt(PARTITION).withPartitioning();
+        final ColumnDefinition<Long> bazColumn = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapColumn = ColumnDefinition.ofString(ZAP);
         final ParquetInstructions instructions = ParquetInstructions.builder()
-                .setFieldId(idColumn.getName(), ID_ID)
-                .setFieldId(nameColumn.getName(), NAME_ID)
+                .setFieldId(BAZ, BAZ_ID)
+                .setFieldId(ZAP, ZAP_ID)
                 .build();
 
-        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, idColumn, nameColumn);
+        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, bazColumn, zapColumn);
 
         final Table expected = newTable(expectedTd,
-                intCol("Partition", 0, 0, 1, 1),
-                longCol("Id", 99, 101, 99, 101),
-                stringCol("Name", "Foo", "Bar", "Foo", "Bar"));
+                intCol(PARTITION, 0, 0, 1, 1),
+                longCol(BAZ, 99, 101, 99, 101),
+                stringCol(ZAP, "Foo", "Bar", "Foo", "Bar"));
 
         {
             final Table actual = ParquetTools.readTable(file, instructions);

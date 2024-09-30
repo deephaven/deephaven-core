@@ -169,10 +169,14 @@ public class ParquetSchemaReader {
             final String colName;
             COL_NAME: {
                 if (fieldId != null) {
-                    final String mappedName = readInstructions.getColumnNameFromParquetFieldId(fieldId.intValue());
-                    if (mappedName != null) {
-                        colName = mappedName;
+                    final List<String> columnNames =
+                            readInstructions.getColumnNamesFromParquetFieldId(fieldId.intValue());
+                    if (columnNames.size() == 1) {
+                        colName = columnNames.get(0);
                         break COL_NAME;
+                    } else if (columnNames.size() > 1) {
+                        // TODO: how should we handle this? Ignore?
+                        // throw new IllegalArgumentException();
                     }
                 }
                 final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);

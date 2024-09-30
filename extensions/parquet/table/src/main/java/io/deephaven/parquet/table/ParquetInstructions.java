@@ -171,7 +171,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
 
-    public abstract String getColumnNameFromParquetFieldId(final int fieldId);
+    public abstract List<String> getColumnNamesFromParquetFieldId(final int fieldId);
 
     @Override
     public abstract String getCodecName(final String columnName);
@@ -291,9 +291,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        @Nullable
-        public String getColumnNameFromParquetFieldId(int fieldId) {
-            return null;
+        public List<String> getColumnNamesFromParquetFieldId(int fieldId) {
+            return List.of();
         }
 
         @Override
@@ -524,8 +523,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                             .collect(Collectors.toUnmodifiableList());
         }
 
-        private String getOrDefault(final String columnName, final String defaultValue,
-                final Function<ColumnInstructions, String> fun) {
+        private <T> T getOrDefault(final String columnName, final T defaultValue,
+                final Function<ColumnInstructions, T> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -566,17 +565,18 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public String getColumnNameFromParquetFieldId(int fieldId) {
+        public List<String> getColumnNamesFromParquetFieldId(int fieldId) {
             if (columnNameToInstructions == null) {
-                return null;
+                return List.of();
             }
+            final List<String> out = new ArrayList<>();
             for (Entry<String, ColumnInstructions> e : columnNameToInstructions.entrySet()) {
                 final OptionalInt parquetFieldId = e.getValue().fieldId();
                 if (parquetFieldId.isPresent() && parquetFieldId.getAsInt() == fieldId) {
-                    return e.getKey();
+                    out.add(e.getKey());
                 }
             }
-            return null;
+            return out;
         }
 
         @Override
@@ -596,14 +596,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public OptionalInt getFieldId(String columnName) {
-            if (columnNameToInstructions == null) {
-                return OptionalInt.empty();
-            }
-            final ColumnInstructions ci = columnNameToInstructions.get(columnName);
-            if (ci == null) {
-                return OptionalInt.empty();
-            }
-            return ci.fieldId();
+            return getOrDefault(columnName, OptionalInt.empty(), ColumnInstructions::fieldId);
         }
 
         @Override
