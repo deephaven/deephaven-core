@@ -3803,13 +3803,14 @@ class MultiJoinInput(JObjectWrapper):
 
 class MultiJoinTable(JObjectWrapper):
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the table() method. """
+    result Table, use the :attr:`.table` property. """
     j_object_type = _JMultiJoinTable
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_multijointable
 
+    @property
     def table(self) -> Table:
         """Returns the Table containing the multi-table natural join output. """
         return Table(j_table=self.j_multijointable.table())
@@ -3866,7 +3867,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
-            table() method.
+            :attr:`~MultiJoinTable.table` property.
     """
     return MultiJoinTable(input, on)
 

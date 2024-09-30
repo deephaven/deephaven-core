@@ -808,11 +808,12 @@ class InputTable(Table):
 
 class MultiJoinTable:
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the :meth:`.table` method. """
+    result Table, use the :attr:`.table` property. """
 
     def __init__(self, table: Table):
         self._table = table
 
+    @property
     def table(self) -> Table:
         """Returns the Table containing the multi-table natural join output. """
         return self._table
@@ -856,7 +857,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation.  To access the underlying Table, use the
-            :meth:`~MultiJoinTable.table` method.
+            :attr:`~MultiJoinTable.table` property.
 
     Raises:
         DHError
