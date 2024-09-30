@@ -15,6 +15,7 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * This test shows that we can integrate with data written by <a href="https://py.iceberg.apache.org/">pyiceberg</a>.
  * See TESTING.md and generate-pyiceberg-1.py for more details.
  */
+@Tag("security-manager-allow")
 public class PyIceberg1Test {
     private static final Namespace NAMESPACE = Namespace.of("dh-default");
     private static final TableIdentifier CITIES_ID = TableIdentifier.of(NAMESPACE, "cities");
