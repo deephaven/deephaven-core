@@ -23,11 +23,11 @@ The R Client provides the following functionalities:
    -   Construct and execute complex queries
    -   Retrieve references to tables on the server
    -   Pull table data into an [Arrow RecordBatchReader](https://arrow.apache.org/docs/r/reference/RecordBatchReader.html),
-an [Arrow Table](https://arrow.apache.org/docs/r/reference/Table.html),
+an [Arrow Table](https://arrow.apache.org/docs/6.0/r/reference/Table.html),
 a [dplyr Tibble](https://tibble.tidyverse.org),
 or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)
    -   Create new tables on the server from an [Arrow RecordBatchReader](https://arrow.apache.org/docs/r/reference/RecordBatchReader.html),
-an [Arrow Table](https://arrow.apache.org/docs/r/reference/Table.html),
+an [Arrow Table](https://arrow.apache.org/docs/6.0/r/reference/Table.html),
 a [dplyr Tibble](https://tibble.tidyverse.org),
 or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/data.frame.html)
    -   Call Deephaven table methods with familiar R functions
