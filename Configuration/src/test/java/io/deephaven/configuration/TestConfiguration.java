@@ -455,7 +455,7 @@ public class TestConfiguration extends TestCase {
                             +
                             "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
                     history.get(0).fileName);
-        } else if ("22".equals(javaVersion)) {
+        } else if ("23".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +

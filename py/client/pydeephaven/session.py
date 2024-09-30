@@ -397,7 +397,7 @@ class Session:
             # started together don't align retries.
             skew = random()
             # Backoff schedule for retries after consecutive failures to refresh auth token
-            self._refresh_backoff = [ skew + 0.1, skew + 1, skew + 10 ]
+            self._refresh_backoff = [skew + 0.1, skew + 1, skew + 10]
 
             if self._refresh_backoff[0] > self._timeout_seconds:
                 raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')

@@ -252,7 +252,7 @@ def adapter_aws_glue(
 def adapter(
         name: Optional[str] = None,
         properties: Optional[Dict[str, str]] = None,
-        hadoopConfig: Optional[Dict[str, str]] = None
+        hadoop_config: Optional[Dict[str, str]] = None
 ) -> IcebergCatalogAdapter:
     """
     Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
@@ -276,7 +276,7 @@ def adapter(
     ```
     from deephaven.experimental import iceberg
 
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
+    adapter = iceberg.adapter(name="generic-adapter", properties={
         "type" : "rest",
         "uri" : "http://rest:8181",
         "client.region" : "us-east-1",
@@ -291,7 +291,7 @@ def adapter(
     from deephaven.experimental import iceberg
 
     ## Note: region and credential information are loaded by the catalog from the environment
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
+    adapter = iceberg.adapter(name="generic-adapter", properties={
         "type" : "glue",
         "uri" : "s3://lab-warehouse/sales",
     });
@@ -301,7 +301,7 @@ def adapter(
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
         properties (Optional[Dict[str, str]]): the properties of the catalog to load
-        hadoopConfig (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
+        hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
 
     Returns:
         IcebergCatalogAdapter: the catalog adapter created from the provided properties
@@ -315,7 +315,7 @@ def adapter(
             _JIcebergTools.createAdapter(
                 name,
                 j_hashmap(properties if properties is not None else {}),
-                j_hashmap(hadoopConfig if hadoopConfig is not None else {})))
+                j_hashmap(hadoop_config if hadoopConfig is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

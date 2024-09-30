@@ -4,7 +4,7 @@ This README is oriented towards getting a server up for local development in a d
 
 If you wish to use Deephaven from a production environment, which is simpler but source code cannot be modified, see one of the following documents:
 
-- [Quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/)
+- [Quickstart for Docker](https://deephaven.io/core/docs/getting-started/quickstart/)
 - [How to configure the Deephaven native application](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/)
 
 This README deals with general development for either the Python or Groovy server-side API. For Python-specific development instructions, see the [Python development README](../../py/README.md).

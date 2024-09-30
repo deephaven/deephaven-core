@@ -817,7 +817,7 @@ public class IcebergCatalogAdapter {
 
         // Do we want the latest or a specific snapshot?
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
-        final Schema schema = table.schemas().get(snapshot.schemaId());
+        final Schema schema = snapshot == null ? table.schema() : table.schemas().get(snapshot.schemaId());
 
         // Load the partitioning schema.
         final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();

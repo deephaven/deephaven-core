@@ -145,11 +145,11 @@ class ApplicationTicket(Ticket):
             raise DHError('ApplicationTicket: ticket is None')
         elif not ticket_bytes.startswith(b'a/'):
             raise DHError(f'ApplicationTicket: ticket {ticket_bytes} is not an application ticket')
-        elif len(ticket_bytes.split(b'/')) != 3:
+        elif len(ticket_bytes.split(b'/')) != 4:
             raise DHError(f'ApplicationTicket: ticket {ticket_bytes} is not in the correct format')
 
         self.app_id = ticket_bytes.split(b'/')[1].decode(encoding='ascii')
-        self.field = ticket_bytes.split(b'/')[2].decode(encoding='ascii')
+        self.field = ticket_bytes.split(b'/')[3].decode(encoding='ascii')
 
         super().__init__(ticket_bytes)
 
@@ -169,7 +169,7 @@ class ApplicationTicket(Ticket):
         if not field:
             raise DHError('app_ticket: field must be a non-empty string')
 
-        return cls(ticket_bytes=f'a/{app_id}/{field}'.encode(encoding='ascii'))
+        return cls(ticket_bytes=f'a/{app_id}/f/{field}'.encode(encoding='ascii'))
 
 
 def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:

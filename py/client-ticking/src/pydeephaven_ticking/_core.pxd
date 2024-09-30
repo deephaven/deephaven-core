@@ -138,8 +138,16 @@ cdef extern from "deephaven/dhcore/types.h" namespace "deephaven::dhcore":
         kBool "deephaven::dhcore::ElementTypeId::kBool"
         kString "deephaven::dhcore::ElementTypeId::kString"
         kTimestamp "deephaven::dhcore::ElementTypeId::kTimestamp"
+        kLocalDate "deephaven::dhcore::ElementTypeId::kLocalDate"
+        kLocalTime "deephaven::dhcore::ElementTypeId::kLocalTime"
 
     cdef cppclass CDateTime "deephaven::dhcore::DateTime":
+        pass
+
+    cdef cppclass CLocalDate "deephaven::dhcore::LocalDate":
+        pass
+
+    cdef cppclass CLocalTime "deephaven::dhcore::LocalTime":
         pass
 
 cdef extern from "deephaven/dhcore/utility/cython_support.h" namespace "deephaven::dhcore::utility":
@@ -155,6 +163,14 @@ cdef extern from "deephaven/dhcore/utility/cython_support.h" namespace "deephave
 
         @staticmethod
         shared_ptr[CColumnSource] CreateDateTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+
+        @staticmethod
+        shared_ptr[CColumnSource] CreateLocalDateColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
+            const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
+
+        @staticmethod
+        shared_ptr[CColumnSource] CreateLocalTimeColumnSource(const int64_t *dataBegin, const int64_t *dataEnd,
             const uint8_t *validityBegin, const uint8_t *validityEnd, size_t numElements)
 
         @staticmethod
