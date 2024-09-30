@@ -84,9 +84,10 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                         true);
 
                 // Create a single value column source wrapping the ring buffer.
-                //noinspection unchecked
+                // noinspection unchecked
                 final SingleValueColumnSource<Vector<?>> formulaInputSource =
-                        (SingleValueColumnSource<Vector<?>>)SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+                        (SingleValueColumnSource<Vector<?>>) SingleValueColumnSource
+                                .getSingleValueColumnSource(inputVectorType);
 
                 final RingBufferVectorWrapper<?> wrapper = RingBufferVectorWrapper.makeRingBufferVectorWrapper(
                         inputVectorType,

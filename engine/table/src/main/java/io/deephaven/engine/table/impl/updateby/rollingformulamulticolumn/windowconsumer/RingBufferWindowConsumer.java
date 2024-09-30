@@ -27,7 +27,10 @@ public abstract class RingBufferWindowConsumer {
     }
 
     public abstract void setInfluencerValuesChunk(Chunk<?> influencerValuesChunk);
+
     public abstract void push(int index, int length);
+
     public abstract void pop(int length);
+
     public abstract void reset();
 }

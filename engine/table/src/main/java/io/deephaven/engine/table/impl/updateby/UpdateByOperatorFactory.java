@@ -544,7 +544,10 @@ public class UpdateByOperatorFactory {
             final Map<Class<?>, FormulaColumn> formulaColumnMap = new HashMap<>();
 
             if (spec.paramToken().isEmpty()) {
-                ops.add(makeRollingFormulaMultiColumnOperator(tableDef, spec));
+                // Need to make an operator for each formula
+                for (String formula : spec.formula()) {
+                    ops.add(makeRollingFormulaMultiColumnOperator(tableDef, formula, spec));
+                }
                 return null;
             }
 
@@ -1380,55 +1383,58 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
+            final String formula = rs.formula().get(0);
+
             if (csType == boolean.class || csType == Boolean.class) {
                 return new BooleanRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                         formulaColumnMap, tableDef, compilationProcessor);
             }
             return new ObjectRollingFormulaOperator<>(pair, affectingColumns,
                     rs.revWindowScale().timestampCol(),
-                    prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken().get(),
+                    prevWindowScaleUnits, fwdWindowScaleUnits, formula, rs.paramToken().get(),
                     formulaColumnMap, tableDef, compilationProcessor);
         }
 
         private UpdateByOperator makeRollingFormulaMultiColumnOperator(
                 @NotNull final TableDefinition tableDef,
+                @NotNull final String formula,
                 @NotNull final RollingFormulaSpec rs) {
 
             final String[] affectingColumns;
@@ -1442,16 +1448,16 @@ public class UpdateByOperatorFactory {
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             // Extract the output column name and formula from the formula string
-            final Selectable column = Selectable.parse(rs.formula());
+            final Selectable column = Selectable.parse(formula);
 
             Assert.eqTrue(column.expression() instanceof RawString, "column.expression() instanceof RawString");
 
             // Create a new column pair with the same name for the left and right columns
             final MatchPair pair = new MatchPair(column.newColumn().name(), column.newColumn().name());
-            final String formula = ((RawString)column.expression()).value();
+            final String expression = ((RawString) column.expression()).value();
 
             return new RollingFormulaMultiColumnOperator(pair, affectingColumns,
-                    rs.revWindowScale().timestampCol(), formula,
+                    rs.revWindowScale().timestampCol(), expression,
                     prevWindowScaleUnits, fwdWindowScaleUnits, tableDef, compilationProcessor);
         }
     }

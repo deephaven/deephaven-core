@@ -2221,7 +2221,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation RollingFormula(String timestampCol, Duration revDuration, Duration fwdDuration,
-                                            String formula) {
+            String formula) {
         return RollingFormulaSpec.ofTime(timestampCol, revDuration, fwdDuration, formula).clause();
     }
 

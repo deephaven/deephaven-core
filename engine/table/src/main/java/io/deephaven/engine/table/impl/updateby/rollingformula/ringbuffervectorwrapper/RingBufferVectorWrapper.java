@@ -30,9 +30,9 @@ public interface RingBufferVectorWrapper<T extends Vector<T>> extends Vector<T> 
             result = new ShortRingBufferVectorWrapper((ShortRingBuffer) buffer);
         } else {
             // noinspection unchecked
-            result = new ObjectRingBufferVectorWrapper<T>((ObjectRingBuffer<T>) buffer, (Class<T>)componentType);
+            result = new ObjectRingBufferVectorWrapper<T>((ObjectRingBuffer<T>) buffer, (Class<T>) componentType);
         }
         // noinspection unchecked
-        return (RingBufferVectorWrapper<T>)result;
+        return (RingBufferVectorWrapper<T>) result;
     }
 }
