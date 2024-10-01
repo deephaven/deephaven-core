@@ -485,6 +485,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public void setFieldId(final int fieldId) {
+            if (this.fieldId != null) {
+                throw new IllegalArgumentException(
+                        String.format("Trying to set fieldId for columnName=%s more than once", columnName));
+            }
             this.fieldId = fieldId;
         }
     }
