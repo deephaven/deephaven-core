@@ -22,9 +22,22 @@ import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.vector.*;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.DoubleVectorDirect;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import junit.framework.TestCase;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,13 +48,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
-import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.shortCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -768,18 +789,18 @@ public class TestParquetTools {
 
         final int BAZ_ID = 42;
         final int ZAP_ID = 43;
-        final String BAZ = "Id";
-        final String ZAP = "Name";
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
         final String PARTITION = "Partition";
         final ColumnDefinition<Integer> partitionColumn = ColumnDefinition.ofInt(PARTITION).withPartitioning();
-        final ColumnDefinition<Long> bazColumn = ColumnDefinition.ofLong(BAZ);
-        final ColumnDefinition<String> zapColumn = ColumnDefinition.ofString(ZAP);
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setFieldId(BAZ, BAZ_ID)
                 .setFieldId(ZAP, ZAP_ID)
                 .build();
 
-        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, bazColumn, zapColumn);
+        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, bazCol, zapCol);
 
         final Table expected = newTable(expectedTd,
                 intCol(PARTITION, 0, 0, 1, 1),
@@ -796,6 +817,127 @@ public class TestParquetTools {
             final Table actual = ParquetTools.readTable(file, instructions.withTableDefinition(expectedTd));
             assertEquals(expectedTd, actual.getDefinition());
             assertTableEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testWriteParquetFieldIds() {
+        final int BAZ_ID = 111;
+        final int ZAP_ID = 112;
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
+        final TableDefinition td = TableDefinition.of(bazCol, zapCol);
+        final Table table = newTable(td,
+                longCol(BAZ, 99, 101),
+                stringCol(ZAP, "Foo", "Bar"));
+        final File file = new File(testRoot, "testWriteParquetFieldIds.parquet");
+        {
+            // Writing down random parquet column names that we _don't_ keep a reference to. This way, the only way we
+            // can successfully resolve them is by field id.
+            final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .addColumnNameMapping(UUID.randomUUID().toString(), BAZ)
+                    .addColumnNameMapping(UUID.randomUUID().toString(), ZAP)
+                    .build();
+            ParquetTools.writeTable(table, file.getPath(), writeInstructions);
+        }
+
+        // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
+        // we are writing it down correctly if we can read it correctly.
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .build();
+            {
+                final Table actual = ParquetTools.readTable(file.getPath(), readInstructions);
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(table, actual);
+            }
+            {
+                final Table actual = ParquetTools.readTable(file.getPath(), readInstructions.withTableDefinition(td));
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(table, actual);
+            }
+        }
+    }
+
+    /**
+     * This is meant to test a "common" renaming scenario. Originally, a schema might be written down with a column
+     * named "Name" where semantically, this was really a first name. Later, the schema might be "corrected" to label
+     * this column as "FirstName". Both standalone, and in combination with the newer file, we should be able to read it
+     * with the latest schema.
+     */
+    @Test
+    public void testRenamingResolveViaFieldId() {
+        final File f1 = new File(testRoot, "testRenamingResolveViaFieldId.00.parquet");
+        final File f2 = new File(testRoot, "testRenamingResolveViaFieldId.01.parquet");
+
+        final int FIRST_NAME_ID = 15;
+        {
+            final String NAME = "Name";
+            final Table t1 = newTable(TableDefinition.of(ColumnDefinition.ofString(NAME)),
+                    stringCol(NAME, "Shivam", "Ryan"));
+            ParquetTools.writeTable(t1, f1.getPath(), ParquetInstructions.builder()
+                    .setFieldId(NAME, FIRST_NAME_ID)
+                    .build());
+        }
+
+        final int LAST_NAME_ID = 16;
+        final String FIRST_NAME = "FirstName";
+        final String LAST_NAME = "LastName";
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofString(FIRST_NAME),
+                ColumnDefinition.ofString(LAST_NAME));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FIRST_NAME, FIRST_NAME_ID)
+                .setFieldId(LAST_NAME, LAST_NAME_ID)
+                .build();
+        {
+            final Table t = newTable(td,
+                    stringCol(FIRST_NAME, "Pete", "Colin"),
+                    stringCol(LAST_NAME, "Goddard", "Alworth"));
+            ParquetTools.writeTable(t, f2.getPath(), instructions);
+        }
+
+
+        // If we read first file without an explicit definition, we should only get the column from the file
+        {
+            final TableDefinition expectedTd = TableDefinition.of(ColumnDefinition.ofString(FIRST_NAME));
+            final Table expected = newTable(expectedTd, stringCol(FIRST_NAME, "Shivam", "Ryan"));
+            final Table actual = ParquetTools.readTable(f1.getPath(), instructions);
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        // If we read first file with an explicit definition, the new column should return nulls
+        {
+            final Table expected = newTable(td,
+                    stringCol(FIRST_NAME, "Shivam", "Ryan"),
+                    stringCol(LAST_NAME, null, null));
+            final Table actual = ParquetTools.readTable(f1.getPath(), instructions.withTableDefinition(td));
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        // We should be able to read both (flat partitioning) with the latest schema
+        {
+            final Table expected = newTable(td,
+                    stringCol(FIRST_NAME, "Shivam", "Ryan", "Pete", "Colin"),
+                    stringCol(LAST_NAME, null, null, "Goddard", "Alworth"));
+            {
+                final Table actual = ParquetTools.readTable(testRoot, instructions);
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
+            {
+                final Table actual = ParquetTools.readTable(testRoot, instructions.withTableDefinition(td));
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
         }
     }
 }

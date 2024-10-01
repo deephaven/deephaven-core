@@ -865,10 +865,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * ({@code null}) values.
          *
          * <p>
-         * This field is not typically configured by end users.
+         * For writing, this will set the {@code field_id} in the proper Parquet {@code SchemaElement}.
          *
          * <p>
-         * For writing, this is not currently supported.
+         * This field is not typically configured by end users.
          */
         public Builder setFieldId(final String columnName, final int fieldId) {
             final ColumnInstructions ci = getColumnInstructions(columnName);
