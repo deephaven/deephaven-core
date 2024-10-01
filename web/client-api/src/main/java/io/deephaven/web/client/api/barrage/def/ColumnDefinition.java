@@ -137,7 +137,7 @@ public class ColumnDefinition {
                 style == null ? null : style.getColumnIndex(),
                 style == null ? null : style.getColumnIndex(),
                 isPartitionColumn(),
-                format == null || format.isFormatColumn() ? null : format.getColumnIndex(),
+                format == null ? null : format.getColumnIndex(),
                 getDescription(),
                 isInputTableKeyColumn());
     }
