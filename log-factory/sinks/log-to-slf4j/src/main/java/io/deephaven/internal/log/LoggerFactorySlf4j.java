@@ -11,7 +11,6 @@ public final class LoggerFactorySlf4j implements LoggerFactory {
 
     @Override
     public final Logger create(String name) {
-        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(name);
-        return new LoggerSlf4j(logger);
+        return new LoggerSlf4j(org.slf4j.LoggerFactory.getLogger(name));
     }
 }

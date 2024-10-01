@@ -1370,14 +1370,12 @@ public class SessionState {
         private final int exportId;
         private final ExportObject<T> export;
 
-        private Context context;
         private boolean requiresSerialQueue;
         private ExportErrorHandler errorHandler;
         private Consumer<? super T> successHandler;
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-            this.context = Context.current();
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
@@ -1515,19 +1513,6 @@ public class SessionState {
         }
 
         /**
-         * Set a custom {@code context} to be used. This context will be set for the submission, success handler, and
-         * error handler. If not explicitly set, the {@link Context#current() current context} at the time this builder
-         * was created will be used.
-         *
-         * @param context the context
-         * @return this builder
-         */
-        public ExportBuilder<T> withContext(final Context context) {
-            this.context = context;
-            return this;
-        }
-
-        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
@@ -1539,11 +1524,7 @@ public class SessionState {
          * @return the submitted export object
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
-            export.setWork(
-                    context == null ? exportMain : context.wrap(exportMain),
-                    context == null || errorHandler == null ? errorHandler : wrap(context, errorHandler),
-                    context == null || successHandler == null ? successHandler : wrap(context, successHandler),
-                    requiresSerialQueue);
+            export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
             return export;
         }
 

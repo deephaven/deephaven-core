@@ -19,7 +19,7 @@ import java.util.UUID;
 /**
  * This exists to work around how the FlightSQL JDBC driver works out-of-the-box.
  */
-public final class AuthCookie {
+final class AuthCookie {
 
     private static final String HEADER = "x-deephaven-auth-cookie-request";
 
@@ -28,39 +28,30 @@ public final class AuthCookie {
     private static final Metadata.Key<String> REQUEST_AUTH_COOKIE_HEADER_KEY =
             Metadata.Key.of(HEADER, Metadata.ASCII_STRING_MARSHALLER);
 
-    private static final Context.Key<Object> REQUEST_AUTH_COOKIE_CONTEXT_KEY =
-            Context.key(AuthCookie.class.getSimpleName());
-
     private static final Metadata.Key<String> SET_COOKIE =
-            Metadata.Key.of("Set-Cookie", Metadata.ASCII_STRING_MARSHALLER);
+            Metadata.Key.of("set-cookie", Metadata.ASCII_STRING_MARSHALLER);
 
     private static final Metadata.Key<String> COOKIE =
             Metadata.Key.of("cookie", Metadata.ASCII_STRING_MARSHALLER);
 
-    private static final Object SENTINEL = new Object();
-
     /**
-     * A server interceptor that parses the header {@value HEADER}; when "true", the auth cookie will be set as part of
-     * {@link #setAuthCookieIfRequested(Context, Metadata, UUID)}.
-     *
-     * @return the server interceptor
+     * Returns {@code true} if the metadata contains the header {@value HEADER} with value "true".
      */
-    public static ServerInterceptor interceptor() {
-        return Interceptor.REQUEST_AUTH_COOKIE_INTERCEPTOR;
+    public static boolean hasDeephavenAuthCookieRequest(Metadata md) {
+        return Boolean.parseBoolean(md.get(REQUEST_AUTH_COOKIE_HEADER_KEY));
     }
 
     /**
-     * Sets the auth cookie {@value DEEPHAVEN_AUTH_COOKIE} to {@code token} if the auth cookie was requested. See
-     * {@link #interceptor()}.
+     * Sets the auth cookie {@value DEEPHAVEN_AUTH_COOKIE} to {@code token}.
      */
-    public static void setAuthCookieIfRequested(Context context, Metadata md, UUID token) {
-        if (REQUEST_AUTH_COOKIE_CONTEXT_KEY.get(context) != SENTINEL) {
-            return;
-        }
-        md.put(SET_COOKIE, AuthCookie.DEEPHAVEN_AUTH_COOKIE + "=" + token.toString());
+    public static void setDeephavenAuthCookie(Metadata md, UUID token) {
+        md.put(SET_COOKIE, DEEPHAVEN_AUTH_COOKIE + "=" + token.toString());
     }
 
-    static Optional<UUID> parseAuthCookie(Metadata md) {
+    /**
+     * Parses the "cookie" header for the Deephaven auth cookie if it is of the form "deephaven-auth-cookie=<UUID>".
+     */
+    public static Optional<UUID> parseAuthCookie(Metadata md) {
         final String cookie = md.get(COOKIE);
         if (cookie == null) {
             return Optional.empty();
@@ -78,19 +69,5 @@ public final class AuthCookie {
             return Optional.empty();
         }
         return Optional.of(uuid);
-    }
-
-    private enum Interceptor implements ServerInterceptor {
-        REQUEST_AUTH_COOKIE_INTERCEPTOR;
-
-        @Override
-        public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
-                ServerCallHandler<ReqT, RespT> next) {
-            if (!Boolean.parseBoolean(headers.get(REQUEST_AUTH_COOKIE_HEADER_KEY))) {
-                return next.startCall(call, headers);
-            }
-            final Context newContext = Context.current().withValue(REQUEST_AUTH_COOKIE_CONTEXT_KEY, SENTINEL);
-            return Contexts.interceptCall(newContext, call, headers, next);
-        }
     }
 }

@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.server.flightsql.JettyTestComponent.JettyTestConfig;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
@@ -14,9 +15,17 @@ import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-public class JettyFlightSqlTest extends FlightSqlTest {
+@Singleton
+@Component(modules = {
+        ExecutionContextUnitTestModule.class,
+        FlightSqlTestModule.class,
+        JettyServerModule.class,
+        JettyTestConfig.class,
+})
+public interface JettyTestComponent extends FlightSqlTestComponent {
+
     @Module
-    public interface JettyTestConfig {
+    interface JettyTestConfig {
         @Provides
         static JettyConfig providesJettyConfig() {
             return JettyConfig.builder()
@@ -25,20 +34,4 @@ public class JettyFlightSqlTest extends FlightSqlTest {
                     .build();
         }
     }
-
-    @Singleton
-    @Component(modules = {
-            ExecutionContextUnitTestModule.class,
-            FlightTestModule.class,
-            JettyServerModule.class,
-            JettyTestConfig.class,
-    })
-    public interface JettyTestComponent extends TestComponent {
-    }
-
-    @Override
-    protected TestComponent component() {
-        return DaggerJettyFlightSqlTest_JettyTestComponent.create();
-    }
-
 }

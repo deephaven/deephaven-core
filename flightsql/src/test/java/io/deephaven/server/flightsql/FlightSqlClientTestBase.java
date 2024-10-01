@@ -4,37 +4,17 @@
 package io.deephaven.server.flightsql;
 
 import com.google.common.collect.ImmutableList;
-import dagger.Module;
-import dagger.Provides;
-import dagger.multibindings.IntoSet;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.base.clock.Clock;
 import io.deephaven.client.impl.*;
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.OperationInitializer;
-import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
-import io.deephaven.engine.util.NoLanguageDeephavenSession;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
-import io.deephaven.plugin.Registration;
-import io.deephaven.server.arrow.ArrowModule;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.config.ConfigServiceModule;
-import io.deephaven.server.console.ConsoleModule;
-import io.deephaven.server.log.LogModule;
-import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
-import io.deephaven.server.table.TableModule;
-import io.deephaven.server.test.TestAuthModule;
-import io.deephaven.server.test.TestAuthorizationProvider;
-import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.CallOptions;
 import io.grpc.*;
@@ -54,11 +34,8 @@ import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.util.Text;
 import org.hamcrest.MatcherAssert;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.*;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -77,113 +54,7 @@ import static java.util.Objects.isNull;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 
-public abstract class FlightSqlTest {
-    @Module(includes = {
-            ArrowModule.class,
-            ConfigServiceModule.class,
-            ConsoleModule.class,
-            LogModule.class,
-            SessionModule.class,
-            TableModule.class,
-            TestAuthModule.class,
-            ObfuscatingErrorTransformerModule.class,
-            PluginsModule.class,
-            FlightSqlModule.class
-    })
-    public static class FlightTestModule {
-        @IntoSet
-        @Provides
-        TicketResolver ticketResolver(ExportTicketResolver resolver) {
-            return resolver;
-        }
-
-        @Singleton
-        @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession(
-                final UpdateGraph updateGraph,
-                final OperationInitializer operationInitializer) {
-            return new NoLanguageDeephavenSession(
-                    updateGraph, operationInitializer, "non-script-session");
-        }
-
-        @Provides
-        ScriptSession provideScriptSession(AbstractScriptSession<?> scriptSession) {
-            return scriptSession;
-        }
-
-        @Provides
-        Scheduler provideScheduler() {
-            return new Scheduler.DelegatingImpl(
-                    Executors.newSingleThreadExecutor(),
-                    Executors.newScheduledThreadPool(1),
-                    Clock.system());
-        }
-
-        @Provides
-        @Named("session.tokenExpireMs")
-        long provideTokenExpireMs() {
-            return 60_000_000;
-        }
-
-        @Provides
-        @Named("http.port")
-        int provideHttpPort() {
-            return 0;// 'select first available'
-        }
-
-        @Provides
-        @Named("grpc.maxInboundMessageSize")
-        int provideMaxInboundMessageSize() {
-            return 1024 * 1024;
-        }
-
-        @Provides
-        @Nullable
-        ScheduledExecutorService provideExecutorService() {
-            return null;
-        }
-
-        @Provides
-        AuthorizationProvider provideAuthorizationProvider(TestAuthorizationProvider provider) {
-            return provider;
-        }
-
-        @Provides
-        @Singleton
-        TestAuthorizationProvider provideTestAuthorizationProvider() {
-            return new TestAuthorizationProvider();
-        }
-
-        @Provides
-        @Singleton
-        static UpdateGraph provideUpdateGraph() {
-            return ExecutionContext.getContext().getUpdateGraph();
-        }
-
-        @Provides
-        @Singleton
-        static OperationInitializer provideOperationInitializer() {
-            return ExecutionContext.getContext().getOperationInitializer();
-        }
-    }
-
-    public interface TestComponent {
-        Set<ServerInterceptor> interceptors();
-
-        SessionServiceGrpcImpl sessionGrpcService();
-
-        SessionService sessionService();
-
-        GrpcServer server();
-
-        TestAuthModule.BasicAuthTestImpl basicAuthHandler();
-
-        ExecutionContext executionContext();
-
-        TestAuthorizationProvider authorizationProvider();
-
-        Registration.Callback registration();
-    }
+public abstract class FlightSqlClientTestBase {
 
     private LogBuffer logBuffer;
     private GrpcServer server;
@@ -195,7 +66,7 @@ public abstract class FlightSqlTest {
     private SessionState currentSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
-    protected TestComponent component;
+    protected FlightSqlTestComponent component;
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
@@ -262,7 +133,7 @@ public abstract class FlightSqlTest {
         }
     }
 
-    protected abstract TestComponent component();
+    protected abstract FlightSqlTestComponent component();
 
     @AfterEach
     public void teardown() throws InterruptedException {
@@ -342,7 +213,7 @@ public abstract class FlightSqlTest {
                                 .getEndpoints().get(0).getTicket())) {
             Schema schema = stream.getSchema();
             assertTrue(schema.getFields().size() == 5);
-            List<List<String>> results = FlightSqlTest.getResults(stream);
+            List<List<String>> results = FlightSqlClientTestBase.getResults(stream);
             assertTrue(results.size() > 0);
         }
     }
@@ -357,7 +228,7 @@ public abstract class FlightSqlTest {
                                 .getEndpoints().get(0).getTicket())) {
             Schema schema = stream.getSchema();
             assertTrue(schema.getFields().size() == 3);
-            List<List<String>> results = FlightSqlTest.getResults(stream);
+            List<List<String>> results = FlightSqlClientTestBase.getResults(stream);
             assertTrue(results.size() > 0);
         }
     }
@@ -726,7 +597,7 @@ public abstract class FlightSqlTest {
             try (final FlightStream stream = flightSqlClient.getStream(info.getEndpoints().get(0).getTicket())) {
                 Schema schema = stream.getSchema();
                 assertEquals(5, schema.getFields().size());
-                List<List<String>> results = FlightSqlTest.getResults(stream);
+                List<List<String>> results = FlightSqlClientTestBase.getResults(stream);
                 assertFalse(results.isEmpty());
             }
         }

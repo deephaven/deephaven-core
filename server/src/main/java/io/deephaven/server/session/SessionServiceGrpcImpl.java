@@ -40,6 +40,7 @@ import java.io.Closeable;
 import java.lang.Object;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -265,12 +266,17 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private final SessionService service;
         private final SessionState session;
         private final Map<Metadata.Key<String>, String> extraHeaders = new LinkedHashMap<>();
+        private final boolean setDeephavenAuthCookie;
 
-        private InterceptedCall(final SessionService service, final ServerCall<ReqT, RespT> call,
-                @Nullable final SessionState session) {
-            super(call);
-            this.service = service;
+        private InterceptedCall(
+                final SessionService service,
+                final ServerCall<ReqT, RespT> call,
+                @Nullable final SessionState session,
+                boolean setDeephavenAuthCookie) {
+            super(Objects.requireNonNull(call));
+            this.service = Objects.requireNonNull(service);
             this.session = session;
+            this.setDeephavenAuthCookie = setDeephavenAuthCookie;
         }
 
         @Override
@@ -306,7 +312,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final SessionService.TokenExpiration exp = service.refreshToken(session);
                 if (exp != null) {
                     md.put(SESSION_HEADER_KEY, Auth2Constants.BEARER_PREFIX + exp.token.toString());
-                    AuthCookie.setAuthCookieIfRequested(Context.current(), md, exp.token);
+                    if (setDeephavenAuthCookie) {
+                        AuthCookie.setDeephavenAuthCookie(md, exp.token);
+                    }
                 }
             }
         }
@@ -332,8 +340,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         public SessionServiceInterceptor(
                 final SessionService service,
                 final SessionService.ErrorTransformer errorTransformer) {
-            this.service = service;
-            this.errorTransformer = errorTransformer;
+            this.service = Objects.requireNonNull(service);
+            this.errorTransformer = Objects.requireNonNull(errorTransformer);
         }
 
         @Override
@@ -375,9 +383,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 }
             }
 
-
             // On the outer half of the call we'll install the context that includes our session.
-            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
+            final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session,
+                    AuthCookie.hasDeephavenAuthCookieRequest(metadata));
             final Context context = Context.current().withValues(
                     SESSION_CONTEXT_KEY, session, SESSION_CALL_KEY, serverCall);
 
