@@ -797,9 +797,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            if (parquetColumnName.equals(columnName)) {
-                return this;
-            }
             final ColumnInstructions ci = getColumnInstructions(columnName);
             ci.setParquetColumnName(parquetColumnName);
             if (parquetColumnNameToInstructions == null) {
