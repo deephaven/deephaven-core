@@ -10,10 +10,10 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.hash.KeyedObjectKey.Basic;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -408,6 +408,21 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     };
 
     private static class ColumnInstructions {
+
+        private static final KeyedObjectKey<String, ColumnInstructions> COLUMN_NAME_KEY = new Basic<>() {
+            @Override
+            public String getKey(ColumnInstructions columnInstructions) {
+                return columnInstructions.getColumnName();
+            }
+        };
+
+        private static final KeyedObjectKey<String, ColumnInstructions> PARQUET_COLUMN_NAME_KEY = new Basic<>() {
+            @Override
+            public String getKey(ColumnInstructions columnInstructions) {
+                return columnInstructions.getParquetColumnName();
+            }
+        };
+
         private final String columnName;
         private String parquetColumnName;
         private String codecName;
@@ -429,6 +444,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public ColumnInstructions setParquetColumnName(final String parquetColumnName) {
+            if (this.parquetColumnName != null && !this.parquetColumnName.equals(parquetColumnName)) {
+                throw new IllegalArgumentException(
+                        "Cannot add a mapping from parquetColumnName=" + parquetColumnName
+                                + ": columnName=" + columnName + " already mapped to parquetColumnName="
+                                + this.parquetColumnName);
+            }
             this.parquetColumnName = parquetColumnName;
             return this;
         }
@@ -775,75 +796,25 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
         }
 
-        private void newColumnNameToInstructionsMap() {
-            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
-                @Override
-                public String getKey(@NotNull final ColumnInstructions value) {
-                    return value.getColumnName();
-                }
-            });
-        }
-
-        private void newParquetColumnNameToInstructionsMap() {
-            parquetColumnNameToInstructions =
-                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
-                        @Override
-                        public String getKey(@NotNull final ColumnInstructions value) {
-                            return value.getParquetColumnName();
-                        }
-                    });
-        }
-
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
             if (parquetColumnName.equals(columnName)) {
                 return this;
             }
-            if (columnNameToInstructions == null) {
-                newColumnNameToInstructionsMap();
-                final ColumnInstructions ci = new ColumnInstructions(columnName);
-                ci.setParquetColumnName(parquetColumnName);
-                columnNameToInstructions.put(columnName, ci);
-                newParquetColumnNameToInstructionsMap();
-                parquetColumnNameToInstructions.put(parquetColumnName, ci);
-                return this;
-            }
-
-            ColumnInstructions ci = columnNameToInstructions.get(columnName);
-            if (ci != null) {
-                if (ci.parquetColumnName != null) {
-                    if (ci.parquetColumnName.equals(parquetColumnName)) {
-                        return this;
-                    }
-                    throw new IllegalArgumentException(
-                            "Cannot add a mapping from parquetColumnName=" + parquetColumnName
-                                    + ": columnName=" + columnName + " already mapped to parquetColumnName="
-                                    + ci.parquetColumnName);
-                }
-            } else {
-                ci = new ColumnInstructions(columnName);
-                columnNameToInstructions.put(columnName, ci);
-            }
-
+            final ColumnInstructions ci = getColumnInstructions(columnName);
+            ci.setParquetColumnName(parquetColumnName);
             if (parquetColumnNameToInstructions == null) {
-                newParquetColumnNameToInstructionsMap();
-                parquetColumnNameToInstructions.put(parquetColumnName, ci);
-                return this;
+                parquetColumnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.PARQUET_COLUMN_NAME_KEY);
             }
-
-            final ColumnInstructions fromParquetColumnNameInstructions =
-                    parquetColumnNameToInstructions.get(parquetColumnName);
-            if (fromParquetColumnNameInstructions != null) {
-                if (fromParquetColumnNameInstructions == ci) {
-                    return this;
-                }
+            final ColumnInstructions existing = parquetColumnNameToInstructions.putIfAbsent(parquetColumnName, ci);
+            if (existing != null) {
+                // Note: this is a limitation that doesn't need to exist. Technically, we could allow a single physical
+                // parquet column to manifest as multiple Deephaven columns.
                 throw new IllegalArgumentException(
                         "Cannot add new mapping from parquetColumnName=" + parquetColumnName + " to columnName="
                                 + columnName
                                 + ": already mapped to columnName="
-                                + fromParquetColumnNameInstructions.getColumnName());
+                                + existing.getColumnName());
             }
-            ci.setParquetColumnName(parquetColumnName);
-            parquetColumnNameToInstructions.put(parquetColumnName, ci);
             return this;
         }
 
@@ -907,7 +878,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ColumnInstructions getColumnInstructions(final String columnName) {
             final ColumnInstructions ci;
             if (columnNameToInstructions == null) {
-                newColumnNameToInstructionsMap();
+                columnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.COLUMN_NAME_KEY);
                 ci = new ColumnInstructions(columnName);
                 columnNameToInstructions.put(columnName, ci);
             } else {

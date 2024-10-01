@@ -662,18 +662,17 @@ public class TestParquetTools {
                     longCol(BAZ, 99, 101)), table);
         }
 
-        // TODO: file bug report
         // If only a partial id mapping is provided, only that will be "properly" mapped
-        // {
-        // final TableDefinition partialTD = TableDefinition.of(
-        // ColumnDefinition.ofLong("Id"),
-        // ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
-        // final ParquetInstructions partialInstructions = ParquetInstructions.builder()
-        // .addFieldId(bazCol.getName(), BAZ_ID)
-        // .build();
-        // final Table table = ParquetTools.readTable(file, partialInstructions);
-        // assertEquals(partialTD, table.getDefinition());
-        // }
+        {
+            final TableDefinition partialTD = TableDefinition.of(
+                    ColumnDefinition.ofLong(BAZ),
+                    ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
+            final ParquetInstructions partialInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .build();
+            final Table table = ParquetTools.readTable(file, partialInstructions);
+            assertEquals(partialTD, table.getDefinition());
+        }
 
         // There are no errors if a field ID is configured but not found; it won't be inferred.
         {
