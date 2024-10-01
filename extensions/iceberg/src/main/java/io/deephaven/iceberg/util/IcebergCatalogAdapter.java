@@ -1113,10 +1113,12 @@ public class IcebergCatalogAdapter {
         // Try loading the table from the catalog, or create if required
         final org.apache.iceberg.Table icebergTable;
         final SpecAndSchema newSpecAndSchema;
+        final boolean newNamespaceCreated;
         final boolean newTableCreated;
         if (catalog.tableExists(tableIdentifier)) {
             icebergTable = catalog.loadTable(tableIdentifier);
             newSpecAndSchema = fromTableDefinition(useDefinition, userInstructions);
+            newNamespaceCreated = false;
             newTableCreated = false;
             if (writeInstructions.verifySchema()) {
                 if (overwrite) {
@@ -1128,7 +1130,7 @@ public class IcebergCatalogAdapter {
                 }
             }
         } else if (writeInstructions.createTableIfNotExist()) {
-            createNamespaceIfNotExists(tableIdentifier.namespace());
+            newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
             newSpecAndSchema = fromTableDefinition(useDefinition, userInstructions);
             icebergTable = createNewIcebergTable(tableIdentifier, newSpecAndSchema, writeInstructions);
             newTableCreated = true;
@@ -1154,6 +1156,10 @@ public class IcebergCatalogAdapter {
                 } catch (final RuntimeException dropException) {
                     writeException.addSuppressed(dropException);
                 }
+            }
+            if (newNamespaceCreated) {
+                // Delete it to avoid leaving a partial namespace in the catalog
+                dropNamespaceIfExists(tableIdentifier.namespace());
             }
             throw writeException;
         }
@@ -1244,14 +1250,23 @@ public class IcebergCatalogAdapter {
         return (IcebergParquetWriteInstructions) instructions;
     }
 
-    private Namespace createNamespaceIfNotExists(@NotNull final Namespace namespace) {
+
+    private boolean createNamespaceIfNotExists(@NotNull final Namespace namespace) {
         if (catalog instanceof SupportsNamespaces) {
             final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
             if (!nsCatalog.namespaceExists(namespace)) {
                 nsCatalog.createNamespace(namespace);
+                return true;
             }
         }
-        return namespace;
+        return false;
+    }
+
+    private void dropNamespaceIfExists(@NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
+            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
+            nsCatalog.dropNamespace(namespace);
+        }
     }
 
     private static class SpecAndSchema {
