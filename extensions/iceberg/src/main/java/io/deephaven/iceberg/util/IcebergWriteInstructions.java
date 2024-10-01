@@ -6,14 +6,13 @@ package io.deephaven.iceberg.util;
 import org.immutables.value.Value.Default;
 
 /**
- * This class provides instructions intended for writing Iceberg tables as well as for reading Iceberg catalogs and
- * tables. The default values documented in this class may change in the future. As such, callers may wish to explicitly
- * set the values.
+ * This class provides instructions intended for writing Iceberg tables. The default values documented in this class may
+ * change in the future. As such, callers may wish to explicitly set the values.
  */
 public abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
     /**
-     * While appending a partition to an iceberg table, whether to create the iceberg table if it does not exist;
-     * defaults to {@code false}.
+     * While writing to an iceberg table, whether to create the iceberg table if it does not exist, defaults to
+     * {@code false}.
      */
     @Default
     public boolean createTableIfNotExist() {
@@ -21,8 +20,8 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     }
 
     /**
-     * While appending a partition to an iceberg table, whether to verify that the partition spec and schema of the
-     * table being appended is consistent with the iceberg table; defaults to {@code false}.
+     * While writing to an iceberg table, whether to verify that the partition spec and schema of the table being
+     * written is consistent with the iceberg table; defaults to {@code false}.
      */
     @Default
     public boolean verifySchema() {

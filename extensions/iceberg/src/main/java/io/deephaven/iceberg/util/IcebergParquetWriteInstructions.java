@@ -16,9 +16,8 @@ import java.util.Map;
 import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZE;
 
 /**
- * This class provides instructions intended for writing Iceberg tables as Parquet data files as well as reading for
- * reading Iceberg catalogs and tables. The default values documented in this class may change in the future. As such,
- * callers may wish to explicitly set the values.
+ * This class provides instructions intended for writing Iceberg tables as Parquet data files. The default values
+ * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
 @BuildableStyle
@@ -136,7 +135,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     }
 
     @Check
-    final void boundsCheckMinTargetPageSize() {
+    final void boundsCheckTargetPageSize() {
         if (targetPageSize() < MIN_TARGET_PAGE_SIZE) {
             throw new IllegalArgumentException(
                     "targetPageSize(=" + targetPageSize() + ") must be >= " + MIN_TARGET_PAGE_SIZE);

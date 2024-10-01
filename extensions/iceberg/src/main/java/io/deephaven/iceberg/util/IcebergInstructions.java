@@ -14,7 +14,6 @@ import org.immutables.value.Value.Immutable;
 @BuildableStyle
 // TODO I propose renaming, but this will be breaking change:
 // IcebergInstructions -> IcebergReadInstructions
-// IcebergBaseInstructions -> IcebergInstructions
 public abstract class IcebergInstructions implements IcebergBaseInstructions {
     /**
      * The default {@link IcebergInstructions} to use when reading Iceberg data files. Providing this will use system

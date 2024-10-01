@@ -344,7 +344,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private void abortMultipartUpload() throws IOException {
         if (uploadId == null) {
-            // Upload not started, or already completed/aborted
+            // We didn't start the upload, so nothing to abort
             return;
         }
         final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()

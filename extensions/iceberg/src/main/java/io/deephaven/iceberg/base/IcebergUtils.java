@@ -23,7 +23,7 @@ import java.util.stream.StreamSupport;
 public final class IcebergUtils {
 
     /**
-     * Get a stream of all {@link DataFile} objects from the given {@link Snapshot} and {@link Table}.
+     * Get a stream of all {@link DataFile} objects from the given {@link Table} and {@link Snapshot}.
      *
      * @param table The {@link Table} to retrieve data files for.
      * @param snapshot The {@link Snapshot} to retrieve data files from.
@@ -56,14 +56,14 @@ public final class IcebergUtils {
                                     throw new UncheckedIOException(e);
                                 }
                             });
-                        } catch (final Exception e) {
+                        } catch (final RuntimeException e) {
                             throw new TableDataException(
                                     String.format("%s:%d:%s - error reading manifest file", table,
                                             snapshot.snapshotId(), manifestFile),
                                     e);
                         }
                     });
-        } catch (final Exception e) {
+        } catch (final RuntimeException e) {
             throw new TableDataException(
                     String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
         }

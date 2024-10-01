@@ -223,6 +223,12 @@ public class IcebergCatalogAdapter {
         }
     }
 
+    /**
+     * Convert a Deephaven type to an Iceberg type.
+     *
+     * @param columnType The Deephaven type to be converted.
+     * @return The converted Iceberg type.
+     */
     @VisibleForTesting
     static Type convertToIcebergType(final Class<?> columnType) {
         if (columnType == Boolean.class) {
@@ -250,7 +256,7 @@ public class IcebergCatalogAdapter {
         } else {
             throw new TableDataException("Unsupported deephaven column type " + columnType.getName());
         }
-        // TODO Add support for writing and appending big decimals
+        // TODO Add support for writing big decimals
         // TODO Add support for reading and writing lists
     }
 
@@ -479,7 +485,7 @@ public class IcebergCatalogAdapter {
     private Map<String, String> getRenameColumnMap(
             @NotNull final org.apache.iceberg.Table table,
             @NotNull final Schema schema,
-            @NotNull final IcebergBaseInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
 
         final Set<String> takenNames = new HashSet<>();
 
@@ -524,7 +530,7 @@ public class IcebergCatalogAdapter {
      */
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
         // Load the table from the catalog.
         return getTableDefinition(tableId, instructions);
@@ -540,7 +546,7 @@ public class IcebergCatalogAdapter {
      */
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, null, instructions);
     }
@@ -557,7 +563,7 @@ public class IcebergCatalogAdapter {
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
             final long snapshotId,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
 
         // Find the snapshot with the given snapshot id
@@ -582,7 +588,7 @@ public class IcebergCatalogAdapter {
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, tableSnapshot, instructions);
     }
@@ -597,7 +603,7 @@ public class IcebergCatalogAdapter {
      */
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
         return getTableDefinitionTable(tableId, instructions);
     }
@@ -612,7 +618,7 @@ public class IcebergCatalogAdapter {
      */
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
         return TableTools.metaTable(definition);
     }
@@ -629,7 +635,7 @@ public class IcebergCatalogAdapter {
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
             final long snapshotId,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
 
         // Find the snapshot with the given snapshot id
@@ -653,7 +659,7 @@ public class IcebergCatalogAdapter {
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, tableSnapshot, instructions);
         return TableTools.metaTable(definition);
     }
@@ -664,7 +670,7 @@ public class IcebergCatalogAdapter {
     private TableDefinition getTableDefinitionInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
@@ -673,7 +679,7 @@ public class IcebergCatalogAdapter {
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
         final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
-        final IcebergBaseInstructions userInstructions =
+        final IcebergInstructions userInstructions =
                 instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         return fromSchema(schema,
@@ -691,7 +697,7 @@ public class IcebergCatalogAdapter {
      */
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
     }
 
@@ -704,7 +710,7 @@ public class IcebergCatalogAdapter {
      */
     public Table readTable(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), instructions);
     }
 
@@ -767,7 +773,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
         if (tableSnapshot == null) {
@@ -787,7 +793,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
     }
 
@@ -802,14 +808,14 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
     private Table readTableInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergBaseInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
@@ -824,8 +830,7 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
         // Get default instructions if none are provided
-        final IcebergBaseInstructions userInstructions =
-                instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
@@ -1067,7 +1072,7 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Appends or overwrites data in an Iceberg table with the provided Deephaven table.
+     * Appends or overwrites data in an Iceberg table with the provided Deephaven tables.
      *
      * @param tableIdentifier The identifier for the Iceberg table to append to or overwrite
      * @param dhTables The Deephaven tables to write
@@ -1096,7 +1101,7 @@ public class IcebergCatalogAdapter {
             for (int idx = 1; idx < dhTables.length; idx++) {
                 if (!firstDefinition.equals(dhTables[idx].getDefinition())) {
                     throw new IllegalArgumentException(
-                            "All Deephacen tables must have the same definition, else table definition shuold be " +
+                            "All Deephaven tables must have the same definition, else table definition should be " +
                                     "provided when writing multiple tables with different definitions");
                 }
             }
@@ -1354,7 +1359,7 @@ public class IcebergCatalogAdapter {
             deletes.commit();
 
             // Update the spec and schema of the existing table.
-            // If we have already verified the schema, we don't need to update it again.
+            // If we have already verified the schema, we don't need to update it.
             if (!writeInstructions.verifySchema()) {
                 if (!icebergTable.schema().sameSchema(newSpecAndSchema.schema)) {
                     final UpdateSchema updateSchema = icebergTransaction.updateSchema().allowIncompatibleChanges();
@@ -1391,7 +1396,7 @@ public class IcebergCatalogAdapter {
         if (parquetFilesWritten.isEmpty()) {
             throw new UncheckedDeephavenException("Failed to generate data files because no parquet files written");
         }
-        // TODO This assumes no partition data is written
+        // TODO This assumes no partition data is written, is that okay?
         return parquetFilesWritten.stream()
                 .map(parquetFileWritten -> DataFiles.builder(PartitionSpec.unpartitioned())
                         .withPath(parquetFileWritten.destination().toString())

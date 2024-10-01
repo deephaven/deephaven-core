@@ -5,12 +5,11 @@ package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
 import org.apache.iceberg.CatalogProperties;
-import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
+import org.apache.iceberg.aws.s3.S3FileIO;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.catalog.Catalog;
-import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,12 +18,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Tools for accessing tables in the Iceberg table format.
+ * Tools for accessing tables in the Iceberg table format from S3.
  */
 @SuppressWarnings("unused")
 public class IcebergToolsS3 extends IcebergTools {
-    private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
-
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
      * value, the system defaults will be used.
@@ -100,8 +97,9 @@ public class IcebergToolsS3 extends IcebergTools {
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
-        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
-        properties.put(CatalogProperties.FILE_IO_IMPL, fileIO.getClass().getName());
+        // Following is needed to write new manifest files when writing new data.
+        // Not setting this will result in using ResolvingFileIO.
+        properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
