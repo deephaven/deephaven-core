@@ -10,12 +10,15 @@ import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.DateWrapper;
+import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.util.Objects;
@@ -23,15 +26,7 @@ import java.util.Objects;
 import static elemental2.dom.DomGlobal.console;
 
 /**
- * Assumes two tables, ticking every 2 seconds:
- *
- * growingForward = db.timeTable("00:00:01").update("I=i", "J=i*i", "K=0") growingBackward =
- * growingForward.sortDescending("Timestamp") blinkOne = db.timeTable("00:00:01").update("I=i",
- * "J=1").lastBy("J").where("I%2 != 0")
- *
- * And another static one:
- *
- * staticTable = emptyTable(100).update("I=i")
+ * Verifies behavior of viewport subscriptions.
  */
 public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
@@ -40,9 +35,11 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("staticTable", "empty_table(100).update(\"I=i\")")
             .script("from datetime import datetime, timedelta")
             .script("growingForward",
-                    "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
+                    "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1))" +
+                            ".update([\"I=i\", \"J=i*i\", \"K=0\"])")
             .script("growingBackward",
-                    "growingForward.sort_descending(\"Timestamp\").format_columns(['I=I>2 ? GREEN : RED'])")
+                    "growingForward.sort_descending(\"Timestamp\")" +
+                            ".format_columns(['I=I>2 ? GREEN : RED', 'I = Decimal(`0.00%`)', 'Timestamp = Date(`yyyy_MM_dd`)'])")
             .script("blinkOne",
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
 
@@ -174,20 +171,55 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("growingBackward"))
                 .then(table -> {
                     delayTestFinish(8000);
-                    table.setViewport(0, 0, Js.uncheckedCast(new Column[] {table.findColumn("I")}));
+                    table.setViewport(0, 0, Js.uncheckedCast(table.findColumns(new String[] { "I", "Timestamp" })));
 
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(1, viewport.getColumns().length);
-                        assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("I")));
+                        assertEquals(2, viewport.getColumns().length);
+                        assertEquals(1, indexOf(viewport.getColumns(), table.findColumn("I")));
+                        assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("Timestamp")));
 
                         assertEquals(1, viewport.getRows().length);
                         TableData.Row row1 = viewport.getRows().getAt(0);
-                        assertNotNull(viewport.getData(0, table.findColumn("I")));
-                        assertNotNull(row1.get(table.findColumn("I")));
-                        assertNotNull(table.findColumn("I").get(row1));
-                        assertNotNull(row1.getFormat(table.findColumn("I")));
-                        assertNotNull(table.findColumn("I").getFormat(row1));
-                        assertNotNull(viewport.getFormat(0, table.findColumn("I")));
+                        {
+                            Any d1 = viewport.getData(0, table.findColumn("I"));
+                            Any d2 = row1.get(table.findColumn("I"));
+                            Any d3 = table.findColumn("I").get(row1);
+                            assertNotNull(d1);
+                            assertEquals("number", Js.typeof(d1));
+                            assertEquals(d1, d2);
+                            assertEquals(d2, d3);
+                            Format f1 = row1.getFormat(table.findColumn("I"));
+                            Format f2 = table.findColumn("I").getFormat(row1);
+                            Format f3 = viewport.getFormat(0, table.findColumn("I"));
+                            assertNotNull(f1);
+                            assertEquals(f1, f2);
+                            assertEquals(f2, f3);
+
+                            assertNotNull(f1.getBackgroundColor());
+                            assertNotNull(f1.getColor());
+                            assertEquals("0.00%", f1.getFormatString());
+                        }
+
+                        {
+                            Any d1 = viewport.getData(0, table.findColumn("Timestamp"));
+                            Any d2 = row1.get(table.findColumn("Timestamp"));
+                            Any d3 = table.findColumn("Timestamp").get(row1);
+                            assertNotNull(d1);
+                            assertTrue(d1 instanceof DateWrapper);
+                            assertEquals(d1, d2);
+                            assertEquals(d2, d3);
+                            Format f1 = row1.getFormat(table.findColumn("Timestamp"));
+                            Format f2 = table.findColumn("Timestamp").getFormat(row1);
+                            Format f3 = viewport.getFormat(0, table.findColumn("Timestamp"));
+                            assertNotNull(f1);
+                            assertEquals(f1, f2);
+                            assertEquals(f2, f3);
+
+                            assertNull(f1.getBackgroundColor());
+                            assertNull(f1.getColor());
+                            assertEquals("yyyy_MM_dd", f1.getFormatString());
+                        }
+
 
                         assertThrowsException(() -> row1.get(table.findColumn("J")));
                         assertThrowsException(() -> row1.get(table.findColumn("K")));
@@ -196,8 +228,9 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     // don't change viewport, test the same thing again, make sure deltas behave too
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(1, viewport.getColumns().length);
-                        assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("I")));
+                        assertEquals(2, viewport.getColumns().length);
+                        assertEquals(1, indexOf(viewport.getColumns(), table.findColumn("I")));
+                        assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("Timestamp")));
 
                         assertEquals(1, viewport.getRows().length);
                         assertNotNull(viewport.getRows().getAt(0).get(table.findColumn("I")));
