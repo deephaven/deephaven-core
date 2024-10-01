@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Manager for ColumnSources in a Table.
  */
-public interface ColumnSourceManager extends LivenessReferent {
+public interface ColumnSourceManager extends LivenessNode {
 
     /**
      * Get a map of name to {@link ColumnSource} for the column sources maintained by this manager.
@@ -116,6 +116,13 @@ public interface ColumnSourceManager extends LivenessReferent {
      */
     void removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 
+    /**
+     * Get a list of Table attributes that can be applied to the output source table, given the update modes of the
+     * underlying table location provider.
+     *
+     * @param tableUpdateMode The update mode of the table location set
+     * @param tableLocationUpdateMode The update mode of the table location rows
+     */
     Map<String, Object> getTableAttributes(
             @NotNull TableUpdateMode tableUpdateMode,
             @NotNull TableUpdateMode tableLocationUpdateMode);

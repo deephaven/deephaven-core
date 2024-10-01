@@ -217,7 +217,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                             ? tableLocationProvider.getLocationUpdateMode()
                             : TableUpdateMode.STATIC),
                     refreshSizes ? refreshCombiner : null);
-            // TODO: WE NEED TO TRANSFER TL REF FROM UTM TO CONSTITUENT RCSM
+
+            // Transfer management to the constituent CSM. NOTE: this is likely to end up double-managed
+            // after the CSM adds the location to the table, but that's acceptable.
+            constituent.columnSourceManager.manage(tableLocation);
+            unmanage(tableLocation);
 
             // Be careful to propagate the systemic attribute properly to child tables
             constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
@@ -279,7 +283,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private RowSet processRemovals(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            // TODO: I THINK WE HAVE A BUG. WE AREN'T REMOVING REMOVED LOCATIONS FROM pendingLocationStates
             final Set<ImmutableTableLocationKey> relevantRemovedLocations =
                     locationUpdate.getPendingRemovedLocationKeys()
                             .stream()
@@ -289,6 +292,16 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (relevantRemovedLocations.isEmpty()) {
                 return RowSetFactory.empty();
+            }
+
+            // Iterate through the pending locations and remove any that are in the removed set.
+            for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
+                final PendingLocationState pendingLocationState = iter.next();
+                if (relevantRemovedLocations.contains(pendingLocationState.location.getKey())) {
+                    iter.remove();
+                    // Release the state and unmanage the location
+                    unmanage(pendingLocationState.release());
+                }
             }
 
             // At the end of the cycle we need to make sure we unmanage any removed constituents.

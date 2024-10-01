@@ -108,8 +108,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
         if (isRefreshing) {
             setRefreshing(true);
-            // Given the location provider's update modes, retreive applicable table attributes from the column
-            // source manager.
+            // Given the location provider's update modes, retrieve applicable table attributes from the CSM
             columnSourceManager.getTableAttributes(
                     locationProvider.getUpdateMode(),
                     locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
