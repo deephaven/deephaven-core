@@ -171,7 +171,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("growingBackward"))
                 .then(table -> {
                     delayTestFinish(8000);
-                    table.setViewport(0, 0, Js.uncheckedCast(table.findColumns(new String[] { "I", "Timestamp" })));
+                    table.setViewport(0, 0, Js.uncheckedCast(table.findColumns(new String[] {"I", "Timestamp"})));
 
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(2, viewport.getColumns().length);
