@@ -32,6 +32,7 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Type.ID;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,7 +45,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
@@ -144,6 +147,13 @@ public class ParquetSchemaReader {
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
         final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
+        final Map<Integer, Long> fieldIdCount = schema.getColumns()
+                .stream()
+                .map(ColumnDescriptor::getPrimitiveType)
+                .map(Type::getId)
+                .filter(Objects::nonNull)
+                .map(ID::intValue)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         for (final ColumnDescriptor column : schema.getColumns()) {
             if (column.getMaxRepetitionLevel() > 1) {
                 // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
@@ -168,7 +178,11 @@ public class ParquetSchemaReader {
             });
             final String colName;
             COL_NAME: {
-                if (fieldId != null) {
+                FIELD_ID: if (fieldId != null) {
+                    if (fieldIdCount.getOrDefault(fieldId.intValue(), 0L) > 1) {
+                        // This file has multiple entries for fieldId; don't match against it for field ids.
+                        break FIELD_ID;
+                    }
                     final List<String> columnNames =
                             readInstructions.getColumnNamesFromParquetFieldId(fieldId.intValue());
                     if (columnNames.size() == 1) {

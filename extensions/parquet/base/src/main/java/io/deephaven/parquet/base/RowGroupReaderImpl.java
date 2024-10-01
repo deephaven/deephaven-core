@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.schema.MessageType;
@@ -42,31 +43,36 @@ final class RowGroupReaderImpl implements RowGroupReader {
             @NotNull final URI rootURI,
             @NotNull final MessageType schema,
             @Nullable final String version) {
-        final int fieldCount = schema.getFieldCount();
-        if (rowGroup.getColumnsSize() != fieldCount) {
+        final List<ColumnDescriptor> columnDescriptors = schema.getColumns();
+        final int columnsCount = columnDescriptors.size();
+        if (rowGroup.getColumnsSize() != columnsCount) {
             throw new IllegalStateException(String.format(
-                    "Expected schema fieldCount and row group columns siize to be equal, schema.getFieldCount()=%d, rowGroup.getColumnsSize()=%d, rootURI=%s",
-                    fieldCount, rowGroup.getColumnsSize(), rootURI));
+                    "Expected schema columnsCount and row group columns size to be equal, schema.getColumns().size()=%d, rowGroup.getColumnsSize()=%d, rootURI=%s",
+                    columnsCount, rowGroup.getColumnsSize(), rootURI));
         }
         this.channelsProvider = Objects.requireNonNull(channelsProvider);
         this.rowGroup = Objects.requireNonNull(rowGroup);
         this.rootURI = Objects.requireNonNull(rootURI);
         this.schema = Objects.requireNonNull(schema);
-        schemaMap = new HashMap<>(fieldCount);
-        chunkMap = new HashMap<>(fieldCount);
-        schemaMapByFieldId = new HashMap<>(fieldCount);
-        chunkMapByFieldId = new HashMap<>(fieldCount);
+        schemaMap = new HashMap<>(columnsCount);
+        chunkMap = new HashMap<>(columnsCount);
+        schemaMapByFieldId = new HashMap<>(columnsCount);
+        chunkMapByFieldId = new HashMap<>(columnsCount);
         // Note: there is no technical guarantee from parquet that column names, path_in_schema, or field_ids are
         // unique; it's technically possible that they are duplicated. Ultimately, getColumnChunk is a bad abstraction -
         // we shouldn't need to re-do matching for every single row group column chunk, the matching should be done
         // _once_ per column to get the column index, and then for every row group we should just need to do
-        // rowGroup.getColumns().get(columnIndex). If we want to
+        // rowGroup.getColumns().get(columnIndex).
+        //
+        // Also, this logic divorced from our inference
+        // (io.deephaven.parquet.table.ParquetSchemaReader.readParquetSchema)
+        // makes it harder to keep the two in-sync.
         final Set<String> nonUniqueKeys = new HashSet<>();
         final Set<Integer> nonUniqueFieldIds = new HashSet<>();
-        final Iterator<Type> fieldsIt = schema.getFields().iterator();
+        final Iterator<ColumnDescriptor> columnsDescriptorIt = columnDescriptors.iterator();
         final Iterator<ColumnChunk> colsIt = rowGroup.getColumnsIterator();
-        while (fieldsIt.hasNext() && colsIt.hasNext()) {
-            final Type ft = fieldsIt.next();
+        while (columnsDescriptorIt.hasNext() && colsIt.hasNext()) {
+            final ColumnDescriptor columnDescriptor = columnsDescriptorIt.next();
             final ColumnChunk column = colsIt.next();
             final List<String> path_in_schema = column.getMeta_data().path_in_schema;
             final String key = path_in_schema.toString();
@@ -82,15 +88,15 @@ final class RowGroupReaderImpl implements RowGroupReader {
                 nonUniqueKeys.add(key);
             }
             schemaMap.putIfAbsent(key, nonRequiredFields);
-            if (ft.getId() != null) {
-                final int fieldId = ft.getId().intValue();
+            if (columnDescriptor.getPrimitiveType().getId() != null) {
+                final int fieldId = columnDescriptor.getPrimitiveType().getId().intValue();
                 if (chunkMapByFieldId.putIfAbsent(fieldId, column) != null) {
                     nonUniqueFieldIds.add(fieldId);
                 }
                 schemaMapByFieldId.putIfAbsent(fieldId, nonRequiredFields);
             }
         }
-        if (fieldsIt.hasNext() || colsIt.hasNext()) {
+        if (columnsDescriptorIt.hasNext() || colsIt.hasNext()) {
             throw new IllegalStateException(String.format("Unexpected, iterators not exhausted, rootURI=%s", rootURI));
         }
         for (String nonUniqueKey : nonUniqueKeys) {

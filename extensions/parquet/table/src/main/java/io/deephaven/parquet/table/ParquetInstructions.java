@@ -862,7 +862,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * In the case where a field id mapping is provided but no matching parquet column is found, the column will not
          * be inferred; and in the case where it's explicitly included as part of a
          * {@link #setTableDefinition(TableDefinition)}, the resulting column will contain the appropriate default
-         * ({@code null}) values.
+         * ({@code null}) values. In the case where there are multiple parquet columns with the same field_id, those
+         * parquet columns will not be resolvable via a field id.
          *
          * <p>
          * For writing, this will set the {@code field_id} in the proper Parquet {@code SchemaElement}.

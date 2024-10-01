@@ -905,7 +905,6 @@ public class TestParquetTools {
             ParquetTools.writeTable(t, f2.getPath(), instructions);
         }
 
-
         // If we read first file without an explicit definition, we should only get the column from the file
         {
             final TableDefinition expectedTd = TableDefinition.of(ColumnDefinition.ofString(FIRST_NAME));
@@ -942,4 +941,56 @@ public class TestParquetTools {
             }
         }
     }
+
+
+    @Test
+    public void parquetWithNonUniqueFieldIds() {
+        final File f = new File(testRoot, "parquetWithNonUniqueFieldIds.parquet");
+        final String FOO = "Foo";
+        final String BAR = "Bar";
+        final int fieldId = 31337;
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FOO, fieldId)
+                .setFieldId(BAR, fieldId)
+                .build();
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt(FOO), ColumnDefinition.ofString(BAR));
+        final Table expected = newTable(td,
+                intCol(FOO, 44, 45),
+                stringCol(BAR, "Zip", "Zap"));
+        {
+            ParquetTools.writeTable(expected, f.getPath(), instructions);
+        }
+
+        {
+            final String BAZ = "Baz";
+            final ParquetInstructions bazInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, fieldId)
+                    .build();
+
+            // fieldId _won't_ be used to actually create a Baz column since the underlying file has multiple. In this
+            // case, we just infer the physical parquet column names.
+            {
+
+                final Table actual = ParquetTools.readTable(f.getPath(), bazInstructions);
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
+
+            // If the user explicitly asks for a definition with a mapping to a non-unique field id, they will get back
+            // the column of default (null) values.
+            {
+                final TableDefinition bazTd = TableDefinition.of(ColumnDefinition.ofInt(BAZ));
+                final Table bazTable = newTable(bazTd, intCol(BAZ, QueryConstants.NULL_INT, QueryConstants.NULL_INT));
+                final Table actual = ParquetTools.readTable(f.getPath(), bazInstructions.withTableDefinition(bazTd));
+                assertEquals(bazTd, actual.getDefinition());
+                assertTableEquals(bazTable, actual);
+            }
+        }
+    }
+
+    // // We are unable to generate this sort of file via DH atm.
+    // @Test
+    // public void parquetWithNonUniqueColumnNames() {
+    //
+    // }
 }
