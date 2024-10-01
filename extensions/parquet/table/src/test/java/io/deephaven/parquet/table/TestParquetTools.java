@@ -13,11 +13,13 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
@@ -822,6 +824,49 @@ public class TestParquetTools {
         }
     }
 
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * field_id = b"PARQUET:field_id"
+     * schema = pa.schema(
+     *     [pa.field("some random name", pa.list_(pa.int32()), metadata={field_id: b"999"})]
+     * )
+     * data = [pa.array([[1, 2, 3], None, [], [42]], type=pa.list_(pa.int32()))]
+     * table = pa.Table.from_arrays(data, schema=schema)
+     * pq.write_table(table, "ReferenceListParquetFieldIds.parquet")
+     * </pre>
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Test
+    public void testParquetFieldIdsWithListType() {
+        final String file = TestParquetTools.class.getResource("/ReferenceListParquetFieldIds.parquet").getFile();
+        final String FOO = "Foo";
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(FOO, Type.intType().arrayType()));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FOO, 999)
+                .build();
+        final Table expected = TableTools.newTable(td, new ColumnHolder<>(FOO, int[].class, int.class, false,
+                new int[] {1, 2, 3},
+                null,
+                new int[0],
+                new int[] {42}));
+        {
+            final Table actual = ParquetTools.readTable(file, instructions);
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+        {
+            final Table actual = ParquetTools.readTable(file, instructions.withTableDefinition(td));
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+    }
+
     @Test
     public void testWriteParquetFieldIds() {
         final int BAZ_ID = 111;
@@ -829,11 +874,12 @@ public class TestParquetTools {
         final String BAZ = "Baz";
         final String ZAP = "Zap";
         final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
-        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
+        final ColumnDefinition<?> zapCol = ColumnDefinition.of(ZAP, Type.stringType().arrayType());
         final TableDefinition td = TableDefinition.of(bazCol, zapCol);
-        final Table table = newTable(td,
+        final Table expected = newTable(td,
                 longCol(BAZ, 99, 101),
-                stringCol(ZAP, "Foo", "Bar"));
+                new ColumnHolder<>(ZAP, String[].class, String.class, false, new String[] {"Foo", "Bar"},
+                        new String[] {"Hello"}));
         final File file = new File(testRoot, "testWriteParquetFieldIds.parquet");
         {
             // Writing down random parquet column names that we _don't_ keep a reference to. This way, the only way we
@@ -844,7 +890,7 @@ public class TestParquetTools {
                     .addColumnNameMapping(UUID.randomUUID().toString(), BAZ)
                     .addColumnNameMapping(UUID.randomUUID().toString(), ZAP)
                     .build();
-            ParquetTools.writeTable(table, file.getPath(), writeInstructions);
+            ParquetTools.writeTable(expected, file.getPath(), writeInstructions);
         }
 
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
@@ -857,12 +903,12 @@ public class TestParquetTools {
             {
                 final Table actual = ParquetTools.readTable(file.getPath(), readInstructions);
                 assertEquals(td, actual.getDefinition());
-                assertTableEquals(table, actual);
+                assertTableEquals(expected, actual);
             }
             {
                 final Table actual = ParquetTools.readTable(file.getPath(), readInstructions.withTableDefinition(td));
                 assertEquals(td, actual.getDefinition());
-                assertTableEquals(table, actual);
+                assertTableEquals(expected, actual);
             }
         }
     }

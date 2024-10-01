@@ -154,18 +154,26 @@ public class ParquetSchemaReader {
                 .filter(Objects::nonNull)
                 .map(ID::intValue)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        for (final ColumnDescriptor column : schema.getColumns()) {
+        if (schema.getFieldCount() != schema.getColumns().size()) {
+            throw new IllegalStateException();
+        }
+        final Iterator<Type> fieldIt = schema.getFields().iterator();
+        final Iterator<ColumnDescriptor> columnDescriptorIterator = schema.getColumns().iterator();
+        while (fieldIt.hasNext() && columnDescriptorIterator.hasNext()) {
+            final Type fieldType = fieldIt.next();
+            final ColumnDescriptor column = columnDescriptorIterator.next();
             if (column.getMaxRepetitionLevel() > 1) {
                 // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
                 throw new UnsupportedOperationException("Unsupported maximum repetition level "
                         + column.getMaxRepetitionLevel() + " in column " + String.join("/", column.getPath()));
             }
-
             colDef.reset();
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
             final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
-            final ID fieldId = primitiveType.getId();
+            // Note: we are taking the id from the fieldType which is not equivalent to the primitiveType field id (ie,
+            // in the case of repeated types).
+            final ID fieldId = fieldType.getId();
             final String parquetColumnName = column.getPath()[0];
             parquetColumnNameToFirstPath.compute(parquetColumnName, (final String pcn, final String[] oldPath) -> {
                 if (oldPath != null) {
@@ -294,6 +302,9 @@ public class ParquetSchemaReader {
                 });
             }
             consumer.accept(colDef);
+        }
+        if (fieldIt.hasNext() || columnDescriptorIterator.hasNext()) {
+            throw new IllegalStateException("Iterators not exhausted");
         }
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions
