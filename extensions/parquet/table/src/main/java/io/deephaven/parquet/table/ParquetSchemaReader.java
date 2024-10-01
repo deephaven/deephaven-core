@@ -175,8 +175,9 @@ public class ParquetSchemaReader {
                         colName = columnNames.get(0);
                         break COL_NAME;
                     } else if (columnNames.size() > 1) {
-                        // TODO: how should we handle this? Ignore?
-                        // throw new IllegalArgumentException();
+                        throw new IllegalArgumentException(String.format(
+                                "Non-unique Field ID mapping provided; unable to infer TableDefinition for fieldId=%d, parquetColumnName=%s",
+                                fieldId.intValue(), parquetColumnName));
                     }
                 }
                 final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);

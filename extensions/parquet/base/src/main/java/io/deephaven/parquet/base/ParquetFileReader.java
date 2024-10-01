@@ -39,7 +39,7 @@ public class ParquetFileReader {
      * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
      */
     private final URI rootURI;
-    private final MessageType type;
+    private final MessageType schema;
 
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
@@ -102,7 +102,7 @@ public class ParquetFileReader {
                 fileMetaData = Util.readFileMetaData(in);
             }
         }
-        type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
+        schema = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
     /**
@@ -476,7 +476,7 @@ public class ParquetFileReader {
     }
 
     public MessageType getSchema() {
-        return type;
+        return schema;
     }
 
     public int rowGroupCount() {

@@ -33,6 +33,7 @@ import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import junit.framework.TestCase;
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -744,15 +745,16 @@ public class TestParquetTools {
                         longCol(BAZ_DUPE, 99, 101)), table);
             }
 
-            // TODO: how should we handle this?
-            // {
-            // final Table table = ParquetTools.readTable(file, dupeInstructions);
-            // assertEquals(dupeTd, table.getDefinition());
-            // assertTableEquals(newTable(dupeTd,
-            // longCol(BAZ, 99, 101),
-            // stringCol(ZAP, "Foo", "Bar"),
-            // longCol(BAZ_DUPE, 99, 101)), table);
-            // }
+            // In the case where we have dupe field IDs and don't provide an explicit definition, we are preferring to
+            // fail during the inference step
+            {
+                try {
+                    ParquetTools.readTable(file, dupeInstructions);
+                    Assertions.failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+                } catch (IllegalArgumentException e) {
+                    Assertions.assertThat(e).hasMessageContaining("Non-unique Field ID mapping provided");
+                }
+            }
         }
     }
 

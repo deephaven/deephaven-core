@@ -14,9 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 final class RowGroupReaderImpl implements RowGroupReader {
     private final RowGroup rowGroup;
@@ -45,14 +48,21 @@ final class RowGroupReaderImpl implements RowGroupReader {
                     "Expected schema fieldCount and row group columns siize to be equal, schema.getFieldCount()=%d, rowGroup.getColumnsSize()=%d, rootURI=%s",
                     fieldCount, rowGroup.getColumnsSize(), rootURI));
         }
-        this.channelsProvider = channelsProvider;
-        this.rowGroup = rowGroup;
-        this.rootURI = rootURI;
-        this.schema = schema;
+        this.channelsProvider = Objects.requireNonNull(channelsProvider);
+        this.rowGroup = Objects.requireNonNull(rowGroup);
+        this.rootURI = Objects.requireNonNull(rootURI);
+        this.schema = Objects.requireNonNull(schema);
         schemaMap = new HashMap<>(fieldCount);
         chunkMap = new HashMap<>(fieldCount);
         schemaMapByFieldId = new HashMap<>(fieldCount);
         chunkMapByFieldId = new HashMap<>(fieldCount);
+        // Note: there is no technical guarantee from parquet that column names, path_in_schema, or field_ids are
+        // unique; it's technically possible that they are duplicated. Ultimately, getColumnChunk is a bad abstraction -
+        // we shouldn't need to re-do matching for every single row group column chunk, the matching should be done
+        // _once_ per column to get the column index, and then for every row group we should just need to do
+        // rowGroup.getColumns().get(columnIndex). If we want to
+        final Set<String> nonUniqueKeys = new HashSet<>();
+        final Set<Integer> nonUniqueFieldIds = new HashSet<>();
         final Iterator<Type> fieldsIt = schema.getFields().iterator();
         final Iterator<ColumnChunk> colsIt = rowGroup.getColumnsIterator();
         while (fieldsIt.hasNext() && colsIt.hasNext()) {
@@ -68,15 +78,28 @@ final class RowGroupReaderImpl implements RowGroupReader {
                     nonRequiredFields.add(fieldType);
                 }
             }
-            chunkMap.put(key, column);
-            schemaMap.put(key, nonRequiredFields);
+            if (chunkMap.putIfAbsent(key, column) != null) {
+                nonUniqueKeys.add(key);
+            }
+            schemaMap.putIfAbsent(key, nonRequiredFields);
             if (ft.getId() != null) {
-                chunkMapByFieldId.put(ft.getId().intValue(), column);
-                schemaMapByFieldId.put(ft.getId().intValue(), nonRequiredFields);
+                final int fieldId = ft.getId().intValue();
+                if (chunkMapByFieldId.putIfAbsent(fieldId, column) != null) {
+                    nonUniqueFieldIds.add(fieldId);
+                }
+                schemaMapByFieldId.putIfAbsent(fieldId, nonRequiredFields);
             }
         }
         if (fieldsIt.hasNext() || colsIt.hasNext()) {
             throw new IllegalStateException(String.format("Unexpected, iterators not exhausted, rootURI=%s", rootURI));
+        }
+        for (String nonUniqueKey : nonUniqueKeys) {
+            chunkMap.remove(nonUniqueKey);
+            schemaMap.remove(nonUniqueKey);
+        }
+        for (Integer nonUniqueFieldId : nonUniqueFieldIds) {
+            chunkMapByFieldId.remove(nonUniqueFieldId);
+            schemaMapByFieldId.remove(nonUniqueFieldId);
         }
         this.version = version;
     }

@@ -58,7 +58,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     private final PageMaterializerFactory pageMaterializerFactory;
     private final ColumnDescriptor path;
     private final URI uri;
-    private final List<Type> fieldTypes;
+    private final List<Type> nonRequiredFields;
 
     /**
      * The offset for data following the page header in the file.
@@ -80,7 +80,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * @param materializerFactory The factory for creating {@link PageMaterializer}.
      * @param path The path of the column.
      * @param uri The uri of the parquet file.
-     * @param fieldTypes The types of the fields in the column.
+     * @param nonRequiredFields The types of the fields in the column.
      * @param dataOffset The offset for data following the page header in the file.
      * @param pageHeader The page header, should not be {@code null}.
      * @param numValues The number of values in the page.
@@ -93,7 +93,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final PageMaterializerFactory materializerFactory,
             final ColumnDescriptor path,
             final URI uri,
-            final List<Type> fieldTypes,
+            final List<Type> nonRequiredFields,
             final long dataOffset,
             final PageHeader pageHeader,
             final int numValues) {
@@ -104,7 +104,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         this.pageMaterializerFactory = materializerFactory;
         this.path = path;
         this.uri = uri;
-        this.fieldTypes = fieldTypes;
+        this.nonRequiredFields = nonRequiredFields;
         this.dataOffset = dataOffset;
         this.pageHeader = Require.neqNull(pageHeader, "pageHeader");
         this.numValues = Require.geqZero(numValues, "numValues");
@@ -716,7 +716,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         int currentRl = rlDecoder == null ? 0 : rlDecoder.currentValue();
 
         final LevelsController levelsController = new LevelsController(
-                fieldTypes.stream().map(Type::getRepetition).toArray(Type.Repetition[]::new));
+                nonRequiredFields.stream().map(Type::getRepetition).toArray(Type.Repetition[]::new));
         for (int valuesProcessed = 0; valuesProcessed < numValues;) {
             if (dlRangeSize == 0) {
                 dlDecoder.readNextRange();
