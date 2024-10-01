@@ -75,11 +75,11 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     /**
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
      *
-     * @param completedWrites List of completed writes to be set in the {@link ParquetInstructions}
+     * @param onWriteCompleted The callback to be invoked after writing the parquet file.
      * @param fieldIdToName Mapping of field id to field name, to be populated inside the parquet file's schema
      */
     ParquetInstructions toParquetInstructions(
-            @NotNull final List<ParquetInstructions.CompletedWrite> completedWrites,
+            @NotNull final ParquetInstructions.OnWriteCompleted onWriteCompleted,
             @NotNull final Map<Integer, String> fieldIdToName) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
@@ -99,7 +99,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         builder.setMaximumDictionaryKeys(maximumDictionaryKeys());
         builder.setMaximumDictionarySize(maximumDictionarySize());
         builder.setTargetPageSize(targetPageSize());
-        builder.setCompletedWrites(completedWrites);
+        builder.setOnWriteCompleted(onWriteCompleted);
 
         return builder.build();
     }

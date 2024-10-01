@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CatalogAdapterTest extends CatalogAdapterBase {
+class CatalogAdapterTest extends CatalogAdapterBase {
     @Test
     void empty() {
         assertThat(catalogAdapter.listNamespaces()).isEmpty();

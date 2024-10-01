@@ -4,19 +4,16 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.test.types.OutOfBandTest;
-import org.junit.experimental.categories.Category;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Category(OutOfBandTest.class)
-public class IcebergParquetWriteInstructionsTest {
+class IcebergParquetWriteInstructionsTest {
 
     @Test
-    public void defaults() {
+    void defaults() {
         final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder().build();
         assertThat(instructions.tableDefinition().isEmpty()).isTrue();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
@@ -29,7 +26,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testSetCreateTableIfNotExist() {
+    void testSetCreateTableIfNotExist() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .createTableIfNotExist(true)
                 .build()
@@ -38,7 +35,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testSetVerifySchema() {
+    void testSetVerifySchema() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .verifySchema(true)
                 .build()
@@ -56,7 +53,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testSetMaximumDictionaryKeys() {
+    void testSetMaximumDictionaryKeys() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .maximumDictionaryKeys(100)
                 .build()
@@ -83,7 +80,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testMinMaximumDictionaryKeys() {
+    void testMinMaximumDictionaryKeys() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .maximumDictionaryKeys(-1)
@@ -105,7 +102,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testMinTargetPageSize() {
+    void testMinTargetPageSize() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .targetPageSize(1024)
@@ -116,7 +113,7 @@ public class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void toParquetInstructionTest() {
+    void toParquetInstructionTest() {
         final IcebergParquetWriteInstructions icebergInstructions = IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("GZIP")
                 .maximumDictionaryKeys(100)
@@ -133,5 +130,6 @@ public class IcebergParquetWriteInstructionsTest {
         assertThat(parquetInstructions.getFieldId("field1")).isEmpty();
         assertThat(parquetInstructions.getFieldId("field2")).hasValue(2);
         assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
+        assertThat(parquetInstructions.onWriteCompleted()).isEmpty();
     }
 }

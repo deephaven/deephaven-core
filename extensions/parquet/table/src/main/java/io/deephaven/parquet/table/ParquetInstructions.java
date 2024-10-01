@@ -48,6 +48,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     private static final boolean DEFAULT_IS_REFRESHING = false;
 
+    public interface OnWriteCompleted {
+        void onWriteCompleted(URI destination, long numRows, long numBytes);
+    }
+
     public enum ParquetFileLayout {
         /**
          * A single parquet file.
@@ -179,35 +183,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract String baseNameForPartitionedParquetData();
 
-    public static class CompletedWrite {
-        private final URI destination;
-        private final long numRows;
-        private final long numBytes;
-
-        CompletedWrite(final URI destination, final long numRows, final long numBytes) {
-            this.destination = destination;
-            this.numRows = numRows;
-            this.numBytes = numBytes;
-        }
-
-        public URI destination() {
-            return destination;
-        }
-
-        public long numRows() {
-            return numRows;
-        }
-
-        public long numBytes() {
-            return numBytes;
-        }
-    }
-
     /**
-     * @return A list to be populated with information about all the parquet files written, ignoring the index and
-     *         metadata files.
+     * @return A callback to be executed when on completing each parquet data file write (excluding the index and
+     *         metadata files).
      */
-    public abstract Optional<List<CompletedWrite>> completedWrites();
+    public abstract Optional<OnWriteCompleted> onWriteCompleted();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -347,7 +327,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<List<CompletedWrite>> completedWrites() {
+        public Optional<OnWriteCompleted> onWriteCompleted() {
             return Optional.empty();
         }
     };
@@ -432,7 +412,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetFileLayout fileLayout;
         private final TableDefinition tableDefinition;
         private final Collection<List<String>> indexColumns;
-        private final List<CompletedWrite> completedWrites;
+        private final OnWriteCompleted onWriteCompleted;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -449,7 +429,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final ParquetFileLayout fileLayout,
                 final TableDefinition tableDefinition,
                 final Collection<List<String>> indexColumns,
-                final List<CompletedWrite> completedWrites) {
+                final OnWriteCompleted onWriteCompleted) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -467,7 +447,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : indexColumns.stream()
                             .map(List::copyOf)
                             .collect(Collectors.toUnmodifiableList());
-            this.completedWrites = completedWrites;
+            this.onWriteCompleted = onWriteCompleted;
         }
 
         private <VALUE_TYPE> VALUE_TYPE getOrDefault(final String columnName, final VALUE_TYPE defaultValue,
@@ -610,7 +590,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns, completedWrites);
+                    indexColumns, onWriteCompleted);
         }
 
         @Override
@@ -619,12 +599,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns, completedWrites);
+                    tableDefinition, useIndexColumns, onWriteCompleted);
         }
 
         @Override
-        public Optional<List<CompletedWrite>> completedWrites() {
-            return Optional.ofNullable(completedWrites);
+        public Optional<OnWriteCompleted> onWriteCompleted() {
+            return Optional.ofNullable(onWriteCompleted);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -683,7 +663,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetFileLayout fileLayout;
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
-        private List<CompletedWrite> completedWrites;
+        private OnWriteCompleted onWriteCompleted;
         private TIntObjectHashMap<String> usedFieldIdToColumn;
 
         /**
@@ -712,7 +692,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
             tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
-            completedWrites = readOnlyParquetInstructions.completedWrites().orElse(null);
+            onWriteCompleted = readOnlyParquetInstructions.onWriteCompleted().orElse(null);
         }
 
         private void newColumnNameToInstructionsMap() {
@@ -1027,8 +1007,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
-        public Builder setCompletedWrites(final List<CompletedWrite> completedWrites) {
-            this.completedWrites = completedWrites;
+        /**
+         * Adds a callback to be executed when on completing each parquet data file write (excluding the index and
+         * metadata files).
+         */
+        public Builder setOnWriteCompleted(final OnWriteCompleted onWriteCompleted) {
+            this.onWriteCompleted = onWriteCompleted;
             return this;
         }
 
@@ -1041,7 +1025,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns, completedWrites);
+                    tableDefinition, indexColumns, onWriteCompleted);
         }
     }
 

@@ -52,6 +52,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -679,8 +680,7 @@ public class IcebergCatalogAdapter {
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
         final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
-        final IcebergInstructions userInstructions =
-                instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         return fromSchema(schema,
                 table.spec(),
@@ -1139,7 +1139,7 @@ public class IcebergCatalogAdapter {
         }
 
         try {
-            final List<ParquetInstructions.CompletedWrite> parquetFileinfo =
+            final List<CompletedParquetWrite> parquetFileinfo =
                     writeParquet(icebergTable, dhTables, writeInstructions);
             final List<DataFile> appendFiles = dataFilesFromParquet(parquetFileinfo);
             if (addSnapshot) {
@@ -1314,14 +1314,32 @@ public class IcebergCatalogAdapter {
                         StringUtils.toLowerCase(writeInstructions.compressionCodecName())));
     }
 
+    private static class CompletedParquetWrite {
+        private final URI destination;
+        private final long numRows;
+        private final long numBytes;
+
+        private CompletedParquetWrite(final URI destination, final long numRows, final long numBytes) {
+            this.destination = destination;
+            this.numRows = numRows;
+            this.numBytes = numBytes;
+        }
+    }
+
     @NotNull
-    private static List<ParquetInstructions.CompletedWrite> writeParquet(
+    private static List<CompletedParquetWrite> writeParquet(
             @NotNull final org.apache.iceberg.Table icebergTable,
             @NotNull final Table[] dhTables,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
-        final List<ParquetInstructions.CompletedWrite> parquetFilesWritten = new ArrayList<>(dhTables.length);
+        // Build the parquet instructions
+        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.length);
+        final ParquetInstructions.OnWriteCompleted onWriteCompleted =
+                (destination, numRows, numBytes) -> parquetFilesWritten
+                        .add(new CompletedParquetWrite(destination, numRows, numBytes));
         final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                parquetFilesWritten, icebergTable.schema().idToName());
+                onWriteCompleted, icebergTable.schema().idToName());
+
+        // Write the data to parquet files
         for (final Table dhTable : dhTables) {
             final long epochMicrosNow = Instant.now().getEpochSecond() * 1_000_000 + Instant.now().getNano() / 1_000;
             final String filename = new StringBuilder()
@@ -1392,17 +1410,17 @@ public class IcebergCatalogAdapter {
      * Generate a list of {@link DataFile} objects from a list of parquet files written.
      */
     private static List<DataFile> dataFilesFromParquet(
-            @NotNull final Collection<ParquetInstructions.CompletedWrite> parquetFilesWritten) {
+            @NotNull final Collection<CompletedParquetWrite> parquetFilesWritten) {
         if (parquetFilesWritten.isEmpty()) {
             throw new UncheckedDeephavenException("Failed to generate data files because no parquet files written");
         }
         // TODO This assumes no partition data is written, is that okay?
         return parquetFilesWritten.stream()
                 .map(parquetFileWritten -> DataFiles.builder(PartitionSpec.unpartitioned())
-                        .withPath(parquetFileWritten.destination().toString())
+                        .withPath(parquetFileWritten.destination.toString())
                         .withFormat(FileFormat.PARQUET)
-                        .withRecordCount(parquetFileWritten.numRows())
-                        .withFileSizeInBytes(parquetFileWritten.numBytes())
+                        .withRecordCount(parquetFileWritten.numRows)
+                        .withFileSizeInBytes(parquetFileWritten.numBytes)
                         .build())
                 .collect(Collectors.toList());
     }

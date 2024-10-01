@@ -587,14 +587,6 @@ public class ParquetTools {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
 
-        final boolean collectCompletedWrites = writeInstructions.completedWrites().isPresent();
-        final List<ParquetInstructions.CompletedWrite> completedWrites;
-        if (collectCompletedWrites) {
-            completedWrites = new ArrayList<>(destinations.length);
-        } else {
-            completedWrites = null;
-        }
-
         // List of output streams created, to rollback in case of exceptions
         final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
         try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
@@ -603,16 +595,15 @@ public class ParquetTools {
                     // Write the tables without any index info
                     for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                         final Table source = sources[tableIdx];
+                        final URI tableDestination = destinations[tableIdx];
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                                tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
                         final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
-                                destinations[tableIdx], outputStream, Collections.emptyMap(),
+                                tableDestination, outputStream, Collections.emptyMap(),
                                 (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter, computedCache);
-                        if (collectCompletedWrites) {
-                            completedWrites.add(new ParquetInstructions.CompletedWrite(destinations[tableIdx],
-                                    source.size(), numBytes));
-                        }
+                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
+                                tableDestination, source.size(), numBytes));
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -633,14 +624,12 @@ public class ParquetTools {
                         for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                             outputStreams.add(info.destOutputStream);
                         }
-                        final Table sourceTable = sources[tableIdx];
-                        final long numBytes = ParquetTableWriter.write(sourceTable, definition, writeInstructions,
+                        final Table source = sources[tableIdx];
+                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
                                 tableDestination, outputStream, Collections.emptyMap(), indexInfoList,
                                 metadataFileWriter, computedCache);
-                        if (collectCompletedWrites) {
-                            completedWrites.add(new ParquetInstructions.CompletedWrite(tableDestination,
-                                    sourceTable.size(), numBytes));
-                        }
+                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
+                                tableDestination, source.size(), numBytes));
                     }
                 }
 
@@ -669,17 +658,8 @@ public class ParquetTools {
                         log.error().append("Error in rolling back output stream ").append(e1).endl();
                     }
                 }
-                if (completedWrites != null) {
-                    completedWrites.clear();
-                }
                 throw new UncheckedDeephavenException("Error writing parquet tables", e);
             }
-        }
-        if (collectCompletedWrites && !completedWrites.isEmpty()) {
-            // Add the completed writes to the list provided in the instructions
-            final List<ParquetInstructions.CompletedWrite> userCompletedWritesList =
-                    writeInstructions.completedWrites().get();
-            userCompletedWritesList.addAll(completedWrites);
         }
     }
 

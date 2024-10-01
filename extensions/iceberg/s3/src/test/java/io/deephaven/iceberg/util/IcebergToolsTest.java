@@ -131,7 +131,7 @@ public abstract class IcebergToolsTest {
     }
 
     @AfterEach
-    public void tearDown() throws ExecutionException, InterruptedException {
+    void tearDown() throws ExecutionException, InterruptedException {
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }
