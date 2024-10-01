@@ -12,7 +12,7 @@ import inspect
 from enum import Enum
 from enum import auto
 from functools import cached_property
-from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
+from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal, TypeVar, Generic
 from typing import Sequence, List, Union, Protocol, Mapping, Iterable
 
 import jpy
@@ -538,7 +538,61 @@ class TableDefinition(JObjectWrapper, Mapping):
         return JObjectWrapper.__hash__(self)
 
 
-class Table(JObjectWrapper):
+T = TypeVar("T", "Table", "PartitionedTableProxy")
+
+class TableOperations(Generic[T]):
+    """A protocol for classes that support table operations."""
+    j_object: jpy.JType
+
+    def head(self, num_rows: int) -> T:
+        """ When called on a :class:`Table`, the head method creates a new table with a specific number of rows from the
+        beginning of the table.
+
+        When called on a :class:`PartitionedTableProxy`, the head method applies the head operation to all constituent tables
+        of the underlying partitioned table and produces a new :class:`PartitionedTableProxy` with the result tables as the
+        constituents of its underlying partitioned table.
+
+        Args:
+            num_rows (int): the number of rows at the head of table or the constituent tables
+
+        Returns:
+            a new :class:`Table` or :class:`PartitionedTableProxy`
+
+        Raises:
+            DHError
+        """
+        try:
+            with auto_locking_ctx(self):
+                return self.__class__(self.j_object.head(num_rows))
+        except Exception as e:
+            raise DHError(e, f"head operation on the {self.__class__.__name__} failed.") from e
+
+
+    def tail(self, num_rows: int) -> T:
+        """When called on a :class:`Table`, the tail method creates a new table with a specific number of rows from the
+        end of the table.
+
+        When called on a :class:`PartitionedTableProxy`, the tail method applies the tail operation to all constituent tables
+        of the underlying partitioned table, and produces a new :class:`PartitionedTableProxy` with the result tables as the
+        constituents of its underlying partitioned table.
+
+        Args:
+            num_rows (int): the number of rows at the tail of table or the constituent tables
+
+        Returns:
+            a new :class:`Table` or :class:`PartitionedTableProxy`
+
+        Raises:
+            DHError
+        """
+        try:
+            with auto_locking_ctx(self):
+                return self.__class__(self.j_object.tail(num_rows))
+        except Exception as e:
+            raise DHError(e, f"tail operation on the {self.__class__.__name__} failed.") from e
+
+
+class Table(JObjectWrapper, TableOperations["Table"]):
     """A Table represents a Deephaven table. It allows applications to perform powerful Deephaven table operations.
 
     Note: It should not be instantiated directly by user code. Tables are mostly created by factory methods,
@@ -1189,23 +1243,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
-    def head(self, num_rows: int) -> Table:
-        """The head method creates a new table with a specific number of rows from the beginning of the table.
-
-        Args:
-            num_rows (int): the number of rows at the head of table
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.head(num_rows))
-        except Exception as e:
-            raise DHError(e, "table head operation failed.") from e
-
     def head_pct(self, pct: float) -> Table:
         """The head_pct method creates a new table with a specific percentage of rows from the beginning of the table.
 
@@ -1222,23 +1259,6 @@ class Table(JObjectWrapper):
             return Table(j_table=self.j_table.headPct(pct))
         except Exception as e:
             raise DHError(e, "table head_pct operation failed.") from e
-
-    def tail(self, num_rows: int) -> Table:
-        """The tail method creates a new table with a specific number of rows from the end of the table.
-
-        Args:
-            num_rows (int): the number of rows at the end of table
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            return Table(j_table=self.j_table.tail(num_rows))
-        except Exception as e:
-            raise DHError(e, "table tail operation failed.") from e
 
     def tail_pct(self, pct: float) -> Table:
         """The tail_pct method creates a new table with a specific percentage of rows from the end of the table.
@@ -2809,7 +2829,7 @@ class PartitionedTable(JObjectWrapper):
             j_pt_proxy=self.j_partitioned_table.proxy(require_matching_keys, sanity_check_joins))
 
 
-class PartitionedTableProxy(JObjectWrapper):
+class PartitionedTableProxy(JObjectWrapper, TableOperations["PartitionedTableProxy"]):
     """A PartitionedTableProxy is a table operation proxy for the underlying partitioned table. It provides methods
     that apply table operations to the constituent tables of the underlying partitioned table, produce a new
     partitioned table from the resulting constituent tables, and return a proxy of it.
@@ -2844,46 +2864,6 @@ class PartitionedTableProxy(JObjectWrapper):
         self.require_matching_keys = self.j_pt_proxy.requiresMatchingKeys()
         self.sanity_check_joins = self.j_pt_proxy.sanityChecksJoins()
         self.target = PartitionedTable(j_partitioned_table=self.j_pt_proxy.target())
-
-    def head(self, num_rows: int) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.head` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            num_rows (int): the number of rows at the head of the constituent tables
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.head(num_rows))
-        except Exception as e:
-            raise DHError(e, "head operation on the PartitionedTableProxy failed.") from e
-
-    def tail(self, num_rows: int) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.tail` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            num_rows (int): the number of rows at the end of the constituent tables
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.tail(num_rows))
-        except Exception as e:
-            raise DHError(e, "tail operation on the PartitionedTableProxy failed.") from e
 
     def reverse(self) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.reverse` table operation to all constituent tables of the underlying partitioned
