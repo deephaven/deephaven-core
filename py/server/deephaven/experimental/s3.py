@@ -7,7 +7,6 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.experimental.s3_credentials import S3Credentials
 from deephaven.time import DurationLike, to_j_duration
 
 # If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
@@ -24,6 +23,91 @@ except Exception:
     included in the package. This is an opt-out functionality included by default. If not included, importing this
     module will fail to find the java types.
 """
+
+class Credentials(JObjectWrapper):
+    """
+    Credentials object for authenticating with S3 server.
+    """
+    j_object_type = _JCredentials
+
+    def __init__(self, _j_object: jpy.JType):
+        """
+        Initializes the credentials object.
+
+        Args:
+            _j_object (Credentials): the Java credentials object.
+        """
+        self._j_object = _j_object
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+    @classmethod
+    def resolving(cls) -> 'Credentials':
+        """
+        Default credentials provider used by Deephaven which resolves credentials in the following order:
+        1. If a profile name, config file path, or credentials file path is provided, use ProfileCredentialsProvider.
+        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/ProfileCredentialsProvider.html
+
+        2. If not, check all places mentioned in DefaultCredentialsProvider and fall back to AnonymousCredentialsProvider.
+        Ref: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html
+        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AnonymousCredentialsProvider.html
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.resolving())
+
+    @classmethod
+    def default(cls) -> 'Credentials':
+        """
+        Default credentials provider used by the AWS SDK that looks for credentials at a number of locations as
+        described in DefaultCredentialsProvider.
+        Ref: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.defaultCredentials())
+
+    @classmethod
+    def basic(cls, access_key_id: str, secret_access_key: str) -> 'Credentials':
+        """
+        Basic credentials with the specified access key id and secret access key.
+
+        Args:
+            access_key_id (str): the access key id, used to identify the user.
+            secret_access_key (str): the secret access key, used to authenticate the user.
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.basic(access_key_id, secret_access_key))
+
+    @classmethod
+    def anonymous(cls) -> 'Credentials':
+        """
+        Creates a new anonymous credentials object.
+        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AnonymousCredentialsProvider.html
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.anonymous())
+
+    @classmethod
+    def profile(cls) -> 'Credentials':
+        """
+        Profile specific credentials that uses configuration and credentials files.
+        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/ProfileCredentialsProvider.html
+
+        Returns:
+            Credentials: the credentials object.
+        """
+        return cls(_JCredentials.profile())
+
+
 class S3Instructions(JObjectWrapper):
     """
     S3Instructions provides specialized instructions for reading from and writing to S3-compatible APIs.
@@ -33,7 +117,7 @@ class S3Instructions(JObjectWrapper):
 
     def __init__(self,
                  region_name: Optional[str] = None,
-                 credentials: Optional[S3Credentials] = None,
+                 credentials: Optional[Credentials] = None,
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
@@ -59,7 +143,7 @@ class S3Instructions(JObjectWrapper):
                 in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
                 the bucket accessed, the correct region name will be derived internally, at the cost of one additional
                 request.
-            credentials (S3Credentials): the credentials object for authenticating to the S3 server, defaults to
+            credentials (Credentials): the credentials object for authenticating to the S3 server, defaults to
                 Credentials.resolving().
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the

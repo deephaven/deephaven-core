@@ -4,7 +4,6 @@
 import jpy
 import tempfile
 
-from deephaven.experimental.s3_credentials import S3Credentials
 from tests.testbase import BaseTestCase
 from deephaven import DHError
 from deephaven.experimental import s3
@@ -88,22 +87,22 @@ class S3InstructionTest(BaseTestCase):
             self.assertEqual(s3_instructions.j_object.credentialsFilePath().get().toString(), temp_credentials_file.name)
 
     def test_set_resolving_credentials(self):
-        s3_instructions = s3.S3Instructions(credentials=S3Credentials.resolving())
+        s3_instructions = s3.S3Instructions(credentials=s3.Credentials.resolving())
         self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.resolving().getClass())
 
     def test_set_anonymous_access(self):
         s3_instructions = s3.S3Instructions(anonymous_access=True)
         self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.anonymous().getClass())
 
-        s3_instructions = s3.S3Instructions(credentials=S3Credentials.anonymous())
+        s3_instructions = s3.S3Instructions(credentials=s3.Credentials.anonymous())
         self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.anonymous().getClass())
 
     def test_set_default_credentials(self):
-        s3_instructions = s3.S3Instructions(credentials=S3Credentials.default())
+        s3_instructions = s3.S3Instructions(credentials=s3.Credentials.default())
         self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.defaultCredentials().getClass())
 
     def test_set_profile_credentials(self):
-        s3_instructions = s3.S3Instructions(credentials=S3Credentials.profile())
+        s3_instructions = s3.S3Instructions(credentials=s3.Credentials.profile())
         self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.profile().getClass())
 
     def test_set_multiple_credentials(self):
@@ -113,9 +112,9 @@ class S3InstructionTest(BaseTestCase):
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(anonymous_access=True, credentials=S3Credentials.resolving())
+            s3.S3Instructions(anonymous_access=True, credentials=s3.Credentials.resolving())
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(access_key_id="foo", secret_access_key="bar", credentials=S3Credentials.resolving())
+            s3.S3Instructions(access_key_id="foo", secret_access_key="bar", credentials=s3.Credentials.resolving())
             self.fail("Expected ValueError")
