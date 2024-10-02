@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
+import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -122,6 +123,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     abstract IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri);
 
+    @NotNull
+    private URI dataFileUri(@NotNull DataFile df) {
+        String path = df.path().toString();
+        if (fileIO instanceof RelativeFileIO) {
+            path = ((RelativeFileIO) fileIO).absoluteLocation(path);
+        }
+        return FileUtils.convertToURI(path, false);
+    }
+
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
         final Table table = tableAdapter.icebergTable();
@@ -137,7 +147,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
                     for (DataFile df : reader) {
-                        final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
+                        final URI fileUri = dataFileUri(df);
                         final IcebergTableLocationKey locationKey =
                                 cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
                         if (locationKey != null) {

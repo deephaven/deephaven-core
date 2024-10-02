@@ -75,16 +75,43 @@ public class S3ParquetRemoteTest {
     @Test
     public void readSampleParquetFilesFromPublicS3Part2() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("eu-west-3")
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-        readTable("s3://datasets-documentation/pypi/2023/pypi_66_7_29.snappy.parquet", readInstructions)
-                .head(10).select();
+        {
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .regionName("eu-west-3")
+                    .readTimeout(Duration.ofSeconds(60))
+                    .credentials(Credentials.anonymous())
+                    .build();
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            readTable("s3://datasets-documentation/pypi/2023/pypi_66_7_29.snappy.parquet", readInstructions)
+                    .head(10).select();
+        }
+
+        // Now read the same file without a region
+        {
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .readTimeout(Duration.ofSeconds(60))
+                    .credentials(Credentials.anonymous())
+                    .build();
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            readTable("s3://datasets-documentation/pypi/2023/pypi_66_7_29.snappy.parquet", readInstructions)
+                    .head(10).select();
+        }
+
+        // Now read the same file with credentials not set as anonymous
+        {
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .readTimeout(Duration.ofSeconds(60))
+                    .build();
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            readTable("s3://datasets-documentation/pypi/2023/pypi_66_7_29.snappy.parquet", readInstructions)
+                    .head(10).select();
+        }
     }
 
     @Test
@@ -135,6 +162,23 @@ public class S3ParquetRemoteTest {
             assertEquals(50, tableWithoutEndpointOverride.size());
         }
         assertTableEquals(tableWithEndpointOverride, tableWithoutEndpointOverride);
+
+        final Table tableWithNoRegionAndCredentials;
+        {
+            // Note that this assumes that credentials are not present in the credentials file. If they are, this test
+            // will fail.
+            final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                    .setSpecialInstructions(S3Instructions.builder()
+                            .readTimeout(Duration.ofSeconds(60))
+                            .endpointOverride("https://storage.googleapis.com")
+                            .build())
+                    .build();
+            tableWithNoRegionAndCredentials = ParquetTools.readTable(
+                    "gs://cloud-samples-data/bigquery/us-states/us-states.parquet", readInstructions).select();
+            assertEquals(2, tableWithNoRegionAndCredentials.numColumns());
+            assertEquals(50, tableWithNoRegionAndCredentials.size());
+        }
+        assertTableEquals(tableWithEndpointOverride, tableWithNoRegionAndCredentials);
     }
 
     @Test
@@ -175,7 +219,7 @@ public class S3ParquetRemoteTest {
     }
 
     /**
-     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up.
+     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up, else will fail.
      */
     @Test
     public void readMetadataPartitionedParquetFromS3() {

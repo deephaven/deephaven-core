@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
@@ -565,6 +566,9 @@ public class RangeSetTest {
         for (int i = 0; i < rows.length; i++) {
             assertEquals("i=" + i, rows[i], initialRange.get(i));
         }
+        assertEquals(-1, initialRange.get(rows.length));
+        assertEquals(-1, initialRange.get(rows.length + 1));
+        assertEquals(-1, initialRange.get(rows.length + 100));
 
         initialRange.removeRange(new Range(0, 1));
     }
@@ -631,5 +635,42 @@ public class RangeSetTest {
                 new ShiftedRange(new Range(29022, 29024), -1),
                 new ShiftedRange(new Range(29026, 29026), -2),
         });
+    }
+
+    @Test
+    public void testInvert() {
+        RangeSet r = RangeSet.ofItems(4, 5, 7, 9, 10);
+
+        assertEquals(RangeSet.ofRange(0, 4), r.invert(r));
+        assertEquals(RangeSet.empty(), r.invert(RangeSet.empty()));
+        assertEquals(RangeSet.ofItems(0, 2, 4), r.invert(RangeSet.ofItems(4, 7, 10)));
+        assertEquals(RangeSet.ofItems(1, 2, 3), r.invert(RangeSet.ofItems(5, 7, 9)));
+
+        RangeSet positions = RangeSet.ofItems(18, 37, 83, 88);
+        RangeSet keys = RangeSet.fromSortedRanges(new Range[] {
+                new Range(1073739467, 1073739511), new Range(1073739568, 1073739639), new Range(1073739700, 1073739767),
+                new Range(1073739828, 1073739895), new Range(1073739956, 1073740023), new Range(1073740083, 1073740151),
+                new Range(1073740214, 1073740279), new Range(1073740342, 1073740407), new Range(1073740464, 1073740535),
+                new Range(1073740597, 1073740663), new Range(1073740725, 1073740791), new Range(1073740851, 1073740924),
+                new Range(1073740937, 1073741052), new Range(1073741063, 1073741180), new Range(1073741189, 1073741308),
+                new Range(1073741310, 1073741436), new Range(1073741440, 1073741564), new Range(1073741569, 1073741692),
+                new Range(1073741696, 1073741948), new Range(1073741968, 1073742065), new Range(1073742096, 1073742184),
+                new Range(1073742224, 1073742325), new Range(1073742352, 1073742454), new Range(1073742480, 1073742579),
+                new Range(1073742608, 1073742702), new Range(1073742736, 1073742840), new Range(1073742864, 1073742967),
+                new Range(1073742992, 1073743084), new Range(1073743120, 1073743218), new Range(1073743248, 1073743348),
+                new Range(1073743376, 1073743465), new Range(1073743504, 1073743597), new Range(1073743632, 1073743741),
+                new Range(1073743760, 1073743869), new Range(1073743888, 1073743912)
+        });
+        RangeSet selected = RangeSet.ofItems(1073739485, 1073739504, 1073739606, 1073739611);
+        PrimitiveIterator.OfLong selectedIter = selected.indexIterator();
+        PrimitiveIterator.OfLong positionsIter = positions.indexIterator();
+        while (selectedIter.hasNext()) {
+            assert positionsIter.hasNext();
+            long s = selectedIter.nextLong();
+            long p = positionsIter.nextLong();
+            assertEquals(s, keys.get(p));
+        }
+        assert !positionsIter.hasNext();
+        assertEquals(positions, keys.invert(selected));
     }
 }

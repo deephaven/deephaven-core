@@ -400,6 +400,22 @@ public class RangeSet {
         return sortedRanges.iterator();
     }
 
+    public Iterator<Range> reverseRangeIterator() {
+        return new Iterator<>() {
+            int i = sortedRanges.size();
+
+            @Override
+            public boolean hasNext() {
+                return i > 0;
+            }
+
+            @Override
+            public Range next() {
+                return sortedRanges.get(--i);
+            }
+        };
+    }
+
     public PrimitiveIterator.OfLong indexIterator() {
         if (isEmpty()) {
             return LongStream.empty().iterator();
@@ -664,13 +680,77 @@ public class RangeSet {
         return result;
     }
 
+    /**
+     *
+     * @param keys
+     * @return
+     */
+    public RangeSet invert(RangeSet keys) {
+        if (keys.isEmpty()) {
+            return empty();
+        }
+        if (isEmpty()) {
+            throw new IllegalArgumentException("Keys not found: " + keys);
+        }
+        ensureCardinalityCache();
+
+        List<Range> positions = new ArrayList<>();
+
+        int from = 0;
+
+        Iterator<Range> keysIter = keys.rangeIterator();
+        long startPos = -1;
+        long endPos = Long.MIN_VALUE;
+        while (keysIter.hasNext()) {
+            Range nextKeyRange = keysIter.next();
+
+            int index = Collections.binarySearch(sortedRanges.subList(from, sortedRanges.size()), nextKeyRange);
+            if (index < 0) {
+                index = -index - 2;// examine the previous element
+            }
+            index += from;
+            if (index < 0) {
+                throw new IllegalArgumentException("Key " + nextKeyRange.getFirst() + " not found");
+            }
+            Range target = sortedRanges.get(index);
+
+            long newStartPos =
+                    (index == 0 ? 0 : this.cardinality[index - 1]) + (nextKeyRange.getFirst() - target.getFirst());
+            if (newStartPos - 1 == endPos) {
+                // nothing to do, only grow the existing range
+                // endPos = newStartPos + (nextKeyRange.size() - 1);
+            } else {
+                // append the existing range and start a new one
+                if (endPos != Long.MIN_VALUE) {
+                    positions.add(new Range(startPos, endPos));
+                }
+
+                startPos = newStartPos;
+                // endPos = startPos + (nextKeyRange.size() - 1);
+            }
+            endPos = newStartPos + (nextKeyRange.size() - 1);
+
+            from = index;
+        }
+        assert endPos != Long.MIN_VALUE;
+        positions.add(new Range(startPos, endPos));
+
+        RangeSet result = RangeSet.fromSortedRanges(positions.toArray(new Range[0]));
+        assert result.size() == keys.size();
+        return result;
+    }
+
+
     public long get(long key) {
         if (key == 0) {
             return getFirstRow();
         }
+        if (key >= size()) {
+            return -1;
+        }
         ensureCardinalityCache();
 
-        int pos = Arrays.binarySearch(cardinality, key);
+        int pos = Arrays.binarySearch(cardinality, 0, sortedRanges.size(), key);
 
         if (pos >= 0) {
             return sortedRanges.get(pos + 1).getFirst();

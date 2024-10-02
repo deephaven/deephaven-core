@@ -139,7 +139,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
             fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
         }
-        UpdateEventData detail = new SubscriptionEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+        UpdateEventData detail = new ViewportEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
 
         detail.setOffset(this.viewportRowSet.getFirstRow());
@@ -383,9 +383,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                 if (message != null) {
                     // Replace rowsets with flat versions
                     long resultSize = message.rowsIncluded.size();
-                    message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
-                    message.rowsIncluded = message.rowsAdded;
-                    rowsReceived.add(resultSize);
+                    if (resultSize != 0) {
+                        message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
+                        message.rowsIncluded = message.rowsAdded;
+                        message.snapshotRowSet = null;
+                        rowsReceived.add(resultSize);
+                    }
 
                     // Update our table data with the complete message
                     snapshot.applyUpdates(message);
@@ -420,8 +423,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.onEnd(status -> {
                 if (status.isOk()) {
                     // notify the caller that the snapshot is finished
+                    RangeSet result;
+                    if (rowsReceived.get() != 0) {
+                        result = RangeSet.ofRange(0, rowsReceived.get() - 1);
+                    } else {
+                        result = RangeSet.empty();
+                    }
                     resolve.onInvoke(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
-                            RangeSet.ofRange(0, rowsReceived.get() - 1),
+                            result,
                             RangeSet.empty(),
                             RangeSet.empty(),
                             null));

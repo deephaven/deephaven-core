@@ -17,7 +17,6 @@ configurations {
   js {}
   python {}
   go {}
-  cpp {}
   protoDocs {}
 }
 
@@ -84,9 +83,6 @@ artifacts {
     builtBy generateProtobuf
   }
   go(layout.buildDirectory.dir('generated/source/proto/main/go')) {
-    builtBy generateProtobuf
-  }
-  cpp(layout.buildDirectory.dir('generated/source/proto/main/cpp')) {
     builtBy generateProtobuf
   }
   protoDocs(layout.buildDirectory.dir('generated/source/proto/main/proto-doc')) {

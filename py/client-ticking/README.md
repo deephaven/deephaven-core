@@ -96,6 +96,14 @@ package just built from the above steps, rather than one from PyPi.
 
 ## Testing the library
 
+### Run tests
+``` shell
+$ python3 -m unittest discover tests
+
+```
+
+### Sample Python program
+
 Run python from the venv while in this directory, and try this sample Python program:
 
 ``` python

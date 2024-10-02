@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -91,22 +92,28 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
     @Test
     public final void readWriteSingleParquetFile() {
-        readWriteSingleParquetFileHelper(0); // Empty table
-        readWriteSingleParquetFileHelper(5_000);
-        readWriteSingleParquetFileHelper(50_000);
-        readWriteSingleParquetFileHelper(500_000);
+        readWriteSingleParquetFileHelper(0, true); // Empty table
+        readWriteSingleParquetFileHelper(0, false);
+        readWriteSingleParquetFileHelper(5_000, true);
+        readWriteSingleParquetFileHelper(5_000, false);
+        readWriteSingleParquetFileHelper(50_000, true);
+        readWriteSingleParquetFileHelper(500_000, true);
     }
 
-    private void readWriteSingleParquetFileHelper(final int numRows) {
+    private void readWriteSingleParquetFileHelper(final int numRows, boolean withRegion) {
         final Table table = getTable(numRows);
         final URI uri = uri("table.parquet");
+        S3Instructions s3Instructions = s3Instructions(
+                S3Instructions.builder()
+                        .writePartSize(5 << 20)
+                        .numConcurrentWriteParts(5)
+                        .readTimeout(Duration.ofSeconds(10)))
+                .build();
+        if (!withRegion) {
+            s3Instructions = s3Instructions.withRegionName(Optional.empty());
+        }
         final ParquetInstructions instructions = ParquetInstructions.builder()
-                .setSpecialInstructions(s3Instructions(
-                        S3Instructions.builder()
-                                .writePartSize(5 << 20)
-                                .numConcurrentWriteParts(5)
-                                .readTimeout(Duration.ofSeconds(10)))
-                        .build())
+                .setSpecialInstructions(s3Instructions)
                 .build();
 
         // Write the table to S3 using ParquetTools write API

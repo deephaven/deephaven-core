@@ -6,18 +6,18 @@ data."""
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List, Union, Sequence
 
 import pyarrow as pa
+
 from pydeephaven._utils import to_list
 
-from pydeephaven._table_ops import MetaTableOp, SortDirection
+from pydeephaven._table_ops import MetaTableOp, SortDirection, MultijoinTablesOp
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
+from pydeephaven.ticket import Ticket, ServerObject
 from pydeephaven.updateby import UpdateByOperation
-
-from pydeephaven.experimental.server_object import ServerObject
 
 
 class Table(TableInterface, ServerObject):
@@ -35,12 +35,11 @@ class Table(TableInterface, ServerObject):
     def table_op_handler(self, table_op):
         return self.session.table_service.grpc_table_op(self, table_op)
 
-    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
-        ServerObject.__init__(self, type_="Table", ticket=ticket)
+    def __init__(self, session: 'Session', ticket: Ticket, schema_header: bytes = b'', size: int = None, is_static: bool = None, schema: pa.Schema = None):
+        ServerObject.__init__(self, type="Table", ticket=ticket)
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
-        self.ticket = ticket
         self.schema = schema
         self.is_static = is_static
         self.size = size
@@ -74,7 +73,7 @@ class Table(TableInterface, ServerObject):
         Raises:
             DHError
         """
-        self.session.release(self.ticket)
+        self.session.release(self)
         self.ticket = None
 
     def _parse_schema(self, schema_header):
@@ -805,3 +804,81 @@ class InputTable(Table):
             self.session.input_table_service.delete(self, table)
         except Exception as e:
             raise DHError("delete data in the InputTable failed.") from e
+
+
+class MultiJoinTable:
+    """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
+    result Table, use the :attr:`.table` property. """
+
+    def __init__(self, table: Table):
+        self._table = table
+
+    @property
+    def table(self) -> Table:
+        """Returns the Table containing the multi-table natural join output. """
+        return self._table
+
+
+class MultiJoinInput:
+    """A MultiJoinInput represents the input tables, key columns and additional columns to be used in the multi-table
+    natural join.
+    """
+    table: Table
+    on: Union[str, Sequence[str]]
+    joins: Union[str, Sequence[str]] = None
+
+    def __init__(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None):
+        """Initializes a MultiJoinInput object.
+
+        Args:
+            table (Table): the right table to include in the join
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equality expression that
+                matches every input table, i.e. "col_a = col_b" to rename output column names.
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
+        """
+        self.table = table
+        self.on = to_list(on)
+        self.joins = to_list(joins)
+
+
+def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]],
+               on: Union[str, Sequence[str]] = None) -> MultiJoinTable:
+    """ The multi_join method creates a new table by performing a multi-table natural join on the input tables. The
+    result consists of the set of distinct keys from the input tables natural joined to each input table. Input
+    tables need not have a matching row for each key, but they may not have multiple matching rows for a given key.
+
+    Args:
+        input (Union[Table, Sequence[Table], MultiJoinInput, Sequence[MultiJoinInput]]): the input objects specifying the
+            tables and columns to include in the join.
+        on (Union[str, Sequence[str]], optional): the column(s) to match, can be a common name or an equality expression
+            that matches every input table, i.e. "col_a = col_b" to rename output column names. Note: When
+            MultiJoinInput objects are supplied, this parameter must be omitted.
+
+    Returns:
+        MultiJoinTable: the result of the multi-table natural join operation.  To access the underlying Table, use the
+            :attr:`~MultiJoinTable.table` property.
+
+    Raises:
+        DHError
+    """
+    if isinstance(input, Table) or (isinstance(input, Sequence) and all(isinstance(t, Table) for t in input)):
+        tables = to_list(input)
+        session = tables[0].session
+        if not all([t.session == session for t in tables]):
+            raise DHError(message="all tables must be from the same session.")
+        multi_join_inputs = [MultiJoinInput(table=t, on=on) for t in tables]
+    elif isinstance(input, MultiJoinInput) or (
+            isinstance(input, Sequence) and all(isinstance(ji, MultiJoinInput) for ji in input)):
+        if on is not None:
+            raise DHError(message="on parameter is not permitted when MultiJoinInput objects are provided.")
+        multi_join_inputs = to_list(input)
+        session = multi_join_inputs[0].table.session
+        if not all([mji.table.session == session for mji in multi_join_inputs]):
+            raise DHError(message="all tables must be from the same session.")
+    else:
+        raise DHError(
+            message="input must be a Table, a sequence of Tables, a MultiJoinInput, or a sequence of MultiJoinInputs.")
+
+    table_op = MultijoinTablesOp(multi_join_inputs=multi_join_inputs)
+    return MultiJoinTable(table=session.table_service.grpc_table_op(None, table_op, table_class=Table))
