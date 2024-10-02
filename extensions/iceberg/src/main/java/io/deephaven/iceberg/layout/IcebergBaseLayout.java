@@ -15,6 +15,7 @@ import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
+import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -126,6 +127,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     @NotNull
     private URI dataFileUri(@NotNull DataFile df) {
         String path = df.path().toString();
+        final FileIO fileIO = tableAdapter.icebergTable().io();
         if (fileIO instanceof RelativeFileIO) {
             path = ((RelativeFileIO) fileIO).absoluteLocation(path);
         }
