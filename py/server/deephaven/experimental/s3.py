@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 from typing import Optional, Union
+from warnings import warn
 
 import jpy
 
@@ -26,7 +27,7 @@ except Exception:
 
 class Credentials(JObjectWrapper):
     """
-    Credentials object for authenticating with S3 server.
+    Credentials object for authenticating with an S3 server.
     """
     j_object_type = _JCredentials
 
@@ -47,12 +48,15 @@ class Credentials(JObjectWrapper):
     def resolving(cls) -> 'Credentials':
         """
         Default credentials provider used by Deephaven which resolves credentials in the following order:
-        1. If a profile name, config file path, or credentials file path is provided, use ProfileCredentialsProvider.
-        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/ProfileCredentialsProvider.html
 
-        2. If not, check all places mentioned in DefaultCredentialsProvider and fall back to AnonymousCredentialsProvider.
-        Ref: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html
-        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AnonymousCredentialsProvider.html
+        1. If a profile name, config file path, or credentials file path is provided via S3 Instructions, use the
+        profile_name for loading the credentials from the config and credentials file and fail if none found.
+
+        2. If not, use the default AWS SDK behavior that looks for credentials in this order: Java System Properties
+        (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID` and
+        `AWS_SECRET_ACCESS_KEY`), Credential profiles file at the default location (~/.aws/credentials), or Instance
+        profile credentials delivered through the Amazon EC2  metadata service. If still none found, fall back to
+        anonymous credentials, which can only be used to read data with S3 policy set to allow anonymous access.
 
         Returns:
             Credentials: the credentials object.
@@ -62,9 +66,10 @@ class Credentials(JObjectWrapper):
     @classmethod
     def default(cls) -> 'Credentials':
         """
-        Default credentials provider used by the AWS SDK that looks for credentials at a number of locations as
-        described in DefaultCredentialsProvider.
-        Ref: https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html
+        Default credentials provider used by the AWS SDK that looks for credentials in this order:
+        Java System Properties (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID`
+        and `AWS_SECRET_ACCESS_KEY`), Credential profiles file at the default location (~/.aws/credentials), and
+        Instance profile credentials delivered through the Amazon EC2 metadata service.
 
         Returns:
             Credentials: the credentials object.
@@ -88,8 +93,7 @@ class Credentials(JObjectWrapper):
     @classmethod
     def anonymous(cls) -> 'Credentials':
         """
-        Creates a new anonymous credentials object.
-        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AnonymousCredentialsProvider.html
+       Use anonymous credentials, which can only be used to read data with S3 policy set to allow anonymous access.
 
         Returns:
             Credentials: the credentials object.
@@ -99,8 +103,8 @@ class Credentials(JObjectWrapper):
     @classmethod
     def profile(cls) -> 'Credentials':
         """
-        Profile specific credentials that uses configuration and credentials files.
-        Ref: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/ProfileCredentialsProvider.html
+        Use the profile name, config file path, or credentials file path from S3 Instructions for loading the
+        credentials and fail if none found.
 
         Returns:
             Credentials: the credentials object.
@@ -194,14 +198,15 @@ class S3Instructions(JObjectWrapper):
                 and secret_access_key.
                 For reference on the configuration file format, check
                 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
-            credentials_file_path (str): the path to the credentials file to use for configuring the credentials, etc.
-                when reading or writing to S3. If not provided, the AWS SDK picks the credentials file from the
-                'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to
-                "{user.home}/.aws/credentials".
+            credentials_file_path (str): the path to the credentials file to use for configuring the credentials,
+                region, etc. when reading or writing to S3. If not provided, the AWS SDK picks the credentials file from
+                the 'aws.credentialsFile' system property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults
+                to "{user.home}/.aws/credentials".
                 Setting a credentials file path assumes that the credentials are provided via the config and
                 credentials files; if that is not the case, you must explicitly set credentials using the access_key_id
                 and secret_access_key.
-                For reference on the credentials file format, check
+                The main difference between config_file_path and credentials_file_path is around the conventions used
+                in the files. For reference on the credentials file format, check
                 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
 
         Raises:
@@ -246,10 +251,16 @@ class S3Instructions(JObjectWrapper):
                     throw_multiple_credentials_error("access_key_id", "anonymous_access")
                 if credentials is not None:
                     throw_multiple_credentials_error("access_key_id", "credentials")
+                warn('access_key_id is deprecated, prefer setting credentials as '
+                     'Credentials.basic(access_key_id, secret_access_key)', DeprecationWarning, stacklevel=2)
+                # TODO(deephaven-core#6165): Delete deprecated parameters
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
             elif anonymous_access:
                 if credentials is not None:
                     throw_multiple_credentials_error("anonymous_access", "credentials")
+                warn("anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
+                     DeprecationWarning, stacklevel=2)
+                # TODO(deephaven-core#6165): Delete deprecated parameters
                 builder.credentials(_JCredentials.anonymous())
             elif credentials is not None:
                 builder.credentials(credentials.j_object)
