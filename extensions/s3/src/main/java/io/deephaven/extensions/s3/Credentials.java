@@ -22,7 +22,7 @@ public interface Credentials {
      * @see DefaultCredentialsProvider
      * @see AnonymousCredentialsProvider
      */
-    static Credentials resolvingCredentials() {
+    static Credentials resolving() {
         return ResolvingCredentials.INSTANCE;
     }
 

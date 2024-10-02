@@ -7,6 +7,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
+from deephaven.experimental.s3_credentials import S3Credentials
 from deephaven.time import DurationLike, to_j_duration
 
 # If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
@@ -32,6 +33,7 @@ class S3Instructions(JObjectWrapper):
 
     def __init__(self,
                  region_name: Optional[str] = None,
+                 credentials: Optional[S3Credentials] = None,
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
@@ -45,9 +47,7 @@ class S3Instructions(JObjectWrapper):
                  num_concurrent_write_parts: Optional[int] = None,
                  profile_name: Optional[str] = None,
                  config_file_path: Optional[str] = None,
-                 credentials_file_path: Optional[str] = None,
-                 use_profile_credentials: bool = False,
-                 use_default_credentials: bool = False):
+                 credentials_file_path: Optional[str] = None):
 
         """
         Initializes the instructions.
@@ -59,6 +59,8 @@ class S3Instructions(JObjectWrapper):
                 in EC2. If no region name is derived from the above chain or the derived region name is incorrect for
                 the bucket accessed, the correct region name will be derived internally, at the cost of one additional
                 request.
+            credentials (S3Credentials): the credentials object for authenticating to the S3 server, defaults to
+                Credentials.resolving().
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the
                 current fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the
@@ -71,14 +73,20 @@ class S3Instructions(JObjectWrapper):
             read_timeout (DurationLike): the amount of time to wait when reading a fragment before giving up and timing
                 out. Can be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or
                 "PT1s", or other time duration types. Default to 2 seconds.
-            access_key_id (str): the access key for reading files. Both access key and secret access key must be
-                provided to use static credentials. If you specify both access key and secret key, then you cannot
-                provide other credentials like anonymous_access or use_profile_credentials.
-            secret_access_key (str): the secret access key for reading files. Both access key and secret key must be
-                provided to use static credentials.  If you specify both access key and secret key, then you cannot
-                provide other credentials like anonymous_access or use_profile_credentials.
-            anonymous_access (bool): use anonymous credentials, this is useful when the S3 policy has been set to allow
-                anonymous access. Can't be combined with other credentials. By default, is False.
+            access_key_id (str):  (Deprecated) the access key for reading files. Both access key and secret access key
+                must be provided to use static credentials. If you specify both access key and secret key, then you
+                cannot provide other credentials like setting anonymous_access or credentials argument.
+                This option is deprecated and should be replaced by setting credentials as
+                Credentials.basic(access_key_id, secret_access_key).
+            secret_access_key (str): (Deprecated) the secret access key for reading files. Both access key and secret
+                key must be provided to use static credentials.  If you specify both access key and secret key, then you
+                cannot provide other credentials like setting anonymous_access or credentials argument.
+                This option is deprecated and should be replaced by setting credentials as
+                Credentials.basic(access_key_id, secret_access_key).
+            anonymous_access (bool): (Deprecated) use anonymous credentials, this is useful when the S3 policy has been
+                set to allow anonymous access. By default, is False. If you set this to True, you cannot provide other
+                credentials like setting access_key_id or credentials argument.
+                This option is deprecated and should be replaced by setting credentials as Credentials.anonymous().
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
             write_part_size (int): The part or chunk size when writing to S3. The default is 10 MiB. The minimum allowed
@@ -111,13 +119,6 @@ class S3Instructions(JObjectWrapper):
                 and secret_access_key.
                 For reference on the credentials file format, check
                 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
-            use_profile_credentials (bool): use the profile_name for loading the credentials from the config and
-                credentials file and fail if none found. Default is False. Cannot be combined with using other
-                credentials, like anonymous_access or use_default_credentials.
-            use_default_credentials (bool): use the default AWS SDK behavior for loading credentials from the
-                environment, system properties, or instance profile credentials. Default is False. Cannot be combined
-                with other credentials, like anonymous_access or use_default_credentials. For more details, check
-                https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/DefaultCredentialsProvider.html.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -156,25 +157,18 @@ class S3Instructions(JObjectWrapper):
                 raise DHError(f"Only one set of credentials can be set, but found {credentials1} and {credentials2}")
 
             # Configure the credentials
-            credentials_configured = None
             if access_key_id is not None:
+                if anonymous_access:
+                    throw_multiple_credentials_error("access_key_id", "anonymous_access")
+                if credentials is not None:
+                    throw_multiple_credentials_error("access_key_id", "credentials")
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
-                credentials_configured = "access_key_id"
-            if anonymous_access:
-                if credentials_configured:
-                    throw_multiple_credentials_error(credentials_configured, "anonymous_access")
+            elif anonymous_access:
+                if credentials is not None:
+                    throw_multiple_credentials_error("anonymous_access", "credentials")
                 builder.credentials(_JCredentials.anonymous())
-                credentials_configured = "anonymous_access"
-            if use_profile_credentials:
-                if credentials_configured:
-                    throw_multiple_credentials_error(credentials_configured, "use_profile_credentials")
-                builder.credentials(_JCredentials.profile())
-                credentials_configured = "use_profile_credentials"
-            if use_default_credentials:
-                if credentials_configured:
-                    throw_multiple_credentials_error(credentials_configured, "use_default_credentials")
-                builder.credentials(_JCredentials.defaultCredentials())
-                credentials_configured = "use_default_credentials"
+            elif credentials is not None:
+                builder.credentials(credentials.j_object)
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)

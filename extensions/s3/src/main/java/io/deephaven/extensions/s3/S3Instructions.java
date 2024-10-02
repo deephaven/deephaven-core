@@ -109,12 +109,11 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The credentials to use when reading or writing to S3. By default, uses
-     * {@link Credentials#resolvingCredentials()}.
+     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#resolving()}.
      */
     @Default
     public Credentials credentials() {
-        return Credentials.resolvingCredentials();
+        return Credentials.resolving();
     }
 
     /**

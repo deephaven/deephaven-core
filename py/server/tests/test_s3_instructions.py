@@ -1,11 +1,15 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+import jpy
 import tempfile
 
+from deephaven.experimental.s3_credentials import S3Credentials
 from tests.testbase import BaseTestCase
 from deephaven import DHError
 from deephaven.experimental import s3
+
+_JCredentials = jpy.get_type("io.deephaven.extensions.s3.Credentials")
 
 class S3InstructionTest(BaseTestCase):
     """ Test cases for the s3 instructions """
@@ -20,6 +24,7 @@ class S3InstructionTest(BaseTestCase):
         s3_instructions = s3.S3Instructions()
         self.assertTrue(s3_instructions.j_object is not None)
         self.assertTrue(s3_instructions.j_object.regionName().isEmpty())
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.resolving().getClass())
         self.assertEqual(s3_instructions.j_object.maxConcurrentRequests(), 256)
         self.assertEqual(s3_instructions.j_object.readAheadCount(), 32)
         self.assertEqual(s3_instructions.j_object.fragmentSize(), 65536)
@@ -74,7 +79,7 @@ class S3InstructionTest(BaseTestCase):
 
     def test_set_config_file_path(self):
         with tempfile.NamedTemporaryFile() as temp_config_file:
-            s3_instructions = s3.S3Instructions(config_file_path=temp_config_file.name, use_profile_credentials=True)
+            s3_instructions = s3.S3Instructions(config_file_path=temp_config_file.name)
             self.assertEqual(s3_instructions.j_object.configFilePath().get().toString(), temp_config_file.name)
 
     def test_set_credentials_file_path(self):
@@ -82,16 +87,35 @@ class S3InstructionTest(BaseTestCase):
             s3_instructions = s3.S3Instructions(credentials_file_path=temp_credentials_file.name)
             self.assertEqual(s3_instructions.j_object.credentialsFilePath().get().toString(), temp_credentials_file.name)
 
+    def test_set_resolving_credentials(self):
+        s3_instructions = s3.S3Instructions(credentials=S3Credentials.resolving())
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.resolving().getClass())
+
+    def test_set_anonymous_access(self):
+        s3_instructions = s3.S3Instructions(anonymous_access=True)
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.anonymous().getClass())
+
+        s3_instructions = s3.S3Instructions(credentials=S3Credentials.anonymous())
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.anonymous().getClass())
+
+    def test_set_default_credentials(self):
+        s3_instructions = s3.S3Instructions(credentials=S3Credentials.default())
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.defaultCredentials().getClass())
+
+    def test_set_profile_credentials(self):
+        s3_instructions = s3.S3Instructions(credentials=S3Credentials.profile())
+        self.assertTrue(s3_instructions.j_object.credentials().getClass() == _JCredentials.profile().getClass())
+
     def test_set_multiple_credentials(self):
         # Only one set of credentials can be set
         with self.assertRaises(DHError):
-            s3.S3Instructions(anonymous_access=True, use_profile_credentials=True)
+            s3.S3Instructions(anonymous_access=True, access_key_id="foo", secret_access_key="bar")
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(anonymous_access=True, use_default_credentials=True)
+            s3.S3Instructions(anonymous_access=True, credentials=S3Credentials.resolving())
             self.fail("Expected ValueError")
 
         with self.assertRaises(DHError):
-            s3.S3Instructions(use_profile_credentials=True, use_default_credentials=True)
+            s3.S3Instructions(access_key_id="foo", secret_access_key="bar", credentials=S3Credentials.resolving())
             self.fail("Expected ValueError")

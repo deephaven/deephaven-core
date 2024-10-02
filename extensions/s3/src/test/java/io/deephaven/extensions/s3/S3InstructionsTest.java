@@ -26,7 +26,7 @@ public class S3InstructionsTest {
         assertThat(instructions.fragmentSize()).isEqualTo(65536);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(instructions.credentials()).isEqualTo(Credentials.resolvingCredentials());
+        assertThat(instructions.credentials()).isEqualTo(Credentials.resolving());
         assertThat(instructions.writePartSize()).isEqualTo(10485760);
         assertThat(instructions.numConcurrentWriteParts()).isEqualTo(64);
         assertThat(instructions.endpointOverride()).isEmpty();
