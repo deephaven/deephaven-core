@@ -544,7 +544,7 @@ class TableOperations(Generic[T]):
     """A protocol for classes that support table operations."""
     j_object: jpy.JType
 
-    def head(self, num_rows: int) -> T:
+    def head(self: T, num_rows: int) -> T:
         """ When called on a :class:`Table`, the head method creates a new table with a specific number of rows from the
         beginning of the table.
 
@@ -568,7 +568,7 @@ class TableOperations(Generic[T]):
             raise DHError(e, f"head operation on the {self.__class__.__name__} failed.") from e
 
 
-    def tail(self, num_rows: int) -> T:
+    def tail(self: T, num_rows: int) -> T:
         """When called on a :class:`Table`, the tail method creates a new table with a specific number of rows from the
         end of the table.
 
