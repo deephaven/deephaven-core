@@ -25,7 +25,7 @@ public abstract class FlightSqlJdbcTestBase extends FlightSqlTestBase {
                 localPort);
     }
 
-    private Connection jdbcConnection() throws SQLException {
+    private Connection connect() throws SQLException {
         return DriverManager.getConnection(jdbcUrl());
     }
 
@@ -33,7 +33,7 @@ public abstract class FlightSqlJdbcTestBase extends FlightSqlTestBase {
     @Test
     void executeSelect1() throws SQLException {
         try (
-                final Connection connection = jdbcConnection();
+                final Connection connection = connect();
                 final Statement statement = connection.createStatement()) {
             if (statement.execute("SELECT 1")) {
                 printResultSet(statement.getResultSet());
@@ -46,16 +46,27 @@ public abstract class FlightSqlJdbcTestBase extends FlightSqlTestBase {
     @Test
     void executeQuerySelect1() throws SQLException {
         try (
-                final Connection connection = jdbcConnection();
+                final Connection connection = connect();
                 final Statement statement = connection.createStatement()) {
             printResultSet(statement.executeQuery("SELECT 1"));
         }
     }
 
     @Test
+    void select1Prepared() throws SQLException {
+        try (
+                final Connection connection = connect();
+                final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1")) {
+            if (preparedStatement.execute()) {
+                printResultSet(preparedStatement.getResultSet());
+            }
+        }
+    }
+
+    @Test
     void executeUpdate() throws SQLException {
         try (
-                final Connection connection = jdbcConnection();
+                final Connection connection = connect();
                 final Statement statement = connection.createStatement()) {
             try {
                 statement.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
@@ -63,17 +74,6 @@ public abstract class FlightSqlJdbcTestBase extends FlightSqlTestBase {
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
                         .hasMessageContaining("FlightSQL descriptors cannot be published to");
-            }
-        }
-    }
-
-    @Test
-    void select1Prepared() throws SQLException {
-        try (
-                final Connection connection = jdbcConnection();
-                final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1")) {
-            if (preparedStatement.execute()) {
-                printResultSet(preparedStatement.getResultSet());
             }
         }
     }
