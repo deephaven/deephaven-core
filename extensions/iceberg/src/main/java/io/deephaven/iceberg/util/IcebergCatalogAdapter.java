@@ -195,6 +195,16 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
      */
+    public IcebergTableAdapter loadTable(final String tableIdentifier) {
+        return loadTable(TableIdentifier.parse(tableIdentifier));
+    }
+
+    /**
+     * Load an Iceberg table from the catalog.
+     *
+     * @param tableIdentifier The identifier of the table to load.
+     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     */
     public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
@@ -501,16 +511,6 @@ public class IcebergCatalogAdapter {
             @Nullable final IcebergInstructions instructions) {
         final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
         return tableAdapter.table(tableSnapshot, instructions);
-    }
-
-    /**
-     * Load an Iceberg table from the catalog.
-     *
-     * @param tableIdentifier The identifier of the table to load.
-     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
-     */
-    public IcebergTableAdapter loadTable(final String tableIdentifier) {
-        return loadTable(TableIdentifier.parse(tableIdentifier));
     }
 
     /**
