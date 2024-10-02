@@ -50,9 +50,9 @@ class Credentials(JObjectWrapper):
         Default credentials provider used by Deephaven which resolves credentials in the following order:
 
         1. If a profile name, config file path, or credentials file path is provided via S3 Instructions, use the
-        profile_name for loading the credentials from the config and credentials file and fail if none found.
+        profile_name for loading the credentials from the config and credentials file and fail if none is found.
 
-        2. If not, use the default AWS SDK behavior that looks for credentials in this order: Java System Properties
+        2. Otherwise, use the default AWS SDK behavior that looks for credentials in this order: Java System Properties
         (`aws.accessKeyId` and `aws.secretAccessKey`), Environment Variables (`AWS_ACCESS_KEY_ID` and
         `AWS_SECRET_ACCESS_KEY`), Credential profiles file at the default location (~/.aws/credentials), or Instance
         profile credentials delivered through the Amazon EC2  metadata service. If still none found, fall back to
@@ -79,7 +79,7 @@ class Credentials(JObjectWrapper):
     @classmethod
     def basic(cls, access_key_id: str, secret_access_key: str) -> 'Credentials':
         """
-        Basic credentials with the specified access key id and secret access key.
+        Basic credentials provider with the specified access key id and secret access key.
 
         Args:
             access_key_id (str): the access key id, used to identify the user.
@@ -93,7 +93,7 @@ class Credentials(JObjectWrapper):
     @classmethod
     def anonymous(cls) -> 'Credentials':
         """
-       Use anonymous credentials, which can only be used to read data with S3 policy set to allow anonymous access.
+       Anonymous credentials provider, which can only be used to read data with S3 policy set to allow anonymous access.
 
         Returns:
             Credentials: the credentials object.
@@ -247,20 +247,20 @@ class S3Instructions(JObjectWrapper):
 
             # Configure the credentials
             if access_key_id is not None:
+                warn('access_key_id is deprecated, prefer setting credentials as '
+                     'Credentials.basic(access_key_id, secret_access_key)', DeprecationWarning, stacklevel=2)
+                # TODO(deephaven-core#6165): Delete deprecated parameters
                 if anonymous_access:
                     throw_multiple_credentials_error("access_key_id", "anonymous_access")
                 if credentials is not None:
                     throw_multiple_credentials_error("access_key_id", "credentials")
-                warn('access_key_id is deprecated, prefer setting credentials as '
-                     'Credentials.basic(access_key_id, secret_access_key)', DeprecationWarning, stacklevel=2)
-                # TODO(deephaven-core#6165): Delete deprecated parameters
                 builder.credentials(_JCredentials.basic(access_key_id, secret_access_key))
             elif anonymous_access:
-                if credentials is not None:
-                    throw_multiple_credentials_error("anonymous_access", "credentials")
                 warn("anonymous_access is deprecated, prefer setting credentials as Credentials.anonymous()",
                      DeprecationWarning, stacklevel=2)
                 # TODO(deephaven-core#6165): Delete deprecated parameters
+                if credentials is not None:
+                    throw_multiple_credentials_error("anonymous_access", "credentials")
                 builder.credentials(_JCredentials.anonymous())
             elif credentials is not None:
                 builder.credentials(credentials.j_object)
