@@ -155,7 +155,9 @@ public class ParquetSchemaReader {
                 .map(ID::intValue)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
         if (schema.getFieldCount() != schema.getColumns().size()) {
-            throw new IllegalStateException();
+            throw new IllegalStateException(String.format(
+                    "Field count inconsistent with number of columns, schema.getFieldCount()=%d, schema.getColumns().size()=%d",
+                    schema.getFieldCount(), schema.getColumns().size()));
         }
         final Iterator<Type> fieldIt = schema.getFields().iterator();
         final Iterator<ColumnDescriptor> columnDescriptorIterator = schema.getColumns().iterator();
