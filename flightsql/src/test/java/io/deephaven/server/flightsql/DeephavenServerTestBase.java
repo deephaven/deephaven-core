@@ -8,24 +8,45 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
+import io.deephaven.server.session.SessionService;
 import io.deephaven.util.SafeCloseable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-public abstract class FlightSqlTestBase {
+@Timeout(30)
+public abstract class DeephavenServerTestBase {
 
-    protected FlightSqlTestComponent component;
+    public interface TestComponent {
+        // Set<ServerInterceptor> interceptors();
+        //
+        // SessionServiceGrpcImpl sessionGrpcService();
+
+        SessionService sessionService();
+
+        GrpcServer server();
+
+        // TestAuthModule.BasicAuthTestImpl basicAuthHandler();
+
+        ExecutionContext executionContext();
+
+        // TestAuthorizationProvider authorizationProvider();
+        //
+        // Registration.Callback registration();
+    }
+
+    protected TestComponent component;
 
     private LogBuffer logBuffer;
     private SafeCloseable executionContext;
     private GrpcServer server;
     protected int localPort;
 
-    protected abstract FlightSqlTestComponent component();
+    protected abstract TestComponent component();
 
     @BeforeAll
     public static void setupOnce() throws IOException {
@@ -45,7 +66,7 @@ public abstract class FlightSqlTestBase {
 
     @AfterEach
     void tearDown() throws InterruptedException {
-        server.stopWithTimeout(1, TimeUnit.MINUTES);
+        server.stopWithTimeout(10, TimeUnit.SECONDS);
         server.join();
         executionContext.close();
         LogBufferGlobal.clear(logBuffer);

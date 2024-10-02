@@ -119,6 +119,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             .map(ActionType::getType)
             .collect(Collectors.toSet());
 
+    private static final Set<ActionType> SUPPORTED_FLIGHT_SQL_ACTION_TYPES = Set.of(
+            FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT,
+            FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
+
     private static final String FLIGHT_SQL_COMMAND_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
 
     @VisibleForTesting
@@ -193,6 +197,13 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             ColumnDefinition.ofString("table_name"),
             ColumnDefinition.ofString("table_type"),
             ColumnDefinition.of("table_schema", Type.byteType().arrayType()));
+
+    @VisibleForTesting
+    static final TableDefinition GET_TABLES_DEFINITION_NO_SCHEMA = TableDefinition.of(
+            ColumnDefinition.ofString("catalog_name"),
+            ColumnDefinition.ofString("db_schema_name"),
+            ColumnDefinition.ofString("table_name"),
+            ColumnDefinition.ofString("table_type"));
 
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
     // TicketResolvers).
@@ -291,6 +302,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @Override
     public boolean supportsDoActionType(String type) {
         return FLIGHT_SQL_ACTION_TYPES.contains(type);
+    }
+
+    @Override
+    public void forAllFlightActionType(@Nullable SessionState session, Consumer<ActionType> visitor) {
+        visitor.accept(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT);
+        visitor.accept(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
     }
 
     @Override
@@ -420,7 +437,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     private Table execute(CommandGetTables request) {
-        return TableTools.newTable(GET_TABLES_DEFINITION);
+        return request.getIncludeSchema()
+                ? TableTools.newTable(GET_TABLES_DEFINITION)
+                : TableTools.newTable(GET_TABLES_DEFINITION_NO_SCHEMA);
     }
 
     private Table execute(CommandGetSqlInfo request) {

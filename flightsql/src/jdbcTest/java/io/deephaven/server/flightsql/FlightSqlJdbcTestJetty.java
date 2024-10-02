@@ -6,7 +6,7 @@ package io.deephaven.server.flightsql;
 public class FlightSqlJdbcTestJetty extends FlightSqlJdbcTestBase {
 
     @Override
-    protected FlightSqlTestComponent component() {
+    protected TestComponent component() {
         return DaggerJettyTestComponent.create();
     }
 }

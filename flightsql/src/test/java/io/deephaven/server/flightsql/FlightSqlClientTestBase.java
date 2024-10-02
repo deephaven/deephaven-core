@@ -12,6 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.server.flightsql.DeephavenServerTestBase.TestComponent;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
 import io.deephaven.server.session.*;
@@ -66,7 +67,7 @@ public abstract class FlightSqlClientTestBase {
     private SessionState currentSession;
     private SafeCloseable executionContext;
     private Location serverLocation;
-    protected FlightSqlTestComponent component;
+    protected TestComponent component;
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
@@ -133,7 +134,7 @@ public abstract class FlightSqlClientTestBase {
         }
     }
 
-    protected abstract FlightSqlTestComponent component();
+    protected abstract TestComponent component();
 
     @AfterEach
     public void teardown() throws InterruptedException {

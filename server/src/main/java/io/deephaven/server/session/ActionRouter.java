@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.google.rpc.Code;
 import io.deephaven.proto.util.Exceptions;
+import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.impl.Flight.Action;
 import org.apache.arrow.flight.impl.Flight.Result;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
@@ -22,6 +23,12 @@ public final class ActionRouter {
     @Inject
     public ActionRouter(Set<ActionResolver> resolvers) {
         this.resolvers = Objects.requireNonNull(resolvers);
+    }
+
+    public void listActions(@Nullable final SessionState session, Consumer<ActionType> visitor) {
+        for (ActionResolver resolver : resolvers) {
+            resolver.forAllFlightActionType(session, visitor);
+        }
     }
 
     public void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor) {

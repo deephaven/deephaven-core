@@ -17,7 +17,7 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public abstract class FlightSqlJdbcTestBase extends FlightSqlTestBase {
+public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
 
     private String jdbcUrl() {
         return String.format(

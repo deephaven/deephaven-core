@@ -28,7 +28,10 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.ActionTypeExposer;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.ActionType;
+import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,8 +40,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
@@ -179,6 +184,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     @Override
+    public void listActions(Empty request, StreamObserver<ActionType> responseObserver) {
+        actionRouter.listActions(sessionService.getOptionalSession(), new ActionTypeConsumer(responseObserver));
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void getFlightInfo(
             @NotNull final Flight.FlightDescriptor request,
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
@@ -302,5 +313,18 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      */
     public StreamObserver<InputStream> doExchangeCustom(final StreamObserver<InputStream> responseObserver) {
         return doExchangeFactory.openExchange(sessionService.getCurrentSession(), responseObserver);
+    }
+
+    private static class ActionTypeConsumer implements Consumer<org.apache.arrow.flight.ActionType> {
+        private final StreamObserver<ActionType> responseObserver;
+
+        public ActionTypeConsumer(StreamObserver<ActionType> responseObserver) {
+            this.responseObserver = Objects.requireNonNull(responseObserver);
+        }
+
+        @Override
+        public void accept(org.apache.arrow.flight.ActionType actionType) {
+            responseObserver.onNext(ActionTypeExposer.toProtocol(actionType));
+        }
     }
 }

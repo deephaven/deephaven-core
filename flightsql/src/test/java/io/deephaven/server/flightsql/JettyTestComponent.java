@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.server.flightsql.DeephavenServerTestBase.TestComponent;
 import io.deephaven.server.flightsql.JettyTestComponent.JettyTestConfig;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyServerModule;
@@ -22,7 +23,7 @@ import java.time.temporal.ChronoUnit;
         JettyServerModule.class,
         JettyTestConfig.class,
 })
-public interface JettyTestComponent extends FlightSqlTestComponent {
+public interface JettyTestComponent extends TestComponent {
 
     @Module
     interface JettyTestConfig {

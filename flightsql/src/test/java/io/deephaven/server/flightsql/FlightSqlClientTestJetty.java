@@ -3,10 +3,12 @@
 //
 package io.deephaven.server.flightsql;
 
+import io.deephaven.server.flightsql.DeephavenServerTestBase.TestComponent;
+
 public class FlightSqlClientTestJetty extends FlightSqlClientTestBase {
 
     @Override
-    protected FlightSqlTestComponent component() {
+    protected TestComponent component() {
         return DaggerJettyTestComponent.create();
     }
 }
