@@ -7,6 +7,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -40,11 +41,11 @@ class IcebergParquetWriteInstructionsTest {
                 .verifySchema(true)
                 .build()
                 .verifySchema())
-                .isEqualTo(true);
+                .isEqualTo(Optional.of(true));
     }
 
     @Test
-    public void testSetCompressionCodecName() {
+    void testSetCompressionCodecName() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("GZIP")
                 .build()
@@ -62,7 +63,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testSetMaximumDictionarySize() {
+    void testSetMaximumDictionarySize() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .maximumDictionarySize(100)
                 .build()
@@ -71,7 +72,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testSetTargetPageSize() {
+    void testSetTargetPageSize() {
         assertThat(IcebergParquetWriteInstructions.builder()
                 .targetPageSize(1024 * 1024)
                 .build()
@@ -91,7 +92,7 @@ class IcebergParquetWriteInstructionsTest {
     }
 
     @Test
-    public void testMinMaximumDictionarySize() {
+    void testMinMaximumDictionarySize() {
         try {
             IcebergParquetWriteInstructions.builder()
                     .maximumDictionarySize(-1)
