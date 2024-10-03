@@ -112,7 +112,6 @@ public class BusinessCalendar extends Calendar {
 
         LocalDate date = startDate;
         long businessTimeNanos = 0;
-        int days = 0;
         int businessDays = 0;
         int nonBusinessDays = 0;
         final ArrayList<LocalDate> businessDates = new ArrayList<>();
@@ -121,7 +120,6 @@ public class BusinessCalendar extends Calendar {
         while (date.isBefore(endDate)) {
             final CalendarDay<Instant> bs = calendarDay(date);
             final boolean ibd = bs.isBusinessDay();
-            days += 1;
             businessDays += ibd ? 1 : 0;
             nonBusinessDays += ibd ? 0 : 1;
             businessTimeNanos += bs.businessNanos();
