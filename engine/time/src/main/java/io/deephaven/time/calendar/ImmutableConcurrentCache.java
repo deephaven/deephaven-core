@@ -105,7 +105,7 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
      *
      * @param key the key
      * @return the value
-     * @throws IllegalArgumentException if the value is not found
+     * @throws NullPointerException if the value is not found
      */
     public V computeIfAbsent(int key) {
         V existing = cache.get(key);
@@ -117,7 +117,7 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
         final V newValue = valueComputer.apply(key);
 
         if (newValue == null) {
-            throw new IllegalArgumentException("Computed a null value: key=" + key);
+            throw new NullPointerException("Computed a null value: key=" + key);
         }
 
         existing = cache.putIfAbsent(key, newValue);
