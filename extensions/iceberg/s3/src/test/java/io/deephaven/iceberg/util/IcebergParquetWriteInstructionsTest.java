@@ -19,7 +19,7 @@ class IcebergParquetWriteInstructionsTest {
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
         assertThat(instructions.columnRenames().isEmpty()).isTrue();
         assertThat(instructions.createTableIfNotExist()).isFalse();
-        assertThat(instructions.verifySchema()).isFalse();
+        assertThat(instructions.verifySchema()).isEmpty();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);
@@ -40,7 +40,7 @@ class IcebergParquetWriteInstructionsTest {
                 .verifySchema(true)
                 .build()
                 .verifySchema())
-                .isTrue();
+                .isEqualTo(true);
     }
 
     @Test

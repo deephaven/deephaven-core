@@ -161,13 +161,12 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         try {
             catalogAdapter.overwrite("MyNamespace.MyTable", differentSource, writeInstructionsWithSchemaMatching);
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Schema mismatch");
+            assertThat(e.getMessage()).contains("Schema verification failed");
         }
 
+        // By default, schema verification should be disabled for overwriting
         final IcebergWriteInstructions writeInstructionsWithoutSchemaMatching =
-                IcebergParquetWriteInstructions.builder()
-                        .verifySchema(false)
-                        .build();
+                IcebergParquetWriteInstructions.builder().build();
         catalogAdapter.overwrite("MyNamespace.MyTable", differentSource, writeInstructionsWithoutSchemaMatching);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
         assertTableEquals(differentSource, fromIceberg);
@@ -186,9 +185,10 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
+
+        // By default, schema verification should be enabled for appending
         final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
                 .createTableIfNotExist(true)
-                .verifySchema(true)
                 .build();
         catalogAdapter.append("MyNamespace.MyTable", source, writeInstructions);
         Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
@@ -199,7 +199,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         try {
             catalogAdapter.append("MyNamespace.MyTable", differentSource, writeInstructions);
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Schema mismatch");
+            assertThat(e.getMessage()).contains("Schema verification failed");
         }
 
         // Append a table with just the int column, should be compatible with the existing schema

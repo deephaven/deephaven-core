@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
+import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
@@ -903,10 +904,10 @@ public abstract class IcebergToolsTest {
 
         for (final Class<?> javaType : javaTypes) {
             // Java type -> Iceberg type
-            final Type icebergType = IcebergCatalogAdapter.convertToIcebergType(javaType);
+            final Type icebergType = IcebergUtils.convertToIcebergType(javaType);
 
             // Iceberg type -> Deephaven type
-            final io.deephaven.qst.type.Type<?> deephavenType = IcebergCatalogAdapter.convertToDHType(icebergType);
+            final io.deephaven.qst.type.Type<?> deephavenType = IcebergUtils.convertToDHType(icebergType);
 
             // Deephaven type == Java type
             Assert.eq(javaType, javaType.getName(), deephavenType.clazz(), deephavenType.clazz().getName());
