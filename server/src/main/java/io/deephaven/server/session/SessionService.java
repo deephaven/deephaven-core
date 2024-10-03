@@ -90,7 +90,7 @@ public class SessionService {
             } else if (err instanceof InterruptedException) {
                 return securelyWrapError(err, Code.UNAVAILABLE);
             } else {
-                return securelyWrapError(err, Code.INVALID_ARGUMENT);
+                return securelyWrapError(err, Code.INTERNAL);
             }
         }
 

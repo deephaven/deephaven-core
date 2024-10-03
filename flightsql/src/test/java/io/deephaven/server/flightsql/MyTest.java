@@ -340,7 +340,7 @@ public class MyTest extends DeephavenApiServerTestBase {
         }
     }
 
-    @Disabled("need to fix server, should error out before")
+//    @Disabled("need to fix server, should error out before")
     @Test
     public void insert1Prepared() {
 
