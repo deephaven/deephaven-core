@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Deephaven.DeephavenClient;
 
-public sealed class TableHandleManager : IDisposable {
+public class TableHandleManager : IDisposable {
   internal NativePtr<NativeTableHandleManager> Self;
   private readonly Dictionary<SubscriptionHandle, object> _subscriptions;
 
@@ -13,16 +13,19 @@ public sealed class TableHandleManager : IDisposable {
   }
 
   ~TableHandleManager() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
   }
 
   public void Dispose() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
     GC.SuppressFinalize(this);
   }
 
-  private void ReleaseUnmanagedResources() {
+  protected virtual void ReleaseUnmanagedResources(bool destructSelf) {
     if (!Self.TryRelease(out var old)) {
+      return;
+    }
+    if (!destructSelf) {
       return;
     }
     NativeTableHandleManager.deephaven_client_TableHandleManager_dtor(old);

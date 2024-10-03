@@ -55,7 +55,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingRequired: true
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         id: slack-nightly-failure
         if: failure()
         with:

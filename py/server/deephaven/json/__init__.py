@@ -7,38 +7,45 @@ JSON (https://www.json.org) value. Most commonly, this will be used to model the
 example, the JSON object
 
 .. code-block:: json
+
     { "name": "Foo", "age": 42, "location": { "lat": 45.018269, "lon": -93.473892 } }
 
 can be modelled with the dictionary
 
 .. code-block:: python
+
     { "name": str, "age": int, "location": { "lat": float, "lon": float } }
 
 Notice that this allows for the nested modelling of JSON values. Other common constructions involve the modelling of
 JSON arrays. For example, a variable-length JSON array where the elements are the same type
 
 .. code-block:: json
+
     [42, 31, ..., 12345]
 
 can be modelled with a single-element list containing the element type
 
 .. code-block:: python
+
     [ int ]
 
 If the JSON array is a fixed size and each elements' type is known, for example
 
 .. code-block:: json
+
     ["Foo", 42, [45.018269, -93.473892]]
 
 can be modelled with a tuple containing each type
 
 .. code-block:: python
+
     (str, int, (float, float))
 
 Notice again that this allows for the nested modelling of JSON values. Of course, these constructions can be all be used
 together. For example, the JSON object
 
 .. code-block:: json
+
     {
       "name": "Foo",
       "locations": [
@@ -51,6 +58,7 @@ together. For example, the JSON object
 can be modelled as
 
 .. code-block:: python
+
     {"name": str, "locations": [(float, float)]}
 
 See the methods in this module more more details on modelling JSON values.
@@ -64,7 +72,7 @@ from typing import Dict, List, Union, Tuple, Optional, Literal, Any
 
 from deephaven import dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.time import to_j_instant
+from deephaven.time import InstantLike, to_j_instant
 from deephaven._jpy import strict_cast
 
 
@@ -200,7 +208,9 @@ def json_val(json_value_type: JsonValueType) -> JsonValue:
 class RepeatedFieldBehavior(Enum):
     """
     The behavior to use when a repeated field is encountered in a JSON object. For example,
+
     .. code-block:: json
+
         {
           "foo": 42,
           "foo": 43
@@ -222,6 +232,7 @@ class ObjectField:
     simplify by just using the JsonValueType. For example,
 
     .. code-block:: python
+
         {
             "name": ObjectField(str),
             "age": ObjectField(int),
@@ -230,6 +241,7 @@ class ObjectField:
     could be simplified to
 
     .. code-block:: python
+
         {
             "name": str,
             "age": int,
@@ -294,22 +306,26 @@ def object_val(
     """Creates an object value. For example, the JSON object
 
     .. code-block:: json
+
         { "name": "foo", "age": 42 }
 
     might be modelled as the object type
 
     .. code-block:: python
+
         object_val({ "name": str, "age": int })
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using a Dict[str, Union[JsonValueType, ObjectField]]. For example,
 
     .. code-block:: python
+
         some_method(object_val({ "name": str, "age": int }))
 
     could be simplified to
 
     .. code-block:: python
+
         some_method({ "name": str, "age": int })
 
     Args:
@@ -356,9 +372,11 @@ def typed_object_val(
     """Creates a type-discriminated object value. For example, the JSON objects
 
     .. code-block:: json
+
         { "type": "trade", "symbol": "FOO", "price": 70.03, "size": 42 }
 
     .. code-block:: json
+
         { "type": "quote", "symbol": "BAR", "bid": 10.01, "ask": 10.05 }
 
     might be modelled as a type-discriminated object with "type" as the type field, "symbol" as a shared field, with a
@@ -366,6 +384,7 @@ def typed_object_val(
     field:
 
     .. code-block:: python
+
         typed_object_val(
             "type",
             {"symbol": str},
@@ -432,22 +451,26 @@ def array_val(
     """Creates a "typed array", where all elements of the array have the same element type. For example, the JSON array
 
     .. code-block:: json
+
         [1, 42, 43, 13]
 
     might be modelled as an array of ints
 
     .. code-block:: python
+
         array_val(int)
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using a list with a single element type. For example,
 
     .. code-block:: python
+
         some_method(array_val(element))
 
     could be simplified to
 
     .. code-block:: python
+
         some_method([element])
 
     Args:
@@ -474,6 +497,7 @@ def object_entries_val(
     variable and all the values types are the same. For example, the JSON object
 
     .. code-block:: json
+
         {
             "foo": 1,
             "bar": 42,
@@ -485,6 +509,7 @@ def object_entries_val(
     might be modelled as the object kv type
 
     .. code-block:: python
+
         object_entries_val(int)
 
     Args:
@@ -511,16 +536,19 @@ def tuple_val(
     """Creates a tuple value. For example, the JSON array
 
     .. code-block:: json
+
         ["foo", 42, 5.72]
 
     might be modelled as the tuple type
 
     .. code-block:: python
+
         tuple_val((str, int, float))
 
     To provide meaningful names, a dictionary can be used:
 
     .. code-block:: python
+
         tuple_val({"name": str, "age": int, "height": float})
 
     otherwise, default names based on the indexes of the values will be used.
@@ -529,11 +557,13 @@ def tuple_val(
     names, the user can simplify passing through a python tuple type. For example,
 
     .. code-block:: python
+
         some_method(tuple_val((tuple_type_1, tuple_type_2)))
 
     could be simplified to
 
     .. code-block:: python
+
         some_method((tuple_type_1, tuple_type_2))
 
     Args:
@@ -571,22 +601,26 @@ def bool_val(
     """Creates a bool value. For example, the JSON boolean
 
     .. code-block:: json
+
         True
 
     might be modelled as the bool type
 
     .. code-block:: python
+
         bool_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in bool type. For example,
 
     .. code-block:: python
+
         some_method(bool_val())
 
     could be simplified to
 
     .. code-block:: python
+
         some_method(bool)
 
     Args:
@@ -623,11 +657,13 @@ def char_val(
     """Creates a char value. For example, the JSON string
 
     .. code-block:: json
+
         "F"
 
     might be modelled as the char type
 
     .. code-block:: python
+
         char_val()
 
     Args:
@@ -664,11 +700,13 @@ def byte_val(
     """Creates a byte (signed 8-bit) value. For example, the JSON integer
 
     .. code-block:: json
+
         42
 
     might be modelled as the byte type
 
     .. code-block:: python
+
         byte_val()
 
     Args:
@@ -709,11 +747,13 @@ def short_val(
     """Creates a short (signed 16-bit) value. For example, the JSON integer
 
     .. code-block:: json
+
         30000
 
     might be modelled as the short type
 
     .. code-block:: python
+
         short_val()
 
     Args:
@@ -754,11 +794,13 @@ def int_val(
     """Creates an int (signed 32-bit) value. For example, the JSON integer
 
     .. code-block:: json
+
         100000
 
     might be modelled as the int type
 
     .. code-block:: python
+
         int_val()
 
     Args:
@@ -799,22 +841,26 @@ def long_val(
     """Creates a long (signed 64-bit) value. For example, the JSON integer
 
     .. code-block:: json
+
         8000000000
 
     might be modelled as the long type
 
     .. code-block:: python
+
         long_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in long type. For example,
 
     .. code-block:: python
+
         some_method(long_val())
 
     could be simplified to
 
     .. code-block:: python
+
         some_method(int)
 
     Args:
@@ -854,11 +900,13 @@ def float_val(
     """Creates a float (signed 32-bit) value. For example, the JSON decimal
 
     .. code-block:: json
+
         42.42
 
     might be modelled as the float type
 
     .. code-block:: python
+
         float_val()
 
     Args:
@@ -897,22 +945,26 @@ def double_val(
     """Creates a double (signed 64-bit) value. For example, the JSON decimal
 
     .. code-block:: json
+
         42.42424242
 
     might be modelled as the double type
 
     .. code-block:: python
+
         double_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in float type. For example,
 
     .. code-block:: python
+
         some_method(double_val())
 
     could be simplified to
 
     .. code-block:: python
+
         some_method(float)
 
     Args:
@@ -953,22 +1005,26 @@ def string_val(
     """Creates a String value. For example, the JSON string
 
     .. code-block:: json
+
         "Hello, world!"
 
     might be modelled as the string type
 
     .. code-block:: python
+
         string_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in str type. For example,
 
     .. code-block:: python
+
         some_method(string_val())
 
     could be simplified to
 
     .. code-block:: python
+
         some_method(str)
 
     Args:
@@ -1000,44 +1056,49 @@ def string_val(
     return JsonValue(builder.build())
 
 
-# TODO(deephaven-core#5269): Create deephaven.time time-type aliases
 def instant_val(
     allow_missing: bool = True,
     allow_null: bool = True,
     number_format: Literal[None, "s", "ms", "us", "ns"] = None,
     allow_decimal: bool = False,
-    on_missing: Optional[Any] = None,
-    on_null: Optional[Any] = None,
+    on_missing: Optional[InstantLike] = None,
+    on_null: Optional[InstantLike] = None,
 ) -> JsonValue:
     """Creates an Instant value. For example, the JSON string
 
     .. code-block:: json
+
         "2009-02-13T23:31:30.123456789Z"
 
     might be modelled as the Instant type
 
     .. code-block:: python
+
         instant_val()
 
     In another example, the JSON decimal
 
     .. code-block:: json
+
         1234567890.123456789
 
     might be modelled as the Instant type
 
     .. code-block:: python
+
         instant_val(number_format="s", allow_decimal=True)
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python datetime.datetime type. For example,
 
     .. code-block:: python
+
         some_method(instant_val())
 
     could be simplified to
 
     .. code-block:: python
+
         some_method(datetime.datetime)
 
     Args:
@@ -1048,8 +1109,8 @@ def instant_val(
             the epoch. When not set, a JSON string in the ISO-8601 format is expected.
         allow_decimal (bool): if the Instant value is allowed to be a JSON decimal type, default is False. Only valid
             when number_format is specified.
-        on_missing (Optional[Any]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[Any]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (Optional[InstantLike]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[InstantLike]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the Instant value
@@ -1106,11 +1167,13 @@ def big_integer_val(
     """Creates a BigInteger value. For example, the JSON integer
 
     .. code-block:: json
+
         123456789012345678901
 
     might be modelled as the BigInteger type
 
     .. code-block:: python
+
         big_integer_val()
 
     Args:
@@ -1150,11 +1213,13 @@ def big_decimal_val(
     """Creates a BigDecimal value. For example, the JSON decimal
 
     .. code-block:: json
+
         123456789012345678901.42
 
     might be modelled as the BigDecimal type
 
     .. code-block:: python
+
         big_decimal_val()
 
     Args:
@@ -1207,11 +1272,13 @@ def skip_val(
     This may be useful in combination with an object type where allow_unknown_fields=False. For example, the JSON object
 
     .. code-block:: json
+
         { "name": "foo", "age": 42 }
 
     might be modelled as the object type
 
     .. code-block:: python
+
         object_val({ "name": str, "age": skip_val() }, allow_unknown_fields=False)
 
     Args:

@@ -15,6 +15,13 @@ import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
@@ -4113,18 +4120,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final byte value : values) {
-                itemCount.increment();
-                if (value == NULL_BYTE) {
-                    nullCount.increment();
-                } else {
-                    if (min.get() == NULL_BYTE || value < min.get()) {
-                        min.set(value);
+            try (final CloseablePrimitiveIteratorOfByte valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final byte value) -> {
+                    itemCount.increment();
+                    if (value == NULL_BYTE) {
+                        nullCount.increment();
+                    } else {
+                        if (min.get() == NULL_BYTE || value < min.get()) {
+                            min.set(value);
+                        }
+                        if (max.get() == NULL_BYTE || value > max.get()) {
+                            max.set(value);
+                        }
                     }
-                    if (max.get() == NULL_BYTE || value > max.get()) {
-                        max.set(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4222,18 +4231,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final char value : values) {
-                itemCount.increment();
-                if (value == NULL_CHAR) {
-                    nullCount.increment();
-                } else {
-                    if (min.get() == NULL_CHAR || value < min.get()) {
-                        min.set(value);
+            try (final CloseablePrimitiveIteratorOfChar valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final char value) -> {
+                    itemCount.increment();
+                    if (value == NULL_CHAR) {
+                        nullCount.increment();
+                    } else {
+                        if (min.get() == NULL_CHAR || value < min.get()) {
+                            min.set(value);
+                        }
+                        if (max.get() == NULL_CHAR || value > max.get()) {
+                            max.set(value);
+                        }
                     }
-                    if (max.get() == NULL_CHAR || value > max.get()) {
-                        max.set(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4331,18 +4342,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final short value : values) {
-                itemCount.increment();
-                if (value == NULL_SHORT) {
-                    nullCount.increment();
-                } else {
-                    if (min.get() == NULL_SHORT || value < min.get()) {
-                        min.set(value);
+            try (final CloseablePrimitiveIteratorOfShort valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final short value) -> {
+                    itemCount.increment();
+                    if (value == NULL_SHORT) {
+                        nullCount.increment();
+                    } else {
+                        if (min.get() == NULL_SHORT || value < min.get()) {
+                            min.set(value);
+                        }
+                        if (max.get() == NULL_SHORT || value > max.get()) {
+                            max.set(value);
+                        }
                     }
-                    if (max.get() == NULL_SHORT || value > max.get()) {
-                        max.set(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4440,18 +4453,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final int value : values) {
-                itemCount.increment();
-                if (value == NULL_INT) {
-                    nullCount.increment();
-                } else {
-                    if (min.get() == NULL_INT || value < min.get()) {
-                        min.set(value);
+            try (final CloseablePrimitiveIteratorOfInt valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final int value) -> {
+                    itemCount.increment();
+                    if (value == NULL_INT) {
+                        nullCount.increment();
+                    } else {
+                        if (min.get() == NULL_INT || value < min.get()) {
+                            min.set(value);
+                        }
+                        if (max.get() == NULL_INT || value > max.get()) {
+                            max.set(value);
+                        }
                     }
-                    if (max.get() == NULL_INT || value > max.get()) {
-                        max.set(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4549,18 +4564,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final long value : values) {
-                itemCount.increment();
-                if (value == NULL_LONG) {
-                    nullCount.increment();
-                } else {
-                    if (min.get() == NULL_LONG || value < min.get()) {
-                        min.set(value);
+            try (final CloseablePrimitiveIteratorOfLong valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final long value) -> {
+                    itemCount.increment();
+                    if (value == NULL_LONG) {
+                        nullCount.increment();
+                    } else {
+                        if (min.get() == NULL_LONG || value < min.get()) {
+                            min.set(value);
+                        }
+                        if (max.get() == NULL_LONG || value > max.get()) {
+                            max.set(value);
+                        }
                     }
-                    if (max.get() == NULL_LONG || value > max.get()) {
-                        max.set(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4660,18 +4677,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final float value : values) {
-                itemCount.increment();
-                if (value == NULL_FLOAT) {
-                    nullCount.increment();
-                } else {
-                    if (min.floatValue() == NULL_FLOAT || value < min.floatValue()) {
-                        min.setValue(value);
+            try (final CloseablePrimitiveIteratorOfFloat valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final float value) -> {
+                    itemCount.increment();
+                    if (value == NULL_FLOAT) {
+                        nullCount.increment();
+                    } else {
+                        if (min.floatValue() == NULL_FLOAT || value < min.floatValue()) {
+                            min.setValue(value);
+                        }
+                        if (max.floatValue() == NULL_FLOAT || value > max.floatValue()) {
+                            max.setValue(value);
+                        }
                     }
-                    if (max.floatValue() == NULL_FLOAT || value > max.floatValue()) {
-                        max.setValue(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4772,18 +4791,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (final double value : values) {
-                itemCount.increment();
-                if (value == NULL_DOUBLE) {
-                    nullCount.increment();
-                } else {
-                    if (min.doubleValue() == NULL_DOUBLE || value < min.doubleValue()) {
-                        min.setValue(value);
+            try (final CloseablePrimitiveIteratorOfDouble valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final double value) -> {
+                    itemCount.increment();
+                    if (value == NULL_DOUBLE) {
+                        nullCount.increment();
+                    } else {
+                        if (min.doubleValue() == NULL_DOUBLE || value < min.doubleValue()) {
+                            min.setValue(value);
+                        }
+                        if (max.doubleValue() == NULL_DOUBLE || value > max.doubleValue()) {
+                            max.setValue(value);
+                        }
                     }
-                    if (max.doubleValue() == NULL_DOUBLE || value > max.doubleValue()) {
-                        max.setValue(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4883,18 +4904,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (String value : values) {
-                itemCount.increment();
-                if (value == null) {
-                    nullCount.increment();
-                } else {
-                    if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
-                        min.setValue(value);
+            try (final CloseableIterator<String> valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final String value) -> {
+                    itemCount.increment();
+                    if (value == null) {
+                        nullCount.increment();
+                    } else {
+                        if (min.getValue() == null || value.compareTo(min.getValue()) < 0) {
+                            min.setValue(value);
+                        }
+                        if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
+                            max.setValue(value);
+                        }
                     }
-                    if (max.getValue() == null || value.compareTo(max.getValue()) > 0) {
-                        max.setValue(value);
-                    }
-                }
+                });
             }
         });
 
@@ -4995,19 +5018,21 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
                 return;
             }
-            for (Instant value : values) {
-                itemCount.increment();
-                if (value == null) {
-                    nullCount.increment();
-                } else {
-                    // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
-                    if (min.get() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.get()) {
-                        min.set(DateTimeUtils.epochNanos(value));
+            try (final CloseableIterator<Instant> valuesIterator = values.iterator()) {
+                valuesIterator.forEachRemaining((final Instant value) -> {
+                    itemCount.increment();
+                    if (value == null) {
+                        nullCount.increment();
+                    } else {
+                        // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
+                        if (min.get() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.get()) {
+                            min.set(DateTimeUtils.epochNanos(value));
+                        }
+                        if (max.get() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.get()) {
+                            max.set(DateTimeUtils.epochNanos(value));
+                        }
                     }
-                    if (max.get() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.get()) {
-                        max.set(DateTimeUtils.epochNanos(value));
-                    }
-                }
+                });
             }
         });
 
