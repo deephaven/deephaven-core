@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Empty;
 import dagger.BindsInstance;
 import dagger.Component;
 import dagger.Module;
@@ -58,7 +59,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
@@ -92,8 +92,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
+// using JUnit4 so we can inherit properly from DeephavenApiServerTestBase
 @RunWith(JUnit4.class)
-public class MyTest extends DeephavenApiServerTestBase {
+public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private static final Map<String, String> DEEPHAVEN_STRING = Map.of(
             "deephaven:isSortable", "true",
@@ -123,6 +124,10 @@ public class MyTest extends DeephavenApiServerTestBase {
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
 
+    private static final Map<String, String> FLAT_ATTRIBUTES = Map.of(
+            "deephaven:attribute_type.IsFlat", "java.lang.Boolean",
+            "deephaven:attribute.IsFlat", "true");
+
     private static final Field CATALOG_NAME_FIELD =
             new Field("catalog_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
     private static final Field DB_SCHEMA_NAME =
@@ -134,9 +139,9 @@ public class MyTest extends DeephavenApiServerTestBase {
     private static final Field TABLE_SCHEMA =
             new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
                     List.of(Field.nullable("", MinorType.TINYINT.getType())));
-    private static final Map<String, String> FLAT_ATTRIBUTES = Map.of(
-            "deephaven:attribute_type.IsFlat", "java.lang.Boolean",
-            "deephaven:attribute.IsFlat", "true");
+
+    private static final TableRef FOO_TABLE_REF = TableRef.of(null, null, "foo_table");
+    public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "bar_table");
 
     @Module(includes = {
             TestModule.class,
@@ -176,7 +181,7 @@ public class MyTest extends DeephavenApiServerTestBase {
 
     @Override
     protected Builder testComponentBuilder() {
-        return DaggerMyTest_MyComponent.builder();
+        return DaggerFlightSqlTest_MyComponent.builder();
     }
 
     @Before
@@ -433,32 +438,28 @@ public class MyTest extends DeephavenApiServerTestBase {
     @Ignore("need to fix server, should error out before")
     @Test
     public void insert1Prepared() {
-
         try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO fake(name) VALUES('Smith')")) {
-
-            final SchemaResult schema = prepared.fetchSchema();
-            // TODO: note the lack of a useful error from perspective of client.
-            // INVALID_ARGUMENT: Export in state DEPENDENCY_FAILED
+            // final SchemaResult schema = prepared.fetchSchema();
+            // // TODO: note the lack of a useful error from perspective of client.
+            // // INVALID_ARGUMENT: Export in state DEPENDENCY_FAILED
+            // //
+            // // final SessionState.ExportObject<Flight.FlightInfo> export =
+            // // ticketRouter.flightInfoFor(session, request, "request");
+            // //
+            // // if (session != null) {
+            // // session.nonExport()
+            // // .queryPerformanceRecorder(queryPerformanceRecorder)
+            // // .require(export)
+            // // .onError(responseObserver)
+            // // .submit(() -> {
+            // // responseObserver.onNext(export.get());
+            // // responseObserver.onCompleted();
+            // // });
+            // // return;
+            // // }
             //
-            // final SessionState.ExportObject<Flight.FlightInfo> export =
-            // ticketRouter.flightInfoFor(session, request, "request");
-            //
-            // if (session != null) {
-            // session.nonExport()
-            // .queryPerformanceRecorder(queryPerformanceRecorder)
-            // .require(export)
-            // .onError(responseObserver)
-            // .submit(() -> {
-            // responseObserver.onNext(export.get());
-            // responseObserver.onCompleted();
-            // });
-            // return;
-            // }
-
-            unpackable(CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
-
+            // unpackable(CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
         }
-
     }
 
     @Test
@@ -481,8 +482,8 @@ public class MyTest extends DeephavenApiServerTestBase {
         setBarTable();
         getSchemaUnimplemented(() -> flightSqlClient.getCrossReferenceSchema(),
                 CommandGetCrossReference.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getCrossReference(TableRef.of(null, null, "foo_table"),
-                TableRef.of(null, null, "bar_table")), CommandGetCrossReference.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getCrossReference(FOO_TABLE_REF, BAR_TABLE_REF),
+                CommandGetCrossReference.getDescriptor());
         unpackable(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
     }
 
@@ -490,7 +491,7 @@ public class MyTest extends DeephavenApiServerTestBase {
     public void getPrimaryKeys() {
         setFooTable();
         getSchemaUnimplemented(() -> flightSqlClient.getPrimaryKeysSchema(), CommandGetPrimaryKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getPrimaryKeys(TableRef.of(null, null, "foo_table")),
+        commandUnimplemented(() -> flightSqlClient.getPrimaryKeys(FOO_TABLE_REF),
                 CommandGetPrimaryKeys.getDescriptor());
         unpackable(CommandGetPrimaryKeys.getDescriptor(), CommandGetPrimaryKeys.class);
     }
@@ -499,7 +500,7 @@ public class MyTest extends DeephavenApiServerTestBase {
     public void getExportedKeys() {
         setFooTable();
         getSchemaUnimplemented(() -> flightSqlClient.getExportedKeysSchema(), CommandGetExportedKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getExportedKeys(TableRef.of(null, null, "foo_table")),
+        commandUnimplemented(() -> flightSqlClient.getExportedKeys(FOO_TABLE_REF),
                 CommandGetExportedKeys.getDescriptor());
         unpackable(CommandGetExportedKeys.getDescriptor(), CommandGetExportedKeys.class);
     }
@@ -508,7 +509,7 @@ public class MyTest extends DeephavenApiServerTestBase {
     public void getImportedKeys() {
         setFooTable();
         getSchemaUnimplemented(() -> flightSqlClient.getImportedKeysSchema(), CommandGetImportedKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getImportedKeys(TableRef.of(null, null, "foo_table")),
+        commandUnimplemented(() -> flightSqlClient.getImportedKeys(FOO_TABLE_REF),
                 CommandGetImportedKeys.getDescriptor());
         unpackable(CommandGetImportedKeys.getDescriptor(), CommandGetImportedKeys.class);
     }
@@ -587,7 +588,6 @@ public class MyTest extends DeephavenApiServerTestBase {
     @Test
     public void cancelFlightInfo() {
         // Note: this should likely be tested in the context of Flight, not FlightSQL
-
         // flightClient.cancelFlightInfo(null);
     }
 
@@ -646,9 +646,15 @@ public class MyTest extends DeephavenApiServerTestBase {
     }
 
     private void unpackable(ActionType type, Class<?> actionProto) {
-        // Provided message cannot be unpacked
-        final Action action = new Action(type.getType(), new byte[0]);
-        expectUnpackable(() -> doAction(action), actionProto);
+        {
+            final Action action = new Action(type.getType(), Any.getDefaultInstance().toByteArray());
+            expectUnpackable(() -> doAction(action), actionProto);
+        }
+        {
+            final Action action = new Action(type.getType(), new byte[] {-1});
+            expectException(() -> doAction(action), FlightStatusCode.INVALID_ARGUMENT,
+                    "Received invalid message from remote");
+        }
     }
 
     private void getSchemaUnpackable(Runnable r, Class<?> clazz) {

@@ -1,14 +1,13 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.flightsql;
+package io.deephaven.server;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
-import io.deephaven.server.session.SessionService;
 import io.deephaven.util.SafeCloseable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,21 +21,10 @@ import java.util.concurrent.TimeUnit;
 public abstract class DeephavenServerTestBase {
 
     public interface TestComponent {
-        // Set<ServerInterceptor> interceptors();
-        //
-        // SessionServiceGrpcImpl sessionGrpcService();
-
-        SessionService sessionService();
 
         GrpcServer server();
 
-        // TestAuthModule.BasicAuthTestImpl basicAuthHandler();
-
         ExecutionContext executionContext();
-
-        // TestAuthorizationProvider authorizationProvider();
-        //
-        // Registration.Callback registration();
     }
 
     protected TestComponent component;

@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.flightsql;
 
+import io.deephaven.server.DeephavenServerTestBase;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +36,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         try (
                 final Connection connection = connect();
                 final Statement statement = connection.createStatement()) {
-            if (statement.execute("SELECT 1")) {
-                printResultSet(statement.getResultSet());
+            if (statement.execute("SELECT 1 as Foo, 2 as Bar")) {
+                consume(statement.getResultSet(), 2, 1);
             }
         }
     }
@@ -48,7 +49,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         try (
                 final Connection connection = connect();
                 final Statement statement = connection.createStatement()) {
-            printResultSet(statement.executeQuery("SELECT 1"));
+            consume(statement.executeQuery("SELECT 1 as Foo, 2 as Bar"), 2, 1);
         }
     }
 
@@ -56,9 +57,9 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
     void select1Prepared() throws SQLException {
         try (
                 final Connection connection = connect();
-                final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1")) {
+                final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 as Foo, 2 as Bar")) {
             if (preparedStatement.execute()) {
-                printResultSet(preparedStatement.getResultSet());
+                consume(preparedStatement.getResultSet(), 2, 1);
             }
         }
     }
@@ -78,18 +79,13 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         }
     }
 
-    private static void printResultSet(ResultSet rs) throws SQLException {
-        ResultSetMetaData rsmd = rs.getMetaData();
-        int columnsNumber = rsmd.getColumnCount();
+    private static void consume(ResultSet rs, int numCols, int numRows) throws SQLException {
+        final ResultSetMetaData rsmd = rs.getMetaData();
+        assertThat(rsmd.getColumnCount()).isEqualTo(numCols);
+        int rows = 0;
         while (rs.next()) {
-            for (int i = 1; i <= columnsNumber; i++) {
-                if (i > 1) {
-                    System.out.print(",  ");
-                }
-                String columnValue = rs.getString(i);
-                System.out.print(columnValue + " " + rsmd.getColumnName(i));
-            }
-            System.out.println("");
+            ++rows;
         }
+        assertThat(rows).isEqualTo(numRows);
     }
 }
