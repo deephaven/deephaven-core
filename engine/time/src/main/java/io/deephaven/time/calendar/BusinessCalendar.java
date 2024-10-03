@@ -57,7 +57,7 @@ public class BusinessCalendar extends Calendar {
 
     // region Cache
 
-    private static class SummaryData extends ImmutableConcurrentCache.IntKeyedValue {
+    private static class SummaryData extends ReadOptimizedConcurrentCache.IntKeyedValue {
         private final Instant startInstant;
         private final LocalDate startDate;
         private final Instant endInstant;
@@ -92,8 +92,8 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private final ImmutableConcurrentCache<ImmutableConcurrentCache.Pair<CalendarDay<Instant>>> schedulesCache =
-            new ImmutableConcurrentCache<>(10000, this::computeCalendarDay);
+    private final ReadOptimizedConcurrentCache<ReadOptimizedConcurrentCache.Pair<CalendarDay<Instant>>> schedulesCache =
+            new ReadOptimizedConcurrentCache<>(10000, this::computeCalendarDay);
     private final YearMonthSummaryCache<SummaryData> summaryCache =
             new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
     private final int yearCacheStart;
@@ -225,7 +225,7 @@ public class BusinessCalendar extends Calendar {
         return LocalDate.of(key / 10000, (key % 10000) / 100, key % 100);
     }
 
-    private ImmutableConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int key) {
+    private ReadOptimizedConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int key) {
         final LocalDate date = schedulesCacheDateFromKey(key);
         final CalendarDay<Instant> h = holidays.get(date);
         final CalendarDay<Instant> v;
@@ -238,7 +238,7 @@ public class BusinessCalendar extends Calendar {
             v = CalendarDay.toInstant(standardBusinessDay, date, timeZone());
         }
 
-        return new ImmutableConcurrentCache.Pair<>(key, v);
+        return new ReadOptimizedConcurrentCache.Pair<>(key, v);
     }
 
     // endregion

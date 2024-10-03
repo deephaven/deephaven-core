@@ -16,7 +16,7 @@ import java.util.stream.StreamSupport;
 @SuppressWarnings({"DataFlowIssue", "ConstantValue"})
 public class TestYearMonthSummaryCache extends BaseArrayTestCase {
 
-    private static class Value extends ImmutableConcurrentCache.Pair<String> {
+    private static class Value extends ReadOptimizedConcurrentCache.Pair<String> {
         Value(int key, String value) {
             super(key, value);
         }

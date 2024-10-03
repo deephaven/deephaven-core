@@ -9,12 +9,12 @@ import io.deephaven.hash.KeyedIntObjectKey;
 import java.util.function.IntFunction;
 
 /**
- * An immutable cache that is designed to be fast when accessed concurrently with read-heavy workloads. Values are
- * populated from a function when they are not found in the cache. All values must be non-null.
+ * A cache that is designed to be fast when accessed concurrently with read-heavy workloads. Values are populated from a
+ * function when they are not found in the cache. All values must be non-null.
  *
  * @param <V> the value type
  */
-class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue> {
+class ReadOptimizedConcurrentCache<V extends ReadOptimizedConcurrentCache.IntKeyedValue> {
 
     /**
      * A value that has an included integer key.
@@ -88,7 +88,7 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
      * @param initialCapacity the initial capacity
      * @param valueComputer computes the value for a key.
      */
-    public ImmutableConcurrentCache(final int initialCapacity, final IntFunction<V> valueComputer) {
+    public ReadOptimizedConcurrentCache(final int initialCapacity, final IntFunction<V> valueComputer) {
         this.valueComputer = valueComputer;
         this.cache = new KeyedIntObjectHash<>(initialCapacity, new KeyDef<>());
     }

@@ -30,7 +30,7 @@ public class Calendar {
 
     // region Cache
 
-    private static class SummaryData extends ImmutableConcurrentCache.IntKeyedValue {
+    private static class SummaryData extends ReadOptimizedConcurrentCache.IntKeyedValue {
         final LocalDate startDate;
         final LocalDate endDate; // exclusive
         final List<LocalDate> dates;

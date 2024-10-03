@@ -5,9 +5,9 @@ package io.deephaven.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 
-public class TestImmutableConcurrentCache extends BaseArrayTestCase {
+public class TestReadOptimizedConcurrentCache extends BaseArrayTestCase {
 
-    private static class Value extends ImmutableConcurrentCache.Pair<String> {
+    private static class Value extends ReadOptimizedConcurrentCache.Pair<String> {
         Value(int key, String value) {
             super(key, value);
         }
@@ -24,8 +24,8 @@ public class TestImmutableConcurrentCache extends BaseArrayTestCase {
     }
 
     public void testCache() {
-        final ImmutableConcurrentCache<Value> cache =
-                new ImmutableConcurrentCache<>(10, TestImmutableConcurrentCache::makeVal);
+        final ReadOptimizedConcurrentCache<Value> cache =
+                new ReadOptimizedConcurrentCache<>(10, TestReadOptimizedConcurrentCache::makeVal);
 
         assertEquals("A", cache.computeIfAbsent(0).getValue());
         assertEquals("A", cache.computeIfAbsent(0).getValue());

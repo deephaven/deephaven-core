@@ -12,7 +12,7 @@ import java.util.function.IntFunction;
  *
  * @param <T> the type of the summary
  */
-class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
+class YearMonthSummaryCache<T extends ReadOptimizedConcurrentCache.IntKeyedValue> {
 
     /**
      * Computes a year-month key for a year and month.
@@ -45,8 +45,8 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
         return key % 100;
     }
 
-    private final ImmutableConcurrentCache<T> monthCache;
-    private final ImmutableConcurrentCache<T> yearCache;
+    private final ReadOptimizedConcurrentCache<T> monthCache;
+    private final ReadOptimizedConcurrentCache<T> yearCache;
 
     /**
      * Creates a new cache.
@@ -55,8 +55,8 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @param computeYearSummary the function to compute a year summary
      */
     YearMonthSummaryCache(IntFunction<T> computeMonthSummary, IntFunction<T> computeYearSummary) {
-        monthCache = new ImmutableConcurrentCache<>(12 * 50, computeMonthSummary);
-        yearCache = new ImmutableConcurrentCache<>(50, computeYearSummary);
+        monthCache = new ReadOptimizedConcurrentCache<>(12 * 50, computeMonthSummary);
+        yearCache = new ReadOptimizedConcurrentCache<>(50, computeYearSummary);
     }
 
     /**
