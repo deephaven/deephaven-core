@@ -46,7 +46,7 @@ import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITI
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.SNAPSHOT_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 
-public abstract class IcebergToolsTest {
+abstract class IcebergToolsTest {
 
     private static final TableDefinition SALES_SINGLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("Region"),

@@ -10,12 +10,13 @@ import io.deephaven.iceberg.util.IcebergTools;
 import org.apache.iceberg.catalog.Catalog;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 
-
+@Tag("security-manager-allow")
 public abstract class CatalogAdapterBase {
 
     protected IcebergCatalogAdapter catalogAdapter;
