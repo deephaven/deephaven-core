@@ -4,11 +4,16 @@
 package io.deephaven.extensions.s3;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.profiles.ProfileFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
 public class S3InstructionsTest {
 
@@ -21,10 +26,14 @@ public class S3InstructionsTest {
         assertThat(instructions.fragmentSize()).isEqualTo(65536);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
+        assertThat(instructions.credentials()).isEqualTo(Credentials.resolving());
         assertThat(instructions.writePartSize()).isEqualTo(10485760);
         assertThat(instructions.numConcurrentWriteParts()).isEqualTo(64);
         assertThat(instructions.endpointOverride()).isEmpty();
+        assertThat(instructions.profileName()).isEmpty();
+        assertThat(instructions.configFilePath()).isEmpty();
+        assertThat(instructions.credentialsFilePath()).isEmpty();
+        assertThat(instructions.aggregatedProfileFile()).isEmpty();
     }
 
     @Test
@@ -54,6 +63,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .maxConcurrentRequests(-1)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
         }
@@ -66,6 +76,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .maxConcurrentRequests(0)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
         }
@@ -88,6 +99,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .readAheadCount(-1)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("readAheadCount");
         }
@@ -110,6 +122,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .fragmentSize(8 * (1 << 10) - 1)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("fragmentSize");
         }
@@ -132,6 +145,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .credentials(new Credentials() {})
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("credentials");
         }
@@ -144,6 +158,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .writePartSize(1024)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("writePartSize");
         }
@@ -156,6 +171,7 @@ public class S3InstructionsTest {
                     .regionName("some-region")
                     .numConcurrentWriteParts(0)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("numConcurrentWriteParts");
         }
@@ -169,8 +185,76 @@ public class S3InstructionsTest {
                     .numConcurrentWriteParts(1001)
                     .maxConcurrentRequests(1000)
                     .build();
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("numConcurrentWriteParts");
+        }
+    }
+
+    @Test
+    void testSetProfileName() {
+        final Optional<String> profileName = S3Instructions.builder()
+                .regionName("some-region")
+                .profileName("some-profile")
+                .build()
+                .profileName();
+        assertThat(profileName.isPresent()).isTrue();
+        assertThat(profileName.get()).isEqualTo("some-profile");
+    }
+
+    @Test
+    void testSetConfigFilePath() throws IOException {
+        // Create temporary config and credentials file and write some data to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final String configData = "[default]\nregion = us-east-1\n\n[profile test-user]\nregion = us-east-2";
+        Files.write(tempConfigFile, configData.getBytes());
+
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
+        final String credentialsData = "[default]\naws_access_key_id = foo\naws_secret_access_key = bar";
+        Files.write(tempCredentialsFile, credentialsData.getBytes());
+
+        try {
+            final Optional<ProfileFile> ret = S3Instructions.builder()
+                    .configFilePath(tempConfigFile.toString())
+                    .credentialsFilePath(tempCredentialsFile.toString())
+                    .build()
+                    .aggregatedProfileFile();
+            assertThat(ret.isPresent()).isTrue();
+            final ProfileFile profileFile = ret.get();
+            assertThat(profileFile.profiles().size()).isEqualTo(2);
+            assertThat(profileFile.profile("default").get().properties().get("region")).isEqualTo("us-east-1");
+            assertThat(profileFile.profile("default").get().properties().get("aws_access_key_id")).isEqualTo("foo");
+            assertThat(profileFile.profile("default").get().properties().get("aws_secret_access_key")).isEqualTo("bar");
+            assertThat(profileFile.profile("test-user").get().properties().get("region")).isEqualTo("us-east-2");
+        } finally {
+            Files.delete(tempConfigFile);
+            Files.delete(tempCredentialsFile);
+        }
+    }
+
+    @Test
+    void testBadConfigFilePath() {
+        try {
+            S3Instructions.builder()
+                    .configFilePath("/some/random/path")
+                    .build()
+                    .aggregatedProfileFile();
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("/some/random/path");
+        }
+    }
+
+    @Test
+    void testBadCredentialsFilePath() {
+        try {
+            S3Instructions.builder()
+                    .credentialsFilePath("/some/random/path")
+                    .build()
+                    .aggregatedProfileFile();
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("/some/random/path");
         }
     }
 }
