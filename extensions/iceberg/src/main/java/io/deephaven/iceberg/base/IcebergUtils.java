@@ -41,13 +41,13 @@ public final class IcebergUtils {
      *
      * @param table The {@link Table} to retrieve data files for.
      * @param snapshot The {@link Snapshot} to retrieve data files from.
-     * @param fileIO The {@link FileIO} to use for reading manifest data files.
+     *
      * @return A stream of {@link DataFile} objects.
      */
     public static Stream<DataFile> getAllDataFiles(
             @NotNull final Table table,
-            @NotNull final Snapshot snapshot,
-            @NotNull final FileIO fileIO) {
+            @NotNull final Snapshot snapshot) {
+        final FileIO fileIO = table.io();
         try {
             // Retrieve the manifest files from the snapshot
             final List<ManifestFile> manifestFiles = snapshot.allManifests(fileIO);

@@ -1241,8 +1241,7 @@ public class IcebergCatalogAdapter {
         if (overwrite) {
             // Delete all the existing data files in the table
             final DeleteFiles deletes = icebergTransaction.newDelete();
-            try (final Stream<DataFile> dataFiles =
-                    getAllDataFiles(icebergTable, icebergTable.currentSnapshot(), icebergTable.io())) {
+            try (final Stream<DataFile> dataFiles = getAllDataFiles(icebergTable, icebergTable.currentSnapshot())) {
                 dataFiles.forEach(deletes::deleteFile);
             }
             deletes.commit();

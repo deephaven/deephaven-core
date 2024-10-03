@@ -144,7 +144,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
-        try (final Stream<DataFile> dataFiles = getAllDataFiles(table, snapshot, fileIO)) {
+        try (final Stream<DataFile> dataFiles = getAllDataFiles(table, snapshot)) {
             dataFiles.forEach(df -> {
                 final URI fileUri = dataFileUri(df);
                 final IcebergTableLocationKey locationKey =
