@@ -120,7 +120,7 @@ class ReadOptimizedConcurrentCache<V extends ReadOptimizedConcurrentCache.IntKey
             throw new NullPointerException("Computed a null value: key=" + key);
         }
 
-        existing = cache.putIfAbsent(key, newValue);
+        existing = cache.put(key, newValue);
         return existing == null ? newValue : existing;
     }
 }
