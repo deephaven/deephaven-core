@@ -1042,9 +1042,9 @@ public class SessionState {
 
         private synchronized void onDependencyFailure(final ExportObject<?> parent) {
             errorId = parent.errorId;
-//            if (parent.caughtException instanceof StatusRuntimeException) {
+            if (parent.caughtException instanceof StatusRuntimeException) {
                 caughtException = parent.caughtException;
-//            }
+            }
             ExportNotification.State terminalState = ExportNotification.State.DEPENDENCY_FAILED;
 
             if (errorId == null) {

@@ -3,77 +3,92 @@
 //
 package io.deephaven.server.flightsql;
 
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.Descriptor;
 import dagger.BindsInstance;
 import dagger.Component;
 import dagger.Module;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Builder;
 import io.grpc.ManagedChannel;
+import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightDescriptor;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.flight.FlightRuntimeException;
 import org.apache.arrow.flight.FlightStatusCode;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.flight.Result;
 import org.apache.arrow.flight.SchemaResult;
 import org.apache.arrow.flight.Ticket;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlClient.PreparedStatement;
+import org.apache.arrow.flight.sql.FlightSqlClient.Savepoint;
+import org.apache.arrow.flight.sql.FlightSqlClient.SubstraitPlan;
+import org.apache.arrow.flight.sql.FlightSqlClient.Transaction;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionClosePreparedStatementRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedStatementRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedSubstraitPlanRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndSavepointRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndTransactionRequest;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCrossReference;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementUpdate;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
+import org.apache.arrow.flight.sql.util.TableRef;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.BitVector;
-import org.apache.arrow.vector.DecimalVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.TimeStampNanoTZVector;
-import org.apache.arrow.vector.UInt1Vector;
-import org.apache.arrow.vector.UInt4Vector;
-import org.apache.arrow.vector.VarBinaryVector;
-import org.apache.arrow.vector.VarCharVector;
-import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.complex.DenseUnionVector;
-import org.apache.arrow.vector.complex.ListVector;
-import org.apache.arrow.vector.ipc.ReadChannel;
-import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
-import org.apache.arrow.vector.util.Text;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.channels.Channels;
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static java.util.Objects.isNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -226,17 +241,17 @@ public class MyTest extends DeephavenApiServerTestBase {
             assertThat(schemaResult.getSchema()).isEqualTo(expectedSchema);
         }
         {
-            final FlightInfo catalogs = flightSqlClient.getCatalogs();
-            assertThat(catalogs.getSchema()).isEqualTo(expectedSchema);
-            // todo
-            try (final FlightStream stream = flightSqlClient.getStream(ticket(catalogs))) {
-                System.out.println(getResults(stream));
+            final FlightInfo info = flightSqlClient.getCatalogs();
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                consume(stream, 0, 0);
             }
         }
+        unpackable(CommandGetCatalogs.getDescriptor(), CommandGetCatalogs.class);
     }
 
     @Test
-    public void getSchemas() {
+    public void getSchemas() throws Exception {
         final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME);
         {
             final SchemaResult schemasSchema = flightSqlClient.getSchemasSchema();
@@ -244,14 +259,17 @@ public class MyTest extends DeephavenApiServerTestBase {
         }
         {
             // We don't have any catalogs we list right now.
-            final FlightInfo schemas = flightSqlClient.getSchemas(null, null);
-            assertThat(schemas.getSchema()).isEqualTo(expectedSchema);
-            // todo
+            final FlightInfo info = flightSqlClient.getSchemas(null, null);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                consume(stream, 0, 0);
+            }
         }
+        unpackable(CommandGetDbSchemas.getDescriptor(), CommandGetDbSchemas.class);
     }
 
     @Test
-    public void getTables() {
+    public void getTables() throws Exception {
         // Without schema field
         {
             final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
@@ -260,9 +278,11 @@ public class MyTest extends DeephavenApiServerTestBase {
                 assertThat(schema.getSchema()).isEqualTo(expectedSchema);
             }
             {
-                final FlightInfo tables = flightSqlClient.getTables(null, null, null, null, false);
-                assertThat(tables.getSchema()).isEqualTo(expectedSchema);
-                // todo
+                final FlightInfo info = flightSqlClient.getTables(null, null, null, null, false);
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                    consume(stream, 0, 0);
+                }
             }
         }
         // With schema field
@@ -275,29 +295,35 @@ public class MyTest extends DeephavenApiServerTestBase {
                 assertThat(schema.getSchema()).isEqualTo(expectedSchema);
             }
             {
-                final FlightInfo tables = flightSqlClient.getTables(null, null, null, null, true);
-                assertThat(tables.getSchema()).isEqualTo(expectedSchema);
-                // todo
+                final FlightInfo info = flightSqlClient.getTables(null, null, null, null, true);
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                    consume(stream, 0, 0);
+                }
             }
         }
+        unpackable(CommandGetTables.getDescriptor(), CommandGetTables.class);
     }
 
     @Test
-    public void getTableTypes() {
+    public void getTableTypes() throws Exception {
         final Schema expectedSchema = flatTableSchema(TABLE_TYPE);
         {
             final SchemaResult schema = flightSqlClient.getTableTypesSchema();
             assertThat(schema.getSchema()).isEqualTo(expectedSchema);
         }
         {
-            final FlightInfo tableTypes = flightSqlClient.getTableTypes();
-            assertThat(tableTypes.getSchema()).isEqualTo(expectedSchema);
-            // todo
+            final FlightInfo info = flightSqlClient.getTableTypes();
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                consume(stream, 1, 1);
+            }
         }
+        unpackable(CommandGetTableTypes.getDescriptor(), CommandGetTableTypes.class);
     }
 
     @Test
-    public void select1() {
+    public void select1() throws Exception {
         final Schema expectedSchema = new Schema(
                 List.of(new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null)));
         {
@@ -307,12 +333,15 @@ public class MyTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT 1 as Foo");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            // todo
+            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                consume(stream, 1, 1);
+            }
         }
+        unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
     }
 
     @Test
-    public void select1Prepared() {
+    public void select1Prepared() throws Exception {
         final Schema expectedSchema = new Schema(
                 List.of(new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null)));
         try (final PreparedStatement preparedStatement = flightSqlClient.prepare("SELECT 1 as Foo")) {
@@ -323,24 +352,88 @@ public class MyTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = preparedStatement.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                // todo
+                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                    consume(stream, 1, 1);
+                }
             }
+            unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
         }
     }
 
     @Test
-    public void insert1() {
-        try {
-            flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
-            failBecauseExceptionWasNotThrown(FlightRuntimeException.class);
-        } catch (FlightRuntimeException e) {
-            // FAILED_PRECONDITION gets mapped to INVALID_ARGUMENT here.
-            assertThat(e.status().code()).isEqualTo(FlightStatusCode.INVALID_ARGUMENT);
-            assertThat(e).hasMessageContaining("FlightSQL descriptors cannot be published to");
+    public void selectStarFromQueryScopeTable() throws Exception {
+        setFooTable();
+        {
+            final Schema expectedSchema = flatTableSchema(
+                    new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
+            {
+                final SchemaResult schema = flightSqlClient.getExecuteSchema("SELECT * FROM foo_table");
+                assertThat(schema.getSchema()).isEqualTo(expectedSchema);
+            }
+            {
+                final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                    consume(stream, 1, 3);
+                }
+            }
+            unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
         }
     }
 
-//    @Disabled("need to fix server, should error out before")
+    @Test
+    public void selectStarPreparedFromQueryScopeTable() throws Exception {
+        setFooTable();
+        {
+            final Schema expectedSchema = flatTableSchema(
+                    new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
+            try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT * FROM foo_table")) {
+                {
+                    final SchemaResult schema = prepared.fetchSchema();
+                    assertThat(schema.getSchema()).isEqualTo(expectedSchema);
+                }
+                {
+                    final FlightInfo info = prepared.execute();
+                    assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                    try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
+                        consume(stream, 1, 3);
+                    }
+                }
+                unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
+            }
+            unpackable(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT, ActionCreatePreparedStatementRequest.class);
+            unpackable(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT, ActionClosePreparedStatementRequest.class);
+        }
+    }
+
+    @Test
+    public void executeSubstrait() {
+        getSchemaUnimplemented(() -> flightSqlClient.getExecuteSubstraitSchema(fakePlan()),
+                CommandStatementSubstraitPlan.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.executeSubstrait(fakePlan()),
+                CommandStatementSubstraitPlan.getDescriptor());
+        unpackable(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
+    }
+
+    @Test
+    public void executeSubstraitUpdate() {
+        // Note: this is the same descriptor as the executeSubstrait
+        getSchemaUnimplemented(() -> flightSqlClient.getExecuteSubstraitSchema(fakePlan()),
+                CommandStatementSubstraitPlan.getDescriptor());
+        // todo: this does a doPut though
+        commandUnimplemented(() -> flightSqlClient.executeSubstraitUpdate(fakePlan()),
+                CommandStatementSubstraitPlan.getDescriptor());
+        unpackable(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
+    }
+
+    @Test
+    public void insert1() {
+        expectException(() -> flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')"),
+                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL descriptors cannot be published to");
+        unpackable(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
+    }
+
+    @Ignore("need to fix server, should error out before")
     @Test
     public void insert1Prepared() {
 
@@ -364,73 +457,228 @@ public class MyTest extends DeephavenApiServerTestBase {
             // });
             // return;
             // }
+
+            unpackable(CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
+
         }
 
     }
 
     @Test
     public void getSqlInfo() {
-        getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), "arrow.flight.protocol.sql.CommandGetSqlInfo");
-        commandUnimplemented(() -> flightSqlClient.getSqlInfo(), "arrow.flight.protocol.sql.CommandGetSqlInfo");
+        getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), CommandGetSqlInfo.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getSqlInfo(), CommandGetSqlInfo.getDescriptor());
+        unpackable(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
     }
 
     @Test
     public void getXdbcTypeInfo() {
-        getSchemaUnimplemented(() -> flightSqlClient.getXdbcTypeInfoSchema(),
-                "arrow.flight.protocol.sql.CommandGetXdbcTypeInfo");
-        commandUnimplemented(() -> flightSqlClient.getXdbcTypeInfo(),
-                "arrow.flight.protocol.sql.CommandGetXdbcTypeInfo");
-
+        getSchemaUnimplemented(() -> flightSqlClient.getXdbcTypeInfoSchema(), CommandGetXdbcTypeInfo.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getXdbcTypeInfo(), CommandGetXdbcTypeInfo.getDescriptor());
+        unpackable(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
     }
 
     @Test
     public void getCrossReference() {
+        setFooTable();
+        setBarTable();
         getSchemaUnimplemented(() -> flightSqlClient.getCrossReferenceSchema(),
-                "arrow.flight.protocol.sql.CommandGetCrossReference");
-        // Need actual refs
-        // commandUnimplemented(() -> flightSqlClient.getCrossReference(),
-        // "arrow.flight.protocol.sql.CommandGetCrossReference");
+                CommandGetCrossReference.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getCrossReference(TableRef.of(null, null, "foo_table"),
+                TableRef.of(null, null, "bar_table")), CommandGetCrossReference.getDescriptor());
+        unpackable(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
     }
 
     @Test
     public void getPrimaryKeys() {
-        getSchemaUnimplemented(() -> flightSqlClient.getPrimaryKeysSchema(),
-                "arrow.flight.protocol.sql.CommandGetPrimaryKeys");
-        // Need actual refs
-        // commandUnimplemented(() -> flightSqlClient.getPrimaryKeys(),
-        // "arrow.flight.protocol.sql.CommandGetPrimaryKeys");
+        setFooTable();
+        getSchemaUnimplemented(() -> flightSqlClient.getPrimaryKeysSchema(), CommandGetPrimaryKeys.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getPrimaryKeys(TableRef.of(null, null, "foo_table")),
+                CommandGetPrimaryKeys.getDescriptor());
+        unpackable(CommandGetPrimaryKeys.getDescriptor(), CommandGetPrimaryKeys.class);
     }
 
     @Test
     public void getExportedKeys() {
-        getSchemaUnimplemented(() -> flightSqlClient.getExportedKeysSchema(),
-                "arrow.flight.protocol.sql.CommandGetExportedKeys");
-        // Need actual refs
-        // commandUnimplemented(() -> flightSqlClient.getExportedKeys(),
-        // "arrow.flight.protocol.sql.CommandGetExportedKeys");
+        setFooTable();
+        getSchemaUnimplemented(() -> flightSqlClient.getExportedKeysSchema(), CommandGetExportedKeys.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getExportedKeys(TableRef.of(null, null, "foo_table")),
+                CommandGetExportedKeys.getDescriptor());
+        unpackable(CommandGetExportedKeys.getDescriptor(), CommandGetExportedKeys.class);
     }
 
     @Test
     public void getImportedKeys() {
-        getSchemaUnimplemented(() -> flightSqlClient.getImportedKeysSchema(),
-                "arrow.flight.protocol.sql.CommandGetImportedKeys");
-        // Need actual refs
-        // commandUnimplemented(() -> flightSqlClient.getImportedKeys(),
-        // "arrow.flight.protocol.sql.CommandGetImportedKeys");
+        setFooTable();
+        getSchemaUnimplemented(() -> flightSqlClient.getImportedKeysSchema(), CommandGetImportedKeys.getDescriptor());
+        commandUnimplemented(() -> flightSqlClient.getImportedKeys(TableRef.of(null, null, "foo_table")),
+                CommandGetImportedKeys.getDescriptor());
+        unpackable(CommandGetImportedKeys.getDescriptor(), CommandGetImportedKeys.class);
     }
 
-    private void getSchemaUnimplemented(Runnable r, String command) {
+    @Test
+    public void unknownCommandLooksLikeFlightSql() {
+        final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandLooksRealButDoesNotExist";
+        final FlightDescriptor descriptor = unpackableCommand(typeUrl);
+        getSchemaUnknown(() -> flightClient.getSchema(descriptor), typeUrl);
+        commandUnknown(() -> flightClient.getInfo(descriptor), typeUrl);
+    }
+
+    @Test
+    public void unknownCommand() {
+        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        final String typeUrl = "type.googleapis.com/com.example.SomeRandomCommand";
+        final FlightDescriptor descriptor = unpackableCommand(typeUrl);
+        expectException(() -> flightClient.getSchema(descriptor), FlightStatusCode.INVALID_ARGUMENT,
+                "no resolver for command");
+        expectException(() -> flightClient.getInfo(descriptor), FlightStatusCode.INVALID_ARGUMENT,
+                "no resolver for command");
+    }
+
+    @Test
+    public void prepareSubstrait() {
+        actionUnimplemented(() -> flightSqlClient.prepare(fakePlan()),
+                FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN,
+                ActionCreatePreparedSubstraitPlanRequest.class);
+    }
+
+    @Test
+    public void beginTransaction() {
+        actionUnimplemented(() -> flightSqlClient.beginTransaction(), FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION, ActionBeginTransactionRequest.class);
+    }
+
+    @Test
+    public void commit() {
+        actionUnimplemented(() -> flightSqlClient.commit(fakeTxn()), FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION, ActionEndTransactionRequest.class);
+    }
+
+    @Test
+    public void rollbackTxn() {
+        actionUnimplemented(() -> flightSqlClient.rollback(fakeTxn()), FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION, ActionEndTransactionRequest.class);
+    }
+
+    @Test
+    public void beginSavepoint() {
+        actionUnimplemented(() -> flightSqlClient.beginSavepoint(fakeTxn(), "fakeName"),
+                FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT, ActionBeginSavepointRequest.class);
+    }
+
+    @Test
+    public void release() {
+        actionUnimplemented(() -> flightSqlClient.release(fakeSavepoint()), FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT, ActionEndSavepointRequest.class);
+    }
+
+    @Test
+    public void rollbackSavepoint() {
+        actionUnimplemented(() -> flightSqlClient.rollback(fakeSavepoint()), FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT, ActionEndSavepointRequest.class);
+    }
+
+    @Test
+    public void cancelQuery() {
+        final FlightInfo info = flightSqlClient.execute("SELECT 1");
+        actionUnimplemented(() -> flightSqlClient.cancelQuery(info), FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY);
+        unpackable(FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY, ActionCancelQueryRequest.class);
+    }
+
+    @Test
+    public void cancelFlightInfo() {
+        // Note: this should likely be tested in the context of Flight, not FlightSQL
+
+        // flightClient.cancelFlightInfo(null);
+    }
+
+    @Test
+    public void unknownAction() {
+        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        final Action action = new Action("SomeFakeAction", new byte[0]);
+        expectException(() -> doAction(action), FlightStatusCode.UNIMPLEMENTED,
+                "No action resolver found for action type 'SomeFakeAction'");
+    }
+
+    private Result doAction(Action action) {
+        final Iterator<Result> it = flightClient.doAction(action);
+        if (!it.hasNext()) {
+            throw new IllegalStateException();
+        }
+        final Result result = it.next();
+        if (it.hasNext()) {
+            throw new IllegalStateException();
+        }
+        return result;
+    }
+
+    private static FlightDescriptor unpackableCommand(Descriptor descriptor) {
+        return unpackableCommand("type.googleapis.com/" + descriptor.getFullName());
+    }
+
+    private static FlightDescriptor unpackableCommand(String typeUrl) {
+        return FlightDescriptor.command(
+                Any.newBuilder().setTypeUrl(typeUrl).setValue(ByteString.copyFrom(new byte[1])).build().toByteArray());
+    }
+
+    private void getSchemaUnimplemented(Runnable r, Descriptor command) {
         // right now our server impl routes all getSchema through their respective commands
         commandUnimplemented(r, command);
     }
 
-    private void commandUnimplemented(Runnable r, String command) {
+    private void commandUnimplemented(Runnable r, Descriptor command) {
+        expectException(r, FlightStatusCode.UNIMPLEMENTED,
+                String.format("FlightSQL command '%s' is unimplemented", command.getFullName()));
+    }
+
+    private void getSchemaUnknown(Runnable r, String command) {
+        // right now our server impl routes all getSchema through their respective commands
+        commandUnknown(r, command);
+    }
+
+    private void commandUnknown(Runnable r, String command) {
+        expectException(r, FlightStatusCode.UNIMPLEMENTED, String.format("FlightSQL command '%s' is unknown", command));
+    }
+
+    private void unpackable(Descriptor descriptor, Class<?> clazz) {
+        final FlightDescriptor flightDescriptor = unpackableCommand(descriptor);
+        getSchemaUnpackable(() -> flightClient.getSchema(flightDescriptor), clazz);
+        commandUnpackable(() -> flightClient.getInfo(flightDescriptor), clazz);
+    }
+
+    private void unpackable(ActionType type, Class<?> actionProto) {
+        // Provided message cannot be unpacked
+        final Action action = new Action(type.getType(), new byte[0]);
+        expectUnpackable(() -> doAction(action), actionProto);
+    }
+
+    private void getSchemaUnpackable(Runnable r, Class<?> clazz) {
+        commandUnpackable(r, clazz);
+    }
+
+    private void commandUnpackable(Runnable r, Class<?> clazz) {
+        expectUnpackable(r, clazz);
+    }
+
+    private void expectUnpackable(Runnable r, Class<?> clazz) {
+        expectException(r, FlightStatusCode.INVALID_ARGUMENT,
+                String.format("Provided message cannot be unpacked as %s", clazz.getName()));
+    }
+
+    private void actionUnimplemented(Runnable r, ActionType actionType) {
+        expectException(r, FlightStatusCode.UNIMPLEMENTED,
+                String.format("FlightSQL Action type '%s' is unimplemented", actionType.getType()));
+    }
+
+    private void expectException(Runnable r, FlightStatusCode code, String messagePart) {
         try {
             r.run();
             failBecauseExceptionWasNotThrown(FlightRuntimeException.class);
         } catch (FlightRuntimeException e) {
-            assertThat(e.status().code()).isEqualTo(FlightStatusCode.UNIMPLEMENTED);
-            assertThat(e).hasMessageContaining(String.format("FlightSQL command '%s' is unimplemented", command));
+            assertThat(e.status().code()).isEqualTo(code);
+            assertThat(e).hasMessageContaining(messagePart);
         }
     }
 
@@ -443,119 +691,40 @@ public class MyTest extends DeephavenApiServerTestBase {
         return new Schema(List.of(fields), FLAT_ATTRIBUTES);
     }
 
-    public static List<List<String>> getResults(FlightStream stream) {
-        final List<List<String>> results = new ArrayList<>();
-        while (stream.next()) {
-            try (final VectorSchemaRoot root = stream.getRoot()) {
-                final long rowCount = root.getRowCount();
-                for (int i = 0; i < rowCount; ++i) {
-                    results.add(new ArrayList<>());
-                }
-
-                root.getSchema()
-                        .getFields()
-                        .forEach(
-                                field -> {
-                                    try (final FieldVector fieldVector = root.getVector(field.getName())) {
-                                        if (fieldVector instanceof VarCharVector) {
-                                            final VarCharVector varcharVector = (VarCharVector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                final Text data = varcharVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : data.toString());
-                                            }
-                                        } else if (fieldVector instanceof IntVector) {
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Object data = fieldVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof VarBinaryVector) {
-                                            final VarBinaryVector varbinaryVector = (VarBinaryVector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                final byte[] data = varbinaryVector.getObject(rowIndex);
-                                                final String output;
-                                                try {
-                                                    output =
-                                                            isNull(data)
-                                                                    ? null
-                                                                    : MessageSerializer.deserializeSchema(
-                                                                            new ReadChannel(
-                                                                                    Channels.newChannel(
-                                                                                            new ByteArrayInputStream(
-                                                                                                    data))))
-                                                                            .toJson();
-                                                } catch (final IOException e) {
-                                                    throw new RuntimeException("Failed to deserialize schema", e);
-                                                }
-                                                results.get(rowIndex).add(output);
-                                            }
-                                        } else if (fieldVector instanceof DenseUnionVector) {
-                                            final DenseUnionVector denseUnionVector = (DenseUnionVector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                final Object data = denseUnionVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof ListVector) {
-                                            for (int i = 0; i < fieldVector.getValueCount(); i++) {
-                                                if (!fieldVector.isNull(i)) {
-                                                    List<Text> elements =
-                                                            (List<Text>) ((ListVector) fieldVector).getObject(i);
-                                                    List<String> values = new ArrayList<>();
-
-                                                    for (Text element : elements) {
-                                                        values.add(element.toString());
-                                                    }
-                                                    results.get(i).add(values.toString());
-                                                }
-                                            }
-
-                                        } else if (fieldVector instanceof UInt4Vector) {
-                                            final UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                final Object data = uInt4Vector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof UInt1Vector) {
-                                            final UInt1Vector uInt1Vector = (UInt1Vector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                final Object data = uInt1Vector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof BitVector) {
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Object data = fieldVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof TimeStampNanoTZVector) {
-                                            TimeStampNanoTZVector timeStampNanoTZVector =
-                                                    (TimeStampNanoTZVector) fieldVector;
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Long data = timeStampNanoTZVector.getObject(rowIndex);
-                                                Instant instant = Instant.ofEpochSecond(0, data);
-                                                results.get(rowIndex).add(isNull(instant) ? null : instant.toString());
-                                            }
-                                        } else if (fieldVector instanceof Float8Vector) {
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Object data = fieldVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof Float4Vector) {
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Object data = fieldVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else if (fieldVector instanceof DecimalVector) {
-                                            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
-                                                Object data = fieldVector.getObject(rowIndex);
-                                                results.get(rowIndex).add(isNull(data) ? null : Objects.toString(data));
-                                            }
-                                        } else {
-                                            System.out.println("Unsupported vector type: " + fieldVector.getClass());
-                                        }
-                                    }
-                                });
-            }
-        }
-        return results;
+    private static void setFooTable() {
+        setSimpleTable("foo_table", "Foo");
     }
 
+    private static void setBarTable() {
+        setSimpleTable("bar_table", "Bar");
+    }
+
+    private static void setSimpleTable(String tableName, String columnName) {
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt(columnName));
+        final Table table = TableTools.newTable(td, TableTools.intCol(columnName, 1, 2, 3));
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
+    }
+
+    private static void consume(FlightStream stream, int expectedFlightCount, int expectedNumRows) {
+        int numRows = 0;
+        int flightCount = 0;
+        while (stream.next()) {
+            ++flightCount;
+            numRows += stream.getRoot().getRowCount();
+        }
+        assertThat(flightCount).isEqualTo(expectedFlightCount);
+        assertThat(numRows).isEqualTo(expectedNumRows);
+    }
+
+    private static SubstraitPlan fakePlan() {
+        return new SubstraitPlan("fake".getBytes(StandardCharsets.UTF_8), "1");
+    }
+
+    private static Transaction fakeTxn() {
+        return new Transaction("fake".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static Savepoint fakeSavepoint() {
+        return new Savepoint("fake".getBytes(StandardCharsets.UTF_8));
+    }
 }

@@ -66,6 +66,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -236,13 +237,22 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     String.format("Unsupported descriptor type '%s'", descriptor.getType()));
         }
+        // Doing as much validation outside of the export as we can.
+        final Any any = parseOrThrow(descriptor.getCmd());
+        final Supplier<Table> command = supplier(session, any, comm(any));
         return session.<Flight.FlightInfo>nonExport().submit(() -> {
-            final Table table = executeCommand(session, descriptor);
+            final Table table = command.get();
             final ExportObject<Table> sse = session.newServerSideExport(table);
             final int exportId = sse.getExportIdInt();
             return TicketRouter.getFlightInfo(table, descriptor,
                     FlightSqlTicketHelper.exportIdToFlightTicket(exportId));
         });
+    }
+
+    private static <T> Supplier<Table> supplier(SessionState sessionState, Any any, Command<T> command) {
+        final T request = command.parse(any);
+        command.validate(request);
+        return () -> command.execute(sessionState, request);
     }
 
     @Override
@@ -334,11 +344,13 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             case END_TRANSACTION_ACTION_TYPE:
             case CANCEL_QUERY_ACTION_TYPE:
             case CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE:
+                // TODO: try to parse request to make sure it's valid?
                 throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
-                        String.format("FlightSQL doAction type '%s' is unimplemented", type));
+                        String.format("FlightSQL Action type '%s' is unimplemented", type));
         }
+        // Should not get to this point, should not be routed here if it's unknown
         throw Exceptions.statusRuntimeException(Code.INTERNAL,
-                String.format("Unexpected FlightSQL doAction type '%s'", type));
+                String.format("FlightSQL Action type '%s' is unknown", type));
     }
 
     private ActionCreatePreparedStatementResult createPreparedStatement(@Nullable SessionState session,
@@ -357,50 +369,42 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     }
 
-    private Table executeCommand(final SessionState sessionState, final Flight.FlightDescriptor descriptor) {
-        final Any any = parseOrThrow(descriptor.getCmd());
+    private Command<?> comm(Any any) {
         final String typeUrl = any.getTypeUrl();
         switch (typeUrl) {
             case COMMAND_STATEMENT_QUERY_TYPE_URL:
-                return execute(sessionState, unpackOrThrow(any, CommandStatementQuery.class));
+                return new CommandStatementQueryImpl();
             case COMMAND_STATEMENT_UPDATE_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandStatementUpdate.class));
+                return new UnsupportedCommand<>(CommandStatementUpdate.class);
             case COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandStatementSubstraitPlan.class));
+                return new UnsupportedCommand<>(CommandStatementSubstraitPlan.class);
             case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
-                return execute(sessionState, unpackOrThrow(any, CommandPreparedStatementQuery.class));
+                return new CommandPreparedStatementQueryImpl();
             case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandPreparedStatementUpdate.class));
+                return new UnsupportedCommand<>(CommandPreparedStatementUpdate.class);
             case COMMAND_GET_TABLE_TYPES_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetTableTypes.class));
+                return new CommandGetTableTypesImpl();
             case COMMAND_GET_CATALOGS_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetCatalogs.class));
+                return new CommandGetCatalogsImpl();
             case COMMAND_GET_DB_SCHEMAS_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetDbSchemas.class));
+                return new CommandGetDbSchemasImpl();
             case COMMAND_GET_TABLES_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetTables.class));
+                return new CommandGetTablesImpl();
             case COMMAND_GET_SQL_INFO_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetSqlInfo.class));
+                return new UnsupportedCommand<>(CommandGetSqlInfo.class);
             case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetCrossReference.class));
+                return new UnsupportedCommand<>(CommandGetCrossReference.class);
             case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetExportedKeys.class));
+                return new UnsupportedCommand<>(CommandGetExportedKeys.class);
             case COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetImportedKeys.class));
+                return new UnsupportedCommand<>(CommandGetImportedKeys.class);
             case COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetPrimaryKeys.class));
+                return new UnsupportedCommand<>(CommandGetPrimaryKeys.class);
             case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandGetXdbcTypeInfo.class));
+                return new UnsupportedCommand<>(CommandGetXdbcTypeInfo.class);
         }
         throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
-                String.format("FlightSQL command typeUrl '%s' is unimplemented", typeUrl));
-    }
-
-    private Table execute(SessionState sessionState, CommandStatementQuery query) {
-        if (query.hasTransactionId()) {
-            throw transactionIdsNotSupported();
-        }
-        return executeSqlQuery(sessionState, query.getQuery());
+                String.format("FlightSQL command '%s' is unknown", typeUrl));
     }
 
     private Table execute(SessionState sessionState, CommandPreparedStatementQuery query) {
@@ -442,42 +446,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 : TableTools.newTable(GET_TABLES_DEFINITION_NO_SCHEMA);
     }
 
-    private Table execute(CommandGetSqlInfo request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandGetCrossReference request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandGetExportedKeys request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandGetImportedKeys request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandGetPrimaryKeys request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandGetXdbcTypeInfo request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandStatementSubstraitPlan request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandPreparedStatementUpdate request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
-    private Table execute(CommandStatementUpdate request) {
-        throw commandNotSupported(request.getDescriptorForType());
-    }
-
     private static StatusRuntimeException commandNotSupported(Descriptor descriptor) {
         throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
                 String.format("FlightSQL command '%s' is unimplemented", descriptor.getFullName()));
@@ -516,6 +484,123 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw new StatusRuntimeException(Status.INVALID_ARGUMENT
                     .withDescription("Provided message cannot be unpacked as " + as.getName() + ": " + e)
                     .withCause(e));
+        }
+    }
+
+
+    interface Command<T> {
+        T parse(Any any);
+
+        void validate(T command);
+
+        Table execute(SessionState sessionState, T command);
+    }
+
+    static abstract class CommandBase<T extends Message> implements Command<T> {
+        private final Class<T> clazz;
+
+        public CommandBase(Class<T> clazz) {
+            this.clazz = Objects.requireNonNull(clazz);
+        }
+
+        @Override
+        public T parse(Any any) {
+            return unpackOrThrow(any, clazz);
+        }
+
+        @Override
+        public void validate(T command) {
+
+        }
+    }
+
+    static class UnsupportedCommand<T extends Message> extends CommandBase<T> {
+        public UnsupportedCommand(Class<T> clazz) {
+            super(clazz);
+        }
+
+        @Override
+        public void validate(T command) {
+            throw commandNotSupported(command.getDescriptorForType());
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, T command) {
+            throw new IllegalStateException();
+        }
+    }
+
+    class CommandStatementQueryImpl extends CommandBase<CommandStatementQuery> {
+
+        public CommandStatementQueryImpl() {
+            super(CommandStatementQuery.class);
+        }
+
+        @Override
+        public void validate(CommandStatementQuery command) {
+            if (command.hasTransactionId()) {
+                throw transactionIdsNotSupported();
+            }
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandStatementQuery command) {
+            return executeSqlQuery(sessionState, command.getQuery());
+        }
+    }
+
+    class CommandPreparedStatementQueryImpl extends CommandBase<CommandPreparedStatementQuery> {
+        public CommandPreparedStatementQueryImpl() {
+            super(CommandPreparedStatementQuery.class);
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandPreparedStatementQuery command) {
+            return FlightSqlResolver.this.execute(sessionState, command);
+        }
+    }
+
+    class CommandGetTableTypesImpl extends CommandBase<CommandGetTableTypes> {
+        public CommandGetTableTypesImpl() {
+            super(CommandGetTableTypes.class);
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandGetTableTypes command) {
+            return FlightSqlResolver.this.execute(command);
+        }
+    }
+
+    class CommandGetCatalogsImpl extends CommandBase<CommandGetCatalogs> {
+        public CommandGetCatalogsImpl() {
+            super(CommandGetCatalogs.class);
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandGetCatalogs command) {
+            return FlightSqlResolver.this.execute(command);
+        }
+    }
+
+    class CommandGetDbSchemasImpl extends CommandBase<CommandGetDbSchemas> {
+        public CommandGetDbSchemasImpl() {
+            super(CommandGetDbSchemas.class);
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandGetDbSchemas command) {
+            return FlightSqlResolver.this.execute(command);
+        }
+    }
+
+    class CommandGetTablesImpl extends CommandBase<CommandGetTables> {
+        public CommandGetTablesImpl() {
+            super(CommandGetTables.class);
+        }
+
+        @Override
+        public Table execute(SessionState sessionState, CommandGetTables command) {
+            return FlightSqlResolver.this.execute(command);
         }
     }
 }

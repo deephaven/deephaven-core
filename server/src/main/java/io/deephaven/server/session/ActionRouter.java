@@ -48,8 +48,7 @@ public final class ActionRouter {
             // Similar to the default unimplemented message from
             // org.apache.arrow.flight.impl.FlightServiceGrpc.AsyncService.doAction
             throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
-                    String.format("Method %s is unimplemented, no doAction resolver found for for action type '%s'",
-                            FlightServiceGrpc.getDoActionMethod(), type));
+                    String.format("No action resolver found for action type '%s'", type));
         }
         actionResolver.doAction(session, request, visitor);
     }
