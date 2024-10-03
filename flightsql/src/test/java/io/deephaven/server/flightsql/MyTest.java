@@ -420,16 +420,13 @@ public class MyTest extends DeephavenApiServerTestBase {
         // Note: this is the same descriptor as the executeSubstrait
         getSchemaUnimplemented(() -> flightSqlClient.getExecuteSubstraitSchema(fakePlan()),
                 CommandStatementSubstraitPlan.getDescriptor());
-        // todo: this does a doPut though
-        commandUnimplemented(() -> flightSqlClient.executeSubstraitUpdate(fakePlan()),
-                CommandStatementSubstraitPlan.getDescriptor());
+        expectUnpublishable(() -> flightSqlClient.executeSubstraitUpdate(fakePlan()));
         unpackable(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
     }
 
     @Test
     public void insert1() {
-        expectException(() -> flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')"),
-                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL descriptors cannot be published to");
+        expectUnpublishable(() -> flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')"));
         unpackable(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
     }
 
@@ -665,6 +662,10 @@ public class MyTest extends DeephavenApiServerTestBase {
     private void expectUnpackable(Runnable r, Class<?> clazz) {
         expectException(r, FlightStatusCode.INVALID_ARGUMENT,
                 String.format("Provided message cannot be unpacked as %s", clazz.getName()));
+    }
+
+    private void expectUnpublishable(Runnable r) {
+        expectException(r, FlightStatusCode.INVALID_ARGUMENT, "FlightSQL descriptors cannot be published to");
     }
 
     private void actionUnimplemented(Runnable r, ActionType actionType) {
