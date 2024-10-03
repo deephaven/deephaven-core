@@ -119,17 +119,16 @@ public class BusinessCalendar extends Calendar {
 
         while (date.isBefore(endDate)) {
             final CalendarDay<Instant> bs = calendarDay(date);
-            final boolean ibd = bs.isBusinessDay();
-            businessDays += ibd ? 1 : 0;
-            nonBusinessDays += ibd ? 0 : 1;
-            businessTimeNanos += bs.businessNanos();
 
-            if (ibd) {
+            if (bs.isBusinessDay()) {
+                ++businessDays;
                 businessDates.add(date);
             } else {
+                ++nonBusinessDays;
                 nonBusinessDates.add(date);
             }
 
+            businessTimeNanos += bs.businessNanos();
             date = date.plusDays(1);
         }
 
