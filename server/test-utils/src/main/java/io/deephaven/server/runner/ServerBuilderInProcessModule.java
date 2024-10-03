@@ -5,8 +5,8 @@ package io.deephaven.server.runner;
 
 import dagger.Module;
 import dagger.Provides;
-import dagger.Reusable;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.deephaven.server.grpc.UserAgentContext;
 import io.grpc.BindableService;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
@@ -47,14 +47,15 @@ public class ServerBuilderInProcessModule {
 
         services.forEach(builder::addService);
         interceptors.forEach(builder::intercept);
+        builder.intercept(UserAgentContext.interceptor());
 
         return GrpcServer.of(builder.build());
     }
 
     @Provides
-    @Reusable
     static ManagedChannelBuilder<?> channelBuilder(@Named("serverName") String serverName) {
-        return InProcessChannelBuilder.forName(serverName);
+        return InProcessChannelBuilder.forName(serverName)
+                .userAgent(ServerBuilderInProcessModule.class.getSimpleName());
     }
 
     /**
