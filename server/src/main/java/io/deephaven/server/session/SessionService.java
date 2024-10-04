@@ -338,7 +338,7 @@ public class SessionService {
                 if (session != null) {
                     return session;
                 }
-            } catch (IllegalArgumentException | InvalidUuidException ignored) {
+            } catch (InvalidUuidException ignored) {
             }
 
             // In case we don't have another handler for Bearer, look for nested tokens to try later
