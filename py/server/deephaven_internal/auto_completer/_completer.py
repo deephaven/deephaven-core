@@ -3,10 +3,12 @@
 #
 from __future__ import annotations
 from enum import Enum
+from docstring_parser import parse
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
 from importlib.metadata import version
+from ._signature_help import _get_signature_result
 import sys
 import warnings
 
@@ -78,6 +80,8 @@ class Completer:
     def __init__(self):
         self._docs = {}
         self._versions = {}
+        # Cache for signature markdown
+        self.signature_cache = {}
         # we will replace this w/ top-level globals() when we open the document
         self.__scope = globals()
         # might want to make this a {uri: []} instead of []
@@ -214,14 +218,7 @@ class Completer:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
                 return []
-
-            result: list = [
-                signature.to_string(),
-                signature.docstring(raw=True),
-                [[param.to_string().strip(), param.docstring(raw=True).strip()] for param in signature.params],
-                signature.index if signature.index is not None else -1
-            ]
-            results.append(result)
+            results.append(_get_signature_result(signature))
 
         return results
 
