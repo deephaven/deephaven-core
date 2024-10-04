@@ -22,7 +22,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
 
     private String jdbcUrl() {
         return String.format(
-                "jdbc:arrow-flight-sql://localhost:%d/?Authorization=Anonymous&useEncryption=false&x-deephaven-auth-cookie-request=true",
+                "jdbc:arrow-flight-sql://localhost:%d/?Authorization=Anonymous&useEncryption=false",
                 localPort);
     }
 
@@ -58,6 +58,9 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         try (
                 final Connection connection = connect();
                 final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 as Foo, 2 as Bar")) {
+            if (preparedStatement.execute()) {
+                consume(preparedStatement.getResultSet(), 2, 1);
+            }
             if (preparedStatement.execute()) {
                 consume(preparedStatement.getResultSet(), 2, 1);
             }

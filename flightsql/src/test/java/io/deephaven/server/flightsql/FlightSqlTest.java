@@ -275,6 +275,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void getTables() throws Exception {
+        setFooTable();
+        setBarTable();
         // Without schema field
         {
             final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
@@ -286,7 +288,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 final FlightInfo info = flightSqlClient.getTables(null, null, null, null, false);
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 0, 0);
+                    consume(stream, 1, 2);
                 }
             }
         }
@@ -303,7 +305,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 final FlightInfo info = flightSqlClient.getTables(null, null, null, null, true);
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 0, 0);
+                    consume(stream, 1, 2);
                 }
             }
         }
@@ -515,6 +517,16 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
+    public void commandStatementIngest() {
+        // This is a real newer FlightSQL command.
+        // Once we upgrade to newer FlightSQL, we can change this to Unimplemented and use the proper APIs.
+        final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandStatementIngest";
+        final FlightDescriptor descriptor = unpackableCommand(typeUrl);
+        getSchemaUnknown(() -> flightClient.getSchema(descriptor), typeUrl);
+        commandUnknown(() -> flightClient.getInfo(descriptor), typeUrl);
+    }
+
+    @Test
     public void unknownCommandLooksLikeFlightSql() {
         final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandLooksRealButDoesNotExist";
         final FlightDescriptor descriptor = unpackableCommand(typeUrl);
@@ -715,6 +727,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     private static void consume(FlightStream stream, int expectedFlightCount, int expectedNumRows) {
         int numRows = 0;
         int flightCount = 0;
+        // stream.hasRoot();?
         while (stream.next()) {
             ++flightCount;
             numRows += stream.getRoot().getRowCount();

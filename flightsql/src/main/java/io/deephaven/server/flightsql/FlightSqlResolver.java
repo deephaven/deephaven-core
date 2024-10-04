@@ -16,7 +16,9 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -70,6 +72,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -127,10 +130,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             .map(ActionType::getType)
             .collect(Collectors.toSet());
 
-    private static final Set<ActionType> SUPPORTED_FLIGHT_SQL_ACTION_TYPES = Set.of(
-            FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT,
-            FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
-
     private static final String FLIGHT_SQL_COMMAND_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
 
     @VisibleForTesting
@@ -185,33 +184,41 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @VisibleForTesting
     static final String COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL = FLIGHT_SQL_COMMAND_PREFIX + "CommandGetXdbcTypeInfo";
 
+    private static final String CATALOG_NAME = "catalog_name";
+    private static final String DB_SCHEMA_NAME = "db_schema_name";
+    private static final String TABLE_TYPE = "table_type";
+    private static final String TABLE_NAME = "table_name";
+    private static final String TABLE_SCHEMA = "table_schema";
+
+    private static final String TABLE_TYPE_TABLE = "TABLE";
+
     @VisibleForTesting
     static final TableDefinition GET_TABLE_TYPES_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("table_type"));
+            ColumnDefinition.ofString(TABLE_TYPE));
 
     @VisibleForTesting
     static final TableDefinition GET_CATALOGS_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("catalog_name"));
+            ColumnDefinition.ofString(CATALOG_NAME));
 
     @VisibleForTesting
     static final TableDefinition GET_DB_SCHEMAS_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("catalog_name"),
-            ColumnDefinition.ofString("db_schema_name"));
+            ColumnDefinition.ofString(CATALOG_NAME),
+            ColumnDefinition.ofString(DB_SCHEMA_NAME));
 
     @VisibleForTesting
     static final TableDefinition GET_TABLES_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("catalog_name"),
-            ColumnDefinition.ofString("db_schema_name"),
-            ColumnDefinition.ofString("table_name"),
-            ColumnDefinition.ofString("table_type"),
-            ColumnDefinition.of("table_schema", Type.byteType().arrayType()));
+            ColumnDefinition.ofString(CATALOG_NAME),
+            ColumnDefinition.ofString(DB_SCHEMA_NAME),
+            ColumnDefinition.ofString(TABLE_NAME),
+            ColumnDefinition.ofString(TABLE_TYPE),
+            ColumnDefinition.of(TABLE_SCHEMA, Type.byteType().arrayType()));
 
     @VisibleForTesting
     static final TableDefinition GET_TABLES_DEFINITION_NO_SCHEMA = TableDefinition.of(
-            ColumnDefinition.ofString("catalog_name"),
-            ColumnDefinition.ofString("db_schema_name"),
-            ColumnDefinition.ofString("table_name"),
-            ColumnDefinition.ofString("table_type"));
+            ColumnDefinition.ofString(CATALOG_NAME),
+            ColumnDefinition.ofString(DB_SCHEMA_NAME),
+            ColumnDefinition.ofString(TABLE_NAME),
+            ColumnDefinition.ofString(TABLE_TYPE));
 
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
     // TicketResolvers).
@@ -312,6 +319,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final Supplier<Table> command = supplier(session, commandHandler(any), any);
         return session.<Flight.FlightInfo>nonExport().submit(() -> {
             final Table table = command.get();
+            // Note: the only way we clean up these tables is when the session is cleaned up.
             final ExportObject<Table> sse = session.newServerSideExport(table);
             final int exportId = sse.getExportIdInt();
             return TicketRouter.getFlightInfo(table, descriptor,
@@ -379,7 +387,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private Table execute(CommandGetTableTypes request) {
         return TableTools.newTable(GET_TABLE_TYPES_DEFINITION,
-                TableTools.stringCol("table_type", "TABLE"));
+                TableTools.stringCol(TABLE_TYPE, TABLE_TYPE_TABLE));
     }
 
     private Table execute(CommandGetCatalogs request) {
@@ -391,9 +399,37 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     private Table execute(CommandGetTables request) {
-        return request.getIncludeSchema()
-                ? TableTools.newTable(GET_TABLES_DEFINITION)
-                : TableTools.newTable(GET_TABLES_DEFINITION_NO_SCHEMA);
+        final boolean includeSchema = request.getIncludeSchema();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Table> queryScopeTables =
+                (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
+        final int size = queryScopeTables.size();
+        final String[] catalogNames = new String[size];
+        final String[] dbSchemaNames = new String[size];
+        final String[] tableNames = new String[size];
+        final String[] tableTypes = new String[size];
+        final byte[][] tableSchemas = includeSchema ? new byte[size][] : null;
+        int ix = 0;
+        for (Entry<String, Table> e : queryScopeTables.entrySet()) {
+            catalogNames[ix] = null;
+            dbSchemaNames[ix] = null;
+            tableNames[ix] = e.getKey();
+            tableTypes[ix] = TABLE_TYPE_TABLE;
+            if (includeSchema) {
+                tableSchemas[ix] = BarrageUtil.schemaBytesFromTable(e.getValue()).toByteArray();
+            }
+            ++ix;
+        }
+        final ColumnHolder<String> c1 = TableTools.stringCol(CATALOG_NAME, catalogNames);
+        final ColumnHolder<String> c2 = TableTools.stringCol(DB_SCHEMA_NAME, dbSchemaNames);
+        final ColumnHolder<String> c3 = TableTools.stringCol(TABLE_NAME, tableNames);
+        final ColumnHolder<String> c4 = TableTools.stringCol(TABLE_TYPE, tableTypes);
+        final ColumnHolder<byte[]> c5 = includeSchema
+                ? new ColumnHolder<>(TABLE_SCHEMA, byte[].class, byte.class, false, tableSchemas)
+                : null;
+        return includeSchema
+                ? TableTools.newTable(GET_TABLES_DEFINITION, c1, c2, c3, c4, c5)
+                : TableTools.newTable(GET_TABLES_DEFINITION_NO_SCHEMA, c1, c2, c3, c4);
     }
 
     interface CommandHandler<T> {
