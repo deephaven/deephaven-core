@@ -348,7 +348,7 @@ public class WorkerConnection {
                     state = State.Failed;
                     JsLog.debug("Failed to connect to worker.");
 
-                    final String failure = fail.toString();
+                    final String failure = String.valueOf(fail);
 
                     // notify all pending fetches that they failed
                     onOpen.forEach(c -> c.onFailure(failure));
@@ -386,7 +386,7 @@ public class WorkerConnection {
 
             // signal that the user needs to re-authenticate, make a new session
             // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
-            info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+            info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
         } else if (status.isTransportError()) {
             // fire deprecated event for now
             info.notifyConnectionError(status);
@@ -501,15 +501,15 @@ public class WorkerConnection {
                         metadata.delete(FLIGHT_AUTH_HEADER_NAME);
 
                         // Fire an event for the UI to attempt to re-auth
-                        info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+                        info.fireCriticalEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
 
                         // We return here rather than continue and call checkStatus()
                         return Promise.reject("Authentication failed, please reconnect");
                     }
-                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getMessage().toString(),
+                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getStatusMessage(),
                             result.getTrailers()));
-                    if (result.getMessage() == null || result.getMessage().toString().isEmpty()) {
-                        return Promise.reject(result.getMessage());
+                    if (result.getStatusMessage() != null && !result.getStatusMessage().isEmpty()) {
+                        return Promise.reject(result.getStatusMessage());
                     } else {
                         return Promise.reject("Error occurred while authenticating, gRPC status " + result.getStatus());
                     }
