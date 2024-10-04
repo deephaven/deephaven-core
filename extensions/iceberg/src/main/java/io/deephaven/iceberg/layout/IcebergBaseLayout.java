@@ -9,8 +9,10 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
+import io.deephaven.iceberg.relative.RelativeFileIO;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +56,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final Map<URI, IcebergTableLocationKey> cache;
 
     /**
+     * The data instructions provider for creating instructions from URI and user-supplied properties.
+     */
+    final DataInstructionsProviderLoader dataInstructionsProvider;
+
+    /**
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
      * accessed while synchronized on {@code this}.
      */
@@ -79,8 +86,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     }
                 }
 
-                // Add the data instructions.
-                instructions.dataInstructions().ifPresent(builder::setSpecialInstructions);
+                // Add the data instructions if provided as part of the IcebergInstructions.
+                if (instructions.dataInstructions().isPresent()) {
+                    builder.setSpecialInstructions(instructions.dataInstructions().get());
+                } else {
+                    // Attempt to create data instructions from the properties collection and URI.
+                    final Object dataInstructions = dataInstructionsProvider.fromServiceLoader(fileUri);
+                    if (dataInstructions != null) {
+                        builder.setSpecialInstructions(dataInstructions);
+                    }
+                }
 
                 parquetInstructions = builder.build();
             }
@@ -102,17 +117,28 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableDef = tableDef;
         this.table = table;
         this.snapshot = tableSnapshot;
         this.fileIO = fileIO;
         this.instructions = instructions;
+        this.dataInstructionsProvider = dataInstructionsProvider;
 
         this.cache = new HashMap<>();
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri);
+
+    @NotNull
+    private URI dataFileUri(@NotNull DataFile df) {
+        String path = df.path().toString();
+        if (fileIO instanceof RelativeFileIO) {
+            path = ((RelativeFileIO) fileIO).absoluteLocation(path);
+        }
+        return FileUtils.convertToURI(path, false);
+    }
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
@@ -128,7 +154,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO)) {
                     for (DataFile df : reader) {
-                        final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
+                        final URI fileUri = dataFileUri(df);
                         final IcebergTableLocationKey locationKey =
                                 cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
                         if (locationKey != null) {

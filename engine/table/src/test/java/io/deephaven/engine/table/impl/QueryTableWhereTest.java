@@ -31,6 +31,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
@@ -43,7 +44,6 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1646,5 +1646,35 @@ public abstract class QueryTableWhereTest {
         ExecutionContext.getContext().getQueryScope().putParam("bi_5", BigInteger.valueOf(5));
         final Table bi_result = table.where("X >= bi_5");
         assertTableEquals(range_result, bi_result);
+    }
+
+    @Test
+    public void testAddAndRemoveRefilter() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
+                intCol("Sentinel", 10, 20, 30));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable setTable = testRefreshingTable(i(10, 30).toTracking(), stringCol("FV", "A", "C"));
+
+        final Table result = source.whereIn(setTable, "FV");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final PrintListener plResult = new PrintListener("testAddAndRemoveRefilter-result", result);
+        assertTableEquals(source.where("FV in `A`, `C`"), result);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(20), stringCol("FV", "B"));
+            TstUtils.removeRows(setTable, i(30));
+            setTable.notifyListeners(i(20), i(30), i());
+            TstUtils.addToTable(source, i(10), stringCol("FV", "A"), intCol("Sentinel", 40));
+            source.notifyListeners(i(10), i(10), i());
+        });
+
+        assertEquals(i(10, 20), listener.update.added());
+        assertEquals(i(10, 30), listener.update.removed());
+        assertEquals(i(), listener.update.modified());
+
+        assertTableEquals(source.where("FV in `A`, `B`"), result);
     }
 }

@@ -8,6 +8,8 @@ import io.deephaven.extensions.s3.testlib.SingletonContainers;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import java.util.Map;
+
 public class IcebergLocalStackTest extends IcebergToolsTest {
 
     @BeforeClass
@@ -24,5 +26,10 @@ public class IcebergLocalStackTest extends IcebergToolsTest {
     @Override
     public S3AsyncClient s3AsyncClient() {
         return SingletonContainers.LocalStack.s3AsyncClient();
+    }
+
+    @Override
+    public Map<String, String> s3Properties() {
+        return SingletonContainers.LocalStack.s3Properties();
     }
 }

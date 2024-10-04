@@ -36,6 +36,9 @@ public class ReplicateBarrageUtils {
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/IntVectorExpansionKernel.java", "Int");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/LongVectorExpansionKernel.java", "Long");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/DoubleVectorExpansionKernel.java", "Double");
+
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                "web/client-api/src/main/java/io/deephaven/web/client/api/barrage/data/WebCharColumnData.java");
     }
 
     private static void fixupVectorExpansionKernel(final @NotNull String path, final @NotNull String type)

@@ -3,13 +3,15 @@
 //
 package io.deephaven.extensions.s3;
 
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+
 public interface Credentials {
 
     /**
-     * The default credentials.
+     * Default credentials provider that looks for credentials at a number of locations as described in
+     * {@link DefaultCredentialsProvider} and falls back to anonymous credentials if no credentials are found.
      *
-     * @see <a href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html">Default
-     *      credentials provider chain</a>
+     * @see DefaultCredentialsProvider
      */
     static Credentials defaultCredentials() {
         return DefaultCredentials.DEFAULT_CREDENTIALS;

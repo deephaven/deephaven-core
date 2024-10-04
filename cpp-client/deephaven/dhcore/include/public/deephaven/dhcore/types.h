@@ -21,11 +21,14 @@ struct ElementTypeId {
     kInt8, kInt16, kInt32, kInt64,
     kFloat, kDouble,
     kBool, kString, kTimestamp,
-    kList
+    kList,
+    kLocalDate, kLocalTime
   };
 };
 
 class DateTime;
+class LocalDate;
+class LocalTime;
 
 template<typename T>
 void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
@@ -68,6 +71,14 @@ void VisitElementTypeId(ElementTypeId::Enum type_id, T *visitor) {
     }
     case ElementTypeId::kTimestamp: {
       visitor->template operator()<deephaven::dhcore::DateTime>();
+      break;
+    }
+    case ElementTypeId::kLocalDate: {
+      visitor->template operator()<deephaven::dhcore::LocalDate>();
+      break;
+    }
+    case ElementTypeId::kLocalTime: {
+      visitor->template operator()<deephaven::dhcore::LocalTime>();
       break;
     }
     default: {
@@ -315,12 +326,37 @@ struct DeephavenTraits<DateTime> {
   static constexpr bool kIsNumeric = false;
 };
 
+template<>
+struct DeephavenTraits<LocalDate> {
+  static constexpr bool kIsNumeric = false;
+};
+
+template<>
+struct DeephavenTraits<LocalTime> {
+  static constexpr bool kIsNumeric = false;
+};
+
 /**
  * The Deephaven DateTime type. Records nanoseconds relative to the epoch (January 1, 1970) UTC.
  * Times before the epoch can be represented with negative nanosecond values.
  */
 class DateTime {
 public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<DateTime> &&
+        std::has_unique_object_representations_v<DateTime> &&
+        std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
   /**
    * Converts nanoseconds-since-UTC-epoch to DateTime. The Deephaven null value sentinel is
    * turned into DateTime(0).
@@ -401,6 +437,151 @@ private:
     return !(lhs == rhs);
   }
 };
+
+/**
+ * The Deephaven LocalDate type which corresponds to java.time.LocalDate.
+ * For consistency with the Arrow type we use, stores its value in units of milliseconds.
+ * However we do not allow fractional days, so only millisecond values that are an even
+ * number of days are permitted.
+ */
+class LocalDate {
+public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalDate> &&
+            std::has_unique_object_representations_v<LocalDate> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
+  /**
+   * Creates an instance of LocalDate from the specified year, month, and day.
+   */
+  static LocalDate Of(int32_t year, int32_t month, int32_t day_of_month);
+
+  /**
+   * Creates an instance of LocalDate from milliseconds-since-UTC-epoch.
+   * The Deephaven null value sentinel is turned into LocalDate(0).
+   * @param millis Milliseconds since the epoch (January 1, 1970 UTC).
+   * An exception is thrown if millis is not an even number of days.
+   * @return The corresponding LocalDate
+   */
+  static LocalDate FromMillis(int64_t millis) {
+    if (millis == DeephavenConstants::kNullLong) {
+      return LocalDate(0);
+    }
+    return LocalDate(millis);
+  }
+
+  /**
+   * Default constructor. Sets the LocalDate equal to the null value.
+   */
+  LocalDate() = default;
+
+  /**
+   * Sets the DateTime to the specified number of milliseconds relative to the epoch.
+   * Currently we will throw an exception if millis is not an even number of days.
+   * @param millis Milliseconds since the epoch (January 1, 1970 UTC).
+   */
+  explicit LocalDate(int64_t millis);
+
+  /**
+   * The LocalDate as expressed in milliseconds since the epoch. Can be negative.
+   */
+  [[nodiscard]]
+  int64_t Millis() const { return millis_; }
+
+private:
+  int64_t millis_ = 0;
+
+  friend std::ostream &operator<<(std::ostream &s, const LocalDate &o);
+
+  friend bool operator==(const LocalDate &lhs, const LocalDate &rhs) {
+    return lhs.millis_ == rhs.millis_;
+  }
+
+  friend bool operator!=(const LocalDate &lhs, const LocalDate &rhs) {
+    return !(lhs == rhs);
+  }
+};
+
+/**
+ * The Deephaven LocalTime type which corresponds to java.time.LocalTime. Records
+ * nanoseconds since midnight (of some unspecified reference day).
+ */
+class LocalTime {
+public:
+  using rep_t = int64_t;
+
+  /**
+   * This method exists to document and enforce an assumption in Cython, namely that this
+   * class has the same representation as an int64_t. This constexpr method always returns
+   * true (or fails to compile).
+   */
+  static constexpr bool IsBlittableToInt64() {
+    static_assert(
+        std::is_trivially_copyable_v<LocalTime> &&
+            std::has_unique_object_representations_v<LocalTime> &&
+            std::is_same_v<rep_t, std::int64_t>);
+    return true;
+  }
+
+  /**
+   * Creates an instance of LocalTime from the specified hour, minute, and second.
+   */
+  static LocalTime Of(int32_t hour, int32_t minute, int32_t second);
+
+  /**
+   * Converts nanoseconds-since-start-of-day to LocalTime. The Deephaven null value sentinel is
+   * turned into LocalTime(0).
+   * TODO(kosak): find out null convention
+   * @param nanos Nanoseconds since the start of the day.
+   * @return The corresponding LocalTime.
+   */
+  static LocalTime FromNanos(int64_t nanos) {
+    if (nanos == DeephavenConstants::kNullLong) {
+      return LocalTime(0);
+    }
+    return LocalTime(nanos);
+  }
+
+  /**
+   * Default constructor. Sets the DateTime equal to the epoch.
+   */
+  LocalTime() = default;
+
+  /**
+   * Sets the LocalTime to the specified number of nanoseconds relative to the start of the day.
+   * @param nanos Nanoseconds since the start of the day.
+   */
+  explicit LocalTime(int64_t nanos);
+
+  [[nodiscard]]
+  int64_t Nanos() const { return nanos_; }
+
+private:
+  int64_t nanos_ = 0;
+
+  friend std::ostream &operator<<(std::ostream &s, const LocalTime &o);
+
+  friend bool operator==(const LocalTime &lhs, const LocalTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  friend bool operator!=(const LocalTime &lhs, const LocalTime &rhs) {
+    return !(lhs == rhs);
+  }
+};
+
 }  // namespace deephaven::dhcore
 
 template<> struct fmt::formatter<deephaven::dhcore::DateTime> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::LocalDate> : ostream_formatter {};
+template<> struct fmt::formatter<deephaven::dhcore::LocalTime> : ostream_formatter {};

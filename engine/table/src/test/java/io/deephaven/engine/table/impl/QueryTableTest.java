@@ -3848,6 +3848,79 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, s2, r2).getUpdateGraph()));
     }
 
+    public void testColumnSourceCast() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("MyTestStrCol", "A", "B", "C"),
+                TableTools.col("MyTestArrCol", new String[] {"A0", "A1"}, new String[] {"B0", "B1"},
+                        new String[] {"C0", "C1"}));
+
+        /* Test getting column sources with checked types */
+
+        // Test getColumnSource for MyTestStrCol
+        ColumnSource<CharSequence> stringColSource = testTable.getColumnSource("MyTestStrCol", CharSequence.class);
+        assertNotNull(stringColSource);
+        assertEquals(String.class, stringColSource.getType()); // actual type is still String
+
+        // Test getColumnSource for MyTestStrCol with wrong type and verify exception message
+        ClassCastException colTypeException = Assert.assertThrows(ClassCastException.class, () -> {
+            ColumnSource<Integer> intColSource = testTable.getColumnSource("MyTestStrCol", Integer.class);
+        });
+        assertEquals("Cannot convert ColumnSource[MyTestStrCol] of type java.lang.String to type java.lang.Integer",
+                colTypeException.getMessage());
+
+        // Test getColumnSource for MyTestArrCol
+        ColumnSource<CharSequence[]> arrColSource =
+                testTable.getColumnSource("MyTestArrCol", CharSequence[].class, CharSequence.class);
+        assertNotNull(arrColSource);
+        assertEquals(String[].class, arrColSource.getType());
+        assertEquals(String.class, arrColSource.getComponentType());
+
+        // Test getColumnSource for MyTestArrCol with a wrong component type and verify exception message
+        ClassCastException wrongComponentException = Assert.assertThrows(ClassCastException.class, () -> {
+            ColumnSource<CharSequence[]> wrongComponentTypeSource =
+                    testTable.getColumnSource("MyTestArrCol", CharSequence[].class, Integer.class);
+        });
+        assertEquals(
+                "Cannot convert ColumnSource[MyTestArrCol] componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.CharSequence;)",
+                wrongComponentException.getMessage());
+
+
+        /* Verify exception messages of underlying ColumnSource.cast method, with and without column name specified */
+
+        ColumnSource<?> rawStrColSource = testTable.getColumnSource("MyTestStrCol");
+        // cast() without component type, with column name specified
+        ClassCastException castExceptionNoCompWithColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawStrColSource.cast(Boolean.class, "MyTestStrCol");
+        });
+        assertEquals("Cannot convert ColumnSource[MyTestStrCol] of type java.lang.String to type java.lang.Boolean",
+                castExceptionNoCompWithColName.getMessage());
+
+        // cast() without component type and no column name specified
+        ClassCastException castExceptionNoCompNoColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawStrColSource.cast(Boolean.class);
+        });
+        assertEquals("Cannot convert ColumnSource of type java.lang.String to type java.lang.Boolean",
+                castExceptionNoCompNoColName.getMessage());
+
+        ColumnSource<Object> rawArrColSource = testTable.getColumnSource("MyTestArrCol");
+        // cast() with component type and column name specified
+        ClassCastException castExceptionWithCompAndColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawArrColSource.cast(Object[].class, Integer.class, "MyTestArrCol");
+        });
+        assertEquals(
+                "Cannot convert ColumnSource[MyTestArrCol] componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
+                castExceptionWithCompAndColName.getMessage());
+
+        // cast() with component type and no column name specified
+        ClassCastException castExceptionWithCompNoColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawArrColSource.cast(Object[].class, Integer.class);
+        });
+        assertEquals(
+                "Cannot convert ColumnSource componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
+                castExceptionWithCompNoColName.getMessage());
+    }
+
     private static final class DummyUpdateGraph implements UpdateGraph {
 
         private final String name;

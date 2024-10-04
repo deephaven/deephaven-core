@@ -99,7 +99,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
-        return rawColumnSource.cast(clazz);
+        return rawColumnSource.cast(clazz, sourceName);
     }
 
     @Override
@@ -109,7 +109,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         @SuppressWarnings("rawtypes")
         ColumnSource rawColumnSource = getColumnSource(sourceName);
         // noinspection unchecked
-        return rawColumnSource.cast(clazz, componentType);
+        return rawColumnSource.cast(clazz, componentType, sourceName);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

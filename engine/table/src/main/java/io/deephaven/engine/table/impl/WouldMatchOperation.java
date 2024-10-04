@@ -432,14 +432,21 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void requestRecomputeUnmatched() {
-            // TODO: No need to recompute matched rows
+            // TODO: No need to recompute matched rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }
 
         @Override
         public void requestRecomputeMatched() {
-            // TODO: No need to recompute unmatched rows
+            // TODO: No need to recompute unmatched rows (https://github.com/deephaven/deephaven-core/issues/6083)
+            doRecompute = true;
+            Require.neqNull(mergedListener, "mergedListener").notifyChanges();
+        }
+
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            // TODO: No need to recompute the remaining rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }

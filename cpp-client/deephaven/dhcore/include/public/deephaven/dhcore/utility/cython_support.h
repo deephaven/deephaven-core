@@ -20,6 +20,10 @@ public:
       const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
   static std::shared_ptr<ColumnSource> CreateDateTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
       const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
+  static std::shared_ptr<ColumnSource> CreateLocalDateColumnSource(const int64_t *data_begin, const int64_t *data_end,
+      const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
+  static std::shared_ptr<ColumnSource> CreateLocalTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
+      const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements);
 
   static ElementTypeId::Enum GetElementTypeId(const ColumnSource &column_source);
 };
