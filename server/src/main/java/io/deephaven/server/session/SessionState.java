@@ -1561,28 +1561,6 @@ public class SessionState {
         }
     }
 
-    private static ExportErrorHandler wrap(Context context, ExportErrorHandler handler) {
-        return (resultState, errorContext, cause, dependentExportId) -> {
-            final Context prev = context.attach();
-            try {
-                handler.onError(resultState, errorContext, cause, dependentExportId);
-            } finally {
-                context.detach(prev);
-            }
-        };
-    }
-
-    private static <X> Consumer<X> wrap(Context context, Consumer<X> consumer) {
-        return x -> {
-            final Context prev = context.attach();
-            try {
-                consumer.accept(x);
-            } finally {
-                context.detach(prev);
-            }
-        };
-    }
-
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =
             new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
                 @Override
