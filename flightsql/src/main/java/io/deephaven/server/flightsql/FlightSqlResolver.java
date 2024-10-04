@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.rpc.Code;
@@ -317,6 +318,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // Doing as much validation outside of the export as we can.
         final Any any = parseOrThrow(descriptor.getCmd());
         final Supplier<Table> command = supplier(session, commandHandler(any), any);
+        // TODO: say we don't know the size, FlightInfo
+
+        // TODO: refreshing get catalog tables
+
         return session.<Flight.FlightInfo>nonExport().submit(() -> {
             final Table table = command.get();
             // Note: the only way we clean up these tables is when the session is cleaned up.
@@ -349,6 +354,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             case COMMAND_GET_TABLES_TYPE_URL:
                 return new CommandGetTablesImpl();
             case COMMAND_GET_SQL_INFO_TYPE_URL:
+                // Need dense_union support to implement this.
                 return new UnsupportedCommand<>(CommandGetSqlInfo.class);
             case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
                 return new UnsupportedCommand<>(CommandGetCrossReference.class);
@@ -395,12 +401,30 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     private Table execute(CommandGetDbSchemas request) {
+        // already validated we don't have filter patterns
+        // final String catalog = request.getCatalog();
         return TableTools.newTable(GET_DB_SCHEMAS_DEFINITION);
     }
 
     private Table execute(CommandGetTables request) {
+        // already validated we don't have filter patterns
+        final boolean hasNullCatalog = !request.hasCatalog() || request.getCatalog().isEmpty();
+        final boolean hasTableTypeTable =
+                request.getTableTypesCount() == 0 || request.getTableTypesList().contains(TABLE_TYPE_TABLE);
         final boolean includeSchema = request.getIncludeSchema();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        return hasNullCatalog && hasTableTypeTable
+                ? getTables(includeSchema, ExecutionContext.getContext().getQueryScope())
+                : getTablesEmpty(includeSchema);
+    }
+
+
+    private static Table getTablesEmpty(boolean includeSchema) {
+        return includeSchema
+                ? TableTools.newTable(GET_TABLES_DEFINITION)
+                : TableTools.newTable(GET_TABLES_DEFINITION_NO_SCHEMA);
+    }
+
+    private static Table getTables(boolean includeSchema, QueryScope queryScope) {
         final Map<String, Table> queryScopeTables =
                 (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
         final int size = queryScopeTables.size();
@@ -438,6 +462,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         void validate(T command);
 
         Table execute(SessionState sessionState, T command);
+
+        // FlightInfo flightInfo(); // todo?
     }
 
     static abstract class CommandBase<T extends Message> implements CommandHandler<T> {
@@ -531,9 +557,23 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     }
 
+    private static final FieldDescriptor GET_DB_SCHEMAS_FILTER_PATTERN =
+            CommandGetDbSchemas.getDescriptor().findFieldByNumber(2);
+
     final class CommandGetDbSchemasImpl extends CommandBase<CommandGetDbSchemas> {
         public CommandGetDbSchemasImpl() {
             super(CommandGetDbSchemas.class);
+        }
+
+        @Override
+        public void validate(CommandGetDbSchemas command) {
+            // Note: even though we technically support this field right now since we _always_ return empty, this is a
+            // defensive check in case there is a time in the future where we have catalogs and forget to update this
+            // method.
+            if (command.hasDbSchemaFilterPattern()) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("FlightSQL %s not supported at this time", GET_DB_SCHEMAS_FILTER_PATTERN));
+            }
         }
 
         @Override
@@ -542,9 +582,27 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     }
 
+    private static final FieldDescriptor GET_TABLES_DB_SCHEMA_FILTER_PATTERN =
+            CommandGetTables.getDescriptor().findFieldByNumber(2);
+    private static final FieldDescriptor GET_TABLES_TABLE_NAME_FILTER_PATTERN =
+            CommandGetTables.getDescriptor().findFieldByNumber(3);
+
     final class CommandGetTablesImpl extends CommandBase<CommandGetTables> {
+
         public CommandGetTablesImpl() {
             super(CommandGetTables.class);
+        }
+
+        @Override
+        public void validate(CommandGetTables command) {
+            if (command.hasDbSchemaFilterPattern()) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("FlightSQL %s not supported at this time", GET_TABLES_DB_SCHEMA_FILTER_PATTERN));
+            }
+            if (command.hasTableNameFilterPattern()) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("FlightSQL %s not supported at this time", GET_TABLES_TABLE_NAME_FILTER_PATTERN));
+            }
         }
 
         @Override

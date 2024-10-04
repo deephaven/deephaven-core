@@ -49,6 +49,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
+import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -736,6 +737,12 @@ public class BarrageUtil {
                 return Types.MinorType.FLOAT8.getType();
             case Object:
                 if (type.isArray()) {
+                    if (type == byte[].class) {
+                        return Types.MinorType.VARBINARY.getType();
+                    }
+                    // if (type == char[].class) {
+                    // return Types.MinorType.VARCHAR.getType();
+                    // }
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {

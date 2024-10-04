@@ -23,7 +23,9 @@ import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Build
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
+import org.apache.arrow.flight.CancelFlightInfoRequest;
 import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightConstants;
 import org.apache.arrow.flight.FlightDescriptor;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
 import org.apache.arrow.flight.FlightInfo;
@@ -81,6 +83,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -88,6 +91,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -136,9 +140,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             new Field("table_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
     private static final Field TABLE_TYPE =
             new Field("table_type", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+    // private static final Field TABLE_SCHEMA =
+    // new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
+    // List.of(Field.nullable("", MinorType.TINYINT.getType())));
     private static final Field TABLE_SCHEMA =
-            new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
-                    List.of(Field.nullable("", MinorType.TINYINT.getType())));
+            new Field("table_schema", new FieldType(true, MinorType.VARBINARY.getType(), null, DEEPHAVEN_BYTES), null);
 
     private static final TableRef FOO_TABLE_REF = TableRef.of(null, null, "foo_table");
     public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "bar_table");
@@ -262,14 +268,16 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final SchemaResult schemasSchema = flightSqlClient.getSchemasSchema();
             assertThat(schemasSchema.getSchema()).isEqualTo(expectedSchema);
         }
-        {
-            // We don't have any catalogs we list right now.
-            final FlightInfo info = flightSqlClient.getSchemas(null, null);
+        for (final FlightInfo info : new FlightInfo[] {
+                flightSqlClient.getSchemas(null, null),
+                flightSqlClient.getSchemas("DoesNotExist", null)}) {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
                 consume(stream, 0, 0);
             }
         }
+        expectException(() -> flightSqlClient.getSchemas(null, "filter_pattern"), FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL arrow.flight.protocol.sql.CommandGetDbSchemas.db_schema_filter_pattern not supported at this time");
         unpackable(CommandGetDbSchemas.getDescriptor(), CommandGetDbSchemas.class);
     }
 
@@ -277,37 +285,44 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void getTables() throws Exception {
         setFooTable();
         setBarTable();
-        // Without schema field
-        {
-            final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
+        for (final boolean includeSchema : new boolean[] {false, true}) {
+            final Schema expectedSchema = includeSchema
+                    ? flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE, TABLE_SCHEMA)
+                    : flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
             {
-                final SchemaResult schema = flightSqlClient.getTablesSchema(false);
+                final SchemaResult schema = flightSqlClient.getTablesSchema(includeSchema);
                 assertThat(schema.getSchema()).isEqualTo(expectedSchema);
             }
-            {
-                final FlightInfo info = flightSqlClient.getTables(null, null, null, null, false);
+            // Any of these queries will fetch everything from query scope
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables(null, null, null, null, includeSchema),
+                    flightSqlClient.getTables("", null, null, null, includeSchema),
+                    flightSqlClient.getTables(null, null, null, List.of("TABLE"), includeSchema),
+                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE", "TABLE"), includeSchema),
+                    flightSqlClient.getTables("", null, null, List.of("TABLE"), includeSchema),
+            }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
                     consume(stream, 1, 2);
                 }
             }
-        }
-        // With schema field
-        {
-            final Schema expectedSchema =
-                    flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE, TABLE_SCHEMA);
-
-            {
-                final SchemaResult schema = flightSqlClient.getTablesSchema(true);
-                assertThat(schema.getSchema()).isEqualTo(expectedSchema);
-            }
-            {
-                final FlightInfo info = flightSqlClient.getTables(null, null, null, null, true);
+            // Any of these queries will fetch an empty table
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables("DoesNotExistCatalog", null, null, null, includeSchema),
+                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
+            }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 1, 2);
+                    consume(stream, 0, 0);
                 }
             }
+            // We do not implement filtering right now
+            expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
+                    FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.db_schema_filter_pattern not supported at this time");
+            expectException(() -> flightSqlClient.getTables(null, null, "filter_pattern", null, includeSchema),
+                    FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.table_name_filter_pattern not supported at this time");
         }
         unpackable(CommandGetTables.getDescriptor(), CommandGetTables.class);
     }
@@ -600,15 +615,17 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     @Test
     public void cancelFlightInfo() {
         // Note: this should likely be tested in the context of Flight, not FlightSQL
-        // flightClient.cancelFlightInfo(null);
+        final FlightInfo info = flightSqlClient.execute("SELECT 1");
+        actionNoResolver(() -> flightClient.cancelFlightInfo(new CancelFlightInfoRequest(info)),
+                FlightConstants.CANCEL_FLIGHT_INFO.getType());
     }
 
     @Test
     public void unknownAction() {
         // Note: this should likely be tested in the context of Flight, not FlightSQL
-        final Action action = new Action("SomeFakeAction", new byte[0]);
-        expectException(() -> doAction(action), FlightStatusCode.UNIMPLEMENTED,
-                "No action resolver found for action type 'SomeFakeAction'");
+        final String type = "SomeFakeAction";
+        final Action action = new Action(type, new byte[0]);
+        actionNoResolver(() -> doAction(action), type);
     }
 
     private Result doAction(Action action) {
@@ -691,6 +708,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 String.format("FlightSQL Action type '%s' is unimplemented", actionType.getType()));
     }
 
+    private void actionNoResolver(Runnable r, String actionType) {
+        expectException(r, FlightStatusCode.UNIMPLEMENTED,
+                String.format("No action resolver found for action type '%s'", actionType));
+    }
+
     private void expectException(Runnable r, FlightStatusCode code, String messagePart) {
         try {
             r.run();
@@ -727,7 +749,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     private static void consume(FlightStream stream, int expectedFlightCount, int expectedNumRows) {
         int numRows = 0;
         int flightCount = 0;
-        // stream.hasRoot();?
         while (stream.next()) {
             ++flightCount;
             numRows += stream.getRoot().getRowCount();
