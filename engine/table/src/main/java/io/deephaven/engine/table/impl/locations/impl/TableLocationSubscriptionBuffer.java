@@ -133,16 +133,6 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void beginTransaction(@NotNull final Object token) {
-        throw new UnsupportedOperationException("Transactions are not supported by this provider.");
-    }
-
-    @Override
-    public void endTransaction(@NotNull final Object token) {
-        throw new UnsupportedOperationException("Transactions are not supported by this provider.");
-    }
-
-    @Override
     public void handleTableLocationKeyAdded(@NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
         synchronized (updateLock) {
             // Need to verify that we don't have stacked adds (without intervening removes).

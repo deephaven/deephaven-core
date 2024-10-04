@@ -158,7 +158,7 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     @Override
     public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
             @NotNull final AbstractTableLocationProvider tableLocationProvider) {
-        return new ScheduledTableLocationProviderRefresh(tableLocationProvider,
+        return scheduleTableLocationProviderRefresh(tableLocationProvider,
                 tableLocationProviderDefaultRefreshIntervalMillis);
     }
 
@@ -172,7 +172,7 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     @Override
     public CancellableSubscriptionToken scheduleTableLocationRefresh(
             @NotNull final AbstractTableLocation tableLocation) {
-        return new ScheduledTableLocationRefresh(tableLocation, tableLocationDefaultRefreshIntervalMillis);
+        return scheduleTableLocationRefresh(tableLocation, tableLocationDefaultRefreshIntervalMillis);
     }
 
     @Override

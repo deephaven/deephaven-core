@@ -117,7 +117,7 @@ public interface ColumnSourceManager extends LivenessNode {
     void removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
 
     /**
-     * Get a list of Table attributes that can be applied to the output source table, given the update modes of the
+     * Get a map of Table attributes that can be applied to the output source table, given the update modes of the
      * underlying table location provider.
      *
      * @param tableUpdateMode The update mode of the table location set

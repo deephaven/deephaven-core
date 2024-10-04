@@ -106,13 +106,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
         }
 
-        if (isRefreshing) {
-            setRefreshing(true);
-            // Given the location provider's update modes, retrieve applicable table attributes from the CSM
-            columnSourceManager.getTableAttributes(
-                    locationProvider.getUpdateMode(),
-                    locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
-        }
+        setRefreshing(isRefreshing);
+        // Given the location provider's update modes, retrieve and set applicable table attributes from the CSM
+        columnSourceManager.getTableAttributes(
+                locationProvider.getUpdateMode(),
+                locationProvider.getLocationUpdateMode()).forEach(this::setAttribute);
     }
 
     /**
@@ -261,7 +259,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 return;
             }
 
-            Assert.eqTrue(update.shifted().empty(), "update.shifted().empty()");
+            Assert.assertion(update.shifted().empty(), "update.shifted().empty()");
             rowSet.remove(update.removed());
             rowSet.insert(update.added());
             notifyListeners(update);

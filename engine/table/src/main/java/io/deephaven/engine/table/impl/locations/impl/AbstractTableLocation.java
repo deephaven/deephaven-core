@@ -249,7 +249,7 @@ public abstract class AbstractTableLocation
     // ------------------------------------------------------------------------------------------------------------------
 
     /**
-     * The reference count has reached zero or we are being GC'd, we can clear this location and release any resources.
+     * The reference count has reached zero, we can clear this location and release any resources.
      */
     protected void destroy() {
         handleUpdate(null, System.currentTimeMillis());

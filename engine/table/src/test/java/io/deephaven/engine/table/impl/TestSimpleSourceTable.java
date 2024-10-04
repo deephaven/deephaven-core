@@ -74,7 +74,10 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 allowing(columnSourceManager).allLocations();
-                will(returnValue(Collections.EMPTY_SET));
+                will(returnValue(Collections.EMPTY_MAP));
+                allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
+                        with(any(TableUpdateMode.class)));
+                will(returnValue(Collections.EMPTY_MAP));
             }
         });
 
@@ -103,6 +106,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 will(returnValue(true));
                 allowing(keySupplier).getWeakReference();
                 will(returnValue(new WeakReference<>(keySupplier)));
+                allowing(keySupplier).retainReference();
                 allowing(keySupplier).dropReference();
 
                 allowing(locationProvider).getTableLocationKeys();
@@ -119,14 +123,16 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                 });
                 allowing(locationProvider).getTableLocation(with(StandaloneTableLocationKey.getInstance()));
                 will(returnValue(tableLocation));
+                allowing(locationProvider).getUpdateMode();
+                will(returnValue(TableUpdateMode.STATIC));
+                allowing(locationProvider).getLocationUpdateMode();
+                will(returnValue(TableUpdateMode.STATIC));
                 allowing(tableLocation).supportsSubscriptions();
                 will(returnValue(true));
                 allowing(tableLocation).getKey();
                 will(returnValue(StandaloneTableLocationKey.getInstance()));
                 allowing(locationProvider).supportsSubscriptions();
                 will(returnValue(true));
-                allowing(locationProvider).getUpdateMode();
-                will(returnValue(TableUpdateMode.ADD_REMOVE));
             }
         });
 

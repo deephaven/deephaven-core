@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.impl.TableUpdateMode;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -44,21 +45,6 @@ public interface TableLocationProvider extends NamedImplementation {
      * ShiftObliviousListener interface for anything that wants to know about new table location keys.
      */
     interface Listener extends BasicTableDataListener {
-
-        /**
-         * Begin a transaction that collects location key additions and removals to be processed atomically.
-         *
-         * @param token A token to identify the transaction.
-         */
-        void beginTransaction(@NotNull Object token);
-
-        /**
-         * End the transaction and process the location changes.
-         *
-         * @param token A token to identify the transaction.
-         */
-        void endTransaction(@NotNull Object token);
-
         /**
          * Notify the listener of a {@link LiveSupplier<ImmutableTableLocationKey>} encountered while initiating or
          * maintaining the location subscription. This should occur at most once per location, but the order of delivery
@@ -149,6 +135,7 @@ public interface TableLocationProvider extends NamedImplementation {
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
      * guaranteed to succeed for all results.
      */
+    @TestUseOnly
     default Collection<ImmutableTableLocationKey> getTableLocationKeys() {
         final List<ImmutableTableLocationKey> keys = new ArrayList<>();
         getTableLocationKeys(trackedKey -> keys.add(trackedKey.get()));

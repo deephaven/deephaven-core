@@ -132,43 +132,39 @@ public class CompositeTableDataService extends AbstractTableDataService {
             implementationName = "Composite-" + inputProviders;
 
             // Analyze the update modes of the input providers to determine the update mode of the composite provider.
-            // 1) If any providers are REFRESHING, the overall provider is REFRESHING
-            // 2) If any providers are ADD_ONLY or APPEND_ONLY, the overall provider is ADD_ONLY
-            // 3) If all providers are STATIC, the overall provider is STATIC
+            // The resultant mode is the most permissive mode of the input providers, with the exception that we will
+            // never return APPEND_ONLY.
+            boolean anyRemoves = false;
             boolean anyAdditions = false;
-            TableUpdateMode tmpMode = TableUpdateMode.STATIC;
+            boolean anyAppends = false;
             for (final TableLocationProvider provider : inputProviders) {
                 if (provider.getUpdateMode().removeAllowed()) {
-                    tmpMode = TableUpdateMode.ADD_REMOVE;
-                    break;
-                } else if (provider.getUpdateMode().addAllowed()) {
+                    anyRemoves = true;
+                } else if (provider.getLocationUpdateMode() == TableUpdateMode.ADD_ONLY) {
                     anyAdditions = true;
+                } else if (provider.getLocationUpdateMode() == TableUpdateMode.APPEND_ONLY) {
+                    anyAppends = true;
                 }
             }
-            if (anyAdditions) {
-                tmpMode = TableUpdateMode.ADD_ONLY;
-            }
-            updateMode = tmpMode;
+            updateMode = anyRemoves ? TableUpdateMode.ADD_REMOVE
+                    : (anyAdditions || anyAppends) ? TableUpdateMode.ADD_ONLY : TableUpdateMode.STATIC;
 
             // Analyze the location update modes of the input providers to determine the location update mode
-            // of the composite provider.
-            // 1) If any provider locations are REFRESHING, the overall provider location mode is REFRESHING
-            // 2) If any provider locations are ADD_ONLY or APPEND_ONLY, the overall provider location mode is ADD_ONLY
-            // 3) If all provider locations are STATIC, the overall provider location mode is STATIC
-            anyAdditions = false;
-            tmpMode = TableUpdateMode.STATIC;
+            // of the composite provider. The resultant mode is the most permissive mode of the input provider
+            // locations.
+            anyRemoves = anyAdditions = anyAppends = false;
             for (final TableLocationProvider provider : inputProviders) {
                 if (provider.getLocationUpdateMode().removeAllowed()) {
-                    tmpMode = TableUpdateMode.ADD_REMOVE;
-                    break;
-                } else if (provider.getLocationUpdateMode().addAllowed()) {
+                    anyRemoves = true;
+                } else if (provider.getLocationUpdateMode() == TableUpdateMode.ADD_ONLY) {
                     anyAdditions = true;
+                } else if (provider.getLocationUpdateMode() == TableUpdateMode.APPEND_ONLY) {
+                    anyAppends = true;
                 }
             }
-            if (anyAdditions) {
-                tmpMode = TableUpdateMode.ADD_ONLY;
-            }
-            locationUpdateMode = tmpMode;
+            locationUpdateMode = anyRemoves ? TableUpdateMode.ADD_REMOVE
+                    : anyAdditions ? TableUpdateMode.ADD_ONLY
+                            : anyAppends ? TableUpdateMode.APPEND_ONLY : TableUpdateMode.STATIC;
         }
 
         @Override
@@ -227,22 +223,24 @@ public class CompositeTableDataService extends AbstractTableDataService {
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
                 // Add all the location keys from the providers to the set, throw an exception if there are duplicates
                 inputProviders.forEach(p -> p.getTableLocationKeys(tlk -> {
-                    if (!locationKeys.add(tlk)) {
+                    if (locationKeys.add(tlk)) {
                         // Consume the key immediately (while the key is still managed by the input provider)
                         consumer.accept(tlk);
-                        final String overlappingProviders = inputProviders.stream()
-                                .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.get()))
-                                .map(TableLocationProvider::getName)
-                                .collect(Collectors.joining(","));
-                        throw new TableDataException(
-                                "Data Routing Configuration error: TableDataService elements overlap at location " +
-                                        tlk +
-                                        " in providers " + overlappingProviders +
-                                        ". Full TableDataService configuration:\n" +
-                                        Formatter
-                                                .formatTableDataService(CompositeTableDataService.this.toString()));
-
+                        return;
                     }
+                    // We have a duplicate key, throw a detailed exception
+                    final String overlappingProviders = inputProviders.stream()
+                            .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.get()))
+                            .map(TableLocationProvider::getName)
+                            .collect(Collectors.joining(","));
+                    throw new TableDataException(
+                            "Data Routing Configuration error: TableDataService elements overlap at location " +
+                                    tlk +
+                                    " in providers " + overlappingProviders +
+                                    ". Full TableDataService configuration:\n" +
+                                    Formatter
+                                            .formatTableDataService(CompositeTableDataService.this.toString()));
+
                 }, filter));
             }
         }

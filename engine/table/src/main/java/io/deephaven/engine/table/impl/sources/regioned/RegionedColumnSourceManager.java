@@ -42,7 +42,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
 
     /**
-     * Whether this column source manager is serving a refreshing dynamic table.
+     * The liveness node to which this column source manager will delegate.
      */
     private final LivenessNode livenessNode;
 
@@ -116,7 +116,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
     /**
      * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
      */
-    @SuppressWarnings("unused")
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
 
@@ -743,7 +742,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
     public Map<String, Object> getTableAttributes(
             @NotNull TableUpdateMode tableUpdateMode,
             @NotNull TableUpdateMode tableLocationUpdateMode) {
-        final Map<String, Object> attributes = new LinkedHashMap<>();
+        final Map<String, Object> attributes = new HashMap<>();
         // NOTE: Current RegionedColumnSourceManager implementation appends new locations and does not reuse
         // region indices. This is important for the following attributes to be correct.
 

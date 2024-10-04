@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * {@link TableDataService} implementation with support to filter the provided {@link TableLocation}s.
@@ -166,15 +167,13 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         @NotNull
         public TableUpdateMode getUpdateMode() {
-            // TODO: I think locations can be added or removed at any time (with a dynamic filter)
-            return TableUpdateMode.ADD_REMOVE;
+            return inputProvider.getUpdateMode();
         }
 
         @Override
         @NotNull
         public TableUpdateMode getLocationUpdateMode() {
-            // TODO: this is defensive, individual location contents might be static (e.g. Parquet files)
-            return TableUpdateMode.ADD_REMOVE;
+            return inputProvider.getLocationUpdateMode();
         }
     }
 
@@ -183,24 +182,6 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         private FilteringListener(@NotNull final TableLocationProvider.Listener outputListener) {
             super(outputListener);
-        }
-
-        @Override
-        public void beginTransaction(@NotNull final Object token) {
-            // Delegate to the wrapped listener.
-            final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null) {
-                outputListener.beginTransaction(token);
-            }
-        }
-
-        @Override
-        public void endTransaction(@NotNull final Object token) {
-            // Delegate to the wrapped listener.
-            final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null) {
-                outputListener.endTransaction(token);
-            }
         }
 
         @Override
@@ -225,11 +206,16 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public void handleTableLocationKeysUpdate(
-                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
-                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+                @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
+                @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
-                outputListener.handleTableLocationKeysUpdate(addedKeys, removedKeys);
+                // Produce filtered lists of added and removed keys.
+                final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredAddedKeys = addedKeys.stream()
+                        .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
+                final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredRemovedKeys = removedKeys.stream()
+                        .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
+                outputListener.handleTableLocationKeysUpdate(filteredAddedKeys, filteredRemovedKeys);
             }
         }
 

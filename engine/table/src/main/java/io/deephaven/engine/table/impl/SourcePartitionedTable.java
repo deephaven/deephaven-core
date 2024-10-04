@@ -16,7 +16,9 @@ import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
@@ -74,7 +76,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 false);
     }
 
-    private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode {
+    private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode
+            implements NotificationQueue.Dependency {
 
         private final TableDefinition constituentDefinition;
         private final UnaryOperator<Table> applyTablePermissions;
@@ -339,6 +342,22 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             resultTableLocationKeys.setNull(deletedRows);
             resultLocationTables.setNull(deletedRows);
             return deletedRows;
+        }
+
+        @Override
+        public boolean satisfied(final long step) {
+            if (refreshCombiner == null) {
+                throw new UnsupportedOperationException("This method should not be called when result is static");
+            }
+            return refreshCombiner.satisfied(step);
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            if (refreshCombiner == null) {
+                throw new UnsupportedOperationException("This method should not be called when result is static");
+            }
+            return refreshCombiner.getUpdateGraph();
         }
     }
 

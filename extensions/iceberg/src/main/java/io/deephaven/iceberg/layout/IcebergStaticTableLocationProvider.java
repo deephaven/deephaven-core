@@ -85,9 +85,4 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
         throw new IllegalStateException(
                 "deactivateUnderlyingDataSource() called on a static Iceberg table location provider");
     }
-
-    @Override
-    protected <T> boolean matchSubscriptionToken(final T token) {
-        return false;
-    }
 }

@@ -4,33 +4,47 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.engine.liveness.LiveSupplier;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}.
+ * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}. In
+ * contrast to {@link AbstractTableLocationProvider}, this class does not manage the liveness of the table location.
+ * Managment must be done externally (as in {@link io.deephaven.engine.table.impl.SourcePartitionedTable}).
  */
 public final class SingleTableLocationProvider implements TableLocationProvider {
     private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();
 
-    private static class TrackedKeySupplier extends ReferenceCountedLivenessNode
-            implements LiveSupplier<ImmutableTableLocationKey> {
+    private static class TrackedKeySupplier implements LiveSupplier<ImmutableTableLocationKey>, LivenessReferent {
         final ImmutableTableLocationKey key;
 
         protected TrackedKeySupplier(final ImmutableTableLocationKey key) {
-            super(false);
             this.key = key;
         }
 
         @Override
         public ImmutableTableLocationKey get() {
             return key;
+        }
+
+        @Override
+        public boolean tryRetainReference() {
+            return true;
+        }
+
+        @Override
+        public void dropReference() {}
+
+        @Override
+        public WeakReference<? extends LivenessReferent> getWeakReference() {
+            return new WeakReference<>(this);
         }
     }
 
@@ -45,7 +59,6 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
             @NotNull final TableLocation tableLocation,
             final TableUpdateMode locationUpdateMode) {
         this.tableLocation = tableLocation;
-        // TODO: it seems like we should manage this, but SingleTableLocationProvider isn't a LivenessManager.
         immutableKeySupplier = new TrackedKeySupplier(tableLocation.getKey());
         this.locationUpdateMode = locationUpdateMode;
     }

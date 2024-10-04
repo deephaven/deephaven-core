@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -77,28 +79,18 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    private static class TrackedKeySupplier extends ReferenceCountedLivenessNode
+    private class TrackedKeySupplier extends ReferenceCountedLivenessNode
             implements LiveSupplier<ImmutableTableLocationKey> {
-        enum State {
-            /** The key is included in the live set for new subscribers. */
-            ACTIVE,
-            /** The key was removed from the live list and will not be provided to new subscribers */
-            INACTIVE
-        }
 
         private final ImmutableTableLocationKey key;
-        private final Consumer<TrackedKeySupplier> zeroCountConsumer;
 
-        private TableLocation tableLocation;
-        private State state;
+        private volatile TableLocation tableLocation;
+        private volatile boolean active;
 
-        TrackedKeySupplier(
-                final ImmutableTableLocationKey key,
-                final Consumer<TrackedKeySupplier> zeroCountConsumer) {
+        TrackedKeySupplier(@NotNull final ImmutableTableLocationKey key) {
             super(false);
             this.key = key;
-            this.zeroCountConsumer = zeroCountConsumer;
-            state = State.ACTIVE;
+            active = true;
         }
 
         @Override
@@ -107,30 +99,40 @@ public abstract class AbstractTableLocationProvider
         }
 
         /**
-         * This {@link TrackedKeySupplier} should manage the given {@link TableLocation} and store a reference to it.
-         *
-         * @param tableLocation The {@link TableLocation} to manage.
+         * Create the {@link TableLocation} for this key, if it has not already been created, and return it.
          */
-        public synchronized void setTableLocation(final TableLocation tableLocation) {
-            Assert.eqNull(this.tableLocation, "this.tableLocation");
-            manage(tableLocation);
-            this.tableLocation = tableLocation;
+        private TableLocation getTableLocation() {
+            TableLocation localTableLocation;
+            if ((localTableLocation = tableLocation) == null) {
+                synchronized (this) {
+                    if ((localTableLocation = tableLocation) == null) {
+                        // Make a new location, have the tracked key manage it, then store the location in the tracked
+                        // key.
+                        tableLocation = localTableLocation = makeTableLocation(key);
+                        manage(tableLocation);
+                    }
+                }
+            }
+            return localTableLocation;
         }
 
         /**
-         * Change the state of this object to {@link State#INACTIVE}, indicates that this key is not included in the
-         * live set for new subscribers.
+         * Mark this supplier inactive. Indicates that this key is not included in the live set for new subscribers.
          */
-        public synchronized void deactivate() {
-            this.state = State.INACTIVE;
+        private void deactivate() {
+            active = false;
+        }
+
+        private boolean active() {
+            return active;
         }
 
         @Override
-        protected synchronized void destroy() {
+        protected void destroy() {
             super.destroy();
+            Assert.assertion(!active, "!active");
             tableLocation = null;
-            state = State.INACTIVE;
-            zeroCountConsumer.accept(this);
+            releaseLocationKey(this);
         }
     }
 
@@ -141,7 +143,7 @@ public abstract class AbstractTableLocationProvider
 
     /**
      * Map from {@link TableLocationKey} to a {@link TrackedKeySupplier}.
-     *
+     * <p>
      * These values will not be cleared until all references to the {@link TableLocation} have been released by its
      * managers (i.e. {@link TableLocationSubscriptionBuffer subscriptions} and
      * {@link io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager column source managers}).
@@ -150,9 +152,9 @@ public abstract class AbstractTableLocationProvider
             new KeyedObjectHashMap<>(TableLocationKeyDefinition.INSTANCE);
 
     /**
-     * TLP are (currently) outside of liveness scopes, but they need to manage liveness referents to prevent them from
-     * going out of scope. The {@link StandaloneLivenessManager manager} will maintain the references until GC'd or the
-     * referents are not needed byt the TLP.
+     * TLPs are (currently) not LivenessArtifacts, hence they are not managed by the enclosing LivenessScope, but they
+     * still need to manage liveness referents to control their lifecycles. The {@link StandaloneLivenessManager
+     * manager} will maintain the references until GC'd or the referents are not needed by the TLP.
      */
     private final StandaloneLivenessManager livenessManager;
 
@@ -226,7 +228,7 @@ public abstract class AbstractTableLocationProvider
         synchronized (tableLocationKeyMap) {
             final List<LiveSupplier<ImmutableTableLocationKey>> keySuppliers =
                     tableLocationKeyMap.values().stream()
-                            .filter(iks -> iks.state == TrackedKeySupplier.State.ACTIVE)
+                            .filter(TrackedKeySupplier::active)
                             .collect(Collectors.toList());
             listener.handleTableLocationKeysUpdate(keySuppliers, List.of());
         }
@@ -264,37 +266,49 @@ public abstract class AbstractTableLocationProvider
             return;
         }
 
-        final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys =
-                new ArrayList<>(transaction.locationsAdded.size());
-        final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys =
-                new ArrayList<>(transaction.locationsRemoved.size());
+        // This may need to run this under the subscriptions lock.
+        final Supplier<Pair<Collection<LiveSupplier<ImmutableTableLocationKey>>, Collection<LiveSupplier<ImmutableTableLocationKey>>>> applyTransaction =
+                () -> {
+                    final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys =
+                            new ArrayList<>(transaction.locationsAdded.size());
+                    final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys =
+                            new ArrayList<>(transaction.locationsRemoved.size());
 
-        synchronized (tableLocationKeyMap) {
-            for (ImmutableTableLocationKey locationKey : transaction.locationsRemoved) {
-                final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
-                if (trackedKey == null) {
-                    // Not an error to remove a key multiple times (or a keu that was never added)
-                    continue;
-                }
-                trackedKey.deactivate();
+                    synchronized (tableLocationKeyMap) {
+                        for (ImmutableTableLocationKey locationKey : transaction.locationsRemoved) {
+                            final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
+                            if (trackedKey == null) {
+                                // Not an error to remove a key multiple times (or a key that was never added)
+                                continue;
+                            }
+                            trackedKey.deactivate();
 
-                // Pass this removed key to the subscribers
-                removedKeys.add(trackedKey);
-            }
+                            // Pass this removed key to the subscribers
+                            removedKeys.add(trackedKey);
+                        }
 
-            for (ImmutableTableLocationKey locationKey : transaction.locationsAdded) {
-                locationCreatedRecorder = false;
-                final TrackedKeySupplier result = tableLocationKeyMap.putIfAbsent(locationKey, this::observeInsert);
-                visitLocationKey(locationKey);
-                if (locationCreatedRecorder) {
-                    verifyPartitionKeys(locationKey);
-                    addedKeys.add(result);
-                }
-            }
-        }
+                        for (ImmutableTableLocationKey locationKey : transaction.locationsAdded) {
+                            locationCreatedRecorder = false;
+                            final TrackedKeySupplier result =
+                                    tableLocationKeyMap.putIfAbsent(locationKey, this::observeInsert);
+                            visitLocationKey(locationKey);
+                            if (locationCreatedRecorder) {
+                                verifyPartitionKeys(locationKey);
+                                addedKeys.add(result);
+                            }
+                        }
+                    }
+                    return new Pair<>(addedKeys, removedKeys);
+                };
 
-        if (subscriptions != null && (!addedKeys.isEmpty() || !removedKeys.isEmpty())) {
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys;
+        if (supportsSubscriptions()) {
             synchronized (subscriptions) {
+                final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys;
+                final Pair<Collection<LiveSupplier<ImmutableTableLocationKey>>, Collection<LiveSupplier<ImmutableTableLocationKey>>> result =
+                        applyTransaction.get();
+                addedKeys = result.getFirst();
+                removedKeys = result.getSecond();
                 // Push the notifications to the subscribers
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeysUpdate,
@@ -304,6 +318,8 @@ public abstract class AbstractTableLocationProvider
                     onEmpty();
                 }
             }
+        } else {
+            removedKeys = applyTransaction.get().getSecond();
         }
         // Release the keys that were removed after we have delivered the notifications and the
         // subscribers have had a chance to process them
@@ -360,7 +376,7 @@ public abstract class AbstractTableLocationProvider
                 verifyPartitionKeys(result.get());
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyAdded,
-                        (LiveSupplier<ImmutableTableLocationKey>) result,
+                        result,
                         true)) {
                     onEmpty();
                 }
@@ -402,7 +418,7 @@ public abstract class AbstractTableLocationProvider
                 trackedKey.deactivate();
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
-                        (LiveSupplier<ImmutableTableLocationKey>) trackedKey,
+                        trackedKey,
                         true)) {
                     onEmpty();
                 }
@@ -419,6 +435,7 @@ public abstract class AbstractTableLocationProvider
      *
      * @param locationKey The {@link TableLocationKey} that was visited.
      */
+    @SuppressWarnings("unused")
     protected void visitLocationKey(@NotNull final TableLocationKey locationKey) {}
 
     @NotNull
@@ -483,8 +500,9 @@ public abstract class AbstractTableLocationProvider
         // Lock the live set and deliver a copy to the listener after filtering.
         synchronized (tableLocationKeyMap) {
             tableLocationKeyMap.values().stream()
-                    .filter(ttlk -> ttlk.state == TrackedKeySupplier.State.ACTIVE)
-                    .filter(ttlk -> filter.test(ttlk.get())).forEach(consumer);
+                    .filter(TrackedKeySupplier::active)
+                    .filter(ttlk -> filter.test(ttlk.get()))
+                    .forEach(consumer);
         }
     }
 
@@ -496,21 +514,11 @@ public abstract class AbstractTableLocationProvider
     @Override
     @Nullable
     public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
-        TrackedKeySupplier trackedKey = tableLocationKeyMap.get(tableLocationKey);
+        final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(tableLocationKey);
         if (trackedKey == null) {
             return null;
         }
-        // See JavaDoc on tableLocations for background.
-        if (trackedKey.tableLocation == null) {
-            synchronized (trackedKey) {
-                if (trackedKey.tableLocation == null) {
-                    // Make a new location, have the tracked key manage it, then store the location in the tracked key.
-                    final TableLocation newLocation = makeTableLocation(trackedKey.get());
-                    trackedKey.setTableLocation(newLocation);
-                }
-            }
-        }
-        return trackedKey.tableLocation;
+        return trackedKey.getTableLocation();
     }
 
     /**
@@ -563,13 +571,13 @@ public abstract class AbstractTableLocationProvider
         private TableLocationKeyDefinition() {}
 
         @Override
-        public TableLocationKey getKey(TrackedKeySupplier immutableKeySupplier) {
+        public TableLocationKey getKey(@NotNull final TrackedKeySupplier immutableKeySupplier) {
             return immutableKeySupplier.get();
         }
     }
 
     private TrackedKeySupplier toTrackedKey(@NotNull final TableLocationKey locationKey) {
-        return new TrackedKeySupplier(locationKey.makeImmutable(), this::releaseLocationKey);
+        return new TrackedKeySupplier(locationKey.makeImmutable());
     }
 
     private static <T> boolean equals(Collection<T> c1, Collection<T> c2) {

@@ -144,6 +144,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 allowing(locationProvider).getUpdateMode();
                 will(returnValue(TableUpdateMode.ADD_REMOVE));
+                allowing(locationProvider).getLocationUpdateMode();
+                will(returnValue(TableUpdateMode.ADD_REMOVE));
             }
         });
 
@@ -188,6 +190,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 allowing(columnSourceManager).getWeakReference();
                 will(returnValue(new WeakReference<>(columnSourceManager)));
                 allowing(columnSourceManager).dropReference();
+                allowing(columnSourceManager).getTableAttributes(with(any(TableUpdateMode.class)),
+                        with(any(TableUpdateMode.class)));
+                will(returnValue(Collections.EMPTY_MAP));
+
             }
         });
 
