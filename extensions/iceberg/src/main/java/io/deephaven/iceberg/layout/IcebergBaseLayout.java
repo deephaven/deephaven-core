@@ -136,6 +136,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
+        if (snapshot == null) {
+            return;
+        }
         final Table table = tableAdapter.icebergTable();
         try {
             // Retrieve the manifest files from the snapshot
