@@ -55,12 +55,20 @@ public final class SingletonContainers {
                     .build();
         }
 
-        public static Map<String, String> s3Properties() {
-            return Map.of(
-                    "s3.endpoint", LOCALSTACK_S3.getEndpoint().toString(),
-                    "client.region", LOCALSTACK_S3.getRegion(),
-                    "s3.access-key-id", LOCALSTACK_S3.getAccessKey(),
-                    "s3.secret-access-key", LOCALSTACK_S3.getSecretKey());
+        public static String s3Endpoint() {
+            return LOCALSTACK_S3.getEndpoint().toString();
+        }
+
+        public static String region() {
+            return LOCALSTACK_S3.getRegion();
+        }
+
+        public static String accessKey() {
+            return LOCALSTACK_S3.getAccessKey();
+        }
+
+        public static String secretAccessKey() {
+            return LOCALSTACK_S3.getSecretKey();
         }
     }
 
@@ -97,12 +105,20 @@ public final class SingletonContainers {
                     .build();
         }
 
-        public static Map<String, String> s3Properties() {
-            return Map.of(
-                    "s3.endpoint", MINIO.getS3URL(),
-                    "client.region", Region.AWS_GLOBAL.toString(),
-                    "s3.access-key-id", MINIO.getUserName(),
-                    "s3.secret-access-key", MINIO.getPassword());
+        public static String s3Endpoint() {
+            return MINIO.getS3URL();
+        }
+
+        public static String region() {
+            return Region.AWS_GLOBAL.toString();
+        }
+
+        public static String accessKey() {
+            return MINIO.getUserName();
+        }
+
+        public static String secretAccessKey() {
+            return MINIO.getPassword();
         }
     }
 }

@@ -216,12 +216,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         fireEvent(QueryInfoConstants.EVENT_CONNECT);
 
         if (hasDisconnected) {
-            if (hasListeners(QueryInfoConstants.EVENT_RECONNECT)) {
-                fireEvent(QueryInfoConstants.EVENT_RECONNECT);
-            } else {
-                DomGlobal.console.log(logPrefix()
-                        + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
-            }
+            fireCriticalEvent(QueryInfoConstants.EVENT_RECONNECT);
         }
     }
 
@@ -245,12 +240,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         hasDisconnected = true;
 
-        if (hasListeners(QueryInfoConstants.EVENT_DISCONNECT)) {
-            this.fireEvent(QueryInfoConstants.EVENT_DISCONNECT);
-        } else {
-            DomGlobal.console.log(logPrefix()
-                    + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
-        }
+        fireCriticalEvent(QueryInfoConstants.EVENT_DISCONNECT);
     }
 
     public abstract void notifyServerShutdown(TerminationNotificationResponse success);

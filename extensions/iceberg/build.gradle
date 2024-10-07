@@ -58,6 +58,31 @@ dependencies {
     testImplementation project(':engine-test-utils')
 }
 
+/**
+ * We are setting up a "security-manage-allow" tag to add the system property `-Djava.security.manager=allow`
+ * to the tests that need it for Java 23+. Otherwise, the following exception is thrown:
+ *
+ * java.lang.UnsupportedOperationException: getSubject is supported only if a security manager is allowed
+ *   at java.base/javax.security.auth.Subject.getSubject(Subject.java:347)
+ *   at org.apache.hadoop.security.UserGroupInformation.getCurrentUser(UserGroupInformation.java:588)
+ *
+ * See https://issues.apache.org/jira/browse/HADOOP-19212
+ * See https://jdk.java.net/23/release-notes#JDK-8296244
+ */
+
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags("security-manager-allow")
+    }
 }
+
+def testSecurityManagerAllow = tasks.register('testSecurityManagerAllow', Test) {
+    useJUnitPlatform {
+        includeTags("security-manager-allow")
+    }
+    if (it.javaLauncher.get().metadata.languageVersion >= JavaLanguageVersion.of(23)) {
+        it.systemProperty("java.security.manager", "allow")
+    }
+}
+
+check.dependsOn testSecurityManagerAllow
