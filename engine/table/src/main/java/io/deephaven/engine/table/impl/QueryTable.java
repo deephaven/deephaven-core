@@ -438,6 +438,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
     }
 
+    @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, clazz), getRowSet());
+    }
+
     // endregion Column Iterators
 
     /**
@@ -974,6 +980,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         private final QueryTable source;
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
+        private WritableRowSet refilterRequestedRowset = null;
         private MergedListener whereListener;
 
         @ReferentialIntegrity
@@ -1006,6 +1013,16 @@ public class QueryTable extends BaseTable<QueryTable> {
             Require.neqNull(whereListener, "whereListener").notifyChanges();
         }
 
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            if (refilterRequestedRowset == null) {
+                refilterRequestedRowset = rowSet.copy();
+            } else {
+                refilterRequestedRowset.insert(rowSet);
+            }
+            Require.neqNull(whereListener, "whereListener").notifyChanges();
+        }
+
         /**
          * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
          * the public API.
@@ -1014,7 +1031,7 @@ public class QueryTable extends BaseTable<QueryTable> {
          */
         @InternalUseOnly
         boolean refilterRequested() {
-            return refilterUnmatchedRequested || refilterMatchedRequested;
+            return refilterUnmatchedRequested || refilterMatchedRequested || refilterRequestedRowset != null;
         }
 
         @NotNull
@@ -1065,9 +1082,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final WhereListener.ListenerFilterExecution filterExecution =
                         listener.makeRefilterExecution(source.getRowSet().copy());
                 filterExecution.scheduleCompletion(
-                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        (matchedRows, unusedMods) -> completeRefilterUpdate(listener, upstream, update, matchedRows),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
+                if (refilterRequestedRowset != null) {
+                    refilterRequestedRowset.close();
+                    refilterRequestedRowset = null;
+                }
             } else if (refilterUnmatchedRequested) {
                 // things that are added or removed are already reflected in source.getRowSet
                 final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
@@ -1075,9 +1096,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (upstream != null) {
                     unmatchedRows.insert(upstream.modified());
                 }
-                final RowSet unmatched = unmatchedRows.copy();
-                final WhereListener.ListenerFilterExecution filterExecution = listener.makeRefilterExecution(unmatched);
-                filterExecution.scheduleCompletion((adds, mods) -> {
+                if (refilterRequestedRowset != null) {
+                    unmatchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset.close();
+                    refilterRequestedRowset = null;
+                }
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeRefilterExecution(unmatchedRows);
+                filterExecution.scheduleCompletion((adds, unusedMods) -> {
                     final WritableRowSet newMapping = adds.writableCast();
                     // add back what we previously matched, but for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
@@ -1098,14 +1124,40 @@ public class QueryTable extends BaseTable<QueryTable> {
                     matchedRows.insert(upstream.added());
                     matchedRows.insert(upstream.modified());
                 }
-                final RowSet matchedClone = matchedRows.copy();
+                if (refilterRequestedRowset != null) {
+                    matchedRows.insert(refilterRequestedRowset);
+                    refilterRequestedRowset.close();
+                    refilterRequestedRowset = null;
+                }
 
                 final WhereListener.ListenerFilterExecution filterExecution =
-                        listener.makeRefilterExecution(matchedClone);
+                        listener.makeRefilterExecution(matchedRows);
                 filterExecution.scheduleCompletion(
-                        (adds, mods) -> completeRefilterUpdate(listener, upstream, update, adds),
+                        (adds, unusedMods) -> completeRefilterUpdate(listener, upstream, update, adds),
                         exception -> errorRefilterUpdate(listener, exception, upstream));
                 refilterMatchedRequested = false;
+            } else if (refilterRequestedRowset != null) {
+                final WritableRowSet rowsToFilter = refilterRequestedRowset;
+                if (upstream != null) {
+                    rowsToFilter.insert(upstream.added());
+                    rowsToFilter.insert(upstream.modified());
+                }
+
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeRefilterExecution(rowsToFilter);
+
+                filterExecution.scheduleCompletion((adds, unusedMods) -> {
+                    final WritableRowSet newMapping = adds.writableCast();
+                    // add back what we previously matched, except for modifications and removals
+                    try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
+                        previouslyMatched.remove(rowsToFilter);
+                        newMapping.insert(previouslyMatched);
+                    }
+                    completeRefilterUpdate(listener, upstream, update, adds);
+                }, exception -> errorRefilterUpdate(listener, exception, upstream));
+
+
+                refilterRequestedRowset = null;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
             }
@@ -1118,22 +1170,21 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final RowSet newMapping) {
             // Compute added/removed in post-shift keyspace.
             update.added = newMapping.minus(getRowSet());
-            final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
-            // Update our index in post-shift keyspace.
-            getRowSet().writableCast().remove(postShiftRemovals);
-            getRowSet().writableCast().insert(update.added);
+            try (final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping)) {
+                getRowSet().writableCast().resetTo(newMapping);
 
-            // Note that removed must be propagated to listeners in pre-shift keyspace.
-            if (upstream != null) {
-                upstream.shifted().unapply(postShiftRemovals);
+                // Note that removed must be propagated to listeners in pre-shift keyspace.
+                if (upstream != null) {
+                    upstream.shifted().unapply(postShiftRemovals);
+                }
+                update.removed.writableCast().insert(postShiftRemovals);
             }
-            update.removed.writableCast().insert(postShiftRemovals);
 
             if (upstream == null || upstream.modified().isEmpty()) {
                 update.modified = RowSetFactory.empty();
             } else {
-                update.modified = upstream.modified().intersect(newMapping);
+                update.modified = upstream.modified().intersect(getRowSet());
                 update.modified.writableCast().remove(update.added);
             }
 

@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
-from pydeephaven.session import SharedTicket
+from pydeephaven.ticket import SharedTicket
 from tests.testbase import BaseTestCase
 
 
@@ -111,7 +111,6 @@ t1 = empty_table(0) if t.is_blink else None
         df = pa_table2.to_pandas()
         self.assertEquals(1000, len(df.index))
 
-    @unittest.skip("GH ticket filed #941.")
     def test_import_table_time64(self):
         pa_array = pa.array([1, 2], type=pa.time64('ns'))
         pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
@@ -187,8 +186,8 @@ t1 = empty_table(0) if t.is_blink else None
         self.assertEqual(0, len(exception_list))
 
     @unittest.skip("GH ticket filed #941.")
-    def test_import_table_dates(self):
-        types = [pa.date32(), pa.date64()]
+    def test_import_table_date32(self):
+        types = [pa.date32()]
         exception_list = []
         for t in types:
             pa_array = pa.array([1245, 123456], type=t)
@@ -202,6 +201,18 @@ t1 = empty_table(0) if t.is_blink else None
                 exception_list.append(e)
 
         self.assertEqual(0, len(exception_list))
+
+    def test_import_table_date64(self):
+        from datetime import datetime
+        pa_date1 = pa.scalar(datetime(2012, 1, 1), type=pa.date64())
+        pa_date2 = pa.scalar(datetime(2022, 11, 11), type=pa.date64())
+        pa_array = pa.array([pa_date1, pa_date2], type=pa.date64())
+
+        pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+        pa_table = pa.Table.from_batches([pa_record_batch])
+        new_table = self.session.import_table(pa_table)
+        pa_table2 = new_table.to_arrow()
+        self.assertEqual(pa_table, pa_table2)
 
     def test_input_table(self):
         pa_types = [
@@ -339,7 +350,6 @@ t1 = empty_table(0) if t.size == 2 else None
                 with self.assertRaises(PermissionError):
                     blink_input_table.delete(dh_table.select(["f1"]))
 
-
     def test_publish_table(self):
         pub_session = Session()
         t = pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
@@ -363,6 +373,7 @@ t1 = empty_table(0) if t.size == 2 else None
             pub_session.close()
             with self.assertRaises(DHError):
                  sub_session2.fetch_table(shared_ticket)
+            sub_session2.close()
 
     # Note no 'test_' prefix; we don't want this to be picked up
     # on every run; you can still ask the test runner to run it by manually asking

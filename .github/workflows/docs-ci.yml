@@ -16,7 +16,7 @@ jobs:
           cd tmp-deephaven-core-v2/${{ github.ref_name }}/
           mkdir -p javadoc pydoc client-api
           cd client-api
-          mkdir -p javascript python cpp-examples cpp r
+          mkdir -p javascript python cpp-examples cpp r protobuf
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
@@ -31,7 +31,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
   symlink:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') }}
-    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
+    needs: [javadoc, typedoc, pydoc, cppdoc, rdoc, protodoc]
     runs-on: ubuntu-22.04
     steps:
       - name: Make Symlinks
@@ -396,3 +396,57 @@ jobs:
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v4
         if: failure()
+
+  protodoc:
+    needs: [makedirs]
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: protodoc-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh >> gradle.properties
+          cat gradle.properties
+
+      - name: Generate Protobuf Docs
+        run: ./gradlew --scan outputVersion :proto:proto-backplane-grpc:generateProtobuf
+
+      - name: Get Deephaven Version
+        id: dhc-version
+        run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
+
+      - name: Upload Protobuf Docs
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: protobuf-docs-${{ steps.dhc-version.outputs.version }}
+          path: 'proto/proto-backplane-grpc/build/generated/source/proto/main/proto-doc/single-html/index.html'
+
+      - name: Deploy Protobuf Docs
+        if: ${{ github.event_name == 'push' }}
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -rlptDvz --delete
+          path: proto/proto-backplane-grpc/build/generated/source/proto/main/proto-doc/single-html/index.html
+          remote_path: deephaven-core-v2/${{ github.ref_name }}/client-api/protobuf/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}

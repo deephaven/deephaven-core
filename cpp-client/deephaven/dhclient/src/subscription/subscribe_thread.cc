@@ -33,6 +33,8 @@ using deephaven::client::arrowutil::Int8ArrowColumnSource;
 using deephaven::client::arrowutil::Int16ArrowColumnSource;
 using deephaven::client::arrowutil::Int32ArrowColumnSource;
 using deephaven::client::arrowutil::Int64ArrowColumnSource;
+using deephaven::client::arrowutil::LocalDateArrowColumnSource;
+using deephaven::client::arrowutil::LocalTimeArrowColumnSource;
 using deephaven::client::arrowutil::StringArrowColumnSource;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
@@ -320,6 +322,18 @@ struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
   arrow::Status Visit(const arrow::TimestampArray &/*array*/) final {
     auto typed_array = std::dynamic_pointer_cast<arrow::TimestampArray>(array_);
     result_ = DateTimeArrowColumnSource::OfArrowArray(std::move(typed_array));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Date64Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Date64Array>(array_);
+    result_ = LocalDateArrowColumnSource::OfArrowArray(std::move(typed_array));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Time64Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Time64Array>(array_);
+    result_ = LocalTimeArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 

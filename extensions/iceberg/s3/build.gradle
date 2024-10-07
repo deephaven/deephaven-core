@@ -26,8 +26,10 @@ dependencies {
     runtimeOnly libs.awssdk.sts
     runtimeOnly libs.awssdk.glue
 
-    testImplementation libs.junit4
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
+    testImplementation libs.junit4
     testImplementation project(':engine-test-utils')
 
     testImplementation libs.testcontainers

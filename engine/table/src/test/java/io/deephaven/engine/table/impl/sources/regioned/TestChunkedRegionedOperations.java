@@ -227,7 +227,7 @@ public class TestChunkedRegionedOperations {
         final PartitionedTable partitionedInputData = inputData.partitionBy("PC");
         final String[] partitionedInputDestinations;
         try (final Stream<String> partitionNames = partitionedInputData.table()
-                .<String>objectColumnIterator("PC").stream()) {
+                .objectColumnIterator("PC", String.class).stream()) {
             partitionedInputDestinations = partitionNames.map(pcv -> new File(dataDirectory,
                     "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
                             + PARQUET_FILE_NAME)
@@ -242,7 +242,7 @@ public class TestChunkedRegionedOperations {
         final PartitionedTable partitionedInputMissingData = inputMissingData.view("PC", "II").partitionBy("PC");
         final String[] partitionedInputMissingDestinations;
         try (final Stream<String> partitionNames = partitionedInputMissingData.table()
-                .<String>objectColumnIterator("PC").stream()) {
+                .objectColumnIterator("PC", String.class).stream()) {
             partitionedInputMissingDestinations = partitionNames.map(pcv -> new File(dataDirectory,
                     "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
                             + PARQUET_FILE_NAME)

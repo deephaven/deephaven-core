@@ -19,7 +19,7 @@ run it.
 
 If you don't have a Deephaven Community Core server installation,
 you can use these instructions to build one.
-https://deephaven.io/core/docs/how-to-guides/launch-build/
+https://deephaven.io/core/docs/getting-started/launch-build/
 
 Note that it is only possible to build a server on Linux. Building a server
 on Windows is not currently supported.

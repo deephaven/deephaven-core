@@ -567,7 +567,10 @@ class TableTestCase(BaseTestCase):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
             self.assertFalse(snapshot_hist.j_table.isFailed())
         self.wait_ticking_table_update(t, row_count=10, timeout=2)
-        self.assertTrue(snapshot_hist.j_table.isFailed())
+        # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
+        # to ensure snapshot_hist has had the opportunity to process the update we just saw
+        with update_graph.shared_lock(t):
+            self.assertTrue(snapshot_hist.j_table.isFailed())
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
@@ -929,6 +932,12 @@ class TableTestCase(BaseTestCase):
         rt_attrs = rt.attributes()
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
+
+    def test_remove_blink(self):
+        t_blink = time_table("PT1s", blink_table=True)
+        t_no_blink = t_blink.remove_blink()
+        self.assertEqual(t_blink.is_blink, True)
+        self.assertEqual(t_no_blink.is_blink, False)
 
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(

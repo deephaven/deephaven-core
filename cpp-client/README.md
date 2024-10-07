@@ -17,7 +17,7 @@ To actually use Deephaven, for example running these examples and unit
 tests, you will eventually need to have a server running. If you have
 an existing server running Deephaven Core, you should be able to
 connect to that. However, if you don't have one, you can follow the
-instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/.
+instructions [here](https://deephaven.io/core/docs/getting-started/launch-build/).
 
 Note that it is only possible to build a server on Linux. Building a server on
 Windows is not currently supported.
@@ -80,7 +80,7 @@ connect a server when you want to run them.
    export DHCPP=$HOME/dhcpp
    # If the directory already exists from a previous attempt, ensure is clean/empty
    mkdir -p $DHCPP
-   cp build-dependencies.sh $DHCPP
+   cp $DHSRC/build-dependencies.sh $DHCPP
    cd $DHCPP
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target, if you
    # want anything different than defaults; defaults are tested to work,
