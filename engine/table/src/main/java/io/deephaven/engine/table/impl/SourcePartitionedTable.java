@@ -128,8 +128,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             if (needToRefreshLocations || refreshSizes) {
                 result.setRefreshing(true);
                 refreshCombiner = new UpdateSourceCombiner(result.getUpdateGraph());
-                manage(refreshCombiner);
                 result.addParentReference(this);
+                manage(refreshCombiner);
             } else {
                 refreshCombiner = null;
             }
