@@ -186,9 +186,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract boolean useDictionary(String columnName);
 
     /**
-     * The field ID for the given {@code columnName}. Only applicable for reading (currently).
+     * The field ID for the given {@code columnName}.
      *
-     * @param columnName the column name
+     * @param columnName the Deephaven column name
      * @return the field id
      */
     public abstract OptionalInt getFieldId(final String columnName);
@@ -485,9 +485,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public void setFieldId(final int fieldId) {
-            if (this.fieldId != null) {
+            if (this.fieldId != null && this.fieldId != fieldId) {
                 throw new IllegalArgumentException(
-                        String.format("Trying to set fieldId for columnName=%s more than once", columnName));
+                        String.format("Inconsistent fieldId for columnName=%s, already set fieldId=%d", columnName,
+                                this.fieldId));
             }
             this.fieldId = fieldId;
         }
@@ -801,7 +802,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setParquetColumnName(parquetColumnName);
             if (parquetColumnNameToInstructions == null) {
                 parquetColumnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.PARQUET_COLUMN_NAME_KEY);
@@ -828,7 +829,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder addColumnCodec(final String columnName, final String codecName, final String codecArgs) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setCodecName(codecName);
             ci.setCodecArgs(codecArgs);
             return this;
@@ -842,7 +843,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * @param useDictionary The hint value
          */
         public Builder useDictionary(final String columnName, final boolean useDictionary) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.useDictionary(useDictionary);
             return this;
         }
@@ -850,8 +851,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         /**
          * For reading, provides a mapping between a Deephaven column name and a parquet column by field id. This allows
          * resolving a parquet column where the physical "parquet column name" may not be known apriori by the caller.
-         * This may happen in cases where the parquet file is managed by a higher-level schema that has the concept of a
-         * "field id"; for example, Iceberg. As <a href=
+         * In the case where both a field id mapping and a parquet colum name mapping is provided, the field id will
+         * take precedence over the parquet column name. This may happen in cases where the parquet file is managed by a
+         * higher-level schema that has the concept of a "field id"; for example, Iceberg. As <a href=
          * "https://github.com/apache/parquet-format/blob/apache-parquet-format-2.10.0/src/main/thrift/parquet.thrift#L456-L459">documented
          * in the parquet format</a>:
          *
@@ -869,24 +871,25 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * For writing, this will set the {@code field_id} in the proper Parquet {@code SchemaElement}.
          *
          * <p>
-         * This field is not typically configured by end users.
+         * Setting multiple field ids for a single column name is not allowed.
+         *
+         * <p>
+         * Field ids are not typically configured by end users.
+         *
+         * @param columnName the Deephaven column name
+         * @param fieldId the field id
          */
         public Builder setFieldId(final String columnName, final int fieldId) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setFieldId(fieldId);
             return this;
         }
 
-        private ColumnInstructions getColumnInstructions(final String columnName) {
-            final ColumnInstructions ci;
+        private ColumnInstructions getOrCreateColumnInstructions(final String columnName) {
             if (columnNameToInstructions == null) {
                 columnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.COLUMN_NAME_KEY);
-                ci = new ColumnInstructions(columnName);
-                columnNameToInstructions.put(columnName, ci);
-            } else {
-                ci = columnNameToInstructions.putIfAbsent(columnName, ColumnInstructions::new);
             }
-            return ci;
+            return columnNameToInstructions.putIfAbsent(columnName, ColumnInstructions::new);
         }
 
         public Builder setCompressionCodecName(final String compressionCodecName) {

@@ -80,7 +80,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * @param materializerFactory The factory for creating {@link PageMaterializer}.
      * @param path The path of the column.
      * @param uri The uri of the parquet file.
-     * @param nonRequiredFields The types of the fields in the column.
+     * @param nonRequiredFields The types of the non-required fields in the column.
      * @param dataOffset The offset for data following the page header in the file.
      * @param pageHeader The page header, should not be {@code null}.
      * @param numValues The number of values in the page.

@@ -30,6 +30,17 @@ public class ParquetInstructionsTest {
 
     @Test
     public void setFieldIdAlreadySet() {
+
+        // Setting the same fieldId on a given column name is "ok" if it's the same value, this is to be more consistent
+        // with how addColumnNameMapping works.
+        {
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .setFieldId("Foo", 42)
+                    .setFieldId("Foo", 42)
+                    .build();
+            assertThat(instructions.getFieldId("Foo")).hasValue(42);
+        }
+
         try {
             ParquetInstructions.builder()
                     .setFieldId("Foo", 42)
@@ -37,7 +48,7 @@ public class ParquetInstructionsTest {
                     .build();
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("Trying to set fieldId for columnName=Foo more than once");
+            assertThat(e).hasMessage("Inconsistent fieldId for columnName=Foo, already set fieldId=42");
         }
     }
 
