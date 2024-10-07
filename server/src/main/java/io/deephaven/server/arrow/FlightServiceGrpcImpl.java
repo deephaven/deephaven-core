@@ -7,6 +7,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
@@ -20,14 +21,17 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.session.ActionRouter;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.ActionTypeExposer;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.ActionType;
+import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,8 +40,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
@@ -48,6 +54,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private final SessionService sessionService;
     private final SessionService.ErrorTransformer errorTransformer;
     private final TicketRouter ticketRouter;
+    private final ActionRouter actionRouter;
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
@@ -59,6 +66,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionService sessionService,
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
+            final ActionRouter actionRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
             Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
@@ -66,6 +74,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         this.sessionService = sessionService;
         this.errorTransformer = errorTransformer;
         this.ticketRouter = ticketRouter;
+        this.actionRouter = actionRouter;
         this.doExchangeFactory = doExchangeFactory;
         this.authRequestHandlers = authRequestHandlers;
     }
@@ -161,10 +170,22 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     @Override
+    public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
+        actionRouter.doAction(sessionService.getOptionalSession(), request, responseObserver::onNext);
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void listFlights(
             @NotNull final Flight.Criteria request,
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
         ticketRouter.visitFlightInfo(sessionService.getOptionalSession(), responseObserver::onNext);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void listActions(Empty request, StreamObserver<ActionType> responseObserver) {
+        actionRouter.listActions(sessionService.getOptionalSession(), new ActionTypeConsumer(responseObserver));
         responseObserver.onCompleted();
     }
 
@@ -292,5 +313,18 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      */
     public StreamObserver<InputStream> doExchangeCustom(final StreamObserver<InputStream> responseObserver) {
         return doExchangeFactory.openExchange(sessionService.getCurrentSession(), responseObserver);
+    }
+
+    private static class ActionTypeConsumer implements Consumer<org.apache.arrow.flight.ActionType> {
+        private final StreamObserver<ActionType> responseObserver;
+
+        public ActionTypeConsumer(StreamObserver<ActionType> responseObserver) {
+            this.responseObserver = Objects.requireNonNull(responseObserver);
+        }
+
+        @Override
+        public void accept(org.apache.arrow.flight.ActionType actionType) {
+            responseObserver.onNext(ActionTypeExposer.toProtocol(actionType));
+        }
     }
 }

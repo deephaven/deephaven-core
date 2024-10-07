@@ -414,6 +414,7 @@ include ':clock'
 include ':clock-impl'
 
 include ':sql'
+include ':flightsql'
 
 include(':codec-api')
 project(':codec-api').projectDir = file('codec/api')
