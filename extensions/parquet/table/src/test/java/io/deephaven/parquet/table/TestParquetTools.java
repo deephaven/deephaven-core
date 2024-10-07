@@ -1067,4 +1067,101 @@ public class TestParquetTools {
     // public void parquetWithNonUniqueColumnNames() {
     //
     // }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * fields = [
+     *     pa.field("Foo", pa.int64()),
+     *     pa.field(
+     *         "MyStruct",
+     *         pa.struct(
+     *             [
+     *                 pa.field("Zip", pa.int16()),
+     *                 pa.field("Zap", pa.int32()),
+     *             ]
+     *         ),
+     *     ),
+     *     pa.field("Bar", pa.string()),
+     * ]
+     *
+     * table = pa.table([[] for _ in fields], schema=pa.schema(fields))
+     * pq.write_table(table, "NestedStruct1.parquet", compression="none")
+     * </pre>
+     */
+    @Test
+    public void nestedMessageEmpty() {
+        final String file = TestParquetTools.class.getResource("/NestedStruct1.parquet").getFile();
+        final TableDefinition expectedTd =
+                TableDefinition.of(ColumnDefinition.ofLong("Foo"), ColumnDefinition.ofString("Bar"));
+        final Table table = TableTools.newTable(expectedTd, longCol("Foo"), stringCol("Bar"));
+        // If we use an explicit definition, we can skip over MyStruct and read Foo, Bar
+        {
+            final Table actual =
+                    ParquetTools.readTable(file, ParquetInstructions.EMPTY.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(table, actual);
+        }
+
+        // If we try to infer, we currently throw an error.
+        // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+        try {
+            ParquetTools.readTable(file);
+            Assertions.failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            Assertions.assertThat(e)
+                    .hasMessageContaining("Encountered unsupported multi-column field MyStruct, has 2 total columns");
+        }
+    }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * fields = [
+     *     pa.field("Foo", pa.int64()),
+     *     pa.field(
+     *         "MyStruct",
+     *         pa.struct(
+     *             [
+     *                 pa.field("Zip", pa.int16()),
+     *                 pa.field("Zap", pa.int32()),
+     *             ]
+     *         ),
+     *     ),
+     *     pa.field("Bar", pa.string()),
+     * ]
+     *
+     * table = pa.table([[None] for _ in fields], schema=pa.schema(fields))
+     * pq.write_table(table, "NestedStruct2.parquet", compression="none")
+     * </pre>
+     */
+    @Test
+    public void nestedMessage1Row() {
+        final String file = TestParquetTools.class.getResource("/NestedStruct2.parquet").getFile();
+        final TableDefinition expectedTd =
+                TableDefinition.of(ColumnDefinition.ofLong("Foo"), ColumnDefinition.ofString("Bar"));
+        final Table table = TableTools.newTable(expectedTd, longCol("Foo", QueryConstants.NULL_LONG),
+                stringCol("Bar", (String) null));
+        // If we use an explicit definition, we can skip over MyStruct and read Foo, Bar
+        {
+            final Table actual =
+                    ParquetTools.readTable(file, ParquetInstructions.EMPTY.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(table, actual);
+        }
+
+        // If we try to infer, we currently throw an error.
+        // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+        try {
+            ParquetTools.readTable(file);
+            Assertions.failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            Assertions.assertThat(e)
+                    .hasMessageContaining("Encountered unsupported multi-column field MyStruct, has 2 total columns");
+        }
+    }
 }

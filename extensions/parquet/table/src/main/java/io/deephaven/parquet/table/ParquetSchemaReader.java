@@ -8,6 +8,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.parquet.base.ParquetTotalColumns;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -146,28 +147,29 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
-        final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
-        final Map<Integer, Long> fieldIdCount = schema.getFields()
+        final Map<Integer, Long> topLevelFieldIdCount = schema.getFields()
                 .stream()
                 .map(Type::getId)
                 .filter(Objects::nonNull)
                 .map(ID::intValue)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        if (schema.getFieldCount() != schema.getColumns().size()) {
-            throw new IllegalStateException(String.format(
-                    "Field count inconsistent with number of columns, schema.getFieldCount()=%d, schema.getColumns().size()=%d",
-                    schema.getFieldCount(), schema.getColumns().size()));
-        }
-        final Iterator<Type> fieldIt = schema.getFields().iterator();
-        final Iterator<ColumnDescriptor> columnDescriptorIterator = schema.getColumns().iterator();
-        while (fieldIt.hasNext() && columnDescriptorIterator.hasNext()) {
-            final Type fieldType = fieldIt.next();
-            final ColumnDescriptor column = columnDescriptorIterator.next();
+        int columnIx = 0;
+        final List<ColumnDescriptor> columnDescriptors = schema.getColumns();
+        for (final Type fieldType : schema.getFields()) {
+            final int numColumns = ParquetTotalColumns.of(fieldType);
+            if (numColumns > 1) {
+                // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+                throw new UnsupportedOperationException(
+                        String.format("Encountered unsupported multi-column field %s, has %d total columns",
+                                fieldType.getName(), numColumns));
+            }
+            final ColumnDescriptor column = columnDescriptors.get(columnIx);
             if (column.getMaxRepetitionLevel() > 1) {
-                // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
+                // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
                 throw new UnsupportedOperationException("Unsupported maximum repetition level "
                         + column.getMaxRepetitionLevel() + " in column " + String.join("/", column.getPath()));
             }
+            columnIx += numColumns;
             colDef.reset();
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
@@ -176,19 +178,10 @@ public class ParquetSchemaReader {
             // in the case of repeated types).
             final ID fieldId = fieldType.getId();
             final String parquetColumnName = column.getPath()[0];
-            parquetColumnNameToFirstPath.compute(parquetColumnName, (final String pcn, final String[] oldPath) -> {
-                if (oldPath != null) {
-                    // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
-                    throw new UnsupportedOperationException("Encountered unsupported multi-column field "
-                            + parquetColumnName + ": found columns " + String.join("/", oldPath) + " and "
-                            + String.join("/", column.getPath()));
-                }
-                return column.getPath();
-            });
             final String colName;
             COL_NAME: {
                 FIELD_ID: if (fieldId != null) {
-                    if (fieldIdCount.getOrDefault(fieldId.intValue(), 0L) > 1) {
+                    if (topLevelFieldIdCount.getOrDefault(fieldId.intValue(), 0L) > 1) {
                         // This file has multiple entries for fieldId; don't match against it for field ids.
                         break FIELD_ID;
                     }
@@ -305,8 +298,8 @@ public class ParquetSchemaReader {
             }
             consumer.accept(colDef);
         }
-        if (fieldIt.hasNext() || columnDescriptorIterator.hasNext()) {
-            throw new IllegalStateException("Iterators not exhausted");
+        if (columnIx != columnDescriptors.size()) {
+            throw new IllegalStateException("Not proper size");
         }
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions

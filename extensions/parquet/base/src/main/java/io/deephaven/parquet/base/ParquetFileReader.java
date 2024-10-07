@@ -12,13 +12,19 @@ import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import shaded.parquet.org.apache.thrift.protocol.TSimpleJSONProtocol;
+import shaded.parquet.org.apache.thrift.transport.TIOStreamTransport;
+import shaded.parquet.org.apache.thrift.transport.TTransport;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
@@ -481,5 +487,13 @@ public class ParquetFileReader {
 
     public int rowGroupCount() {
         return fileMetaData.getRow_groups().size();
+    }
+
+    // Useful debugging utility
+    void writeFileMetadata(Path path) throws Exception {
+        try (final TTransport out = new TIOStreamTransport(new BufferedOutputStream(Files.newOutputStream(path)))) {
+            fileMetaData.write(new TSimpleJSONProtocol(out));
+            out.flush();
+        }
     }
 }

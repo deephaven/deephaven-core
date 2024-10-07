@@ -25,9 +25,11 @@ import java.util.Set;
 final class RowGroupReaderImpl implements RowGroupReader {
 
     private class ColumnHolder {
+        private final int fieldIndex;
         private final int columnIndex;
 
-        ColumnHolder(int columnIndex) {
+        public ColumnHolder(int fieldIndex, int columnIndex) {
+            this.fieldIndex = fieldIndex;
             this.columnIndex = columnIndex;
         }
 
@@ -36,7 +38,7 @@ final class RowGroupReaderImpl implements RowGroupReader {
         }
 
         Integer fieldId() {
-            final ID id = type().getId();
+            final ID id = fieldType().getId();
             return id == null ? null : id.intValue();
         }
 
@@ -45,8 +47,8 @@ final class RowGroupReaderImpl implements RowGroupReader {
                     nonRequiredFields(), numRows(), version);
         }
 
-        private Type type() {
-            return schema.getFields().get(columnIndex);
+        private Type fieldType() {
+            return schema.getFields().get(fieldIndex);
         }
 
         private List<String> pathInSchema() {
@@ -94,11 +96,6 @@ final class RowGroupReaderImpl implements RowGroupReader {
             @NotNull final MessageType schema,
             @Nullable final String version) {
         final int fieldCount = schema.getFieldCount();
-        if (rowGroup.getColumnsSize() != fieldCount) {
-            throw new IllegalStateException(String.format(
-                    "Expected schema columnsCount and row group columns size to be equal, schema.getFieldCount()=%d, rowGroup.getColumnsSize()=%d, rootURI=%s",
-                    fieldCount, rowGroup.getColumnsSize(), rootURI));
-        }
         this.channelsProvider = Objects.requireNonNull(channelsProvider);
         this.rowGroup = Objects.requireNonNull(rowGroup);
         this.rootURI = Objects.requireNonNull(rootURI);
@@ -109,25 +106,37 @@ final class RowGroupReaderImpl implements RowGroupReader {
         // unique; it's technically possible that they are duplicated. Ultimately, getColumnChunk is a bad abstraction -
         // we shouldn't need to re-do matching for every single row group column chunk, the matching should be done
         // _once_ per column to get the column index, and then for every row group we should just need to do
-        // rowGroup.getColumns().get(columnIndex).
+        // rowGroup.getColumns().get(columnIx).
         //
         // Also, this logic divorced from our inference
         // (io.deephaven.parquet.table.ParquetSchemaReader.readParquetSchema)
         // makes it harder to keep the two in-sync.
         final Set<String> nonUniquePaths = new HashSet<>();
         final Set<Integer> nonUniqueFieldIds = new HashSet<>();
-        for (int ix = 0; ix < fieldCount; ++ix) {
-            final ColumnHolder holder = new ColumnHolder(ix);
-            final String key = holder.pathKey();
-            final Integer fieldId = holder.fieldId();
-            if (byPath.putIfAbsent(key, holder) != null) {
-                nonUniquePaths.add(key);
-            }
-            if (fieldId != null) {
-                if (byFieldId.putIfAbsent(fieldId, holder) != null) {
-                    nonUniqueFieldIds.add(fieldId);
+        int fieldIx = 0;
+        int columnIx = 0;
+        for (final Type fieldType : schema.getFields()) {
+            final int totalColumns = ParquetTotalColumns.of(fieldType);
+            if (totalColumns == 1) {
+                final ColumnHolder holder = new ColumnHolder(fieldIx, columnIx);
+                final String key = holder.pathKey();
+                final Integer fieldId = holder.fieldId();
+                if (byPath.putIfAbsent(key, holder) != null) {
+                    nonUniquePaths.add(key);
+                }
+                if (fieldId != null) {
+                    if (byFieldId.putIfAbsent(fieldId, holder) != null) {
+                        nonUniqueFieldIds.add(fieldId);
+                    }
                 }
             }
+            columnIx += totalColumns;
+            ++fieldIx;
+        }
+        if (columnIx != schema.getPaths().size()) {
+            throw new IllegalStateException(
+                    String.format("Inconsistent column count, columnIx=%d, schema.getPaths().size()=%d", columnIx,
+                            schema.getPaths().size()));
         }
         for (String nonUniquePath : nonUniquePaths) {
             byPath.remove(nonUniquePath);
