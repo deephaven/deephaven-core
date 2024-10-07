@@ -94,7 +94,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     }
                 }
 
-                // Add the data instructions if provided as part of the IcebergInstructions.
+                // Add the data instructions if provided as part of the iceberg instructions.
                 if (instructions.dataInstructions().isPresent()) {
                     builder.setSpecialInstructions(instructions.dataInstructions().get());
                 } else {

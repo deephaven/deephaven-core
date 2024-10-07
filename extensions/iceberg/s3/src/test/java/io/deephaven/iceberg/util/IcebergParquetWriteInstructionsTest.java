@@ -165,7 +165,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void toParquetInstructionTest() {
-        final IcebergParquetWriteInstructions icebergInstructions = IcebergParquetWriteInstructions.builder()
+        final IcebergParquetWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
                 .putDhToIcebergColumnRenames("dh1", "ice1")
                 .putDhToParquetColumnRenames("dh2", "parquet1")
                 .compressionCodecName("GZIP")
@@ -174,7 +174,7 @@ class IcebergParquetWriteInstructionsTest {
                 .targetPageSize(1024 * 1024)
                 .build();
         final Map<Integer, String> fieldIdToName = Map.of(2, "field2", 3, "field3");
-        final ParquetInstructions parquetInstructions = icebergInstructions.toParquetInstructions(
+        final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
                 null, fieldIdToName);
 
         assertThat(parquetInstructions.getParquetColumnNameFromColumnNameOrDefault("dh1")).isEqualTo("dh1");
