@@ -183,15 +183,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
         final OptionalInt fid = readInstructions.getFieldId(columnName);
         final Integer fieldId = fid.isPresent() ? fid.getAsInt() : null;
-        final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        final List<String> defaultPath;
+        {
+            final String[] path = parquetColumnNameToPath.get(columnName);
+            defaultPath = path == null ? List.of(columnName) : List.of(path);
+        }
+        final List<String> parquetPath;
+        final String parquetColumnName;
+        {
+            parquetColumnName = readInstructions.getParquetColumnName(columnName).orElse(null);
+            if (parquetColumnName == null) {
+                parquetPath = null;
+            } else {
+                final String[] path = parquetColumnNameToPath.get(parquetColumnName);
+                parquetPath = path == null ? List.of(parquetColumnName) : List.of(path);
+            }
+        }
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList, fieldId)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, defaultPath, parquetPath, fieldId))
+                .toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
-        return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? columnChunkReaders : null);
+        return new ParquetColumnLocation<>(this, columnName, parquetColumnName, exists ? columnChunkReaders : null);
     }
 
     private RowSet computeIndex() {

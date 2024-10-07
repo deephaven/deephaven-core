@@ -758,6 +758,34 @@ public class TestParquetTools {
                 }
             }
         }
+
+        // If both a field id and parquet column name mapping is provided, they need to map to the same parquet column.
+        {
+            final TableDefinition bazTd = TableDefinition.of(bazCol);
+            final ParquetInstructions inconsistent = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .addColumnNameMapping("53f0de5a-e06f-476e-b82a-a3f9294fcd05", BAZ)
+                    .build();
+            // In the case where we are inferring the TableDefinition from parquet schema, the inconsistency will be
+            // noticed up front
+            try {
+                ParquetTools.readTable(file, inconsistent);
+                Assertions.failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                Assertions.assertThat(e)
+                        .hasMessageContaining("Supplied ColumnDefinitions include duplicate names [Baz]");
+            }
+            // In the case where we provide a TableDefinition, the inconsistency will be noticed when reading the
+            // data
+            try {
+                // Need to force read of data
+                ParquetTools.readTable(file, inconsistent.withTableDefinition(bazTd)).select();
+                Assertions.failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                Assertions.assertThat(e).getRootCause().hasMessageContaining(
+                        "For columnName=Baz, providing an explicit parquet column name path ([53f0de5a-e06f-476e-b82a-a3f9294fcd05]) and field id (0) mapping, but they are resolving to different columns, byFieldId=[colIx=0, pathKey=[e0cf7927-45dc-4dfc-b4ef-36bf4b6ae463], fieldId=0], byPath=[colIx=1, pathKey=[53f0de5a-e06f-476e-b82a-a3f9294fcd05], fieldId=1]");
+            }
+        }
     }
 
     /**

@@ -77,6 +77,11 @@ public class ParquetInstructionsTest {
         assertThat(instructions.getColumnNameFromParquetColumnName("ParquetColumn3")).isEqualTo("Baz");
         assertThat(instructions.getColumnNameFromParquetColumnName("Does Not Exist")).isNull();
 
+        assertThat(instructions.getParquetColumnName("Foo")).hasValue("Foo");
+        assertThat(instructions.getParquetColumnName("Bar")).hasValue("PARQUET COLUMN 2!");
+        assertThat(instructions.getParquetColumnName("Baz")).hasValue("ParquetColumn3");
+        assertThat(instructions.getParquetColumnName("Zap")).isEmpty();
+
         assertThat(instructions.getParquetColumnNameFromColumnNameOrDefault("Foo")).isEqualTo("Foo");
         assertThat(instructions.getParquetColumnNameFromColumnNameOrDefault("Bar")).isEqualTo("PARQUET COLUMN 2!");
         assertThat(instructions.getParquetColumnNameFromColumnNameOrDefault("Baz")).isEqualTo("ParquetColumn3");

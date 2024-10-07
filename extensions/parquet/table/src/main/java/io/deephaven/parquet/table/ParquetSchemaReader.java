@@ -147,9 +147,8 @@ public class ParquetSchemaReader {
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
         final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
-        final Map<Integer, Long> fieldIdCount = schema.getColumns()
+        final Map<Integer, Long> fieldIdCount = schema.getFields()
                 .stream()
-                .map(ColumnDescriptor::getPrimitiveType)
                 .map(Type::getId)
                 .filter(Objects::nonNull)
                 .map(ID::intValue)
@@ -199,6 +198,7 @@ public class ParquetSchemaReader {
                         colName = columnNames.get(0);
                         break COL_NAME;
                     } else if (columnNames.size() > 1) {
+                        // This limitation could likely be removed with a more thorough refactoring of the parquet code.
                         throw new IllegalArgumentException(String.format(
                                 "Non-unique Field ID mapping provided; unable to infer TableDefinition for fieldId=%d, parquetColumnName=%s",
                                 fieldId.intValue(), parquetColumnName));

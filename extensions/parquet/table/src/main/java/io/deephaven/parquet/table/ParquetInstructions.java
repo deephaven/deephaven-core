@@ -167,6 +167,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return (mapped != null) ? mapped : parquetColumnName;
     }
 
+    /**
+     * Returns the explicitly mapped parquet column name if set.
+     *
+     * @param columnName the Deephaven column name
+     * @return the parquet column name
+     */
+    public abstract Optional<String> getParquetColumnName(final String columnName);
+
     public abstract String getParquetColumnNameFromColumnNameOrDefault(final String columnName);
 
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
@@ -279,6 +287,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     }
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
+
+        @Override
+        public Optional<String> getParquetColumnName(String columnName) {
+            return Optional.empty();
+        }
+
         @Override
         public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
             return columnName;
@@ -443,6 +457,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return parquetColumnName != null ? parquetColumnName : columnName;
         }
 
+        public Optional<String> getParquetColumnNameOpt() {
+            return Optional.ofNullable(parquetColumnName);
+        }
+
         public ColumnInstructions setParquetColumnName(final String parquetColumnName) {
             if (this.parquetColumnName != null && !this.parquetColumnName.equals(parquetColumnName)) {
                 throw new IllegalArgumentException(
@@ -571,6 +589,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 return defaultValue;
             }
             return fun.test(ci);
+        }
+
+        @Override
+        public Optional<String> getParquetColumnName(String columnName) {
+            return getOrDefault(columnName, Optional.empty(), ColumnInstructions::getParquetColumnNameOpt);
         }
 
         @Override

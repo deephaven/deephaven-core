@@ -17,15 +17,16 @@ import java.util.List;
 public interface RowGroupReader {
     /**
      * Returns the accessor to a given Column Chunk. If {@code fieldId} is present, it will be matched over
-     * {@code path}.
+     * {@code parquetColumnNamePath}.
      *
      * @param columnName the name of the column
-     * @param path the full column path
+     * @param parquetColumnNamePath the full column parquetColumnNamePath
      * @param fieldId the field_id to fetch
      * @return the accessor to a given Column Chunk, or null if the column is not present in this Row Group
      */
     @Nullable
-    ColumnChunkReader getColumnChunk(@NotNull String columnName, @NotNull List<String> path, @Nullable Integer fieldId);
+    ColumnChunkReader getColumnChunk(@NotNull String columnName, @NotNull List<String> defaultPath,
+            @Nullable List<String> parquetColumnNamePath, @Nullable Integer fieldId);
 
     long numRows();
 

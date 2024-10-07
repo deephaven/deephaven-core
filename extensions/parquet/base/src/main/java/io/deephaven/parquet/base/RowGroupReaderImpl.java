@@ -8,6 +8,7 @@ import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Type.ID;
 import org.apache.parquet.schema.Type.Repetition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,20 +17,69 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 final class RowGroupReaderImpl implements RowGroupReader {
+
+    private class ColumnHolder {
+        private final int columnIndex;
+
+        ColumnHolder(int columnIndex) {
+            this.columnIndex = columnIndex;
+        }
+
+        String pathKey() {
+            return pathInSchema().toString();
+        }
+
+        Integer fieldId() {
+            final ID id = type().getId();
+            return id == null ? null : id.intValue();
+        }
+
+        ColumnChunkReaderImpl reader(String columnName) {
+            return new ColumnChunkReaderImpl(columnName, columnChunk(), channelsProvider, rootURI, schema,
+                    nonRequiredFields(), numRows(), version);
+        }
+
+        private Type type() {
+            return schema.getFields().get(columnIndex);
+        }
+
+        private List<String> pathInSchema() {
+            return columnChunk().getMeta_data().path_in_schema;
+        }
+
+        private ColumnChunk columnChunk() {
+            return rowGroup.getColumns().get(columnIndex);
+        }
+
+        private List<Type> nonRequiredFields() {
+            final List<String> path_in_schema = pathInSchema();
+            final List<Type> nonRequiredFields = new ArrayList<>();
+            for (int indexInPath = 0; indexInPath < path_in_schema.size(); indexInPath++) {
+                Type fieldType = schema
+                        .getType(path_in_schema.subList(0, indexInPath + 1).toArray(new String[0]));
+                if (fieldType.getRepetition() != Repetition.REQUIRED) {
+                    nonRequiredFields.add(fieldType);
+                }
+            }
+            return nonRequiredFields;
+        }
+
+        private String debugString() {
+            return String.format("colIx=%d, pathKey=%s, fieldId=%d", columnIndex, pathKey(), fieldId());
+        }
+    }
+
     private final RowGroup rowGroup;
     private final SeekableChannelsProvider channelsProvider;
     private final MessageType schema;
-    private final Map<String, List<Type>> schemaMap;
-    private final Map<String, ColumnChunk> chunkMap;
-    private final Map<Integer, List<Type>> schemaMapByFieldId;
-    private final Map<Integer, ColumnChunk> chunkMapByFieldId;
+    private final Map<String, ColumnHolder> byPath;
+    private final Map<Integer, ColumnHolder> byFieldId;
 
     /**
      * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
@@ -53,10 +103,8 @@ final class RowGroupReaderImpl implements RowGroupReader {
         this.rowGroup = Objects.requireNonNull(rowGroup);
         this.rootURI = Objects.requireNonNull(rootURI);
         this.schema = Objects.requireNonNull(schema);
-        schemaMap = new HashMap<>(fieldCount);
-        chunkMap = new HashMap<>(fieldCount);
-        schemaMapByFieldId = new HashMap<>(fieldCount);
-        chunkMapByFieldId = new HashMap<>(fieldCount);
+        byPath = new HashMap<>(fieldCount);
+        byFieldId = new HashMap<>(fieldCount);
         // Note: there is no technical guarantee from parquet that column names, path_in_schema, or field_ids are
         // unique; it's technically possible that they are duplicated. Ultimately, getColumnChunk is a bad abstraction -
         // we shouldn't need to re-do matching for every single row group column chunk, the matching should be done
@@ -66,74 +114,53 @@ final class RowGroupReaderImpl implements RowGroupReader {
         // Also, this logic divorced from our inference
         // (io.deephaven.parquet.table.ParquetSchemaReader.readParquetSchema)
         // makes it harder to keep the two in-sync.
-        final Set<String> nonUniqueKeys = new HashSet<>();
+        final Set<String> nonUniquePaths = new HashSet<>();
         final Set<Integer> nonUniqueFieldIds = new HashSet<>();
-        final Iterator<Type> fieldsIt = schema.getFields().iterator();
-        final Iterator<ColumnChunk> colsIt = rowGroup.getColumnsIterator();
-        while (fieldsIt.hasNext() && colsIt.hasNext()) {
-            final Type ft = fieldsIt.next();
-            final ColumnChunk column = colsIt.next();
-            final List<String> path_in_schema = column.getMeta_data().path_in_schema;
-            final String key = path_in_schema.toString();
-            final List<Type> nonRequiredFields = new ArrayList<>();
-            for (int indexInPath = 0; indexInPath < path_in_schema.size(); indexInPath++) {
-                Type fieldType = schema
-                        .getType(path_in_schema.subList(0, indexInPath + 1).toArray(new String[0]));
-                if (fieldType.getRepetition() != Repetition.REQUIRED) {
-                    nonRequiredFields.add(fieldType);
-                }
+        for (int ix = 0; ix < fieldCount; ++ix) {
+            final ColumnHolder holder = new ColumnHolder(ix);
+            final String key = holder.pathKey();
+            final Integer fieldId = holder.fieldId();
+            if (byPath.putIfAbsent(key, holder) != null) {
+                nonUniquePaths.add(key);
             }
-            if (chunkMap.putIfAbsent(key, column) != null) {
-                nonUniqueKeys.add(key);
-            }
-            schemaMap.putIfAbsent(key, nonRequiredFields);
-            if (ft.getId() != null) {
-                final int fieldId = ft.getId().intValue();
-                if (chunkMapByFieldId.putIfAbsent(fieldId, column) != null) {
+            if (fieldId != null) {
+                if (byFieldId.putIfAbsent(fieldId, holder) != null) {
                     nonUniqueFieldIds.add(fieldId);
                 }
-                schemaMapByFieldId.putIfAbsent(fieldId, nonRequiredFields);
             }
         }
-        if (fieldsIt.hasNext() || colsIt.hasNext()) {
-            throw new IllegalStateException(String.format("Unexpected, iterators not exhausted, rootURI=%s", rootURI));
-        }
-        for (String nonUniqueKey : nonUniqueKeys) {
-            chunkMap.remove(nonUniqueKey);
-            schemaMap.remove(nonUniqueKey);
+        for (String nonUniquePath : nonUniquePaths) {
+            byPath.remove(nonUniquePath);
         }
         for (Integer nonUniqueFieldId : nonUniqueFieldIds) {
-            chunkMapByFieldId.remove(nonUniqueFieldId);
-            schemaMapByFieldId.remove(nonUniqueFieldId);
+            byFieldId.remove(nonUniqueFieldId);
         }
         this.version = version;
     }
 
     @Override
-    @Nullable
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final String columnName, @NotNull final List<String> path,
+    public @Nullable ColumnChunkReader getColumnChunk(
+            @NotNull String columnName,
+            @NotNull List<String> defaultPath,
+            @Nullable List<String> parquetColumnNamePath,
             @Nullable Integer fieldId) {
-        final ColumnChunk columnChunk;
-        final List<Type> nonRequiredFields;
-        PARTS: {
-            if (fieldId != null) {
-                final ColumnChunk cc = chunkMapByFieldId.get(fieldId);
-                if (cc != null) {
-                    columnChunk = cc;
-                    nonRequiredFields = schemaMapByFieldId.get(fieldId);
-                    break PARTS;
+        final ColumnHolder holder;
+        if (fieldId == null && parquetColumnNamePath == null) {
+            holder = byPath.get(defaultPath.toString());
+        } else {
+            final ColumnHolder byFieldId = fieldId == null ? null : this.byFieldId.get(fieldId);
+            final ColumnHolder byPath =
+                    parquetColumnNamePath == null ? null : this.byPath.get(parquetColumnNamePath.toString());
+            if (byFieldId != null && byPath != null) {
+                if (byFieldId != byPath) {
+                    throw new IllegalArgumentException(String.format(
+                            "For columnName=%s, providing an explicit parquet column name path (%s) and field id (%d) mapping, but they are resolving to different columns, byFieldId=[%s], byPath=[%s]",
+                            columnName, parquetColumnNamePath, fieldId, byFieldId.debugString(), byPath.debugString()));
                 }
             }
-            final String key = path.toString();
-            final ColumnChunk cc = chunkMap.get(key);
-            if (cc == null) {
-                return null;
-            }
-            columnChunk = cc;
-            nonRequiredFields = schemaMap.get(key);
+            holder = byFieldId != null ? byFieldId : byPath;
         }
-        return new ColumnChunkReaderImpl(columnName, columnChunk, channelsProvider, rootURI, schema, nonRequiredFields,
-                numRows(), version);
+        return holder == null ? null : holder.reader(columnName);
     }
 
     @Override
