@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.TableDefinition;
 
-import java.util.Map;
 import java.util.Optional;
 
 public interface IcebergBaseInstructions {
@@ -21,20 +20,9 @@ public interface IcebergBaseInstructions {
      */
     Optional<Object> dataInstructions();
 
-    /**
-     * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading/writing the
-     * Iceberg data files.
-     */
-    Map<String, String> columnRenames();
-
     interface Builder<INSTRUCTIONS_BUILDER> {
         INSTRUCTIONS_BUILDER tableDefinition(TableDefinition tableDefinition);
 
         INSTRUCTIONS_BUILDER dataInstructions(Object s3Instructions);
-
-        INSTRUCTIONS_BUILDER putColumnRenames(String key, String value);
-
-        @SuppressWarnings("unused")
-        INSTRUCTIONS_BUILDER putAllColumnRenames(Map<String, ? extends String> entries);
     }
 }

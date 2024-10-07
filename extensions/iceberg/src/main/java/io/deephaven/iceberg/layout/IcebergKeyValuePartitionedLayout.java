@@ -8,7 +8,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergBaseInstructions;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -53,7 +53,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergBaseInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
 

@@ -3,14 +3,14 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Check;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Map;
 
 import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZE;
@@ -20,7 +20,7 @@ import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZ
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@BuildableStyle
+@CopyableStyle
 public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstructions {
     /**
      * The default {@link IcebergParquetWriteInstructions} to use when reading/writing Iceberg tables as Parquet data
@@ -73,6 +73,14 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     }
 
     /**
+     * A one-to-one {@link Map map} from Deephaven to Parquet column names to use when writing deephaven tables to
+     * Iceberg tables.
+     */
+    public abstract Map<String, String> dhToParquetColumnRenames();
+
+    abstract IcebergParquetWriteInstructions withTableDefinition(@NotNull final TableDefinition tableDefinition);
+
+    /**
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
      *
      * @param onWriteCompleted The callback to be invoked after writing the parquet file.
@@ -86,10 +94,10 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         tableDefinition().ifPresent(builder::setTableDefinition);
         dataInstructions().ifPresent(builder::setSpecialInstructions);
 
-        // Add any column rename mappings.
-        if (!columnRenames().isEmpty()) {
-            for (final Map.Entry<String, String> entry : columnRenames().entrySet()) {
-                builder.addColumnNameMapping(entry.getKey(), entry.getValue());
+        // Add any parquet column rename mappings.
+        if (!dhToParquetColumnRenames().isEmpty()) {
+            for (final Map.Entry<String, String> entry : dhToParquetColumnRenames().entrySet()) {
+                builder.addColumnNameMapping(entry.getValue(), entry.getKey());
             }
         }
 
@@ -105,17 +113,17 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     }
 
     public interface Builder extends IcebergWriteInstructions.Builder<Builder> {
-        @SuppressWarnings("unused")
         Builder compressionCodecName(String compressionCodecName);
 
-        @SuppressWarnings("unused")
         Builder maximumDictionaryKeys(int maximumDictionaryKeys);
 
-        @SuppressWarnings("unused")
         Builder maximumDictionarySize(int maximumDictionarySize);
 
-        @SuppressWarnings("unused")
         Builder targetPageSize(int targetPageSize);
+
+        Builder putDhToParquetColumnRenames(String key, String value);
+
+        Builder putAllDhToParquetColumnRenames(Map<String, ? extends String> entries);
 
         IcebergParquetWriteInstructions build();
     }

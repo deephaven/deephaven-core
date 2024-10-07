@@ -9,8 +9,8 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.util.IcebergBaseInstructions;
 import io.deephaven.iceberg.relative.RelativeFileIO;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
@@ -21,10 +21,11 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.deephaven.iceberg.base.IcebergUtils.getAllDataFiles;
+import static io.deephaven.iceberg.base.IcebergUtils.allDataFiles;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -50,7 +51,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * The instructions for customizations while reading.
      */
-    final IcebergBaseInstructions instructions;
+    final IcebergReadInstructions instructions;
 
     /**
      * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
@@ -67,6 +68,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * accessed while synchronized on {@code this}.
      */
     ParquetInstructions parquetInstructions;
+
+    /**
+     * The number of files discovered, used for ordering the keys.
+     */
+    private int fileCount;
 
     protected IcebergTableLocationKey locationKey(
             final org.apache.iceberg.FileFormat format,
@@ -101,7 +107,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
                 parquetInstructions = builder.build();
             }
-            return new IcebergTableParquetLocationKey(fileUri, 0, partitions, parquetInstructions);
+            return new IcebergTableParquetLocationKey(fileUri, fileCount++, partitions, parquetInstructions);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 table, snapshot.snapshotId(), format, fileUri));
@@ -119,7 +125,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final IcebergBaseInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableDef = tableDef;
         this.table = table;
@@ -144,16 +150,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
-        try (final Stream<DataFile> dataFiles = getAllDataFiles(table, snapshot)) {
-            dataFiles.forEach(df -> {
-                final URI fileUri = dataFileUri(df);
-                final IcebergTableLocationKey locationKey =
-                        cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
-                if (locationKey != null) {
-                    locationKeyObserver.accept(locationKey);
-                }
-            });
-        } catch (final Exception e) {
+        try (final Stream<DataFile> dataFiles = allDataFiles(table, snapshot)) {
+            dataFiles
+                    .map(df -> {
+                        final URI fileUri = dataFileUri(df);
+                        return cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
+                    })
+                    .filter(Objects::nonNull)
+                    .forEach(locationKeyObserver);
+        } catch (final RuntimeException e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", table, snapshot.snapshotId()), e);
         }

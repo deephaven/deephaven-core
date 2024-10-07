@@ -6,7 +6,7 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergBaseInstructions;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
@@ -31,7 +31,7 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final IcebergBaseInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
     }

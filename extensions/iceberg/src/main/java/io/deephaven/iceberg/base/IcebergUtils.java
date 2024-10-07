@@ -6,16 +6,16 @@ package io.deephaven.iceberg.base;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import org.apache.iceberg.DataFile;
-import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
-import org.apache.iceberg.ManifestReader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -28,8 +28,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -44,36 +49,18 @@ public final class IcebergUtils {
      *
      * @return A stream of {@link DataFile} objects.
      */
-    public static Stream<DataFile> getAllDataFiles(
-            @NotNull final Table table,
-            @NotNull final Snapshot snapshot) {
+    public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
         final FileIO fileIO = table.io();
         try {
-            // Retrieve the manifest files from the snapshot
-            final List<ManifestFile> manifestFiles = snapshot.allManifests(fileIO);
-            return manifestFiles.stream()
-                    .peek(manifestFile -> {
-                        if (manifestFile.content() != ManifestContent.DATA) {
-                            throw new TableDataException(
-                                    String.format(
-                                            "%s:%d - only DATA manifest files are currently supported, encountered %s",
-                                            table, snapshot.snapshotId(), manifestFile.content()));
-                        }
-                    })
-                    .flatMap(manifestFile -> {
+            return allManifests(table, snapshot).stream()
+                    .map(manifestFile -> ManifestFiles.read(manifestFile, fileIO))
+                    .flatMap(manifestReader -> {
                         try {
-                            final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO);
-                            return StreamSupport.stream(reader.spliterator(), false).onClose(() -> {
-                                try {
-                                    reader.close();
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
-                                }
-                            });
+                            return toStream(manifestReader);
                         } catch (final RuntimeException e) {
                             throw new TableDataException(
                                     String.format("%s:%d:%s - error reading manifest file", table,
-                                            snapshot.snapshotId(), manifestFile),
+                                            snapshot.snapshotId(), manifestReader),
                                     e);
                         }
                     });
@@ -81,6 +68,34 @@ public final class IcebergUtils {
             throw new TableDataException(
                     String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
         }
+    }
+
+    /**
+     * Retrieves a {@link List} of manifest files from the given {@link Table} and {@link Snapshot}.
+     *
+     * @param table The {@link Table} to retrieve manifest files for.
+     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
+     *
+     * @return A {@link List} of {@link ManifestFile} objects.
+     * @throws TableDataException if there is an error retrieving the manifest files.
+     */
+    static List<ManifestFile> allManifests(@NotNull final Table table, @NotNull final Snapshot snapshot) {
+        try {
+            return snapshot.allManifests(table.io());
+        } catch (final RuntimeException e) {
+            throw new TableDataException(
+                    String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
+        }
+    }
+
+    private static <T> Stream<T> toStream(final CloseableIterable<T> iterable) {
+        return StreamSupport.stream(iterable.spliterator(), false).onClose(() -> {
+            try {
+                iterable.close();
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     /**
@@ -163,6 +178,62 @@ public final class IcebergUtils {
         // TODO Add support for reading and writing lists
     }
 
+    public static class SpecAndSchema {
+        private final PartitionSpec partitionSpec;
+        private Schema schema;
+
+        private SpecAndSchema(final PartitionSpec partitionSpec, final Schema schema) {
+            this.partitionSpec = partitionSpec;
+            this.schema = schema;
+        }
+
+        public PartitionSpec partitionSpec() {
+            return partitionSpec;
+        }
+
+        public Schema schema() {
+            return schema;
+        }
+    }
+
+    /**
+     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition} using the provided instructions.
+     */
+    public static SpecAndSchema createSpecAndSchema(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final IcebergWriteInstructions instructions) {
+        final Collection<String> partitioningColumnNames = new ArrayList<>();
+        final List<Types.NestedField> fields = new ArrayList<>();
+        int fieldID = 1; // Iceberg field IDs start from 1
+
+        // Create the schema first and use it to build the partition spec
+        final Map<String, String> dhToIcebergColumnRenames = instructions.dhToIcebergColumnRenames();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String dhColumnName = columnDefinition.getName();
+            final String icebergColName = dhToIcebergColumnRenames.getOrDefault(dhColumnName, dhColumnName);
+            final Type icebergType = convertToIcebergType(columnDefinition.getDataType());
+            fields.add(Types.NestedField.optional(fieldID, icebergColName, icebergType));
+            if (columnDefinition.isPartitioning()) {
+                partitioningColumnNames.add(icebergColName);
+            }
+            fieldID++;
+        }
+        final Schema schema = new Schema(fields);
+
+        final PartitionSpec partitionSpec = createPartitionSpec(schema, partitioningColumnNames);
+        return new SpecAndSchema(partitionSpec, schema);
+    }
+
+    private static PartitionSpec createPartitionSpec(
+            @NotNull final Schema schema,
+            @NotNull final Iterable<String> partitionColumnNames) {
+        final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema);
+        for (final String partitioningColumnName : partitionColumnNames) {
+            partitionSpecBuilder.identity(partitioningColumnName);
+        }
+        return partitionSpecBuilder.build();
+    }
+
     /**
      * Check if an existing iceberg table with provided schema is compatible for overwriting with a new table with given
      * schema.
@@ -209,27 +280,40 @@ public final class IcebergUtils {
      * @throws IllegalArgumentException if the schemas are not compatible.
      */
     public static void verifyAppendCompatibility(
-            final Schema icebergSchema,
-            final TableDefinition tableDefinition) {
+            @NotNull final Schema icebergSchema,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final IcebergWriteInstructions instructions) {
         // Check that all columns in the table definition are part of the Iceberg schema and have the same type
+        final Map<String, String> dhToIcebergColumnRenames = instructions.dhToIcebergColumnRenames();
         for (final ColumnDefinition<?> dhColumn : tableDefinition.getColumns()) {
-            final Types.NestedField icebergColumn = icebergSchema.findField(dhColumn.getName());
-            if (icebergColumn == null || !icebergColumn.type().equals(convertToIcebergType(dhColumn.getDataType()))) {
+            final String dhColumnName = dhColumn.getName();
+            final String icebergColName = dhToIcebergColumnRenames.getOrDefault(dhColumnName, dhColumnName);
+            final Types.NestedField icebergColumn = icebergSchema.findField(icebergColName);
+            if (icebergColumn == null) {
                 throw new IllegalArgumentException("Schema mismatch, column " + dhColumn.getName() + " from Deephaven "
-                        + "table definition: " + tableDefinition + " is not found or has a different type in Iceberg "
-                        + "table schema: " + icebergSchema);
+                        + "table definition: " + tableDefinition + " is not found in Iceberg table schema: "
+                        + icebergSchema);
+            }
+            if (!icebergColumn.type().equals(convertToIcebergType(dhColumn.getDataType()))) {
+                throw new IllegalArgumentException("Schema mismatch, column " + dhColumn.getName() + " from Deephaven "
+                        + "table definition: " + tableDefinition + " has type " + dhColumn.getDataType()
+                        + " which does not match the type " + icebergColumn.type() + " in Iceberg table schema: "
+                        + icebergSchema);
             }
         }
 
         // Check that all required columns in the Iceberg schema are part of the table definition
+        final Map<String, String> icebergToDhColumnRenames = instructions.icebergToDhColumnRenames();
         for (final Types.NestedField icebergColumn : icebergSchema.columns()) {
             if (icebergColumn.isOptional()) {
                 continue;
             }
-            if (tableDefinition.getColumn(icebergColumn.name()) == null) {
-                throw new IllegalArgumentException("Partition spec mismatch, required column " + icebergColumn.name() +
-                        " from Iceberg table schema: " + icebergSchema + " not found in Deephaven table definition: "
-                        + tableDefinition);
+            final String icebergColumnName = icebergColumn.name();
+            final String dhColName = icebergToDhColumnRenames.getOrDefault(icebergColumnName, icebergColumnName);
+            if (tableDefinition.getColumn(dhColName) == null) {
+                throw new IllegalArgumentException("Schema mismatch, required column " + icebergColumnName
+                        + " from Iceberg table schema: " + icebergSchema + " is not found in Deephaven table "
+                        + "definition: " + tableDefinition);
             }
         }
     }
@@ -244,10 +328,13 @@ public final class IcebergUtils {
      * @throws IllegalArgumentException if the partition spec are not compatible.
      */
     public static void verifyAppendCompatibility(
-            final PartitionSpec partitionSpec,
-            final TableDefinition tableDefinition) {
+            @NotNull final PartitionSpec partitionSpec,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final IcebergWriteInstructions instructions) {
+        final Map<String, String> icebergToDhColumnRenames = instructions.icebergToDhColumnRenames();
         final Set<String> icebergPartitionColumns = partitionSpec.fields().stream()
                 .map(PartitionField::name)
+                .map(icebergColumnName -> icebergToDhColumnRenames.getOrDefault(icebergColumnName, icebergColumnName))
                 .collect(Collectors.toSet());
         final Set<String> dhPartitioningColumns = tableDefinition.getColumns().stream()
                 .filter(ColumnDefinition::isPartitioning)

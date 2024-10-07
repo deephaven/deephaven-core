@@ -211,15 +211,16 @@ public class ParquetTableWriter {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
-            final CountingOutputStream countingOutput = new CountingOutputStream(destOutputStream);
+            final long numBytesWritten;
             try (final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
-                    tableRowSet, columnSourceMap, dest, countingOutput, writeInstructions, tableMeta,
+                    tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
                     tableInfoBuilder, metadataFileWriter)) {
                 // Given the transformation, do not use the original table's "definition" for writing
                 write(t, writeInstructions, parquetFileWriter, computedCache);
+                numBytesWritten = parquetFileWriter.getCount();
             }
             destOutputStream.done();
-            return countingOutput.getCount();
+            return numBytesWritten;
         }
     }
 
@@ -323,7 +324,7 @@ public class ParquetTableWriter {
      * @param tableRowSet The row set being written
      * @param columnSourceMap The columns of the table
      * @param dest The destination URI to write to
-     * @param countingOutput The output stream to write to dest
+     * @param destOutputStream The output stream to write to dest
      * @param writeInstructions Write instructions for the file
      * @param tableMeta Metadata to include in the parquet metadata
      * @param tableInfoBuilder Builder for accumulating per-column information to construct the deephaven metadata
@@ -338,7 +339,7 @@ public class ParquetTableWriter {
             @NotNull final RowSet tableRowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final URI dest,
-            @NotNull final CountingOutputStream countingOutput,
+            @NotNull final OutputStream destOutputStream,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
@@ -384,7 +385,7 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(dest, countingOutput, writeInstructions.getTargetPageSize(),
+        return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
     }

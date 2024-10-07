@@ -9,15 +9,21 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.junit5.CatalogAdapterBase;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.parquet.table.ParquetTools;
 import junit.framework.TestCase;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +83,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                         "doubleCol = (double) 3.5 * i + 20");
         catalogAdapter.append("MyNamespace.MyTable", moreData, writeInstructions);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        final Table expected = TableTools.merge(source, moreData);
+        final Table expected = TableTools.merge(moreData, source);
         assertTableEquals(expected, fromIceberg);
 
         // Append an empty table
@@ -95,7 +101,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.append("MyNamespace.MyTable", new Table[] {someMoreData, moreData, emptyTable},
                 writeInstructions);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        final Table expected2 = TableTools.merge(expected, someMoreData, moreData);
+        final Table expected2 = TableTools.merge(someMoreData, moreData, expected);
         assertTableEquals(expected2, fromIceberg);
     }
 
@@ -176,7 +182,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .update("intCol = (int) 3 * i + 20");
         catalogAdapter.append("MyNamespace.MyTable", moreData, writeInstructionsWithoutSchemaMatching);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        final Table expected = TableTools.merge(differentSource, moreData);
+        final Table expected = TableTools.merge(moreData, differentSource);
         assertTableEquals(expected, fromIceberg);
     }
 
@@ -207,7 +213,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .update("intCol = (int) 5 * i + 10");
         catalogAdapter.append("MyNamespace.MyTable", compatibleSource, writeInstructions);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        final Table expected = TableTools.merge(source, compatibleSource.update("doubleCol = NULL_DOUBLE"));
+        final Table expected = TableTools.merge(compatibleSource.update("doubleCol = NULL_DOUBLE"), source);
         assertTableEquals(expected, fromIceberg);
 
         // Append more data
@@ -216,7 +222,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                         "doubleCol = (double) 3.5 * i + 20");
         catalogAdapter.append("MyNamespace.MyTable", moreData, writeInstructions);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        final Table expected2 = TableTools.merge(expected, moreData);
+        final Table expected2 = TableTools.merge(moreData, expected);
         assertTableEquals(expected2, fromIceberg);
     }
 
@@ -262,9 +268,9 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 writeInstructionsWithDefinition);
         fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
         final Table expected = TableTools.merge(
-                source,
                 appendTable1.dropColumns("shortCol"),
-                appendTable2.dropColumns("charCol"));
+                appendTable2.dropColumns("charCol"),
+                source);
         assertTableEquals(expected, fromIceberg);
     }
 
@@ -346,5 +352,73 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(myTableId);
         fromIceberg = catalogAdapter.readTable(myTableId, null);
         assertTableEquals(goodSource, fromIceberg);
+    }
+
+    @Test
+    void testColumnRenameWhileWriting() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
+                .createTableIfNotExist(true)
+                .verifySchema(true)
+                .putDhToParquetColumnRenames("intCol", "numbers")
+                .putDhToParquetColumnRenames("doubleCol", "decimals")
+                .build();
+
+        catalogAdapter.append("MyNamespace.MyTable", source, writeInstructions);
+        // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment when this
+        // is fixed.
+        // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
+        // assertTableEquals(source, fromIceberg);
+
+        // Verify that the columns are renamed in the parquet file
+        final TableIdentifier tableIdentifier = TableIdentifier.of("MyNamespace", "MyTable");
+        final String firstParquetFilePath;
+        {
+            final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
+            final List<DataFile> dataFileList =
+                    IcebergUtils.allDataFiles(table, table.currentSnapshot()).collect(Collectors.toList());
+            assertThat(dataFileList).hasSize(1);
+            firstParquetFilePath = dataFileList.get(0).path().toString();
+            final Table fromParquet = ParquetTools.readTable(firstParquetFilePath);
+            assertTableEquals(source.renameColumns("numbers=intCol", "decimals=doubleCol"), fromParquet);
+        }
+
+        // TODO Verify that the column ID is set correctly after #6156 is merged
+
+        // Now append more data to it
+        final Table moreData = TableTools.emptyTable(5)
+                .update("newIntCol = (int) 3 * i + 20",
+                        "newDoubleCol = (double) 3.5 * i + 20");
+        writeInstructions = IcebergParquetWriteInstructions.builder()
+                .verifySchema(true)
+                .putDhToIcebergColumnRenames("newIntCol", "intCol")
+                .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
+                .putDhToParquetColumnRenames("newIntCol", "integers")
+                .putDhToParquetColumnRenames("newDoubleCol", "fractions")
+                .build();
+        catalogAdapter.append("MyNamespace.MyTable", moreData, writeInstructions);
+
+        // Verify that the columns are renamed in the parquet file
+        {
+            final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
+            final List<DataFile> dataFileList =
+                    IcebergUtils.allDataFiles(table, table.currentSnapshot()).collect(Collectors.toList());
+            assertThat(dataFileList).hasSize(2);
+            String secondParquetFilePath = null;
+            for (final DataFile df : dataFileList) {
+                final String parquetFilePath = df.path().toString();
+                if (!parquetFilePath.equals(firstParquetFilePath)) {
+                    secondParquetFilePath = parquetFilePath;
+                    break;
+                }
+            }
+            assertThat(secondParquetFilePath).isNotNull();
+            final Table fromParquet = ParquetTools.readTable(secondParquetFilePath);
+            assertTableEquals(moreData.renameColumns("integers=newIntCol", "fractions=newDoubleCol"), fromParquet);
+        }
+
+        // TODO Verify that the column ID is set correctly after #6156 is merged
     }
 }

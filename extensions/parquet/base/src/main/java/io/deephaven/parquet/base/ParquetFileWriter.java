@@ -18,6 +18,7 @@ import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ public final class ParquetFileWriter implements AutoCloseable {
 
     public ParquetFileWriter(
             final URI dest,
-            final CountingOutputStream countingOutput,
+            final OutputStream destOutputStream,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
@@ -54,7 +55,7 @@ public final class ParquetFileWriter implements AutoCloseable {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        this.countingOutput = countingOutput;
+        this.countingOutput = new CountingOutputStream(destOutputStream);
         countingOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
@@ -69,6 +70,13 @@ public final class ParquetFileWriter implements AutoCloseable {
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
         return rowGroupWriter;
+    }
+
+    /**
+     * Get the number of bytes written to the parquet file so far.
+     */
+    public long getCount() {
+        return countingOutput.getCount();
     }
 
     @Override

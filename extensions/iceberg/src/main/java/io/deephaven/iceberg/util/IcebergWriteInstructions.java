@@ -3,9 +3,12 @@
 //
 package io.deephaven.iceberg.util;
 
+import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * This class provides instructions intended for writing Iceberg tables. The default values documented in this class may
@@ -42,11 +45,28 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     public abstract Optional<Boolean> verifySchema();
     // @formatter:on
 
+    /**
+     * A one-to-one {@link Map map} from Deephaven to Iceberg column names to use when writing deephaven tables to
+     * Iceberg tables.
+     */
+    public abstract Map<String, String> dhToIcebergColumnRenames();
+
+    /**
+     * The inverse map of {@link #dhToIcebergColumnRenames()}.
+     */
+    @Value.Lazy
+    public Map<String, String> icebergToDhColumnRenames() {
+        return dhToIcebergColumnRenames().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    }
+
     public interface Builder<INSTRUCTIONS_BUILDER> extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
-        @SuppressWarnings("unused")
         INSTRUCTIONS_BUILDER createTableIfNotExist(boolean createTableIfNotExist);
 
-        @SuppressWarnings("unused")
         INSTRUCTIONS_BUILDER verifySchema(boolean verifySchema);
+
+        INSTRUCTIONS_BUILDER putDhToIcebergColumnRenames(String key, String value);
+
+        INSTRUCTIONS_BUILDER putAllDhToIcebergColumnRenames(Map<String, ? extends String> entries);
     }
 }
