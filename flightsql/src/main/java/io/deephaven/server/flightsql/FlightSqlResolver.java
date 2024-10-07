@@ -478,7 +478,13 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     static final class CommandStatementQueryImpl implements CommandHandler, TicketHandler {
 
         private final long id;
+
+        private ByteString schemaBytes;
         private Table table;
+
+        public void reup() {
+            // todo
+        }
 
         @Override
         public TicketHandler validate(Any any) {
@@ -486,15 +492,26 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             if (command.hasTransactionId()) {
                 throw transactionIdsNotSupported();
             }
-
+            // TODO: nugget, scopes.
+            // TODO: some attribute to set on table to force the schema / schemaBytes?
+            // TODO: query scope, exex context
             table = null; // todo
-
+            schemaBytes = BarrageUtil.schemaBytesFromTable(table);
             return this;
         }
 
         @Override
         public FlightInfo flightInfo(FlightDescriptor descriptor) {
-            return null;
+            return FlightInfo.newBuilder()
+                    .setFlightDescriptor(descriptor)
+                    .setSchema(schemaBytes)
+                    .addEndpoint(FlightEndpoint.newBuilder()
+                            .setTicket((Ticket) null) // todo: based on id
+                            //.setExpirationTime(expirationTime())
+                            .build())
+                    .setTotalRecords(-1)
+                    .setTotalBytes(-1)
+                    .build();
         }
 
         @Override
