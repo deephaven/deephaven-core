@@ -15,11 +15,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -29,14 +25,15 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.InternalUseOnly;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -92,7 +89,8 @@ public class WindowCheck {
      * @param addToMonitor should we add this to the PeriodicUpdateGraph
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
+    @InternalUseOnly
+    public static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         if (table.isRefreshing()) {
             table.getUpdateGraph().checkInitiateSerialTableOperation();
@@ -111,19 +109,28 @@ public class WindowCheck {
 
         final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
         final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
-        final TimeWindowListener timeWindowListener =
-                new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
-        recorder.setMergedListener(timeWindowListener);
+        final TimeWindowListenerImpl timeWindowListenerImpl =
+                new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
+        recorder.setMergedListener(timeWindowListenerImpl);
         if (table.isRefreshing()) {
             table.addUpdateListener(recorder);
         }
-        timeWindowListener.addRowSequence(table.getRowSet(), false);
-        result.addParentReference(timeWindowListener);
-        result.manage(table);
+        timeWindowListenerImpl.addRowSequence(table.getRowSet(), false);
+        result.addParentReference(timeWindowListenerImpl);
         if (addToMonitor) {
-            result.getUpdateGraph().addSource(timeWindowListener);
+            result.getUpdateGraph().addSource(timeWindowListenerImpl);
         }
-        return new Pair<>(result, timeWindowListener);
+        return new Pair<>(result, timeWindowListenerImpl);
+    }
+
+    /**
+     * This interface is only for Deephaven internal use.
+     */
+    @InternalUseOnly
+    public interface TimeWindowListener extends Runnable {
+        void validateQueue();
+
+        void dumpQueue();
     }
 
     /**
@@ -134,7 +141,7 @@ public class WindowCheck {
      * It implements {@link Runnable}, so that we can be inserted into the {@link PeriodicUpdateGraph}.
      * </p>
      */
-    static class TimeWindowListener extends MergedListener implements Runnable {
+    static class TimeWindowListenerImpl extends MergedListener implements TimeWindowListener {
         private final InWindowColumnSource inWindowColumnSource;
         private final QueryTable result;
         /**
@@ -202,9 +209,9 @@ public class WindowCheck {
          * @param source the source table
          * @param result our initialized result table
          */
-        private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
+        private TimeWindowListenerImpl(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
                 final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
-            super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
+            super(Collections.singleton(recorder), List.of(), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
             this.inWindowColumnSource = inWindowColumnSource;
@@ -802,7 +809,8 @@ public class WindowCheck {
             return builder.build();
         }
 
-        void validateQueue() {
+        @Override
+        public void validateQueue() {
             final RowSet resultRowSet = result.getRowSet();
             final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
 
@@ -866,7 +874,8 @@ public class WindowCheck {
             }
         }
 
-        void dumpQueue() {
+        @Override
+        public void dumpQueue() {
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
             System.out.println("Queue size: " + entries.length);
@@ -1047,6 +1056,53 @@ public class WindowCheck {
         private long timeStampForPrev() {
             final long currentStep = updateGraph.clock().currentStep();
             return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
+        }
+
+        @Override
+        public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive,
+                @Nullable DataIndex dataIndex, @NotNull RowSet mapper, Object... keys) {
+            final List<Object> keysList = Arrays.asList(keys);
+            final boolean includeNull = keysList.contains(null) ^ invertMatch;
+            final boolean includeTrue = keysList.contains(true) ^ invertMatch;
+            final boolean includeFalse = keysList.contains(false) ^ invertMatch;
+
+            final int getSize = (int) Math.min(4096, mapper.size());
+
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+
+            try (final GetContext getContext = timeStampSource.makeGetContext(getSize);
+                    final RowSequence.Iterator rsit = mapper.getRowSequenceIterator()) {
+                while (rsit.hasMore()) {
+                    final RowSequence chunkRs = rsit.getNextRowSequenceWithLength(getSize);
+                    final LongChunk<OrderedRowKeys> rowKeys = chunkRs.asRowKeyChunk();
+                    final LongChunk<? extends Values> timeStamps;
+                    if (usePrev) {
+                        timeStamps = timeStampSource.getPrevChunk(getContext, chunkRs).asLongChunk();
+                    } else {
+                        timeStamps = timeStampSource.getChunk(getContext, chunkRs).asLongChunk();
+                    }
+                    final int chunkSize = rowKeys.size();
+                    for (int ii = 0; ii < chunkSize; ++ii) {
+                        final long rowKey = rowKeys.get(ii);
+                        final Boolean inWindow = computeInWindow(timeStamps.get(ii), currentTime);
+                        if (inWindow == null) {
+                            if (includeNull) {
+                                builder.appendKey(rowKey);
+                            }
+                        } else if (inWindow) {
+                            if (includeTrue) {
+                                builder.appendKey(rowKey);
+                            }
+                        } else {
+                            if (includeFalse) {
+                                builder.appendKey(rowKey);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return builder.build();
         }
     }
 }

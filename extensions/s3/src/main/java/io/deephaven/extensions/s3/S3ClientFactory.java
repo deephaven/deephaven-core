@@ -136,7 +136,7 @@ final class S3ClientFactory {
 
     static <B extends SdkClientBuilder<B, C>, C> void applyOverrideConfiguration(B builder,
             S3Instructions instructions) {
-        builder.overrideConfiguration(ClientOverrideConfiguration.builder()
+        final ClientOverrideConfiguration.Builder overideConfigurationBuilder = ClientOverrideConfiguration.builder()
                 // If we find that the STANDARD retry policy does not work well in all situations, we might
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
                 // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
@@ -145,8 +145,10 @@ final class S3ClientFactory {
                 .apiCallTimeout(instructions.readTimeout())
                 // Adding a metrics publisher may be useful for debugging, but it's very verbose.
                 // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
-                .scheduledExecutorService(ensureScheduledExecutor())
-                .build());
+                .scheduledExecutorService(ensureScheduledExecutor());
+        instructions.profileName().ifPresent(overideConfigurationBuilder::defaultProfileName);
+        instructions.aggregatedProfileFile().ifPresent(overideConfigurationBuilder::defaultProfileFile);
+        builder.overrideConfiguration(overideConfigurationBuilder.build());
     }
 
     static <B extends AwsClientBuilder<B, C>, C> void applyCredentialsProvider(B builder, S3Instructions instructions) {

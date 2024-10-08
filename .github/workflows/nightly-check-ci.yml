@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '21', '22']
+        test-jvm-version: ['11', '17', '21', '23']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-22.04
     concurrency:
@@ -48,12 +48,12 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup JDK 22
-        id: setup-java-22
+      - name: Setup JDK 23
+        id: setup-java-23
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '22'
+          java-version: '23'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4

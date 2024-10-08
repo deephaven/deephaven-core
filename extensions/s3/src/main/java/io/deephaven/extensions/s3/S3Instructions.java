@@ -12,8 +12,11 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.profiles.ProfileFile;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -77,9 +80,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The maximum byte size of each fragment to read from S3, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must be
-     * larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment can
-     * be smaller.
+     * The maximum byte size of each fragment to read from S3 in bytes, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must
+     * be larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment
+     * can be smaller.
      */
     @Default
     public int fragmentSize() {
@@ -106,11 +109,11 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#defaultCredentials()}.
+     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#resolving()}.
      */
     @Default
     public Credentials credentials() {
-        return Credentials.defaultCredentials();
+        return Credentials.resolving();
     }
 
     /**
@@ -133,6 +136,53 @@ public abstract class S3Instructions implements LogOutputAppendable {
     @Default
     public int numConcurrentWriteParts() {
         return DEFAULT_NUM_CONCURRENT_WRITE_PARTS;
+    }
+
+    /**
+     * The default profile name used for configuring the default region, credentials, etc., when reading or writing to
+     * S3. If not provided, the AWS SDK picks the profile name from the 'aws.profile' system property, the "AWS_PROFILE"
+     * environment variable, or defaults to "default".
+     * <p>
+     * Setting a profile name assumes that the credentials are provided via this profile; if that is not the case, you
+     * must explicitly set {@link #credentials() credentials}.
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileName(String)
+     */
+    public abstract Optional<String> profileName();
+
+    /**
+     * The path to the configuration file to use for configuring the default region, credentials, etc. when reading or
+     * writing to S3. If not provided, the AWS SDK picks the configuration file from the 'aws.configFile' system
+     * property, the "AWS_CONFIG_FILE" environment variable, or defaults to "{user.home}/.aws/config".
+     * <p>
+     * Setting a configuration file path assumes that the credentials are provided via the configuration and credentials
+     * files; if that is not the case, you must explicitly set {@link #credentials() credentials}.
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
+     */
+    public abstract Optional<Path> configFilePath();
+
+    /**
+     * The path to the credentials file to use for configuring the default region, credentials, etc. when reading or
+     * writing to S3. If not provided, the AWS SDK picks the credentials file from the 'aws.credentialsFile' system
+     * property, the "AWS_CREDENTIALS_FILE" environment variable, or defaults to "{user.home}/.aws/credentials".
+     * <p>
+     * Setting a credentials file path assumes that the credentials are provided via the config and credentials files;
+     * if that is not the case, you must explicitly set {@link #credentials() credentials}.
+     *
+     * @see ClientOverrideConfiguration.Builder#defaultProfileFile(ProfileFile)
+     */
+    public abstract Optional<Path> credentialsFilePath();
+
+    /**
+     * The aggregated profile file that combines the configuration and credentials files.
+     */
+    @Lazy
+    Optional<ProfileFile> aggregatedProfileFile() {
+        if (configFilePath().isPresent() || credentialsFilePath().isPresent()) {
+            return Optional.of(S3Utils.aggregateProfileFile(configFilePath(), credentialsFilePath()));
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -171,8 +221,22 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder numConcurrentWriteParts(int numConcurrentWriteParts);
 
-        default Builder endpointOverride(String endpointOverride) {
+        Builder profileName(String profileName);
+
+        Builder configFilePath(Path configFilePath);
+
+        Builder credentialsFilePath(Path credentialsFilePath);
+
+        default Builder endpointOverride(final String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
+        }
+
+        default Builder configFilePath(final String configFilePath) {
+            return configFilePath(Path.of(configFilePath));
+        }
+
+        default Builder credentialsFilePath(final String credentialsFilePath) {
+            return credentialsFilePath(Path.of(credentialsFilePath));
         }
 
         S3Instructions build();
@@ -245,7 +309,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     final AwsCredentialsProvider awsV2CredentialsProvider() {
-        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider();
+        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider(this);
     }
 
     final boolean crossRegionAccessEnabled() {

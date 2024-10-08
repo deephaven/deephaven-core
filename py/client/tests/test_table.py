@@ -235,6 +235,7 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             result_table = source_table.snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
                                                       initial=True, incremental=False, history=True)
+        source_table = trigger_table = result_table = None
 
     def test_agg_by(self):
         pa_table = csv.read_csv(self.csv_file)

@@ -11,7 +11,6 @@ import os
 from random import random
 import threading
 from typing import Any, Dict, Iterable, List, Union, Tuple, NewType
-from uuid import uuid4
 
 import grpc
 import pyarrow as pa
@@ -28,10 +27,10 @@ from pydeephaven._plugin_obj_service import PluginObjService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
+from pydeephaven.ticket import SharedTicket, ExportTicket, ScopeTicket, Ticket, ServerObject, _server_object_from_proto
 from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginClient
-from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
@@ -77,34 +76,6 @@ def _trace(who: str) -> None:
     logger.debug(f'TRACE: {who}')
 
 
-class SharedTicket:
-    """ A SharedTicket object represents a ticket that can be shared with other sessions. """
-
-    def __init__(self, ticket_bytes: bytes):
-        """Initializes a SharedTicket object
-
-        Args:
-            ticket_bytes (bytes): the raw bytes for the ticket
-        """
-        self._ticket_bytes = ticket_bytes
-        self.api_ticket = ticket_pb2.Ticket(ticket=self._ticket_bytes)
-
-    @property
-    def bytes(self) -> bytes:
-        """ The raw bytes for the ticket."""
-        return self._ticket_bytes
-
-    @classmethod
-    def random_ticket(cls) -> SharedTicket:
-        """Generates a random shared ticket. To minimize the probability of collision, the ticket is made from a
-        generated UUID.
-
-        Returns:
-            a SharedTicket object
-        """
-        bytes_ = uuid4().int.to_bytes(16, byteorder='little', signed=False)
-        return cls(ticket_bytes=b'h' + bytes_)
-
 _BidiRpc = NewType("_BidiRpc", grpc.StreamStreamMultiCallable)
 
 _NotBidiRpc = NewType(
@@ -114,8 +85,9 @@ _NotBidiRpc = NewType(
         grpc.UnaryStreamMultiCallable,
         grpc.StreamUnaryMultiCallable])
 
+
 class Session:
-    """A Session object represents a connection to the Deephaven data server. It contains a number of convenience
+    """A Session represents a connection to the Deephaven data server. It contains a number of convenience
     methods for asking the server to create tables, import Arrow data into tables, merge tables, run Python scripts, and
     execute queries.
 
@@ -176,7 +148,7 @@ class Session:
         _trace('Session.__init__')
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
-        self._last_ticket = 0
+        self._last_export_ticket_number: int = 0
         self._ticket_bitarray = BitArray(1024)
 
         self.host = host
@@ -279,10 +251,10 @@ class Session:
                     field.application_id == 'scope' and field.typed_ticket.type == 'Table']
 
     @property
-    def exportable_objects(self) -> Dict[str, ticket_pb2.TypedTicket]:
+    def exportable_objects(self) -> Dict[str, ServerObject]:
         with self._r_lock:
             fields = self._fetch_fields()
-            return {field.field_name: field.typed_ticket for field in fields if field.application_id == 'scope'}
+            return {field.field_name: _server_object_from_proto(field.typed_ticket) for field in fields}
 
     @property
     def grpc_metadata(self):
@@ -360,19 +332,18 @@ class Session:
                     self._plugin_obj_service = PluginObjService(self)
         return self._plugin_obj_service
 
-    def make_ticket(self, ticket_no=None):
+    def make_export_ticket(self, ticket_no: int = None) -> ExportTicket:
         if not ticket_no:
-            ticket_no = self.get_ticket()
-        ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)
-        return ticket_pb2.Ticket(ticket=b'e' + ticket_bytes)
+            ticket_no = self.next_export_ticket_number()
+        return ExportTicket.export_ticket(ticket_no)
 
-    def get_ticket(self):
+    def next_export_ticket_number(self) -> int:
         with self._r_lock:
-            self._last_ticket += 1
-            if self._last_ticket == 2 ** 31 - 1:
+            self._last_export_ticket_number += 1
+            if self._last_export_ticket_number == 2 ** 31 - 1:
                 raise DHError("fatal error: out of free internal ticket")
 
-            return self._last_ticket
+            return self._last_export_ticket_number
 
     def _fetch_fields(self):
         """Returns a list of available fields on the server.
@@ -426,7 +397,7 @@ class Session:
             # started together don't align retries.
             skew = random()
             # Backoff schedule for retries after consecutive failures to refresh auth token
-            self._refresh_backoff = [ skew + 0.1, skew + 1, skew + 10 ]
+            self._refresh_backoff = [skew + 0.1, skew + 1, skew + 10]
 
             if self._refresh_backoff[0] > self._timeout_seconds:
                 raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')
@@ -511,10 +482,15 @@ class Session:
             self.session_service.close()
             self.grpc_channel.close()
             self.is_connected = False
-            self._last_ticket = 0
+            self._last_export_ticket_number = 0
             self._flight_client.close()
 
-    def release(self, ticket):
+    def release(self, ticket: ExportTicket) -> None:
+        """Releases an export ticket.
+
+        Args:
+            ticket (Ticket): the ticket to release
+        """
         self.session_service.release(ticket)
 
     # convenience/factory methods
@@ -543,7 +519,7 @@ class Session:
         Raises:
             DHError
         """
-        ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+        ticket = ScopeTicket.scope_ticket(name)
 
         faketable = Table(session=self, ticket=ticket)
 
@@ -572,6 +548,42 @@ class Session:
         """
         self.console_service.bind_table(table=table, variable_name=name)
 
+    def publish(self, source_ticket: Ticket, result_ticket: Ticket) -> None:
+        """ Publishes a source ticket to the result ticket.
+
+        This is low-level method that can be used to publish non-Table server objects that are previously
+        fetched from the server. The source ticket represents the previously fetched server object to be published, and
+        the result ticket, which should normally be a SharedTicket, is the ticket to publish to. The result ticket can
+        then be fetched by other sessions to access the object as long as the object is not released. This method is
+        used together with the :meth:`.fetch` method to share server objects between sessions.
+
+        Args:
+            source_ticket (Ticket): The source ticket to publish from.
+            result_ticket (Ticket): The result ticket to publish to.
+
+        Raises:
+            DHError: If the operation fails.
+        """
+        self._session_service.publish(source_ticket, result_ticket)
+
+    def fetch(self, ticket: Ticket) -> ExportTicket:
+        """Fetches a server object by ticket.
+
+        This is low-level method that can be used to fetch non-Table server objects. The ticket represents a
+        fetchable server object, e.g :class:`~.plugin_client.PluginClient`, :class:`~.plugin_client.Fetchable`.
+        This method is used together with the :meth:`.publish` method to share server objects between sessions.
+
+        Args:
+            ticket (Ticket): a ticket
+
+        Returns:
+            an ExportTicket object
+
+        Raises:
+            DHError
+        """
+        return self._session_service.fetch(ticket)
+
     def publish_table(self, ticket: SharedTicket, table: Table) -> None:
         """Publishes a table to the given shared ticket. The ticket can then be used by another session to fetch the
         table.
@@ -588,7 +600,7 @@ class Session:
         Raises:
             DHError
         """
-        self._session_service.publish(table.ticket, ticket.api_ticket)
+        self.publish(table.ticket, ticket)
 
     def fetch_table(self, ticket: SharedTicket) -> Table:
         """Fetches a table by ticket.
@@ -602,16 +614,10 @@ class Session:
         Raises:
             DHError
         """
-        table = Table(session=self, ticket=ticket.api_ticket)
         try:
-            table_op = FetchTableOp()
-            return self.table_service.grpc_table_op(table, table_op)
+            return self.table_service.fetch_etcr(ticket.pb_ticket)
         except Exception as e:
             raise DHError("could not fetch table by ticket") from e
-        finally:
-            # Explicitly close the table without releasing it (because it isn't ours)
-            table.ticket = None
-            table.schema = None
 
     def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
                    blink_table: bool = False) -> Table:
@@ -726,11 +732,11 @@ class Session:
         input_table.key_cols = key_cols
         return input_table
 
-    def plugin_client(self, exportable_obj: ticket_pb2.TypedTicket) -> PluginClient:
+    def plugin_client(self, server_obj: ServerObject) -> PluginClient:
         """Wraps a ticket as a PluginClient. Capabilities here vary based on the server implementation of the ObjectType,
         but most will at least send a response payload to the client, possibly including references to other objects.
         In some cases, depending on the server implementation, the client will also be able to send the same sort of
         messages back to the server.
 
         Part of the experimental plugin API."""
-        return PluginClient(self, exportable_obj)
+        return PluginClient(self, server_obj)

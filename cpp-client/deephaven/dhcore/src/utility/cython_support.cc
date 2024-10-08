@@ -22,6 +22,7 @@ using deephaven::dhcore::column::StringArrayColumnSource;
 namespace deephaven::dhcore::utility {
 namespace {
 void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
+void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
 }  // namespace
 
 std::shared_ptr<ColumnSource>
@@ -61,9 +62,9 @@ CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64
   auto nulls = std::make_unique<bool[]>(num_elements);
 
   for (size_t i = 0; i != num_elements; ++i) {
-    elements[i] = DateTime(data_begin[i]);
+    elements[i] = DateTime::FromNanos(data_begin[i]);
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return DateTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
       num_elements);
 }
@@ -75,9 +76,9 @@ CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int6
   auto nulls = std::make_unique<bool[]>(num_elements);
 
   for (size_t i = 0; i != num_elements; ++i) {
-    elements[i] = LocalDate(data_begin[i]);
+    elements[i] = LocalDate::FromMillis(data_begin[i]);
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return LocalDateArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
       num_elements);
 }
@@ -89,9 +90,9 @@ CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int6
   auto nulls = std::make_unique<bool[]>(num_elements);
 
   for (size_t i = 0; i != num_elements; ++i) {
-    elements[i] = LocalTime(data_begin[i]);
+    elements[i] = LocalTime::FromNanos(data_begin[i]);
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return LocalTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
       num_elements);
 }
@@ -172,6 +173,12 @@ void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elem
       ++src;
     }
     --num_elements;
+  }
+}
+
+void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
+  for (size_t i = 0; i != num_elements; ++i) {
+    dest[i] = data_begin[i] == DeephavenConstants::kNullLong;
   }
 }
 }  // namespace
