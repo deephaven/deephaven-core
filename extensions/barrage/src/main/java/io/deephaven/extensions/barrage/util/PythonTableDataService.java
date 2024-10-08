@@ -28,11 +28,13 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.Schema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,8 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+
+import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
 
 @ScriptApi
 public class PythonTableDataService extends AbstractTableDataService {
@@ -68,7 +72,7 @@ public class PythonTableDataService extends AbstractTableDataService {
      * Get a Deephaven {@link Table} for the supplied name.
      *
      * @param tableKey The table key
-     * @param live      Whether the table should update as new data becomes available
+     * @param live Whether the table should update as new data becomes available
      * @return The {@link Table}
      */
     @ScriptApi
@@ -90,8 +94,8 @@ public class PythonTableDataService extends AbstractTableDataService {
 
     /**
      * This Backend impl marries the Python TableDataService with the Deephaven TableDataService. By performing the
-     * object translation here, we can keep the Python TableDataService implementation simple and focused on the
-     * Python side of the implementation.
+     * object translation here, we can keep the Python TableDataService implementation simple and focused on the Python
+     * side of the implementation.
      */
     private static class BackendAccessor {
         private final PyObject pyTableDataService;
@@ -109,23 +113,31 @@ public class PythonTableDataService extends AbstractTableDataService {
          */
         public SchemaPair getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
-            final PyObject schemas = pyTableDataService.call("table_schema", tableKey.key);
+            final PyObject schemas = pyTableDataService.call("_table_schema", tableKey.key);
             final SchemaPair result = new SchemaPair();
-            result.tableSchema = convertSchema(schemas.getAttribute("0", ByteBuffer.class));
-            result.partitionSchema = convertSchema(schemas.getAttribute("1", ByteBuffer.class));
+            result.tableSchema = convertSchema((ByteBuffer) schemas.call("__getitem__", 0).getObjectValue());
+            result.partitionSchema = convertSchema((ByteBuffer) schemas.call("__getitem__", 1).getObjectValue());
             return result;
         }
 
         private BarrageUtil.ConvertedArrowSchema convertSchema(final ByteBuffer original) {
             // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
-            // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
+            // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a
+            // copy of
             // the header to use after the return of this method.
 
-            final ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
-            final Schema schema = new Schema();
-            Message.getRootAsMessage(copy).header(schema);
+            try {
+                final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(original);
+                if (mi.header.headerType() != MessageHeader.Schema) {
+                    throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
+                }
+                final Schema schema = new Schema();
+                Message.getRootAsMessage(mi.header.getByteBuffer()).header(schema);
 
-            return BarrageUtil.convertArrowSchema(schema);
+                return BarrageUtil.convertArrowSchema(schema);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to parse Arrow IPC message", e);
+            }
         }
 
         /**
@@ -145,7 +157,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 return new TableLocationKeyImpl(tableLocationKey, Map.of());
             };
 
-            pyTableDataService.call("get_existing_partitions", tableKey.key, convertingListener);
+            pyTableDataService.call("_get_existing_partitions", tableKey.key, convertingListener);
         }
 
         /**
@@ -167,7 +179,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             };
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "subscribe_to_new_partitions", tableKey.key, convertingListener);
+                    "_subscribe_to_new_partitions", tableKey.key, convertingListener);
             return () -> {
                 cancellationCallback.call("__call__");
             };
@@ -184,7 +196,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final LongConsumer listener) {
-            pyTableDataService.call("get_partition_size", tableKey.key, tableLocationKey.locationKey, listener);
+            pyTableDataService.call("_get_partition_size", tableKey.key, tableLocationKey.locationKey, listener);
         }
 
         /**
@@ -201,7 +213,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final LongConsumer listener) {
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "subscribe_to_partition_size_changes", tableKey.key, tableLocationKey.locationKey, listener);
+                    "_subscribe_to_partition_size_changes", tableKey.key, tableLocationKey.locationKey, listener);
 
             return () -> {
                 cancellationCallback.call("__call__");
@@ -534,51 +546,59 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public ColumnRegionChar<Values> makeColumnRegionChar(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionChar<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionChar<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionByte<Values> makeColumnRegionByte(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionByte<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionByte<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionShort<Values> makeColumnRegionShort(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionShort<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionShort<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionInt<Values> makeColumnRegionInt(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionInt<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionInt<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
 
         }
 
         @Override
         public ColumnRegionLong<Values> makeColumnRegionLong(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionLong<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionLong<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
 
         }
 
         @Override
         public ColumnRegionFloat<Values> makeColumnRegionFloat(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionFloat<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionFloat<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionDouble<Values> makeColumnRegionDouble(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionDouble<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionDouble<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
                 @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionObject<>(REGION_MASK, PAGE_SIZE, new TableServiceGetRangeAdapter(columnDefinition));
+            return new AppendOnlyFixedSizePageRegionObject<>(REGION_MASK, PAGE_SIZE,
+                    new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         private class TableServiceGetRangeAdapter implements AppendOnlyRegionAccessor<Values> {
@@ -589,7 +609,8 @@ public class PythonTableDataService extends AbstractTableDataService {
             }
 
             @Override
-            public void readChunkPage(long firstRowPosition, int minimumSize, @NotNull WritableChunk<Values> destination) {
+            public void readChunkPage(long firstRowPosition, int minimumSize,
+                    @NotNull WritableChunk<Values> destination) {
                 final TableLocationImpl location = (TableLocationImpl) getTableLocation();
                 final TableKeyImpl key = (TableKeyImpl) location.getTableKey();
 
@@ -598,7 +619,7 @@ public class PythonTableDataService extends AbstractTableDataService {
 
                 if (msg.length < minimumSize) {
                     throw new TableDataException(String.format("Not enough data returned. Read %d rows but minimum "
-                                    + "expected was %d. Short result from get_column_values(%s, %s, %s, %d, %d).",
+                            + "expected was %d. Short result from get_column_values(%s, %s, %s, %d, %d).",
                             msg.length, minimumSize, key.key, ((TableLocationKeyImpl) location.getKey()).locationKey,
                             columnDefinition.getName(), firstRowPosition, minimumSize));
                 }
