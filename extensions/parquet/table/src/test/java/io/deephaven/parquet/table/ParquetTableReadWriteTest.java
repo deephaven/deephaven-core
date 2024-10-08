@@ -559,6 +559,30 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testReadingParquetDataWithEmptyRowgroups() {
+        {
+            // Single parquet file with empty row group
+            final String path =
+                    TestParquetTools.class.getResource("/ReferenceParquetWithEmptyRowGroup.parquet").getFile();
+            final Table table =
+                    readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
+            assertEquals(0, table.size());
+            assertTrue(table.getRowSet().isEmpty());
+        }
+
+        {
+            // Parquet dataset with two files, each having three row groups, two non-empty followed by an empty row
+            // group
+            final String path = TestParquetTools.class.getResource("/datasetWithEmptyRowgroups").getFile();
+            final Table table =
+                    readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED)).select();
+            assertEquals(2138182, table.size());
+            assertEquals(4, table.numColumns());
+            assertEquals(1068950, table.selectDistinct("price").size());
+        }
+    }
+
+    @Test
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper(ParquetTools.GZIP);
     }
