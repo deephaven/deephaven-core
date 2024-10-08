@@ -49,6 +49,7 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
      * A one-to-one {@link Map map} from Deephaven to Iceberg column names to use when writing deephaven tables to
      * Iceberg tables.
      */
+    // TODO Please suggest better name for this method, on the read side its just called columnRenames
     public abstract Map<String, String> dhToIcebergColumnRenames();
 
     /**
@@ -68,5 +69,12 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
         INSTRUCTIONS_BUILDER putDhToIcebergColumnRenames(String key, String value);
 
         INSTRUCTIONS_BUILDER putAllDhToIcebergColumnRenames(Map<String, ? extends String> entries);
+    }
+
+    @Value.Check
+    final void checkColumnRenamesUnique() {
+        if (dhToIcebergColumnRenames().size() != dhToIcebergColumnRenames().values().stream().distinct().count()) {
+            throw new IllegalArgumentException("Duplicate values in column renames, values must be unique");
+        }
     }
 }

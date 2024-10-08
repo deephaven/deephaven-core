@@ -154,7 +154,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             dataFiles
                     .map(df -> {
                         final URI fileUri = dataFileUri(df);
-                        return cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
+                        return cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, uri));
                     })
                     .filter(Objects::nonNull)
                     .forEach(locationKeyObserver);

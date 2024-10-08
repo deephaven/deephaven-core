@@ -362,8 +362,6 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
                 .createTableIfNotExist(true)
                 .verifySchema(true)
-                .putDhToParquetColumnRenames("intCol", "numbers")
-                .putDhToParquetColumnRenames("doubleCol", "decimals")
                 .build();
 
         catalogAdapter.append("MyNamespace.MyTable", source, writeInstructions);
@@ -372,7 +370,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
         // assertTableEquals(source, fromIceberg);
 
-        // Verify that the columns are renamed in the parquet file
+        // Verify that the column names in the parquet file are same as the table written
         final TableIdentifier tableIdentifier = TableIdentifier.of("MyNamespace", "MyTable");
         final String firstParquetFilePath;
         {
@@ -382,7 +380,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
             assertThat(dataFileList).hasSize(1);
             firstParquetFilePath = dataFileList.get(0).path().toString();
             final Table fromParquet = ParquetTools.readTable(firstParquetFilePath);
-            assertTableEquals(source.renameColumns("numbers=intCol", "decimals=doubleCol"), fromParquet);
+            assertTableEquals(source, fromParquet);
         }
 
         // TODO Verify that the column ID is set correctly after #6156 is merged
@@ -395,12 +393,10 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .verifySchema(true)
                 .putDhToIcebergColumnRenames("newIntCol", "intCol")
                 .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
-                .putDhToParquetColumnRenames("newIntCol", "integers")
-                .putDhToParquetColumnRenames("newDoubleCol", "fractions")
                 .build();
         catalogAdapter.append("MyNamespace.MyTable", moreData, writeInstructions);
 
-        // Verify that the columns are renamed in the parquet file
+        // Verify that the column names in the parquet file are same as the table written
         {
             final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
             final List<DataFile> dataFileList =
@@ -416,7 +412,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
             }
             assertThat(secondParquetFilePath).isNotNull();
             final Table fromParquet = ParquetTools.readTable(secondParquetFilePath);
-            assertTableEquals(moreData.renameColumns("integers=newIntCol", "fractions=newDoubleCol"), fromParquet);
+            assertTableEquals(moreData, fromParquet);
         }
 
         // TODO Verify that the column ID is set correctly after #6156 is merged

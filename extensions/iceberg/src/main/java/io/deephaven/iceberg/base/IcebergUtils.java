@@ -33,8 +33,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -50,20 +48,10 @@ public final class IcebergUtils {
      * @return A stream of {@link DataFile} objects.
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        final FileIO fileIO = table.io();
         try {
             return allManifests(table, snapshot).stream()
-                    .map(manifestFile -> ManifestFiles.read(manifestFile, fileIO))
-                    .flatMap(manifestReader -> {
-                        try {
-                            return toStream(manifestReader);
-                        } catch (final RuntimeException e) {
-                            throw new TableDataException(
-                                    String.format("%s:%d:%s - error reading manifest file", table,
-                                            snapshot.snapshotId(), manifestReader),
-                                    e);
-                        }
-                    });
+                    .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
+                    .flatMap(IcebergUtils::toStream);
         } catch (final RuntimeException e) {
             throw new TableDataException(
                     String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
@@ -180,7 +168,7 @@ public final class IcebergUtils {
 
     public static class SpecAndSchema {
         private final PartitionSpec partitionSpec;
-        private Schema schema;
+        private final Schema schema;
 
         private SpecAndSchema(final PartitionSpec partitionSpec, final Schema schema) {
             this.partitionSpec = partitionSpec;

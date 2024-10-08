@@ -133,13 +133,13 @@ abstract class IcebergToolsTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        engineCleanup.tearDown();
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
+        engineCleanup.tearDown();
     }
 
     private void uploadFiles(final File root, final String prefixToRemove)

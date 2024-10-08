@@ -72,12 +72,6 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         return ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE;
     }
 
-    /**
-     * A one-to-one {@link Map map} from Deephaven to Parquet column names to use when writing deephaven tables to
-     * Iceberg tables.
-     */
-    public abstract Map<String, String> dhToParquetColumnRenames();
-
     abstract IcebergParquetWriteInstructions withTableDefinition(@NotNull final TableDefinition tableDefinition);
 
     /**
@@ -93,13 +87,6 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
 
         tableDefinition().ifPresent(builder::setTableDefinition);
         dataInstructions().ifPresent(builder::setSpecialInstructions);
-
-        // Add any parquet column rename mappings.
-        if (!dhToParquetColumnRenames().isEmpty()) {
-            for (final Map.Entry<String, String> entry : dhToParquetColumnRenames().entrySet()) {
-                builder.addColumnNameMapping(entry.getValue(), entry.getKey());
-            }
-        }
 
         // Add parquet writing specific instructions.
         builder.addFieldIdMapping(fieldIdToName);
@@ -120,10 +107,6 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         Builder maximumDictionarySize(int maximumDictionarySize);
 
         Builder targetPageSize(int targetPageSize);
-
-        Builder putDhToParquetColumnRenames(String key, String value);
-
-        Builder putAllDhToParquetColumnRenames(Map<String, ? extends String> entries);
 
         IcebergParquetWriteInstructions build();
     }
