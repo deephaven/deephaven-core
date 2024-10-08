@@ -4,8 +4,9 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
-import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.util.Map;
@@ -15,10 +16,11 @@ import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
-public class IcebergLocalStackTest extends IcebergToolsTest {
+@Tag("testcontainers")
+class IcebergLocalStackTest extends IcebergToolsTest {
 
-    @BeforeClass
-    public static void initContainer() {
+    @BeforeAll
+    static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }

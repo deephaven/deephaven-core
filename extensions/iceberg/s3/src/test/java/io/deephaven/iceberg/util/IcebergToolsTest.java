@@ -12,16 +12,15 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
-import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.experimental.categories.Category;
-import org.junit.Test;
+import org.apache.iceberg.types.Type;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -32,6 +31,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -46,8 +46,7 @@ import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITI
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.SNAPSHOT_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 
-@Category(OutOfBandTest.class)
-public abstract class IcebergToolsTest {
+abstract class IcebergToolsTest {
 
     private static final TableDefinition SALES_SINGLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("Region"),
@@ -95,7 +94,7 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.ofString("ColumnType"),
             ColumnDefinition.ofBoolean("IsPartitioning"));
 
-    IcebergInstructions instructions;
+    private IcebergReadInstructions instructions;
 
     public abstract S3AsyncClient s3AsyncClient();
 
@@ -111,11 +110,11 @@ public abstract class IcebergToolsTest {
     private String warehousePath;
     private Catalog resourceCatalog;
 
-    @Rule
-    public final EngineCleanup framework = new EngineCleanup();
+    private final EngineCleanup engineCleanup = new EngineCleanup();
 
-    @Before
-    public void setUp() throws ExecutionException, InterruptedException {
+    @BeforeEach
+    void setUp() throws Exception {
+        engineCleanup.setUp();
         bucket = "warehouse";
         asyncClient = s3AsyncClient();
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
@@ -127,19 +126,20 @@ public abstract class IcebergToolsTest {
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
-        instructions = IcebergInstructions.builder()
+        instructions = IcebergReadInstructions.builder()
                 .dataInstructions(s3Instructions)
                 .build();
     }
 
-    @After
-    public void tearDown() throws ExecutionException, InterruptedException {
+    @AfterEach
+    void tearDown() throws Exception {
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
+        engineCleanup.tearDown();
     }
 
     private void uploadFiles(final File root, final String prefixToRemove)
@@ -189,7 +189,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListNamespaces() {
+    void testListNamespaces() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Collection<Namespace> namespaces = adapter.listNamespaces();
@@ -206,7 +206,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListTables() {
+    void testListTables() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
@@ -230,7 +230,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListSnapshots() {
+    void testListSnapshots() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final TLongArrayList snapshotIds = new TLongArrayList();
@@ -256,7 +256,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableA() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableA() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -299,7 +299,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableC() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableC() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesSingle();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -321,7 +321,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableS3Only() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableS3Only() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -336,10 +336,10 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(SALES_PARTITIONED_DEFINITION)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -356,7 +356,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTablePartitionTypeException() {
+    void testOpenTablePartitionTypeException() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofLong("year").withPartitioning(),
                 ColumnDefinition.ofInt("month").withPartitioning(),
@@ -366,7 +366,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofLong("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -390,7 +390,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableDefinitionRename() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableDefinitionRename() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition renamed = TableDefinition.of(
@@ -402,7 +402,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("UnitPrice"),
                 ColumnDefinition.ofTime("OrderDate"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(renamed)
                 .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("Region", "RegionName")
@@ -426,7 +426,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testSkippedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+    void testSkippedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition tableDef = TableDefinition.of(
@@ -438,7 +438,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -455,7 +455,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testReorderedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+    void testReorderedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition tableDef = TableDefinition.of(
@@ -467,7 +467,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -484,10 +484,10 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+    void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(SALES_MULTI_DEFINITION)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -504,7 +504,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+    void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("month").withPartitioning(),
                 ColumnDefinition.ofInt("year").withPartitioning(),
@@ -514,7 +514,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofDouble("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -539,7 +539,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testMissingPartitioningColumns() {
+    void testMissingPartitioningColumns() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("__year").withPartitioning(), // Incorrect name
                 ColumnDefinition.ofInt("__month").withPartitioning(), // Incorrect name
@@ -549,7 +549,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofLong("Unit_Price"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
@@ -573,10 +573,10 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnRename() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableColumnRename() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("Region", "RegionName")
                 .putColumnRenames("Item_Type", "ItemType")
@@ -593,10 +593,10 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
@@ -612,11 +612,11 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationRename()
+    void testOpenTableColumnLegalizationRename()
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("Item&Type", "Item_Type")
                 .putColumnRenames("Units/Sold", "Units_Sold")
@@ -641,12 +641,12 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationPartitionException() {
+    void testOpenTableColumnLegalizationPartitionException() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("Year").withPartitioning(),
                 ColumnDefinition.ofInt("Month").withPartitioning());
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .tableDefinition(tableDef)
                 .putColumnRenames("Year", "Current Year")
                 .putColumnRenames("Month", "Current Month")
@@ -672,11 +672,11 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnRenamePartitioningColumns()
+    void testOpenTableColumnRenamePartitioningColumns()
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+        final IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("VendorID", "vendor_id")
                 .putColumnRenames("month", "__month")
@@ -704,7 +704,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -736,7 +736,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -783,7 +783,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenAllTypesTable() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenAllTypesTable() throws ExecutionException, InterruptedException, TimeoutException {
         uploadAllTypes();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
@@ -798,7 +798,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinition() {
+    void testTableDefinition() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
@@ -823,7 +823,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinitionTable() {
+    void testTableDefinitionTable() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
@@ -856,10 +856,10 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinitionWithInstructions() {
+    void testTableDefinitionWithInstructions() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
-        IcebergInstructions localInstructions = IcebergInstructions.builder()
+        IcebergReadInstructions localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("Region", "Area")
                 .putColumnRenames("Item_Type", "ItemType")
@@ -886,7 +886,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofString("Item_Type"),
                 ColumnDefinition.ofTime("Order_Date"));
 
-        localInstructions = IcebergInstructions.builder()
+        localInstructions = IcebergReadInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
                 .tableDefinition(userTableDef)
                 .build();
@@ -894,5 +894,24 @@ public abstract class IcebergToolsTest {
         // Use string and current snapshot
         tableDef = adapter.getTableDefinition("sales.sales_multi", localInstructions);
         Assert.equals(tableDef, "tableDef", userTableDef);
+    }
+
+    @Test
+    void testConvertToIcebergTypeAndBack() {
+        final Class<?>[] javaTypes = {
+                Boolean.class, double.class, float.class, int.class, long.class, String.class, Instant.class,
+                LocalDateTime.class, LocalDate.class, LocalTime.class, byte[].class
+        };
+
+        for (final Class<?> javaType : javaTypes) {
+            // Java type -> Iceberg type
+            final Type icebergType = IcebergUtils.convertToIcebergType(javaType);
+
+            // Iceberg type -> Deephaven type
+            final io.deephaven.qst.type.Type<?> deephavenType = IcebergUtils.convertToDHType(icebergType);
+
+            // Deephaven type == Java type
+            Assert.eq(javaType, javaType.getName(), deephavenType.clazz(), deephavenType.clazz().getName());
+        }
     }
 }
