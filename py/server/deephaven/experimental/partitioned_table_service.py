@@ -6,6 +6,9 @@ from typing import Tuple, Optional, Any, Callable, Iterable
 
 import pyarrow as pa
 
+from deephaven._wrapper import JObjectWrapper
+
+
 class TableKey:
     """A key that identifies a table. The key should be unique for each table. The key can be any Python object and
     should include sufficient information to uniquely identify the table for the backend service."""
@@ -85,3 +88,27 @@ class PartitionedTableServiceBackend(ABC):
 
         """
         pass
+
+
+_JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService")
+_JBarrageConvertedSchema = jpy.get_type("io.deephaven.extensions.barrage.util.BarrageConvertedSchema")
+
+
+class PythonTableDataService (JObjectWrapper):
+    j_object_type = _JPythonTableDataService
+
+    def __init__(self, backend: PartitionedTableServiceBackend):
+        self._backend = backend
+        self._j_service = _JPythonTableDataService.create(self)
+
+    @property
+    def j_object(self):
+        return self._j_service
+
+    def table_schema(self, table_key: Any) -> jpy.JType:
+        pt_schema, pc_schema =  self._backend.table_schema(table_key)
+        return _JBarrageConvertedSchema.(pt_schema, pc_schema)
+
+
+
+
