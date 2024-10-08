@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Objects;
 
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 
@@ -26,8 +25,7 @@ public final class ParquetTableLocationFactory implements TableLocationFactory<T
     private final ParquetInstructions readInstructions;
 
     public ParquetTableLocationFactory(@NotNull final ParquetInstructions readInstructions) {
-        this.readInstructions = Objects.requireNonNull(readInstructions);
-        ParquetInstructions.ensureDefinition(readInstructions);
+        this.readInstructions = readInstructions;
     }
 
     @Override
