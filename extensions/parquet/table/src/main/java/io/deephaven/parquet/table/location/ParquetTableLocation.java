@@ -195,19 +195,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private RowSet computeIndex() {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
 
-        boolean foundEmptyRowGroup = false;
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
             final long subRegionSize = rowGroups[rgi].getNum_rows();
-            if (subRegionSize < 0) {
-                throw new TableDataException("Negative row count " + subRegionSize + " in row group " + rgi);
-            }
             if (subRegionSize == 0) {
-                foundEmptyRowGroup = true;
+                // Skip empty row groups
                 continue;
-            }
-            if (foundEmptyRowGroup) {
-                throw new TableDataException("Reading parquet files with empty row groups in the middle, found empty " +
-                        "row group at index " + (rgi - 1) + " followed by non-empty row group at index " + rgi);
             }
             final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
