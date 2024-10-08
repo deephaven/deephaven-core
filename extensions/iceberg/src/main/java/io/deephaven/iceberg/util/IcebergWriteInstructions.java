@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 
@@ -55,6 +56,7 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     /**
      * The inverse map of {@link #dhToIcebergColumnRenames()}.
      */
+    @InternalUseOnly
     @Value.Lazy
     public Map<String, String> icebergToDhColumnRenames() {
         return dhToIcebergColumnRenames().entrySet().stream()
