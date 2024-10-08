@@ -571,11 +571,14 @@ public final class ParquetTableReadWriteTest {
         }
 
         {
-            // Parquet dataset with two files, each having three row groups, two non-empty followed by an empty row
-            // group
-            final String path = TestParquetTools.class.getResource("/datasetWithEmptyRowgroups").getFile();
-            final Table table =
-                    readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED)).select();
+            // Parquet dataset with three files, first and third file have three row groups, two non-empty followed by
+            // an empty row group, and second file has just one empty row group.
+            final String dirPath = TestParquetTools.class.getResource("/datasetWithEmptyRowgroups").getFile();
+            assertFalse(readTable(dirPath + "/parquet_sample1.gz.parquet").isEmpty());
+            assertTrue(readTable(dirPath + "/parquet_sample2.gz.parquet").isEmpty());
+            assertFalse(readTable(dirPath + "/parquet_sample3.gz.parquet").isEmpty());
+
+            final Table table = readTable(dirPath).select();
             assertEquals(2138182, table.size());
             assertEquals(4, table.numColumns());
             assertEquals(1068950, table.selectDistinct("price").size());
