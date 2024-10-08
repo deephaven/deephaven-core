@@ -16,7 +16,6 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.io.CloseableIterable;
-import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +38,23 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class IcebergUtils {
+
+    private static final Map<Class<?>, Type> DH_TO_ICEBERG_TYPE_MAP = new HashMap<>();
+
+    static {
+        DH_TO_ICEBERG_TYPE_MAP.put(Boolean.class, Types.BooleanType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(double.class, Types.DoubleType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(float.class, Types.FloatType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(int.class, Types.IntegerType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(long.class, Types.LongType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(String.class, Types.StringType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(Instant.class, Types.TimestampType.withZone());
+        DH_TO_ICEBERG_TYPE_MAP.put(LocalDateTime.class, Types.TimestampType.withoutZone());
+        DH_TO_ICEBERG_TYPE_MAP.put(LocalDate.class, Types.DateType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(LocalTime.class, Types.TimeType.get());
+        DH_TO_ICEBERG_TYPE_MAP.put(byte[].class, Types.BinaryType.get());
+        // TODO Add support for writing big decimals and lists
+    }
 
     /**
      * Get a stream of all {@link DataFile} objects from the given {@link Table} and {@link Snapshot}.
@@ -48,14 +65,9 @@ public final class IcebergUtils {
      * @return A stream of {@link DataFile} objects.
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        try {
-            return allManifests(table, snapshot).stream()
-                    .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
-                    .flatMap(IcebergUtils::toStream);
-        } catch (final RuntimeException e) {
-            throw new TableDataException(
-                    String.format("%s:%d - error retrieving manifest files", table, snapshot.snapshotId()), e);
-        }
+        return allManifests(table, snapshot).stream()
+                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
+                .flatMap(IcebergUtils::toStream);
     }
 
     /**
@@ -137,33 +149,12 @@ public final class IcebergUtils {
      * @return The converted Iceberg type.
      */
     public static Type convertToIcebergType(final Class<?> columnType) {
-        if (columnType == Boolean.class) {
-            return Types.BooleanType.get();
-        } else if (columnType == double.class) {
-            return Types.DoubleType.get();
-        } else if (columnType == float.class) {
-            return Types.FloatType.get();
-        } else if (columnType == int.class) {
-            return Types.IntegerType.get();
-        } else if (columnType == long.class) {
-            return Types.LongType.get();
-        } else if (columnType == String.class) {
-            return Types.StringType.get();
-        } else if (columnType == Instant.class) {
-            return Types.TimestampType.withZone();
-        } else if (columnType == LocalDateTime.class) {
-            return Types.TimestampType.withoutZone();
-        } else if (columnType == LocalDate.class) {
-            return Types.DateType.get();
-        } else if (columnType == LocalTime.class) {
-            return Types.TimeType.get();
-        } else if (columnType == byte[].class) {
-            return Types.BinaryType.get();
+        final Type icebergType = DH_TO_ICEBERG_TYPE_MAP.get(columnType);
+        if (icebergType != null) {
+            return icebergType;
         } else {
             throw new TableDataException("Unsupported deephaven column type " + columnType.getName());
         }
-        // TODO Add support for writing big decimals
-        // TODO Add support for reading and writing lists
     }
 
     public static class SpecAndSchema {

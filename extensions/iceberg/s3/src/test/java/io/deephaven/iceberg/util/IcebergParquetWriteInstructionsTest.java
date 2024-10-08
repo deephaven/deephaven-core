@@ -7,7 +7,6 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -42,7 +41,7 @@ class IcebergParquetWriteInstructionsTest {
                 .verifySchema(true)
                 .build()
                 .verifySchema())
-                .isEqualTo(Optional.of(true));
+                .hasValue(true);
     }
 
     @Test
