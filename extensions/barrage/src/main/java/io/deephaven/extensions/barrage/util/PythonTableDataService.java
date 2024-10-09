@@ -39,6 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -113,10 +114,11 @@ public class PythonTableDataService extends AbstractTableDataService {
          */
         public SchemaPair getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
-            final PyObject schemas = pyTableDataService.call("_table_schema", tableKey.key);
+            final ByteBuffer[] schemas =
+                    pyTableDataService.call("_table_schema", tableKey.key).getObjectArrayValue(ByteBuffer.class);
             final SchemaPair result = new SchemaPair();
-            result.tableSchema = convertSchema((ByteBuffer) schemas.call("__getitem__", 0).getObjectValue());
-            result.partitionSchema = convertSchema((ByteBuffer) schemas.call("__getitem__", 1).getObjectValue());
+            result.tableSchema = convertSchema(schemas[0]);
+            result.partitionSchema = convertSchema(schemas[1]);
             return result;
         }
 
@@ -149,15 +151,14 @@ public class PythonTableDataService extends AbstractTableDataService {
         public void getExistingPartitions(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
-            final Function<PyObject, TableLocationKey> convertingListener = partitionInfo -> {
-                PyObject tableLocationKey = partitionInfo.getAttribute("0");
-                ByteBuffer arrowTablePayload = partitionInfo.getAttribute("1", ByteBuffer.class);
+            final BiFunction<TableLocationKeyImpl, ByteBuffer[], TableLocationKey> convertingListener =
+                    (tableLocationKey, byteBuffers) -> {
+                        // TODO: parse real partition column values into map
+                        // ByteBuffer[] arrowTablePayload = byteBuffers.getObjectArrayValue(ByteBuffer.class);
+                        return new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of());
+                    };
 
-                // TODO: parse real partition column values into map
-                return new TableLocationKeyImpl(tableLocationKey, Map.of());
-            };
-
-            pyTableDataService.call("_get_existing_partitions", tableKey.key, convertingListener);
+            pyTableDataService.call("_existing_partitions", tableKey.key, convertingListener);
         }
 
         /**
@@ -373,6 +374,10 @@ public class PythonTableDataService extends AbstractTableDataService {
     public static class TableLocationKeyImpl extends PartitionedTableLocationKey {
 
         private final PyObject locationKey;
+
+        public TableLocationKeyImpl(@NotNull final PyObject locationKey) {
+            this(locationKey, Map.of());
+        }
 
         private TableLocationKeyImpl(
                 @NotNull final PyObject locationKey,

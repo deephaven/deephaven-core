@@ -14,6 +14,7 @@ from deephaven.table import Table
 
 _JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService")
 _JTableKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableKeyImpl")
+_JTableLocationKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableLocationKeyImpl")
 
 
 class TableKey:
@@ -136,7 +137,7 @@ class PythonTableDataService(JObjectWrapper):
     def j_object(self):
         return self._j_tbl_service
 
-    def make_table(self, table_key: TableKey) -> Table:
+    def make_table(self, table_key: TableKey, live: bool = True) -> Table:
         """ Creates a Table from the backend service for the table with the given table key.
 
         Args:
@@ -146,9 +147,9 @@ class PythonTableDataService(JObjectWrapper):
             Table: a new table
         """
         j_table_key = _JTableKeyImpl(table_key)
-        return Table(self._j_tbl_service.makeTable(j_table_key, True))
+        return Table(self._j_tbl_service.makeTable(j_table_key, live))
 
-    def _table_schema(self, table_key: TableKey) -> Tuple[jpy.JType, jpy.JType]:
+    def _table_schema(self, table_key: TableKey) -> jpy.JType:
         """ Returns the table schema and the partition schema for the table with the given table key as two serialized
         byte buffers.
 
@@ -161,4 +162,21 @@ class PythonTableDataService(JObjectWrapper):
         pc_schema = pc_schema if pc_schema is not None else pa.schema([])
         j_pt_schema_bb = jpy.byte_buffer(pt_schema.serialize())
         j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
-        return j_pt_schema_bb, j_pc_schema_bb
+        return jpy.array("java.nio.ByteBuffer", [j_pt_schema_bb, j_pc_schema_bb])
+
+    def _existing_partitions(self, table_key: TableKey, callback: jpy.JType):
+        """ Provides the existing partitions for the table with the given table key to the backend service.
+
+        Args:
+            table_key (TableKey): the table key
+        """
+        jpy.diag.flags = jpy.diag.F_METH
+        def cb(pt_location_key, pt_table):
+            j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
+            if pt_table is None:
+                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
+            else:
+                bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
+                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
+
+        self._backend.existing_partitions(table_key, cb)
