@@ -12,18 +12,16 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
-import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -37,10 +35,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -106,6 +101,8 @@ public abstract class IcebergToolsTest {
 
     public abstract S3Instructions.Builder s3Instructions(S3Instructions.Builder builder);
 
+    public abstract Map<String, String> s3Properties();
+
     private S3AsyncClient asyncClient;
     private String bucket;
 
@@ -113,7 +110,6 @@ public abstract class IcebergToolsTest {
 
     private String warehousePath;
     private Catalog resourceCatalog;
-    private FileIO resourceFileIO;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -125,10 +121,9 @@ public abstract class IcebergToolsTest {
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
 
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
-        resourceFileIO = new IcebergTestFileIO("s3://warehouse", warehousePath);
 
         // Create the test catalog for the tests
-        resourceCatalog = IcebergTestCatalog.create(warehousePath, resourceFileIO);
+        resourceCatalog = IcebergTestCatalog.create(warehousePath, s3Properties());
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
@@ -147,12 +142,12 @@ public abstract class IcebergToolsTest {
         asyncClient.close();
     }
 
-    private void uploadParquetFiles(final File root, final String prefixToRemove)
+    private void uploadFiles(final File root, final String prefixToRemove)
             throws ExecutionException, InterruptedException, TimeoutException {
         for (final File file : root.listFiles()) {
             if (file.isDirectory()) {
-                uploadParquetFiles(file, prefixToRemove);
-            } else if (file.getName().endsWith(".parquet")) {
+                uploadFiles(file, prefixToRemove);
+            } else {
                 final String key = file.getPath().substring(prefixToRemove.length() + 1);
 
                 keys.add(key);
@@ -169,33 +164,33 @@ public abstract class IcebergToolsTest {
     }
 
     private void uploadSalesPartitioned() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
                 warehousePath);
     }
 
     private void uploadAllTypes() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sample/all_types").getPath()),
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sample/all_types").getPath()),
                 warehousePath);
     }
 
     private void uploadSalesSingle() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_single").getPath()),
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_single").getPath()),
                 warehousePath);
     }
 
     private void uploadSalesMulti() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
                 warehousePath);
     }
 
     private void uploadSalesRenamed() throws ExecutionException, InterruptedException, TimeoutException {
-        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
                 warehousePath);
     }
 
     @Test
     public void testListNamespaces() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Collection<Namespace> namespaces = adapter.listNamespaces();
         final Collection<String> namespaceNames =
@@ -212,7 +207,7 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testListTables() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
 
@@ -236,7 +231,7 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testListSnapshots() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final TLongArrayList snapshotIds = new TLongArrayList();
         final TableIdentifier tableIdentifier = TableIdentifier.of("sales", "sales_multi");
@@ -264,8 +259,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableA() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -287,8 +281,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableB() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
@@ -309,8 +302,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableC() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesSingle();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_single");
@@ -332,7 +324,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableS3Only() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -352,8 +344,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -380,8 +371,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -424,8 +414,7 @@ public abstract class IcebergToolsTest {
                 .putColumnRenames("month", "__month")
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -454,8 +443,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -484,8 +472,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -505,8 +492,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -533,8 +519,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -569,8 +554,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -598,8 +582,7 @@ public abstract class IcebergToolsTest {
                 .putColumnRenames("Item_Type", "ItemType")
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -617,8 +600,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
@@ -640,8 +622,7 @@ public abstract class IcebergToolsTest {
                 .putColumnRenames("Units/Sold", "Units_Sold")
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
@@ -672,8 +653,7 @@ public abstract class IcebergToolsTest {
                 .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -703,8 +683,7 @@ public abstract class IcebergToolsTest {
                 .putColumnRenames("year", "__year")
                 .build();
 
-        final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
@@ -728,7 +707,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
@@ -760,7 +739,7 @@ public abstract class IcebergToolsTest {
     public void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
@@ -807,7 +786,7 @@ public abstract class IcebergToolsTest {
     public void testOpenAllTypesTable() throws ExecutionException, InterruptedException, TimeoutException {
         uploadAllTypes();
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sample");
         final TableIdentifier tableId = TableIdentifier.of(ns, "all_types");
@@ -820,7 +799,7 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testTableDefinition() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
@@ -845,7 +824,7 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testTableDefinitionTable() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
@@ -878,7 +857,7 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testTableDefinitionWithInstructions() {
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())

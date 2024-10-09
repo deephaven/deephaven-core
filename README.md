@@ -36,13 +36,13 @@ Deephaven's client APIs use [gRPC](https://grpc.io/), [protobuf](https://github.
 The following list contains documentation links for installation instructions and more:
 
 - Python
-  - [Run from Docker](https://deephaven.io/core/docs/tutorials/quickstart/)
-  - [pip-installed](https://deephaven.io/core/docs/tutorials/quickstart-pip/)
+  - [Run from Docker](https://deephaven.io/core/docs/getting-started/quickstart/)
+  - [pip-installed](https://deephaven.io/core/docs/getting-started/pip-install/)
 - Groovy
-  - [Run from Docker](https://deephaven.io/core/groovy/docs/tutorials/quickstart/)
+  - [Run from Docker](https://deephaven.io/core/docs/getting-started/quickstart/)
 - [Python client](https://pypi.org/project/pydeephaven/)
 - [Java client](https://deephaven.io/core/docs/how-to-guides/java-client/)
-- [JS client](https://deephaven.io/core/docs/reference/js-api/documentation/)
+- [JS client](https://deephaven.io/core/client-api/javascript/modules/dh.html)
 - [Go client](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 - [R client](https://github.com/deephaven/deephaven-core/blob/main/R/rdeephaven/README.md)
 
@@ -52,7 +52,7 @@ The Deephaven server can be installed and instantiated [from Docker](#from-docke
 
 ### From Docker
 
-This is the easiest way to get started with Deephaven. For complete instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/tutorials/quickstart/). The table below shows installation dependencies.
+This is the easiest way to get started with Deephaven. For complete instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/getting-started/quickstart/). The table below shows installation dependencies.
 
 | Dependency     | Version  | OS      | Required/Recommended |
 | -------------- | -------- | --------| -------------------- |
@@ -77,7 +77,7 @@ docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
 docker run --rm name deephaven -p 10000:10000 ghcr.io/deephaven/server-slim:latest
 ```
 
-Users who wish to customize their deployment should use Docker Compose. Deephaven offers a multitude of pre-made [docker-compose.yml files](https://deephaven.io/core/docs/tutorials/quickstart/#choose-a-deployment) to choose from. To get started, all that's required is to download a file, pull the images, and start the server.
+Users who wish to customize their deployment should use Docker Compose. Deephaven offers a multitude of pre-made [docker-compose.yml files](https://deephaven.io/core/docs/getting-started/docker-install/#choose-a-deployment) to choose from. To get started, all that's required is to download a file, pull the images, and start the server.
 
 **Python with Docker Compose**
 
@@ -127,7 +127,7 @@ The input arguments to `Server` specify to bind to the Deephaven server on port 
 
 ### Built from source
 
-Users who wish to modify source code and contribute to the project should build Deephaven from source. For complete instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
+Users who wish to modify source code and contribute to the project should build Deephaven from source. For complete instructions, see [How to build Deephaven from source](https://deephaven.io/core/docs/getting-started/launch-build/).
 
 Building and running Deephaven requires a few software packages.
 

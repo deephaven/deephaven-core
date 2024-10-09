@@ -190,18 +190,30 @@ public class HasEventHandling {
         }
     }
 
-    public boolean failureHandled(String failure) {
-        if (failure != null) {
-            if (hasListeners(CoreClient.EVENT_REQUEST_FAILED)) {
-                final CustomEventInit<String> event = CustomEventInit.create();
-                event.setDetail(failure);
-                fireEvent(CoreClient.EVENT_REQUEST_FAILED, event);
-            } else {
-                DomGlobal.console.error(logPrefix() + failure);
-            }
-            return true;
+    public <T> void fireCriticalEvent(String type) {
+        if (hasListeners(type)) {
+            fireEvent(type);
+        } else {
+            DomGlobal.console.error(logPrefix() + type, "(to prevent this log message, handle the " + type + " event)");
         }
-        return false;
+    }
+
+    public <T> void fireCriticalEvent(String type, CustomEventInit<T> init) {
+        if (hasListeners(type)) {
+            fireEvent(type, init);
+        } else {
+            DomGlobal.console.error(logPrefix(), init.getDetail(),
+                    "(to prevent this log message, handle the " + type + " event)");
+        }
+    }
+
+    public void failureHandled(String failure) {
+        if (failure == null) {
+            return;
+        }
+        final CustomEventInit<String> event = CustomEventInit.create();
+        event.setDetail(failure);
+        fireCriticalEvent(CoreClient.EVENT_REQUEST_FAILED, event);
     }
 
     public void suppressEvents() {

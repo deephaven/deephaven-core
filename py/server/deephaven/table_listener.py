@@ -17,6 +17,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence, j_list_to_list
 from deephaven.table import Table
 from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
+from deephaven.table_factory import _error_callback_wrapper
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
@@ -236,14 +237,6 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
         raise ValueError(f"The on_update method must have 2 (update, is_replay) parameters.")
     listener.on_update = _listener_wrapper(table=t)(listener.on_update)
     return listener
-
-
-def _error_callback_wrapper(callback: Callable[[Exception], None]):
-    @wraps(callback)
-    def wrapper(e):
-        callback(RuntimeError(e))
-
-    return wrapper
 
 
 class TableListenerHandle(JObjectWrapper):

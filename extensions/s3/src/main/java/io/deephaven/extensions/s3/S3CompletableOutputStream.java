@@ -344,8 +344,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      */
     private void abortMultipartUpload() throws IOException {
         if (uploadId == null) {
-            throw new IllegalStateException("Cannot abort multipart upload for uri " + uri + " because upload ID " +
-                    "is null");
+            // We didn't start the upload, so nothing to abort
+            return;
         }
         final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())

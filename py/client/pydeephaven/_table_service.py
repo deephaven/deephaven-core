@@ -1,13 +1,14 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-from typing import Union, List
+from typing import Union, List, Optional
 
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import table_pb2_grpc, table_pb2
 from pydeephaven.table import Table, InputTable
+from pydeephaven.ticket import ExportTicket, Ticket, _ticket_from_proto
 
 
 class TableService:
@@ -29,7 +30,7 @@ class TableService:
                 if not exported.success:
                     raise DHError(exported.error_info)
                 if exported.result_id.WhichOneof("ref") == "ticket":
-                    exported_tables.append(Table(self.session, ticket=exported.result_id.ticket,
+                    exported_tables.append(Table(self.session, ticket=ExportTicket(ticket_bytes=exported.result_id.ticket.ticket),
                                                  schema_header=exported.schema_header,
                                                  size=exported.size,
                                                  is_static=exported.is_static))
@@ -37,22 +38,22 @@ class TableService:
         except Exception as e:
             raise DHError("failed to finish the table batch operation.") from e
 
-    def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table) -> Union[Table, InputTable]:
+    def grpc_table_op(self, table: Optional[Table], op: TableOp, table_class: type = Table) -> Union[Table, InputTable]:
         """Makes a single gRPC Table operation call and returns a new Table."""
         try:
-            result_id = self.session.make_ticket()
+            export_ticket = self.session.make_export_ticket()
             if table:
-                table_reference = table_pb2.TableReference(ticket=table.ticket)
+                table_reference = table_pb2.TableReference(ticket=table.pb_ticket)
             else:
                 table_reference = None
             stub_func = op.__class__.get_stub_func(self._grpc_table_stub)
             response = self.session.wrap_rpc(
                 stub_func,
                 op.make_grpc_request(
-                    result_id=result_id,
+                    result_id=export_ticket.pb_ticket,
                     source_id=table_reference))
             if response.success:
-                return table_class(self.session, ticket=response.result_id.ticket,
+                return table_class(self.session, ticket=ExportTicket(response.result_id.ticket.ticket),
                                    schema_header=response.schema_header,
                                    size=response.size,
                                    is_static=response.is_static)
@@ -66,8 +67,10 @@ class TableService:
         response = self.session.wrap_rpc(
             self._grpc_table_stub.GetExportedTableCreationResponse,
             ticket)
+
+        ticket = _ticket_from_proto(response.result_id.ticket)
         if response.success:
-            return Table(self.session, ticket=response.result_id.ticket,
+            return Table(self.session, ticket=ticket,
                          schema_header=response.schema_header,
                          size=response.size,
                          is_static=response.is_static)

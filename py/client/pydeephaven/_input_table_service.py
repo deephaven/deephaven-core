@@ -17,8 +17,8 @@ class InputTableService:
         try:
             self.session.wrap_rpc(
                 self._grpc_input_table_stub.AddTableToInputTable,
-                inputtable_pb2.AddTableRequest(input_table=input_table.ticket,
-                                               table_to_add=table.ticket))
+                inputtable_pb2.AddTableRequest(input_table=input_table.pb_ticket,
+                                               table_to_add=table.pb_ticket))
         except Exception as e:
             raise DHError("failed to add to InputTable") from e
 
@@ -28,7 +28,7 @@ class InputTableService:
             self.session.wrap_rpc(
                 self._grpc_input_table_stub.DeleteTableFromInputTable,
                 inputtable_pb2.DeleteTableRequest(
-                    input_table=input_table.ticket,
-                    table_to_remove=table.ticket))
+                    input_table=input_table.pb_ticket,
+                    table_to_remove=table.pb_ticket))
         except Exception as e:
             raise DHError("failed to delete from InputTable") from e

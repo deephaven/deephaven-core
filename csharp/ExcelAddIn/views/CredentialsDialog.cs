@@ -2,14 +2,10 @@
 
 namespace ExcelAddIn.views {
   public partial class CredentialsDialog : Form {
-    private readonly Action _onSetCredentialsButtonClicked;
-    private readonly Action _onTestCredentialsButtonClicked;
+    public event Action? OnSetCredentialsButtonClicked = null;
+    public event Action? OnTestCredentialsButtonClicked = null;
 
-    public CredentialsDialog(CredentialsDialogViewModel vm, Action onSetCredentialsButtonClicked,
-      Action onTestCredentialsButtonClicked) {
-      _onSetCredentialsButtonClicked = onSetCredentialsButtonClicked;
-      _onTestCredentialsButtonClicked = onTestCredentialsButtonClicked;
-
+    public CredentialsDialog(CredentialsDialogViewModel vm) {
       InitializeComponent();
       // Need to fire these bindings on property changed rather than simply on validation,
       // because on validation is not responsive enough. Also, painful technical note:
@@ -33,7 +29,9 @@ namespace ExcelAddIn.views {
       jsonUrlBox.DataBindings.Add(nameof(jsonUrlBox.Text), vm, nameof(vm.JsonUrl));
       userIdBox.DataBindings.Add(nameof(userIdBox.Text), vm, nameof(vm.UserId));
       passwordBox.DataBindings.Add(nameof(passwordBox.Text), vm, nameof(vm.Password));
+
       operateAsBox.DataBindings.Add(nameof(operateAsBox.Text), vm, nameof(vm.OperateAs));
+
       validateCertCheckBox.DataBindings.Add(nameof(validateCertCheckBox.Checked), vm, nameof(vm.ValidateCertificate));
 
       // Bind the Core property (there's just one)
@@ -52,15 +50,27 @@ namespace ExcelAddIn.views {
     }
 
     public void SetTestResultsBox(string testResultsState) {
-      Invoke(() => testResultsTextBox.Text = testResultsState);
+      if (InvokeRequired) {
+        try {
+          Invoke(() => SetTestResultsBox(testResultsState));
+        } catch (InvalidOperationException) {
+          // TODO(kosak): figure out a better way to handle this race
+          // Invoke will fail if it is called after the form was closed. There is a race
+          // here that is pretty hard to get rid of. For now we catch the exception and
+          // throw away the value.
+        }
+        return;
+      }
+
+      testResultsTextBox.Text = testResultsState;
     }
 
     private void setCredentialsButton_Click(object sender, EventArgs e) {
-      _onSetCredentialsButtonClicked();
+      OnSetCredentialsButtonClicked?.Invoke();
     }
 
     private void testCredentialsButton_Click(object sender, EventArgs e) {
-      _onTestCredentialsButtonClicked();
+      OnTestCredentialsButtonClicked?.Invoke();
     }
   }
 }

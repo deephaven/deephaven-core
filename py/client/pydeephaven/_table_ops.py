@@ -345,7 +345,7 @@ class MergeTablesOp(TableOp):
     def make_grpc_request(self, result_id, source_id) -> Any:
         table_references = []
         for tbl in self.tables:
-            table_references.append(table_pb2.TableReference(ticket=tbl.ticket))
+            table_references.append(table_pb2.TableReference(ticket=tbl.pb_ticket))
 
         return table_pb2.MergeTablesRequest(result_id=result_id,
                                             source_ids=table_references,
@@ -368,7 +368,7 @@ class NaturalJoinOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
         return table_pb2.NaturalJoinTablesRequest(result_id=result_id,
                                                   left_id=left_id,
                                                   right_id=right_id,
@@ -392,7 +392,7 @@ class ExactJoinOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
         return table_pb2.ExactJoinTablesRequest(result_id=result_id,
                                                 left_id=left_id,
                                                 right_id=right_id,
@@ -417,7 +417,7 @@ class CrossJoinOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
         return table_pb2.CrossJoinTablesRequest(result_id=result_id,
                                                 left_id=left_id,
                                                 right_id=right_id,
@@ -442,7 +442,7 @@ class AjOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
         return table_pb2.AjRajTablesRequest(result_id=result_id,
                                             left_id=left_id,
                                             right_id=right_id,
@@ -467,7 +467,7 @@ class RajOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
         return table_pb2.AjRajTablesRequest(result_id=result_id,
                                             left_id=left_id,
                                             right_id=right_id,
@@ -554,7 +554,7 @@ class SnapshotWhenTableOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         base_id = source_id
-        trigger_id = table_pb2.TableReference(ticket=self.trigger_table.ticket)
+        trigger_id = table_pb2.TableReference(ticket=self.trigger_table.pb_ticket)
         return table_pb2.SnapshotWhenTableRequest(result_id=result_id,
                                                   base_id=base_id,
                                                   trigger_id=trigger_id,
@@ -642,7 +642,7 @@ class CreateInputTableOp(TableOp):
                                                      schema=schema,
                                                      kind=input_table_kind)
         else:
-            source_table_id = table_pb2.TableReference(ticket=self.init_table.ticket)
+            source_table_id = table_pb2.TableReference(ticket=self.init_table.pb_ticket)
             return table_pb2.CreateInputTableRequest(result_id=result_id,
                                                      source_table_id=source_table_id,
                                                      kind=input_table_kind)
@@ -664,7 +664,7 @@ class WhereInTableOp(TableOp):
         return table_service_stub.WhereIn
 
     def make_grpc_request(self, result_id, source_id) -> Any:
-        right_id = table_pb2.TableReference(ticket=self.filter_table.ticket)
+        right_id = table_pb2.TableReference(ticket=self.filter_table.pb_ticket)
         return table_pb2.WhereInRequest(result_id=result_id,
                                         left_id=source_id,
                                         right_id=right_id,
@@ -687,3 +687,26 @@ class MetaTableOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
             meta_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class MultijoinTablesOp(TableOp):
+    def __init__(self, multi_join_inputs: List["MultiJoinInput"]):
+        self.multi_join_inputs = multi_join_inputs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
+        return table_service_stub.MultiJoinTables
+
+    def make_grpc_request(self, result_id, source_id) -> Any:
+        pb_inputs = []
+        for mji in self.multi_join_inputs:
+            source_id = table_pb2.TableReference(ticket=mji.table.ticket.pb_ticket)
+            columns_to_match = mji.on
+            columns_to_add = mji.joins
+            pb_inputs.append(table_pb2.MultiJoinInput(source_id=source_id, columns_to_match=columns_to_match,
+                                                   columns_to_add=columns_to_add))
+        return table_pb2.MultiJoinTablesRequest(result_id=result_id, multi_join_inputs=pb_inputs)
+
+    def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
+        return table_pb2.BatchTableRequest.Operation(
+            multi_join=self.make_grpc_request(result_id=result_id, source_id=source_id))

@@ -11,6 +11,8 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 /**
@@ -29,6 +31,8 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
     public static final String HTTP_COMPRESSION = "http.compression";
     public static final String SNI_HOST_CHECK = "https.sniHostCheck";
+    public static final String MAX_CONCURRENT_STREAMS = "http2.maxConcurrentStreams";
+    public static final String MAX_HEADER_REQUEST_SIZE = "http.maxHeaderRequestSize";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -93,6 +97,8 @@ public abstract class JettyConfig implements ServerConfig {
         String httpCompression = config.getStringWithDefault(HTTP_COMPRESSION, null);
         String sniHostCheck = config.getStringWithDefault(SNI_HOST_CHECK, null);
         String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
+        String h2MaxConcurrentStreams = config.getStringWithDefault(MAX_CONCURRENT_STREAMS, null);
+        String maxHeaderRequestSize = config.getStringWithDefault(MAX_HEADER_REQUEST_SIZE, null);
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
                 case "true":// backwards compatible
@@ -121,6 +127,12 @@ public abstract class JettyConfig implements ServerConfig {
         }
         if (sniHostCheck != null) {
             builder.sniHostCheck(Boolean.parseBoolean(sniHostCheck));
+        }
+        if (h2MaxConcurrentStreams != null) {
+            builder.maxConcurrentStreams(Integer.parseInt(h2MaxConcurrentStreams));
+        }
+        if (maxHeaderRequestSize != null) {
+            builder.maxHeaderRequestSize(Integer.parseInt(maxHeaderRequestSize));
         }
         return builder;
     }
@@ -212,6 +224,16 @@ public abstract class JettyConfig implements ServerConfig {
         return httpCompression == null || httpCompression;
     }
 
+    /**
+     * Value is in bytes. If unset, uses Jetty's default (presently 8192).
+     */
+    public abstract OptionalInt maxHeaderRequestSize();
+
+    /**
+     * If unset, uses Jetty's default (presently 128). Only applies to http2 connections.
+     */
+    public abstract OptionalInt maxConcurrentStreams();
+
     public interface Builder extends ServerConfig.Builder<JettyConfig, Builder> {
 
         Builder websockets(WebsocketsSupport websockets);
@@ -223,5 +245,9 @@ public abstract class JettyConfig implements ServerConfig {
         Builder http2StreamIdleTimeout(long timeoutInMillis);
 
         Builder sniHostCheck(boolean sniHostCheck);
+
+        Builder maxHeaderRequestSize(int maxHeaderRequestSize);
+
+        Builder maxConcurrentStreams(int maxConcurrentStreams);
     }
 }

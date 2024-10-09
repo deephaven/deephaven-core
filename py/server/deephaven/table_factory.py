@@ -1,9 +1,8 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-
 """ This module provides various ways to make a Deephaven table. """
-
+from functools import wraps
 from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping, Optional
 
 import jpy
@@ -32,6 +31,18 @@ _J_InputTableUpdater = jpy.get_type("io.deephaven.engine.util.input.InputTableUp
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
+_JPythonInputTableStatusListenerAdapter = jpy.get_type(
+    "io.deephaven.integrations.python.PythonInputTableStatusListenerAdapter")
+
+_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK = lambda e: print(f"An error occurred during InputTable async operation: {e}")
+
+
+def _error_callback_wrapper(callback: Callable[[Exception], None]):
+    @wraps(callback)
+    def wrapper(e):
+        callback(RuntimeError(e))
+
+    return wrapper
 
 
 def empty_table(size: int) -> Table:
@@ -243,8 +254,8 @@ class InputTable(Table):
             raise DHError("the provided table's InputTable attribute type is not of InputTableUpdater type.")
 
     def add(self, table: Table) -> None:
-        """Synchronously writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
-        that match existing rows will replace those rows.
+        """Synchronously writes rows from the provided table to this input table. If this is a keyed input table,
+        added rows with keys that match existing rows will replace those rows.
 
         Args:
             table (Table): the table that provides the rows to write
@@ -258,8 +269,8 @@ class InputTable(Table):
             raise DHError(e, "add to InputTable failed.") from e
 
     def delete(self, table: Table) -> None:
-        """Synchronously  deletes the keys contained in the provided table from this keyed input table. If this method is called on an
-        append-only input table, an error will be raised.
+        """Synchronously  deletes the keys contained in the provided table from this keyed input table. If this
+        method is called on an append-only input table, an error will be raised.
 
         Args:
             table (Table): the table with the keys to delete
@@ -271,6 +282,76 @@ class InputTable(Table):
             self.j_input_table.delete(table.j_table)
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
+
+    def add_async(self, table: Table, on_success: Callable[[], None] = None,
+                  on_error: Callable[[Exception], None] = None) -> None:
+        """Asynchronously writes rows from the provided table to this input table. If this is a keyed input table,
+        added rows with keys that match existing rows will replace those rows. This method returns immediately without
+        waiting for the operation to complete. If the operation succeeds, the optional on_success callback if provided
+        will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
+        is not provided, a default callback function will be called that simply prints out the received exception.
+
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
+
+        Args:
+            table (Table): the table that provides the rows to write
+            on_success (Callable[[], None]): the success callback function, default is None
+            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+                callback function will be provided that simply prints out the received exception. If the callback
+                function itself raises an exception, the new exception will be logged in the Deephaven server log and
+                will not be further processed by the server.
+
+        Raises:
+            DHError
+        """
+        try:
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK)
+
+            j_input_table_status_listener = _JPythonInputTableStatusListenerAdapter.create(on_success,
+                                                                                           on_error_callback)
+            self.j_input_table.addAsync(table.j_table, j_input_table_status_listener)
+        except Exception as e:
+            raise DHError(e, "async add to InputTable failed.") from e
+
+    def delete_async(self, table: Table, on_success: Callable[[], None] = None,
+                     on_error: Callable[[Exception], None] = None) -> None:
+        """Asynchronously deletes the keys contained in the provided table from this keyed input table. If this
+        method is
+        called on an append-only input table, an error will be raised. This method returns immediately without
+        waiting for
+        the operation to complete. If the operation succeeds, the optional on_success callback if provided
+        will be called. If the operation fails, the optional on_error callback if provided will be called. If on_error
+        is not provided, a default callback function will be called that simply prints out the received exception.
+
+        Note, multiple calls to this method on the same thread will be queued and processed in order. However, ordering
+        is not guaranteed across threads.
+
+        Args:
+            table (Table): the table with the keys to delete
+            on_success (Callable[[], None]): the success callback function, default is None
+            on_error (Callable[[Exception], None]): the error callback function, default is None. When None, a default
+                callback function will be provided that simply prints out the received exception. If the callback
+                function itself raises an exception, the new exception will be logged in the Deephaven server log and
+                will not be further processed by the server.
+
+        Raises:
+            DHError
+        """
+        try:
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_DEFAULT_INPUT_TABLE_ON_ERROR_CALLBACK)
+
+            j_input_table_status_listener = _JPythonInputTableStatusListenerAdapter.create(on_success,
+                                                                                           on_error_callback)
+            self.j_input_table.deleteAsync(table.j_table, j_input_table_status_listener)
+        except Exception as e:
+            raise DHError(e, "async delete data in the InputTable failed.") from e
 
     @property
     def key_names(self) -> List[str]:
@@ -354,11 +435,11 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
 
 
 def function_generated_table(table_generator: Callable[..., Table],
-           source_tables: Union[Table, List[Table]] = None,
-           refresh_interval_ms: int = None,
-           exec_ctx: ExecutionContext = None,
-           args: Tuple = (),
-           kwargs: Dict = {}) -> Table:
+                             source_tables: Union[Table, List[Table]] = None,
+                             refresh_interval_ms: int = None,
+                             exec_ctx: ExecutionContext = None,
+                             args: Tuple = (),
+                             kwargs: Dict = {}) -> Table:
     """Creates an abstract table that is generated by running the table_generator() function. The function will first be
     run to generate the table when this method is called, then subsequently either (a) whenever one of the
     'source_tables' ticks or (b) after refresh_interval_ms have elapsed. Either 'refresh_interval_ms' or
@@ -368,13 +449,15 @@ def function_generated_table(table_generator: Callable[..., Table],
     function-generated tables can create tables that are produced by arbitrary Python logic (including using Pandas or
     numpy). They can also be used to retrieve data from external sources (such as files or websites).
 
-    The table definition must not change between invocations of the 'table_generator' function, or an exception will be raised.
+    The table definition must not change between invocations of the 'table_generator' function, or an exception will
+    be raised.
 
     Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
     on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
     return a table created by a previous invocation of the same operation. Since that result will not have been included
     in the 'source_table', it's not automatically treated as a dependency for purposes of determining when it's safe to
-    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own update
+    invoke 'table_generator', allowing races to exist between accessing the operation result and that result's own
+    update
     processing. It's best to include all dependencies directly in 'source_table', or only compute on-demand inputs under
     a LivenessScope.
 
@@ -441,6 +524,6 @@ def function_generated_table(table_generator: Callable[..., Table],
             j_function_generated_table = _JFunctionGeneratedTableFactory.create(
                 table_generator_j_function,
                 source_j_tables
-        )
+            )
 
     return Table(j_function_generated_table)

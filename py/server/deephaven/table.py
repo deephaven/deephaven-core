@@ -816,6 +816,10 @@ class Table(JObjectWrapper):
         """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
         return Table(j_table=self.j_table.flatten())
 
+    def remove_blink(self) -> Table:
+        """Returns a non-blink child table, or this table if it is not a blink table."""
+        return Table(j_table=self.j_table.removeBlink())
+
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
 
@@ -3782,7 +3786,7 @@ class MultiJoinInput(JObjectWrapper):
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
@@ -3799,13 +3803,14 @@ class MultiJoinInput(JObjectWrapper):
 
 class MultiJoinTable(JObjectWrapper):
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the table() method. """
+    result Table, use the :attr:`.table` property. """
     j_object_type = _JMultiJoinTable
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_multijointable
 
+    @property
     def table(self) -> Table:
         """Returns the Table containing the multi-table natural join output. """
         return Table(j_table=self.j_multijointable.table())
@@ -3862,7 +3867,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
-            table() method.
+            :attr:`~MultiJoinTable.table` property.
     """
     return MultiJoinTable(input, on)
 

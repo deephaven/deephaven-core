@@ -26,7 +26,13 @@ public sealed class CoreSession(Client client) : SessionBase {
   }
 
   public override void Dispose() {
-    Utility.Exchange(ref _client, null)?.Dispose();
+    var temp = Utility.Exchange(ref _client, null);
+    if (temp == null) {
+      return;
+    }
+
+    // Do the actual dispose work on a helper thread.
+    Utility.RunInBackground(temp.Dispose);
   }
 
   public Client Client {
@@ -48,11 +54,17 @@ public sealed class CorePlusSession(SessionManager sessionManager, WorkerThread 
   }
 
   public override void Dispose() {
-    if (workerThread.InvokeIfRequired(Dispose)) {
+    if (workerThread.EnqueueOrNop(Dispose)) {
       return;
     }
 
-    Utility.Exchange(ref _sessionManager, null)?.Dispose();
+    var temp = Utility.Exchange(ref _sessionManager, null);
+    if (temp == null) {
+      return;
+    }
+
+    // Do the actual dispose work on a helper thread.
+    Utility.RunInBackground(temp.Dispose);
   }
 
   public SessionManager SessionManager {

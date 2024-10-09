@@ -22,7 +22,7 @@ class ConsoleService:
         with self.session._r_lock:
             if not self.console_id:
                 try:
-                    result_id = self.session.make_ticket()
+                    result_id = self.session.make_export_ticket().pb_ticket
                     response = self.session.wrap_rpc(
                         self._grpc_console_stub.StartConsole,
                         console_pb2.StartConsoleRequest(
@@ -55,7 +55,7 @@ class ConsoleService:
                 self._grpc_console_stub.BindTableToVariable,
                 console_pb2.BindTableToVariableRequest(
                     console_id=self.console_id,
-                    table_id=table.ticket,
+                    table_id=table.pb_ticket,
                     variable_name=variable_name))
         except Exception as e:
             raise DHError("failed to bind a table to a variable on the server.") from e
