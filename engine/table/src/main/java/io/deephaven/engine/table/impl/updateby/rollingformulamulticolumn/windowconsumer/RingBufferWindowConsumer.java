@@ -8,9 +8,9 @@ import io.deephaven.chunk.Chunk;
 
 /**
  * This helper provides an abstract interface for consuming UpdateBy window input data values and storing in a
- * {@link RingBuffer). The UpdateBy code produces a chunk of input data and lists of push/pop instructions for managing
- * the current window values. This class abstracts the details of the buffer type and provides a common interface for
- * the UpdateBy code to interact with the buffer.
+ * {@link RingBuffer}. The UpdateBy code produces a chunk of input data and lists of push/pop instructions for managing
+ * the current window values. This class abstracts the underlying buffer type and provides a common interface for the
+ * UpdateBy code to interact with the buffer.
  */
 public abstract class RingBufferWindowConsumer {
     /**
