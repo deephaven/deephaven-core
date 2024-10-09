@@ -37,7 +37,7 @@ public class TestReadOptimizedConcurrentCache extends BaseArrayTestCase {
         try {
             cache.computeIfAbsent(3);
             fail("Expected exception");
-        } catch (final IllegalArgumentException e) {
+        } catch (final NullPointerException e) {
             // pass
         }
 
@@ -49,7 +49,7 @@ public class TestReadOptimizedConcurrentCache extends BaseArrayTestCase {
         try {
             cache.computeIfAbsent(3);
             fail("Expected exception");
-        } catch (final IllegalArgumentException e) {
+        } catch (final NullPointerException e) {
             // pass
         }
     }
