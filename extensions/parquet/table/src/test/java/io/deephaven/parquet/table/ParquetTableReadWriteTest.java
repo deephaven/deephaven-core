@@ -1736,6 +1736,47 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testReadingParquetDataWithEmptyRowGroups() {
+        {
+            // Single parquet file with empty row group
+            final String path =
+                    TestParquetTools.class.getResource("/ReferenceParquetWithEmptyRowGroup1.parquet").getFile();
+            final Table fromDisk =
+                    readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
+            assertEquals(0, fromDisk.size());
+            assertTrue(fromDisk.getRowSet().isEmpty());
+        }
+
+        {
+            // Single parquet file with three row groups, first and third row group are non-empty, and second row group
+            // is empty. To generate this file, the following branch was used:
+            // https://github.com/malhotrashivam/deephaven-core/tree/sm-ref-branch
+            final String path =
+                    TestParquetTools.class.getResource("/ReferenceParquetWithEmptyRowGroup2.parquet").getFile();
+            final Table fromDisk =
+                    readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
+            assertEquals(20, fromDisk.size());
+            final Table table = TableTools.emptyTable(10).update("integers = (int)(ii%3)");
+            final Table expected = merge(table, table);
+            assertTableEquals(expected, fromDisk);
+        }
+
+        {
+            // Parquet dataset with three files, first and third file have three row groups, two non-empty followed by
+            // an empty row group, and second file has just one empty row group.
+            final String dirPath = TestParquetTools.class.getResource("/datasetWithEmptyRowgroups").getFile();
+            assertFalse(readTable(dirPath + "/file1.parquet").isEmpty());
+            assertTrue(readTable(dirPath + "/file2.parquet").isEmpty());
+            assertFalse(readTable(dirPath + "/file3.parquet").isEmpty());
+
+            final Table table = readTable(dirPath).select();
+            assertEquals(2138182, table.size());
+            assertEquals(4, table.numColumns());
+            assertEquals(1068950, table.selectDistinct("price").size());
+        }
+    }
+
+    @Test
     public void decimalLogicalTypeTest() {
         final Table expected = TableTools.emptyTable(100_000).update(
                 "DecimalIntCol = ii % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii*12, 5)",
