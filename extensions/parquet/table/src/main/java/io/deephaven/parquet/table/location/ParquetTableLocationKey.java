@@ -5,19 +5,17 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -127,11 +125,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (metadata != null) {
             return metadata;
         }
-        try {
-            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
-        }
+        return metadata = getFileReader().getMetadata();
     }
 
     /**
@@ -154,7 +148,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (rowGroupIndices != null) {
             return rowGroupIndices;
         }
-        final List<RowGroup> rowGroups = getFileReader().fileMetaData.getRow_groups();
+        final List<BlockMetaData> rowGroups = getFileReader().getMetadata().getBlocks();
         return rowGroupIndices = IntStream.range(0, rowGroups.size()).filter(rgi -> {
             // 1. We can safely assume there's always at least one column. Our tools will refuse to write a
             // column-less table, and other readers we've tested fail catastrophically.
@@ -165,7 +159,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath =
-                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getPath());
             return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }

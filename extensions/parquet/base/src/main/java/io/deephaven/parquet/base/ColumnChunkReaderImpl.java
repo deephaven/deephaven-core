@@ -14,8 +14,10 @@ import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.EncodingStats;
 import org.apache.parquet.column.page.DictionaryPage;
 import org.apache.parquet.format.*;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -31,7 +33,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import static io.deephaven.parquet.base.ParquetUtils.resolve;
 import static io.deephaven.parquet.base.ColumnPageReaderImpl.getDecompressorHolder;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
@@ -39,7 +40,7 @@ import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     private final String columnName;
-    private final ColumnChunk columnChunk;
+    private final ColumnChunkMetaData columnChunk;
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter decompressor;
     private final ColumnDescriptor path;
@@ -58,9 +59,9 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     ColumnChunkReaderImpl(
             final String columnName,
-            final ColumnChunk columnChunk,
+            final ColumnChunkMetaData columnChunk,
             final SeekableChannelsProvider channelsProvider,
-            final URI rootURI,
+            final URI columnChunkUri,
             final MessageType type,
             final List<Type> fieldTypes,
             final long numRows,
@@ -68,25 +69,17 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.columnName = columnName;
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.path = type
-                .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
-        if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = DeephavenCompressorAdapterFactory.getInstance()
-                    .getByName(columnChunk.getMeta_data().getCodec().name());
-        } else {
-            decompressor = CompressorAdapter.PASSTHRU;
-        }
+        this.path = type.getColumnDescription(columnChunk.getPath().toArray());
+        this.decompressor = columnChunk.getCodec() == null
+                ? CompressorAdapter.PASSTHRU
+                : DeephavenCompressorAdapterFactory.getInstance().getByName(columnChunk.getCodec().name());
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
         this.numRows = numRows;
         this.version = version;
-        if (columnChunk.isSetFile_path()) {
-            columnChunkURI = resolve(rootURI, columnChunk.getFile_path());
-        } else {
-            columnChunkURI = rootURI;
-        }
+        this.columnChunkURI = columnChunkUri;
         // Construct the reader object but don't read the offset index yet
-        this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
+        this.offsetIndexReader = columnChunk.getOffsetIndexReference() != null
                 ? new OffsetIndexReaderImpl(channelsProvider, columnChunk, columnChunkURI)
                 : OffsetIndexReader.NULL;
     }
@@ -103,7 +96,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public long numValues() {
-        return columnChunk.getMeta_data().num_values;
+        return columnChunk.getValueCount();
     }
 
     @Override
@@ -113,7 +106,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public boolean hasOffsetIndex() {
-        return columnChunk.isSetOffset_index_offset();
+        return columnChunk.getOffsetIndexReference() != null;
     }
 
     @Override
@@ -145,24 +138,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @Override
     public boolean usesDictionaryOnEveryPage() {
-        final ColumnMetaData columnMeta = columnChunk.getMeta_data();
-        if (columnMeta.encoding_stats == null) {
+        final EncodingStats encodingStats = columnChunk.getEncodingStats();
+        if (encodingStats == null) {
             // We don't know, so we bail out to "false"
             return false;
         }
-        for (final PageEncodingStats encodingStat : columnMeta.encoding_stats) {
-            if (encodingStat.page_type != PageType.DATA_PAGE
-                    && encodingStat.page_type != PageType.DATA_PAGE_V2) {
-                // Not a data page, skip
-                continue;
-            }
-            // This is a data page
-            if (encodingStat.encoding != PLAIN_DICTIONARY
-                    && encodingStat.encoding != RLE_DICTIONARY) {
-                return false;
-            }
-        }
-        return true;
+        return !encodingStats.hasNonDictionaryEncodedPages();
     }
 
     @Override
@@ -172,15 +153,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @NotNull
     private Dictionary getDictionary(final SeekableChannelContext channelContext) {
-        final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
-        // If the dictionary page offset is set, use it, otherwise inspect the first data page -- it might be the
-        // dictionary page. Fallback, inspired by
-        // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
-        final long dictionaryPageOffset = chunkMeta.isSetDictionary_page_offset()
-                ? chunkMeta.getDictionary_page_offset()
-                : chunkMeta.getData_page_offset();
-
-        return readDictionary(dictionaryPageOffset, channelContext);
+        return readDictionary(channelContext);
     }
 
     @Override
@@ -199,15 +172,21 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @NotNull
-    private Dictionary readDictionary(long dictionaryPageOffset, SeekableChannelContext channelContext) {
+    private Dictionary readDictionary(SeekableChannelContext channelContext) {
+        // This will cause io.deephaven.parquet.table.TestParquetTools.testNoDictionaryOffset to fail
+        // Should this be exposed as an option in ParquetInstructions instead?
+        // Ideally, we should would prefer to trust columnChunk by default
+        // if (!columnChunk.hasDictionaryPage()) {
+        // return NULL_DICTIONARY;
+        // }
         // Use the context object provided by the caller, or create (and close) a new one
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel ch =
-                        channelsProvider.getReadChannel(holder.get(), getURI()).position(dictionaryPageOffset)) {
+                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI())) {
+            ch.position(columnChunk.getStartingPos());
             final PageHeader pageHeader = readPageHeader(ch);
             if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
-                // In case our fallback in getDictionary was too optimistic...
+                // In case we are too optimistic...
                 return NULL_DICTIONARY;
             }
             final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
@@ -241,8 +220,13 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         PageMaterializerFactory pageMaterializerFactory;
 
         ColumnPageReaderIteratorImpl(final PageMaterializerFactory pageMaterializerFactory) {
-            this.remainingValues = columnChunk.meta_data.getNum_values();
-            this.nextHeaderOffset = columnChunk.meta_data.getData_page_offset();
+            this.remainingValues = columnChunk.getValueCount();
+            // In the case where parquet-mr wrote this incorrectly with the what really should be
+            // dictionary_page_offset, we will skip the dictionary page during iteration. We _could_ also use
+            // columnChunk.getStartingPos(), but that will be less efficient in the case where there is a dictionary.
+            // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+            // gives an example of a case where parquet-mr wrote incorrect data.
+            this.nextHeaderOffset = columnChunk.getFirstDataPageOffset();
             this.pageMaterializerFactory = pageMaterializerFactory;
         }
 

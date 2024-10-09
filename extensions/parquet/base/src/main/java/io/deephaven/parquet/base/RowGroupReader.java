@@ -3,7 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
-import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,5 +25,5 @@ public interface RowGroupReader {
 
     long numRows();
 
-    RowGroup getRowGroup();
+    BlockMetaData getRowGroup();
 }
