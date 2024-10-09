@@ -261,7 +261,8 @@ public class TestRollingFormula extends BaseUpdateByTest {
         // Count vs. RollingCount
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(x)", "x", primitiveColumns));
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(x)", "x",
+                primitiveColumns));
         expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, primitiveColumns));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
@@ -309,6 +310,38 @@ public class TestRollingFormula extends BaseUpdateByTest {
         actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(ifelse(x, (long)1, (long)0))",
                 "x", "boolCol"));
         expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "boolCol"));
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Multi-column formula tests
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - sum(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - sum(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=min(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=min(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -429,6 +462,42 @@ public class TestRollingFormula extends BaseUpdateByTest {
         actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
                 "count(ifelse(x, (long)1, (long)0))", "x", "boolCol"));
         expected = t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "boolCol"));
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Multi-column formula tests
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=sum(intCol) - sum(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - sum(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=min(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=min(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=intCol + longCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=a + b").dropColumns("a", "b");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -640,6 +709,38 @@ public class TestRollingFormula extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "boolCol"), "Sym");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Multi-column formula tests
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - sum(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - sum(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=min(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=min(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -760,6 +861,42 @@ public class TestRollingFormula extends BaseUpdateByTest {
         actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
                 "count(ifelse(x, (long)1, (long)0))", "x", "boolCol"), "Sym");
         expected = t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "boolCol"), "Sym");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Multi-column formula tests
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=sum(intCol) - sum(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - sum(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=min(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=min(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=sum(intCol) - max(longCol)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=intCol + longCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
+                "a=intCol", "b=longCol"))
+                .update("out_val=a + b").dropColumns("a", "b");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -930,6 +1067,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
         ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
+                // Single column formula tests
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum(x + 1)", "x",
                                 primitiveColumns), "Sym")
@@ -945,6 +1083,18 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"))),
+                // Multi-column formula tests
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum=intCol + longCol"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum=intCol + longCol"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                        "sum=sum(intCol) + sum(longCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                "sum=sum(intCol) + sum(longCol)"))),
         };
 
         final Random billy = new Random(0xB177B177);
@@ -967,6 +1117,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
         ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
+                // Single column formula tests
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sum(x + 1)", "x",
                                 primitiveColumns), "Sym")
@@ -982,6 +1133,19 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "sumBigDecimal(x)", "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
                                 "sumBigDecimal(x)", "x", "bigDecimalCol"))),
+                // Multi-column formula tests
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sum=intCol + longCol"),
+                                "Sym")
+                        : t.updateBy(
+                                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sum=intCol + longCol"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                        "sum=sum(intCol) + sum(longCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                "sum=sum(intCol) + sum(longCol)"))),
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1132,6 +1296,18 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"))),
+                // Multi-column formula tests
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum=intCol + longCol"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sum=intCol + longCol"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                        "sum=sum(intCol) + sum(longCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                "sum=sum(intCol) + sum(longCol)"))),
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1169,6 +1345,19 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "sumBigDecimal(x)", "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
                                 "sumBigDecimal(x)", "x", "bigDecimalCol"))),
+                // Multi-column formula tests
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sum=intCol + longCol"),
+                                "Sym")
+                        : t.updateBy(
+                                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sum=intCol + longCol"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                        "sum=sum(intCol) + sum(longCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                "sum=sum(intCol) + sum(longCol)"))),
         };
 
         final Random billy = new Random(0xB177B177);
