@@ -544,10 +544,7 @@ public class UpdateByOperatorFactory {
             final Map<Class<?>, FormulaColumn> formulaColumnMap = new HashMap<>();
 
             if (spec.paramToken().isEmpty()) {
-                // Need to make an operator for each formula
-                for (String formula : spec.formula()) {
-                    ops.add(makeRollingFormulaMultiColumnOperator(tableDef, formula, spec));
-                }
+                ops.add(makeRollingFormulaMultiColumnOperator(tableDef, spec));
                 return null;
             }
 
@@ -1383,7 +1380,7 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
-            final String formula = rs.formula().get(0);
+            final String formula = rs.formula();
 
             if (csType == boolean.class || csType == Boolean.class) {
                 return new BooleanRollingFormulaOperator(pair, affectingColumns,
@@ -1434,7 +1431,6 @@ public class UpdateByOperatorFactory {
 
         private UpdateByOperator makeRollingFormulaMultiColumnOperator(
                 @NotNull final TableDefinition tableDef,
-                @NotNull final String formula,
                 @NotNull final RollingFormulaSpec rs) {
 
             final String[] affectingColumns;
@@ -1448,7 +1444,7 @@ public class UpdateByOperatorFactory {
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             // Extract the output column name and formula from the formula string
-            final Selectable column = Selectable.parse(formula);
+            final Selectable column = Selectable.parse(rs.formula());
 
             Assert.eqTrue(column.expression() instanceof RawString, "column.expression() instanceof RawString");
 

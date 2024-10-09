@@ -4,7 +4,6 @@
 package io.deephaven.base.ringbuffer;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Generic interface for a ring buffer and factory methods for buffer creation.
@@ -13,7 +12,6 @@ public interface RingBuffer {
     @NotNull
     static <T> RingBuffer makeRingBuffer(
             @NotNull final Class<?> dataType,
-            @Nullable final Class<T> componentType,
             final int capacity,
             final boolean growable) {
         final RingBuffer result;
@@ -34,21 +32,43 @@ public interface RingBuffer {
         } else {
             result = new ObjectRingBuffer<T>(capacity, growable);
         }
-        // noinspection unchecked
         return result;
     }
 
+    /**
+     * Whether the buffer is completely full.
+     */
     boolean isFull();
 
+    /**
+     * Whether the buffer is entirely empty.
+     */
     boolean isEmpty();
 
+    /**
+     * How many items are currently in the buffer.
+     */
     int size();
 
+    /**
+     * How many items can fit in the buffer at its current capacity. If the buffer can grow, this number can change.
+     */
     int capacity();
 
+    /**
+     * How many free slots exist in this buffer at its current capacity.
+     */
     int remaining();
 
+    /**
+     * Reset the ring buffer to its initial state. If this is an object ring buffer, this will additionally set all
+     * values to {@code null}.
+     */
     void clear();
 
+    /**
+     * Ensure that at least {@code count} free slots are available in the buffer. If the buffer is growable, the
+     * capacity may be increased to accommodate the new slots.
+     */
     void ensureRemaining(int count);
 }

@@ -11,31 +11,31 @@ import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 
-public class ByteRingBufferWindowConsumer extends RingBufferWindowConsumer {
+class ByteRingBufferWindowConsumer extends RingBufferWindowConsumer {
     private final ByteRingBuffer byteRingBuffer;
 
     private ByteChunk<?> influencerValuesChunk;
 
-    public ByteRingBufferWindowConsumer(ByteRingBuffer byteRingBuffer) {
+    ByteRingBufferWindowConsumer(ByteRingBuffer byteRingBuffer) {
         this.byteRingBuffer = byteRingBuffer;
     }
 
     @Override
-    public void setInfluencerValuesChunk(final Chunk<?> influencerValuesChunk) {
-        this.influencerValuesChunk = influencerValuesChunk.asByteChunk();
+    public void setInputChunk(final Chunk<?> inputChunk) {
+        this.influencerValuesChunk = inputChunk.asByteChunk();
     }
 
     @Override
-    public void push(int index, int length) {
-        byteRingBuffer.ensureRemaining(length);
-        for (int i = 0; i < length; i++) {
+    public void push(int index, int count) {
+        byteRingBuffer.ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
             byteRingBuffer.add(influencerValuesChunk.get(index + i));
         }
     }
 
     @Override
-    public void pop(int length) {
-        for (int i = 0; i < length; i++) {
+    public void pop(int count) {
+        for (int i = 0; i < count; i++) {
             byteRingBuffer.remove();
         }
     }

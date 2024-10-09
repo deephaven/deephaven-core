@@ -8,7 +8,6 @@ import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,9 +17,23 @@ import java.util.Optional;
 @BuildableStyle
 public abstract class RollingFormulaSpec extends RollingOpSpec {
 
-    public abstract List<String> formula();
+    /**
+     * The formula to use to calculate output values. The formula is similar to
+     * {@link io.deephaven.api.TableOperations#update} and {@link io.deephaven.api.TableOperations#updateView} in
+     * specifying the output column name and the expression to compute in terms of the input columns. (e.g.
+     * {@code "outputCol = sum(inputColA + inputColB)"}).
+     * <p>
+     * The alternative (and deprecated) form for {@link #formula()} is active when {@link #paramToken()} is provided. In
+     * this case the formula should only contain the expression in terms of the token. (e.g. {@code sum(x)} where x is
+     * the {@link #paramToken()}). NOTE: This form is deprecated and will be removed in a future release.
+     */
+    public abstract String formula();
 
-    // Continue single-parameter token support
+    /**
+     * (Deprecated) The token to use in {@link #formula()} to represent the input column. If this parameter is provided,
+     * then only a single input column can be provided in the formula.
+     */
+    @Deprecated
     public abstract Optional<String> paramToken();
 
     public static RollingFormulaSpec ofTicks(long revTicks, String formula, String paramToken) {
@@ -58,32 +71,32 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
 
     // New methods for supporting the non-tokenized version (expects valid column names in the formula)
 
-    public static RollingFormulaSpec ofTicks(long revTicks, String... formula) {
+    public static RollingFormulaSpec ofTicks(long revTicks, String formula) {
         return of(WindowScale.ofTicks(revTicks), formula);
     }
 
-    public static RollingFormulaSpec ofTicks(long revTicks, long fwdTicks, String... formula) {
+    public static RollingFormulaSpec ofTicks(long revTicks, long fwdTicks, String formula) {
         return of(WindowScale.ofTicks(revTicks), WindowScale.ofTicks(fwdTicks), formula);
     }
 
-    public static RollingFormulaSpec ofTime(final String timestampCol, Duration revDuration, String... formula) {
+    public static RollingFormulaSpec ofTime(final String timestampCol, Duration revDuration, String formula) {
         return of(WindowScale.ofTime(timestampCol, revDuration), formula);
     }
 
     public static RollingFormulaSpec ofTime(final String timestampCol, Duration revDuration, Duration fwdDuration,
-            String... formula) {
+            String formula) {
         return of(WindowScale.ofTime(timestampCol, revDuration),
                 WindowScale.ofTime(timestampCol, fwdDuration),
                 formula);
     }
 
-    public static RollingFormulaSpec ofTime(final String timestampCol, long revDuration, String... formula) {
+    public static RollingFormulaSpec ofTime(final String timestampCol, long revDuration, String formula) {
         return of(WindowScale.ofTime(timestampCol, revDuration),
                 formula);
     }
 
     public static RollingFormulaSpec ofTime(final String timestampCol, long revDuration, long fwdDuration,
-            String... formula) {
+            String formula) {
         return of(WindowScale.ofTime(timestampCol, revDuration),
                 WindowScale.ofTime(timestampCol, fwdDuration),
                 formula);
@@ -94,7 +107,7 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
     public static RollingFormulaSpec of(WindowScale revWindowScale, String formula, String paramToken) {
         return ImmutableRollingFormulaSpec.builder()
                 .revWindowScale(revWindowScale)
-                .addFormula(formula)
+                .formula(formula)
                 .paramToken(paramToken)
                 .build();
     }
@@ -104,23 +117,23 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
         return ImmutableRollingFormulaSpec.builder()
                 .revWindowScale(revWindowScale)
                 .fwdWindowScale(fwdWindowScale)
-                .addFormula(formula)
+                .formula(formula)
                 .paramToken(paramToken)
                 .build();
     }
 
-    public static RollingFormulaSpec of(WindowScale revWindowScale, String[] formula) {
+    public static RollingFormulaSpec of(WindowScale revWindowScale, String formula) {
         return ImmutableRollingFormulaSpec.builder()
                 .revWindowScale(revWindowScale)
-                .addFormula(formula)
+                .formula(formula)
                 .build();
     }
 
-    public static RollingFormulaSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, String[] formula) {
+    public static RollingFormulaSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, String formula) {
         return ImmutableRollingFormulaSpec.builder()
                 .revWindowScale(revWindowScale)
                 .fwdWindowScale(fwdWindowScale)
-                .addFormula(formula)
+                .formula(formula)
                 .build();
     }
 
@@ -138,15 +151,6 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
     final void checkFormula() {
         if (formula().isEmpty()) {
             throw new IllegalArgumentException("formula must not be empty");
-        }
-    }
-
-    @Value.Check
-    final void checkFormulaTokenPresent() {
-        if (paramToken().isPresent()) {
-            if (formula().size() != 1) {
-                throw new IllegalArgumentException("paramToken requires a single formula");
-            }
         }
     }
 }

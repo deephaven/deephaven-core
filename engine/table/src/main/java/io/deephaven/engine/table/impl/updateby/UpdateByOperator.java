@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.*;
+import java.util.Map;
 
 /**
  * An operator that performs a specific computation for {@link Table#updateBy}. When adding implementations of this
@@ -140,7 +140,6 @@ public abstract class UpdateByOperator {
             final long forwardWindowScaleUnits,
             final boolean isWindowed) {
         this.pair = pair;
-        // Create a mutable copy of the provided collection
         this.affectingColumns = affectingColumns;
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;

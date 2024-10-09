@@ -6,31 +6,66 @@ package io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.window
 import io.deephaven.base.ringbuffer.*;
 import io.deephaven.chunk.Chunk;
 
+/**
+ * This helper provides an abstract interface for consuming UpdateBy window input data values and storing in a
+ * {@link RingBuffer). The UpdateBy code produces a chunk of input data and lists of push/pop instructions for managing
+ * the current window values. This class abstracts the details of the buffer type and provides a common interface for
+ * the UpdateBy code to interact with the buffer.
+ */
 public abstract class RingBufferWindowConsumer {
+    /**
+     * Create a new {@link RingBufferWindowConsumer} for the given buffer.
+     *
+     * @param buffer the buffer to manage and
+     * @return a new RingBufferWindowConsumer
+     */
     public static RingBufferWindowConsumer create(final RingBuffer buffer) {
-        if (buffer instanceof CharRingBuffer) {
+        final Class<?> bufferClass = buffer.getClass();
+
+        if (bufferClass == CharRingBuffer.class) {
             return new CharRingBufferWindowConsumer((CharRingBuffer) buffer);
-        } else if (buffer instanceof ByteRingBuffer) {
+        } else if (bufferClass == ByteRingBuffer.class) {
             return new ByteRingBufferWindowConsumer((ByteRingBuffer) buffer);
-        } else if (buffer instanceof DoubleRingBuffer) {
+        } else if (bufferClass == DoubleRingBuffer.class) {
             return new DoubleRingBufferWindowConsumer((DoubleRingBuffer) buffer);
-        } else if (buffer instanceof FloatRingBuffer) {
+        } else if (bufferClass == FloatRingBuffer.class) {
             return new FloatRingBufferWindowConsumer((FloatRingBuffer) buffer);
-        } else if (buffer instanceof IntRingBuffer) {
+        } else if (bufferClass == IntRingBuffer.class) {
             return new IntRingBufferWindowConsumer((IntRingBuffer) buffer);
-        } else if (buffer instanceof LongRingBuffer) {
+        } else if (bufferClass == LongRingBuffer.class) {
             return new LongRingBufferWindowConsumer((LongRingBuffer) buffer);
-        } else if (buffer instanceof ShortRingBuffer) {
+        } else if (bufferClass == ShortRingBuffer.class) {
             return new ShortRingBufferWindowConsumer((ShortRingBuffer) buffer);
         }
         return new ObjectRingBufferWindowConsumer<>((ObjectRingBuffer<?>) buffer);
     }
 
-    public abstract void setInfluencerValuesChunk(Chunk<?> influencerValuesChunk);
+    /**
+     * Set the input chunk for this consumer. This will be stored and the push instructions will index into this buffer
+     * for newly provided values.
+     *
+     * @param inputChunk the input chunk
+     */
+    public abstract void setInputChunk(Chunk<?> inputChunk);
 
-    public abstract void push(int index, int length);
+    /**
+     * Push {@code count} values from the input chunk into the ring buffer, beginning at {@code index}.
+     *
+     * @param index the index to push the value
+     * @param count the count of the value to push
+     */
+    public abstract void push(int index, int count);
 
-    public abstract void pop(int length);
+    /**
+     * Pop {@code count} values from the ring buffer.
+     *
+     * @param count the count of the value to pop
+     */
+    public abstract void pop(int count);
 
+    /**
+     * Reset the ring buffer to its initial state. If this is an object ring buffer, this will set all values to
+     * {@code null}.
+     */
     public abstract void reset();
 }

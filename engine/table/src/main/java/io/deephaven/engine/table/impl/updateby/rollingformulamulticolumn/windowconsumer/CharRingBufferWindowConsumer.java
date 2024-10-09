@@ -7,31 +7,31 @@ import io.deephaven.base.ringbuffer.CharRingBuffer;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 
-public class CharRingBufferWindowConsumer extends RingBufferWindowConsumer {
+class CharRingBufferWindowConsumer extends RingBufferWindowConsumer {
     private final CharRingBuffer charRingBuffer;
 
     private CharChunk<?> influencerValuesChunk;
 
-    public CharRingBufferWindowConsumer(CharRingBuffer charRingBuffer) {
+    CharRingBufferWindowConsumer(CharRingBuffer charRingBuffer) {
         this.charRingBuffer = charRingBuffer;
     }
 
     @Override
-    public void setInfluencerValuesChunk(final Chunk<?> influencerValuesChunk) {
-        this.influencerValuesChunk = influencerValuesChunk.asCharChunk();
+    public void setInputChunk(final Chunk<?> inputChunk) {
+        this.influencerValuesChunk = inputChunk.asCharChunk();
     }
 
     @Override
-    public void push(int index, int length) {
-        charRingBuffer.ensureRemaining(length);
-        for (int i = 0; i < length; i++) {
+    public void push(int index, int count) {
+        charRingBuffer.ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
             charRingBuffer.add(influencerValuesChunk.get(index + i));
         }
     }
 
     @Override
-    public void pop(int length) {
-        for (int i = 0; i < length; i++) {
+    public void pop(int count) {
+        for (int i = 0; i < count; i++) {
             charRingBuffer.remove();
         }
     }

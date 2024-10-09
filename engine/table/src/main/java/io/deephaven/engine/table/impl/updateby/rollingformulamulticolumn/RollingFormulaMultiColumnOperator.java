@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn;
 
 import io.deephaven.base.ringbuffer.*;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -33,33 +32,32 @@ import java.util.function.IntConsumer;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
-    private static final int BUFFER_INITIAL_CAPACITY = 128;
+    private static final int BUFFER_INITIAL_CAPACITY = 512;
 
-    @NotNull
-    final TableDefinition tableDef;
+    private final String formula;
+    private final TableDefinition tableDef;
+    private final QueryCompilerRequestProcessor compilationProcessor;
+    private final FormulaColumn formulaColumn;
+    private final String[] inputColumnNames;
+    private final Class<?>[] inputColumnTypes;
+    private final Class<?>[] inputComponentTypes;
+    private final Class<?>[] inputVectorTypes;
 
-    final FormulaColumn formulaColumn;
-    final String[] inputColumnNames;
-    final Class<?>[] inputColumnTypes;
-    final Class<?>[] inputVectorTypes;
-    final Class<?>[] inputComponentTypes;
-
-    protected WritableColumnSource<?> primitiveOutputSource;
-    protected WritableColumnSource<?> outputSource;
-    protected WritableColumnSource<?> maybeInnerSource;
-    ChunkType outputChunkType;
+    private WritableColumnSource<?> primitiveOutputSource;
+    private WritableColumnSource<?> outputSource;
+    private WritableColumnSource<?> maybeInnerSource;
+    private ChunkType outputChunkType;
 
     private class Context extends UpdateByOperator.Context {
-        protected final ChunkSink.FillFromContext outputFillContext;
-        final WritableChunk<? extends Values> outputValues;
+        private final ChunkSink.FillFromContext outputFillContext;
+        private final WritableChunk<? extends Values> outputValues;
 
-        private final ColumnSource<?> formulaOutputSource;
         private final IntConsumer outputSetter;
 
         private final RingBufferWindowConsumer[] inputConsumers;
 
         @SuppressWarnings("unused")
-        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+        private Context(final int affectedChunkSize, final int influencerChunkSize) {
             outputFillContext = primitiveOutputSource.makeFillFromContext(affectedChunkSize);
             outputValues = outputChunkType.makeWritableChunk(affectedChunkSize);
 
@@ -68,7 +66,17 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
             inputConsumers = new RingBufferWindowConsumer[inputColumnNames.length];
 
-            // Create single value column sources of the appropriate type for each formula column input.
+            // To perform the calculation, we will leverage FormulaColumn and for its input sources we create a set of
+            // SingleValueColumnSources, each containing a Vector of values. This vector will contain exactly the
+            // values from the input columns that are appropriate for output row given the RollingWindow configuration.
+            // The formula column will be evaluated once per output row and the result written to the output column
+            // source.
+
+            // The SingleValueColumnSources will be backed by RingBuffers through use of a RingBufferVectorWrapper.
+            // The underlying RingBuffer will be updated with the values from the input columns with assistance from
+            // the RingBufferWindowConsumer class, which abstracts the process of pushing and popping values from input
+            // column data chunks into the RingBuffer.
+
             final Map<String, ColumnSource<?>> inputSources = new HashMap<>();
             for (int i = 0; i < inputColumnNames.length; i++) {
                 final String inputColumnName = inputColumnNames[i];
@@ -79,7 +87,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 // Create and store the ring buffer for the input column.
                 final RingBuffer ringBuffer = RingBuffer.makeRingBuffer(
                         inputColumnType,
-                        inputComponentType,
                         BUFFER_INITIAL_CAPACITY,
                         true);
 
@@ -90,9 +97,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                                 .getSingleValueColumnSource(inputVectorType);
 
                 final RingBufferVectorWrapper<?> wrapper = RingBufferVectorWrapper.makeRingBufferVectorWrapper(
-                        inputVectorType,
-                        inputComponentTypes[i],
-                        ringBuffer);
+                        ringBuffer,
+                        inputComponentType);
 
                 formulaInputSource.set(wrapper);
 
@@ -102,7 +108,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             }
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(), inputSources);
 
-            formulaOutputSource = ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+            final ColumnSource<?> formulaOutputSource =
+                    ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
@@ -110,7 +117,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         protected void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks) {
             // Assign the influencer values chunks to the input consumers.
             for (int i = 0; i < valueChunks.length; i++) {
-                inputConsumers[i].setInfluencerValuesChunk(valueChunks[i]);
+                inputConsumers[i].setInputChunk(valueChunks[i]);
             }
         }
 
@@ -138,7 +145,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 @NotNull final IntChunk<? extends Values> popChunk,
                 final int len) {
 
-            // TODO: reuse a
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
 
@@ -179,7 +185,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         @Override
         protected void writeToOutputChunk(int outIdx) {
-            throw Assert.statementNeverExecuted("RollingFormulaMultiColumnOperator.Context.writeToOutputChunk");
+            throw new IllegalStateException(
+                    "RollingFormulaMultiColumnOperator.Context.writeToOutputChunk should never be called.");
         }
 
         @Override
@@ -203,6 +210,19 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         }
     }
 
+    /**
+     * Create a new RollingFormulaMultiColumnOperator.
+     *
+     * @param pair Contains the output column name as a MatchPair
+     * @param affectingColumns The names of the columns that when changed would affect this formula output
+     * @param timestampColumnName The name of the column containing timestamps for time-based calculations (or null when
+     *        not time-based)
+     * @param formula The formula specifying the calculation to be performed
+     * @param reverseWindowScaleUnits The size of the reverse window in ticks (or nanoseconds when time-based)
+     * @param forwardWindowScaleUnits The size of the forward window in ticks (or nanoseconds when time-based)
+     * @param tableDef The table definition for the table containing the columns
+     * @param compilationProcessor The shared {@link QueryCompilerRequestProcessor} to use for formula compilation
+     */
     public RollingFormulaMultiColumnOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -213,7 +233,10 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             @NotNull final TableDefinition tableDef,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+
+        this.formula = formula;
         this.tableDef = tableDef;
+        this.compilationProcessor = compilationProcessor;
 
         final String outputColumnName = pair.leftColumn;
 
@@ -222,12 +245,11 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         final Map<String, ColumnDefinition<?>> columnDefinitionMap = tableDef.getColumnNameMap();
 
         // Create a column definition map composed of vector types for the formula.
-        // TODO: do this ahead of time and provide it as an alternate table definition?
         final Map<String, ColumnDefinition<?>> vectorColumnNameMap = new HashMap<>();
-        columnDefinitionMap.entrySet().forEach(e -> {
+        columnDefinitionMap.forEach((key, value) -> {
             final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                    e.getKey(), VectorFactory.forElementType(e.getValue().getDataType()).vectorType());
-            vectorColumnNameMap.put(e.getKey(), columnDef);
+                    key, VectorFactory.forElementType(value.getDataType()).vectorType());
+            vectorColumnNameMap.put(key, columnDef);
         });
 
         // Get the input column names and data types from the formula.
@@ -246,7 +268,15 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
     @Override
     public UpdateByOperator copy() {
-        return null;
+        return new RollingFormulaMultiColumnOperator(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                formula,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                tableDef,
+                compilationProcessor);
     }
 
     @Override
@@ -280,48 +310,34 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         }
         if (chunkType == ChunkType.Byte) {
             final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getByte(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getByte(0));
         }
         if (chunkType == ChunkType.Char) {
             final WritableCharChunk<? extends Values> writableChunk = valueChunk.asWritableCharChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getChar(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getChar(0));
         }
         if (chunkType == ChunkType.Double) {
             final WritableDoubleChunk<? extends Values> writableChunk = valueChunk.asWritableDoubleChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getDouble(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getDouble(0));
         }
         if (chunkType == ChunkType.Float) {
             final WritableFloatChunk<? extends Values> writableChunk = valueChunk.asWritableFloatChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getFloat(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getFloat(0));
         }
         if (chunkType == ChunkType.Int) {
             final WritableIntChunk<? extends Values> writableChunk = valueChunk.asWritableIntChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getInt(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getInt(0));
         }
         if (chunkType == ChunkType.Long) {
             final WritableLongChunk<? extends Values> writableChunk = valueChunk.asWritableLongChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getLong(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getLong(0));
         }
         if (chunkType == ChunkType.Short) {
             final WritableShortChunk<? extends Values> writableChunk = valueChunk.asWritableShortChunk();
-            return i -> {
-                writableChunk.set(i, formulaOutputSource.getShort(0));
-            };
+            return index -> writableChunk.set(index, formulaOutputSource.getShort(0));
         }
         final WritableObjectChunk<Object, ? extends Values> writableChunk = valueChunk.asWritableObjectChunk();
-        return i -> {
+        return index -> {
             Object result = formulaOutputSource.get(0);
             if (result instanceof RingBufferVectorWrapper) {
                 // Handle the rare (and probably not useful) case where the formula is an identity. We need to
@@ -329,7 +345,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 // live data in the ring.
                 result = ((Vector<?>) result).getDirect();
             }
-            writableChunk.set(i, result);
+            writableChunk.set(index, result);
         };
     }
 

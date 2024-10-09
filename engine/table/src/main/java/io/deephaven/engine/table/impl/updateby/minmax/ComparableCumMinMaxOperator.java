@@ -8,8 +8,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectBinaryOperator;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-
 public final class ComparableCumMinMaxOperator<T extends Comparable<T>> extends BaseObjectBinaryOperator<T> {
     private final boolean isMax;
 

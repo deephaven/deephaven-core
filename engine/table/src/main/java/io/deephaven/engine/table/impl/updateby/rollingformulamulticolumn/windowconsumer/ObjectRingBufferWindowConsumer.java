@@ -7,31 +7,31 @@ import io.deephaven.base.ringbuffer.ObjectRingBuffer;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 
-public class ObjectRingBufferWindowConsumer<T> extends RingBufferWindowConsumer {
+class ObjectRingBufferWindowConsumer<T> extends RingBufferWindowConsumer {
     private final ObjectRingBuffer<T> objectRingBuffer;
 
     private ObjectChunk<T, ?> influencerValuesChunk;
 
-    public ObjectRingBufferWindowConsumer(ObjectRingBuffer<T> objectRingBuffer) {
+    ObjectRingBufferWindowConsumer(ObjectRingBuffer<T> objectRingBuffer) {
         this.objectRingBuffer = objectRingBuffer;
     }
 
     @Override
-    public void setInfluencerValuesChunk(final Chunk<?> influencerValuesChunk) {
-        this.influencerValuesChunk = influencerValuesChunk.asObjectChunk();
+    public void setInputChunk(final Chunk<?> inputChunk) {
+        this.influencerValuesChunk = inputChunk.asObjectChunk();
     }
 
     @Override
-    public void push(int index, int length) {
-        objectRingBuffer.ensureRemaining(length);
-        for (int i = 0; i < length; i++) {
+    public void push(int index, int count) {
+        objectRingBuffer.ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
             objectRingBuffer.add(influencerValuesChunk.get(index + i));
         }
     }
 
     @Override
-    public void pop(int length) {
-        for (int i = 0; i < length; i++) {
+    public void pop(int count) {
+        for (int i = 0; i < count; i++) {
             objectRingBuffer.remove();
         }
     }

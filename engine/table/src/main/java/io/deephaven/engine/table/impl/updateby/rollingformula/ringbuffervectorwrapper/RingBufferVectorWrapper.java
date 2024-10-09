@@ -8,29 +8,36 @@ import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * This helper class will expose a {@link Vector} interface for a {@link RingBuffer}.
+ */
 public interface RingBufferVectorWrapper<T extends Vector<T>> extends Vector<T> {
+    /**
+     * Create a {@link RingBufferVectorWrapper} for the given {@link RingBuffer}. Optionally, a component type can be
+     * supplied (although it will be ignored for all wrappers but {@link ObjectRingBufferVectorWrapper}).
+     */
     static <T extends Vector<T>> RingBufferVectorWrapper<T> makeRingBufferVectorWrapper(
-            @NotNull final Class<?> dataType,
-            @Nullable final Class<?> componentType,
-            @NotNull final RingBuffer buffer) {
+            @NotNull final RingBuffer buffer,
+            @Nullable final Class<?> componentType) {
         final RingBufferVectorWrapper<?> result;
-        if (buffer instanceof CharRingBuffer) {
+        final Class<?> bufferClass = buffer.getClass();
+        if (bufferClass == CharRingBuffer.class) {
             result = new CharRingBufferVectorWrapper((CharRingBuffer) buffer);
-        } else if (buffer instanceof ByteRingBuffer) {
+        } else if (bufferClass == ByteRingBuffer.class) {
             result = new ByteRingBufferVectorWrapper((ByteRingBuffer) buffer);
-        } else if (buffer instanceof DoubleRingBuffer) {
+        } else if (bufferClass == DoubleRingBuffer.class) {
             result = new DoubleRingBufferVectorWrapper((DoubleRingBuffer) buffer);
-        } else if (buffer instanceof FloatRingBuffer) {
+        } else if (bufferClass == FloatRingBuffer.class) {
             result = new FloatRingBufferVectorWrapper((FloatRingBuffer) buffer);
-        } else if (buffer instanceof IntRingBuffer) {
+        } else if (bufferClass == IntRingBuffer.class) {
             result = new IntRingBufferVectorWrapper((IntRingBuffer) buffer);
-        } else if (buffer instanceof LongRingBuffer) {
+        } else if (bufferClass == LongRingBuffer.class) {
             result = new LongRingBufferVectorWrapper((LongRingBuffer) buffer);
-        } else if (buffer instanceof ShortRingBuffer) {
+        } else if (bufferClass == ShortRingBuffer.class) {
             result = new ShortRingBufferVectorWrapper((ShortRingBuffer) buffer);
         } else {
             // noinspection unchecked
-            result = new ObjectRingBufferVectorWrapper<T>((ObjectRingBuffer<T>) buffer, (Class<T>) componentType);
+            result = new ObjectRingBufferVectorWrapper<>((ObjectRingBuffer<T>) buffer, (Class<T>) componentType);
         }
         // noinspection unchecked
         return (RingBufferVectorWrapper<T>) result;

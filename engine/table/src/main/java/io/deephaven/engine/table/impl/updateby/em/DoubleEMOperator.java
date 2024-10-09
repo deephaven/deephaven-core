@@ -20,8 +20,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
 import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleEMOperator extends BasePrimitiveEMOperator {

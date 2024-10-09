@@ -11,31 +11,31 @@ import io.deephaven.base.ringbuffer.ShortRingBuffer;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
 
-public class ShortRingBufferWindowConsumer extends RingBufferWindowConsumer {
+class ShortRingBufferWindowConsumer extends RingBufferWindowConsumer {
     private final ShortRingBuffer shortRingBuffer;
 
     private ShortChunk<?> influencerValuesChunk;
 
-    public ShortRingBufferWindowConsumer(ShortRingBuffer shortRingBuffer) {
+    ShortRingBufferWindowConsumer(ShortRingBuffer shortRingBuffer) {
         this.shortRingBuffer = shortRingBuffer;
     }
 
     @Override
-    public void setInfluencerValuesChunk(final Chunk<?> influencerValuesChunk) {
-        this.influencerValuesChunk = influencerValuesChunk.asShortChunk();
+    public void setInputChunk(final Chunk<?> inputChunk) {
+        this.influencerValuesChunk = inputChunk.asShortChunk();
     }
 
     @Override
-    public void push(int index, int length) {
-        shortRingBuffer.ensureRemaining(length);
-        for (int i = 0; i < length; i++) {
+    public void push(int index, int count) {
+        shortRingBuffer.ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
             shortRingBuffer.add(influencerValuesChunk.get(index + i));
         }
     }
 
     @Override
-    public void pop(int length) {
-        for (int i = 0; i < length; i++) {
+    public void pop(int count) {
+        for (int i = 0; i < count; i++) {
             shortRingBuffer.remove();
         }
     }
