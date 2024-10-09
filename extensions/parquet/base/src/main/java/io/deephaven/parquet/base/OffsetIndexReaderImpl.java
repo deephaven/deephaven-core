@@ -5,10 +5,11 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import org.apache.parquet.format.ColumnChunk;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
+import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
 import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.format.Util;
+import org.apache.parquet.internal.hadoop.metadata.IndexReference;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,12 +26,15 @@ import java.nio.channels.SeekableByteChannel;
 final class OffsetIndexReaderImpl implements OffsetIndexReader {
 
     private final SeekableChannelsProvider channelsProvider;
-    private final ColumnChunk columnChunk;
+    private final ColumnChunkMetaData columnChunk;
     private final URI columnChunkURI;
     private OffsetIndex offsetIndex;
 
-    OffsetIndexReaderImpl(final SeekableChannelsProvider channelsProvider, final ColumnChunk columnChunk,
+    OffsetIndexReaderImpl(final SeekableChannelsProvider channelsProvider, final ColumnChunkMetaData columnChunk,
             final URI columnChunkURI) {
+        if (columnChunk.getOffsetIndexReference() == null) {
+            throw new IllegalArgumentException("Cannot read offset index from this source.");
+        }
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
         this.columnChunkURI = columnChunkURI;
@@ -43,23 +47,23 @@ final class OffsetIndexReaderImpl implements OffsetIndexReader {
         if (offsetIndex != null) {
             return offsetIndex;
         }
-        if (!columnChunk.isSetOffset_index_offset()) {
-            throw new UnsupportedOperationException("Cannot read offset index from this source.");
+        try {
+            return readOffsetIndex(context);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return readOffsetIndex(context);
     }
 
-    private OffsetIndex readOffsetIndex(@NotNull final SeekableChannelContext channelContext) {
+    private OffsetIndex readOffsetIndex(@NotNull final SeekableChannelContext channelContext) throws IOException {
+        final IndexReference ref = columnChunk.getOffsetIndexReference();
         try (
                 final SeekableChannelContext.ContextHolder holder =
                         SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel readChannel = channelsProvider.getReadChannel(holder.get(), columnChunkURI);
-                final InputStream in =
-                        channelsProvider.getInputStream(readChannel.position(columnChunk.getOffset_index_offset()),
-                                columnChunk.getOffset_index_length())) {
-            return (offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(in)));
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
+                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), columnChunkURI)) {
+            ch.position(ref.getOffset());
+            try (final InputStream in = channelsProvider.getInputStream(ch, ref.getLength())) {
+                return offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(in));
+            }
         }
     }
 }

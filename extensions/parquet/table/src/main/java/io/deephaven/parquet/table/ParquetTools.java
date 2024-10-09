@@ -48,6 +48,8 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
+import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -907,8 +909,7 @@ public class ParquetTools {
                     "Unable to infer schema for a partitioned parquet table when there are no initial parquet files");
         }
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
-                lastKey.getFileReader().getSchema(),
-                lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                lastKey.getMetadata().getFileMetaData(),
                 readInstructions);
         final Set<String> partitionKeys = lastKey.getPartitionKeys();
         final List<ColumnDefinition<?>> allColumns =
@@ -1059,8 +1060,7 @@ public class ParquetTools {
         final ParquetTableLocationKey tableLocationKey =
                 new ParquetTableLocationKey(sourceURI, 0, null, readInstructionsIn);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
-                tableLocationKey.getFileReader().getSchema(),
-                tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                tableLocationKey.getMetadata().getFileMetaData(),
                 readInstructionsIn);
         final TableDefinition def = TableDefinition.of(schemaInfo.getFirst());
         final ParquetInstructions instructionsOut = ensureTableDefinition(schemaInfo.getSecond(), def, true);
