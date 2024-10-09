@@ -9,9 +9,7 @@ import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -30,6 +28,68 @@ public class Calendar {
     private final String description;
     private final ZoneId timeZone;
 
+    // region Cache
+
+    private static class SummaryData extends ReadOptimizedConcurrentCache.IntKeyedValue {
+        final LocalDate startDate;
+        final LocalDate endDate; // exclusive
+        final List<LocalDate> dates;
+
+        SummaryData(int key, LocalDate startDate, LocalDate endDate, List<LocalDate> dates) {
+            super(key);
+            this.startDate = startDate;
+            this.endDate = endDate;
+            this.dates = dates;
+        }
+
+    }
+
+    private final YearMonthSummaryCache<SummaryData> summaryCache =
+            new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
+
+    private SummaryData summarize(final int key, final LocalDate startDate, final LocalDate endDate) {
+        LocalDate date = startDate;
+        final ArrayList<LocalDate> dates = new ArrayList<>();
+
+        while (date.isBefore(endDate)) {
+            dates.add(date);
+            date = date.plusDays(1);
+        }
+
+        return new SummaryData(key, startDate, endDate, dates); // end date is exclusive
+    }
+
+    private SummaryData computeMonthSummary(final int yearMonth) {
+        final int year = YearMonthSummaryCache.yearFromYearMonthKey(yearMonth);
+        final int month = YearMonthSummaryCache.monthFromYearMonthKey(yearMonth);
+        final LocalDate startDate = LocalDate.of(year, month, 1);
+        final LocalDate endDate = startDate.plusMonths(1); // exclusive
+        return summarize(yearMonth, startDate, endDate);
+    }
+
+    private SummaryData computeYearSummary(final int year) {
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+        ArrayList<LocalDate> dates = new ArrayList<>();
+
+        for (int month = 1; month <= 12; month++) {
+            SummaryData ms = summaryCache.getMonthSummary(year, month);
+            if (month == 1) {
+                startDate = ms.startDate;
+            }
+
+            if (month == 12) {
+                endDate = ms.endDate;
+            }
+
+            dates.addAll(ms.dates);
+        }
+
+        return new SummaryData(year, startDate, endDate, dates);
+    }
+
+    // endregion
+
     // region Constructors
 
     /**
@@ -44,6 +104,17 @@ public class Calendar {
         this.name = Require.neqNull(name, "name");
         this.description = description;
         this.timeZone = Require.neqNull(timeZone, "timeZone");
+    }
+
+    // endregion
+
+    // region Cache
+
+    /**
+     * Clears the cache. This should not generally be used and is provided for benchmarking.
+     */
+    synchronized void clearCache() {
+        summaryCache.clear();
     }
 
     // endregion
@@ -296,7 +367,7 @@ public class Calendar {
      * determined by the calendar's time zone. This accounts for Daylight Savings Time. For example, 2023-11-05 has a
      * daylight savings time adjustment, so '2023-11-04T14:00 ET' plus 1 day will result in '2023-11-05T15:00 ET', which
      * is a 25-hour difference.
-     *
+     * <p>
      * The resultant time will have the same time zone as the calendar. This could be different than the time zone of
      * the input {@link ZonedDateTime}.
      *
@@ -422,6 +493,18 @@ public class Calendar {
 
     // region Ranges
 
+    private void calendarDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end,
+            final boolean startInclusive,
+            final boolean endInclusive) {
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+
+            if (!skip) {
+                result.add(day);
+            }
+        }
+    }
+
     /**
      * Returns the dates in a given range.
      *
@@ -437,14 +520,31 @@ public class Calendar {
             return null;
         }
 
-        List<LocalDate> dateList = new ArrayList<>();
+        if (start.isAfter(end)) {
+            return new LocalDate[0];
+        }
 
-        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
-            final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
+        final ArrayList<LocalDate> dateList = new ArrayList<>();
 
-            if (!skip) {
-                dateList.add(day);
+        SummaryData summaryFirst = null;
+        SummaryData summary = null;
+
+        for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
+                .hasNext();) {
+            summary = it.next();
+
+            if (summaryFirst == null) {
+                summaryFirst = summary;
+                calendarDatesInternal(dateList, start, summaryFirst.startDate, startInclusive, false);
             }
+
+            dateList.addAll(summary.dates);
+        }
+
+        if (summaryFirst == null) {
+            calendarDatesInternal(dateList, start, end, startInclusive, endInclusive);
+        } else {
+            calendarDatesInternal(dateList, summary.endDate, end, true, endInclusive);
         }
 
         return dateList.toArray(new LocalDate[0]);
