@@ -208,6 +208,8 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public void handleTableLocationKeysUpdate(
                 @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
                 @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+            // NOTE: We are filtering the added and removed keys for every listener. We should consider refactoring to
+            // filter once and then notify all listeners with the filtered lists (similar to SubscriptionAggregator).
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
                 // Produce filtered lists of added and removed keys.
@@ -215,6 +217,10 @@ public class FilteredTableDataService extends AbstractTableDataService {
                         .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
                 final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredRemovedKeys = removedKeys.stream()
                         .filter(key -> locationKeyFilter.accept(key.get())).collect(Collectors.toList());
+
+                if (filteredAddedKeys.isEmpty() && filteredRemovedKeys.isEmpty()) {
+                    return;
+                }
                 outputListener.handleTableLocationKeysUpdate(filteredAddedKeys, filteredRemovedKeys);
             }
         }

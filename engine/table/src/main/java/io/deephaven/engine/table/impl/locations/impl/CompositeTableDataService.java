@@ -134,37 +134,15 @@ public class CompositeTableDataService extends AbstractTableDataService {
             // Analyze the update modes of the input providers to determine the update mode of the composite provider.
             // The resultant mode is the most permissive mode of the input providers, with the exception that we will
             // never return APPEND_ONLY.
-            boolean anyRemoves = false;
-            boolean anyAdditions = false;
-            boolean anyAppends = false;
-            for (final TableLocationProvider provider : inputProviders) {
-                if (provider.getUpdateMode().removeAllowed()) {
-                    anyRemoves = true;
-                } else if (provider.getLocationUpdateMode() == TableUpdateMode.ADD_ONLY) {
-                    anyAdditions = true;
-                } else if (provider.getLocationUpdateMode() == TableUpdateMode.APPEND_ONLY) {
-                    anyAppends = true;
-                }
-            }
-            updateMode = anyRemoves ? TableUpdateMode.ADD_REMOVE
-                    : (anyAdditions || anyAppends) ? TableUpdateMode.ADD_ONLY : TableUpdateMode.STATIC;
+            final TableUpdateMode tmpUpdateMode = TableUpdateMode.mostPermissiveMode(
+                    inputProviders.stream().map(TableLocationProvider::getUpdateMode));
+            updateMode = tmpUpdateMode == TableUpdateMode.APPEND_ONLY ? TableUpdateMode.ADD_ONLY : tmpUpdateMode;
 
             // Analyze the location update modes of the input providers to determine the location update mode
             // of the composite provider. The resultant mode is the most permissive mode of the input provider
             // locations.
-            anyRemoves = anyAdditions = anyAppends = false;
-            for (final TableLocationProvider provider : inputProviders) {
-                if (provider.getLocationUpdateMode().removeAllowed()) {
-                    anyRemoves = true;
-                } else if (provider.getLocationUpdateMode() == TableUpdateMode.ADD_ONLY) {
-                    anyAdditions = true;
-                } else if (provider.getLocationUpdateMode() == TableUpdateMode.APPEND_ONLY) {
-                    anyAppends = true;
-                }
-            }
-            locationUpdateMode = anyRemoves ? TableUpdateMode.ADD_REMOVE
-                    : anyAdditions ? TableUpdateMode.ADD_ONLY
-                            : anyAppends ? TableUpdateMode.APPEND_ONLY : TableUpdateMode.STATIC;
+            locationUpdateMode = TableUpdateMode.mostPermissiveMode(
+                    inputProviders.stream().map(TableLocationProvider::getLocationUpdateMode));
         }
 
         @Override

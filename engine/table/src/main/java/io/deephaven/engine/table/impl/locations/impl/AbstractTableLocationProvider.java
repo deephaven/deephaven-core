@@ -109,7 +109,7 @@ public abstract class AbstractTableLocationProvider
                         // Make a new location, have the tracked key manage it, then store the location in the tracked
                         // key.
                         tableLocation = localTableLocation = makeTableLocation(key);
-                        manage(tableLocation);
+                        manage(localTableLocation);
                     }
                 }
             }
