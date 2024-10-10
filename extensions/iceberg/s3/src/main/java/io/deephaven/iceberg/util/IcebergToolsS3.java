@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import com.google.common.base.Strings;
 import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.util.annotations.ScriptApi;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.AwsProperties;
@@ -114,6 +115,10 @@ public class IcebergToolsS3 extends IcebergTools {
      * {@code instructions}. This ensures, amongst other things, that Iceberg's AWS configuration and credentials are
      * in-sync with Deephaven's AWS configuration and credentials for S3 access.
      *
+     * <p>
+     * The caller is still responsible for providing the properties necessary as specified in
+     * {@link #createAdapter(String, Map, Map)}.
+     *
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties a map containing the Iceberg catalog properties to use
      * @param hadoopConfig a map containing Hadoop configuration properties to use
@@ -121,17 +126,16 @@ public class IcebergToolsS3 extends IcebergTools {
      * @return the Iceberg catalog adapter
      *
      * @see DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)
-     * @see #createAdapter(String, Map, Map)
      */
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
             @NotNull final Map<String, String> properties,
             @NotNull final Map<String, String> hadoopConfig,
             @NotNull final S3Instructions instructions) {
-        final HashMap<String, String> newProperties = new HashMap<>(properties);
+        final Map<String, String> newProperties = new HashMap<>(properties);
         final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
         try {
-            return createAdapter(name, properties, hadoopConfig);
+            return createAdapter(name, newProperties, hadoopConfig);
         } finally {
             cleanup.run();
         }

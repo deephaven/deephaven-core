@@ -49,6 +49,7 @@ final class S3ClientFactory {
 
     private static final Logger log = LoggerFactory.getLogger(S3ClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
+    private static final Map<HttpClientConfig, SdkHttpClient> httpSyncClientCache = new ConcurrentHashMap<>();
 
     private static volatile Executor futureCompletionExecutor;
     private static volatile ScheduledExecutorService scheduledExecutor;
@@ -61,10 +62,18 @@ final class S3ClientFactory {
         return buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class);
     }
 
-    static <B extends S3BaseClientBuilder<B, C>, C extends AwsClient> C buildForS3(
-            Function<S3Instructions, B> builderFactory,
-            S3Instructions instructions,
-            Class<C> clientClass) {
+    static <Builder extends AwsSyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedSync(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
+        builder
+                .applyMutation(b -> applySyncHttpClient(b, instructions))
+                .applyMutation(b -> applyAllSharedCommon(b, instructions));
+    }
+
+    private static <Builder extends S3BaseClientBuilder<Builder, Client>, Client extends AwsClient> Client buildForS3(
+            @NotNull final Function<S3Instructions, Builder> builderFactory,
+            @NotNull final S3Instructions instructions,
+            @NotNull final Class<Client> clientClass) {
         if (log.isDebugEnabled()) {
             log.debug().append("Building ").append(clientClass.getSimpleName()).append(" with instructions: ")
                     .append(instructions).endl();
@@ -82,34 +91,30 @@ final class S3ClientFactory {
         }
     }
 
-    static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
+    private static S3AsyncClientBuilder getAsyncClientBuilder(@NotNull final S3Instructions instructions) {
         return S3AsyncClient.builder()
                 .applyMutation(b -> applyAllSharedAsync(b, instructions))
                 .applyMutation(b -> applyCrossRegionAccess(b, instructions));
     }
 
-    static S3ClientBuilder getSyncClientBuilder(@NotNull final S3Instructions instructions) {
+    private static S3ClientBuilder getSyncClientBuilder(@NotNull final S3Instructions instructions) {
         return S3Client.builder()
                 .applyMutation(b -> applyAllSharedSync(b, instructions))
                 .applyMutation(b -> applyCrossRegionAccess(b, instructions));
     }
 
-    static <B extends AwsSyncClientBuilder<B, C> & AwsClientBuilder<B, C>, C> void applyAllSharedSync(B builder,
-            S3Instructions instructions) {
-        builder
-                .applyMutation(b -> applySyncHttpClient(b, instructions))
-                .applyMutation(b -> applyAllSharedCommon(b, instructions));
-    }
-
-    static <B extends AwsAsyncClientBuilder<B, C> & AwsClientBuilder<B, C>, C> void applyAllSharedAsync(B builder,
-            S3Instructions instructions) {
+    private static <Builder extends AwsAsyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedAsync(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         builder
                 .applyMutation(b -> applyAsyncHttpClient(b, instructions))
                 .applyMutation(b -> applyAsyncConfiguration(b, instructions))
                 .applyMutation(b -> applyAllSharedCommon(b, instructions));
     }
 
-    static <B extends AwsClientBuilder<B, C>, C> void applyAllSharedCommon(B builder, S3Instructions instructions) {
+    private static <Builder extends AwsClientBuilder<Builder, Client>, Client> void applyAllSharedCommon(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         builder
                 .applyMutation(b -> applyOverrideConfiguration(b, instructions))
                 .applyMutation(b -> applyCredentialsProvider(b, instructions))
@@ -117,25 +122,30 @@ final class S3ClientFactory {
                 .applyMutation(b -> applyEndpointOverride(b, instructions));
     }
 
-    static <B extends SdkSyncClientBuilder<B, C>, C> void applySyncHttpClient(B builder, S3Instructions instructions) {
-        builder.httpClient(buildHttpSyncClient(instructions));
+    private static <Builder extends SdkSyncClientBuilder<Builder, Client>, Client> void applySyncHttpClient(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
+        builder.httpClient(getOrBuildHttpSyncClient(instructions));
     }
 
-    static <B extends SdkAsyncClientBuilder<B, C>, C> void applyAsyncHttpClient(B builder,
-            S3Instructions instructions) {
+    private static <Builder extends SdkAsyncClientBuilder<Builder, Client>, Client> void applyAsyncHttpClient(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         builder.httpClient(getOrBuildHttpAsyncClient(instructions));
     }
 
-    static <B extends SdkAsyncClientBuilder<B, C>, C> void applyAsyncConfiguration(B builder,
-            @SuppressWarnings("unused") S3Instructions instructions) {
+    private static <Builder extends SdkAsyncClientBuilder<Builder, Client>, Client> void applyAsyncConfiguration(
+            @NotNull final Builder builder,
+            @SuppressWarnings("unused") @NotNull final S3Instructions instructions) {
         builder.asyncConfiguration(ClientAsyncConfiguration.builder()
                 .advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
                         ensureAsyncFutureCompletionExecutor())
                 .build());
     }
 
-    static <B extends SdkClientBuilder<B, C>, C> void applyOverrideConfiguration(B builder,
-            S3Instructions instructions) {
+    private static <Builder extends SdkClientBuilder<Builder, Client>, Client> void applyOverrideConfiguration(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         final ClientOverrideConfiguration.Builder overideConfigurationBuilder = ClientOverrideConfiguration.builder()
                 // If we find that the STANDARD retry policy does not work well in all situations, we might
                 // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
@@ -151,16 +161,21 @@ final class S3ClientFactory {
         builder.overrideConfiguration(overideConfigurationBuilder.build());
     }
 
-    static <B extends AwsClientBuilder<B, C>, C> void applyCredentialsProvider(B builder, S3Instructions instructions) {
+    private static <Builder extends AwsClientBuilder<Builder, Client>, Client> void applyCredentialsProvider(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         builder.credentialsProvider(instructions.awsV2CredentialsProvider());
     }
 
-    static <B extends AwsClientBuilder<B, C>, C> void applyRegion(B builder, S3Instructions instructions) {
+    private static <Builder extends AwsClientBuilder<Builder, Client>, Client> void applyRegion(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         instructions.regionName().map(Region::of).ifPresent(builder::region);
     }
 
-    static <B extends S3BaseClientBuilder<B, C>, C> void applyCrossRegionAccess(B builder,
-            S3Instructions instructions) {
+    private static <Builder extends S3BaseClientBuilder<Builder, Client>, Client> void applyCrossRegionAccess(
+            @NotNull final Builder builder,
+            @NotNull S3Instructions instructions) {
         if (instructions.crossRegionAccessEnabled()) {
             // If region is not provided, we enable cross-region access to allow the SDK to determine the region
             // based on the bucket location and cache it for future requests.
@@ -168,25 +183,24 @@ final class S3ClientFactory {
         }
     }
 
-    static <B extends SdkClientBuilder<B, C>, C> void applyEndpointOverride(B builder, S3Instructions instructions) {
+    private static <Builder extends SdkClientBuilder<Builder, Client>, Client> void applyEndpointOverride(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
     }
 
     private static class HttpClientConfig {
+
+        static HttpClientConfig of(S3Instructions instructions) {
+            return new HttpClientConfig(instructions.maxConcurrentRequests(), instructions.connectionTimeout());
+        }
+
         private final int maxConcurrentRequests;
         private final Duration connectionTimeout;
 
         HttpClientConfig(final int maxConcurrentRequests, final Duration connectionTimeout) {
             this.maxConcurrentRequests = maxConcurrentRequests;
             this.connectionTimeout = connectionTimeout;
-        }
-
-        int maxConcurrentRequests() {
-            return maxConcurrentRequests;
-        }
-
-        Duration connectionTimeout() {
-            return connectionTimeout;
         }
 
         @Override
@@ -208,23 +222,28 @@ final class S3ClientFactory {
             return maxConcurrentRequests == that.maxConcurrentRequests
                     && connectionTimeout.equals(that.connectionTimeout);
         }
+
+        SdkAsyncHttpClient buildAsync() {
+            return AwsCrtAsyncHttpClient.builder()
+                    .maxConcurrency(maxConcurrentRequests)
+                    .connectionTimeout(connectionTimeout)
+                    .build();
+        }
+
+        SdkHttpClient buildSync() {
+            return AwsCrtHttpClient.builder()
+                    .maxConcurrency(maxConcurrentRequests)
+                    .connectionTimeout(connectionTimeout)
+                    .build();
+        }
     }
 
     private static SdkAsyncHttpClient getOrBuildHttpAsyncClient(@NotNull final S3Instructions instructions) {
-        final HttpClientConfig config = new HttpClientConfig(instructions.maxConcurrentRequests(),
-                instructions.connectionTimeout());
-        return httpAsyncClientCache.computeIfAbsent(config, key -> AwsCrtAsyncHttpClient.builder()
-                .maxConcurrency(config.maxConcurrentRequests())
-                .connectionTimeout(config.connectionTimeout())
-                .build());
+        return httpAsyncClientCache.computeIfAbsent(HttpClientConfig.of(instructions), HttpClientConfig::buildAsync);
     }
 
-    private static SdkHttpClient buildHttpSyncClient(@NotNull final S3Instructions instructions) {
-        // TODO: cache?
-        return AwsCrtHttpClient.builder()
-                .maxConcurrency(instructions.maxConcurrentRequests())
-                .connectionTimeout(instructions.connectionTimeout())
-                .build();
+    private static SdkHttpClient getOrBuildHttpSyncClient(@NotNull final S3Instructions instructions) {
+        return httpSyncClientCache.computeIfAbsent(HttpClientConfig.of(instructions), HttpClientConfig::buildSync);
     }
 
     /**
