@@ -19,7 +19,7 @@ public abstract class IcebergTools {
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             final Catalog catalog) {
-        return new IcebergCatalogAdapter(catalog);
+        return IcebergCatalogAdapter.of(catalog, Map.of());
     }
 
     /**
@@ -125,7 +125,7 @@ public abstract class IcebergTools {
         // Create the Iceberg catalog from the properties
         final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, properties, hadoopConf);
 
-        return new IcebergCatalogAdapter(catalog, properties);
+        return IcebergCatalogAdapter.of(catalog, properties);
     }
 
 }

@@ -68,8 +68,7 @@ public class IcebergToolsS3 extends IcebergTools {
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
-
-        return new IcebergCatalogAdapter(catalog, properties);
+        return IcebergCatalogAdapter.of(catalog);
     }
 
     /**
