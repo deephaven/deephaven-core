@@ -23,7 +23,7 @@ public final class FileWarehouseSqliteCatalogTest extends SqliteCatalogBase {
     protected IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir, Map<String, String> properties) {
         final String catalogName = testInfo.getTestMethod().orElseThrow().getName() + "-catalog";;
         // no relative support needed, we don't need this data to be persistent / portable
-        SqliteHelper.setLocalFileIo(properties, rootDir, catalogName, false);
+        SqliteHelper.setLocalFileIoProperties(properties, rootDir, catalogName, false);
         return IcebergTools.createAdapter(catalogName, properties);
     }
 }

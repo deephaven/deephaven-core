@@ -38,27 +38,22 @@ public class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsC
      */
     public static Runnable addToProperties(S3Instructions instructions, Map<String, String> propertiesOut) {
         Objects.requireNonNull(instructions);
-        if (propertiesOut.putIfAbsent(AwsProperties.CLIENT_FACTORY,
-                DeephavenAwsClientFactory.class.getName()) != null) {
-            throw new IllegalArgumentException(
-                    String.format("Trying to put '%s', but it already exists", AwsProperties.CLIENT_FACTORY));
-        }
-        if (propertiesOut.putIfAbsent(S3FileIOProperties.CLIENT_FACTORY,
-                DeephavenAwsClientFactory.class.getName()) != null) {
-            throw new IllegalArgumentException(
-                    String.format("Trying to put '%s', but it already exists", S3FileIOProperties.CLIENT_FACTORY));
-        }
+        put(propertiesOut, AwsProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
+        put(propertiesOut, S3FileIOProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
         final String uuid = UUID.randomUUID().toString();
-        if (propertiesOut.putIfAbsent(UUID_KEY, uuid) != null) {
-            throw new IllegalArgumentException(
-                    String.format("Trying to put '%s', but it already exists", UUID_KEY));
-        }
+        put(propertiesOut, UUID_KEY, uuid);
         // We are enabling preload to ensure that #initialize gets called during the creation of the catalog while we
         // know the instructions are in the map.
-        propertiesOut.put(S3FileIOProperties.PRELOAD_CLIENT_ENABLED, "true");
         // Note: glue client is already preloaded on init if needed
+        propertiesOut.put(S3FileIOProperties.PRELOAD_CLIENT_ENABLED, "true");
         S3_INSTRUCTIONS_MAP.put(uuid, instructions);
         return () -> S3_INSTRUCTIONS_MAP.remove(uuid);
+    }
+
+    private static <K, V> void put(Map<K, V> map, K key, V value) {
+        if (map.putIfAbsent(key, value) != null) {
+            throw new IllegalArgumentException(String.format("Key '%s' already exist in map", key));
+        }
     }
 
     private static final Map<String, S3Instructions> S3_INSTRUCTIONS_MAP = new ConcurrentHashMap<>();

@@ -18,7 +18,7 @@ public class DbResource {
         final Path rootDir = Path.of(DbResource.class.getResource("db_resource").toURI());
         final Map<String, String> properties = new HashMap<>();
         SqliteHelper.setJdbcCatalogProperties(properties, rootDir);
-        SqliteHelper.setLocalFileIo(properties, rootDir, catalogName, true);
+        SqliteHelper.setLocalFileIoProperties(properties, rootDir, catalogName, true);
         // Note: the catalogName is very important here, the JDBC catalog uses it for lookups. In this way, a single
         // dbFile can be used for multiple catalogs.
         return IcebergTools.createAdapter(catalogName, properties);

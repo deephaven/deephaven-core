@@ -21,8 +21,8 @@ public class SqliteHelper {
         put(props, CatalogProperties.URI, String.format("jdbc:sqlite:%s", rootDir.resolve(DB_FILE)));
     }
 
-    public static void setLocalFileIo(Map<String, String> properties, Path rootDir, String catalogName,
-            boolean relativeSupport) {
+    public static void setLocalFileIoProperties(
+            Map<String, String> properties, Path rootDir, String catalogName, boolean relativeSupport) {
         final Path warehouseDir = rootDir.resolve(CATALOGS_DIR).resolve(catalogName);
         put(properties, CatalogProperties.WAREHOUSE_LOCATION, warehouseDir.toString());
         if (relativeSupport) {

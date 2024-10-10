@@ -175,7 +175,7 @@ final class S3ClientFactory {
 
     private static <Builder extends S3BaseClientBuilder<Builder, Client>, Client> void applyCrossRegionAccess(
             @NotNull final Builder builder,
-            @NotNull S3Instructions instructions) {
+            @NotNull final S3Instructions instructions) {
         if (instructions.crossRegionAccessEnabled()) {
             // If region is not provided, we enable cross-region access to allow the SDK to determine the region
             // based on the bucket location and cache it for future requests.
