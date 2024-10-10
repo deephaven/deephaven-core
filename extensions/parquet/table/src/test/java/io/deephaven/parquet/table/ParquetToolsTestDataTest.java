@@ -36,37 +36,37 @@ public class ParquetToolsTestDataTest {
 
     @Test
     public void London_v1() {
-        readData("London_v1_Whitespace_SNAPPY");
+        read("London_v1_Whitespace_SNAPPY");
     }
 
     @Test
     public void Product_v1() {
-        readData("Product_v1_CPP_SNAPPY_Whitespace");
+        read("Product_v1_CPP_SNAPPY_Whitespace");
     }
 
     @Test
     public void alltypes() {
-        readData("alltypes_dictionary_v1_IMPALA_NONE");
-        readData("alltypes_plain_v1_IMPALA_NONE");
-        readData("alltypes_plain_v1_IMPALA_SNAPPY");
+        read("alltypes_dictionary_v1_IMPALA_NONE");
+        read("alltypes_plain_v1_IMPALA_NONE");
+        read("alltypes_plain_v1_IMPALA_SNAPPY");
     }
 
     @Test
     public void customer() {
-        readData("customer_v1_IMPALA_GZIP");
-        readData("customer_v1_IMPALA_NONE");
-        readData("customer_v1_IMPALA_SNAPPY");
+        read("customer_v1_IMPALA_GZIP");
+        read("customer_v1_IMPALA_NONE");
+        read("customer_v1_IMPALA_SNAPPY");
     }
 
     @Test
     public void eth() {
         final String prefix = "eth_";
         for (String part : new String[] {"cBROTLI_L9", "cBROTLI_PS5"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP_PS5", "cLZ4_PS5", "cNONE_PS5", "cSNAPPY_PS5", "cZSTD_L9",
                 "cZSTD_PS5"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
@@ -74,26 +74,26 @@ public class ParquetToolsTestDataTest {
     public void eth_r2_v1() {
         final String prefix = "eth_r2_v1_";
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cGZIP_l5", "cLZ4", "cNONE", "cSNAPPY", "cZSTD", "cZSTD_l20"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
     @Test
     public void eth_r2_v1_p2() {
-        readData("eth_r2_v1_p2");
+        read("eth_r2_v1_p2");
     }
 
     @Test
     public void eth_r2_v2() {
         final String prefix = "eth_r2_v2_";
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cNONE", "cSNAPPY", "cZSTD"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
@@ -101,10 +101,10 @@ public class ParquetToolsTestDataTest {
     public void eth_v1() {
         final String prefix = "eth_v1_";
         for (String part : new String[] {"cBROTLI", "cBROTLI_l10", "cBROTLI_l100"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cGZIP_l5", "cGZIP_l9", "cLZ4", "cNONE", "cSNAPPY", "cZSTD"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
@@ -112,10 +112,10 @@ public class ParquetToolsTestDataTest {
     public void eth_v1_p1() {
         final String prefix = "eth_v1_p1_";
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cNSAPPY", "cZSTD"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
@@ -123,10 +123,10 @@ public class ParquetToolsTestDataTest {
     public void eth_v1_p2() {
         final String prefix = "eth_v1_p2_";
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cNONE", "cSNAPPY", "cZSTD"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
@@ -134,103 +134,81 @@ public class ParquetToolsTestDataTest {
     public void eth_v2() {
         final String prefix = "eth_v2_";
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec(prefix + part);
+            codecFail(prefix + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cLZ4_PS5", "cNONE", "cSNAPPY", "cZSTD", "fSpark"}) {
-            readData(prefix + part);
+            read(prefix + part);
         }
     }
 
     @Test
     public void eth_v2_p1() {
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec("eth_v2_p1_" + part);
+            codecFail("eth_v2_p1_" + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cNONE", "cSNAPPY", "cZSTD"}) {
-            readData("eth_v2_p1_" + part);
+            read("eth_v2_p1_" + part);
         }
     }
 
     @Test
     public void eth_v2_p2() {
         for (String part : new String[] {"cBROTLI"}) {
-            noCodec("eth_v2_p2_" + part);
+            codecFail("eth_v2_p2_" + part);
         }
         for (String part : new String[] {"cGZIP", "cLZ4", "cNONE", "cSNAPPY", "cZSTD"}) {
-            readData("eth_v2_p2_" + part);
+            read("eth_v2_p2_" + part);
         }
     }
 
     @Test
     public void flow_v1() {
-        readData("flow_v1_NULLS_SNAPPY");
+        read("flow_v1_NULLS_SNAPPY");
     }
 
     @Test
     public void nation() {
-        readData("nation_dict_MALFORMED");
+        read("nation_dict_MALFORMED");
     }
 
     @Test
     public void nested_maps_v1() {
-        try {
-            open("nested_maps_v1_NULLS_SNAPPY");
-            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
-        } catch (UnsupportedOperationException e) {
-            assertThat(e).hasMessageContaining("Unsupported maximum repetition level 2");
-        }
+        openFail("nested_maps_v1_NULLS_SNAPPY", UnsupportedOperationException.class,
+                "Unsupported maximum repetition level");
     }
 
     @Test
     public void nested_v1() {
-        try {
-            open("nested_v1_NULLS_SNAPPY");
-            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
-        } catch (UnsupportedOperationException e) {
-            assertThat(e).hasMessageContaining("Unsupported maximum repetition level 3");
-        }
+        openFail("nested_v1_NULLS_SNAPPY", UnsupportedOperationException.class, "Unsupported maximum repetition level");
     }
 
     @Test
     public void nonnullable_nested_v1() {
-        try {
-            open("nonnullable_nested_v1_IMPALA_NULLS_NONE");
-            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
-        } catch (UnsupportedOperationException e) {
-            assertThat(e).hasMessageContaining("Unsupported maximum repetition level 2");
-        }
+        openFail("nonnullable_nested_v1_IMPALA_NULLS_NONE", UnsupportedOperationException.class,
+                "Unsupported maximum repetition level");
     }
 
     @Test
     public void nulls_v1() {
-        try {
-            // Note: it would be better if we could figure this out before actually reading a column.
-            readData("nulls_v1_NULLS_SNAPPY");
-            failBecauseExceptionWasNotThrown(TableInitializationException.class);
-        } catch (TableInitializationException e) {
-            assertThat(e).getRootCause().hasMessageContaining(
-                    "Failed to read parquet page because nested optional levels are not supported");
-        }
+        // Note: it would be better if we could figure this out before actually reading a column.
+        readFail("nulls_v1_NULLS_SNAPPY", TableInitializationException.class,
+                "Failed to read parquet page because nested optional levels are not supported");
     }
 
     @Test
     public void repeated_nested() {
-        try {
-            open("repeated_nested_RUST_NONE");
-            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
-        } catch (UnsupportedOperationException e) {
-            assertThat(e).hasMessageContaining("Encountered unsupported multi-column field");
-        }
+        openFail("repeated_nested_RUST_NONE", UnsupportedOperationException.class,
+                "Encountered unsupported multi-column field");
     }
 
     @Test
     public void stock_v1() {
-        readData("stock_v1_CPP_SNAPPY");
+        read("stock_v1_CPP_SNAPPY");
     }
 
     @Test
     public void taxi() {
-        readData("taxi");
+        read("taxi");
     }
 
     private static Table open(String name) {
@@ -242,16 +220,32 @@ public class ParquetToolsTestDataTest {
         return ParquetTools.readTable(path);
     }
 
-    private static void readData(String name) {
+    private static void read(String name) {
         open(name).select();
     }
 
-    private static void noCodec(String name) {
+    private static void openFail(String name, Class<? extends Exception> error, String messagePart) {
         try {
-            // Note: it would be better if we could figure this out before actually reading a column.
-            readData(name);
-        } catch (TableDataException e) {
-            assertThat(e).getCause().hasMessageContaining("Failed to find CompressionCodec");
+            open(name);
+            failBecauseExceptionWasNotThrown(error);
+        } catch (Throwable e) {
+            assertThat(e).isInstanceOf(error);
+            assertThat(e).hasMessageContaining(messagePart);
         }
+    }
+
+    private static void readFail(String name, Class<? extends Exception> error, String messagePart) {
+        try {
+            read(name);
+            failBecauseExceptionWasNotThrown(error);
+        } catch (Throwable e) {
+            assertThat(e).isInstanceOf(error);
+            assertThat(e).getRootCause().hasMessageContaining(messagePart);
+        }
+    }
+
+    private static void codecFail(String name) {
+        // Note: it would be better if we could figure this out before actually reading a column.
+        readFail(name, TableDataException.class, "Failed to find CompressionCodec");
     }
 }
