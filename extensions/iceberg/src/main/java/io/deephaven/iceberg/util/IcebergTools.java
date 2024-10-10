@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Tools for accessing tables in the Iceberg table format.
  */
-public abstract class IcebergTools {
+public final class IcebergTools {
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             final Catalog catalog) {

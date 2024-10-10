@@ -23,7 +23,7 @@ import java.util.Map;
  * Tools for accessing tables in the Iceberg table format.
  */
 @SuppressWarnings("unused")
-public class IcebergToolsS3 extends IcebergTools {
+public final class IcebergToolsS3 {
     private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
 
     /**
@@ -116,7 +116,7 @@ public class IcebergToolsS3 extends IcebergTools {
      *
      * <p>
      * The caller is still responsible for providing the properties necessary as specified in
-     * {@link #createAdapter(String, Map, Map)}.
+     * {@link IcebergTools#createAdapter(String, Map, Map)}.
      *
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties a map containing the Iceberg catalog properties to use
@@ -134,7 +134,7 @@ public class IcebergToolsS3 extends IcebergTools {
         final Map<String, String> newProperties = new HashMap<>(properties);
         final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
         try {
-            return createAdapter(name, newProperties, hadoopConfig);
+            return IcebergTools.createAdapter(name, newProperties, hadoopConfig);
         } finally {
             cleanup.run();
         }
