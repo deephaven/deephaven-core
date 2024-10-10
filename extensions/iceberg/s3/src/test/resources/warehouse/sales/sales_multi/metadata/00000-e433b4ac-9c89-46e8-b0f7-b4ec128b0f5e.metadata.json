@@ -1,9 +1,9 @@
 {
   "format-version" : 2,
-  "table-uuid" : "49ca5b8c-6402-40f9-96b0-4c09f9f1b512",
+  "table-uuid" : "533f8120-9943-4b64-a0cf-6cfab18e4a79",
   "location" : "s3://warehouse/sales/sales_multi",
   "last-sequence-number" : 1,
-  "last-updated-ms" : 1716234545155,
+  "last-updated-ms" : 1725396294486,
   "last-column-id" : 5,
   "current-schema-id" : 0,
   "schemas" : [ {
@@ -49,43 +49,43 @@
   } ],
   "properties" : {
     "owner" : "root",
-    "created-at" : "2024-05-20T19:49:04.669537174Z",
+    "created-at" : "2024-09-03T20:44:52.796187633Z",
     "write.format.default" : "parquet",
     "write.parquet.compression-codec" : "zstd"
   },
-  "current-snapshot-id" : 2001582482032951248,
+  "current-snapshot-id" : 8121674823173822790,
   "refs" : {
     "main" : {
-      "snapshot-id" : 2001582482032951248,
+      "snapshot-id" : 8121674823173822790,
       "type" : "branch"
     }
   },
   "snapshots" : [ {
     "sequence-number" : 1,
-    "snapshot-id" : 2001582482032951248,
-    "timestamp-ms" : 1716234545155,
+    "snapshot-id" : 8121674823173822790,
+    "timestamp-ms" : 1725396294486,
     "summary" : {
       "operation" : "append",
-      "spark.app.id" : "local-1716234462547",
+      "spark.app.id" : "local-1725396284766",
       "added-data-files" : "1",
-      "added-records" : "18266",
-      "added-files-size" : "176970",
+      "added-records" : "18073",
+      "added-files-size" : "175359",
       "changed-partition-count" : "1",
-      "total-records" : "18266",
-      "total-files-size" : "176970",
+      "total-records" : "18073",
+      "total-files-size" : "175359",
       "total-data-files" : "1",
       "total-delete-files" : "0",
       "total-position-deletes" : "0",
       "total-equality-deletes" : "0"
     },
-    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-2001582482032951248-1-a61cde47-0ced-4b74-b91a-9e32dd59b212.avro",
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-8121674823173822790-1-ddb2a84e-df73-4cb9-a92f-18d737a54489.avro",
     "schema-id" : 0
   } ],
   "statistics" : [ ],
   "partition-statistics" : [ ],
   "snapshot-log" : [ {
-    "timestamp-ms" : 1716234545155,
-    "snapshot-id" : 2001582482032951248
+    "timestamp-ms" : 1725396294486,
+    "snapshot-id" : 8121674823173822790
   } ],
   "metadata-log" : [ ]
 }

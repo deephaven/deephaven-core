@@ -43,7 +43,6 @@ public class CatalogAdapterTest extends CatalogAdapterBase {
             table = catalogAdapter.readTable(myTableId, null);
             assertThat(table.getDefinition()).isEqualTo(expectedDefinition);
         }
-        // Note: this is failing w/ NPE, assumes that Snapshot is non-null.
-        // assertThat(table.isEmpty()).isTrue();
+        assertThat(table.isEmpty()).isTrue();
     }
 }

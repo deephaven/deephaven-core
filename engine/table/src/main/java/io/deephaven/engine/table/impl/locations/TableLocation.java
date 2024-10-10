@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.locations;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -21,7 +22,7 @@ import java.util.List;
  * location allows access to columns, size, and possibly other metadata for a single partition that may be included in a
  * source table.
  */
-public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState {
+public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState, LivenessReferent {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.

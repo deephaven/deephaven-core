@@ -97,7 +97,8 @@ public class AppendOnlyFixedSizePageRegionTest {
                 constituents[0].getDefinition(),
                 "Test SimpleSourceTable",
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new TableBackedTableLocationProvider(registrar, false, constituents),
+                new TableBackedTableLocationProvider(registrar, false, TableUpdateMode.STATIC, TableUpdateMode.STATIC,
+                        constituents),
                 registrar).coalesce();
     }
 

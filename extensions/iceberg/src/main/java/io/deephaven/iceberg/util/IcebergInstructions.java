@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
@@ -45,6 +46,15 @@ public abstract class IcebergInstructions {
      */
     public abstract Map<String, String> columnRenames();
 
+    /**
+     * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
+     * {@link IcebergUpdateMode#staticMode()}.
+     */
+    @Value.Default
+    public IcebergUpdateMode updateMode() {
+        return IcebergUpdateMode.staticMode();
+    }
+
     public interface Builder {
         @SuppressWarnings("unused")
         Builder tableDefinition(TableDefinition tableDefinition);
@@ -57,6 +67,9 @@ public abstract class IcebergInstructions {
 
         @SuppressWarnings("unused")
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
+
+        @SuppressWarnings("unused")
+        Builder updateMode(IcebergUpdateMode updateMode);
 
         IcebergInstructions build();
     }
