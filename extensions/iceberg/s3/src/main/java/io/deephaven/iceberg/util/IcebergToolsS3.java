@@ -6,7 +6,6 @@ package io.deephaven.iceberg.util;
 import com.google.common.base.Strings;
 import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.util.annotations.ScriptApi;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.AwsProperties;
