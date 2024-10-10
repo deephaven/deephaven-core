@@ -4,9 +4,9 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.BufferListener;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.DrainableColumn;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.FieldNodeListener;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter.BufferListener;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter.DrainableColumn;
+import io.deephaven.extensions.barrage.chunk.ChunkWriter.FieldNodeListener;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,11 +14,11 @@ import java.io.OutputStream;
 /**
  * This helper class is used to generate only the header of an arrow list that contains a single element.
  */
-public class SingleElementListHeaderInputStreamGenerator extends DrainableColumn {
+public class SingleElementListHeaderWriter extends DrainableColumn {
 
     private final int numElements;
 
-    public SingleElementListHeaderInputStreamGenerator(final int numElements) {
+    public SingleElementListHeaderWriter(final int numElements) {
         this.numElements = numElements;
     }
 
@@ -41,7 +41,6 @@ public class SingleElementListHeaderInputStreamGenerator extends DrainableColumn
         return 0;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     @Override
     public int drainTo(final OutputStream outputStream) throws IOException {
         // allow this input stream to be re-read

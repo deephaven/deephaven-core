@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class BarrageStreamGeneratorTest {
+public class BarrageStreamWriterTest {
 
     @Test
     public void testDrainableStreamIsEmptied() throws IOException {
