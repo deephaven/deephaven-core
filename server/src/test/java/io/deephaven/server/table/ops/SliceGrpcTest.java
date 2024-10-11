@@ -61,7 +61,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
                 .setStartRow(2)
                 .setEndRow(0)
                 .build();
-        assertError(request, Code.INVALID_ARGUMENT, "Cannot slice with a non-negative start position that is after a non-negative end position.");
+        assertError(request, Code.INVALID_ARGUMENT,
+                "Cannot slice with a non-negative start position that is after a non-negative end position.");
     }
 
     @Test
@@ -88,7 +89,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
                 .setStartRow(-1)
                 .setEndRow(-2)
                 .build();
-        assertError(request, Code.INVALID_ARGUMENT, "Cannot slice with a negative start position that is after a negative end position.");
+        assertError(request, Code.INVALID_ARGUMENT,
+                "Cannot slice with a negative start position that is after a negative end position.");
     }
 
     @Test
