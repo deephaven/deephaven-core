@@ -268,8 +268,8 @@ def adapter(
 
     If the user is responsible for connecting to an AWS catalog or S3-compatible API for the warehouse, setting
     s3_instructions is the recommended way of configuring these details, as it allows Deephaven to own the creation of
-    the Iceberg-internal AWS / S3 client. When set, these instructions should also be included as part of
-    IcebergInstructions data_instructions. Note: some REST Catalog implementations may be responsible for providing the
+    the Iceberg-internal AWS / S3 client. When set, these instructions will also be automatically included as part of
+    IcebergInstructions data_instructions. Note: some REST Catalog implementations may be responsible for providing S3
     warehouse credentials, in which case the user is not responsible for setting this.
 
     Other common properties include:

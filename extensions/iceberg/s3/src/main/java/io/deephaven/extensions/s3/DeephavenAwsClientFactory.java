@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,16 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * An {@link AwsClientFactory} and {@link S3FileIOAwsClientFactory} implementation that assumes ownership of AWS client
  * creation as configured via {@link S3Instructions}.
  */
-public class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsClientFactory {
+public final class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsClientFactory {
 
     private static final String UUID_KEY = DeephavenAwsClientFactory.class.getName() + ".__uuid";
 
     /**
      * Adds {@link DeephavenAwsClientFactory} to {@code propertiesOut} with the keys
      * {@value AwsProperties#CLIENT_FACTORY} and {@value S3FileIOProperties#CLIENT_FACTORY}; it is an error if either of
-     * these properties is already set. Also sets {@value S3FileIOProperties#PRELOAD_CLIENT_ENABLED} to "true" to ensure
-     * the S3 client is initialized during the catalog creation process. After the necessary objects have been
-     * initialized, the caller should call the returned {@link Runnable} to clean up.
+     * these properties is already set. After the corresponding {@link org.apache.iceberg.catalog.Catalog} is no longer
+     * in use, the caller should invoke the returned {@link Runnable} to clean up.
      *
      * @param instructions the instructions
      * @param propertiesOut the properties
@@ -42,12 +42,29 @@ public class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsC
         put(propertiesOut, S3FileIOProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
         final String uuid = UUID.randomUUID().toString();
         put(propertiesOut, UUID_KEY, uuid);
-        // We are enabling preload to ensure that #initialize gets called during the creation of the catalog while we
-        // know the instructions are in the map.
-        // Note: glue client is already preloaded on init if needed
-        propertiesOut.put(S3FileIOProperties.PRELOAD_CLIENT_ENABLED, "true");
         S3_INSTRUCTIONS_MAP.put(uuid, instructions);
         return () -> S3_INSTRUCTIONS_MAP.remove(uuid);
+    }
+
+    /**
+     * Get the {@link S3Instructions} as set in the corresponding {@link #addToProperties(S3Instructions, Map)} if the
+     * properties were built with that. If the properties were built with {@link #addToProperties(S3Instructions, Map)},
+     * but the {@link Runnable} was already invoked for cleanup, an {@link IllegalStateException} will be thrown.
+     *
+     * @param properties the properties
+     * @return the instructions
+     */
+    public static Optional<S3Instructions> get(Map<String, String> properties) {
+        final String uuid = properties.get(UUID_KEY);
+        if (uuid == null) {
+            return Optional.empty();
+        }
+        final S3Instructions instructions = S3_INSTRUCTIONS_MAP.get(uuid);
+        if (instructions == null) {
+            throw new IllegalStateException(
+                    "This S3Iinstructions were already cleaned up; please ensure that the returned Runnable from addToProperties is not invoked until the Catalog is no longer in use.");
+        }
+        return Optional.of(instructions);
     }
 
     private static <K, V> void put(Map<K, V> map, K key, V value) {
@@ -62,16 +79,8 @@ public class DeephavenAwsClientFactory implements AwsClientFactory, S3FileIOAwsC
 
     @Override
     public void initialize(Map<String, String> properties) {
-        final String uuid = properties.get(UUID_KEY);
-        if (uuid == null) {
-            throw new IllegalArgumentException(
-                    "DeephavenAwsClientFactory was setup improperly; it must be configured with DeephavenAwsClientFactory.addToProperties");
-        }
-        final S3Instructions s3i = S3_INSTRUCTIONS_MAP.get(uuid);
-        if (s3i == null) {
-            throw new IllegalStateException("This DeephavenAwsClientFactory was already cleaned up");
-        }
-        this.instructions = s3i;
+        this.instructions = get(properties).orElseThrow(() -> new IllegalArgumentException(
+                "DeephavenAwsClientFactory was setup improperly; it must be configured with DeephavenAwsClientFactory.addToProperties"));
     }
 
     private void checkInit() {

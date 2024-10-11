@@ -16,6 +16,7 @@ import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.Cleaner;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +26,9 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public final class IcebergToolsS3 {
     private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
+
+    // Note: this could move to a shared location
+    private static final Cleaner CLEANER = Cleaner.create();
 
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
@@ -112,7 +116,9 @@ public final class IcebergToolsS3 {
      * properties (found amongst {@link S3FileIOProperties}, {@link HttpClientProperties}, and {@link AwsProperties}),
      * the clients are created in the same way that Deephaven's AWS clients are configured with respect to
      * {@code instructions}. This ensures, amongst other things, that Iceberg's AWS configuration and credentials are
-     * in-sync with Deephaven's AWS configuration and credentials for S3 access.
+     * in-sync with Deephaven's AWS configuration and credentials for S3 access. The {@code instructions} will
+     * automatically be used as special instructions if {@link IcebergInstructions#dataInstructions()} if not explicitly
+     * set.
      *
      * <p>
      * The caller is still responsible for providing the properties necessary as specified in
@@ -133,10 +139,11 @@ public final class IcebergToolsS3 {
             @NotNull final S3Instructions instructions) {
         final Map<String, String> newProperties = new HashMap<>(properties);
         final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
-        try {
-            return IcebergTools.createAdapter(name, newProperties, hadoopConfig);
-        } finally {
-            cleanup.run();
-        }
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(name, newProperties, hadoopConfig);
+        // When the Catalog becomes unreachable, we can invoke the DeephavenAwsClientFactory cleanup.
+        // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
+        // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).
+        CLEANER.register(adapter.catalog(), cleanup);
+        return adapter;
     }
 }
