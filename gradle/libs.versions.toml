@@ -231,13 +231,15 @@ jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains" }
 
 
-jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server", version.ref = "jetty" }
-jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "jetty" }
-jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server", version.ref = "jetty" }
-jetty-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "jetty" }
-jetty-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "jetty" }
-jetty-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets", version.ref = "jetty" }
-jetty-websocket-jakarta-server = { module = "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jakarta-server", version.ref = "jetty" }
+jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
+jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
+jetty-bom = { module = "org.eclipse.jetty:jetty-bom", version.ref = "jetty" }
+jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server" }
+jetty-ee10-bom = { module = "org.eclipse.jetty.ee10:jetty-ee10-bom", version.ref = "jetty" }
+jetty-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp" }
+jetty-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet" }
+jetty-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets" }
+jetty-websocket-jakarta-server = { module = "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jakarta-server" }
 
 jetty11-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
 jetty11-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
