@@ -20,6 +20,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
+import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,16 +30,22 @@ final class FlightSqlTicketHelper {
     public static final char TICKET_PREFIX = 'q';
     public static final String FLIGHT_DESCRIPTOR_ROUTE = "flight-sql";
 
-    private static final ByteString PREFIX = ByteString.copyFrom(new byte[] { (byte) TICKET_PREFIX });
+    private static final ByteString PREFIX = ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX});
 
     public static String toReadableString(final ByteBuffer ticket, final String logId) {
-        return toReadableString(ticketToExportId(ticket, logId));
+        // TODO
+        final Any any = unpackTicket(ticket, logId);
+        return any.toString();
+        // return "TODO";
+        // return toReadableString(ticketToExportId(ticket, logId));
     }
 
+    @Deprecated
     public static String toReadableString(final int exportId) {
         return FLIGHT_DESCRIPTOR_ROUTE + "/" + exportId;
     }
 
+    @Deprecated
     public static int ticketToExportId(final ByteBuffer ticket, final String logId) {
         if (ticket == null) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -48,6 +55,7 @@ final class FlightSqlTicketHelper {
                 : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN), logId);
     }
 
+    @Deprecated
     public static int ticketToExportIdInternal(final ByteBuffer ticket, final String logId) {
         if (ticket.order() != ByteOrder.LITTLE_ENDIAN) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -75,7 +83,7 @@ final class FlightSqlTicketHelper {
         return Flight.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest)).build();
     }
 
-    public static Any unpackMessage(ByteBuffer ticket, final String logId) {
+    public static Any unpackTicket(ByteBuffer ticket, final String logId) {
         ticket = ticket.slice();
         if (ticket.get() != TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
@@ -115,6 +123,10 @@ final class FlightSqlTicketHelper {
 
     public static Flight.Ticket ticketFor(CommandStatementQuery command) {
         return packedTicket(command); // todo: this might be different
+    }
+
+    public static Flight.Ticket ticketFor(TicketStatementQuery query) {
+        return packedTicket(query);
     }
 
     private static Flight.Ticket packedTicket(Message message) {

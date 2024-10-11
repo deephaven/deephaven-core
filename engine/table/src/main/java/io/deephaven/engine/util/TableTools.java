@@ -764,10 +764,12 @@ public class TableTools {
         return newTable(definition, null, columnHolders);
     }
 
-    public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes, ColumnHolder<?>... columnHolders) {
+    public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
+            ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         final WritableRowSet rowSet = getRowSet(columnHolders);
-        final LinkedHashMap<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        final LinkedHashMap<String, ColumnSource<?>> columns =
+                Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, rowSet.toTracking(), columns, null, attributes) {
             {
                 setFlat();
