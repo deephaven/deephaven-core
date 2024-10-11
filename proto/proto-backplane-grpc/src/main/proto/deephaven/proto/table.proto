@@ -265,6 +265,12 @@ service TableService {
    * primary use case for this is the Deephaven Web UI.
    */
   rpc ComputeColumnStatistics(ColumnStatisticsRequest) returns (ExportedTableCreationResponse) {}
+
+  /**
+   * Returns a new table representing a sliced subset of the original table. The start row is inclusive,
+   * and the end row is exclusive. If a negative
+   */
+  rpc Slice(SliceRequest) returns (ExportedTableCreationResponse) {}
 }
 
 message TableReference {
@@ -1284,6 +1290,13 @@ message ColumnStatisticsRequest {
   optional int32 unique_value_limit = 4;
 }
 
+message SliceRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  sint64 start_row = 3 [jstype=JS_STRING];
+  sint64 end_row = 4 [jstype=JS_STRING];
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
@@ -1333,6 +1346,7 @@ message BatchTableRequest {
       AjRajTablesRequest raj = 41;
       ColumnStatisticsRequest column_statistics = 42;
       MultiJoinTablesRequest multi_join = 43;
+      SliceRequest slice = 44;
     }
   }
 }
