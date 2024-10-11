@@ -17,6 +17,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.TimeLiteralReplacedExpression;
@@ -48,7 +49,7 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
  */
 public class ConditionFilter extends AbstractConditionFilter {
 
-    public static final int CHUNK_SIZE = 4096;
+    public static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
     private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 /**
  * A tracker for modified join hash table slots.
@@ -14,7 +15,7 @@ import io.deephaven.engine.table.impl.sources.LongArraySource;
  * To process the entries after modifications are complete, call {@link #forAllModifiedSlots(ModifiedSlotConsumer)}.
  */
 public class NaturalJoinModifiedSlotTracker {
-    private static final int CHUNK_SIZE = 4096;
+    private static final int CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
     private final LongArraySource modifiedSlots = new LongArraySource();
     /** the original right values, parallel to modifiedSlots. */
     private final LongArraySource originalRightValues = new LongArraySource();

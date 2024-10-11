@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
@@ -95,7 +96,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * The preferred chunk size when the column source is not chunked.
      */
-    private static final int DEFAULT_PREFERRED_CHUNK_SIZE = 4096;
+    private static final int DEFAULT_PREFERRED_CHUNK_SIZE = ChunkUtils.DEFAULT_CHUNK_SIZE;
 
     /**
      * In its own coordinate space
