@@ -25,7 +25,7 @@ import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
- * Top level accessor for a parquet file which can read both from a CLI style file URI, ex."s3://bucket/key".
+ * Top level accessor for a parquet file which can read from a CLI style file URI, ex."s3://bucket/key".
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;

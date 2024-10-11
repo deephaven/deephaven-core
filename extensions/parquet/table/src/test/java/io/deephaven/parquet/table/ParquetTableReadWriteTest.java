@@ -1783,6 +1783,138 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void metadataPartitionedDataWithCustomTableDefinition() {
+        final Table inputData = TableTools.emptyTable(100).update("PC1 = (ii%2 == 0) ? `Apple` : `Ball`",
+                "PC2 = (ii%3 == 0) ? `Pen` : `Pencil`",
+                "numbers = ii",
+                "characters = (char) (65 + (ii % 23))");
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofString("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("numbers"),
+                ColumnDefinition.ofChar("characters"));
+        final File parentDir = new File(rootFile, "metadataPartitionedDataWithCustomTableDefinition");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setTableDefinition(tableDefinition)
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), writeInstructions);
+        final Table fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+        assertEquals(fromDisk.getDefinition(), tableDefinition);
+        assertTableEquals(inputData.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        // Now set a different table definitions and read the data
+        {
+            // Remove a column
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PC1").withPartitioning(),
+                    ColumnDefinition.ofString("PC2").withPartitioning(),
+                    ColumnDefinition.ofLong("numbers"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            final Table fromDiskWithNewDefinition = readTable(parentDir.getPath(), readInstructions);
+            assertEquals(newTableDefinition, fromDiskWithNewDefinition.getDefinition());
+            assertTableEquals(inputData.select("PC1", "PC2", "numbers").sort("PC1", "PC2"),
+                    fromDiskWithNewDefinition.sort("PC1", "PC2"));
+        }
+
+        {
+            // Remove another column
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PC1").withPartitioning(),
+                    ColumnDefinition.ofString("PC2").withPartitioning(),
+                    ColumnDefinition.ofChar("characters"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            final Table fromDiskWithNewDefinition = readTable(parentDir.getPath(), readInstructions);
+            assertEquals(newTableDefinition, fromDiskWithNewDefinition.getDefinition());
+            assertTableEquals(inputData.select("PC1", "PC2", "characters").sort("PC1", "PC2"),
+                    fromDiskWithNewDefinition.sort("PC1", "PC2"));
+        }
+
+        {
+            // Remove a partitioning column
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PC1").withPartitioning(),
+                    ColumnDefinition.ofChar("characters"),
+                    ColumnDefinition.ofLong("numbers"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            try {
+                readTable(parentDir.getPath(), readInstructions);
+                fail("Exception expected because of missing partitioning column in table definition");
+            } catch (final RuntimeException expected) {
+            }
+        }
+
+        {
+            // Add an extra column
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PC1").withPartitioning(),
+                    ColumnDefinition.ofString("PC2").withPartitioning(),
+                    ColumnDefinition.ofLong("numbers"),
+                    ColumnDefinition.ofChar("characters"),
+                    ColumnDefinition.ofInt("extraColumn"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            final Table fromDiskWithNewDefinition = readTable(parentDir.getPath(), readInstructions);
+            assertEquals(newTableDefinition, fromDiskWithNewDefinition.getDefinition());
+            assertTableEquals(inputData.update("extraColumn = (int) null").sort("PC1", "PC2"),
+                    fromDiskWithNewDefinition.sort("PC1", "PC2"));
+        }
+
+        {
+            // Reorder partitioning and non-partitioning columns
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PC2").withPartitioning(),
+                    ColumnDefinition.ofString("PC1").withPartitioning(),
+                    ColumnDefinition.ofChar("characters"),
+                    ColumnDefinition.ofLong("numbers"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            final Table fromDiskWithNewDefinition = readTable(parentDir.getPath(), readInstructions);
+            assertEquals(newTableDefinition, fromDiskWithNewDefinition.getDefinition());
+            assertTableEquals(inputData.select("PC2", "PC1", "characters", "numbers").sort("PC2", "PC1"),
+                    fromDiskWithNewDefinition.sort("PC2", "PC1"));
+        }
+
+        {
+            // Rename partitioning and non partitioning columns
+            final TableDefinition newTableDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("PartCol1").withPartitioning(),
+                    ColumnDefinition.ofString("PartCol2").withPartitioning(),
+                    ColumnDefinition.ofLong("nums"),
+                    ColumnDefinition.ofChar("chars"));
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(newTableDefinition)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .addColumnNameMapping("PC1", "PartCol1")
+                    .addColumnNameMapping("PC2", "PartCol2")
+                    .addColumnNameMapping("numbers", "nums")
+                    .addColumnNameMapping("characters", "chars")
+                    .build();
+            final Table fromDiskWithNewDefinition = readTable(parentDir.getPath(), readInstructions);
+            assertEquals(newTableDefinition, fromDiskWithNewDefinition.getDefinition());
+            assertTableEquals(
+                    inputData.sort("PC1", "PC2"),
+                    fromDiskWithNewDefinition
+                            .renameColumns("PC1 = PartCol1", "PC2 = PartCol2", "numbers = nums", "characters = chars")
+                            .sort("PC1", "PC2"));
+        }
+    }
+
+    @Test
     public void testVectorColumns() {
         final Table table = getTableFlat(20000, true, false);
         // Take a groupBy to create vector columns containing null values
