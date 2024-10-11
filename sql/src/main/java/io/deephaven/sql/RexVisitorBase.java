@@ -92,6 +92,7 @@ class RexVisitorBase<T> implements RexVisitor<T> {
     }
 
     private UnsupportedOperationException unsupported(RexNode node) {
-        return new UnsupportedOperationException(String.format("%s: %s", getClass().getName(), node.toString()));
+        return new UnsupportedOperationException(
+                String.format("%s: %s %s", getClass().getName(), node.getClass().getName(), node.toString()));
     }
 }

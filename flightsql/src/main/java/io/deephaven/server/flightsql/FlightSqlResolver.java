@@ -600,7 +600,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             if (command.hasTransactionId()) {
                 throw transactionIdsNotSupported();
             }
-            table = executeSqlQuery(session, command.getQuery());
+            try {
+                table = executeSqlQuery(session, command.getQuery());
+            } catch (UnsupportedOperationException e) {
+                if (e.getMessage().contains("org.apache.calcite.rex.RexDynamicParam")) {
+                    throw queryParametersNotSupported();
+                }
+                throw e;
+            }
             schemaBytes = BarrageUtil.schemaBytesFromTable(table);
         }
     }
@@ -1046,6 +1053,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private static StatusRuntimeException transactionIdsNotSupported() {
         return Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "FlightSQL transaction ids are not supported");
+    }
+
+    private static StatusRuntimeException queryParametersNotSupported() {
+        return Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "FlightSQL query parameters are not supported");
     }
 
     private static Optional<Any> parse(ByteString data) {

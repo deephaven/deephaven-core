@@ -428,6 +428,25 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
     }
 
+    // @Test
+    // public void selectQuestionMark() {
+    // flightSqlClient.execute("SELECT ?");
+    // }
+
+    @Test
+    public void selectFooParam() {
+        setFooTable();
+        expectException(() -> flightSqlClient.getExecuteSchema("SELECT Foo FROM foo_table WHERE Foo = ?"),
+                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query parameters are not supported");
+        expectException(() -> flightSqlClient.execute("SELECT Foo FROM foo_table WHERE Foo = ?"),
+                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query parameters are not supported");
+    }
+
+    @Test
+    public void selectFooParamPrepared() {
+        // TODO
+    }
+
     @Test
     public void executeSubstrait() {
         getSchemaUnimplemented(() -> flightSqlClient.getExecuteSubstraitSchema(fakePlan()),
