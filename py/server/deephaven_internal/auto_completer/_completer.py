@@ -3,11 +3,9 @@
 #
 from __future__ import annotations
 from enum import Enum
-from docstring_parser import parse
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
-from importlib.metadata import version
 from ._signature_help import _get_signature_result
 import sys
 import warnings

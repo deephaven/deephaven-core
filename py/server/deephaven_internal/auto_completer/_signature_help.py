@@ -3,12 +3,19 @@
 #
 from __future__ import annotations
 from inspect import Parameter
-from typing import Any, List
+from typing import Any
 from docstring_parser import parse, Docstring
 from jedi.api.classes import Signature
 
-from pprint import pprint
 
+IGNORE_PARAM_NAMES = ("", "/", "*")
+MAX_DISPLAY_SIG_LEN = 128  # 3 lines is 150, but there could be overflow so 150 could result in 4 lines
+POSITIONAL_KINDS = (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
+
+# key: result from _hash
+# value: another dictionary that has the following keys:
+#   description: The markdown description (result from _generate_description_markdown)
+#   param_docs: A list of param markdown descriptions (result from _generate_param_markdowns)
 result_cache = {}
 
 
@@ -17,22 +24,7 @@ def _hash(signature: Signature) -> str:
     return f"{signature.to_string()}\n{signature.docstring(raw=True)}"
 
 
-def _generate_param_markdown(param: dict) -> List[Any]:
-    description = f"##### **{param['name']}**"
-    if param['type'] is not None:
-        description += f": *{param['type']}*"
-    description += "\n\n"
-
-    if param['default'] is not None:
-        description += f"Default: {param['default']}\n\n"
-
-    if param['description'] is not None:
-        description += f"{param['description']}\n\n"
-
-    return description + "---"
-
-
-def _get_params(signature: Signature, docs: Docstring) -> List[Any]:
+def _get_params(signature: Signature, docs: Docstring) -> list[Any]:
     """
     Combines all available parameter information from the signature and docstring.
 
@@ -83,7 +75,7 @@ def _get_params(signature: Signature, docs: Docstring) -> List[Any]:
     return params
 
 
-def _get_raises(docs: Docstring) -> List[Any]:
+def _get_raises(docs: Docstring) -> list[Any]:
     raises = []
     for raise_ in docs.raises:
         raises.append({
@@ -94,7 +86,7 @@ def _get_raises(docs: Docstring) -> List[Any]:
     return raises
 
 
-def _get_returns(docs: Docstring) -> List[Any]:
+def _get_returns(docs: Docstring) -> list[Any]:
     returns = []
     for return_ in docs.many_returns:
         returns.append({
@@ -105,40 +97,21 @@ def _get_returns(docs: Docstring) -> List[Any]:
     return returns
 
 
-def _get_signature_result(signature: Signature) -> List[Any]:
-    """ Gets the result of a signature to be used by `do_signature_help`
-
-    Returns:
-        A list that contains [signature name, docstring, param docstrings, index]
-    """
-
-    docstring = signature.docstring(raw=True)
-    cache_key = _hash(signature)
-
-    if cache_key in result_cache:
-        result = result_cache[cache_key].copy()  # deep copy not needed since only index is different
-        result.append(signature.index if signature.index is not None else -1)
-        return result
-
-    docs = parse(docstring)
-
-    # Nothing parsed, revert to plaintext
-    if docstring == docs.description:
-        return [
-            signature.to_string(),
-            signature.docstring(raw=True).replace(" ", "&nbsp;").replace("\n", "  \n"),
-            [[param.to_string().strip(), ""] for param in signature.params],
-            signature.index if signature.index is not None else -1,
-        ]
-
-    params = _get_params(signature, docs)
+def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
     raises = _get_raises(docs)
     returns = _get_returns(docs)
-    description = docs.description.strip().replace("\n", "  \n") + "\n\n"
+
+    if docs.description is None:
+        description = ""
+    else:
+        description = docs.description.strip().replace("\n", "  \n") + "\n\n"
 
     if len(params) > 0:
         description += "#### **Parameters**\n\n"
         for param in params:
+            if param['name'] in IGNORE_PARAM_NAMES:
+                continue
+
             description += f"> **{param['name']}**"
             if param['type'] is not None:
                 description += f": *{param['type']}*"
@@ -147,7 +120,7 @@ def _get_signature_result(signature: Signature) -> List[Any]:
             description += "  \n"
 
             if param['description'] is not None:
-                description += f"> {param['description']}"
+                description += f"> {param['description']}".replace('\n\n', '\n\n> ')
             description += "\n\n"
 
     if len(returns) > 0:
@@ -168,12 +141,104 @@ def _get_signature_result(signature: Signature) -> List[Any]:
                 description += f"> {raises_['description']}"
             description += "\n\n"
 
-    result = [
-        f"{signature.to_string().split('(')[0]}(...)" if len(signature.to_string()) > 20 else signature.to_string(),
-        description.strip(),
-        [[signature.params[i].to_string().strip(), _generate_param_markdown(params[i])] for i in range(len(signature.params))],
-    ]
-    result_cache[cache_key] = result.copy()  # deep copy not needed since only index is different
-    result.append(signature.index if signature.index is not None else -1)
+    return description.strip()
 
-    return result
+
+def _generate_display_sig(signature: Signature) -> str:
+    if len(signature.to_string()) <= MAX_DISPLAY_SIG_LEN:
+        return signature.to_string()
+    
+    # Use 0 as default to display start of signature
+    index = signature.index if signature.index is not None else 0
+    display_sig = f"{signature.name}("
+
+    if index > 0:
+        display_sig += "..., "
+
+    # If current arg is positional, display next 2 args
+    # If current arg is keyword, only display current args
+    if signature.params[index].kind in POSITIONAL_KINDS:
+        # Clamp index so that 3 args are shown, even at last index
+        index = max(min(index, len(signature.params) - 3), 0)
+        end_index = index + 3
+        # If the next arg is not positional, do not show the one after it
+        # Otherwise, this arg will show 2 ahead, and then next arg will show 0 ahead
+        if signature.params[index + 1].kind not in POSITIONAL_KINDS:
+            end_index -= 1
+        display_sig += ", ".join([param.to_string() for param in signature.params[index:end_index]])
+        if index + 3 < len(signature.params):
+            display_sig += ", ..."
+    else:
+        display_sig += signature.params[index].to_string()
+        if index + 1 < len(signature.params):
+            display_sig += ", ..."
+
+    return display_sig + ")"
+
+
+def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[Any]:
+    param_docs = []
+    for i in range(len(signature.params)):
+        if signature.params[i].to_string().strip() in IGNORE_PARAM_NAMES:
+            continue
+
+        param = params[i]
+        description = f"##### **{param['name']}**"
+        if param['type'] is not None:
+            description += f": *{param['type']}*"
+        description += "\n\n"
+        if param['description'] is not None:
+            description += f"{param['description']}\n\n"
+        description += "---"
+
+        param_docs.append([signature.params[i].to_string().strip(), description])
+
+    return param_docs
+
+
+def _get_signature_result(signature: Signature) -> list[Any]:
+    """ Gets the result of a signature to be used by `do_signature_help`
+
+    Returns:
+        A list that contains [signature name, docstring, param docstrings, index]
+    """
+
+    docstring = signature.docstring(raw=True)
+    cache_key = _hash(signature)
+
+    # Check cache
+    if cache_key in result_cache:
+        result = result_cache[cache_key]
+        return [
+            _generate_display_sig(signature),
+            result["description"],
+            result["param_docs"],
+            signature.index if signature.index is not None else -1,
+        ]
+
+    # Parse the docstring to extract information
+    docs = parse(docstring)
+    # Nothing parsed, revert to plaintext
+    if docstring == docs.description:
+        return [
+            signature.to_string(),
+            signature.docstring(raw=True).replace(" ", "&nbsp;").replace("\n", "  \n"),
+            [[param.to_string().strip(), ""] for param in signature.params],
+            signature.index if signature.index is not None else -1,
+        ]
+
+    # Get params in this scope because it'll be used multiple times
+    params = _get_params(signature, docs)
+    description = _generate_description_markdown(docs, params)
+    param_docs = _generate_param_markdowns(signature, params)
+    result_cache[cache_key] = {
+        "description": description,
+        "param_docs": param_docs,
+    }
+
+    return [
+        _generate_display_sig(signature),
+        description,
+        param_docs,
+        signature.index if signature.index is not None else -1,
+    ]
