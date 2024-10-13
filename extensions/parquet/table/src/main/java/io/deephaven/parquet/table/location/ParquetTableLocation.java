@@ -35,7 +35,7 @@ import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
-import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,9 +58,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     private final ParquetInstructions readInstructions;
     private final ParquetFileReader parquetFileReader;
+    // Note: the metadata here may be _different_ than parquetFileReader.getMetadata().
+    private final ParquetMetadata parquetMetadata;
     private final int[] rowGroupIndices;
 
-    private final RowGroup[] rowGroups;
+    private final BlockMetaData[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
 
@@ -79,7 +81,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
-        final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
             // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
@@ -91,15 +92,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
-                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
-                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
-                .toArray(RowGroup[]::new);
-        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
+                .mapToObj(rgi -> parquetMetadata.getBlocks().get(rgi))
+                .sorted(Comparator.comparingInt(BlockMetaData::getOrdinal))
+                .toArray(BlockMetaData[]::new);
+        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(BlockMetaData::getRowCount).max().orElse(0L);
         regionParameters = new RegionedPageStore.Parameters(
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
-        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
+        for (final ColumnDescriptor column : parquetMetadata.getFileMetaData().getSchema().getColumns()) {
             final String[] path = column.getPath();
             if (path.length > 1) {
                 parquetColumnNameToPath.put(path[0], path);
@@ -165,8 +166,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if ((local = rowGroupReaders) != null) {
                 return local;
             }
+
             return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
+                    .mapToObj(idx -> parquetFileReader.getRowGroup(parquetMetadata, idx, version))
                     .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
                     .toArray(RowGroupReader[]::new);
         }
@@ -196,7 +198,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
-            final long subRegionSize = rowGroups[rgi].getNum_rows();
+            final long subRegionSize = rowGroups[rgi].getRowCount();
             if (subRegionSize == 0) {
                 // Skip empty row groups
                 continue;

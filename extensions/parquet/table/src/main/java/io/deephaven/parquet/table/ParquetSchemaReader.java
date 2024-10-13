@@ -28,6 +28,7 @@ import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
@@ -271,6 +272,15 @@ public class ParquetSchemaReader {
                 : instructionsBuilder.getValue().build();
     }
 
+    public static Pair<List<ColumnDefinition<?>>, ParquetInstructions> convertSchema(
+            @NotNull final FileMetaData metadata,
+            @NotNull final ParquetInstructions readInstructionsIn) {
+        return convertSchema(
+                metadata.getSchema(),
+                metadata.getKeyValueMetaData(),
+                readInstructionsIn);
+    }
+
     /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
@@ -284,6 +294,7 @@ public class ParquetSchemaReader {
             @NotNull final MessageType schema,
             @NotNull final Map<String, String> keyValueMetadata,
             @NotNull final ParquetInstructions readInstructionsIn) {
+        // TODO: what is this warning about?
         final ArrayList<ColumnDefinition<?>> cols = new ArrayList<>();
         final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
         return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(

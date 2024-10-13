@@ -21,14 +21,13 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -118,11 +117,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFileURI));
         }
         final ParquetFileReader metadataFileReader = ParquetFileReader.create(metadataFileURI, channelsProvider);
-        final ParquetMetadataConverter converter = new ParquetMetadataConverter();
-        final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFileURI, metadataFileReader, converter);
+        final ParquetMetadata metadataFileMetadata = metadataFileReader.getMetadata();
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetSchemaReader.convertSchema(
-                metadataFileReader.getSchema(),
-                metadataFileMetadata.getFileMetaData().getKeyValueMetaData(),
+                metadataFileReader.getMetadata().getFileMetaData(),
                 inputInstructions);
 
         if (channelsProvider.exists(commonMetadataFileURI)) {
@@ -130,10 +127,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     ParquetFileReader.create(commonMetadataFileURI, channelsProvider);
             final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo =
                     ParquetSchemaReader.convertSchema(
-                            commonMetadataFileReader.getSchema(),
-                            convertMetadata(commonMetadataFileURI, commonMetadataFileReader, converter)
-                                    .getFileMetaData()
-                                    .getKeyValueMetaData(),
+                            commonMetadataFileReader.getMetadata().getFileMetaData(),
                             leafSchemaInfo.getSecond());
             final Collection<ColumnDefinition<?>> adjustedColumnDefinitions = new ArrayList<>();
             final Map<String, ColumnDefinition<?>> leafDefinitionsMap =
@@ -164,11 +158,11 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                 ColumnDefinition::getName,
                 cd -> PartitionParser.lookupSupported(cd.getDataType(), cd.getComponentType())));
         final Map<String, TIntList> filePathToRowGroupIndices = new LinkedHashMap<>();
-        final List<RowGroup> rowGroups = metadataFileReader.fileMetaData.getRow_groups();
+        final List<BlockMetaData> rowGroups = metadataFileReader.getMetadata().getBlocks();
         final int numRowGroups = rowGroups.size();
         for (int rgi = 0; rgi < numRowGroups; ++rgi) {
             final String relativePath =
-                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getPath());
             filePathToRowGroupIndices.computeIfAbsent(relativePath, fn -> new TIntArrayList()).add(rgi);
         }
         final MutableInt partitionOrder = new MutableInt(0);
@@ -258,16 +252,6 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     public String toString() {
         return ParquetMetadataFileLayout.class.getSimpleName() + '[' + metadataFileURI + ',' + commonMetadataFileURI
                 + ']';
-    }
-
-    private static ParquetMetadata convertMetadata(@NotNull final URI uri,
-            @NotNull final ParquetFileReader fileReader,
-            @NotNull final ParquetMetadataConverter converter) {
-        try {
-            return converter.fromParquetMetadata(fileReader.fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Error while converting file metadata from " + uri);
-        }
     }
 
     private static ColumnDefinition<?> adjustPartitionDefinition(@NotNull final ColumnDefinition<?> columnDefinition) {
