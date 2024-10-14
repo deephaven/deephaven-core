@@ -46,6 +46,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static final int defaultTargetPageSize = Configuration.getInstance().getIntegerWithDefault(
             "Parquet.defaultTargetPageSize", DEFAULT_TARGET_PAGE_SIZE);
 
+    /**
+     * Throws an exception if {@link ParquetInstructions#getTableDefinition()} is empty.
+     *
+     * @param parquetInstructions the parquet instructions
+     * @throws IllegalArgumentException if there is not a table definition
+     */
+    static TableDefinition ensureDefinition(final ParquetInstructions parquetInstructions) {
+        return parquetInstructions.getTableDefinition()
+                .orElseThrow(() -> new IllegalArgumentException("Table definition must be provided"));
+    }
+
     private static final boolean DEFAULT_IS_REFRESHING = false;
 
     public interface OnWriteCompleted {
@@ -87,7 +98,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     static final String FILE_INDEX_TOKEN = "{i}";
     private static final String DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA = UUID_TOKEN;
 
-    public ParquetInstructions() {}
+    private ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
         final String mapped = getColumnNameFromParquetColumnName(parquetColumnName);
