@@ -902,8 +902,8 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will change the
-     * schema of the existing table to match the provided deephaven table.
+     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will overwrite
+     * the schema of the existing table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier string for the iceberg table to overwrite
      * @param dhTable The deephaven table to overwrite with
@@ -917,8 +917,8 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will change the
-     * schema of the existing table to match the provided deephaven table.
+     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will overwrite
+     * the schema of the existing table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier for the iceberg table to overwrite
      * @param dhTable The deephaven table to overwrite with
@@ -934,7 +934,7 @@ public class IcebergCatalogAdapter {
     /**
      * Overwrite the existing iceberg table with the provided deephaven tables appended together in a single snapshot.
      * All tables should have the same definition, else a table definition should be provided in the instructions. This
-     * will change the schema of the existing table to match the provided deephaven tables.
+     * will overwrite the schema of the existing table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier string for the iceberg table to overwrite
      * @param dhTables The deephaven tables to overwrite with
@@ -950,7 +950,7 @@ public class IcebergCatalogAdapter {
     /**
      * Overwrite the existing iceberg table with the provided deephaven tables appended together in a single snapshot.
      * All tables should have the same definition, else a table definition should be provided in the instructions. This
-     * will change the schema of the existing table to match the provided deephaven tables.
+     * will overwrite the schema of the existing table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier for the iceberg table to overwrite
      * @param dhTables The deephaven tables to overwrite with
