@@ -268,7 +268,8 @@ service TableService {
 
   /**
    * Returns a new table representing a sliced subset of the original table. The start row is inclusive,
-   * and the end row is exclusive. If a negative
+   * and the end row is exclusive. If a negative value is given, then the row is counted from the end of
+   * the table.
    */
   rpc Slice(SliceRequest) returns (ExportedTableCreationResponse) {}
 }
