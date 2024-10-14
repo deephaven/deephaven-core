@@ -60,7 +60,8 @@ public class TestAggBy extends RefreshingTableTestCase {
     public void testBy() {
         ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        Table table = TableTools.newTable(aHolder, bHolder);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder);
         show(table);
         assertEquals(10, table.size());
         assertEquals(2, table.groupBy("A").size());
@@ -68,16 +69,39 @@ public class TestAggBy extends RefreshingTableTestCase {
         Table minMax = table.aggBy(
                 List.of(
                         AggFormula("min(each)", "each", "Min=B"),
-                        AggFormula("max(each)", "each", "Max=B")),
+                        AggFormula("max(each)", "each", "Max=B"),
+                        AggFormula("sum(each)", "each", "Sum=B"),
+                        AggFormula("f_min=min(B)"),
+                        AggFormula("f_max=max(B)"),
+                        AggFormula("f_sum=sum(B)"),
+                        AggFormula("f_custom_sum=sum(B) + sum(C)")),
                 "A");
         show(minMax);
         assertEquals(2, minMax.size());
         IntVector mins = ColumnVectors.ofInt(minMax, "Min");
         assertEquals(1, mins.get(0));
         assertEquals(3, mins.get(1));
+        mins = ColumnVectors.ofInt(minMax, "f_min");
+        assertEquals(1, mins.get(0));
+        assertEquals(3, mins.get(1));
+
         IntVector maxes = ColumnVectors.ofInt(minMax, "Max");
         assertEquals(10, maxes.get(0));
         assertEquals(8, maxes.get(1));
+        maxes = ColumnVectors.ofInt(minMax, "f_max");
+        assertEquals(10, maxes.get(0));
+        assertEquals(8, maxes.get(1));
+
+        LongVector sums = ColumnVectors.ofLong(minMax, "Sum");
+        assertEquals(33, sums.get(0));
+        assertEquals(22, sums.get(1));
+        sums = ColumnVectors.ofLong(minMax, "f_sum");
+        assertEquals(33, sums.get(0));
+        assertEquals(22, sums.get(1));
+
+        sums = ColumnVectors.ofLong(minMax, "f_custom_sum");
+        assertEquals(33 + 6, sums.get(0));
+        assertEquals(22 + 4, sums.get(1));
 
         Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
         show(doubleCounted);
@@ -127,8 +151,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         for (int ii = 0; ii < bChunk.size(); ++ii) {
             doubles[ii] = 1.1 * bChunk.get(ii);
         }
-        ColumnHolder<?> cHolder = col("C", doubles);
-        table = TableTools.newTable(aHolder, bHolder, cHolder);
+        ColumnHolder<?> dHolder = col("D", doubles);
+        table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder);
         show(table);
         Table summary = table.aggBy(summaryStatistics, "A");
         show(summary);
@@ -215,7 +239,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                     public Table e() {
                         return queryTable.aggBy(List.of(
                                 AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
-                                AggFormula("max(each)", "each", "MaxI=intCol")), "Sym").sort("Sym");
+                                AggFormula("max(each)", "each", "MaxI=intCol"),
+                                AggFormula("f_min=min(intColNulls)"),
+                                AggFormula("f_max=max(doubleColNulls)"),
+                                AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
+                                AggFormula("f_custom_sum=sum(intColNulls) + sum(doubleColNulls)")), "Sym").sort("Sym");
                     }
                 },
                 new QueryTableTest.TableComparator(

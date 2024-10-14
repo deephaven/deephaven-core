@@ -4,9 +4,13 @@
 package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
+
+import javax.annotation.Nullable;
 
 /**
  * Specifies an aggregation that applies a {@link #formula() formula} to each input group (as a Deephaven vector
@@ -16,20 +20,25 @@ import org.immutables.value.Value.Parameter;
 @Immutable
 @SimpleStyle
 public abstract class AggSpecFormula extends AggSpecBase {
-
-    public static final String PARAM_TOKEN_DEFAULT = "each";
+    @Override
+    public boolean deferredInputColumns() {
+        return isMultiColumnFormula();
+    }
 
     /**
-     * Creates a new AggSpecFormula with {@code paramToken} of {@value PARAM_TOKEN_DEFAULT}.
-     *
-     * <p>
-     * todo The
+     * Creates a new AggSpecFormula.
      *
      * @param formula the formula
      * @return the AggSpecFormula
      */
     public static AggSpecFormula of(String formula) {
-        return of(formula, PARAM_TOKEN_DEFAULT);
+        // Parse the supplied formula for the output column name and formula
+        final Selectable column = Selectable.parse(formula);
+
+        final String outputColumnName = column.newColumn().name();
+        final String parsedFormula = ((RawString) column.expression()).value();
+
+        return ImmutableAggSpecFormula.of(parsedFormula, null, outputColumnName);
     }
 
     /**
@@ -40,11 +49,14 @@ public abstract class AggSpecFormula extends AggSpecBase {
      * @return the AggSpecFormula
      */
     public static AggSpecFormula of(String formula, String paramToken) {
-        return ImmutableAggSpecFormula.of(formula, paramToken);
+        return ImmutableAggSpecFormula.of(formula, paramToken, null);
     }
 
     @Override
     public final String description() {
+        if (isMultiColumnFormula()) {
+            return "multi-column formula '" + formula() + '\'';
+        }
         return "formula '" + formula() + "' with column param '" + paramToken() + '\'';
     }
 
@@ -62,7 +74,25 @@ public abstract class AggSpecFormula extends AggSpecBase {
      * @return The parameter token
      */
     @Parameter
+    @Nullable
     public abstract String paramToken();
+
+    /**
+     * Will return the output column name parsed from the supplied formula (or {@code null} if this is a single-column
+     * formula applied to many output columns).
+     *
+     * @return The output column name (or null if this is not a multi-column formula)
+     */
+    @Parameter
+    @Nullable
+    public abstract String outputColumnName();
+
+    /**
+     * Whether this is a multi-column input formula or if it is a single-column input formula with a parameter token.
+     */
+    public boolean isMultiColumnFormula() {
+        return outputColumnName() != null;
+    }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -74,13 +104,6 @@ public abstract class AggSpecFormula extends AggSpecBase {
     final void checkFormula() {
         if (formula().isEmpty()) {
             throw new IllegalArgumentException("formula must not be empty");
-        }
-    }
-
-    @Check
-    final void checkParamToken() {
-        if (paramToken().isEmpty()) {
-            throw new IllegalArgumentException("paramToken must not be empty");
         }
     }
 }

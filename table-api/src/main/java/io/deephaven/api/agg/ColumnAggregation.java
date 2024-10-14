@@ -9,6 +9,8 @@ import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import javax.annotation.Nullable;
+
 /**
  * A ColumnAggregation is an {@link Aggregation} that is composed of a {@link #spec() spec} and a single input/output
  * column {@link #pair() pair}. The spec defines the aggregation operation to apply to the input column in order to
@@ -26,6 +28,7 @@ public abstract class ColumnAggregation implements Aggregation {
     public abstract AggSpec spec();
 
     @Parameter
+    @Nullable
     public abstract Pair pair();
 
     @Override

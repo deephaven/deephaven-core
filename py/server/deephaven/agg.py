@@ -157,22 +157,36 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.first(), cols=cols)
 
 
-def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def formula(formula: str, formula_param: str = None, cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
         |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
         |  User-defined functions
 
+    There are two variants of this call. The preferred variant requires the formula to provide the output column name
+    and specific input column names in the following format:
+        |  formula('output_col=(input_col1 + input_col2) * input_col3')
+    This form does not accept `formula_param` or `cols` arguments because the input and output columns are explicitly
+    set within the formula string.
+
+    The second (deprecated) variant allows the user to apply a formula expression to a set of input columns. In this
+    call the `formula_param` is used as a placeholder for the single input column and the `cols` argument is used to
+    identify the output column name and the input source column when applying the formula.
+
     Args:
-        formula (str): the user defined formula to apply to each group.
-        formula_param (str): the parameter name for the input column's vector within the formula. If formula is
-            `max(each)`, then `each` is the formula_param.
-        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
-            default is None, only valid when used in Table agg_all_by operation
+        formula (str): the user defined formula to apply
+        formula_param (str): If provided, supplies the parameter name for the input column's vector within the formula.
+            If formula is `max(each)`, then `each` is the formula_param. Default is None, implying the `formula`
+            argument specifies the input and output columns.
+        cols (Union[str, List[str]]): If provided, supplies the column(s) to aggregate on, can be renaming expressions,
+            i.e. "new_col = col". Default is None, which can be valid when the `formula` argument supplies the input
+            column names or when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
+    if formula_param == None:
+        return Aggregation(j_agg_spec=_JAggSpec.formula(formula), cols=None)
     return Aggregation(j_agg_spec=_JAggSpec.formula(formula, formula_param), cols=cols)
 
 

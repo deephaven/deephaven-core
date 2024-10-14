@@ -93,6 +93,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -100,6 +101,7 @@ import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -107,12 +109,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -152,6 +149,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private final Collection<? extends Aggregation> aggregations;
     private final Type type;
+
+    private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
 
     /**
      * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
@@ -386,6 +385,10 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public final void visit(@NotNull final ColumnAggregation columnAgg) {
+            if (columnAgg.pair() == null) {
+                columnAgg.spec().walk(this);
+                return;
+            }
             resultPairs = List.of(columnAgg.pair());
             columnAgg.spec().walk(this);
             resultPairs = List.of();
@@ -745,12 +748,48 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
-            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
-                    resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
-            final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                    true, formula.formula(), formula.paramToken(), compilationProcessor,
-                    MatchPair.fromPairs(resultPairs));
-            addNoInputOperator(formulaChunkedOperator);
+            if (formula.isMultiColumnFormula()) {
+                // Create a new column pair with the same name for the left and right columns
+                final String resultColumnName = formula.outputColumnName();
+
+                // Make the column now so we can extract the input column names.
+                final FormulaColumn formulaColumn =
+                        FormulaColumn.createFormulaColumn(resultColumnName, formula.formula());
+
+                // Get or create a column definition map composed of vectors of the original column types.
+                if (vectorColumnNameMap == null) {
+                    vectorColumnNameMap = new HashMap<>();
+                    table.getColumnSourceMap().forEach((key, value) -> {
+                        final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
+                                key, VectorFactory.forElementType(value.getType()).vectorType());
+                        vectorColumnNameMap.put(key, columnDef);
+                    });
+                }
+
+                // Get the input column names and data types from the formula.
+                final String[] inputColumns =
+                        formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+
+                final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                        Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
+                                .toArray(MatchPair[]::new));
+
+                final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(
+                        groupByChunkedOperator,
+                        true,
+                        formulaColumn,
+                        resultColumnName,
+                        compilationProcessor);
+                addNoInputOperator(op);
+            } else {
+                final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                        resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
+
+                final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
+                        true, formula.formula(), formula.paramToken(), compilationProcessor,
+                        MatchPair.fromPairs(resultPairs));
+                addNoInputOperator(formulaChunkedOperator);
+            }
         }
 
         @Override

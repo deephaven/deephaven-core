@@ -18,6 +18,13 @@ import java.util.Collection;
  * {@link io.deephaven.api.agg.ColumnAggregations compound} column aggregations.
  */
 public interface AggSpec {
+    /**
+     * Whether this aggregation specification knows all input sources at construction time or must wait until the
+     * operator is created to determine them (e.g. AggFormula with multiple input columns).
+     */
+    default boolean deferredInputColumns() {
+        return false;
+    }
 
     /**
      * @return {@link AggSpecAbsSum#of()}

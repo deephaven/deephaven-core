@@ -14,7 +14,6 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFirst;
-import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFreeze;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecGroup;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecLast;
@@ -92,9 +91,10 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
 
     @Override
     public void visit(io.deephaven.api.agg.spec.AggSpecFormula formula) {
-        out = spec(Builder::setFormula, AggSpecFormula.newBuilder()
+        final AggSpec.AggSpecFormula.Builder builder = AggSpec.AggSpecFormula.newBuilder()
                 .setFormula(formula.formula())
-                .setParamToken(formula.paramToken()));
+                .setParamToken(formula.paramToken());
+        out = spec(Builder::setFormula, builder);
     }
 
     @Override

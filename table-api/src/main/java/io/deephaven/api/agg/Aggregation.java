@@ -39,6 +39,16 @@ import java.util.function.BiFunction;
 public interface Aggregation {
 
     /**
+     * Create an aggregation from {@link AggSpec} without specifying an input / output pair.
+     *
+     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair
+     * @return The aggregation
+     */
+    static ColumnAggregation of(AggSpec spec) {
+        return ColumnAggregation.of(spec, null);
+    }
+
+    /**
      * Combine an {@link AggSpec} and an input/output {@link Pair column name pair} into a {@link ColumnAggregation}.
      *
      * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair
@@ -73,8 +83,12 @@ public interface Aggregation {
      */
     static Aggregation of(AggSpec spec, List<String> pairs) {
         if (pairs.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
+            if (!spec.deferredInputColumns()) {
+                throw new IllegalArgumentException(
+                        "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
+            } else {
+                return of(spec, (String) null);
+            }
         }
         if (pairs.size() == 1) {
             return of(spec, pairs.get(0));
@@ -289,6 +303,23 @@ public interface Aggregation {
      */
     static FirstRowKey AggFirstRowKey(String resultColumn) {
         return FirstRowKey.of(resultColumn);
+    }
+
+    /**
+     * <p>
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula}.
+     * This variant requires the formula to provide the output column name and specific input column names in the
+     * following format:
+     * </p>
+     * {@code
+     * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
+     * }
+     *
+     * @param formula The {@link AggSpecFormula#formula() formula} to use to produce the output column
+     * @return The aggregation
+     */
+    static Aggregation AggFormula(String formula) {
+        return of(AggSpec.formula(formula));
     }
 
     /**
