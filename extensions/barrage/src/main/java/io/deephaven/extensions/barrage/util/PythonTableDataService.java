@@ -154,7 +154,6 @@ public class PythonTableDataService extends AbstractTableDataService {
             final BiFunction<TableLocationKeyImpl, ByteBuffer[], TableLocationKey> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
                         // TODO: parse real partition column values into map
-                        // ByteBuffer[] arrowTablePayload = byteBuffers.getObjectArrayValue(ByteBuffer.class);
                         return new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of());
                     };
 
@@ -171,13 +170,11 @@ public class PythonTableDataService extends AbstractTableDataService {
         public SafeCloseable subscribeToNewPartitions(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
-            final Function<PyObject, TableLocationKey> convertingListener = partitionInfo -> {
-                PyObject tableLocationKey = partitionInfo.getAttribute("0");
-                ByteBuffer arrowTablePayload = partitionInfo.getAttribute("1", ByteBuffer.class);
-
-                // TODO: parse real partition column values into map
-                return new TableLocationKeyImpl(tableLocationKey, Map.of());
-            };
+            final BiFunction<TableLocationKeyImpl, ByteBuffer[], TableLocationKey> convertingListener =
+                    (tableLocationKey, byteBuffers) -> {
+                        // TODO: parse real partition column values into map
+                        return new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of());
+                    };
 
             final PyObject cancellationCallback = pyTableDataService.call(
                     "_subscribe_to_new_partitions", tableKey.key, convertingListener);
