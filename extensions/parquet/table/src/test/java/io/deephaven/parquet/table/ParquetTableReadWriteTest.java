@@ -1783,8 +1783,9 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void metadataPartitionedDataWithCustomTableDefinition() {
-        final Table inputData = TableTools.emptyTable(100).update("PC1 = (ii%2 == 0) ? `Apple` : `Ball`",
+    public void metadataPartitionedDataWithCustomTableDefinition() throws IOException {
+        final Table inputData = TableTools.emptyTable(100).update(
+                "PC1 = (ii%2 == 0) ? `Apple` : `Ball`",
                 "PC2 = (ii%3 == 0) ? `Pen` : `Pencil`",
                 "numbers = ii",
                 "characters = (char) (65 + (ii % 23))");
@@ -1911,6 +1912,69 @@ public final class ParquetTableReadWriteTest {
                     fromDiskWithNewDefinition
                             .renameColumns("PC1 = PartCol1", "PC2 = PartCol2", "numbers = nums", "characters = chars")
                             .sort("PC1", "PC2"));
+        }
+    }
+
+    @Test
+    public void metadataPartitionedDataWithCustomTableDefinition2() throws IOException {
+        final Table inputData = TableTools.emptyTable(100)
+                .update("PC1 = (ii%2 == 0) ? `Apple` : `Ball`",
+                        "PC2 = (ii%3 == 0) ? `Pen` : `Pencil`",
+                        "numbers = ii",
+                        "characters = (char) (65 + (ii % 23))");
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofString("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("numbers"),
+                ColumnDefinition.ofChar("characters"));
+        final File parentDir = new File(rootFile, "metadataPartitionedDataWithCustomTableDefinition");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setTableDefinition(tableDefinition)
+                .build();
+        writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), writeInstructions);
+
+        // Replace files in directory with empty files and read the data
+        final File dir = new File(parentDir, "PC1=Apple" + File.separator + "PC2=Pen");
+        final String[] dataFileList = dir.list();
+        assertNotNull(dataFileList);
+        for (final String dataFile : dataFileList) {
+            final File file = new File(dir, dataFile);
+            assertTrue(file.delete());
+            assertTrue(file.createNewFile());
+        }
+
+        {
+            // Read as metadata partitioned
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                    .build();
+            final Table fromDiskAfterDelete = readTable(parentDir.getPath(), readInstructions);
+
+            // Make sure the definition is correct, and we can read the size as well as data for the remaining
+            // partitions
+            assertEquals(tableDefinition, fromDiskAfterDelete.getDefinition());
+            assertEquals(inputData.size(), fromDiskAfterDelete.size());
+            assertTableEquals(
+                    inputData.where("PC1 == `Ball` && PC2 == `Pencil`").sort("PC1", "PC2"),
+                    fromDiskAfterDelete.where("PC1 == `Ball` && PC2 == `Pencil`").sort("PC1", "PC2"));
+        }
+
+        {
+            // Read as key-value partitioned
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
+                    .build();
+            final Table fromDiskAfterDelete = readTable(parentDir.getPath(), readInstructions);
+
+            // The definition should be the same as the original table definition, but it won't be able to compute the
+            // size
+            assertEquals(tableDefinition, fromDiskAfterDelete.getDefinition());
+            try {
+                fromDiskAfterDelete.size();
+                fail("Exception expected because one of the partitions is not a valid parquet file");
+            } catch (final RuntimeException expected) {
+            }
         }
     }
 
