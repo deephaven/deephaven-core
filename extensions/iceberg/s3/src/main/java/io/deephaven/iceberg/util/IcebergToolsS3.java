@@ -45,7 +45,7 @@ public class IcebergToolsS3 extends IcebergTools {
             @Nullable final String secretAccessKey,
             @Nullable final String endpointOverride) {
 
-        // Set up the properties map for the Iceberg catalog, and configure it from Iceberg instructions.
+        // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
             properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
