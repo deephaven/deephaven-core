@@ -902,8 +902,9 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will overwrite
-     * the schema of the existing table to match the provided Deephaven table if they do not match.
+     * Overwrite the existing iceberg table with the provided deephaven table, creating two snapshots: one for "delete"
+     * {@link Snapshot#operation() operation} and another for "append". This will overwrite the schema of the existing
+     * table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier string for the iceberg table to overwrite
      * @param dhTable The deephaven table to overwrite with
@@ -917,8 +918,9 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven table in a single snapshot. This will overwrite
-     * the schema of the existing table to match the provided Deephaven table if they do not match.
+     * Overwrite the existing iceberg table with the provided deephaven table, creating two snapshots: one for "delete"
+     * {@link Snapshot#operation() operation} and another for "append". This will overwrite the schema of the existing
+     * table to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier for the iceberg table to overwrite
      * @param dhTable The deephaven table to overwrite with
@@ -932,9 +934,10 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven tables appended together in a single snapshot.
-     * All tables should have the same definition, else a table definition should be provided in the instructions. This
-     * will overwrite the schema of the existing table to match the provided Deephaven table if they do not match.
+     * Overwrite the existing iceberg table with the provided deephaven table, creating two snapshots: one for "delete"
+     * {@link Snapshot#operation() operation} and another for "append". All tables should have the same definition, else
+     * a table definition should be provided in the instructions. This will overwrite the schema of the existing table
+     * to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier string for the iceberg table to overwrite
      * @param dhTables The deephaven tables to overwrite with
@@ -948,9 +951,10 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Overwrite the existing iceberg table with the provided deephaven tables appended together in a single snapshot.
-     * All tables should have the same definition, else a table definition should be provided in the instructions. This
-     * will overwrite the schema of the existing table to match the provided Deephaven table if they do not match.
+     * Overwrite the existing iceberg table with the provided deephaven tables, creating two snapshots: one for "delete"
+     * {@link Snapshot#operation() operation} and another for "append". All tables should have the same definition, else
+     * a table definition should be provided in the instructions. This will overwrite the schema of the existing table
+     * to match the provided Deephaven table if they do not match.
      *
      * @param tableIdentifier The identifier for the iceberg table to overwrite
      * @param dhTables The deephaven tables to overwrite with
@@ -1215,7 +1219,7 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Commit the changes to the Iceberg table by creating a single snapshot.
+     * Commit the changes to the Iceberg table by creating snapshots.
      */
     private static void commit(
             @NotNull final org.apache.iceberg.Table icebergTable,
@@ -1260,7 +1264,8 @@ public class IcebergCatalogAdapter {
         appendFiles.forEach(append::appendFile);
         append.commit();
 
-        // Commit the transaction to create a new snapshot
+        // Commit the transaction, creating new separate snapshots for "delete" and "append" operation.
+        // Note that no new snapshot will be created for the schema change.
         icebergTransaction.commitTransaction();
     }
 
