@@ -20,6 +20,7 @@ configurations {
 
 dependencies {
     api project(':server')
+    implementation project(':sql')
     implementation project(':engine-sql')
     implementation libs.dagger
     implementation libs.arrow.flight.sql

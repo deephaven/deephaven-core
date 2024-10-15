@@ -6,7 +6,6 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Empty;
 import dagger.BindsInstance;
 import dagger.Component;
 import dagger.Module;
@@ -27,6 +26,7 @@ import org.apache.arrow.flight.CancelFlightInfoRequest;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightConstants;
 import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightEndpoint;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.flight.FlightRuntimeException;
@@ -68,7 +68,6 @@ import org.apache.arrow.flight.sql.util.TableRef;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.types.Types.MinorType;
-import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -83,7 +82,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -91,7 +89,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -254,9 +251,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getCatalogs();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                consume(stream, 0, 0);
-            }
+            consume(endpoint(info), 0, 0, true);
         }
         unpackable(CommandGetCatalogs.getDescriptor(), CommandGetCatalogs.class);
     }
@@ -272,9 +267,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 flightSqlClient.getSchemas(null, null),
                 flightSqlClient.getSchemas("DoesNotExist", null)}) {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                consume(stream, 0, 0);
-            }
+            consume(endpoint(info), 0, 0, true);
         }
         expectException(() -> flightSqlClient.getSchemas(null, "filter_pattern"), FlightStatusCode.INVALID_ARGUMENT,
                 "FlightSQL arrow.flight.protocol.sql.CommandGetDbSchemas.db_schema_filter_pattern not supported at this time");
@@ -302,9 +295,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables("", null, null, List.of("TABLE"), includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 1, 2);
-                }
+                consume(endpoint(info), 1, 2, true);
             }
             // Any of these queries will fetch an empty table
             for (final FlightInfo info : new FlightInfo[] {
@@ -312,9 +303,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 0, 0);
-                }
+                consume(endpoint(info), 0, 0, true);
             }
             // We do not implement filtering right now
             expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
@@ -337,9 +326,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getTableTypes();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                consume(stream, 1, 1);
-            }
+            consume(endpoint(info), 1, 1, true);
         }
         unpackable(CommandGetTableTypes.getDescriptor(), CommandGetTableTypes.class);
     }
@@ -355,9 +342,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT 1 as Foo");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                consume(stream, 1, 1);
-            }
+            consume(endpoint(info), 1, 1, false);
         }
         unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
     }
@@ -374,9 +359,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = preparedStatement.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 1, 1);
-                }
+                consume(endpoint(info), 1, 1, false);
             }
             unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
         }
@@ -395,9 +378,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                    consume(stream, 1, 3);
-                }
+                consume(endpoint(info), 1, 3, false);
             }
             unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
         }
@@ -417,9 +398,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 {
                     final FlightInfo info = prepared.execute();
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                    try (final FlightStream stream = flightSqlClient.getStream(ticket(info))) {
-                        consume(stream, 1, 3);
-                    }
+                    consume(endpoint(info), 1, 3, false);
                 }
                 unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
             }
@@ -428,10 +407,13 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
     }
 
-    // @Test
-    // public void selectQuestionMark() {
-    // flightSqlClient.execute("SELECT ?");
-    // }
+    @Test
+    public void selectQuestionMark() {
+        expectException(() -> flightSqlClient.getExecuteSchema("SELECT ?"), FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL query parameters are not supported");
+        expectException(() -> flightSqlClient.execute("SELECT ?"), FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL query parameters are not supported");
+    }
 
     @Test
     public void selectFooParam() {
@@ -444,7 +426,31 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void selectFooParamPrepared() {
-        // TODO
+        setFooTable();
+        try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT Foo FROM foo_table WHERE Foo = ?")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL query parameters are not supported");
+            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL query parameters are not supported");
+        }
+    }
+
+    @Test
+    public void badExecute() {
+        expectException(() -> flightSqlClient.getExecuteSchema("this is not SQL"), FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL query can't be parsed");
+        expectException(() -> flightSqlClient.execute("this is not SQL"), FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL query can't be parsed");
+    }
+
+    @Test
+    public void badExecutePrepared() {
+        // We could consider failing earlier during the prepare
+        try (final PreparedStatement prepared = flightSqlClient.prepare("this is not SQL")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL query can't be parsed");
+            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query can't be parsed");
+        }
     }
 
     @Test
@@ -732,7 +738,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 String.format("No action resolver found for action type '%s'", actionType));
     }
 
-    private void expectException(Runnable r, FlightStatusCode code, String messagePart) {
+    private static void expectException(Runnable r, FlightStatusCode code, String messagePart) {
         try {
             r.run();
             failBecauseExceptionWasNotThrown(FlightRuntimeException.class);
@@ -743,8 +749,12 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     private static Ticket ticket(FlightInfo info) {
+        return endpoint(info).getTicket();
+    }
+
+    private static FlightEndpoint endpoint(FlightInfo info) {
         assertThat(info.getEndpoints()).hasSize(1);
-        return info.getEndpoints().get(0).getTicket();
+        return info.getEndpoints().get(0);
     }
 
     private static Schema flatTableSchema(Field... fields) {
@@ -765,6 +775,27 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
     }
 
+    private void consume(FlightEndpoint endpoint, int expectedFlightCount, int expectedNumRows, boolean expectReusable)
+            throws Exception {
+        if (expectReusable) {
+            assertThat(endpoint.getExpirationTime()).isPresent();
+        } else {
+            assertThat(endpoint.getExpirationTime()).isEmpty();
+        }
+        try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
+            consume(stream, expectedFlightCount, expectedNumRows);
+        }
+        if (expectReusable) {
+            try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
+                consume(stream, expectedFlightCount, expectedNumRows);
+            }
+        } else {
+            try (final FlightStream stream = flightSqlClient.getStream(endpoint.getTicket())) {
+                consumeNotFound(stream);
+            }
+        }
+    }
+
     private static void consume(FlightStream stream, int expectedFlightCount, int expectedNumRows) {
         int numRows = 0;
         int flightCount = 0;
@@ -774,6 +805,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
         assertThat(flightCount).isEqualTo(expectedFlightCount);
         assertThat(numRows).isEqualTo(expectedNumRows);
+    }
+
+    private static void consumeNotFound(FlightStream stream) {
+        expectException(stream::next, FlightStatusCode.NOT_FOUND,
+                "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
     }
 
     private static SubstraitPlan fakePlan() {

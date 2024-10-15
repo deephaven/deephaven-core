@@ -40,49 +40,6 @@ final class FlightSqlTicketHelper {
         // return toReadableString(ticketToExportId(ticket, logId));
     }
 
-    @Deprecated
-    public static String toReadableString(final int exportId) {
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + exportId;
-    }
-
-    @Deprecated
-    public static int ticketToExportId(final ByteBuffer ticket, final String logId) {
-        if (ticket == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': ticket not supplied");
-        }
-        return ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticketToExportIdInternal(ticket, logId)
-                : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN), logId);
-    }
-
-    @Deprecated
-    public static int ticketToExportIdInternal(final ByteBuffer ticket, final String logId) {
-        if (ticket.order() != ByteOrder.LITTLE_ENDIAN) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve ticket '" + logId + "': ticket is not in LITTLE_ENDIAN order");
-        }
-        int pos = ticket.position();
-        if (ticket.remaining() == 0) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve ticket '" + logId + "': ticket was not provided");
-        }
-        if (ticket.remaining() != 5 || ticket.get(pos) != TICKET_PREFIX) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve ticket '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + " (hex)");
-        }
-        return ticket.getInt(pos + 1);
-    }
-
-    public static Flight.Ticket exportIdToFlightTicket(int exportId) {
-        final byte[] dest = new byte[5];
-        dest[0] = TICKET_PREFIX;
-        dest[1] = (byte) exportId;
-        dest[2] = (byte) (exportId >>> 8);
-        dest[3] = (byte) (exportId >>> 16);
-        dest[4] = (byte) (exportId >>> 24);
-        return Flight.Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest)).build();
-    }
-
     public static Any unpackTicket(ByteBuffer ticket, final String logId) {
         ticket = ticket.slice();
         if (ticket.get() != TICKET_PREFIX) {
@@ -109,20 +66,8 @@ final class FlightSqlTicketHelper {
         return packedTicket(command);
     }
 
-    public static Ticket ticketFor(CommandPreparedStatementQuery command) {
-        return packedTicket(command);
-    }
-
     public static Flight.Ticket ticketFor(CommandGetTables command) {
         return packedTicket(command);
-    }
-
-    public static Flight.Ticket ticketFor(CommandGetSqlInfo command) {
-        return packedTicket(command);
-    }
-
-    public static Flight.Ticket ticketFor(CommandStatementQuery command) {
-        return packedTicket(command); // todo: this might be different
     }
 
     public static Flight.Ticket ticketFor(TicketStatementQuery query) {
