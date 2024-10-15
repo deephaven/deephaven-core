@@ -25,8 +25,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public final class IcebergToolsS3 {
-    private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
-
     // Note: this could move to a shared location
     private static final Cleaner CLEANER = Cleaner.create();
 
@@ -115,22 +113,25 @@ public final class IcebergToolsS3 {
      * Create an Iceberg catalog adapter. Instead of the AWS clients being configured via the various Iceberg-specific
      * properties (found amongst {@link S3FileIOProperties}, {@link HttpClientProperties}, and {@link AwsProperties}),
      * the clients are created in the same way that Deephaven's AWS clients are configured with respect to
-     * {@code instructions}. This ensures, amongst other things, that Iceberg's AWS configuration and credentials are
-     * in-sync with Deephaven's AWS configuration and credentials for S3 access. The {@code instructions} will
-     * automatically be used as special instructions if {@link IcebergInstructions#dataInstructions()} if not explicitly
-     * set.
+     * {@code instructions} via {@link DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)}. This ensures,
+     * amongst other things, that Iceberg's AWS configuration and credentials are in-sync with Deephaven's AWS
+     * configuration and credentials for S3 access. The {@code instructions} will automatically be used as special
+     * instructions if {@link IcebergInstructions#dataInstructions()} if not explicitly set.
      *
      * <p>
      * The caller is still responsible for providing the properties necessary as specified in
      * {@link IcebergTools#createAdapter(String, Map, Map)}.
+     *
+     * <p>
+     * Note: this method does not explicitly set, nor impose, that {@link org.apache.iceberg.aws.s3.S3FileIO} be used.
+     * It's possible that a {@link org.apache.iceberg.catalog.Catalog} implementations depends on an AWS client for
+     * purposes unrelated to storing the warehouse data via S3.
      *
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties a map containing the Iceberg catalog properties to use
      * @param hadoopConfig a map containing Hadoop configuration properties to use
      * @param instructions the s3 instructions
      * @return the Iceberg catalog adapter
-     *
-     * @see DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)
      */
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
@@ -140,7 +141,7 @@ public final class IcebergToolsS3 {
         final Map<String, String> newProperties = new HashMap<>(properties);
         final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(name, newProperties, hadoopConfig);
-        // When the Catalog becomes unreachable, we can invoke the DeephavenAwsClientFactory cleanup.
+        // When the Catalog becomes phantom reachable, we can invoke the DeephavenAwsClientFactory cleanup.
         // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
         // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).
         CLEANER.register(adapter.catalog(), cleanup);

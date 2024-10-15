@@ -62,7 +62,7 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         final S3Instructions instructions = S3_INSTRUCTIONS_MAP.get(uuid);
         if (instructions == null) {
             throw new IllegalStateException(
-                    "This S3Iinstructions were already cleaned up; please ensure that the returned Runnable from addToProperties is not invoked until the Catalog is no longer in use.");
+                    "This S3Instructions were already cleaned up; please ensure that the returned Runnable from addToProperties is not invoked until the Catalog is no longer in use.");
         }
         return Optional.of(instructions);
     }
@@ -91,12 +91,18 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
 
     @Override
     public S3Client s3() {
+        // Iceberg calls this from org.apache.iceberg.aws.s3.S3FileIO which multiple Catalog implementations use. This
+        // implementation is backed by the same configuration primitives that our own async S3 client uses. It is well
+        // tested and provides parity between how Iceberg S3 and Deephaven S3 clients are initialized.
         checkInit();
         return S3ClientFactory.getSyncClient(instructions);
     }
 
     @Override
     public GlueClient glue() {
+        // Iceberg calls this from org.apache.iceberg.aws.glue.GlueCatalog, and it's possible that other
+        // custom Catalog implementations could make use out of this interface. This implementation has been manually
+        // tested and confirmed to work in simple cases.
         checkInit();
         return GlueClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
@@ -105,6 +111,11 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
 
     @Override
     public KmsClient kms() {
+        // Iceberg does not call this method. It is likely part of the interface to support advanced authorization that
+        // enterprise users may need. It's likely in those scenarios that the user is owning the full Catalog creation
+        // as well, with their own custom AwsClientFactory, so it's not clear if this implementation will be of value.
+        // That said, it is easy to build and follows the same pattern as the other clients, so it is provided in a
+        // "best-effort" basis without further testing.
         checkInit();
         return KmsClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
@@ -113,6 +124,10 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
 
     @Override
     public DynamoDbClient dynamo() {
+        // Iceberg calls this from org.apache.iceberg.aws.dynamodb.DynamoDbCatalog, and it's possible that other
+        // custom Catalog implementations could make use out of this interface. This implementation is easy to build
+        // and follows the same pattern as the other clients, so it is provided in a "best-effort" basis without further
+        // testing.
         checkInit();
         return DynamoDbClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
