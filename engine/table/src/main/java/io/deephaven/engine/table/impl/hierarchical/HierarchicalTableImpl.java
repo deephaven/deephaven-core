@@ -1473,10 +1473,12 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
             try (final RowSequence.Iterator rowsIter =
                     rows.size() >= chunkSize ? rows.getRowSequenceIterator() : null) {
-                final RowSequence chunkRows =
-                        rowsIter == null ? rows : rowsIter.getNextRowSequenceWithLength(chunkSize);
-                final int chunkRowsSize = chunkRows.intSize();
                 do {
+                    final RowSequence chunkRows = rowsIter == null
+                            ? rows
+                            : rowsIter.getNextRowSequenceWithLength(chunkSize);
+                    final int chunkRowsSize = chunkRows.intSize();
+                    Assert.leq(chunkRowsSize, "chunkRowsSize", capacity, "capacity");
                     for (int di = 0, ci = columns.nextSetBit(0); ci >= 0; ++di, ci = columns.nextSetBit(ci + 1)) {
                         if (ci == ROW_EXPANDED_COLUMN_INDEX) {
                             continue;
