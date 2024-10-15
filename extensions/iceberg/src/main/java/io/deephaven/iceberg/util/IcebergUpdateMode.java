@@ -13,7 +13,7 @@ public abstract class IcebergUpdateMode {
 
     private static final IcebergUpdateMode STATIC = builder().updateType(IcebergUpdateType.STATIC).build();
     private static final IcebergUpdateMode AUTO_REFRESHING =
-            builder().updateType(IcebergUpdateType.AUTO_REFRESHING).build();
+            builder().updateType(IcebergUpdateType.AUTO_REFRESHING).autoRefreshMs(REFRESH_INTERVAL_MS).build();
     private static final IcebergUpdateMode MANUAL_REFRESHING =
             builder().updateType(IcebergUpdateType.MANUAL_REFRESHING).build();
 
@@ -21,22 +21,32 @@ public abstract class IcebergUpdateMode {
         STATIC, AUTO_REFRESHING, MANUAL_REFRESHING
     }
 
-    public static Builder builder() {
-        return ImmutableIcebergUpdateMode.builder();
-    }
-
+    /**
+     * Set a static update mode for this table.
+     */
     public static IcebergUpdateMode staticMode() {
         return STATIC;
     }
 
+    /**
+     * Set a manually-refreshing update mode for this table.
+     */
     public static IcebergUpdateMode manualRefreshingMode() {
         return MANUAL_REFRESHING;
     }
 
+    /**
+     * Set a automatically-refreshing update mode for this table using the default refresh interval of 60 seconds.
+     */
     public static IcebergUpdateMode autoRefreshingMode() {
         return AUTO_REFRESHING;
     }
 
+    /**
+     * Set a automatically-refreshing update mode for this table using the provided refresh interval
+     *
+     * @param refreshMs the refresh interval in milliseconds
+     */
     public static IcebergUpdateMode autoRefreshingMode(final long refreshMs) {
         return ImmutableIcebergUpdateMode.builder()
                 .updateType(IcebergUpdateType.AUTO_REFRESHING)
@@ -44,17 +54,29 @@ public abstract class IcebergUpdateMode {
                 .build();
     }
 
+    /**
+     * Set the update mode for the result table. The default is {@link IcebergUpdateType#STATIC}.
+     */
     @Value.Default
     public IcebergUpdateType updateType() {
         return IcebergUpdateType.STATIC;
     }
 
+    /**
+     * When the update type is {@link IcebergUpdateType#AUTO_REFRESHING}, this value specifies the minimum interval in
+     * milliseconds between automatic refreshes of the table.
+     */
     @Value.Default
     public long autoRefreshMs() {
-        return REFRESH_INTERVAL_MS;
+        return 0;
     }
 
-    public interface Builder {
+
+    private static Builder builder() {
+        return ImmutableIcebergUpdateMode.builder();
+    }
+
+    protected interface Builder {
         @SuppressWarnings("unused")
         Builder updateType(IcebergUpdateType updateType);
 
@@ -62,5 +84,16 @@ public abstract class IcebergUpdateMode {
         Builder autoRefreshMs(long autoRefreshMs);
 
         IcebergUpdateMode build();
+    }
+
+    @Value.Check
+    protected void checkAutoRefreshingInterval() {
+        if (updateType() != IcebergUpdateType.AUTO_REFRESHING && autoRefreshMs() != 0) {
+            throw new IllegalArgumentException(
+                    "Auto-refresh interval must not be set when update type is not auto-refreshing");
+        }
+        if (updateType() == IcebergUpdateType.AUTO_REFRESHING && autoRefreshMs() <= 0) {
+            throw new IllegalArgumentException("Auto-refresh interval must be positive");
+        }
     }
 }

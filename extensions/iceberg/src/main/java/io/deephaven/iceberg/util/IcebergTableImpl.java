@@ -29,8 +29,8 @@ public class IcebergTableImpl extends PartitionAwareSourceTable implements Icebe
      * @param tableDefinition The {@link TableDefinition} describing the table schema
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
-     * @param locationProvider A {@link io.deephaven.engine.table.impl.locations.TableLocationProvider}, for use in
-     *        discovering the locations that compose this table
+     * @param locationProvider A {@link IcebergTableLocationProviderBase}, for use in discovering the locations that
+     *        compose this table
      * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
     IcebergTableImpl(

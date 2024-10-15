@@ -66,14 +66,17 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Get the current {@link Snapshot snapshot} of a given Iceberg table.
+     * Get the current {@link Snapshot snapshot} of a given Iceberg table or {@code null} if there are no snapshots.
      *
-     * @return The current snapshot of the table.
+     * @return The current snapshot of the table or {@code null} if there are no snapshots.
      */
     public Snapshot currentSnapshot() {
+        // Refresh the table to update the snapshot list from the catalog.
+        table.refresh();
+
         final List<Snapshot> snapshots = listSnapshots();
         if (snapshots.isEmpty()) {
-            throw new IllegalStateException("No snapshots found for table " + tableIdentifier);
+            return null;
         }
         return snapshots.get(snapshots.size() - 1);
     }
@@ -84,6 +87,9 @@ public class IcebergTableAdapter {
      * @return A list of all snapshots of the given table.
      */
     public List<Snapshot> listSnapshots() {
+        // Refresh the table to update the snapshot list from the catalog.
+        table.refresh();
+
         final List<Snapshot> snapshots = new ArrayList<>();
         table.snapshots().forEach(snapshots::add);
         return snapshots;
@@ -102,7 +108,7 @@ public class IcebergTableAdapter {
      * <td>The snapshot identifier (can be used for updating the table or loading a specific snapshot)</td>
      * </tr>
      * <tr>
-     * <td>TimestampMs</td>
+     * <td>Timestamp</td>
      * <td>The timestamp of the snapshot</td>
      * </tr>
      * <tr>
@@ -185,7 +191,7 @@ public class IcebergTableAdapter {
      */
     public TableDefinition definition() {
         // Load the table from the catalog.
-        return definition(null, null);
+        return definition(null);
     }
 
     /**
@@ -210,7 +216,6 @@ public class IcebergTableAdapter {
     public TableDefinition definition(
             final long snapshotId,
             @Nullable final IcebergInstructions instructions) {
-
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot =
                 snapshot(snapshotId).orElseThrow(() -> new IllegalArgumentException(
@@ -231,7 +236,18 @@ public class IcebergTableAdapter {
     public TableDefinition definition(
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
+        // Refresh the table to update the snapshot list from the catalog.
+        table.refresh();
+
+        final Snapshot snapshot;
+        if (tableSnapshot == null) {
+            // Refresh the table to update the snapshot list from the catalog.
+            table.refresh();
+            snapshot = table.currentSnapshot();
+        } else {
+            snapshot = tableSnapshot;
+        }
+
         final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
         final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
@@ -248,7 +264,7 @@ public class IcebergTableAdapter {
      * @return The table definition as a Deephaven table
      */
     public Table definitionTable() {
-        return definitionTable(null, null);
+        return TableTools.metaTable(definition());
     }
 
     /**
@@ -259,7 +275,7 @@ public class IcebergTableAdapter {
      * @return The table definition as a Deephaven table
      */
     public Table definitionTable(@Nullable final IcebergInstructions instructions) {
-        return definitionTable(null, instructions);
+        return TableTools.metaTable(definition(null, instructions));
     }
 
     /**
@@ -273,13 +289,7 @@ public class IcebergTableAdapter {
     public Table definitionTable(
             final long snapshotId,
             @Nullable final IcebergInstructions instructions) {
-
-        // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot =
-                snapshot(snapshotId).orElseThrow(() -> new IllegalArgumentException(
-                        "Snapshot with id " + snapshotId + " not found for table " + tableIdentifier));
-
-        return definitionTable(tableSnapshot, instructions);
+        return TableTools.metaTable(definition(snapshotId, instructions));
     }
 
     /**
@@ -293,8 +303,7 @@ public class IcebergTableAdapter {
     public Table definitionTable(
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        final TableDefinition definition = definition(tableSnapshot, instructions);
-        return TableTools.metaTable(definition);
+        return TableTools.metaTable(definition(tableSnapshot, instructions));
     }
 
     /**
@@ -303,7 +312,7 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table() {
-        return table(null, null);
+        return table(null);
     }
 
     /**
@@ -323,12 +332,7 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table(final long tableSnapshotId) {
-        // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot =
-                snapshot(tableSnapshotId).orElseThrow(() -> new IllegalArgumentException(
-                        "Snapshot with id " + tableSnapshotId + " not found for table " + tableIdentifier));
-
-        return table(tableSnapshot, null);
+        return table(tableSnapshotId, null);
     }
 
     /**
@@ -350,7 +354,7 @@ public class IcebergTableAdapter {
     /**
      * Read a snapshot of an Iceberg table from the Iceberg catalog.
      *
-     * @param tableSnapshot The snapshot id to load
+     * @param tableSnapshot The snapshot to load
      * @param instructions The instructions for customizations while reading
      * @return The loaded table
      */
@@ -359,7 +363,15 @@ public class IcebergTableAdapter {
             @Nullable final IcebergInstructions instructions) {
 
         // Do we want the latest or a specific snapshot?
-        final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
+        final Snapshot snapshot;
+        if (tableSnapshot == null) {
+            // Refresh the table to update the snapshot list from the catalog.
+            table.refresh();
+            snapshot = table.currentSnapshot();
+        } else {
+            snapshot = tableSnapshot;
+        }
+
         final Schema schema = snapshot == null ? table.schema() : table.schemas().get(snapshot.schemaId());
 
         // Load the partitioning schema.
@@ -378,15 +390,18 @@ public class IcebergTableAdapter {
         // applying column renames).
         final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
 
-        final IcebergBaseLayout keyFinder;
+        // Create the final instructions with the legalized column renames.
+        final IcebergInstructions finalInstructions = userInstructions.withColumnRenames(legalizedColumnRenames);
 
+        final IcebergBaseLayout keyFinder;
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, snapshot, userInstructions, dataInstructionsProviderLoader);
+            keyFinder = new IcebergFlatLayout(this, snapshot, finalInstructions,
+                    dataInstructionsProviderLoader);
         } else {
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec, userInstructions,
-                    dataInstructionsProviderLoader);
+            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec,
+                    finalInstructions, dataInstructionsProviderLoader);
         }
 
         if (instructions == null

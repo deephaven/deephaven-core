@@ -501,7 +501,7 @@ def adapter(
             _JIcebergTools.createAdapter(
                 name,
                 j_hashmap(properties if properties is not None else {}),
-                j_hashmap(hadoop_config if hadoopConfig is not None else {})))
+                j_hashmap(hadoop_config if hadoop_config is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

@@ -12,10 +12,6 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 /**
  * <p>
  * Manually refreshing {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
@@ -27,8 +23,6 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
         extends IcebergTableLocationProviderBase<TK, TLK> {
 
     private static final String IMPLEMENTATION_NAME = IcebergManualRefreshTableLocationProvider.class.getSimpleName();
-
-    private boolean initialized = false;
 
     public IcebergManualRefreshTableLocationProvider(
             @NotNull final TK tableKey,
@@ -58,62 +52,29 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     public synchronized void refresh() {
-        // There should be no refresh service for this provider.
-        throw new UnsupportedOperationException();
+        // There is no refresh service for this provider, but this is called as part of the initialization process.
+        refreshLocations();
     }
 
     @Override
     public synchronized void update() {
-        adapter.refresh();
-        update(adapter.currentSnapshot());
+        if (locationKeyFinder.maybeUpdateSnapshot()) {
+            refreshLocations();
+        }
     }
 
     @Override
     public synchronized void update(final long snapshotId) {
-        adapter.refresh();
-        final List<Snapshot> snapshots = adapter.listSnapshots();
-
-        final Snapshot snapshot = snapshots.stream()
-                .filter(s -> s.snapshotId() == snapshotId).findFirst()
-                .orElse(null);
-
-        if (snapshot == null) {
-            throw new IllegalArgumentException(
-                    "Snapshot " + snapshotId + " was not found in the list of snapshots for table " + tableIdentifier
-                            + ". Snapshots: " + snapshots);
-        }
-        update(snapshot);
+        // delegate to the locationKeyFinder to update the snapshot
+        locationKeyFinder.updateSnapshot(snapshotId);
+        refreshLocations();
     }
 
     @Override
     public synchronized void update(final Snapshot snapshot) {
-        // Verify that the input snapshot is newer (higher in sequence number) than the current snapshot.
-        if (snapshot.sequenceNumber() <= locationKeyFinder.snapshot.sequenceNumber()) {
-            throw new IllegalArgumentException(
-                    "Update snapshot sequence number (" + snapshot.sequenceNumber()
-                            + ") must be higher than the current snapshot sequence number ("
-                            + locationKeyFinder.snapshot.sequenceNumber() + ") for table " + tableIdentifier);
-        }
         // Update the snapshot.
-        locationKeyFinder.snapshot = snapshot;
-        refreshSnapshot();
-    }
-
-    /**
-     * Refresh the table location provider with the latest snapshot from the catalog. This method will identify new
-     * locations and removed locations.
-     */
-    private void refreshSnapshot() {
-        beginTransaction(this);
-        final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>();
-        getTableLocationKeys(ttlk -> missedKeys.add(ttlk.get()));
-        locationKeyFinder.findKeys(tlk -> {
-            missedKeys.remove(tlk);
-            handleTableLocationKeyAdded(tlk, this);
-        });
-        missedKeys.forEach(tlk -> handleTableLocationKeyRemoved(tlk, this));
-        endTransaction(this);
-        setInitialized();
+        locationKeyFinder.updateSnapshot(snapshot);
+        refreshLocations();
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -122,11 +83,8 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     protected void activateUnderlyingDataSource() {
-        if (!initialized) {
-            refreshSnapshot();
-            activationSuccessful(this);
-            initialized = true;
-        }
+        ensureInitialized();
+        activationSuccessful(this);
     }
 
     @Override

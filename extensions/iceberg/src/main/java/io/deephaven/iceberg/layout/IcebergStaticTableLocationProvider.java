@@ -57,32 +57,16 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
 
     @Override
     public void update() {
-        throw new IllegalStateException("A static table location provider cannot be updated");
+        throw new UnsupportedOperationException("A static table location provider cannot be updated");
     }
 
     @Override
     public void update(long snapshotId) {
-        throw new IllegalStateException("A static table location provider cannot be updated");
+        throw new UnsupportedOperationException("A static table location provider cannot be updated");
     }
 
     @Override
     public void update(Snapshot snapshot) {
-        throw new IllegalStateException("A static table location provider cannot be updated");
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // SubscriptionAggregator implementation
-    // ------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    protected void activateUnderlyingDataSource() {
-        throw new IllegalStateException(
-                "activateUnderlyingDataSource() called on a static Iceberg table location provider");
-    }
-
-    @Override
-    protected void deactivateUnderlyingDataSource() {
-        throw new IllegalStateException(
-                "deactivateUnderlyingDataSource() called on a static Iceberg table location provider");
+        throw new UnsupportedOperationException("A static table location provider cannot be updated");
     }
 }

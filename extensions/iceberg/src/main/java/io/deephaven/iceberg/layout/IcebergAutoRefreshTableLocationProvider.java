@@ -14,9 +14,6 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * <p>
  * Automatically refreshing {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location
@@ -68,44 +65,24 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     public synchronized void refresh() {
-        adapter.refresh();
-        final Snapshot latestSnapshot = adapter.currentSnapshot();
-        if (latestSnapshot.sequenceNumber() > locationKeyFinder.snapshot.sequenceNumber()) {
-            locationKeyFinder.snapshot = latestSnapshot;
-            refreshSnapshot();
+        if (locationKeyFinder.maybeUpdateSnapshot()) {
+            refreshLocations();
         }
     }
 
     @Override
     public void update() {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
+        throw new UnsupportedOperationException("Automatically refreshing Iceberg tables cannot be manually updated");
     }
 
     @Override
     public void update(long snapshotId) {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
+        throw new UnsupportedOperationException("Automatically refreshing Iceberg tables cannot be manually updated");
     }
 
     @Override
     public void update(Snapshot snapshot) {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
-    }
-
-    /**
-     * Refresh the table location provider with the latest snapshot from the catalog. This method will identify new
-     * locations and removed locations.
-     */
-    private void refreshSnapshot() {
-        beginTransaction(this);
-        final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>();
-        getTableLocationKeys(ttlk -> missedKeys.add(ttlk.get()));
-        locationKeyFinder.findKeys(tableLocationKey -> {
-            missedKeys.remove(tableLocationKey);
-            handleTableLocationKeyAdded(tableLocationKey, this);
-        });
-        missedKeys.forEach(tlk -> handleTableLocationKeyRemoved(tlk, this));
-        endTransaction(this);
-        setInitialized();
+        throw new UnsupportedOperationException("Automatically refreshing Iceberg tables cannot be manually updated");
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -114,7 +91,7 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     protected final void activateUnderlyingDataSource() {
-        refreshSnapshot();
+        refresh();
         subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this, refreshIntervalMs);
     }
 

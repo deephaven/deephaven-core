@@ -13,6 +13,9 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK extends TableLocationKey>
         extends AbstractTableLocationProvider {
 
@@ -38,23 +41,27 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
     }
 
     /**
-     * Update the table location provider with the latest snapshot from the catalog.
+     * Update a manually refreshing table location provider with the latest snapshot from the catalog. This will throw
+     * an {@link UnsupportedOperationException} if the table is not manually refreshing.
      */
     public abstract void update();
 
     /**
-     * Update the table location provider with a specific snapshot from the catalog. If the {@code snapshotId} is not
-     * found in the list of snapshots for the table, an {@link IllegalArgumentException} is thrown. The input snapshot
-     * must also be newer (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException}
-     * is thrown.
+     * Update a manually refreshing table location provider with a specific snapshot from the catalog. If the
+     * {@code snapshotId} is not found in the list of snapshots for the table, an {@link IllegalArgumentException} is
+     * thrown. The input snapshot must also be newer (higher in sequence number) than the current snapshot or an
+     * {@link IllegalArgumentException} is thrown. This will throw an {@link UnsupportedOperationException} if the table
+     * is not manually refreshing.
      *
      * @param snapshotId The identifier of the snapshot to use when updating the table.
      */
     public abstract void update(final long snapshotId);
 
     /**
-     * Update the table location provider with a specific snapshot from the catalog. The input snapshot must be newer
-     * (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException} is thrown.
+     * Update a manually refreshing table location provider with a specific snapshot from the catalog. The input
+     * snapshot must be newer (higher in sequence number) than the current snapshot or an
+     * {@link IllegalArgumentException} is thrown. This will throw an {@link UnsupportedOperationException} if the table
+     * is not manually refreshing.
      * 
      * @param snapshot The snapshot to use when updating the table.
      */
@@ -65,5 +72,23 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
         // noinspection unchecked
         return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, null);
+    }
+
+    /**
+     * Refresh the table location provider with the latest snapshot from the catalog. This method will identify new
+     * locations and removed locations.
+     */
+    protected void refreshLocations() {
+        final Object token = new Object();
+        beginTransaction(token);
+        final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>();
+        getTableLocationKeys(ttlk -> missedKeys.add(ttlk.get()));
+        locationKeyFinder.findKeys(tlk -> {
+            missedKeys.remove(tlk);
+            handleTableLocationKeyAdded(tlk, token);
+        });
+        missedKeys.forEach(tlk -> handleTableLocationKeyRemoved(tlk, token));
+        endTransaction(token);
+        setInitialized();
     }
 }

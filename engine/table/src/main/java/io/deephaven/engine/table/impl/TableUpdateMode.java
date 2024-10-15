@@ -15,7 +15,7 @@ public enum TableUpdateMode {
     STATIC, APPEND_ONLY, ADD_ONLY, ADD_REMOVE;
 
     /**
-     * Returns true if the addition is allowed.
+     * Returns true if addition is allowed.
      */
     public boolean addAllowed() {
         switch (this) {
@@ -30,7 +30,7 @@ public enum TableUpdateMode {
     }
 
     /**
-     * Returns true if the removal is allowed.
+     * Returns true if removal is allowed.
      */
     public boolean removeAllowed() {
         switch (this) {
@@ -56,9 +56,6 @@ public enum TableUpdateMode {
      * @return the most permissive mode encountered in the stream
      */
     public static TableUpdateMode mostPermissiveMode(Stream<TableUpdateMode> modes) {
-        // Analyze the location update modes of the input providers to determine the location update mode
-        // of the composite provider. The resultant mode is the most permissive mode of the input provider
-        // locations.
         final MutableBoolean anyRemoves = new MutableBoolean(false);
         final MutableBoolean anyAdditions = new MutableBoolean(false);
         final MutableBoolean anyAppends = new MutableBoolean(false);

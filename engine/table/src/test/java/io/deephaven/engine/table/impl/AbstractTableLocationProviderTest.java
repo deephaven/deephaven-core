@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.BasicDataIndex;
@@ -14,9 +13,7 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -92,17 +89,17 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
 
         @Override
         protected @NotNull ColumnLocation makeColumnLocation(@NotNull String name) {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public @Nullable BasicDataIndex loadDataIndex(@NotNull String... columns) {
-            return null;
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void refresh() {
-            Assert.statementNeverExecuted();
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -123,17 +120,8 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
 
     @Override
     public void setUp() throws Exception {
-        if (null == ProcessEnvironment.tryGet()) {
-            ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
-                    "AbstractTableLocationProviderTest", new StreamLoggerImpl());
-        }
         super.setUp();
         setExpectError(false);
-    }
-
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
     }
 
     private List<TableLocationKey> createKeys(final int count) {
