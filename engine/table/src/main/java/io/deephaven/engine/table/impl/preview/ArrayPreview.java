@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.preview;
 
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.VectorFactory;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +35,9 @@ public class ArrayPreview implements PreviewType {
         if (componentType == boolean.class) {
             return new ArrayPreview(convertToString((boolean[]) array));
         }
-        return new ArrayPreview(VectorFactory.forElementType(componentType)
+        // Boxed primitives need the Object wrapper.
+        final Class<?> elementType = TypeUtils.isBoxedType(componentType) ? Object.class : componentType;
+        return new ArrayPreview(VectorFactory.forElementType(elementType)
                 .vectorWrap(array)
                 .toString(ARRAY_SIZE_CUTOFF));
     }

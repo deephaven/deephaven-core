@@ -12,6 +12,7 @@ import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateSource;
+import io.deephaven.engine.table.impl.sources.ZonedDateTimeArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -38,6 +39,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -491,8 +494,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
         for (int ii = 0; ii < numColumns; ii++) {
             final ColumnDefinition<?> column = columns.get(ii);
-            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
-                    0, column.getDataType(), column.getComponentType());
+            if (column.getDataType() == ZonedDateTime.class) {
+                // TODO NATE NOCOMMIT: we need to get the timestamp up in here
+                writableSources[ii] = new ZonedDateTimeArraySource(ZoneId.systemDefault());
+            } else {
+                writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
+                        0, column.getDataType(), column.getComponentType());
+            }
             finalColumns.put(column.getName(),
                     WritableRedirectedColumnSource.maybeRedirect(emptyRowRedirection, writableSources[ii], 0));
         }
@@ -510,8 +518,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
         for (int ii = 0; ii < numColumns; ii++) {
             final ColumnDefinition<?> column = columns.get(ii);
-            writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, column.getDataType(),
-                    column.getComponentType());
+            if (column.getDataType() == ZonedDateTime.class) {
+                // TODO NATE NOCOMMIT: we need to get the timestamp up in here
+                writableSources[ii] = new ZonedDateTimeArraySource(ZoneId.systemDefault());
+            } else {
+                writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
+                        0, column.getDataType(), column.getComponentType());
+            }
             finalColumns.put(column.getName(), writableSources[ii]);
         }
 
