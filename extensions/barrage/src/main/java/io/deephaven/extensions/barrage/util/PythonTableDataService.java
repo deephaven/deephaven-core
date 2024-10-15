@@ -39,10 +39,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.LongConsumer;
+import java.util.function.*;
 
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
 
@@ -151,10 +148,10 @@ public class PythonTableDataService extends AbstractTableDataService {
         public void getExistingPartitions(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
-            final BiFunction<TableLocationKeyImpl, ByteBuffer[], TableLocationKey> convertingListener =
+            final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
                         // TODO: parse real partition column values into map
-                        return new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of());
+                        listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of()));
                     };
 
             pyTableDataService.call("_existing_partitions", tableKey.key, convertingListener);
@@ -170,10 +167,10 @@ public class PythonTableDataService extends AbstractTableDataService {
         public SafeCloseable subscribeToNewPartitions(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
-            final BiFunction<TableLocationKeyImpl, ByteBuffer[], TableLocationKey> convertingListener =
+            final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
                         // TODO: parse real partition column values into map
-                        return new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of());
+                        listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of()));
                     };
 
             final PyObject cancellationCallback = pyTableDataService.call(
@@ -194,7 +191,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final LongConsumer listener) {
-            pyTableDataService.call("_get_partition_size", tableKey.key, tableLocationKey.locationKey, listener);
+            pyTableDataService.call("_partition_size", tableKey.key, tableLocationKey.locationKey, listener);
         }
 
         /**

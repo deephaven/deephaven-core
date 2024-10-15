@@ -28,6 +28,7 @@ class TestBackend(PartitionedTableServiceBackend):
         self.gen_pa_table = gen_pa_table
         self._sub_new_partition_cancelled = False
         self._partitions: dict[PartitionedTableLocationKey, pa.Table] = {}
+        self._partitions_size_subscriptions: dict[PartitionedTableLocationKey, bool] = {}
 
     def table_schema(self, table_key: TableKey) -> Tuple[pa.Schema, Optional[pa.Schema]]:
         if table_key.key == "test":
@@ -43,7 +44,7 @@ class TestBackend(PartitionedTableServiceBackend):
             self._partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(partition_key, pa_table.filter(expr))
+            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
 
     def partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                        callback: Callable[[int], None]) -> None:
@@ -72,7 +73,7 @@ class TestBackend(PartitionedTableServiceBackend):
             self._partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(PartitionedTableLocationKey(f"{ticker}/NYSE"), pa_table.filter(expr))
+            callback(PartitionedTableLocationKey(f"{ticker}/NYSE"), pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             time.sleep(1)
 
     def subscribe_to_new_partitions(self, table_key: TableKey, callback) -> Callable[[], None]:
@@ -89,14 +90,35 @@ class TestBackend(PartitionedTableServiceBackend):
         return _cancellation_callback
 
 
+    def _th_partition_size_changes(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, callback: Callable[[int], None]) -> None:
+        if table_key.key != "test":
+            return
+
+        if table_location_key not in self._partitions_size_subscriptions:
+            return
+
+        while self._partitions_size_subscriptions[table_location_key]:
+            pa_table = self._partitions[table_location_key]
+            rbs = pa_table.to_batches().append(pa_table.to_batches()[0])
+            new_pa_table = pa.Table.from_batches(rbs)
+            self._partitions[table_location_key] = new_pa_table
+            callback(new_pa_table.num_rows)
+            time.sleep(1)
+
+
     def subscribe_to_partition_size_changes(self, table_key: TableKey,
                                             table_location_key: PartitionedTableLocationKey,
                                             callback: Callable[[int], None]) -> Callable[[], None]:
         if table_key.key != "test":
             return lambda: None
 
+        if table_location_key not in self._partitions:
+            return lambda: None
+
+        self._partitions_size_subscriptions[table_location_key] = True
+
         def _cancellation_callback():
-            self._sub_new_partition_cancelled = True
+            self._partitions_size_subscriptions[table_location_key] = False
 
         return _cancellation_callback
 

@@ -168,16 +168,18 @@ class PythonTableDataService(JObjectWrapper):
             callback (jpy.JType): the Java callback function with two arguments: a table location key and an array of
                 byte buffers that contain the serialized record batches for the partition columns
         """
-        # jpy.diag.flags = jpy.diag.F_METH
-        def cb(pt_location_key, pt_table):
+        def callback_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
+                if pt_table.num_rows != 1:
+                    raise ValueError("The number of rows in the pyarrow table for partition column values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
-                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
+                bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
+                callback.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
 
-        self._backend.existing_partitions(table_key, cb)
+        self._backend.existing_partitions(table_key, callback_proxy)
 
     def _subscribe_to_new_partitions(self, table_key: TableKey, callback: jpy.JType) -> jpy.JType:
         """ Provides the new partitions for the table with the given table key to the table service in the engine.
@@ -186,17 +188,21 @@ class PythonTableDataService(JObjectWrapper):
             table_key (TableKey): the table key
             callback (jpy.JType): the Java callback function with two arguments: a table location key of the new
                 partition and an array of byte buffers that contain the serialized record batches for the partition
-                columns
+                column values
         """
-        def cb(pt_location_key, pt_table):
+        def callback_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
+                # TODO verify the size of pa.Table must be 1
+                if pt_table.num_rows != 1:
+                    raise ValueError("The number of rows in the pyarrow table for partition column values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
-                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
+                bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
+                callback.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
 
-        return self._backend.subscribe_to_new_partitions(table_key, cb)
+        return self._backend.subscribe_to_new_partitions(table_key, callback_proxy)
 
     def _partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, callback: jpy.JType):
         """ Provides the size of the partition with the given table key and partition location key to the table service
@@ -209,7 +215,7 @@ class PythonTableDataService(JObjectWrapper):
                 rows
         """
         def cb(size):
-            callback.apply(size)
+            callback.accept(size)
 
         self._backend.partition_size(table_key, table_location_key, cb)
 
@@ -224,10 +230,10 @@ class PythonTableDataService(JObjectWrapper):
             callback (jpy.JType): the Java callback function with one argument: the size of the partition in number of
                 rows
         """
-        def cb(size):
-            callback.apply(size)
+        def callback_proxy(size):
+            callback.accept(size)
 
-        return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, cb)
+        return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, callback_proxy)
 
     def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str) -> jpy.JType:
         """ Returns the values for the column with the given name for the partition with the given table key and
