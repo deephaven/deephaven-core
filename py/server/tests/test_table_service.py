@@ -51,9 +51,9 @@ class TestBackend(PartitionedTableServiceBackend):
         callback(2)
 
     def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
-                      col: str) -> pa.Table:
+                      col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
         if table_key.key == "test":
-            return pa.Table.from_arrays(self._partitions[table_location_key].column(col))
+            return pa.Table.from_arrays(self._partitions[table_location_key].column(col).slice(offset, max_rows))
         else:
             return pa.table([])
 

@@ -54,6 +54,13 @@ class PartitionedTableServiceBackend(ABC):
         table key.
         The table schema is not required to include the partition columns defined in the partition schema. THe
         partition columns are limited to primitive types and strings.
+
+        Args:
+            table_key (TableKey): the table key
+
+        Returns:
+            Tuple[pa.Schema, Optional[pa.Schema]]: a tuple of the table schema and the optional schema for the partition
+                columns
         """
         pass
 
@@ -65,12 +72,16 @@ class PartitionedTableServiceBackend(ABC):
         The schema of the table should match the optional partition schema returned by table_schema() for the table_key.
         The table should have a single row for the particular partition location key provided in the 1st argument,
         with the values for the partition columns in the row.
+
+        Args:
+            table_key (TableKey): the table key
+            callback (Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]): the callback function
         """
         pass
 
     @abstractmethod
     def subscribe_to_new_partitions(self, table_key: TableKey,
-                                    callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> \
+                                      callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> \
     Callable[[], None]:
         """ Provides a callback for the backend service to pass new partitions for the table with the given table key.
         The 2nd argument of the callback is a pa.Table that contains the values for the partitions. The schema of the
@@ -79,6 +90,10 @@ class PartitionedTableServiceBackend(ABC):
         the partition columns in the row.
 
         The return value is a function that can be called to unsubscribe from the new partitions.
+
+        Args:
+            table_key (TableKey): the table key
+            callback (Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]): the callback function
         """
         pass
 
@@ -87,6 +102,11 @@ class PartitionedTableServiceBackend(ABC):
                        callback: Callable[[int], None]) -> None:
         """ Provides a callback for the backend service to pass the size of the partition with the given table key
         and partition location key. The callback should be called with the size of the partition in number of rows.
+
+        Args:
+            table_key (TableKey): the table key
+            table_location_key (PartitionedTableLocationKey): the partition location key
+            callback (Callable[[int], None]): the callback function
         """
         pass
 
@@ -98,13 +118,34 @@ class PartitionedTableServiceBackend(ABC):
         rows.
 
         The return value is a function that can be called to unsubscribe from the partition size changes.
+
+        Args:
+            table_key (TableKey): the table key
+            table_location_key (PartitionedTableLocationKey): the partition location key
+            callback (Callable[[int], None]): the callback function
+
+        Returns:
+            Callable[[], None]: a function that can be called to unsubscribe from the partition size changes
         """
         pass
 
     @abstractmethod
-    def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str) -> pa.Table:
+    def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
+                      min_rows: int, max_rows: int) -> pa.Table:
         """ Returns the values for the column with the given name for the partition with the given table key and
-        partition location key. The returned pa.Table should have a single column with the values for the given column.
+        partition location key. The returned pa.Table should have a single column with values of the specified range
+        requirement for the given column.
+
+        Args:
+            table_key (TableKey): the table key
+            table_location_key (PartitionedTableLocationKey): the partition location key
+            col (str): the column name
+            offset (int): the starting row index
+            min_rows (int): the minimum number of rows to return
+            max_rows (int): the maximum number of rows to return
+
+        Returns:
+            pa.Table: a pa.Table that contains the values for the column
         """
         pass
 
@@ -166,7 +207,7 @@ class PythonTableDataService(JObjectWrapper):
         Args:
             table_key (TableKey): the table key
             callback (jpy.JType): the Java callback function with two arguments: a table location key and an array of
-                byte buffers that contain the serialized record batches for the partition columns
+                byte buffers that contain the arrow schema and serialized record batches for the partition columns
         """
         def callback_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
@@ -187,15 +228,14 @@ class PythonTableDataService(JObjectWrapper):
         Args:
             table_key (TableKey): the table key
             callback (jpy.JType): the Java callback function with two arguments: a table location key of the new
-                partition and an array of byte buffers that contain the serialized record batches for the partition
-                column values
+                partition and an array of byte buffers that contain the arrow schema and the serialized record batches
+                for the partition column values
         """
         def callback_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
-                # TODO verify the size of pa.Table must be 1
                 if pt_table.num_rows != 1:
                     raise ValueError("The number of rows in the pyarrow table for partition column values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
@@ -214,10 +254,10 @@ class PythonTableDataService(JObjectWrapper):
             callback (jpy.JType): the Java callback function with one argument: the size of the partition in number of
                 rows
         """
-        def cb(size):
+        def callback_proxy(size):
             callback.accept(size)
 
-        self._backend.partition_size(table_key, table_location_key, cb)
+        self._backend.partition_size(table_key, table_location_key, callback_proxy)
 
     def _subscribe_to_partition_size_changes(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                                              callback: jpy.JType) -> jpy.JType:
@@ -235,7 +275,8 @@ class PythonTableDataService(JObjectWrapper):
 
         return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, callback_proxy)
 
-    def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str) -> jpy.JType:
+    def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
+                       min_rows: int, max_rows: int) -> jpy.JType:
         """ Returns the values for the column with the given name for the partition with the given table key and
         partition location key to the table service in the engine.
 
@@ -243,8 +284,16 @@ class PythonTableDataService(JObjectWrapper):
             table_key (TableKey): the table key
             table_location_key (PartitionedTableLocationKey): the partition location key
             col (str): the column name
+            offset (int): the starting row index
+            min_rows (int): the minimum number of rows to return
+            max_rows (int): the maximum number of rows to return
 
         Returns:
-            jpy.JType: a byte buffer that contains the serialized record batch for the column
+            jpy.JType: an array of byte buffers that contain the arrow schema and the serialized record batches for the
+                partition column values
         """
-        return jpy.byte_buffer(self._backend.column_values(table_key, table_location_key, col).to_batches()[0].serialize())
+        pt_table = self._backend.column_values(table_key, table_location_key, col, offset, min_rows, max_rows)
+        bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
+        bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
+        return jpy.array("java.nio.ByteBuffer", bb_list)
+
