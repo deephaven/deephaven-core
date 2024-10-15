@@ -20,7 +20,7 @@ from libcpp.memory cimport shared_ptr, unique_ptr
 from libcpp.string cimport string
 from libcpp.utility cimport move, pair
 from libcpp.vector cimport vector
-from typing import Dict, List, Sequence, Union, cast
+from typing import Sequence, cast
 
 # Simple wrapper of the corresponding C++ TickingUpdate class.
 cdef class TickingUpdate:
@@ -291,6 +291,16 @@ cdef class ColumnSource:
             dest_data_as_int64 = dest_data.view(dtype=np.int64)
             self._fill_timestamp_chunk(rows, dest_data_as_int64, null_flags_ptr)
             arrow_type = pa.timestamp("ns", tz="UTC")
+        elif element_type_id == ElementTypeId.kLocalDate:
+            dest_data = np.zeros(size, dtype=np.int64)
+            dest_data_as_int64 = dest_data.view(dtype=np.int64)
+            self._fill_localdate_chunk(rows, dest_data_as_int64, null_flags_ptr)
+            arrow_type = pa.date64()
+        elif element_type_id == ElementTypeId.kLocalTime:
+            dest_data = np.zeros(size, dtype=np.int64)
+            dest_data_as_int64 = dest_data.view(dtype=np.int64)
+            self._fill_localtime_chunk(rows, dest_data_as_int64, null_flags_ptr)
+            arrow_type = pa.time64("ns")
         else:
            raise RuntimeError(f"Unexpected ElementTypeId {<int>element_type_id}")
 
@@ -329,11 +339,34 @@ cdef class ColumnSource:
     # fill_chunk helper method for timestamp. In this case we shamelessly treat the Python timestamp
     # type as an int64, and then further shamelessly pretend that it's a Deephaven DateTime type.
     cdef _fill_timestamp_chunk(self, rows: RowSequence, int64_t[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
-        """
-        static_assert(sizeof(int64_t) == sizeof(CDateTime));
-        """
+        cdef extern from "<type_traits>":
+            """
+            static_assert(deephaven::dhcore::DateTime::IsBlittableToInt64());
+            """
         rsSize = rows.size
         dest_chunk = CGenericChunk[CDateTime].CreateView(<CDateTime*>&dest_data[0], rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
+
+    # fill_chunk helper method for LocalDate. In this case we shamelessly treat the Python timestamp
+    # type as an int64, and then further shamelessly pretend that it's a Deephaven LocalDate type.
+    cdef _fill_localdate_chunk(self, rows: RowSequence, int64_t[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
+        cdef extern from "<type_traits>":
+            """
+            static_assert(deephaven::dhcore::LocalDate::IsBlittableToInt64());
+            """
+        rsSize = rows.size
+        dest_chunk = CGenericChunk[CLocalDate].CreateView(<CLocalDate*>&dest_data[0], rsSize)
+        deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
+
+    # fill_chunk helper method for LocalTime. In this case we shamelessly treat the Python timestamp
+    # type as an int64, and then further shamelessly pretend that it's a Deephaven LocalTime type.
+    cdef _fill_localtime_chunk(self, rows: RowSequence, int64_t[::1] dest_data, CGenericChunk[bool] *null_flags_ptr):
+        cdef extern from "<type_traits>":
+            """
+            static_assert(deephaven::dhcore::LocalTime::IsBlittableToInt64());
+            """
+        rsSize = rows.size
+        dest_chunk = CGenericChunk[CLocalTime].CreateView(<CLocalTime*>&dest_data[0], rsSize)
         deref(self.column_source).FillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
 
 # Converts an Arrow array to a C++ ColumnSource of the right type. The created column source does not own the
@@ -345,6 +378,10 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
         return _convert_arrow_boolean_array_to_column_source(cast(pa.lib.BooleanArray, array))
     if isinstance(array, pa.lib.TimestampArray):
         return _convert_arrow_timestamp_array_to_column_source(cast(pa.lib.TimestampArray, array))
+    if isinstance(array, pa.lib.Date64Array):
+        return _convert_arrow_date64_array_to_column_source(cast(pa.lib.Date64Array, array))
+    if isinstance(array, pa.lib.Time64Array):
+        return _convert_arrow_time64_array_to_column_source(cast(pa.lib.Time64Array, array))
     buffers = array.buffers()
     if len(buffers) != 2:
         raise RuntimeError(f"Expected 2 simple type buffers, got {len(buffers)}")
@@ -427,10 +464,32 @@ cdef shared_ptr[CColumnSource] _convert_arrow_string_array_to_column_source(arra
 # Converts an Arrow TimestampArray to a C++ DateTimeColumnSource. The created column source does not own the
 # memory used, so it is only valid as long as the original Arrow array is valid.
 cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(array: pa.TimestampArray) except *:
+    return _convert_underlying_int64_to_column_source(array, CCythonSupport.CreateDateTimeColumnSource)
+
+# Converts an Arrow Date64Array to a C++ LocalDateColumnSource. The created column source does not own the
+# memory used, so it is only valid as long as the original Arrow array is valid.
+cdef shared_ptr[CColumnSource] _convert_arrow_date64_array_to_column_source(array: pa.Date64Array) except *:
+    return _convert_underlying_int64_to_column_source(array, CCythonSupport.CreateLocalDateColumnSource)
+
+# Converts an Arrow Time64Array to a C++ LocalTimeColumnSource. The created column source does not own the
+# memory used, so it is only valid as long as the original Arrow array is valid.
+cdef shared_ptr[CColumnSource] _convert_arrow_time64_array_to_column_source(array: pa.Time64Array) except *:
+    return _convert_underlying_int64_to_column_source(array, CCythonSupport.CreateLocalTimeColumnSource)
+
+# Signature of one of the factory functions in CCythonSupport: CreateDateTimeColumnSource, CreateLocalDateColumnSource
+# or CreateLocalTimeColumnSource.
+ctypedef shared_ptr[CColumnSource](*factory_t)(const int64_t *, const int64_t *, const uint8_t *, const uint8_t *, size_t)
+
+# Converts one of the numeric Arrow types with an underlying int64 representation to the
+# corresponding ColumnSource type. The created column source does not own the
+# memory used, so it is only valid as long as the original Arrow array is valid.
+cdef shared_ptr[CColumnSource] _convert_underlying_int64_to_column_source(
+        array: pa.NumericArray,
+        factory: factory_t) except *:
     num_elements = len(array)
     buffers = array.buffers()
     if len(buffers) != 2:
-        raise RuntimeError(f"Expected 2 timestamp buffers, got {len(buffers)}")
+        raise RuntimeError(f"Expected 2 buffers, got {len(buffers)}")
     validity = buffers[0]
     data = buffers[1]
 
@@ -442,9 +501,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_timestamp_array_to_column_source(a
 
     cdef const int64_t *data_begin = <const int64_t *> <intptr_t> data.address
     cdef const int64_t *data_end = <const int64_t *> <intptr_t> (data.address + data.size)
-
-    return CCythonSupport.CreateDateTimeColumnSource(data_begin, data_end, validity_begin, validity_end,
-                                                     num_elements)
+    return factory(data_begin, data_end, validity_begin, validity_end, num_elements)
 
 # This method converts a PyArrow Schema object to a C++ Schema object.
 cdef shared_ptr[CSchema] _pyarrow_schema_to_deephaven_schema(src: pa.Schema) except *:
@@ -547,7 +604,9 @@ cdef _equivalentTypes = [
     _EquivalentTypes.create(ElementTypeId.kDouble, pa.float64()),
     _EquivalentTypes.create(ElementTypeId.kBool, pa.bool_()),
     _EquivalentTypes.create(ElementTypeId.kString, pa.string()),
-    _EquivalentTypes.create(ElementTypeId.kTimestamp, pa.timestamp("ns", "UTC"))
+    _EquivalentTypes.create(ElementTypeId.kTimestamp, pa.timestamp("ns", "UTC")),
+    _EquivalentTypes.create(ElementTypeId.kLocalDate, pa.date64()),
+    _EquivalentTypes.create(ElementTypeId.kLocalTime, pa.time64("ns"))
 ]
 
 # Converts a Deephaven type (an enum) into the corresponding PyArrow type.
