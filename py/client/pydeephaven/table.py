@@ -756,6 +756,40 @@ class Table(TableInterface, ServerObject):
             DHError
         """
         return super(Table, self).where_not_in(filter_table, cols)
+    
+    def slice(self, start: int, end: int) -> Table:
+        """The slice method creates a new table containing rows from the source table, from the start index (inclusive)
+        to the end index (exclusive). 
+
+        - If both start and end are positive, both rows are counted from the beginning of the table.
+        - If both start and end are negative, both rows are counted from the end of the table.
+        - If start is negative and end is 0, the start is counted from the end and the end is the size of the table.
+        - If start is positive and end is negative, the start is counted from the beginning and the end is counted from 
+          the end.
+        - If start is negative and end is postiive, the start is counted from the end and the end is counted from the 
+          beginning
+
+        Args:
+            start (int): the start index (inclusive)
+            end (int): the end index (exclusive)
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
+        """
+        return super(Table, self).slice(start, end)
 
 
 class InputTable(Table):
