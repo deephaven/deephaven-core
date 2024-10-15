@@ -12,13 +12,19 @@ import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import shaded.parquet.org.apache.thrift.protocol.TSimpleJSONProtocol;
+import shaded.parquet.org.apache.thrift.transport.TIOStreamTransport;
+import shaded.parquet.org.apache.thrift.transport.TTransport;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
@@ -39,7 +45,7 @@ public class ParquetFileReader {
      * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
      */
     private final URI rootURI;
-    private final MessageType type;
+    private final MessageType schema;
 
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
@@ -102,7 +108,7 @@ public class ParquetFileReader {
                 fileMetaData = Util.readFileMetaData(in);
             }
         }
-        type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
+        schema = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
     /**
@@ -239,7 +245,6 @@ public class ParquetFileReader {
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootURI,
-                type,
                 getSchema(),
                 version);
     }
@@ -477,10 +482,18 @@ public class ParquetFileReader {
     }
 
     public MessageType getSchema() {
-        return type;
+        return schema;
     }
 
     public int rowGroupCount() {
         return fileMetaData.getRow_groups().size();
+    }
+
+    // Useful debugging utility
+    void writeFileMetadata(Path path) throws Exception {
+        try (final TTransport out = new TIOStreamTransport(new BufferedOutputStream(Files.newOutputStream(path)))) {
+            fileMetaData.write(new TSimpleJSONProtocol(out));
+            out.flush();
+        }
     }
 }

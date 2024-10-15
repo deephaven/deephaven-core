@@ -76,17 +76,22 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
      *
      * @param tableLocation The table location enclosing this column location
-     * @param parquetColumnName The Parquet file column name
+     * @param columnName The Deephaven column name
+     * @param parquetColumnName The Parquet file column name if explicitly set
      * @param columnChunkReaders The {@link ColumnChunkReader column chunk readers} for this location
      */
     ParquetColumnLocation(
             @NotNull final ParquetTableLocation tableLocation,
             @NotNull final String columnName,
-            @NotNull final String parquetColumnName,
+            @Nullable final String parquetColumnName,
             @Nullable final ColumnChunkReader[] columnChunkReaders) {
         super(tableLocation, columnName);
         this.parquetColumnName = parquetColumnName;
         this.columnChunkReaders = columnChunkReaders;
+    }
+
+    private String parquetColumnNameOrDefault() {
+        return parquetColumnName != null ? parquetColumnName : getName();
     }
 
     private PageCache<ATTR> ensurePageCache() {
@@ -311,8 +316,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                     ensurePageCache(),
                                     columnChunkReader,
                                     tl().getRegionParameters().regionMask,
-                                    makeToPage(tl().getColumnTypes().get(parquetColumnName),
-                                            tl().getReadInstructions(), parquetColumnName, columnChunkReader,
+                                    makeToPage(tl().getColumnTypes().get(parquetColumnNameOrDefault()),
+                                            tl().getReadInstructions(), parquetColumnNameOrDefault(), columnChunkReader,
                                             columnDefinition),
                                     columnDefinition);
                     pageStores[psi] = creatorResult.pageStore;

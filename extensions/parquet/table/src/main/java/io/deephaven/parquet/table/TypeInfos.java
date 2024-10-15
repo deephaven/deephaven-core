@@ -13,11 +13,14 @@ import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Type.Repetition;
 import org.apache.parquet.schema.Types;
+import org.apache.parquet.schema.Types.GroupBuilder;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -475,9 +478,12 @@ public class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
+                instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
             }
-            return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
+            final GroupBuilder<GroupType> groupBuilder = Types.buildGroup(Repetition.OPTIONAL);
+            instructions.getFieldId(columnDefinition.getName()).ifPresent(groupBuilder::id);
+            return groupBuilder.addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
                             builder.named("item")).named(parquetColumnName))
                     .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);

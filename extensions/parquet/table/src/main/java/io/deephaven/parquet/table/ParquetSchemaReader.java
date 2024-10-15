@@ -8,6 +8,7 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.parquet.base.ParquetTotalColumns;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -32,6 +33,8 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Type;
+import org.apache.parquet.schema.Type.ID;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -43,7 +46,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
@@ -142,34 +147,61 @@ public class ParquetSchemaReader {
             return instructionsBuilder.getValue();
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
-        final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
-        for (final ColumnDescriptor column : schema.getColumns()) {
+        final Map<Integer, Long> topLevelFieldIdCount = schema.getFields()
+                .stream()
+                .map(Type::getId)
+                .filter(Objects::nonNull)
+                .map(ID::intValue)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        int columnIx = 0;
+        final List<ColumnDescriptor> columnDescriptors = schema.getColumns();
+        for (final Type fieldType : schema.getFields()) {
+            final int numColumns = ParquetTotalColumns.of(fieldType);
+            if (numColumns > 1) {
+                // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+                throw new UnsupportedOperationException(
+                        String.format("Encountered unsupported multi-column field %s, has %d total columns",
+                                fieldType.getName(), numColumns));
+            }
+            final ColumnDescriptor column = columnDescriptors.get(columnIx);
             if (column.getMaxRepetitionLevel() > 1) {
-                // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
+                // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
                 throw new UnsupportedOperationException("Unsupported maximum repetition level "
                         + column.getMaxRepetitionLevel() + " in column " + String.join("/", column.getPath()));
             }
-
+            columnIx += numColumns;
             colDef.reset();
             currentColumn.setValue(column);
             final PrimitiveType primitiveType = column.getPrimitiveType();
             final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
-
+            // Note: we are taking the id from the fieldType which is not equivalent to the primitiveType field id (ie,
+            // in the case of repeated types).
+            final ID fieldId = fieldType.getId();
             final String parquetColumnName = column.getPath()[0];
-            parquetColumnNameToFirstPath.compute(parquetColumnName, (final String pcn, final String[] oldPath) -> {
-                if (oldPath != null) {
-                    // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
-                    throw new UnsupportedOperationException("Encountered unsupported multi-column field "
-                            + parquetColumnName + ": found columns " + String.join("/", oldPath) + " and "
-                            + String.join("/", column.getPath()));
-                }
-                return column.getPath();
-            });
             final String colName;
-            final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
-            if (mappedName != null) {
-                colName = mappedName;
-            } else {
+            COL_NAME: {
+                FIELD_ID: if (fieldId != null) {
+                    if (topLevelFieldIdCount.getOrDefault(fieldId.intValue(), 0L) > 1) {
+                        // This file has multiple entries for fieldId; don't match against it for field ids.
+                        break FIELD_ID;
+                    }
+                    final List<String> columnNames =
+                            readInstructions.getColumnNamesFromParquetFieldId(fieldId.intValue());
+                    if (columnNames.size() == 1) {
+                        colName = columnNames.get(0);
+                        break COL_NAME;
+                    } else if (columnNames.size() > 1) {
+                        // This limitation could likely be removed with a more thorough refactoring of the parquet code.
+                        throw new IllegalArgumentException(String.format(
+                                "Non-unique Field ID mapping provided; unable to infer TableDefinition for fieldId=%d, parquetColumnName=%s",
+                                fieldId.intValue(), parquetColumnName));
+                    }
+                }
+                final String mappedName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
+                if (mappedName != null) {
+                    colName = mappedName;
+                    break COL_NAME;
+                }
                 final String legalized = legalizeColumnNameFunc.apply(
                         parquetColumnName,
                         (instructionsBuilder.getValue() == null)
@@ -265,6 +297,9 @@ public class ParquetSchemaReader {
                 });
             }
             consumer.accept(colDef);
+        }
+        if (columnIx != columnDescriptors.size()) {
+            throw new IllegalStateException("Not proper size");
         }
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions
