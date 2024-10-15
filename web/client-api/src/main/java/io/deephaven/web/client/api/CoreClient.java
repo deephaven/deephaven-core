@@ -29,8 +29,6 @@ import jsinterop.base.JsPropertyMap;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
-
 @JsType(namespace = "dh")
 public class CoreClient extends HasEventHandling {
     public static final String EVENT_CONNECT = "connect",
@@ -48,7 +46,7 @@ public class CoreClient extends HasEventHandling {
     private final IdeConnection ideConnection;
 
     public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
-        ideConnection = new IdeConnection(serverUrl, connectOptions, true);
+        ideConnection = new IdeConnection(serverUrl, connectOptions);
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
         // event here for the UI to listen to
@@ -82,20 +80,20 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        return ideConnection.getConnectOptions().then(options -> {
-            BrowserHeaders metadata = new BrowserHeaders();
-            JsObject.keys(options.headers).forEach((key, index) -> {
-                metadata.set(key, options.headers.get(key));
-                return null;
-            });
-            return getConfigs(
-                    // Explicitly creating a new client, and not passing auth details, so this works pre-connection
-                    c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
-                            new AuthenticationConstantsRequest(),
-                            metadata,
-                            c::apply),
-                    AuthenticationConstantsResponse::getConfigValuesMap);
+        BrowserHeaders metadata = new BrowserHeaders();
+        JsPropertyMap<String> headers = ideConnection.getOptions().headers;
+        JsObject.keys(headers).forEach((key, index) -> {
+            metadata.set(key, headers.get(key));
+            return null;
         });
+        ConfigServiceClient configService = ideConnection.createClient(ConfigServiceClient::new);
+        return getConfigs(
+                // Explicitly creating a new client, and not passing auth details, so this works pre-connection
+                c -> configService.getAuthenticationConstants(
+                        new AuthenticationConstantsRequest(),
+                        metadata,
+                        c::apply),
+                AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
     public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
