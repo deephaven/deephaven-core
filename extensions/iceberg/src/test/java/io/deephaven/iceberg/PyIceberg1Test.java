@@ -10,7 +10,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
-import io.deephaven.iceberg.util.IcebergTools;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -50,7 +49,7 @@ public class PyIceberg1Test {
 
     @BeforeEach
     void setUp() throws URISyntaxException {
-        catalogAdapter = IcebergTools.createAdapter(DbResource.openCatalog("pyiceberg-1"));
+        catalogAdapter = DbResource.openCatalog("pyiceberg-1");
     }
 
     @Test

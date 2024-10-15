@@ -4,14 +4,19 @@
 package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
+import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
+import io.deephaven.extensions.s3.S3Instructions;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
+import org.apache.iceberg.aws.AwsProperties;
+import org.apache.iceberg.aws.HttpClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.Cleaner;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,8 +24,9 @@ import java.util.Map;
  * Tools for accessing tables in the Iceberg table format.
  */
 @SuppressWarnings("unused")
-public class IcebergToolsS3 extends IcebergTools {
-    private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
+public final class IcebergToolsS3 {
+    // Note: this could move to a shared location
+    private static final Cleaner CLEANER = Cleaner.create();
 
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
@@ -100,5 +106,44 @@ public class IcebergToolsS3 extends IcebergTools {
         catalog.initialize(catalogName, properties);
 
         return new IcebergCatalogAdapter(catalog, properties);
+    }
+
+    /**
+     * Create an Iceberg catalog adapter. Instead of the AWS clients being configured via the various Iceberg-specific
+     * properties (found amongst {@link S3FileIOProperties}, {@link HttpClientProperties}, and {@link AwsProperties}),
+     * the clients are created in the same way that Deephaven's AWS clients are configured with respect to
+     * {@code instructions} via {@link DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)}. This ensures,
+     * amongst other things, that Iceberg's AWS configuration and credentials are in-sync with Deephaven's AWS
+     * configuration and credentials for S3 access. The {@code instructions} will automatically be used as special
+     * instructions if {@link IcebergInstructions#dataInstructions()} if not explicitly set.
+     *
+     * <p>
+     * The caller is still responsible for providing the properties necessary as specified in
+     * {@link IcebergTools#createAdapter(String, Map, Map)}.
+     *
+     * <p>
+     * Note: this method does not explicitly set, nor impose, that {@link org.apache.iceberg.aws.s3.S3FileIO} be used.
+     * It's possible that a {@link org.apache.iceberg.catalog.Catalog} implementations depends on an AWS client for
+     * purposes unrelated to storing the warehouse data via S3.
+     *
+     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
+     * @param properties a map containing the Iceberg catalog properties to use
+     * @param hadoopConfig a map containing Hadoop configuration properties to use
+     * @param instructions the s3 instructions
+     * @return the Iceberg catalog adapter
+     */
+    public static IcebergCatalogAdapter createAdapter(
+            @Nullable final String name,
+            @NotNull final Map<String, String> properties,
+            @NotNull final Map<String, String> hadoopConfig,
+            @NotNull final S3Instructions instructions) {
+        final Map<String, String> newProperties = new HashMap<>(properties);
+        final Runnable cleanup = DeephavenAwsClientFactory.addToProperties(instructions, newProperties);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(name, newProperties, hadoopConfig);
+        // When the Catalog becomes phantom reachable, we can invoke the DeephavenAwsClientFactory cleanup.
+        // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
+        // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).
+        CLEANER.register(adapter.catalog(), cleanup);
+        return adapter;
     }
 }
