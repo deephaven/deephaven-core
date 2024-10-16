@@ -19,7 +19,6 @@ import java.util.Map;
 
 import static io.deephaven.engine.table.Table.APPEND_ONLY_TABLE_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.BLINK_TABLE_ATTRIBUTE;
-import static java.lang.Boolean.TRUE;
 
 /**
  * This class provides a single method to adapt an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add-only} or
@@ -48,7 +47,7 @@ public final class AddOnlyToBlinkTableAdapter {
         final Table addOnlyTable;
         if (!Boolean.TRUE.equals(table.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE))
                 && !Boolean.TRUE.equals(table.getAttribute(APPEND_ONLY_TABLE_ATTRIBUTE))) {
-            addOnlyTable = table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, TRUE));
+            addOnlyTable = table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE));
         } else {
             addOnlyTable = table;
         }
