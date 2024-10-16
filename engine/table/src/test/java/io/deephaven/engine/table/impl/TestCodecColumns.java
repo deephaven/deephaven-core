@@ -99,18 +99,30 @@ public class TestCodecColumns {
         final File dest = new File(dir, "Test.parquet");
         try {
             ParquetTools.writeTable(table, dest.getPath(), writeInstructions);
-            final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
-            final Table result =
-                    ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
-            TableTools.show(result);
-            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
-            final ParquetInstructions readInstructions = instructionsOut.getValue();
-            TestCase.assertTrue(
-                    ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
-            TstUtils.assertTableEquals(table, result);
+            doColumnsTestHelper(dest);
         } finally {
             FileUtils.deleteRecursively(dir);
         }
+    }
+
+    @Test
+    public void doLegacyColumnsTest() {
+        // Make sure that we can read legacy data encoded with the old codec implementations.
+        final String path =
+                TestCodecColumns.class.getResource("/ReferenceParquetWithCodecColumns.parquet").getFile();
+        doColumnsTestHelper(new File(path));
+    }
+
+    private void doColumnsTestHelper(final File dest) {
+        final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
+        final Table result =
+                ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
+        TableTools.show(result);
+        TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+        final ParquetInstructions readInstructions = instructionsOut.getValue();
+        TestCase.assertTrue(
+                ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
+        TstUtils.assertTableEquals(table, result);
     }
 
     @Test
