@@ -9,7 +9,7 @@ import jpy
 
 import pyarrow as pa
 
-from deephaven import DHError
+from deephaven.dherror import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
 
@@ -218,7 +218,7 @@ class PythonTableDataService(JObjectWrapper):
         """
         def callback_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
-            if pt_table is None:
+            if pt_table is None or pt_table.to_batches() is None:
                 callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
                 if pt_table.num_rows != 1:
@@ -283,7 +283,7 @@ class PythonTableDataService(JObjectWrapper):
         return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, callback_proxy)
 
     def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
-                       min_rows: int, max_rows: int) -> jpy.JType:
+                       min_rows: int, max_rows: int, callback: jpy.JType):
         """ Returns the values for the column with the given name for the partition with the given table key and
         partition location key to the table service in the engine.
 
@@ -302,5 +302,5 @@ class PythonTableDataService(JObjectWrapper):
         pt_table = self._backend.column_values(table_key, table_location_key, col, offset, min_rows, max_rows)
         bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
         bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
-        return jpy.array("java.nio.ByteBuffer", bb_list)
+        callback.accept(jpy.array("java.nio.ByteBuffer", bb_list))
 

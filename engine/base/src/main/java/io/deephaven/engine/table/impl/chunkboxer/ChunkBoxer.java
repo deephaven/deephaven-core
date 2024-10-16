@@ -22,7 +22,7 @@ public class ChunkBoxer {
          *
          * @param primitives the primitives to convert
          *
-         * @return a chunk containing primitives as an object
+         * @return a chunk containing primitives as an object (not owned by the caller)
          */
         ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> primitives);
     }

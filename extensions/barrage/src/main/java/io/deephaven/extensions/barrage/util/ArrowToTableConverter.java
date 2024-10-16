@@ -51,7 +51,7 @@ public class ArrowToTableConverter {
 
     private volatile boolean completed = false;
 
-    public static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) throws IOException {
+    public static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -64,11 +64,26 @@ public class ArrowToTableConverter {
             final ByteBuffer bodyBB = bb.slice();
             final ByteBufferInputStream bbis = new ByteBufferInputStream(bodyBB);
             final CodedInputStream decoder = CodedInputStream.newInstance(bbis);
-            // noinspection UnstableApiUsage
             mi.inputStream = new LittleEndianDataInputStream(
                     new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, bodyBB.remaining()));
         }
         return mi;
+    }
+
+    public static Schema parseArrowSchema(final BarrageProtoUtil.MessageInfo mi) {
+        if (mi.header.headerType() != MessageHeader.Schema) {
+            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
+        }
+
+        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
+        // the header to use after the return of this method.
+        ByteBuffer original = mi.header.getByteBuffer();
+        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
+        Schema schema = new Schema();
+        Message.getRootAsMessage(copy).header(schema);
+
+        return schema;
     }
 
     @ScriptApi
@@ -79,11 +94,8 @@ public class ArrowToTableConverter {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
-        if (mi.header.headerType() != MessageHeader.Schema) {
-            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
-        }
-        parseSchema(mi.header);
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
+        parseSchema(parseArrowSchema(mi));
     }
 
     @ScriptApi
@@ -108,7 +120,7 @@ public class ArrowToTableConverter {
             throw new IllegalStateException("Arrow schema must be provided before record batches can be added");
         }
 
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
         if (mi.header.headerType() != MessageHeader.RecordBatch) {
             throw new IllegalArgumentException("The input is not a valid Arrow RecordBatch IPC message");
         }
@@ -138,19 +150,13 @@ public class ArrowToTableConverter {
         completed = true;
     }
 
-    protected void parseSchema(final Message message) {
-        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
-        // the header to use after the return of this method.
-        ByteBuffer original = message.getByteBuffer();
-        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
-        Schema schema = new Schema();
-        Message.getRootAsMessage(copy).header(schema);
+    protected void parseSchema(final Schema schema) {
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
+
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
@@ -221,16 +227,4 @@ public class ArrowToTableConverter {
         msg.length = numRowsAdded;
         return msg;
     }
-
-    private BarrageProtoUtil.MessageInfo getMessageInfo(ByteBuffer ipcMessage) {
-        final BarrageProtoUtil.MessageInfo mi;
-        try {
-            mi = parseArrowIpcMessage(ipcMessage);
-        } catch (IOException unexpected) {
-            throw new UncheckedDeephavenException(unexpected);
-        }
-        return mi;
-    }
-
-
 }

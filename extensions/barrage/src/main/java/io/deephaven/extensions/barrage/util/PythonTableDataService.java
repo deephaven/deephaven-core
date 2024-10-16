@@ -3,9 +3,12 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
@@ -15,20 +18,23 @@ import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.*;
-import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.regioned.*;
-import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.generic.region.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,11 +42,19 @@ import org.jpy.PyObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
 
 @ScriptApi
@@ -122,21 +136,16 @@ public class PythonTableDataService extends AbstractTableDataService {
         private BarrageUtil.ConvertedArrowSchema convertSchema(final ByteBuffer original) {
             // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
             // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a
-            // copy of
-            // the header to use after the return of this method.
+            // copy of the header to use after the return of this method.
 
-            try {
-                final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(original);
-                if (mi.header.headerType() != MessageHeader.Schema) {
-                    throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
-                }
-                final Schema schema = new Schema();
-                Message.getRootAsMessage(mi.header.getByteBuffer()).header(schema);
-
-                return BarrageUtil.convertArrowSchema(schema);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to parse Arrow IPC message", e);
+            final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(original);
+            if (mi.header.headerType() != MessageHeader.Schema) {
+                throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
             }
+            final Schema schema = new Schema();
+            Message.getRootAsMessage(mi.header.getByteBuffer()).header(schema);
+
+            return BarrageUtil.convertArrowSchema(schema);
         }
 
         /**
@@ -150,8 +159,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
-                        // TODO: parse real partition column values into map
-                        listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of()));
+                        processNewPartition(listener, tableLocationKey, byteBuffers);
                     };
 
             pyTableDataService.call("_existing_partitions", tableKey.key, convertingListener);
@@ -169,8 +177,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
-                        // TODO: parse real partition column values into map
-                        listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, Map.of()));
+                        processNewPartition(listener, tableLocationKey, byteBuffers);
                     };
 
             final PyObject cancellationCallback = pyTableDataService.call(
@@ -178,6 +185,91 @@ public class PythonTableDataService extends AbstractTableDataService {
             return () -> {
                 cancellationCallback.call("__call__");
             };
+        }
+
+        private void processNewPartition(
+                @NotNull final Consumer<TableLocationKeyImpl> listener,
+                @NotNull final TableLocationKeyImpl tableLocationKey,
+                @NotNull final ByteBuffer[] byteBuffers) {
+            if (byteBuffers.length == 0) {
+                listener.accept(tableLocationKey);
+                return;
+            }
+
+            if (byteBuffers.length != 2) {
+                throw new IllegalArgumentException("Expected Single Record Batch: found "
+                        + byteBuffers.length);
+            }
+
+            final Map<String, Comparable<?>> partitionValues = new HashMap<>();
+            final Schema schema = ArrowToTableConverter.parseArrowSchema(
+                    ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[0]));
+            final BarrageUtil.ConvertedArrowSchema arrowSchema = BarrageUtil.convertArrowSchema(schema);
+
+            final ArrayList<ChunkReader> readers = new ArrayList<>();
+            final ChunkType[] columnChunkTypes = arrowSchema.computeWireChunkTypes();
+            final Class<?>[] columnTypes = arrowSchema.computeWireTypes();
+            final Class<?>[] componentTypes = arrowSchema.computeWireComponentTypes();
+            for (int i = 0; i < schema.fieldsLength(); i++) {
+                final int factor = (arrowSchema.conversionFactors == null) ? 1 : arrowSchema.conversionFactors[i];
+                ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(
+                        BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS, factor,
+                        typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
+                readers.add(reader);
+            }
+
+            final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(byteBuffers[1]);
+            if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
+                throw new IllegalArgumentException("byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
+            }
+            // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be valid
+            // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need
+            // to make a copy of it to use after the return of this method.
+            final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
+
+            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                    new FlatBufferIteratorAdapter<>(batch.nodesLength(),
+                            i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+
+            final long[] bufferInfo = new long[batch.buffersLength()];
+            for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+                if (bi < batch.buffersLength() - 1) {
+                    final int nextOffset =
+                            LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                    // our parsers handle overhanging buffers
+                    length += Math.max(0, nextOffset - offset - length);
+                }
+                bufferInfo[bi] = length;
+            }
+            final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+
+            final int numColumns = schema.fieldsLength();
+            for (int ci = 0; ci < numColumns; ++ci) {
+                try (SafeCloseableList toClose = new SafeCloseableList()) {
+                    final WritableChunk<Values> columnValues = readers.get(ci).readChunk(
+                            fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0);
+                    toClose.add(columnValues);
+
+                    if (columnValues.size() != 1) {
+                        throw new IllegalArgumentException("Expected Single Row: found " + columnValues.size());
+                    }
+
+                    try (final ChunkBoxer.BoxerKernel boxer =
+                                 ChunkBoxer.getBoxer(columnValues.getChunkType(), columnValues.size())) {
+                        // noinspection unchecked
+                        final ObjectChunk<Comparable<?>, ? extends Values> boxedValues =
+                                (ObjectChunk<Comparable<?>, ? extends Values>) boxer.box(columnValues);
+                        partitionValues.put(schema.fields(ci).name(), boxedValues.get(0));
+                    }
+                } catch (final IOException unexpected) {
+                    throw new UncheckedDeephavenException(unexpected);
+                }
+            }
+
+            listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, partitionValues));
         }
 
         /**
@@ -223,21 +315,91 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @param columnDefinition the column definition
          * @param firstRowPosition the first row position
          * @param minimumSize the minimum size
-         * @return the number of rows read
+         * @return the column values
          */
-        public BarrageMessage getColumnValues(
+        public List<WritableChunk<Values>> getColumnValues(
                 TableKeyImpl tableKey,
                 TableLocationKeyImpl tableLocationKey,
                 ColumnDefinition<?> columnDefinition,
                 long firstRowPosition,
-                int minimumSize) {
-            // TODO: should we tell python maximum size that can be accepted?
-            // TODO: do we want to use column definition? what is best for the "lazy" python user?
-            // A - we use string column name
-            // B - Column Definition (column name + type)
-            // C - Arrow Field type
-            return ConstructSnapshot.constructBackplaneSnapshot(
-                    this, (BaseTable<?>) TableTools.emptyTable(0));
+                int minimumSize,
+                int maximumSize) {
+
+            final List<WritableChunk<Values>> resultChunks = new ArrayList<>();
+            final Consumer<ByteBuffer[]> onMessages = messages -> {
+                if (messages.length == 0) {
+                    return;
+                }
+
+                if (messages.length < 2) {
+                    throw new IllegalArgumentException("Expected atleast two Arrow IPC messages: found "
+                            + messages.length);
+                }
+
+                final Schema schema = ArrowToTableConverter.parseArrowSchema(
+                        ArrowToTableConverter.parseArrowIpcMessage(messages[0]));
+                final BarrageUtil.ConvertedArrowSchema arrowSchema = BarrageUtil.convertArrowSchema(schema);
+
+                final ArrayList<ChunkReader> readers = new ArrayList<>();
+                final ChunkType[] columnChunkTypes = arrowSchema.computeWireChunkTypes();
+                final Class<?>[] columnTypes = arrowSchema.computeWireTypes();
+                final Class<?>[] componentTypes = arrowSchema.computeWireComponentTypes();
+                for (int i = 0; i < schema.fieldsLength(); i++) {
+                    final int factor = (arrowSchema.conversionFactors == null) ? 1 : arrowSchema.conversionFactors[i];
+                    ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(
+                            BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS, factor,
+                            typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
+                    readers.add(reader);
+                }
+
+                try {
+                    for (int ii = 1; ii < messages.length; ++ii) {
+                        final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[ii]);
+                        if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
+                            throw new IllegalArgumentException("byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
+                        }
+                        // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be valid
+                        // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need
+                        // to make a copy of it to use after the return of this method.
+                        final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
+
+                        final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                                new FlatBufferIteratorAdapter<>(batch.nodesLength(),
+                                        i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+
+                        final long[] bufferInfo = new long[batch.buffersLength()];
+                        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+                            if (bi < batch.buffersLength() - 1) {
+                                final int nextOffset =
+                                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                                // our parsers handle overhanging buffers
+                                length += Math.max(0, nextOffset - offset - length);
+                            }
+                            bufferInfo[bi] = length;
+                        }
+                        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+
+                        if (schema.fieldsLength() > 1) {
+                            throw new UnsupportedOperationException("More columns returned than requested.");
+                        }
+
+                        resultChunks.add(readers.get(0).readChunk(
+                                fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0));
+                    }
+                } catch (final IOException unexpected) {
+                    SafeCloseable.closeAll(resultChunks.iterator());
+                    throw new UncheckedDeephavenException(unexpected);
+                }
+            };
+
+            pyTableDataService.call("_column_values",
+                    tableKey.key, tableLocationKey.locationKey, columnDefinition.getName(), firstRowPosition,
+                    minimumSize, maximumSize, onMessages);
+
+            return resultChunks;
         }
     }
 
@@ -309,8 +471,29 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         private TableLocationProviderImpl(@NotNull final TableKeyImpl tableKey) {
             super(tableKey, true);
-            // TODO NOCOMMIT: Add partition column to table definition
-            tableDefinition = backend.getTableSchema(tableKey).tableSchema.tableDef;
+            final SchemaPair tableAndPartitionColumnSchemas = backend.getTableSchema(tableKey);
+
+            final TableDefinition tableDef = tableAndPartitionColumnSchemas.tableSchema.tableDef;
+            final TableDefinition partitionDef = tableAndPartitionColumnSchemas.partitionSchema.tableDef;
+            final Map<String, ColumnDefinition<?>> columns = new HashMap<>(tableDef.numColumns());
+
+            for (final ColumnDefinition<?> column : tableDef.getColumns()) {
+                columns.put(column.getName(), column);
+            }
+
+            for (final ColumnDefinition<?> column : partitionDef.getColumns()) {
+                final ColumnDefinition<?> existingDef = columns.get(column.getName());
+                // validate that both definitions are the same
+                if (existingDef != null && !existingDef.equals(column)) {
+                    throw new IllegalArgumentException(String.format(
+                            "Column %s has conflicting definitions in table and partition schemas: %s vs %s",
+                            column.getName(), existingDef, column));
+                }
+
+                columns.put(column.getName(), column.withPartitioning());
+            }
+
+            tableDefinition = TableDefinition.of(columns.values());
         }
 
         @Override
@@ -340,6 +523,7 @@ public class PythonTableDataService extends AbstractTableDataService {
 
                 handleTableLocationKey(tableLocationKey);
             });
+            activationSuccessful(localSubscription);
         }
 
         @Override
@@ -369,6 +553,12 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         private final PyObject locationKey;
 
+        /**
+         * Construct a TableLocationKeyImpl. Used by the Python adapter.
+         *
+         * @param locationKey the location key
+         */
+        @ScriptApi
         public TableLocationKeyImpl(@NotNull final PyObject locationKey) {
             this(locationKey, Map.of());
         }
@@ -443,16 +633,14 @@ public class PythonTableDataService extends AbstractTableDataService {
             super(tableKey, locationKey, true);
         }
 
-        private void checkSizeChange(final long newSize) {
+        private synchronized void checkSizeChange(final long newSize) {
             // TODO: should we throw if python tells us size decreased? or just ignore smaller sizes?
-            synchronized (getStateLock()) {
-                if (size >= newSize) {
-                    return;
-                }
-
-                size = newSize;
-                handleUpdate(RowSetFactory.flat(size), System.currentTimeMillis());
+            if (size >= newSize) {
+                return;
             }
+
+            size = newSize;
+            handleUpdate(RowSetFactory.flat(size), System.currentTimeMillis());
         }
 
         @Override
@@ -502,6 +690,7 @@ public class PythonTableDataService extends AbstractTableDataService {
 
                 checkSizeChange(newSize);
             });
+            activationSuccessful(localSubscription);
         }
 
         @Override
@@ -613,18 +802,21 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final TableLocationImpl location = (TableLocationImpl) getTableLocation();
                 final TableKeyImpl key = (TableKeyImpl) location.getTableKey();
 
-                final BarrageMessage msg = backend.getColumnValues(
-                        key, (TableLocationKeyImpl) location.getKey(), columnDefinition, firstRowPosition, minimumSize);
+                final List<WritableChunk<Values>> values = backend.getColumnValues(
+                        key, (TableLocationKeyImpl) location.getKey(), columnDefinition,
+                        firstRowPosition, minimumSize, destination.capacity());
 
-                if (msg.length < minimumSize) {
+                final int numRows = values.stream().mapToInt(WritableChunk::size).sum();
+
+                if (numRows < minimumSize) {
                     throw new TableDataException(String.format("Not enough data returned. Read %d rows but minimum "
                             + "expected was %d. Short result from get_column_values(%s, %s, %s, %d, %d).",
-                            msg.length, minimumSize, key.key, ((TableLocationKeyImpl) location.getKey()).locationKey,
+                            numRows, minimumSize, key.key, ((TableLocationKeyImpl) location.getKey()).locationKey,
                             columnDefinition.getName(), firstRowPosition, minimumSize));
                 }
 
                 int offset = 0;
-                for (final Chunk<Values> rbChunk : msg.addColumnData[0].data) {
+                for (final Chunk<Values> rbChunk : values) {
                     int length = Math.min(destination.capacity() - offset, rbChunk.size());
                     destination.copyFromChunk(rbChunk, 0, offset, length);
                     offset += length;
@@ -632,6 +824,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                         break;
                     }
                 }
+                destination.setSize(offset);
             }
 
             @Override

@@ -74,7 +74,7 @@ class TestBackend(PartitionedTableServiceBackend):
             self._partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(PartitionedTableLocationKey(f"{ticker}/NYSE"), pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             time.sleep(1)
 
     def subscribe_to_new_partitions(self, table_key: TableKey, callback) -> Callable[[], None]:
@@ -163,7 +163,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
 
     def test_make_static_table_with_partition_schema(self):
         pc_schema = pa.schema(
-            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
