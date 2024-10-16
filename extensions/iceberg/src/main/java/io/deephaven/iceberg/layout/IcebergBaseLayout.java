@@ -109,7 +109,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final Snapshot tableSnapshot,
+            @Nullable final Snapshot tableSnapshot,
             @NotNull final IcebergInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
@@ -171,8 +171,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * Update the snapshot to the latest snapshot from the catalog if
      */
     protected boolean maybeUpdateSnapshot() {
-        tableAdapter.refresh();
-        final Snapshot latestSnapshot = tableAdapter.icebergTable().currentSnapshot();
+        final Snapshot latestSnapshot = tableAdapter.currentSnapshot();
         if (latestSnapshot == null) {
             return false;
         }

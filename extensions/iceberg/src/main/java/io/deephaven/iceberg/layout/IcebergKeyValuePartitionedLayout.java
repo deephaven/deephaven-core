@@ -14,6 +14,7 @@ import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.*;
@@ -46,7 +47,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
      */
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
+            @Nullable final Snapshot tableSnapshot,
             @NotNull final PartitionSpec partitionSpec,
             @NotNull final IcebergInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {

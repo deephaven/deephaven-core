@@ -70,15 +70,10 @@ public class IcebergTableAdapter {
      *
      * @return The current snapshot of the table or {@code null} if there are no snapshots.
      */
-    public Snapshot currentSnapshot() {
-        // Refresh the table to update the snapshot list from the catalog.
-        table.refresh();
-
-        final List<Snapshot> snapshots = listSnapshots();
-        if (snapshots.isEmpty()) {
-            return null;
-        }
-        return snapshots.get(snapshots.size() - 1);
+    public synchronized Snapshot currentSnapshot() {
+        // Refresh the table to update the current snapshot.
+        refresh();
+        return table.currentSnapshot();
     }
 
     /**
@@ -86,10 +81,9 @@ public class IcebergTableAdapter {
      *
      * @return A list of all snapshots of the given table.
      */
-    public List<Snapshot> listSnapshots() {
-        // Refresh the table to update the snapshot list from the catalog.
-        table.refresh();
-
+    public synchronized List<Snapshot> listSnapshots() {
+        // Refresh the table to update the snapshot list.
+        refresh();
         final List<Snapshot> snapshots = new ArrayList<>();
         table.snapshots().forEach(snapshots::add);
         return snapshots;
@@ -185,6 +179,27 @@ public class IcebergTableAdapter {
     }
 
     /**
+     * Retrieve the current {@link Schema schema} of an Iceberg table.
+     */
+    public synchronized Schema currentSchema() {
+        refresh();
+        return table.schema();
+    }
+
+    /**
+     * Retrieve a specific {@link Schema schema} of an Iceberg table.
+     *
+     * @param schemaId The identifier of the schema to load.
+     */
+    public synchronized Schema schema(final int schemaId) {
+        // TODO: discuss refresh() strategy for this and other functions:
+        // 1) ALWAYS refresh() before searching for a match (safe, might be slow)
+        // 2) NEVER refresh() before searching (user should call refresh() manually)
+        // 3) HYBRID, refresh() if search fails, then re-search
+        return table.schemas().get(schemaId);
+    }
+
+    /**
      * Return {@link TableDefinition table definition}.
      *
      * @return The table definition
@@ -236,24 +251,29 @@ public class IcebergTableAdapter {
     public TableDefinition definition(
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        // Refresh the table to update the snapshot list from the catalog.
-        table.refresh();
 
         final Snapshot snapshot;
+        final Schema schema;
+        final org.apache.iceberg.PartitionSpec partitionSpec;
+
         if (tableSnapshot == null) {
-            // Refresh the table to update the snapshot list from the catalog.
-            table.refresh();
-            snapshot = table.currentSnapshot();
+            synchronized (this) {
+                // Refresh only once and record the current snapshot, using its schema and spec.
+                refresh();
+                snapshot = table.currentSnapshot();
+                schema = snapshot != null ? schema(snapshot.schemaId()) : table.schema();
+                partitionSpec = table.spec();
+            }
         } else {
             snapshot = tableSnapshot;
+            schema = schema(tableSnapshot.schemaId());
+            partitionSpec = table.spec();
         }
-
-        final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
         final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         return fromSchema(schema,
-                table.spec(),
+                partitionSpec,
                 userInstructions.tableDefinition().orElse(null),
                 getRenameColumnMap(table, schema, userInstructions));
     }
@@ -362,20 +382,23 @@ public class IcebergTableAdapter {
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
 
-        // Do we want the latest or a specific snapshot?
         final Snapshot snapshot;
+        final Schema schema;
+        final org.apache.iceberg.PartitionSpec partitionSpec;
+
         if (tableSnapshot == null) {
-            // Refresh the table to update the snapshot list from the catalog.
-            table.refresh();
-            snapshot = table.currentSnapshot();
+            synchronized (this) {
+                // Refresh only once and record the current snapshot, using its schema and spec.
+                refresh();
+                snapshot = table.currentSnapshot();
+                schema = snapshot != null ? schema(snapshot.schemaId()) : table.schema();
+                partitionSpec = table.spec();
+            }
         } else {
             snapshot = tableSnapshot;
+            schema = schema(tableSnapshot.schemaId());
+            partitionSpec = table.spec();
         }
-
-        final Schema schema = snapshot == null ? table.schema() : table.schemas().get(snapshot.schemaId());
-
-        // Load the partitioning schema.
-        final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
         // Get default instructions if none are provided
         final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
@@ -453,7 +476,7 @@ public class IcebergTableAdapter {
     /**
      * Refresh the table with the latest information from the Iceberg catalog, including new snapshots and schema.
      */
-    public void refresh() {
+    public synchronized void refresh() {
         table.refresh();
     }
 
@@ -517,14 +540,14 @@ public class IcebergTableAdapter {
      * @param schema The schema of the table.
      * @param partitionSpec The partition specification of the table.
      * @param userTableDef The table definition.
-     * @param columnRename The map for renaming columns.
+     * @param columnRenameMap The map for renaming columns.
      * @return The generated TableDefinition.
      */
     private static TableDefinition fromSchema(
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec,
             @Nullable final TableDefinition userTableDef,
-            @NotNull final Map<String, String> columnRename) {
+            @NotNull final Map<String, String> columnRenameMap) {
 
         final Set<String> columnNames = userTableDef != null
                 ? userTableDef.getColumnNameSet()
@@ -533,13 +556,13 @@ public class IcebergTableAdapter {
         final Set<String> partitionNames =
                 partitionSpec.fields().stream()
                         .map(PartitionField::name)
-                        .map(colName -> columnRename.getOrDefault(colName, colName))
+                        .map(colName -> columnRenameMap.getOrDefault(colName, colName))
                         .collect(Collectors.toSet());
 
         final List<ColumnDefinition<?>> columns = new ArrayList<>();
 
         for (final Types.NestedField field : schema.columns()) {
-            final String name = columnRename.getOrDefault(field.name(), field.name());
+            final String name = columnRenameMap.getOrDefault(field.name(), field.name());
             // Skip columns that are not in the provided table definition.
             if (columnNames != null && !columnNames.contains(name)) {
                 continue;
