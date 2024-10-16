@@ -543,7 +543,8 @@ public interface TableServiceContextualAuthWiring {
      * @param sourceTables the operation's source tables
      * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke Slice
      */
-    void checkPermissionSlice(AuthContext authContext, SliceRequest request, List<Table> sourceTables);
+    void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+            List<Table> sourceTables);
 
     /**
      * A default implementation that funnels all requests to invoke {@code checkPermission}.
@@ -771,7 +772,8 @@ public interface TableServiceContextualAuthWiring {
             checkPermission(authContext, sourceTables);
         }
 
-        public void checkPermissionSlice(AuthContext authContext, SliceRequest request, List<Table> sourceTables) {
+        public void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+                List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
         }
     }
@@ -1105,7 +1107,8 @@ public interface TableServiceContextualAuthWiring {
             }
         }
 
-        public void checkPermissionSlice(AuthContext authContext, SliceRequest request, List<Table> sourceTables) {
+        public void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+                List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSlice(authContext, request, sourceTables);
             }
