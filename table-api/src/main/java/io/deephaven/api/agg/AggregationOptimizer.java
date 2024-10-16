@@ -7,10 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -110,5 +107,11 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     public void visit(Partition partition) {
         visitOrder.computeIfAbsent(partition.includeGroupByColumns() ? PARTITION_KEEPING_OBJ : PARTITION_DROPPING_OBJ,
                 k -> new ArrayList<>()).add(partition.column());
+    }
+
+    @Override
+    public void visit(Formula formula) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(formula, null);
     }
 }

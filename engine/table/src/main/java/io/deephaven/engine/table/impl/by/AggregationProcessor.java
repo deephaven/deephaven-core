@@ -710,6 +710,42 @@ public class AggregationProcessor implements AggregationContextFactory {
                     groupByColumnNames));
         }
 
+        @Override
+        public void visit(@NotNull final Formula formula) {
+            // Create a new column pair with the same name for the left and right columns
+            final String resultColumnName = formula.column().name();
+
+            // Create the formula column now
+            final FormulaColumn formulaColumn =
+                    FormulaColumn.createFormulaColumn(resultColumnName, formula.formula());
+
+            // Get or create a column definition map composed of vectors of the original column types.
+            if (vectorColumnNameMap == null) {
+                vectorColumnNameMap = new HashMap<>();
+                table.getColumnSourceMap().forEach((key, value) -> {
+                    final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
+                            key, VectorFactory.forElementType(value.getType()).vectorType());
+                    vectorColumnNameMap.put(key, columnDef);
+                });
+            }
+
+            // Get the input column names and data types from the formula
+            final String[] inputColumns =
+                    formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                    Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
+                            .toArray(MatchPair[]::new));
+
+            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(
+                    groupByChunkedOperator,
+                    true,
+                    formulaColumn,
+                    resultColumnName,
+                    compilationProcessor);
+            addNoInputOperator(op);
+        }
+
         // -------------------------------------------------------------------------------------------------------------
         // AggSpec.Visitor
         // -------------------------------------------------------------------------------------------------------------
@@ -748,48 +784,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
-            if (formula.isMultiColumnFormula()) {
-                // Create a new column pair with the same name for the left and right columns
-                final String resultColumnName = formula.outputColumnName();
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                    resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
 
-                // Make the column now so we can extract the input column names.
-                final FormulaColumn formulaColumn =
-                        FormulaColumn.createFormulaColumn(resultColumnName, formula.formula());
-
-                // Get or create a column definition map composed of vectors of the original column types.
-                if (vectorColumnNameMap == null) {
-                    vectorColumnNameMap = new HashMap<>();
-                    table.getColumnSourceMap().forEach((key, value) -> {
-                        final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                                key, VectorFactory.forElementType(value.getType()).vectorType());
-                        vectorColumnNameMap.put(key, columnDef);
-                    });
-                }
-
-                // Get the input column names and data types from the formula.
-                final String[] inputColumns =
-                        formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
-
-                final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
-                        Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
-                                .toArray(MatchPair[]::new));
-
-                final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(
-                        groupByChunkedOperator,
-                        true,
-                        formulaColumn,
-                        resultColumnName,
-                        compilationProcessor);
-                addNoInputOperator(op);
-            } else {
-                final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
-                        resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
-
-                final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
-                        true, formula.formula(), formula.paramToken(), compilationProcessor,
-                        MatchPair.fromPairs(resultPairs));
-                addNoInputOperator(formulaChunkedOperator);
-            }
+            final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
+                    true, formula.formula(), formula.paramToken(), compilationProcessor,
+                    MatchPair.fromPairs(resultPairs));
+            addNoInputOperator(formulaChunkedOperator);
         }
 
         @Override
@@ -897,6 +898,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final LastRowKey lastRowKey) {
             rollupUnsupported("LastRowKey");
+        }
+
+        @Override
+        @FinalDefault
+        default void visit(@NotNull final Formula formula) {
+            rollupUnsupported("Formula");
         }
 
         // -------------------------------------------------------------------------------------------------------------

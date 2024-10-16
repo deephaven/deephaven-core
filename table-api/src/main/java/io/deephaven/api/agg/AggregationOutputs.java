@@ -36,12 +36,7 @@ public class AggregationOutputs implements Aggregation.Visitor {
 
     @Override
     public void visit(ColumnAggregation columnAgg) {
-        // AggFormula with multiple columns does not specify an input/output pair
-        if (columnAgg.pair() == null) {
-            out = Stream.empty();
-        } else {
-            out = Stream.of(columnAgg.pair().output());
-        }
+        out = Stream.of(columnAgg.pair().output());
     }
 
     @Override
@@ -67,5 +62,11 @@ public class AggregationOutputs implements Aggregation.Visitor {
     @Override
     public void visit(Partition partition) {
         out = Stream.of(partition.column());
+    }
+
+
+    @Override
+    public void visit(Formula formula) {
+        out = Stream.of(formula.column());
     }
 }

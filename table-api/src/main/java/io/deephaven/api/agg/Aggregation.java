@@ -5,6 +5,8 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
@@ -37,16 +39,6 @@ import java.util.function.BiFunction;
  * @see LastRowKey
  */
 public interface Aggregation {
-
-    /**
-     * Create an aggregation from {@link AggSpec} without specifying an input / output pair.
-     *
-     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair
-     * @return The aggregation
-     */
-    static ColumnAggregation of(AggSpec spec) {
-        return ColumnAggregation.of(spec, null);
-    }
 
     /**
      * Combine an {@link AggSpec} and an input/output {@link Pair column name pair} into a {@link ColumnAggregation}.
@@ -83,12 +75,8 @@ public interface Aggregation {
      */
     static Aggregation of(AggSpec spec, List<String> pairs) {
         if (pairs.isEmpty()) {
-            if (!spec.deferredInputColumns()) {
-                throw new IllegalArgumentException(
-                        "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
-            } else {
-                return of(spec, (String) null);
-            }
+            throw new IllegalArgumentException(
+                    "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
         }
         if (pairs.size() == 1) {
             return of(spec, pairs.get(0));
@@ -318,8 +306,12 @@ public interface Aggregation {
      * @param formula The {@link AggSpecFormula#formula() formula} to use to produce the output column
      * @return The aggregation
      */
-    static Aggregation AggFormula(String formula) {
-        return of(AggSpec.formula(formula));
+    static Formula AggFormula(String formula) {
+        // Parse the supplied formula for the output column name and formula
+        final Selectable column = Selectable.parse(formula);
+        final String parsedFormula = ((RawString) column.expression()).value();
+
+        return Formula.of(column.newColumn(), parsedFormula);
     }
 
     /**
@@ -333,6 +325,7 @@ public interface Aggregation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
+    @Deprecated
     static Aggregation AggFormula(String formula, String paramToken, String... pairs) {
         return of(AggSpec.formula(formula, paramToken), pairs);
     }
@@ -709,6 +702,7 @@ public interface Aggregation {
         visitor.visit((FirstRowKey) null);
         visitor.visit((LastRowKey) null);
         visitor.visit((Partition) null);
+        visitor.visit((Formula) null);
     }
 
     /**
@@ -773,5 +767,12 @@ public interface Aggregation {
          * @param partition The partition aggregation
          */
         void visit(Partition partition);
+
+        /**
+         * Visit a {@link Formula formula aggregation}.
+         *
+         * @param formula The formula aggregation
+         */
+        void visit(Formula formula);
     }
 }

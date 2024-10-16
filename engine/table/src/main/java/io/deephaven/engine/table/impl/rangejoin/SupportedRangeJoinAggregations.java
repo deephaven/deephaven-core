@@ -81,4 +81,9 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
     public void visit(@NotNull final Partition partition) {
         lastSupported = false;
     }
+
+    @Override
+    public void visit(@NotNull final Formula formula) {
+        lastSupported = false;
+    }
 }
