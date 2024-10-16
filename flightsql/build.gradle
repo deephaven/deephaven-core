@@ -1,0 +1,67 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The Deephaven flight SQL library'
+
+sourceSets {
+    jdbcTest {
+        compileClasspath += sourceSets.test.output
+        runtimeClasspath += sourceSets.test.output
+    }
+}
+
+configurations {
+    jdbcTestImplementation.extendsFrom testImplementation
+    jdbcTestRuntimeOnly.extendsFrom testRuntimeOnly
+    jdbcTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+}
+
+dependencies {
+    api project(':server')
+    implementation project(':sql')
+    implementation project(':engine-sql')
+    // :sql does not expose calcite as a dependency (maybe it should?); in the meantime, we want to make sure we can
+    // provide reasonable error messages to the client
+    implementation libs.calcite.core
+
+    implementation libs.dagger
+    implementation libs.arrow.flight.sql
+
+//    testImplementation project(':extensions-csv')
+    testImplementation project(':authorization')
+    testImplementation project(':server-test-utils')
+
+    testAnnotationProcessor libs.dagger.compiler
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly libs.junit.vintage.engine
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+
+    jdbcTestImplementation project(':server-jetty')
+    // Isolating to its own sourceSet / classpath because it breaks logging until we can upgrade to a newer version
+    // See https://github.com/apache/arrow/pull/40908
+    // See https://github.com/deephaven/deephaven-core/issues/5947
+    jdbcTestRuntimeOnly libs.arrow.flight.sql.jdbc
+}
+
+test {
+    useJUnitPlatform()
+}
+
+def jdbcTest = tasks.register('jdbcTest', Test) {
+    description = 'Runs JDBC tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.jdbcTest.output.classesDirs
+    classpath = sourceSets.jdbcTest.runtimeClasspath
+    shouldRunAfter test
+
+    useJUnitPlatform()
+}
+
+check.dependsOn jdbcTest
