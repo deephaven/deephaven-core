@@ -109,7 +109,13 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -150,6 +156,11 @@ public class AggregationProcessor implements AggregationContextFactory {
     private final Collection<? extends Aggregation> aggregations;
     private final Type type;
 
+    /**
+     * For AggFormula we need a representation of the table definition with the column data types converted to
+     * {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all formula aggregations
+     * but does not need to be computed in their absence.
+     */
     private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
 
     /**
@@ -712,10 +723,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Formula formula) {
-            // Create a new column pair with the same name for the left and right columns
             final String resultColumnName = formula.column().name();
 
-            // Create the formula column now
             final FormulaColumn formulaColumn =
                     FormulaColumn.createFormulaColumn(resultColumnName, formula.formula());
 
@@ -729,7 +738,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 });
             }
 
-            // Get the input column names and data types from the formula
+            // Get the input column names from the formula and provide them to the groupBy operator
             final String[] inputColumns =
                     formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
 

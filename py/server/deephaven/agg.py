@@ -169,8 +169,8 @@ def formula(formula: str, formula_param: str = None, cols: Union[str, List[str]]
     This form does not accept `formula_param` or `cols` arguments because the input and output columns are explicitly
     set within the formula string.
 
-    The second (deprecated) variant allows the user to apply a formula expression to a set of input columns. In this
-    call the `formula_param` is used as a placeholder for the single input column and the `cols` argument is used to
+    The second (deprecated) variant allows the user to apply a formula expression to multiple input columns. In this
+    call the `formula_param` is used as a placeholder for the input column name and the `cols` argument is used to
     identify the output column name and the input source column when applying the formula.
 
     Args:
@@ -186,7 +186,7 @@ def formula(formula: str, formula_param: str = None, cols: Union[str, List[str]]
         an aggregation
     """
     if formula_param == None:
-        return Aggregation(j_agg_spec=_JAggSpec.formula(formula), cols=None)
+        return Aggregation(j_agg_spec=_JAggSpec.formula(formula))
     return Aggregation(j_agg_spec=_JAggSpec.formula(formula, formula_param), cols=cols)
 
 

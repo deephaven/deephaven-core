@@ -1044,12 +1044,18 @@ message Aggregation {
     bool include_group_by_columns = 2;
   }
 
+  message AggregationFormula {
+    string column_name = 1;
+    string formula = 2;
+  }
+
   oneof type {
     AggregationColumns columns = 1;
     AggregationCount count = 2;
     AggregationRowKey first_row_key = 3;
     AggregationRowKey last_row_key = 4;
     AggregationPartition partition = 5;
+    AggregationFormula formula = 6;
   }
 }
 
