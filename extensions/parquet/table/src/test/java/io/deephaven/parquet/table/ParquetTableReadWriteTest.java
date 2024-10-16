@@ -1789,20 +1789,22 @@ public final class ParquetTableReadWriteTest {
             ExecutionContext.getContext().getQueryScope().putParam("__bdCodec", bdCodec);
             ExecutionContext.getContext().getQueryScope().putParam("__biCodec", biCodec);
             final Table source = TableTools.emptyTable(10_000).update(
-                    "LocalDateColumn = java.time.LocalDate.ofEpochDay(i)",
-                    "LocalTimeColumn = java.time.LocalTime.ofSecondOfDay(i % 86400)",
-                    "ZonedDateTimeColumn = java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochSecond(i), java.time.ZoneId.of(\"UTC\"))",
-                    "StringColumn = java.lang.String.valueOf(i)",
-                    "BigDecimalColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
-                    "BigDecimalColumnEncoded = __bdCodec.encode(BigDecimalColumn)",
-                    "BigDecimalColumnDecoded = __bdCodec.decode(BigDecimalColumnEncoded, 0, BigDecimalColumnEncoded.length)",
-                    "BigIntegerColumn = i % 10 == 0 ? null : java.math.BigInteger.valueOf(ii*512)",
-                    "BigIntegerColumnEncoded = __biCodec.encode(BigIntegerColumn)",
-                    "BigIntegerColumnDecoded = __biCodec.decode(BigIntegerColumnEncoded, 0, BigIntegerColumnEncoded.length)");
+                    "LocalDateColumn = ii % 10 == 0 ? null :  java.time.LocalDate.ofEpochDay(ii)",
+                    "CompactLocalDateColumn = ii % 10 == 0 ? null :  java.time.LocalDate.ofEpochDay(ii)",
+                    "LocalTimeColumn = ii % 10 == 0 ? null :  java.time.LocalTime.ofSecondOfDay(ii % 86400)",
+                    "ZonedDateTimeColumn = ii % 10 == 0 ? null :  java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochSecond(ii), java.time.ZoneId.of(\"UTC\"))",
+                    "StringColumn = ii % 10 == 0 ? null : java.lang.String.valueOf(ii)",
+                    "BigDecimalColumn = ii % 10 == 0 ? null : ii % 2 == 0 ? java.math.BigDecimal.valueOf(ii).stripTrailingZeros() : java.math.BigDecimal.valueOf(-1 * ii).stripTrailingZeros()",
+                    "BigDecimalColumnEncoded = ii % 10 == 0 ? null : __bdCodec.encode(BigDecimalColumn)",
+                    "BigDecimalColumnDecoded = ii % 10 == 0 ? null : __bdCodec.decode(BigDecimalColumnEncoded, 0, BigDecimalColumnEncoded.length)",
+                    "BigIntegerColumn = ii % 10 == 0 ? null : ii % 2 == 0 ? java.math.BigInteger.valueOf(ii*512) : java.math.BigInteger.valueOf(-1*ii*512)",
+                    "BigIntegerColumnEncoded = ii % 10 == 0 ? null : __biCodec.encode(BigIntegerColumn)",
+                    "BigIntegerColumnDecoded = ii % 10 == 0 ? null : __biCodec.decode(BigIntegerColumnEncoded, 0, BigIntegerColumnEncoded.length)");
 
             // Set codecs for each column
             final ParquetInstructions instructions = ParquetInstructions.builder()
                     .addColumnCodec("LocalDateColumn", "io.deephaven.util.codec.LocalDateCodec")
+                    .addColumnCodec("CompactLocalDateColumn", "io.deephaven.util.codec.LocalDateCodec", "Compact")
                     .addColumnCodec("LocalTimeColumn", "io.deephaven.util.codec.LocalTimeCodec")
                     .addColumnCodec("ZonedDateTimeColumn", "io.deephaven.util.codec.ZonedDateTimeCodec")
                     .addColumnCodec("StringColumn", "io.deephaven.util.codec.UTF8StringAsByteArrayCodec")
