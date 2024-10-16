@@ -125,6 +125,15 @@ project(':server-jetty-app').projectDir = file('server/jetty-app')
 include(':server-jetty-app-custom')
 project(':server-jetty-app-custom').projectDir = file('server/jetty-app-custom')
 
+include(':server-jetty-11')
+project(':server-jetty-11').projectDir = file('server/jetty-11')
+
+include(':server-jetty-app-11')
+project(':server-jetty-app-11').projectDir = file('server/jetty-app-11')
+
+include(':server-jetty-app-custom-11')
+project(':server-jetty-app-custom-11').projectDir = file('server/jetty-app-custom-11')
+
 include(':Base')
 
 include(':base-test-utils')
