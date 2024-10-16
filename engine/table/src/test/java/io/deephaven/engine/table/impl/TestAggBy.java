@@ -74,7 +74,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggFormula("f_min=min(B)"),
                         AggFormula("f_max=max(B)"),
                         AggFormula("f_sum=sum(B)"),
-                        AggFormula("f_custom_sum=sum(B) + sum(C)")),
+                        AggFormula("f_custom_sum=sum(B) + sum(C)"),
+                        AggFormula("f_weighted_avg=wavg(B, C)")),
                 "A");
         show(minMax);
         assertEquals(2, minMax.size());
