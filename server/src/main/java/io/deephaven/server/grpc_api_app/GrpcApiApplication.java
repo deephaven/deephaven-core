@@ -33,10 +33,13 @@ public final class GrpcApiApplication implements ApplicationState.Factory {
     private static final String RING_SIZE = "ringSize";
 
     private static final Object MEMO_KEY = new Object();
-    private static Table blinkTable = TableTools.emptyTable(0);
+    private static Table blinkTable = null;
 
     @ScriptApi
     public static Table exportStateChangeLog() {
+        if (blinkTable == null) {
+            throw new IllegalStateException("GrpcApiApplication not initialized");
+        }
         return BlinkTableTools.blinkToAppendOnly(blinkTable, MEMO_KEY);
     }
 
