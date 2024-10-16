@@ -23,7 +23,8 @@ from tests.testbase import BaseTestCase
 
 
 class TestBackend(PartitionedTableServiceBackend):
-    def __init__(self, gen_pa_table: Generator[pa.Table, None, None], pc_schema: Optional[pa.Schema] = None):
+    def __init__(self, gen_pa_table: Generator[pa.Table, None, None], pt_schema: pa.Schema,  pc_schema: Optional[pa.Schema] = None):
+        self.pt_schema = pt_schema
         self.pc_schema = pc_schema
         self.gen_pa_table = gen_pa_table
         self._sub_new_partition_cancelled = False
@@ -32,7 +33,7 @@ class TestBackend(PartitionedTableServiceBackend):
 
     def table_schema(self, table_key: TableKey) -> Tuple[pa.Schema, Optional[pa.Schema]]:
         if table_key.key == "test":
-             return next(self.gen_pa_table).schema, self.pc_schema
+             return self.pt_schema, self.pc_schema
         return pa.Schema(), None
 
     def existing_partitions(self, table_key: TableKey, callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> None:
@@ -48,7 +49,7 @@ class TestBackend(PartitionedTableServiceBackend):
 
     def partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                        callback: Callable[[int], None]) -> None:
-        callback(2)
+        callback(self._partitions[table_location_key].num_rows)
 
     def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                       col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
@@ -151,7 +152,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         self.test_table = dharrow.to_table(self.pa_table)
 
     def test_make_table_without_partition_schema(self):
-        backend = TestBackend(self.gen_pa_table())
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
         self.assertIsNotNone(table)
@@ -161,7 +162,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
     def test_make_static_table_with_partition_schema(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pc_schema)
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
         self.assertIsNotNone(table)
@@ -170,7 +171,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
     def test_make_static_table_with_partition_schema_existing_partitions(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pc_schema)
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False).coalesce()
         self.assertIsNotNone(table)
@@ -181,7 +182,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
     def test_make_live_table_with_partition_schema(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pc_schema)
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True)
         self.assertIsNotNone(table)
@@ -190,7 +191,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
     def stest_make_live_table_with_partition_schema_existing_partitions(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pc_schema)
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True).coalesce()
         self.assertIsNotNone(table)
