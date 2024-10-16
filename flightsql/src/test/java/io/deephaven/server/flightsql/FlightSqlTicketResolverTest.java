@@ -29,6 +29,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementUpdate
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
+import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.junit.jupiter.api.Test;
 
@@ -86,6 +87,8 @@ public class FlightSqlTicketResolverTest {
                 CommandGetPrimaryKeys.getDefaultInstance());
         checkPackedType(FlightSqlResolver.COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL,
                 CommandGetXdbcTypeInfo.getDefaultInstance());
+        checkPackedType(FlightSqlResolver.TICKET_STATEMENT_QUERY_TYPE_URL,
+                TicketStatementQuery.getDefaultInstance());
     }
 
     @Test

@@ -22,6 +22,10 @@ dependencies {
     api project(':server')
     implementation project(':sql')
     implementation project(':engine-sql')
+    // :sql does not expose calcite as a dependency (maybe it should?); in the meantime, we want to make sure we can
+    // provide reasonable error messages to the client
+    implementation libs.calcite.core
+
     implementation libs.dagger
     implementation libs.arrow.flight.sql
 

@@ -251,7 +251,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getCatalogs();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(endpoint(info), 0, 0, true);
+            consume(info, 0, 0, true);
         }
         unpackable(CommandGetCatalogs.getDescriptor(), CommandGetCatalogs.class);
     }
@@ -267,7 +267,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 flightSqlClient.getSchemas(null, null),
                 flightSqlClient.getSchemas("DoesNotExist", null)}) {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(endpoint(info), 0, 0, true);
+            consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getSchemas(null, "filter_pattern"), FlightStatusCode.INVALID_ARGUMENT,
                 "FlightSQL arrow.flight.protocol.sql.CommandGetDbSchemas.db_schema_filter_pattern not supported at this time");
@@ -295,7 +295,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables("", null, null, List.of("TABLE"), includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(endpoint(info), 1, 2, true);
+                consume(info, 1, 2, true);
             }
             // Any of these queries will fetch an empty table
             for (final FlightInfo info : new FlightInfo[] {
@@ -303,7 +303,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(endpoint(info), 0, 0, true);
+                consume(info, 0, 0, true);
             }
             // We do not implement filtering right now
             expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
@@ -326,7 +326,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.getTableTypes();
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(endpoint(info), 1, 1, true);
+            consume(info, 1, 1, true);
         }
         unpackable(CommandGetTableTypes.getDescriptor(), CommandGetTableTypes.class);
     }
@@ -342,7 +342,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         {
             final FlightInfo info = flightSqlClient.execute("SELECT 1 as Foo");
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
-            consume(endpoint(info), 1, 1, false);
+            consume(info, 1, 1, false);
         }
         unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
     }
@@ -359,7 +359,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = preparedStatement.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(endpoint(info), 1, 1, false);
+                consume(info, 1, 1, false);
             }
             unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
         }
@@ -378,7 +378,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             {
                 final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(endpoint(info), 1, 3, false);
+                consume(info, 1, 3, false);
             }
             unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
         }
@@ -398,7 +398,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 {
                     final FlightInfo info = prepared.execute();
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                    consume(endpoint(info), 1, 3, false);
+                    consume(info, 1, 3, false);
                 }
                 unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
             }
@@ -408,49 +408,65 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
+    public void preparedStatementIsLazy() throws Exception {
+        try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT * FROM foo_table")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.NOT_FOUND, "Object 'foo_table' not found");
+            expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "Object 'foo_table' not found");
+            // If the state-of-the-world changes, this will be reflected in new calls against the prepared statement.
+            // This also implies that we won't error out at the start of prepare call if the table doesn't exist.
+            //
+            // We could introduce some sort of reference-based Transactional model (orthogonal to a snapshot-based
+            // Transactional model) which would ensure schema consistency, but that would be an effort outside of a
+            // PreparedStatement.
+            setFooTable();
+            final Schema expectedSchema = flatTableSchema(
+                    new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
+            {
+                final SchemaResult schema = prepared.fetchSchema();
+                assertThat(schema.getSchema()).isEqualTo(expectedSchema);
+            }
+            {
+                final FlightInfo info = prepared.execute();
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                consume(info, 1, 3, false);
+            }
+        }
+    }
+
+    @Test
     public void selectQuestionMark() {
-        expectException(() -> flightSqlClient.getExecuteSchema("SELECT ?"), FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL query parameters are not supported");
-        expectException(() -> flightSqlClient.execute("SELECT ?"), FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL query parameters are not supported");
+        queryError("SELECT ?", FlightStatusCode.INVALID_ARGUMENT, "Illegal use of dynamic parameter");
     }
 
     @Test
     public void selectFooParam() {
         setFooTable();
-        expectException(() -> flightSqlClient.getExecuteSchema("SELECT Foo FROM foo_table WHERE Foo = ?"),
-                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query parameters are not supported");
-        expectException(() -> flightSqlClient.execute("SELECT Foo FROM foo_table WHERE Foo = ?"),
-                FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query parameters are not supported");
+        queryError("SELECT Foo FROM foo_table WHERE Foo = ?", FlightStatusCode.INVALID_ARGUMENT,
+                "FlightSQL query parameters are not supported");
     }
 
     @Test
-    public void selectFooParamPrepared() {
+    public void selectTableDoesNotExist() {
+        queryError("SELECT * FROM my_table", FlightStatusCode.NOT_FOUND, "Object 'my_table' not found");
+    }
+
+    @Test
+    public void selectColumnDoesNotExist() {
         setFooTable();
-        try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT Foo FROM foo_table WHERE Foo = ?")) {
-            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL query parameters are not supported");
-            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL query parameters are not supported");
-        }
+        queryError("SELECT BadColumn FROM foo_table", FlightStatusCode.NOT_FOUND,
+                "Column 'BadColumn' not found in any table");
     }
 
     @Test
-    public void badExecute() {
-        expectException(() -> flightSqlClient.getExecuteSchema("this is not SQL"), FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL query can't be parsed");
-        expectException(() -> flightSqlClient.execute("this is not SQL"), FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL query can't be parsed");
+    public void selectFunctionDoesNotExist() {
+        setFooTable();
+        queryError("SELECT my_function(Foo) FROM foo_table", FlightStatusCode.INVALID_ARGUMENT,
+                "No match found for function signature");
     }
 
     @Test
-    public void badExecutePrepared() {
-        // We could consider failing earlier during the prepare
-        try (final PreparedStatement prepared = flightSqlClient.prepare("this is not SQL")) {
-            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL query can't be parsed");
-            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query can't be parsed");
-        }
+    public void badSqlQuery() {
+        queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query can't be parsed");
     }
 
     @Test
@@ -475,6 +491,15 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void insert1() {
         expectUnpublishable(() -> flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')"));
         unpackable(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
+    }
+
+    private void queryError(String query, FlightStatusCode expectedCode, String expectedMessage) {
+        expectException(() -> flightSqlClient.getExecuteSchema(query), expectedCode, expectedMessage);
+        expectException(() -> flightSqlClient.execute(query), expectedCode, expectedMessage);
+        try (final PreparedStatement prepared = flightSqlClient.prepare(query)) {
+            expectException(prepared::fetchSchema, expectedCode, expectedMessage);
+            expectException(prepared::execute, expectedCode, expectedMessage);
+        }
     }
 
     @Ignore("need to fix server, should error out before")
@@ -748,10 +773,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
     }
 
-    private static Ticket ticket(FlightInfo info) {
-        return endpoint(info).getTicket();
-    }
-
     private static FlightEndpoint endpoint(FlightInfo info) {
         assertThat(info.getEndpoints()).hasSize(1);
         return info.getEndpoints().get(0);
@@ -775,8 +796,9 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
     }
 
-    private void consume(FlightEndpoint endpoint, int expectedFlightCount, int expectedNumRows, boolean expectReusable)
+    private void consume(FlightInfo info, int expectedFlightCount, int expectedNumRows, boolean expectReusable)
             throws Exception {
+        final FlightEndpoint endpoint = endpoint(info);
         if (expectReusable) {
             assertThat(endpoint.getExpirationTime()).isPresent();
         } else {
