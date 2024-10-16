@@ -45,6 +45,7 @@ import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
@@ -121,6 +122,7 @@ import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
@@ -533,7 +535,8 @@ public final class ParquetTableReadWriteTest {
 
         // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
         // LZ4_RAW. We should be able to read it anyway with no exceptions.
-        String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
+        final String path =
+                ParquetTableReadWriteTest.class.getResource("/sample_lz4_compressed.parquet").getFile();
         readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
         final File randomDest = new File(rootFile, "random.parquet");
         writeTable(fromDisk, randomDest.getPath(), ParquetTools.LZ4_RAW);
@@ -1740,7 +1743,8 @@ public final class ParquetTableReadWriteTest {
         {
             // Single parquet file with empty row group
             final String path =
-                    TestParquetTools.class.getResource("/ReferenceParquetWithEmptyRowGroup1.parquet").getFile();
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceParquetWithEmptyRowGroup1.parquet")
+                            .getFile();
             final Table fromDisk =
                     readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
             assertEquals(0, fromDisk.size());
@@ -1752,7 +1756,8 @@ public final class ParquetTableReadWriteTest {
             // is empty. To generate this file, the following branch was used:
             // https://github.com/malhotrashivam/deephaven-core/tree/sm-ref-branch
             final String path =
-                    TestParquetTools.class.getResource("/ReferenceParquetWithEmptyRowGroup2.parquet").getFile();
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceParquetWithEmptyRowGroup2.parquet")
+                            .getFile();
             final Table fromDisk =
                     readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
             assertEquals(20, fromDisk.size());
@@ -1764,7 +1769,7 @@ public final class ParquetTableReadWriteTest {
         {
             // Parquet dataset with three files, first and third file have three row groups, two non-empty followed by
             // an empty row group, and second file has just one empty row group.
-            final String dirPath = TestParquetTools.class.getResource("/datasetWithEmptyRowgroups").getFile();
+            final String dirPath = ParquetTableReadWriteTest.class.getResource("/datasetWithEmptyRowgroups").getFile();
             assertFalse(readTable(dirPath + "/file1.parquet").isEmpty());
             assertTrue(readTable(dirPath + "/file2.parquet").isEmpty());
             assertFalse(readTable(dirPath + "/file3.parquet").isEmpty());
@@ -1773,6 +1778,81 @@ public final class ParquetTableReadWriteTest {
             assertEquals(2138182, table.size());
             assertEquals(4, table.numColumns());
             assertEquals(1068950, table.selectDistinct("price").size());
+        }
+    }
+
+    @Test
+    public void testReadingReferenceParquetDataWithCodec() {
+        {
+            final BigDecimalParquetBytesCodec bdCodec = new BigDecimalParquetBytesCodec(20, 1);
+            final BigIntegerParquetBytesCodec biCodec = new BigIntegerParquetBytesCodec();
+            ExecutionContext.getContext().getQueryScope().putParam("__bdCodec", bdCodec);
+            ExecutionContext.getContext().getQueryScope().putParam("__biCodec", biCodec);
+            final Table source = TableTools.emptyTable(10_000).update(
+                    "LocalDateColumn = ii % 10 == 0 ? null :  java.time.LocalDate.ofEpochDay(ii)",
+                    "CompactLocalDateColumn = ii % 10 == 0 ? null :  java.time.LocalDate.ofEpochDay(ii)",
+                    "LocalTimeColumn = ii % 10 == 0 ? null :  java.time.LocalTime.ofSecondOfDay(ii % 86400)",
+                    "ZonedDateTimeColumn = ii % 10 == 0 ? null :  java.time.ZonedDateTime.ofInstant(java.time.Instant.ofEpochSecond(ii), java.time.ZoneId.of(\"UTC\"))",
+                    "StringColumn = ii % 10 == 0 ? null : java.lang.String.valueOf(ii)",
+                    "BigDecimalColumn = ii % 10 == 0 ? null : ii % 2 == 0 ? java.math.BigDecimal.valueOf(ii).stripTrailingZeros() : java.math.BigDecimal.valueOf(-1 * ii).stripTrailingZeros()",
+                    "BigDecimalColumnEncoded = ii % 10 == 0 ? null : __bdCodec.encode(BigDecimalColumn)",
+                    "BigDecimalColumnDecoded = ii % 10 == 0 ? null : __bdCodec.decode(BigDecimalColumnEncoded, 0, BigDecimalColumnEncoded.length)",
+                    "BigIntegerColumn = ii % 10 == 0 ? null : ii % 2 == 0 ? java.math.BigInteger.valueOf(ii*512) : java.math.BigInteger.valueOf(-1*ii*512)",
+                    "BigIntegerColumnEncoded = ii % 10 == 0 ? null : __biCodec.encode(BigIntegerColumn)",
+                    "BigIntegerColumnDecoded = ii % 10 == 0 ? null : __biCodec.decode(BigIntegerColumnEncoded, 0, BigIntegerColumnEncoded.length)");
+
+            // Set codecs for each column
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .addColumnCodec("LocalDateColumn", "io.deephaven.util.codec.LocalDateCodec")
+                    .addColumnCodec("CompactLocalDateColumn", "io.deephaven.util.codec.LocalDateCodec", "Compact")
+                    .addColumnCodec("LocalTimeColumn", "io.deephaven.util.codec.LocalTimeCodec")
+                    .addColumnCodec("ZonedDateTimeColumn", "io.deephaven.util.codec.ZonedDateTimeCodec")
+                    .addColumnCodec("StringColumn", "io.deephaven.util.codec.UTF8StringAsByteArrayCodec")
+                    .addColumnCodec("BigDecimalColumn", "io.deephaven.util.codec.BigDecimalCodec", "20,1,allowrounding")
+                    .addColumnCodec("BigIntegerColumn", "io.deephaven.util.codec.BigIntegerCodec")
+                    .build();
+
+            {
+                // Verify that we can write and read the table with codecs
+                final File dest = new File(rootFile, "ReferenceParquetWithCodecData.parquet");
+                ParquetTools.writeTable(source, dest.getPath(), instructions);
+                checkSingleTable(source, dest);
+                dest.delete();
+            }
+            {
+                // Verify that we can read the reference parquet file with these codecs
+                final String path =
+                        ParquetTableReadWriteTest.class.getResource("/ReferenceParquetWithCodecData.parquet").getFile();
+                final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+                assertTableEquals(source, fromDisk);
+            }
+        }
+
+        {
+            // Repeat similar tests for RowSetCodec
+            final Table source = TableTools.emptyTable(10_000).updateView(
+                    "A = (int)(ii%3)",
+                    "B = (double)(ii%2)",
+                    "C = ii");
+            final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+            final File destFile = new File(rootFile, "ReferenceParquetWithRowsetCodecData.parquet");
+            final Table indexTable = dataIndex.table();
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .addColumnCodec(INDEX_ROW_SET_COLUMN_NAME, "io.deephaven.engine.table.impl.dataindex.RowSetCodec")
+                    .build();
+            {
+                writeTable(indexTable, destFile.getPath(), instructions);
+                final Table fromDisk = readTable(destFile.getPath());
+                assertTableEquals(indexTable, fromDisk);
+                destFile.delete();
+            }
+            {
+                final String path =
+                        ParquetTableReadWriteTest.class.getResource("/ReferenceParquetWithRowsetCodecData.parquet")
+                                .getFile();
+                final Table fromDiskWithCodec = readParquetFileFromGitLFS(new File(path));
+                assertTableEquals(indexTable, fromDiskWithCodec);
+            }
         }
     }
 
