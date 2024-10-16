@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Iterative average operator.
+ * Iterative add only min max operator.
  */
 class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final IntegerArraySource resultColumn;
@@ -42,46 +42,48 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
         // endregion resultColumn initialization
     }
 
-    private int min(IntChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static int min(IntChunk<?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         int value = QueryConstants.NULL_INT;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final int candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_INT) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (IntComparisons.lt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (IntComparisons.lt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private int max(IntChunk<?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static int max(IntChunk<?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         int value = QueryConstants.NULL_INT;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final int candidate = values.get(ii);
-            if (candidate != QueryConstants.NULL_INT) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (IntComparisons.gt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (IntComparisons.gt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private int min(int a, int b) {
-        return IntComparisons.lt(a, b) ? a : b;
+    private static int min(int a, int b) {
+        return IntComparisons.leq(a, b) ? a : b;
     }
 
-    private int max(int a, int b) {
-        return IntComparisons.gt(a, b) ? a : b;
+    private static int max(int a, int b) {
+        return IntComparisons.geq(a, b) ? a : b;
     }
 
     @Override
@@ -135,22 +137,22 @@ class IntChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOper
         if (chunkSize == 0) {
             return false;
         }
-        final MutableInt chunkNonNull = new MutableInt(0);
+        final MutableInt chunkNonNullNan = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
-        final int chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
-                : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.get() == 0) {
+        final int chunkValue = minimum ? min(values, chunkNonNullNan, chunkStart, chunkEnd)
+                : max(values, chunkNonNullNan, chunkStart, chunkEnd);
+        if (chunkNonNullNan.get() == 0) {
             return false;
         }
 
         final int result;
         final int oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == QueryConstants.NULL_INT) {
-            // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
-            // that it is in fact empty and we should use the value from the chunk
+        if (MinMaxHelper.isNullOrNan(oldValue)) {
+            // we exclude nulls (and NaNs) from the min/max calculation, therefore if the value in our min/max is null
+            // or NaN we know that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
-            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
+            result = minimum ? min(oldValue, chunkValue) : max(oldValue, chunkValue);
         }
         if (!IntComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
