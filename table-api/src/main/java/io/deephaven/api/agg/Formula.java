@@ -22,6 +22,10 @@ public abstract class Formula implements Aggregation {
         return ImmutableFormula.of(name, formula);
     }
 
+    public static Formula of(String name, String formula) {
+        return of(ColumnName.of(name), formula);
+    }
+
     @Parameter
     public abstract ColumnName column();
 

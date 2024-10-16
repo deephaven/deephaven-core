@@ -186,7 +186,7 @@ def formula(formula: str, formula_param: str = None, cols: Union[str, List[str]]
         an aggregation
     """
     if formula_param == None:
-        return Aggregation(j_agg_spec=_JAggSpec.formula(formula))
+        return Aggregation(j_aggregation=_JAggregation.AggFormula(formula))
     return Aggregation(j_agg_spec=_JAggSpec.formula(formula, formula_param), cols=cols)
 
 
