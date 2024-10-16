@@ -106,13 +106,34 @@ public class BarrageUtil {
     public static final ArrowType.Timestamp NANO_SINCE_EPOCH_TYPE =
             new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC");
 
-    /** The name of the attribute that indicates that a table is flat. */
+    /**
+     * The name of the attribute that indicates that a table is flat.
+     */
     public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
 
+    /**
+     * The Apache Arrow metadata prefix for Deephaven attributes.
+     */
     private static final String ATTR_DH_PREFIX = "deephaven:";
+
+    /**
+     * The deephaven metadata tag to indicate an attribute.
+     */
     private static final String ATTR_ATTR_TAG = "attribute";
+
+    /**
+     * The deephaven metadata tag to indicate an attribute's type.
+     */
     private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
+
+    /**
+     * The deephaven metadata tag to indicate the deephaven column type.
+     */
     private static final String ATTR_TYPE_TAG = "type";
+
+    /**
+     * The deephaven metadata tag to indicate the deephaven column component type.
+     */
     private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
@@ -462,12 +483,10 @@ public class BarrageUtil {
     }
 
     public static class ConvertedArrowSchema {
-        public final int nCols;
         public TableDefinition tableDef;
         public Map<String, Object> attributes;
 
-        public ConvertedArrowSchema(final int nCols) {
-            this.nCols = nCols;
+        public ConvertedArrowSchema() {
         }
 
         public ChunkType[] computeWireChunkTypes() {
@@ -540,7 +559,7 @@ public class BarrageUtil {
             final IntFunction<ArrowType> getArrowType,
             final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
             final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
-        final ConvertedArrowSchema result = new ConvertedArrowSchema(numColumns);
+        final ConvertedArrowSchema result = new ConvertedArrowSchema();
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
@@ -769,7 +788,7 @@ public class BarrageUtil {
     }
 
     public static void createAndSendStaticSnapshot(
-            BarrageMessageWriter.Factory messageWriterFactory,
+            BarrageMessageWriter.Factory bmwFactory,
             BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
@@ -830,14 +849,13 @@ public class BarrageUtil {
                     // send out the data. Note that although a `BarrageUpdateMetaData` object will
                     // be provided with each unique snapshot, vanilla Flight clients will ignore
                     // these and see only an incoming stream of batches
-                    try (final BarrageMessageWriter bsg =
-                            messageWriterFactory.newMessageWriter(msg, chunkWriters, metrics)) {
+                    try (final BarrageMessageWriter bmw = bmwFactory.newMessageWriter(msg, chunkWriters, metrics)) {
                         if (rsIt.hasMore()) {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                            listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
                                     msg.rowsIncluded, columns));
                         } else {
-                            listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
+                            listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     viewport, reverseViewport,
                                     msg.rowsIncluded, columns));
                         }
@@ -872,18 +890,18 @@ public class BarrageUtil {
     }
 
     public static void createAndSendSnapshot(
-            BarrageMessageWriter.Factory streamWriterFactory,
+            BarrageMessageWriter.Factory bwmFactory,
             BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
-            BarrageSnapshotOptions snapshotRequestOptions,
+            BarrageSnapshotOptions options,
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
-            createAndSendStaticSnapshot(streamWriterFactory, table, columns, viewport, reverseViewport,
-                    snapshotRequestOptions, listener, metrics);
+            createAndSendStaticSnapshot(bwmFactory, table, columns, viewport, reverseViewport,
+                    options, listener, metrics);
             return;
         }
 
@@ -911,12 +929,11 @@ public class BarrageUtil {
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
 
         // translate the viewport to keyspace and make the call
-        try (final BarrageMessageWriter bsg = streamWriterFactory.newMessageWriter(msg, chunkWriters, metrics);
+        try (final BarrageMessageWriter bmw = bwmFactory.newMessageWriter(msg, chunkWriters, metrics);
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {
-            listener.onNext(bsg.getSnapshotView(
-                    snapshotRequestOptions, viewport, reverseViewport, keySpaceViewport, columns));
+            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns));
         }
     }
 }
