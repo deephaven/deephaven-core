@@ -758,39 +758,31 @@ class Table(TableInterface, ServerObject):
         return super(Table, self).where_not_in(filter_table, cols)
     
     def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Table:
-        """The slice method creates a new table containing rows from the source table, from the first position
-        (inclusive) to the last position (exclusive). 
+        """Extracts a subset of a table by row positions into a new Table.
 
-        - If both first_position and last_position are positive, then both positions are counted from the beginning of 
-          the table.
-        - If both first_position and last_position are negative, then both positions are counted from the end of the 
-          table.
-        - If first_position is negative and last_position is 0, then first_position is counted from the end and the end 
-          is the size of the table.
-        - If first_position is positive and last_position is negative, then first_position is counted from the beginning
-          and last_position is counted from the end.
-        - If first_position is negative and last_position is positive, then first_position is counted from the end and 
-          last_position is counted from the beginning
+        If both the start and the stop are positive, then both are counted from the beginning of the table.
+        The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
+        The start must be less than or equal to the stop.
+
+        If the start is positive and the stop is negative, then the start is counted from the beginning of the
+        table, inclusively. The stop is counted from the end of the table. For example, slice(1, -1) includes all
+        rows but the first and last. If the stop is before the start, the result is an empty table.
+
+        If the start is negative, and the stop is zero, then the start is counted from the end of the table,
+        and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
+
+        If the start is negative and the stop is negative, they are both counted from the end of the
+        table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
-            first_position_inclusive (int): the first position (inclusive)
-            last_position_exclusive (int): the last position (exclusive)
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
 
         Returns:
-            a Table object
+            a new Table
 
         Raises:
             DHError
-
-        Examples:
-            >>> table.slice(0, 5)    # first 5 rows
-            >>> table.slice(-5, 0)   # last 5 rows
-            >>> table.slice(2, 6)    # rows from index 2 to 5
-            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
-            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
-            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
-            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
-            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
         return super(Table, self).slice(first_position_inclusive, last_position_exclusive)
 
