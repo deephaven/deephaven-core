@@ -68,6 +68,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     ticketRouter.resolve(session, request.getTableId(), "tableId");
 
             session.newExport(request.getResultId(), "resultId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(targetTable)
                     .onError(responseObserver)
@@ -98,6 +99,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
 
             session.newExport(request.getResultId(), "resultId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable)
                     .onError(responseObserver)
@@ -143,6 +145,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     ticketRouter.resolve(session, request.getKeyTableTicket(), "keyTable");
 
             session.newExport(request.getResultId(), "resultId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable, keys)
                     .onError(responseObserver)

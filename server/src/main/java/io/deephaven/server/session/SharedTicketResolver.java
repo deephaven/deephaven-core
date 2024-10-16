@@ -147,6 +147,7 @@ public class SharedTicketResolver extends TicketResolverBase {
     @Override
     public <T> void publish(
             final SessionState session,
+            final String description,
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish,
