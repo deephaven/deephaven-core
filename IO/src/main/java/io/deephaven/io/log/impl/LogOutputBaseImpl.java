@@ -109,6 +109,7 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     @Override // from LogOutput
     public LogOutput clear() {
         for (int i = 0; i < bufferCount; ++i) {
+            buffers[i].clear();
             bufferPool.give(buffers[i]);
             buffers[i] = null;
         }
