@@ -9,6 +9,7 @@ import jpy
 
 import pyarrow as pa
 
+from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
 
@@ -179,9 +180,15 @@ class PythonTableDataService(JObjectWrapper):
 
         Returns:
             Table: a new table
+
+        Raises:
+            DHError
         """
         j_table_key = _JTableKeyImpl(table_key)
-        return Table(self._j_tbl_service.makeTable(j_table_key, live))
+        try:
+            return Table(self._j_tbl_service.makeTable(j_table_key, live))
+        except Exception as e:
+            raise DHError(e, message=f"failed to make a table for the key {table_key.key}") from e
 
     def _table_schema(self, table_key: TableKey) -> jpy.JType:
         """ Returns the table schema and the partition schema for the table with the given table key as two serialized
