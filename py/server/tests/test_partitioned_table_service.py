@@ -54,7 +54,7 @@ class TestBackend(PartitionedTableServiceBackend):
     def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                       col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
         if table_key.key == "test":
-            return pa.Table.from_arrays(self._partitions[table_location_key].column(col).slice(offset, max_rows))
+            return self._partitions[table_location_key].select([col]).slice(offset, max_rows)
         else:
             return pa.table([])
 
@@ -117,6 +117,8 @@ class TestBackend(PartitionedTableServiceBackend):
             return lambda: None
 
         self._partitions_size_subscriptions[table_location_key] = True
+        th = threading.Thread(target=self._th_partition_size_changes, args=(table_key, table_location_key, callback))
+        th.start()
 
         def _cancellation_callback():
             self._partitions_size_subscriptions[table_location_key] = False
