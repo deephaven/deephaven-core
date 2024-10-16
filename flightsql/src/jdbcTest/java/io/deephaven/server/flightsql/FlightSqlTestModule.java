@@ -68,10 +68,16 @@ public class FlightSqlTestModule {
     }
 
     @Provides
-    Scheduler provideScheduler() {
+    @Singleton
+    ScheduledExecutorService provideExecutorService() {
+        return Executors.newScheduledThreadPool(1);
+    }
+
+    @Provides
+    Scheduler provideScheduler(ScheduledExecutorService concurrentExecutor) {
         return new Scheduler.DelegatingImpl(
                 Executors.newSingleThreadExecutor(),
-                Executors.newScheduledThreadPool(1),
+                concurrentExecutor,
                 Clock.system());
     }
 
@@ -91,12 +97,6 @@ public class FlightSqlTestModule {
     @Named("grpc.maxInboundMessageSize")
     int provideMaxInboundMessageSize() {
         return 1024 * 1024;
-    }
-
-    @Provides
-    @Nullable
-    ScheduledExecutorService provideExecutorService() {
-        return null;
     }
 
     @Provides

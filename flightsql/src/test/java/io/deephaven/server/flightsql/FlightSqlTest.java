@@ -34,7 +34,6 @@ import org.apache.arrow.flight.FlightStatusCode;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.flight.Result;
 import org.apache.arrow.flight.SchemaResult;
-import org.apache.arrow.flight.Ticket;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlClient.PreparedStatement;
@@ -87,8 +86,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -178,7 +175,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     BufferAllocator bufferAllocator;
-    ScheduledExecutorService sessionScheduler;
     FlightClient flightClient;
     FlightSqlClient flightSqlClient;
 
@@ -193,7 +189,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         super.setUp();
         ManagedChannel channel = channelBuilder().build();
         register(channel);
-        sessionScheduler = Executors.newScheduledThreadPool(2);
         bufferAllocator = new RootAllocator();
         // Note: this pattern of FlightClient owning the ManagedChannel does not mesh well with the idea that some
         // other entity may be managing the authentication lifecycle. We'd prefer to pass in the stubs or "intercepted"
@@ -228,7 +223,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         // this also closes flightClient
         flightSqlClient.close();
         bufferAllocator.close();
-        sessionScheduler.shutdown();
         super.tearDown();
     }
 

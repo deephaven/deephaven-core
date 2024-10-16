@@ -286,7 +286,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // todo: scope, nugget?
         final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
         final TicketHandler handler = ticketHandler(session, message);
-        final Table table = handler.takeTable();
+        final Table table = handler.takeTable(session);
         // noinspection unchecked
         return (ExportObject<T>) SessionState.wrapAsExport(table);
     }
@@ -438,7 +438,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         FlightInfo flightInfo(FlightDescriptor descriptor);
 
-        Table takeTable();
+        Table takeTable(SessionState session);
     }
 
     /**
@@ -503,7 +503,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
 
             @Override
-            public Table takeTable() {
+            public Table takeTable(SessionState session) {
                 final Table table = CommandHandlerFixedBase.this.table(command);
                 final long totalRecords = totalRecords();
                 if (totalRecords != -1) {
@@ -634,8 +634,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public synchronized final Table takeTable() {
+        public synchronized final Table takeTable(SessionState session) {
             try {
+                if (this.session != session) {
+                    // TODO: what if original session is null? (should not be allowed?)
+                    throw error(Code.UNAUTHENTICATED, "Must use same session for queries");
+                }
                 return table;
             } finally {
                 close();

@@ -315,7 +315,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final SessionService.TokenExpiration exp = service.refreshToken(session);
                 if (exp != null) {
                     md.put(SESSION_HEADER_KEY, Auth2Constants.BEARER_PREFIX + exp.token.toString());
-                    if (setDeephavenAuthCookie || true) {
+                    if (setDeephavenAuthCookie) {
                         AuthCookie.setDeephavenAuthCookie(md, exp.token);
                     }
                 }
