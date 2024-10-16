@@ -15,8 +15,11 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Map;
 
+import static io.deephaven.engine.table.Table.APPEND_ONLY_TABLE_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.BLINK_TABLE_ATTRIBUTE;
+import static java.lang.Boolean.TRUE;
 
 /**
  * This class provides a single method to adapt an {@link Table#ADD_ONLY_TABLE_ATTRIBUTE add-only} or
@@ -42,14 +45,17 @@ public final class AddOnlyToBlinkTableAdapter {
             return table;
         }
 
+        Table addOnlyTable;
         if (!Boolean.TRUE.equals(table.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE))
-                && !Boolean.TRUE.equals(table.getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE))) {
-            throw new IllegalArgumentException("Argument table is neither add-only nor append-only");
+                && !Boolean.TRUE.equals(table.getAttribute(APPEND_ONLY_TABLE_ATTRIBUTE))) {
+            addOnlyTable = table.withAttributes(Map.of(Table.APPEND_ONLY_TABLE_ATTRIBUTE, TRUE));
+        } else {
+            addOnlyTable = table;
         }
 
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
         final MutableObject<AddOnlyToBlinkListener> listenerHolder = new MutableObject<>();
-        final BaseTable<?> coalesced = (BaseTable<?>) table.coalesce();
+        final BaseTable<?> coalesced = (BaseTable<?>) addOnlyTable.coalesce();
         final OperationSnapshotControl snapshotControl =
                 coalesced.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
@@ -58,14 +64,14 @@ public final class AddOnlyToBlinkTableAdapter {
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table
                     final TrackingRowSet resultRowSet = usePrev
-                            ? table.getRowSet().copyPrev().toTracking()
-                            : table.getRowSet().copy().toTracking();
-                    final QueryTable result = new QueryTable(resultRowSet, table.getColumnSourceMap());
+                            ? addOnlyTable.getRowSet().copyPrev().toTracking()
+                            : addOnlyTable.getRowSet().copy().toTracking();
+                    final QueryTable result = new QueryTable(resultRowSet, addOnlyTable.getColumnSourceMap());
                     result.setRefreshing(true);
                     result.setAttribute(BLINK_TABLE_ATTRIBUTE, true);
 
                     final ListenerRecorder recorder =
-                            new ListenerRecorder("AddOnlyToBlinkListenerRecorder", table, null);
+                            new ListenerRecorder("AddOnlyToBlinkListenerRecorder", addOnlyTable, null);
                     final AddOnlyToBlinkListener listener = new AddOnlyToBlinkListener(recorder, result);
                     recorder.setMergedListener(listener);
                     result.addParentReference(listener);
