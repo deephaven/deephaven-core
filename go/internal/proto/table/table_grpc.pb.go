@@ -186,8 +186,8 @@ type TableServiceClient interface {
 	// primary use case for this is the Deephaven Web UI.
 	ComputeColumnStatistics(ctx context.Context, in *ColumnStatisticsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	//*
-	// Returns a new table representing a sliced subset of the original table. The start row is inclusive,
-	// and the end row is exclusive. If a negative value is given, then the row is counted from the end of
+	// Returns a new table representing a sliced subset of the original table. The start position is inclusive
+	// and the end position is exclusive. If a negative value is given, then the position is counted from the end of
 	// the table.
 	Slice(ctx context.Context, in *SliceRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 }
@@ -829,8 +829,8 @@ type TableServiceServer interface {
 	// primary use case for this is the Deephaven Web UI.
 	ComputeColumnStatistics(context.Context, *ColumnStatisticsRequest) (*ExportedTableCreationResponse, error)
 	//*
-	// Returns a new table representing a sliced subset of the original table. The start row is inclusive,
-	// and the end row is exclusive. If a negative value is given, then the row is counted from the end of
+	// Returns a new table representing a sliced subset of the original table. The start position is inclusive
+	// and the end position is exclusive. If a negative value is given, then the position is counted from the end of
 	// the table.
 	Slice(context.Context, *SliceRequest) (*ExportedTableCreationResponse, error)
 	mustEmbedUnimplementedTableServiceServer()

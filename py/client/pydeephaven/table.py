@@ -757,21 +757,24 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).where_not_in(filter_table, cols)
     
-    def slice(self, start: int, end: int) -> Table:
-        """The slice method creates a new table containing rows from the source table, from the start index (inclusive)
-        to the end index (exclusive). 
+    def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Table:
+        """The slice method creates a new table containing rows from the source table, from the first position
+        (inclusive) to the last position (exclusive). 
 
-        - If both start and end are positive, both rows are counted from the beginning of the table.
-        - If both start and end are negative, both rows are counted from the end of the table.
-        - If start is negative and end is 0, the start is counted from the end and the end is the size of the table.
-        - If start is positive and end is negative, the start is counted from the beginning and the end is counted from 
-          the end.
-        - If start is negative and end is postiive, the start is counted from the end and the end is counted from the 
-          beginning
+        - If both first_position and last_position are positive, then both positions are counted from the beginning of 
+          the table.
+        - If both first_position and last_position are negative, then both positions are counted from the end of the 
+          table.
+        - If first_position is negative and last_position is 0, then first_position is counted from the end and the end 
+          is the size of the table.
+        - If first_position is positive and last_position is negative, then first_position is counted from the beginning
+          and last_position is counted from the end.
+        - If first_position is negative and last_position is positive, then first_position is counted from the end and 
+          last_position is counted from the beginning
 
         Args:
-            start (int): the start index (inclusive)
-            end (int): the end index (exclusive)
+            first_position_inclusive (int): the first position (inclusive)
+            last_position_exclusive (int): the last position (exclusive)
 
         Returns:
             a Table object
@@ -789,7 +792,7 @@ class Table(TableInterface, ServerObject):
             >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
             >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
-        return super(Table, self).slice(start, end)
+        return super(Table, self).slice(first_position_inclusive, last_position_exclusive)
 
 
 class InputTable(Table):

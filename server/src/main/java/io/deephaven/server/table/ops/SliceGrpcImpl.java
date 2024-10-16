@@ -34,11 +34,13 @@ public class SliceGrpcImpl extends GrpcTableOperation<SliceRequest> {
         GrpcErrorHelper.checkHasNoUnknownFields(request);
         Common.validate(request.getSourceId());
 
-        if ((request.getStartRow() >= 0 && request.getEndRow() >= 0 && request.getEndRow() < request.getStartRow())) {
+        if ((request.getFirstPositionInclusive() >= 0 && request.getLastPositionExclusive() >= 0
+                && request.getLastPositionExclusive() < request.getFirstPositionInclusive())) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Cannot slice with a non-negative start position that is after a non-negative end position.");
         }
-        if ((request.getStartRow() < 0 && request.getEndRow() < 0 && request.getEndRow() < request.getStartRow())) {
+        if ((request.getFirstPositionInclusive() < 0 && request.getLastPositionExclusive() < 0
+                && request.getLastPositionExclusive() < request.getFirstPositionInclusive())) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Cannot slice with a negative start position that is after a negative end position.");
         }
@@ -48,6 +50,6 @@ public class SliceGrpcImpl extends GrpcTableOperation<SliceRequest> {
     public final Table create(final SliceRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table sourceTable = sourceTables.get(0).get();
-        return sourceTable.slice(request.getStartRow(), request.getEndRow());
+        return sourceTable.slice(request.getFirstPositionInclusive(), request.getLastPositionExclusive());
     }
 }

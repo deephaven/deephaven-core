@@ -43,8 +43,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(0)
-                .setEndRow(2)
+                .setFirstPositionInclusive(0)
+                .setLastPositionExclusive(2)
                 .build();
         final ExportedTableCreationResponse response = send(request);
         assertThat(response.getSuccess()).isTrue();
@@ -58,8 +58,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(2)
-                .setEndRow(0)
+                .setFirstPositionInclusive(2)
+                .setLastPositionExclusive(0)
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "Cannot slice with a non-negative start position that is after a non-negative end position.");
@@ -71,8 +71,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(-2)
-                .setEndRow(-1)
+                .setFirstPositionInclusive(-2)
+                .setLastPositionExclusive(-1)
                 .build();
         final ExportedTableCreationResponse response = send(request);
         assertThat(response.getSuccess()).isTrue();
@@ -86,8 +86,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(-1)
-                .setEndRow(-2)
+                .setFirstPositionInclusive(-1)
+                .setLastPositionExclusive(-2)
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "Cannot slice with a negative start position that is after a negative end position.");
@@ -99,8 +99,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(-2)
-                .setEndRow(2)
+                .setFirstPositionInclusive(-2)
+                .setLastPositionExclusive(2)
                 .build();
         final ExportedTableCreationResponse response = send(request);
         assertThat(response.getSuccess()).isTrue();
@@ -114,8 +114,8 @@ public class SliceGrpcTest extends GrpcTableOperationTestBase<SliceRequest> {
         final SliceRequest request = SliceRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(emptyTable)
-                .setStartRow(2)
-                .setEndRow(-2)
+                .setFirstPositionInclusive(2)
+                .setLastPositionExclusive(-2)
                 .build();
         final ExportedTableCreationResponse response = send(request);
         assertThat(response.getSuccess()).isTrue();

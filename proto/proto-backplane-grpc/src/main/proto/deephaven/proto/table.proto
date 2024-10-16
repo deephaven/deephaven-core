@@ -267,8 +267,8 @@ service TableService {
   rpc ComputeColumnStatistics(ColumnStatisticsRequest) returns (ExportedTableCreationResponse) {}
 
   /**
-   * Returns a new table representing a sliced subset of the original table. The start row is inclusive,
-   * and the end row is exclusive. If a negative value is given, then the row is counted from the end of
+   * Returns a new table representing a sliced subset of the original table. The start position is inclusive
+   * and the end position is exclusive. If a negative value is given, then the position is counted from the end of
    * the table.
    */
   rpc Slice(SliceRequest) returns (ExportedTableCreationResponse) {}
@@ -1294,8 +1294,8 @@ message ColumnStatisticsRequest {
 message SliceRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
-  sint64 start_row = 3 [jstype=JS_STRING];
-  sint64 end_row = 4 [jstype=JS_STRING];
+  sint64 first_position_inclusive = 3 [jstype=JS_STRING];
+  sint64 last_position_exclusive = 4 [jstype=JS_STRING];
 }
 
 message BatchTableRequest {

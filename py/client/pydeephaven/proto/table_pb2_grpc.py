@@ -662,8 +662,8 @@ class TableServiceServicer(object):
 
     def Slice(self, request, context):
         """*
-        Returns a new table representing a sliced subset of the original table. The start row is inclusive,
-        and the end row is exclusive. If a negative value is given, then the row is counted from the end of
+        Returns a new table representing a sliced subset of the original table. The start position is inclusive
+        and the end position is exclusive. If a negative value is given, then the position is counted from the end of
         the table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
