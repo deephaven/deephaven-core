@@ -17,7 +17,7 @@ def add_only_to_blink(table: Table) -> Table:
     """ Creates a blink table from the given add-only table.
 
     Note that the use of this function should be limited to add-only tables that are not fully in-memory, or when
-    blink table specific aggregation semantics is desired.
+    blink table specific aggregation semantics are desired.
 
     Args:
         table (Table): the source table
