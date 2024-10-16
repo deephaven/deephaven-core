@@ -45,7 +45,7 @@ public final class AddOnlyToBlinkTableAdapter {
             return table;
         }
 
-        Table addOnlyTable;
+        final Table addOnlyTable;
         if (!Boolean.TRUE.equals(table.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE))
                 && !Boolean.TRUE.equals(table.getAttribute(APPEND_ONLY_TABLE_ATTRIBUTE))) {
             addOnlyTable = table.withAttributes(Map.of(Table.ADD_ONLY_TABLE_ATTRIBUTE, TRUE));
