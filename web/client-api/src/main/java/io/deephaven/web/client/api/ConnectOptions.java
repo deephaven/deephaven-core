@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Function;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -17,11 +18,13 @@ public class ConnectOptions {
     /**
      * Optional map of http header names and values to send to the server with each request.
      */
+    @JsNullable
     public JsPropertyMap<String> headers = Js.uncheckedCast(JsPropertyMap.of());
 
     /**
      * True to enable debug logging. At this time, only enables logging for gRPC calls.
      */
+    @JsNullable
     public boolean debug = false;
 
     /**
@@ -30,12 +33,14 @@ public class ConnectOptions {
      * <p>
      * Defaults to null, indicating that the server URL should be checked to see if we connect with fetch or websockets.
      */
+    @JsNullable
     public Boolean useWebsockets;
 
     /**
      * Optional fetch implementation to use instead of the global {@code fetch()} call, allowing callers to provide a
      * polyfill rather than add a new global.
      */
+    @JsNullable
     public Function fetch;
 
     public ConnectOptions() {
