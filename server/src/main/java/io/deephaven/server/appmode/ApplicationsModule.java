@@ -8,6 +8,7 @@ import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.app.GcApplication;
 import io.deephaven.appmode.ApplicationState;
+import io.deephaven.server.grpc_api_app.GrpcApiApplication;
 
 @Module
 public interface ApplicationsModule {
@@ -16,5 +17,11 @@ public interface ApplicationsModule {
     @IntoSet
     static ApplicationState.Factory providesGcApplication() {
         return new GcApplication();
+    }
+
+    @Provides
+    @IntoSet
+    static ApplicationState.Factory providesGrpcApiApplication() {
+        return new GrpcApiApplication();
     }
 }

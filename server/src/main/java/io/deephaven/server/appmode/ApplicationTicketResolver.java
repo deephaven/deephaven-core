@@ -88,7 +88,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             throw newNotFoundSRE(logId, id);
         }
         // noinspection unchecked
-        return SessionState.wrapAsExport((T) value);
+        return SessionState.wrapAsExport((T) value, "ApplicationTicketResolver#resolve");
     }
 
     @Override
@@ -119,7 +119,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             }
         }
 
-        return SessionState.wrapAsExport(info);
+        return SessionState.wrapAsExport(info, "ApplicationTicketResolver#flightInfoFor");
     }
 
     @Override
