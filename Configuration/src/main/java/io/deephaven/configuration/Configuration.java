@@ -40,6 +40,10 @@ public class Configuration extends PropertyFile {
         return INSTANCE;
     }
 
+    public static void reset() {
+        INSTANCE = null;
+    }
+
     @SuppressWarnings("UnusedReturnValue")
     public static Configuration newConfigurationForTesting() {
         return new Configuration();
