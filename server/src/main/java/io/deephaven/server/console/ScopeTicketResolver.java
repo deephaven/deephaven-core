@@ -123,7 +123,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             }
         }
 
-        return SessionState.wrapAsExport(export, "ScopeTicketResolver#resolve");
+        return SessionState.wrapAsExport(export, "ScopeTicketResolver#resolve(" + scopeName + ")");
     }
 
     @Override
