@@ -4,6 +4,8 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.impl.Flight.Action;
@@ -17,6 +19,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 public final class ActionRouter {
+
+    private static final Logger log = LoggerFactory.getLogger(ActionRouter.class);
 
     private final Set<ActionResolver> resolvers;
 

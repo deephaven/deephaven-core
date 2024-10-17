@@ -73,6 +73,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         try (
                 final Connection connection = connect(true);
                 final Statement statement = connection.createStatement()) {
+            statement.close();
             try {
                 statement.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
                 failBecauseExceptionWasNotThrown(SQLException.class);

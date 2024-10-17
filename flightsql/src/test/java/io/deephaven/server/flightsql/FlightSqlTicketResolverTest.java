@@ -97,7 +97,9 @@ public class FlightSqlTicketResolverTest {
         checkDefinition(CommandGetCatalogsImpl.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
         checkDefinition(CommandGetDbSchemasImpl.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
         // TODO: we can't use the straight schema b/c it's BINARY not byte[], and we don't know how to natively map
-        checkDefinition(CommandGetTablesImpl.DEFINITION, Schemas.GET_TABLES_SCHEMA);
+        // checkDefinition(CommandGetTablesImpl.DEFINITION, Schemas.GET_TABLES_SCHEMA);
+        checkDefinition(CommandGetTablesImpl.DEFINITION_NO_SCHEMA, Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
+
     }
 
     private static void checkActionType(String actionType, ActionType expected) {
