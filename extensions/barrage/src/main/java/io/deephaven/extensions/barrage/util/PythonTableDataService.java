@@ -42,13 +42,7 @@ import org.jpy.PyObject;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.PrimitiveIterator;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -222,8 +216,10 @@ public class PythonTableDataService extends AbstractTableDataService {
             if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
                 throw new IllegalArgumentException("byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
             }
-            // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be valid
-            // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need
+            // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be
+            // valid
+            // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we
+            // need
             // to make a copy of it to use after the return of this method.
             final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -258,7 +254,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                     }
 
                     try (final ChunkBoxer.BoxerKernel boxer =
-                                 ChunkBoxer.getBoxer(columnValues.getChunkType(), columnValues.size())) {
+                            ChunkBoxer.getBoxer(columnValues.getChunkType(), columnValues.size())) {
                         // noinspection unchecked
                         final ObjectChunk<Comparable<?>, ? extends Values> boxedValues =
                                 (ObjectChunk<Comparable<?>, ? extends Values>) boxer.box(columnValues);
@@ -356,10 +352,13 @@ public class PythonTableDataService extends AbstractTableDataService {
                     for (int ii = 1; ii < messages.length; ++ii) {
                         final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[ii]);
                         if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
-                            throw new IllegalArgumentException("byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
+                            throw new IllegalArgumentException(
+                                    "byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
                         }
-                        // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be assumed to be valid
-                        // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need
+                        // The BarrageProtoUtil.MessageInfo instance (especially originated from Python) can't be
+                        // assumed to be valid
+                        // after the return of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is
+                        // resolved, we need
                         // to make a copy of it to use after the return of this method.
                         final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -475,7 +474,7 @@ public class PythonTableDataService extends AbstractTableDataService {
 
             final TableDefinition tableDef = tableAndPartitionColumnSchemas.tableSchema.tableDef;
             final TableDefinition partitionDef = tableAndPartitionColumnSchemas.partitionSchema.tableDef;
-            final Map<String, ColumnDefinition<?>> columns = new HashMap<>(tableDef.numColumns());
+            final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(tableDef.numColumns());
 
             for (final ColumnDefinition<?> column : tableDef.getColumns()) {
                 columns.put(column.getName(), column);
