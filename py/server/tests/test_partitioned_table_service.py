@@ -13,7 +13,7 @@ import pyarrow.compute as pc
 
 from deephaven import new_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, string_col, \
-    datetime_col, bool_col
+    datetime_col, bool_col, ColumnType
 from deephaven.execution_context import get_exec_ctx, ExecutionContext
 from deephaven.experimental.partitioned_table_service import PartitionedTableServiceBackend, TableKey, \
     PartitionedTableLocationKey, PythonTableDataService
@@ -75,7 +75,7 @@ class TestBackend(PartitionedTableServiceBackend):
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
             callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
-            time.sleep(1)
+            time.sleep(0.1)
 
     def subscribe_to_new_partitions(self, table_key: TableKey, callback) -> Callable[[], None]:
         if table_key.key != "test":
@@ -100,11 +100,12 @@ class TestBackend(PartitionedTableServiceBackend):
 
         while self._partitions_size_subscriptions[table_location_key]:
             pa_table = self._partitions[table_location_key]
-            rbs = pa_table.to_batches().append(pa_table.to_batches()[0])
+            rbs = pa_table.to_batches()
+            rbs.append(pa_table.to_batches()[0])
             new_pa_table = pa.Table.from_batches(rbs)
             self._partitions[table_location_key] = new_pa_table
             callback(new_pa_table.num_rows)
-            time.sleep(1)
+            time.sleep(0.1)
 
 
     def subscribe_to_partition_size_changes(self, table_key: TableKey,
@@ -168,38 +169,23 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
         self.assertIsNotNone(table)
-        self.assertEqual(table.columns, self.test_table.columns)
-
-    def test_make_static_table_with_partition_schema_existing_partitions(self):
-        pc_schema = pa.schema(
-            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=False).coalesce()
-        self.assertIsNotNone(table)
-        self.assertEqual(table.columns, self.test_table.columns)
-        # TODO this is failing due to a TODO in the Java code
-        # self.assertEqual(table.size, 2)
+        self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
+        self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
+        self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+        self.assertEqual(table.size, 2)
 
     def test_make_live_table_with_partition_schema(self):
         pc_schema = pa.schema(
-            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = PythonTableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True)
         self.assertIsNotNone(table)
-        self.assertEqual(table.columns, self.test_table.columns)
-
-    def stest_make_live_table_with_partition_schema_existing_partitions(self):
-        pc_schema = pa.schema(
-            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.int32())])
-        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=True).coalesce()
-        self.assertIsNotNone(table)
-        self.assertEqual(table.columns, self.test_table.columns)
-        # TODO this is failing due to a TODO in the Java code
-        # self.assertEqual(table.size, 2)
+        self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
+        self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
+        self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+        self.wait_ticking_table_update(table, 20, 5)
+        self.assertGreaterEqual(table.size, 20)
 
 
 if __name__ == '__main__':
