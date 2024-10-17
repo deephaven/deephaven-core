@@ -79,17 +79,20 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.append(tableIdentifier, source, writeInstructions);
         Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(source, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(1);
+        verifySnapshots(tableIdentifier, List.of("append"));
 
-        // Append more data
+        // Append more data with different compression codec
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        catalogAdapter.append(tableIdentifier, moreData, writeInstructions);
+        final IcebergWriteInstructions writeInstructionsLZ4 = IcebergParquetWriteInstructions.builder()
+                .compressionCodecName("LZ4")
+                .build();
+        catalogAdapter.append(tableIdentifier, moreData, writeInstructionsLZ4);
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         final Table expected = TableTools.merge(moreData, source);
         assertTableEquals(expected, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(2);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
 
         // Append an empty table
         final Table emptyTable = TableTools.emptyTable(0)
@@ -98,18 +101,21 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.append(tableIdentifier, emptyTable, writeInstructions);
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(expected, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(3);
+        verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
 
-        // Append multiple tables in a single call
+        // Append multiple tables in a single call with different compression codec
         final Table someMoreData = TableTools.emptyTable(3)
                 .update("intCol = (int) 5 * i + 40",
                         "doubleCol = (double) 5.5 * i + 40");
+        final IcebergWriteInstructions writeInstructionsGZIP = IcebergParquetWriteInstructions.builder()
+                .compressionCodecName("GZIP")
+                .build();
         catalogAdapter.append(tableIdentifier, new Table[] {someMoreData, moreData, emptyTable},
-                writeInstructions);
+                writeInstructionsGZIP);
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         final Table expected2 = TableTools.merge(someMoreData, moreData, expected);
         assertTableEquals(expected2, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(4);
+        verifySnapshots(tableIdentifier, List.of("append", "append", "append", "append"));
     }
 
     @Test
@@ -129,12 +135,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.overwrite(tableIdentifier, source, writeInstructions);
         Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(source, fromIceberg);
-        {
-            final Iterable<Snapshot> snapshots =
-                    catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots();
-            assertThat(snapshots).hasSize(1);
-            assertThat(snapshots.iterator().next().operation()).isEqualTo("append");
-        }
+        verifySnapshots(tableIdentifier, List.of("append"));
 
         // Overwrite with more data
         final Table moreData = TableTools.emptyTable(5)
@@ -143,16 +144,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.overwrite(tableIdentifier, moreData, writeInstructions);
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(moreData, fromIceberg);
-        // 2 snapshots added, one for the delete and other for append
-        {
-            final Iterable<Snapshot> snapshots =
-                    catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots();
-            assertThat(snapshots).hasSize(3);
-            final Iterator<Snapshot> snapshotIter = snapshots.iterator();
-            assertThat(snapshotIter.next().operation()).isEqualTo("append");
-            assertThat(snapshotIter.next().operation()).isEqualTo("delete");
-            assertThat(snapshotIter.next().operation()).isEqualTo("append");
-        }
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
 
         // Overwrite with an empty table
         final Table emptyTable = TableTools.emptyTable(0)
@@ -161,7 +153,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.overwrite(tableIdentifier, emptyTable, writeInstructions);
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(emptyTable, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(5);
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite"));
 
         // Overwrite with multiple tables in a single call
         final Table someMoreData = TableTools.emptyTable(3)
@@ -172,7 +164,17 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         final Table expected2 = TableTools.merge(someMoreData, moreData);
         assertTableEquals(expected2, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(7);
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite", "overwrite"));
+    }
+
+    private void verifySnapshots(final String tableIdentifier, final List<String> expectedOperations) {
+        final Iterable<Snapshot> snapshots =
+                catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots();
+        assertThat(snapshots).hasSize(expectedOperations.size());
+        final Iterator<Snapshot> snapshotIter = snapshots.iterator();
+        for (final String expectedOperation : expectedOperations) {
+            assertThat(snapshotIter.next().operation()).isEqualTo(expectedOperation);
+        }
     }
 
     @Test
@@ -185,10 +187,13 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .createTableIfNotExist(true)
                 .verifySchema(true)
                 .build();
-        catalogAdapter.append(tableIdentifier, source, writeInstructionsWithSchemaMatching);
-        Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertTableEquals(source, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(1);
+
+        {
+            catalogAdapter.append(tableIdentifier, source, writeInstructionsWithSchemaMatching);
+            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            assertTableEquals(source, fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append"));
+        }
 
         final Table differentSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10");
@@ -201,19 +206,32 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         // By default, schema verification should be disabled for overwriting
         final IcebergWriteInstructions writeInstructionsWithoutSchemaMatching =
                 IcebergParquetWriteInstructions.builder().build();
-        catalogAdapter.overwrite(tableIdentifier, differentSource, writeInstructionsWithoutSchemaMatching);
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertTableEquals(differentSource, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(3);
+        {
+            catalogAdapter.overwrite(tableIdentifier, differentSource, writeInstructionsWithoutSchemaMatching);
+            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            assertTableEquals(differentSource, fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
+        }
 
         // Append more data to this table with the updated schema
-        final Table moreData = TableTools.emptyTable(5)
-                .update("intCol = (int) 3 * i + 20");
-        catalogAdapter.append(tableIdentifier, moreData, writeInstructionsWithoutSchemaMatching);
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        final Table expected = TableTools.merge(moreData, differentSource);
-        assertTableEquals(expected, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(4);
+        {
+            final Table moreData = TableTools.emptyTable(5)
+                    .update("intCol = (int) 3 * i + 20");
+            catalogAdapter.append(tableIdentifier, moreData, writeInstructionsWithoutSchemaMatching);
+            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table expected = TableTools.merge(moreData, differentSource);
+            assertTableEquals(expected, fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append"));
+
+        }
+
+        // Overwrite with an empty list
+        {
+            catalogAdapter.overwrite(tableIdentifier, new Table[] {}, writeInstructionsWithoutSchemaMatching);
+            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            assertTableEquals(TableTools.emptyTable(0), fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "overwrite"));
+        }
     }
 
     @Test
@@ -230,7 +248,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         catalogAdapter.append(tableIdentifier, source, writeInstructions);
         Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         assertTableEquals(source, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(1);
+        verifySnapshots(tableIdentifier, List.of("append"));
 
         final Table differentSource = TableTools.emptyTable(10)
                 .update("shortCol = (short) 2 * i + 10");
@@ -247,7 +265,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         final Table expected = TableTools.merge(compatibleSource.update("doubleCol = NULL_DOUBLE"), source);
         assertTableEquals(expected, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(2);
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
 
         // Append more data
         final Table moreData = TableTools.emptyTable(5)
@@ -257,7 +275,13 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
         final Table expected2 = TableTools.merge(moreData, expected);
         assertTableEquals(expected2, fromIceberg);
-        assertThat(catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots()).hasSize(3);
+        verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
+
+        // Append an empty list
+        catalogAdapter.append(tableIdentifier, new Table[] {}, writeInstructions);
+        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        assertTableEquals(expected2, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
     }
 
     @Test
