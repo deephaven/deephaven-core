@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.grpc_api_app;
 
 import io.deephaven.base.clock.Clock;
