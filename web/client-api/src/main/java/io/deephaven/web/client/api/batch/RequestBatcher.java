@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.batch;
 
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import elemental2.promise.Promise.PromiseExecutorCallbackFn.RejectCallbackFn;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -341,7 +340,6 @@ public class RequestBatcher {
     }
 
     private void failTable(JsTable t, String failureMessage) {
-        final CustomEventInit event = CustomEventInit.create();
         ClientTableState best = t.state();
         for (ClientTableState state : best.reversed()) {
             if (allStates().anyMatch(state::equals)) {
@@ -350,9 +348,6 @@ public class RequestBatcher {
             }
         }
 
-        event.setDetail(JsPropertyMap.of(
-                "errorMessage", failureMessage,
-                "configuration", best.toJs()));
         try {
             t.rollback();
         } catch (Exception e) {
@@ -360,7 +355,9 @@ public class RequestBatcher {
                     "An exception occurred trying to rollback the table. This means that there will be no ticking data until the table configuration is applied again in a way that makes sense. See IDS-5199 for more detail.",
                     e);
         }
-        t.fireEvent(CoreClient.EVENT_REQUEST_FAILED, event);
+        t.fireEvent(CoreClient.EVENT_REQUEST_FAILED, JsPropertyMap.of(
+                "errorMessage", failureMessage,
+                "configuration", best.toJs()));
     }
 
     private void failed(RejectCallbackFn reject, String fail) {

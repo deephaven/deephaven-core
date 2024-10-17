@@ -10,8 +10,6 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -31,6 +29,7 @@ import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -574,9 +573,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     new TreeViewportDataImpl(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                             rowsRemoved, totalMods, shifted);
             detail.setOffset(this.serverViewport.getFirstRow());
-            CustomEventInit<UpdateEventData> event = CustomEventInit.create();
-            event.setDetail(detail);
-            fireEvent(EVENT_UPDATED, event);
+            fireEvent(EVENT_UPDATED, detail);
         }
     }
 
@@ -660,9 +657,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     TreeSubscription subscription = new TreeSubscription(state, connection);
 
                     subscription.addEventListener(TreeSubscription.EVENT_UPDATED,
-                            (CustomEvent<AbstractTableSubscription.UpdateEventData> data) -> {
+                            (Event<AbstractTableSubscription.UpdateEventData> data) -> {
                                 TreeSubscription.TreeViewportDataImpl detail =
-                                        (TreeSubscription.TreeViewportDataImpl) data.detail;
+                                        (TreeSubscription.TreeViewportDataImpl) data.getDetail();
 
                                 handleUpdate(nextSort, nextFilters, detail, alwaysFireEvent);
                             });
@@ -705,9 +702,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.filters = nextFilters;
 
         if (fireEvent) {
-            CustomEventInit<TreeSubscription.TreeViewportDataImpl> updatedEvent = CustomEventInit.create();
-            updatedEvent.setDetail(viewportData);
-            fireEvent(EVENT_UPDATED, updatedEvent);
+            fireEvent(EVENT_UPDATED, viewportData);
         }
     }
 

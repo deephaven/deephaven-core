@@ -7,7 +7,6 @@ import com.google.gwt.user.client.Timer;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
@@ -18,6 +17,7 @@ import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
@@ -104,9 +104,7 @@ public class IdeSession extends HasEventHandling {
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
         return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
             return table;
         });
     }
@@ -149,9 +147,7 @@ public class IdeSession extends HasEventHandling {
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
         return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);
         });
@@ -165,9 +161,7 @@ public class IdeSession extends HasEventHandling {
      */
     public Promise<JsTable> mergeTables(JsTable[] tables) {
         return connection.mergeTables(tables, this).then(table -> {
-            final CustomEventInit event = CustomEventInit.create();
-            event.setDetail(table);
-            fireEvent(EVENT_TABLE_OPENED, event);
+            fireEvent(EVENT_TABLE_OPENED, table);
 
             return Promise.resolve(table);
         });
@@ -223,9 +217,7 @@ public class IdeSession extends HasEventHandling {
                 });
 
         CommandInfo commandInfo = new CommandInfo(code, result);
-        final CustomEventInit event = CustomEventInit.create();
-        event.setDetail(commandInfo);
-        fireEvent(IdeSession.EVENT_COMMANDSTARTED, event);
+        fireEvent(IdeSession.EVENT_COMMANDSTARTED, commandInfo);
 
         return result;
     }
@@ -251,9 +243,7 @@ public class IdeSession extends HasEventHandling {
         });
         currentStream.onStatus(status -> {
             if (!status.isOk()) {
-                CustomEventInit init = CustomEventInit.create();
-                init.setDetail(status.getDetails());
-                fireEvent(EVENT_REQUEST_FAILED, init);
+                fireEvent(EVENT_REQUEST_FAILED, status.getDetails());
                 pendingAutocompleteCalls.values().forEach(p -> {
                     p.fail("Connection error" + status.getDetails());
                 });

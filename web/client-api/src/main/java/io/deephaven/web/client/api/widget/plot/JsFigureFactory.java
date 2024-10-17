@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
@@ -82,9 +81,7 @@ public class JsFigureFactory {
                                             figure.fireEvent(JsFigure.EVENT_RECONNECT);
                                             figure.enqueueSubscriptionCheck();
                                         } catch (JsFigure.FigureSourceException e) {
-                                            final CustomEventInit init = CustomEventInit.create();
-                                            init.setDetail(e);
-                                            figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                            figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, e);
                                         }
                                     }));
                                     removerFns
@@ -94,9 +91,7 @@ public class JsFigureFactory {
                                                 }
                                                 figure.unsubscribe();
 
-                                                final CustomEventInit init = CustomEventInit.create();
-                                                init.setDetail(err);
-                                                figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, init);
+                                                figure.fireEvent(JsFigure.EVENT_RECONNECTFAILED, err);
                                             }));
                                 }
 

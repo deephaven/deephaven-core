@@ -4,9 +4,9 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEvent;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.TreeViewportData;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
@@ -60,8 +60,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(
                                         JsTreeTable.EVENT_UPDATED, 2001d);
                             }).then(event -> {
-                                assertEquals(10d, event.detail.getTreeSize());
-                                assertEquals(10, event.detail.getRows().length);
+                                assertEquals(10d, event.getDetail().getTreeSize());
+                                assertEquals(10, event.getDetail().getRows().length);
 
 
                                 // move the viewport and try again
@@ -69,8 +69,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(
                                         JsTreeTable.EVENT_UPDATED, 2002d);
                             }).then(event -> {
-                                assertEquals(10d, event.detail.getTreeSize());
-                                assertEquals(5, event.detail.getRows().length);
+                                assertEquals(10d, event.getDetail().getTreeSize());
+                                assertEquals(5, event.getDetail().getRows().length);
 
                                 treeTable.close();
 
@@ -101,9 +101,9 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     // Wait for the table to tick such that the first row has children
                     // Read values from the one returned row
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<TreeViewportData> d) -> d.detail
+                            (Event<TreeViewportData> d) -> d.getDetail()
                                     .getTreeSize() == 1
-                                    && d.detail.getRows().getAtAsAny(0).<TreeViewportData.TreeRow>cast()
+                                    && d.getDetail().getRows().getAtAsAny(0).<TreeViewportData.TreeRow>cast()
                                             .hasChildren(),
                             10001)
                             .then(JsTreeTable::getViewportData)
@@ -133,7 +133,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 // Wait for the expand to occur and table to show all 10 rows
                                 return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 10,
+                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 10,
                                         14004);
                             })
                             .then(JsTreeTable::getViewportData)
@@ -160,8 +160,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(
                                         JsTreeTable.EVENT_UPDATED, 2002d);
                             }).then(event -> {
-                                assertEquals(10d, event.detail.getTreeSize());
-                                assertEquals(5, event.detail.getRows().length);
+                                assertEquals(10d, event.getDetail().getTreeSize());
+                                assertEquals(5, event.getDetail().getRows().length);
 
                                 return Promise.resolve(treeTable);
                             })
@@ -195,7 +195,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     // Wait for the table to tick such that we have at least 4 rows (root, three children)
                     return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 4,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 4,
                             10002)
                             .then(JsTreeTable::getViewportData)
                             .then(data -> Promise.resolve((TreeViewportData) data))
@@ -240,7 +240,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 // Wait for the expand to occur and table to show all 10 rows
                                 return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() > 4,
+                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() > 4,
                                         14008);
                             })
                             .then(JsTreeTable::getViewportData)
@@ -267,7 +267,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 // Collapse row 2, wait until back to 4 rows
                                 rollup.collapse(JsTreeTable.RowReferenceUnion.of(1));
                                 return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 4,
+                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 4,
                                         14009);
                             })
                             .then(event -> {
@@ -313,7 +313,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             delayTestFinish(15000 + step);
 
                             return waitForEventWhere(r, JsTreeTable.EVENT_UPDATED,
-                                    (CustomEvent<TreeViewportData> d) -> r.getSize() == 4, 13000 + step)
+                                    (Event<TreeViewportData> d) -> r.getSize() == 4, 13000 + step)
                                     .then(event -> Promise.resolve(r));
                         }));
                     }

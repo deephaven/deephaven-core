@@ -7,8 +7,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
@@ -28,6 +26,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
@@ -137,16 +136,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
         // viewport subscriptions are sometimes required to notify of size change events
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
-            fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
+            fireEvent(JsTable.EVENT_SIZECHANGED, size());
         }
         UpdateEventData detail = new ViewportEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
 
         detail.setOffset(this.viewportRowSet.getFirstRow());
         this.viewportData = detail;
-        CustomEventInit<UpdateEventData> event = CustomEventInit.create();
-        event.setDetail(detail);
-        refire(new CustomEvent<>(EVENT_UPDATED, event));
+        refire(new Event<>(EVENT_UPDATED, detail));
 
         if (hasListeners(EVENT_ROWADDED) || hasListeners(EVENT_ROWREMOVED) || hasListeners(EVENT_ROWUPDATED)) {
             RangeSet modifiedCopy = totalMods.copy();
@@ -175,9 +172,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private void fireLegacyEventOnRowsetEntries(String eventName, UpdateEventData updateEventData, RangeSet rowset) {
         if (hasListeners(eventName)) {
             rowset.indexIterator().forEachRemaining((long row) -> {
-                CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-                addedEvent.setDetail(wrap((SubscriptionRow) updateEventData.getRows().getAt((int) row), (int) row));
-                fireEvent(eventName, addedEvent);
+                JsPropertyMap<?> detail = wrap((SubscriptionRow) updateEventData.getRows().getAt((int) row), (int) row);
+                fireEvent(eventName, detail);
             });
         }
     }
@@ -188,26 +184,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     public void fireEvent(String type) {
-        refire(new CustomEvent<>(type));
+        refire(new Event<>(type, null));
     }
 
     @Override
-    public <T> void fireEventWithDetail(String type, T detail) {
-        CustomEventInit<T> init = CustomEventInit.create();
-        init.setDetail(detail);
-        refire(new CustomEvent<T>(type, init));
+    public <T> void fireEvent(String type, T detail) {
+        refire(new Event<T>(type, detail));
     }
 
     @Override
-    public <T> void fireEvent(String type, CustomEventInit<T> init) {
-        refire(new CustomEvent<T>(type, init));
-    }
-
-    @Override
-    public <T> void fireEvent(String type, CustomEvent<T> e) {
-        if (!type.equals(e.type)) {
-            throw new IllegalArgumentException(type + " != " + e.type);
-        }
+    public <T> void fireEvent(Event<T> e) {
         refire(e);
     }
 
@@ -228,16 +214,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @param e the event to fire
      * @param <T> the type of the custom event data
      */
-    private <T> void refire(CustomEvent<T> e) {
+    private <T> void refire(Event<T> e) {
         // explicitly calling super.fireEvent to avoid calling ourselves recursively
-        super.fireEvent(e.type, e);
+        super.fireEvent(e);
         if (originalActive && initialState == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still
             // holding on to it. Since we haven't been internalClose()d yet, that means we're still waiting for
             // the new state to resolve or fail, so we can be restored, or stopped. In theory, we should put this
             // assert back, and make the pause code also tell us to pause.
             // assert initialState == original.state() : "Table owning this viewport subscription forgot to release it";
-            original.fireEvent(e.type, e);
+            original.fireEvent(e);
         }
     }
 

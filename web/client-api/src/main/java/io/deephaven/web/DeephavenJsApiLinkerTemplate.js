@@ -19,7 +19,8 @@ Scope.prototype = self;
 var $doc, $entry, $moduleName, $moduleBase;
 var $wnd = new Scope();
 bindTo($wnd, self);
-var dh = {}
+var window = $wnd;
+var dh = {};
 $wnd.dh = dh;
 import {dhinternal} from './dh-internal.js';
 $wnd.dhinternal = dhinternal;
