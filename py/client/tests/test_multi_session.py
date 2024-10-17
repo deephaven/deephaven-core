@@ -4,11 +4,10 @@
 import unittest
 
 import timeout_decorator
-import platform
 
 from pydeephaven import Session
 from tests.testbase import BaseTestCase
-
+from tests.wait_for_table import wait_for_table
 
 class MultiSessionTestCase(BaseTestCase):
     def test_persistent_tables(self):
@@ -29,14 +28,8 @@ class MultiSessionTestCase(BaseTestCase):
         t = session2.empty_table(10)
         session2.bind_table('t', t)
 
-        use_signals = platform.system() != 'Windows'
-        @timeout_decorator.timeout(seconds=1, use_signals=use_signals)
-        def wait_for_table():
-            while 't' not in session1.tables:
-                pass
-
         try:
-            wait_for_table()
+            wait_for_table('t', session1)
         except timeout_decorator.TimeoutError:
             self.fail('table did not get synced to session1')
 
