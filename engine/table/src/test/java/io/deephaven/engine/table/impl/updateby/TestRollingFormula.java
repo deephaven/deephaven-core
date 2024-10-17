@@ -1483,10 +1483,13 @@ public class TestRollingFormula extends BaseUpdateByTest {
         final int postTicks = 0;
 
         Table actual;
-        Table expected;
 
         PartitionedTable pt = t.partitionBy("Sym");
         actual = pt.proxy().updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "count(x)", "x", "intCol"))
+                .target().merge();
+
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "intCol_count=count(intColXX)"))
                 .target().merge();
     }
 

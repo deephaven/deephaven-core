@@ -157,10 +157,14 @@ class UpdateByTestCase(BaseTestCase):
             rolling_formula_tick(formula="sum(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10),
             rolling_formula_tick(formula="avg(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT00:00:10"),
-            rolling_formula_time(formula="avg(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT30S",
-                             fwd_time="-PT00:00:20"),
+            rolling_formula_time(formula="avg(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
+            # rolling formula with multiple column input
+            rolling_formula_tick(formula="formula_ad=sum(a) + sum(d)", rev_ticks=10),
+            rolling_formula_tick(formula="formula_ad=avg(a) + avg(b)", rev_ticks=10, fwd_ticks=10),
+            rolling_formula_time(formula="formula_be=sum(b) + sum(e)", ts_col="Timestamp", rev_time="PT00:00:10"),
+            rolling_formula_time(formula="formula_be=avg(b) + avg(e)", ts_col="Timestamp", rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_formula_time(formula="formula_be=sum(b) + sum(b)", ts_col="Timestamp", rev_time="PT30S", fwd_time="-PT00:00:20"),
         ]
 
     @classmethod

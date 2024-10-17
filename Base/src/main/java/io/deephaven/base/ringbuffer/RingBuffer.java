@@ -46,29 +46,34 @@ public interface RingBuffer {
     boolean isEmpty();
 
     /**
-     * How many items are currently in the buffer.
+     * Return how many items are currently in the buffer.
      */
     int size();
 
     /**
-     * How many items can fit in the buffer at its current capacity. If the buffer can grow, this number can change.
+     * Return how many items can fit in the buffer at its current capacity. If the buffer can grow, this number can
+     * change.
      */
     int capacity();
 
     /**
-     * How many free slots exist in this buffer at its current capacity.
+     * Return how many free slots exist in this buffer at its current capacity.
      */
     int remaining();
 
     /**
-     * Reset the ring buffer to its initial state. If this is an object ring buffer, this will additionally set all
-     * values to {@code null}.
+     * Clear the buffer of all values. If this is an object ring buffer, this will additionally set all values to
+     * {@code null}.
      */
     void clear();
 
     /**
      * Ensure that at least {@code count} free slots are available in the buffer. If the buffer is growable, the
-     * capacity may be increased to accommodate the new slots.
+     * capacity may be increased to accommodate the new slots. If the buffer is not growable and there are insufficient
+     * free slots, an {@link UnsupportedOperationException} will be thrown.
+     *
+     * @param count the number of free slots to ensure are available
+     * @throws UnsupportedOperationException if the buffer is not growable and there are insufficient free slots
      */
     void ensureRemaining(int count);
 }

@@ -34,9 +34,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 512;
 
-    private final String formula;
     private final TableDefinition tableDef;
-    private final QueryCompilerRequestProcessor compilationProcessor;
     private final FormulaColumn formulaColumn;
     private final String[] inputColumnNames;
     private final Class<?>[] inputColumnTypes;
@@ -68,12 +66,12 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
             // To perform the calculation, we will leverage FormulaColumn and for its input sources we create a set of
             // SingleValueColumnSources, each containing a Vector of values. This vector will contain exactly the
-            // values from the input columns that are appropriate for output row given the RollingWindow configuration.
-            // The formula column will be evaluated once per output row and the result written to the output column
+            // values from the input columns that are appropriate for output row given the window configuration.
+            // The formula column is evaluated once per output row and the result written to the output column
             // source.
 
-            // The SingleValueColumnSources will be backed by RingBuffers through use of a RingBufferVectorWrapper.
-            // The underlying RingBuffer will be updated with the values from the input columns with assistance from
+            // The SingleValueColumnSources is backed by RingBuffers through use of a RingBufferVectorWrapper.
+            // The underlying RingBuffer is updated with the values from the input columns with assistance from
             // the RingBufferWindowConsumer class, which abstracts the process of pushing and popping values from input
             // column data chunks into the RingBuffer.
 
@@ -211,6 +209,30 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     }
 
     /**
+     * Private constructor for efficient {@link #copy()} calls.
+     */
+    private RollingFormulaMultiColumnOperator(
+            @NotNull final MatchPair pair,
+            @NotNull final String[] affectingColumns,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final TableDefinition tableDef,
+            @NotNull final FormulaColumn formulaColumn,
+            @NotNull final String[] inputColumnNames,
+            @NotNull final Class<?>[] inputColumnTypes,
+            @NotNull final Class<?>[] inputComponentTypes,
+            @NotNull final Class<?>[] inputVectorTypes) {
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
+        this.tableDef = tableDef;
+        this.formulaColumn = formulaColumn;
+        this.inputColumnNames = inputColumnNames;
+        this.inputColumnTypes = inputColumnTypes;
+        this.inputComponentTypes = inputComponentTypes;
+        this.inputVectorTypes = inputVectorTypes;
+    }
+
+    /**
      * Create a new RollingFormulaMultiColumnOperator.
      *
      * @param pair Contains the output column name as a MatchPair
@@ -234,9 +256,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
 
-        this.formula = formula;
         this.tableDef = tableDef;
-        this.compilationProcessor = compilationProcessor;
 
         final String outputColumnName = pair.leftColumn;
 
@@ -272,11 +292,14 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 pair,
                 affectingColumns,
                 timestampColumnName,
-                formula,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 tableDef,
-                compilationProcessor);
+                formulaColumn,
+                inputColumnNames,
+                inputColumnTypes,
+                inputComponentTypes,
+                inputVectorTypes);
     }
 
     @Override
