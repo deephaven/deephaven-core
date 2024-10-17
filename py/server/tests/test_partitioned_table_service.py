@@ -53,6 +53,7 @@ class TestBackend(PartitionedTableServiceBackend):
 
     def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                       col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
+        # print(f"column_values: {table_key}, {table_location_key}, {col}, {offset}, {min_rows}, {max_rows}")
         if table_key.key == "test":
             return self._partitions[table_location_key].select([col]).slice(offset, max_rows)
         else:
@@ -173,6 +174,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
         self.assertEqual(table.columns[2:], self.test_table.columns[2:])
         self.assertEqual(table.size, 2)
+        # how is the table different from the PartitionedTable?
 
     def test_make_live_table_with_partition_schema(self):
         pc_schema = pa.schema(
@@ -186,6 +188,22 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         self.assertEqual(table.columns[2:], self.test_table.columns[2:])
         self.wait_ticking_table_update(table, 20, 5)
         self.assertGreaterEqual(table.size, 20)
+
+    def test_make_live_table_with_partition_schema_ops(self):
+        pc_schema = pa.schema(
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
+        data_service = PythonTableDataService(backend)
+        table = data_service.make_table(TableKey("test"), live=True)
+        self.assertIsNotNone(table)
+        self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
+        self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
+        self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+        self.wait_ticking_table_update(table, 100, 5)
+        self.assertGreaterEqual(table.size, 100)
+
+        t = table.select_distinct("Ticker")
+        self.assertLessEqual(t.size, len(self.tickers))
 
 
 if __name__ == '__main__':

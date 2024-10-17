@@ -283,7 +283,7 @@ class PythonTableDataService(JObjectWrapper):
         return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, callback_proxy)
 
     def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
-                       min_rows: int, max_rows: int, callback: jpy.JType):
+                       min_rows: int, max_rows: int, callback: jpy.JType) -> None:
         """ Returns the values for the column with the given name for the partition with the given table key and
         partition location key to the table service in the engine.
 
@@ -294,6 +294,8 @@ class PythonTableDataService(JObjectWrapper):
             offset (int): the starting row index
             min_rows (int): the minimum number of rows to return
             max_rows (int): the maximum number of rows to return
+            callback (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
+                the arrow schema and the serialized record batches for the given column
 
         Returns:
             jpy.JType: an array of byte buffers that contain the arrow schema and the serialized record batches for the
