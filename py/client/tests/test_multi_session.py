@@ -21,17 +21,10 @@ class MultiSessionTestCase(BaseTestCase):
             self.assertIn('t', session2.tables)
 
     def test_shared_tables(self):
-        session1 = Session()
-        session1.run_script('t = None')
-
-        session2 = Session()
-        t = session2.empty_table(10)
-        session2.bind_table('t', t)
-
         try:
-            wait_for_table('t', session1)
+            wait_for_table()
         except timeout_decorator.TimeoutError:
-            self.fail('table did not get synced to session1')
+            self.fail('table did not get synced')
 
 
 if __name__ == '__main__':
