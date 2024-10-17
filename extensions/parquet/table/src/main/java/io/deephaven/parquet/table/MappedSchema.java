@@ -26,21 +26,14 @@ class MappedSchema {
             final TableDefinition definition,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
-            final ParquetInstructions instructions,
-            final ColumnDefinition<?>... extraColumns) {
+            final ParquetInstructions instructions) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            TypeInfos.TypeInfo typeInfo =
+            final TypeInfos.TypeInfo typeInfo =
                     getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
-            Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
+            final Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
             builder.addField(schemaType);
         }
-
-        for (final ColumnDefinition<?> extraColumn : extraColumns) {
-            builder.addField(getTypeInfo(computedCache, extraColumn, rowSet, columnSourceMap, instructions)
-                    .createSchemaType(extraColumn, instructions));
-        }
-
         final MessageType schema = builder.named("root");
         return new MappedSchema(definition, schema);
     }

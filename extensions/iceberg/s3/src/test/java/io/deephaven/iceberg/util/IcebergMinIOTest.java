@@ -7,7 +7,8 @@ import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.stats.util.OSUtil;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.util.Map;
@@ -17,10 +18,11 @@ import static org.apache.iceberg.aws.s3.S3FileIOProperties.ACCESS_KEY_ID;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
-public class IcebergMinIOTest extends IcebergToolsTest {
+@Tag("testcontainers")
+class IcebergMinIOTest extends IcebergToolsTest {
 
-    @BeforeClass
-    public static void initContainer() {
+    @BeforeAll
+    static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
         Assumptions.assumeFalse(OSUtil.runningMacOS(), "OSUtil.runningMacOS()");
         // ensure container is started so container startup time isn't associated with a specific test
