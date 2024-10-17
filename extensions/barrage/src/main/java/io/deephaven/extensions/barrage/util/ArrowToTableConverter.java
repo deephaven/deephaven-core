@@ -24,6 +24,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -84,6 +85,23 @@ public class ArrowToTableConverter {
         Message.getRootAsMessage(copy).header(schema);
 
         return schema;
+    }
+
+    public static long[] extractBufferInfo(@NotNull final RecordBatch batch) {
+        final long[] bufferInfo = new long[batch.buffersLength()];
+        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+            if (bi < batch.buffersLength() - 1) {
+                final int nextOffset =
+                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                // our parsers handle overhanging buffers
+                length += Math.max(0, nextOffset - offset - length);
+            }
+            bufferInfo[bi] = length;
+        }
+        return bufferInfo;
     }
 
     @ScriptApi
@@ -185,19 +203,7 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-        final long[] bufferInfo = new long[batch.buffersLength()];
-        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
-            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
-            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
-
-            if (bi < batch.buffersLength() - 1) {
-                final int nextOffset =
-                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
-                // our parsers handle overhanging buffers
-                length += Math.max(0, nextOffset - offset - length);
-            }
-            bufferInfo[bi] = length;
-        }
+        final long[] bufferInfo = extractBufferInfo(batch);
         final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
 
         msg.rowsRemoved = RowSetFactory.empty();
