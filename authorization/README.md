@@ -57,3 +57,5 @@ DEEPHAVEN_VERSION=${DEEPHAVEN_VERSION}  PATH=authorization-codegen:$PATH protoc 
 
 ./gradlew :authorization:spotlessApply
 ```
+
+For protoc versions 3.12.x - 3.14.x, the `--experimental_allow_proto3_optional` flag is needed.
