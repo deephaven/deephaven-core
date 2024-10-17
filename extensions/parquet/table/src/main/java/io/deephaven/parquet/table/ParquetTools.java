@@ -979,11 +979,6 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.METADATA_PARTITIONED);
-        if (readInstructions.getTableDefinition().isPresent()) {
-            // TODO(deephaven-core#6174): Add support for reading metadata files with custom table definition
-            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
-                    "metadata files with custom table definition is currently not supported");
-        }
         final ParquetMetadataFileLayout layout =
                 ParquetMetadataFileLayout.create(sourceURI, readInstructions, channelsProvider);
         return readTable(layout,
