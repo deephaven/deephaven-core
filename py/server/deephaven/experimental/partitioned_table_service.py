@@ -53,7 +53,7 @@ class PartitionedTableServiceBackend(ABC):
     def table_schema(self, table_key: TableKey) -> Tuple[pa.Schema, Optional[pa.Schema]]:
         """ Returns the table schema and optionally the schema for the partition columns for the table with the given
         table key.
-        The table schema is not required to include the partition columns defined in the partition schema. THe
+        The table schema is not required to include the partition columns defined in the partition schema. The
         partition columns are limited to primitive types and strings.
 
         Args:
@@ -74,6 +74,8 @@ class PartitionedTableServiceBackend(ABC):
         The table should have a single row for the particular partition location key provided in the 1st argument,
         with the values for the partition columns in the row.
 
+        TODO JF: This is invoked for tables created when make_table's `live` is False.
+
         Args:
             table_key (TableKey): the table key
             callback (Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]): the callback function
@@ -90,6 +92,11 @@ class PartitionedTableServiceBackend(ABC):
         have a single row for the particular partition location key provided in the 1st argument, with the values for
         the partition columns in the row.
 
+        TODO JF: This is invoked for tables created when make_table's `live` is True.
+        TODO: add comment if test_make_live_table_observe_subscription_cancellations demonstrates that the subscription
+        needs to callback for any existing partitions, too (or if existing_partitions will also be invoked when
+        live == True)
+
         The return value is a function that can be called to unsubscribe from the new partitions.
 
         Args:
@@ -104,6 +111,8 @@ class PartitionedTableServiceBackend(ABC):
         """ Provides a callback for the backend service to pass the size of the partition with the given table key
         and partition location key. The callback should be called with the size of the partition in number of rows.
 
+        TODO JF: This is invoked for tables created when make_table's `live` is False.
+
         Args:
             table_key (TableKey): the table key
             table_location_key (PartitionedTableLocationKey): the partition location key
@@ -117,6 +126,10 @@ class PartitionedTableServiceBackend(ABC):
         """ Provides a callback for the backend service to pass the changed size of the partition with the given
         table key and partition location key. The callback should be called with the size of the partition in number of
         rows.
+
+        TODO JF: This is invoked for tables created when make_table's `live` is True.
+        This callback cannot be invoked until after this method has returned.
+        This callback must be invoked with the initial size of the partition.
 
         The return value is a function that can be called to unsubscribe from the partition size changes.
 
@@ -190,12 +203,13 @@ class PythonTableDataService(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message=f"failed to make a table for the key {table_key.key}") from e
 
-    def _table_schema(self, table_key: TableKey) -> jpy.JType:
+    def _table_schema(self, table_key: TableKey, callback: jpy.JType) -> jpy.JType:
         """ Returns the table schema and the partition schema for the table with the given table key as two serialized
         byte buffers.
 
         Args:
             table_key (TableKey): the table key
+            TODO JF: make good doc ;P
 
         Returns:
             jpy.JType: an array of two serialized byte buffers
@@ -206,7 +220,7 @@ class PythonTableDataService(JObjectWrapper):
         pc_schema = pc_schema if pc_schema is not None else pa.schema([])
         j_pt_schema_bb = jpy.byte_buffer(pt_schema.serialize())
         j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
-        return jpy.array("java.nio.ByteBuffer", [j_pt_schema_bb, j_pc_schema_bb])
+        callback.accept(jpy.array("java.nio.ByteBuffer", [j_pt_schema_bb, j_pc_schema_bb]))
 
     def _existing_partitions(self, table_key: TableKey, callback: jpy.JType) -> None:
         """ Provides the existing partitions for the table with the given table key to the table service in the engine.
@@ -302,6 +316,9 @@ class PythonTableDataService(JObjectWrapper):
                 partition column values
         """
         pt_table = self._backend.column_values(table_key, table_location_key, col, offset, min_rows, max_rows)
+        if len(pt_table) < min_rows or len(pt_table) > max_rows:
+            raise ValueError("The number of rows in the pyarrow table for column values must be in the range of "
+                             f"{min_rows} to {max_rows}")
         bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
         bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
         callback.accept(jpy.array("java.nio.ByteBuffer", bb_list))

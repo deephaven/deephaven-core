@@ -81,11 +81,14 @@ class TestBackend(PartitionedTableServiceBackend):
         if table_key.key != "test":
             return lambda: None
 
+        # TODO for test count the number opened subscriptions
+
         exec_ctx = get_exec_ctx()
         th = threading.Thread(target=self._th_new_partitions, args=(table_key, exec_ctx, callback))
         th.start()
 
         def _cancellation_callback():
+            # TODO for test count the number cancellations
             self._sub_new_partition_cancelled = True
 
         return _cancellation_callback
@@ -121,6 +124,7 @@ class TestBackend(PartitionedTableServiceBackend):
         th = threading.Thread(target=self._th_partition_size_changes, args=(table_key, table_location_key, callback))
         th.start()
 
+        # TODO count number of total subscriptions and number of total cancellations
         def _cancellation_callback():
             self._partitions_size_subscriptions[table_location_key] = False
 
@@ -206,6 +210,19 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         # t doesn't have the partitioning columns
         self.assertEqual(t.columns, self.test_table.columns)
 
+    def test_make_live_table_observe_subscription_cancellations(self):
+        # coalesce the PartitionAwareSourceTable under a liveness scope
+        # count number of new partition subscriptions
+        # count number of partition size subscriptions
+        # close liveness scope
+        # assert subscriptions are all closed
+        pass
+
+    def test_make_live_table_ensure_initial_partitions_exist(self):
+        # disable new partition subscriptions
+        # coalesce the PartitionAwareSourceTable
+        # ensure that all existing partitions were added to the table
+        pass
 
 if __name__ == '__main__':
     unittest.main()
