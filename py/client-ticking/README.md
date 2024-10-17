@@ -67,7 +67,7 @@ source ~/py/cython/bin/activate
 ```
 
 For Windows
-```sh
+```bat
 rem This assumes your venv is in %DHINSTALL%\py\cython
 %DHINSTALL%\py\cython\Scripts\activate.bat
 ```
@@ -92,7 +92,7 @@ DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) CPPFLAGS="-I${DHCPP}/include
 
 #### Build the shared library (Windows version)
 
-```sh
+```bat
 cd %DHSRC%\py\client-ticking
 ```
 
@@ -113,7 +113,7 @@ DEEPHAVEN_VERSION=$(../../gradlew :printVersion -q) python3 setup.py bdist_wheel
 ```
 
 In windows, use
-```sh
+```bat
 rem ensure you have %DEEPHAVEN_VERSION% defined with the right value
 python setup.py bdist_wheel
 ```
@@ -128,7 +128,7 @@ pip3 install --force --no-deps dist/pydeephaven_ticking-<x.y.z>-cp310-cp310-linu
 ```
 
 On Windows:
-```sh
+```bat
 pip3 install --force --no-deps dist\pydeephaven_ticking<x.y.z>-cp312-cp312-win_amd64.whl
 ```
 
