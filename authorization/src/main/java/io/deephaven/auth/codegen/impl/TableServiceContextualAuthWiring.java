@@ -34,6 +34,7 @@ import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SeekRowRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
@@ -535,6 +536,17 @@ public interface TableServiceContextualAuthWiring {
             ColumnStatisticsRequest request, List<Table> sourceTables);
 
     /**
+     * Authorize a request to Slice.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke Slice
+     */
+    void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+            List<Table> sourceTables);
+
+    /**
      * A default implementation that funnels all requests to invoke {@code checkPermission}.
      */
     abstract class DelegateAll implements TableServiceContextualAuthWiring {
@@ -757,6 +769,11 @@ public interface TableServiceContextualAuthWiring {
 
         public void checkPermissionComputeColumnStatistics(AuthContext authContext,
                 ColumnStatisticsRequest request, List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
+        public void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+                List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
         }
     }
@@ -1087,6 +1104,13 @@ public interface TableServiceContextualAuthWiring {
                 ColumnStatisticsRequest request, List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionComputeColumnStatistics(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionSlice(AuthContext authContext, SliceRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionSlice(authContext, request, sourceTables);
             }
         }
     }

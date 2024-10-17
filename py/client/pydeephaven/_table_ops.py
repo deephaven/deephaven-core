@@ -676,6 +676,25 @@ class WhereInTableOp(TableOp):
             where_in=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
 
+class SliceOp(TableOp):
+    def __init__(self, first_position_inclusive: int, last_position_exclusive: int):
+        self.first_position_inclusive = first_position_inclusive
+        self.last_position_exclusive = last_position_exclusive
+    
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
+        return table_service_stub.Slice
+    
+    def make_grpc_request(self, result_id, source_id) -> Any:
+        return table_pb2.SliceRequest(result_id=result_id, source_id=source_id,
+                                      first_position_inclusive=self.first_position_inclusive,
+                                      last_position_exclusive=self.last_position_exclusive)
+    
+    def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
+        return table_pb2.BatchTableRequest.Operation(
+            slice=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
 class MetaTableOp(TableOp):
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:

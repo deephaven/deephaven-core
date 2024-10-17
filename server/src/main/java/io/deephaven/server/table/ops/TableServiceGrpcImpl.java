@@ -358,6 +358,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_BY, request, responseObserver);
     }
 
+    @Override
+    public void slice(
+            @NotNull final SliceRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SLICE, request, responseObserver);
+    }
+
     private Object getSeekValue(@NotNull final Literal literal, @NotNull final Class<?> dataType) {
         if (literal.hasStringValue()) {
             if (BigDecimal.class.isAssignableFrom(dataType)) {

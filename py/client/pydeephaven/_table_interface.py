@@ -15,7 +15,7 @@ from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
     ExactJoinOp, CrossJoinOp, AjOp, RajOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
-    AggregateAllOp, AggregateOp, SortDirection
+    SliceOp, AggregateAllOp, AggregateOp, SortDirection
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.dherror import DHError
@@ -715,4 +715,42 @@ class TableInterface(ABC):
             DHError
         """
         table_op = WhereInTableOp(filter_table=filter_table, cols=to_list(cols), inverted=True)
+        return self.table_op_handler(table_op)
+    
+    def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Union[Table, Query]:
+        """The slice method creates a new table containing rows from the source table, from the first position
+        (inclusive) to the last position (exclusive). 
+
+        - If both first_position and last_position are positive, then both positions are counted from the beginning of 
+          the table.
+        - If both first_position and last_position are negative, then both positions are counted from the end of the 
+          table.
+        - If first_position is negative and last_position is 0, then first_position is counted from the end and the end 
+          is the size of the table.
+        - If first_position is positive and last_position is negative, then first_position is counted from the beginning
+          and last_position is counted from the end.
+        - If first_position is negative and last_position is positive, then first_position is counted from the end and 
+          last_position is counted from the beginning
+
+        Args:
+            first_position_inclusive (int): the first position (inclusive)
+            last_position_exclusive (int): the last position (exclusive)
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
+        """
+        table_op = SliceOp(first_position_inclusive=first_position_inclusive, last_position_exclusive=last_position_exclusive)
         return self.table_op_handler(table_op)
