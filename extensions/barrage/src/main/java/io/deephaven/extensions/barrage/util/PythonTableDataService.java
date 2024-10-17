@@ -72,7 +72,7 @@ public class PythonTableDataService extends AbstractTableDataService {
     }
 
     /**
-     * Get a Deephaven {@link Table} for the supplied name.
+     * Get a Deephaven {@link Table} for the supplied {@link TableKey}.
      *
      * @param tableKey The table key
      * @param live Whether the table should update as new data becomes available
@@ -88,11 +88,6 @@ public class PythonTableDataService extends AbstractTableDataService {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 tableLocationProvider,
                 live ? ExecutionContext.getContext().getUpdateGraph() : null);
-    }
-
-    private static class SchemaPair {
-        BarrageUtil.ConvertedArrowSchema tableSchema;
-        BarrageUtil.ConvertedArrowSchema partitionSchema;
     }
 
     /**
@@ -114,16 +109,23 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @param tableKey the table key
          * @return the schemas
          */
-        public SchemaPair getTableSchema(
+        public BarrageUtil.ConvertedArrowSchema[] getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
-            final ByteBuffer[] schemas =
-                    pyTableDataService.call("_table_schema", tableKey.key).getObjectArrayValue(ByteBuffer.class);
-            final SchemaPair result = new SchemaPair();
-            result.tableSchema = BarrageUtil.convertArrowSchema(ArrowToTableConverter.parseArrowSchema(
-                    ArrowToTableConverter.parseArrowIpcMessage(schemas[0])));
-            result.partitionSchema = BarrageUtil.convertArrowSchema(ArrowToTableConverter.parseArrowSchema(
-                    ArrowToTableConverter.parseArrowIpcMessage(schemas[1])));
-            return result;
+            final BarrageUtil.ConvertedArrowSchema[] schemas = new BarrageUtil.ConvertedArrowSchema[2];
+            final Consumer<ByteBuffer[]> onRawSchemas = byteBuffers -> {
+                if (byteBuffers.length != 2) {
+                    throw new IllegalArgumentException("Expected two Arrow IPC messages: found " + byteBuffers.length);
+                }
+
+                for (int ii = 0; ii < 2; ++ii) {
+                    schemas[ii] = BarrageUtil.convertArrowSchema(ArrowToTableConverter.parseArrowSchema(
+                            ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[ii])));
+                }
+            };
+
+            pyTableDataService.call("_table_schema", tableKey.key, onRawSchemas);
+
+            return schemas;
         }
 
         /**
@@ -136,9 +138,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> {
-                        processNewPartition(listener, tableLocationKey, byteBuffers);
-                    };
+                    (tableLocationKey, byteBuffers) -> processNewPartition(listener, tableLocationKey, byteBuffers);
 
             pyTableDataService.call("_existing_partitions", tableKey.key, convertingListener);
         }
@@ -154,15 +154,11 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> {
-                        processNewPartition(listener, tableLocationKey, byteBuffers);
-                    };
+                    (tableLocationKey, byteBuffers) -> processNewPartition(listener, tableLocationKey, byteBuffers);
 
             final PyObject cancellationCallback = pyTableDataService.call(
                     "_subscribe_to_new_partitions", tableKey.key, convertingListener);
-            return () -> {
-                cancellationCallback.call("__call__");
-            };
+            return () -> cancellationCallback.call("__call__");
         }
 
         private void processNewPartition(
@@ -179,7 +175,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                         + byteBuffers.length);
             }
 
-            final Map<String, Comparable<?>> partitionValues = new HashMap<>();
+            final Map<String, Comparable<?>> partitionValues = new LinkedHashMap<>();
             final Schema schema = ArrowToTableConverter.parseArrowSchema(
                     ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[0]));
             final BarrageUtil.ConvertedArrowSchema arrowSchema = BarrageUtil.convertArrowSchema(schema);
@@ -206,12 +202,10 @@ public class PythonTableDataService extends AbstractTableDataService {
                     new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                             i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-            final long[] bufferInfo = ArrowToTableConverter.extractBufferInfo(batch);
-            final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+            final PrimitiveIterator.OfLong bufferInfoIter = ArrowToTableConverter.extractBufferInfo(batch);
 
             // populate the partition values
-            final int numColumns = schema.fieldsLength();
-            for (int ci = 0; ci < numColumns; ++ci) {
+            for (int ci = 0; ci < schema.fieldsLength(); ++ci) {
                 try (final WritableChunk<Values> columnValues = readers.get(ci).readChunk(
                         fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0)) {
 
@@ -265,9 +259,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             final PyObject cancellationCallback = pyTableDataService.call(
                     "_subscribe_to_partition_size_changes", tableKey.key, tableLocationKey.locationKey, listener);
 
-            return () -> {
-                cancellationCallback.call("__call__");
-            };
+            return () -> cancellationCallback.call("__call__");
         }
 
         /**
@@ -281,19 +273,15 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @return the column values
          */
         public List<WritableChunk<Values>> getColumnValues(
-                TableKeyImpl tableKey,
-                TableLocationKeyImpl tableLocationKey,
-                ColumnDefinition<?> columnDefinition,
-                long firstRowPosition,
-                int minimumSize,
-                int maximumSize) {
+                @NotNull final TableKeyImpl tableKey,
+                @NotNull final TableLocationKeyImpl tableLocationKey,
+                @NotNull final ColumnDefinition<?> columnDefinition,
+                final long firstRowPosition,
+                final int minimumSize,
+                final int maximumSize) {
 
             final List<WritableChunk<Values>> resultChunks = new ArrayList<>();
             final Consumer<ByteBuffer[]> onMessages = messages -> {
-                if (messages.length == 0) {
-                    return;
-                }
-
                 if (messages.length < 2) {
                     throw new IllegalArgumentException("Expected at least two Arrow IPC messages: found "
                             + messages.length);
@@ -328,8 +316,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-                        final long[] bufferInfo = ArrowToTableConverter.extractBufferInfo(batch);
-                        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+                        final PrimitiveIterator.OfLong bufferInfoIter = ArrowToTableConverter.extractBufferInfo(batch);
 
                         resultChunks.add(reader.readChunk(
                                 fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0));
@@ -347,8 +334,6 @@ public class PythonTableDataService extends AbstractTableDataService {
             return resultChunks;
         }
     }
-
-
 
     @Override
     protected @NotNull TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
@@ -383,6 +368,8 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public int hashCode() {
+            // TODO NOCOMMIT @ryan: PyObject's hash is based on pointer location of object which would change if
+            // two different Python objects have the same value.
             return key.hashCode();
         }
 
@@ -418,10 +405,10 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         private TableLocationProviderImpl(@NotNull final TableKeyImpl tableKey) {
             super(tableKey, true);
-            final SchemaPair tableAndPartitionColumnSchemas = backend.getTableSchema(tableKey);
+            final BarrageUtil.ConvertedArrowSchema[] schemas = backend.getTableSchema(tableKey);
 
-            final TableDefinition tableDef = tableAndPartitionColumnSchemas.tableSchema.tableDef;
-            final TableDefinition partitionDef = tableAndPartitionColumnSchemas.partitionSchema.tableDef;
+            final TableDefinition tableDef = schemas[0].tableDef;
+            final TableDefinition partitionDef = schemas[1].tableDef;
             final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(tableDef.numColumns());
 
             for (final ColumnDefinition<?> column : tableDef.getColumns()) {
@@ -462,6 +449,8 @@ public class PythonTableDataService extends AbstractTableDataService {
         protected void activateUnderlyingDataSource() {
             TableKeyImpl key = (TableKeyImpl) getKey();
             final Subscription localSubscription = subscription = new Subscription();
+            // TODO NOCOMMIT @ryan: should we let the python table service impl activate so that they may invoke the
+            // callback immediately?
             localSubscription.cancellationCallback = backend.subscribeToNewPartitions(key, tableLocationKey -> {
                 if (localSubscription != subscription) {
                     // we've been cancelled and/or replaced
@@ -531,6 +520,8 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public int hashCode() {
+            // TODO NOCOMMIT @ryan: PyObject's hash is based on pointer location of object which would change if
+            // two different Python objects have the same value.
             return locationKey.hashCode();
         }
 
@@ -540,8 +531,6 @@ public class PythonTableDataService extends AbstractTableDataService {
                 throw new ClassCastException(String.format("Cannot compare %s to %s", getClass(), other.getClass()));
             }
             final TableLocationKeyImpl otherTableLocationKey = (TableLocationKeyImpl) other;
-            // TODO NOCOMMIT @ryan: What exactly is supposed to happen if partition values are equal but these are
-            // different locations?
             return PartitionsComparator.INSTANCE.compare(partitions, otherTableLocationKey.partitions);
         }
 
@@ -605,7 +594,6 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public @NotNull List<SortColumn> getSortedColumns() {
-            // TODO NOCOMMIT @ryan: we may be able to fetch this from the metadata or table definition post conversion
             return List.of();
         }
 
@@ -745,8 +733,10 @@ public class PythonTableDataService extends AbstractTableDataService {
             }
 
             @Override
-            public void readChunkPage(long firstRowPosition, int minimumSize,
-                    @NotNull WritableChunk<Values> destination) {
+            public void readChunkPage(
+                    final long firstRowPosition,
+                    final int minimumSize,
+                    @NotNull final WritableChunk<Values> destination) {
                 final TableLocationImpl location = (TableLocationImpl) getTableLocation();
                 final TableKeyImpl key = (TableKeyImpl) location.getTableKey();
 
@@ -758,9 +748,16 @@ public class PythonTableDataService extends AbstractTableDataService {
 
                 if (numRows < minimumSize) {
                     throw new TableDataException(String.format("Not enough data returned. Read %d rows but minimum "
-                            + "expected was %d. Short result from get_column_values(%s, %s, %s, %d, %d).",
+                            + "expected was %d. Result from get_column_values(%s, %s, %s, %d, %d).",
                             numRows, minimumSize, key.key, ((TableLocationKeyImpl) location.getKey()).locationKey,
                             columnDefinition.getName(), firstRowPosition, minimumSize));
+                }
+                if (numRows > destination.capacity()) {
+                    throw new TableDataException(String.format("Too much data returned. Read %d rows but maximum "
+                            + "expected was %d. Result from get_column_values(%s, %s, %s, %d, %d).",
+                            numRows, destination.capacity(), key.key,
+                            ((TableLocationKeyImpl) location.getKey()).locationKey, columnDefinition.getName(),
+                            firstRowPosition, minimumSize));
                 }
 
                 int offset = 0;
@@ -768,9 +765,6 @@ public class PythonTableDataService extends AbstractTableDataService {
                     int length = Math.min(destination.capacity() - offset, rbChunk.size());
                     destination.copyFromChunk(rbChunk, 0, offset, length);
                     offset += length;
-                    if (offset >= destination.capacity()) {
-                        break;
-                    }
                 }
                 destination.setSize(offset);
             }

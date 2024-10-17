@@ -87,7 +87,7 @@ public class ArrowToTableConverter {
         return schema;
     }
 
-    public static long[] extractBufferInfo(@NotNull final RecordBatch batch) {
+    public static PrimitiveIterator.OfLong extractBufferInfo(@NotNull final RecordBatch batch) {
         final long[] bufferInfo = new long[batch.buffersLength()];
         for (int bi = 0; bi < batch.buffersLength(); ++bi) {
             int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
@@ -101,7 +101,7 @@ public class ArrowToTableConverter {
             }
             bufferInfo[bi] = length;
         }
-        return bufferInfo;
+        return Arrays.stream(bufferInfo).iterator();
     }
 
     @ScriptApi
@@ -113,7 +113,7 @@ public class ArrowToTableConverter {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
         final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
-        parseSchema(parseArrowSchema(mi));
+        configureWithSchema(parseArrowSchema(mi));
     }
 
     @ScriptApi
@@ -168,13 +168,12 @@ public class ArrowToTableConverter {
         completed = true;
     }
 
-    protected void parseSchema(final Schema schema) {
+    protected void configureWithSchema(final Schema schema) {
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
@@ -203,8 +202,7 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-        final long[] bufferInfo = extractBufferInfo(batch);
-        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+        final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(batch);
 
         msg.rowsRemoved = RowSetFactory.empty();
         msg.shifted = RowSetShiftData.EMPTY;
