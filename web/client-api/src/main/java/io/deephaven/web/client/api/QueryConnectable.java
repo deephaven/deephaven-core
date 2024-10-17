@@ -6,11 +6,11 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
@@ -65,12 +65,10 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
         notifiedConnectionError = true;
 
-        CustomEventInit<JsPropertyMap<Object>> event = CustomEventInit.create();
-        event.setDetail(JsPropertyMap.of(
+        fireEvent(HACK_CONNECTION_FAILURE, JsPropertyMap.of(
                 "status", status.getCode(),
                 "details", status.getDetails(),
                 "metadata", status.getMetadata()));
-        fireEvent(HACK_CONNECTION_FAILURE, event);
         JsLog.warn(
                 "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }

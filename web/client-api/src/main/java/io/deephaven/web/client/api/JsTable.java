@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.RollupRequest;
@@ -1668,9 +1667,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     });
                 });
             }
-            final CustomEventInit init = CustomEventInit.create();
-            init.setDetail(state);
-            fireEvent(INTERNAL_EVENT_STATECHANGED, init);
+            fireEvent(INTERNAL_EVENT_STATECHANGED, state);
         }
     }
 
@@ -1739,9 +1736,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             // If the size changed, and we have no subscription active, fire. Otherwise, we want to let the
             // subscription itself manage this, so that the size changes are synchronized with data changes,
             // and consumers won't be confused by the table size not matching data.
-            CustomEventInit event = CustomEventInit.create();
-            event.setDetail(s);
-            fireEvent(JsTable.EVENT_SIZECHANGED, event);
+            fireEvent(JsTable.EVENT_SIZECHANGED, s);
         }
         fireEvent(JsTable.INTERNAL_EVENT_SIZELISTENER);
     }

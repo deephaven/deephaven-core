@@ -5,7 +5,6 @@ package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
@@ -17,13 +16,10 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
-import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -160,9 +156,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
 
         // fire shutdown advice event
-        CustomEventInit<String> eventDetails = CustomEventInit.create();
-        eventDetails.setDetail(details);
-        fireEvent(EVENT_SHUTDOWN, eventDetails);
+        fireEvent(EVENT_SHUTDOWN, details);
 
         // fire deprecated event
         notifyConnectionError(new ResponseStreamWrapper.Status() {

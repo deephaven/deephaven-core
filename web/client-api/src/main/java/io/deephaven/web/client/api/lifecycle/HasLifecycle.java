@@ -3,11 +3,9 @@
 //
 package io.deephaven.web.client.api.lifecycle;
 
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsLog;
 
 import static io.deephaven.web.client.api.JsTable.EVENT_RECONNECTFAILED;
@@ -28,10 +26,8 @@ public abstract class HasLifecycle extends HasEventHandling {
      */
     public void die(Object error) {
         JsLog.debug("Die!", this, error);
-        final CustomEventInit init = CustomEventInit.create();
-        init.setDetail(error);
         unsuppressEvents();
-        fireEvent(EVENT_RECONNECTFAILED, init);
+        fireEvent(EVENT_RECONNECTFAILED, error);
         suppressEvents();
     }
 
@@ -78,9 +74,9 @@ public abstract class HasLifecycle extends HasEventHandling {
             addEventListenerOneShot(
                     HasEventHandling.EventPair.of(JsTable.EVENT_RECONNECT, event -> resolve.onInvoke((Void) null)),
                     HasEventHandling.EventPair.of(JsTable.EVENT_DISCONNECT,
-                            event -> reject.onInvoke(((CustomEvent<Object>) event).detail)),
+                            event -> reject.onInvoke(event.getDetail())),
                     HasEventHandling.EventPair.of(EVENT_RECONNECTFAILED,
-                            event -> reject.onInvoke(((CustomEvent<Object>) event).detail)));
+                            event -> reject.onInvoke(event.getDetail())));
         });
     }
 }

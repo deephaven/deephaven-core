@@ -10,7 +10,6 @@ import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
@@ -65,6 +64,7 @@ import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.UnaryWithHeaders;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
@@ -465,9 +465,8 @@ public class WorkerConnection {
                         if (!existing.getAt(0).equals(authorization.getAt(0))) {
                             // use this new token
                             metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                            CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
-                            init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
-                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED,
+                                    new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
                         }
                     }
 

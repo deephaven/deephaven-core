@@ -14,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.Con
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -50,9 +51,7 @@ public class CoreClient extends HasEventHandling {
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
         // event here for the UI to listen to
-        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, event -> {
-            fireEvent(EVENT_REFRESH_TOKEN_UPDATED, event);
-        });
+        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, this::fireEvent);
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
