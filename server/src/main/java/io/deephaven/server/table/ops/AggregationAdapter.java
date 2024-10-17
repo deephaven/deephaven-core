@@ -12,11 +12,13 @@ import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
+import io.deephaven.api.agg.Formula;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
+import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
@@ -77,6 +79,12 @@ public class AggregationAdapter {
 
     public static Count adapt(AggregationCount count) {
         return Aggregation.AggCount(count.getColumnName());
+    }
+
+    public static Formula adapt(AggregationFormula formula) {
+        // TODO: until the deprecated AggFormula() that uses paramToken is removed, we must re-create this as a
+        // combined string
+        return Aggregation.AggFormula(formula.getColumnName() + "=" + formula.getFormula());
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {
@@ -190,6 +198,16 @@ public class AggregationAdapter {
                     TypeCase.PARTITION,
                     AggregationPartition.class,
                     Partition.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adapt);
+        }
+
+        @Override
+        public void visit(Formula formula) {
+            add(
+                    TypeCase.FORMULA,
+                    AggregationFormula.class,
+                    Formula.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggregationAdapter::adapt);
         }

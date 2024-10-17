@@ -5,6 +5,8 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
@@ -292,6 +294,27 @@ public interface Aggregation {
     }
 
     /**
+     * <p>
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula}.
+     * This variant requires the formula to provide the output column name and specific input column names in the
+     * following format:
+     * </p>
+     * {@code
+     * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
+     * }
+     *
+     * @param formula The {@link AggSpecFormula#formula() formula} to use to produce the output column
+     * @return The aggregation
+     */
+    static Formula AggFormula(String formula) {
+        // Parse the supplied formula for the output column name and formula
+        final Selectable column = Selectable.parse(formula);
+        final String parsedFormula = ((RawString) column.expression()).value();
+
+        return Formula.of(column.newColumn(), parsedFormula);
+    }
+
+    /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula},
      * {@code paramToken}, and column name pairs.
      *
@@ -302,6 +325,7 @@ public interface Aggregation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
+    @Deprecated
     static Aggregation AggFormula(String formula, String paramToken, String... pairs) {
         return of(AggSpec.formula(formula, paramToken), pairs);
     }
@@ -678,6 +702,7 @@ public interface Aggregation {
         visitor.visit((FirstRowKey) null);
         visitor.visit((LastRowKey) null);
         visitor.visit((Partition) null);
+        visitor.visit((Formula) null);
     }
 
     /**
@@ -742,5 +767,12 @@ public interface Aggregation {
          * @param partition The partition aggregation
          */
         void visit(Partition partition);
+
+        /**
+         * Visit a {@link Formula formula aggregation}.
+         *
+         * @param formula The formula aggregation
+         */
+        void visit(Formula formula);
     }
 }

@@ -461,6 +461,9 @@ class TableTestCase(BaseTestCase):
             formula(
                 formula="min(each)", formula_param="each", cols=["MinA=a", "MinD=d"]
             ),
+            formula(formula="f_min=min(a)"),
+            formula(formula="f_sum=sum(a) + sum(b)"),
+            formula(formula="f_wavg=wavg(a, b)"),
         ]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
