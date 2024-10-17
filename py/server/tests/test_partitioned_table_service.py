@@ -53,7 +53,6 @@ class TestBackend(PartitionedTableServiceBackend):
 
     def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
                       col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
-        # print(f"column_values: {table_key}, {table_location_key}, {col}, {offset}, {min_rows}, {max_rows}")
         if table_key.key == "test":
             return self._partitions[table_location_key].select([col]).slice(offset, max_rows)
         else:
@@ -202,8 +201,10 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         self.wait_ticking_table_update(table, 100, 5)
         self.assertGreaterEqual(table.size, 100)
 
-        t = table.select_distinct("Ticker")
-        self.assertLessEqual(t.size, len(self.tickers))
+        t = table.select_distinct([c.name for c in table.columns])
+        self.assertGreaterEqual(t.size, len(self.tickers))
+        # t doesn't have the partitioning columns
+        self.assertEqual(t.columns, self.test_table.columns)
 
 
 if __name__ == '__main__':
