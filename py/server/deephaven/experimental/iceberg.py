@@ -265,11 +265,16 @@ def adapter(
             `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
 
-    If the user is responsible for connecting to an AWS catalog or S3-compatible API for the warehouse, setting
-    s3_instructions is the recommended way of configuring these details, as it allows Deephaven to own the creation of
-    the Iceberg-internal AWS / S3 client. When set, these instructions will also be automatically included as part of
-    IcebergInstructions data_instructions. Note: some REST Catalog implementations may be responsible for providing S3
-    warehouse credentials, in which case the user is not responsible for setting this.
+    If the user is responsible for providing AWS / S3 connectivity details, setting s3_instructions is the recommended
+    way of providing these details. This allows for the parity of construction logic between Iceberg-managed and
+    Deephaven-managed AWS clients. For advanced use-cases, users are encouraged to use S3Instruction profiles which
+    allows a rich degree of configurability. When set, these instructions will also be automatically included as part of
+    IcebergInstructions data_instructions.
+
+    In cases where the caller prefers to use Iceberg's AWS properties, the parity of construction logic will be limited
+    to what Deephaven is able to infer; in advanced cases, it's possible that there will be a difference in construction
+    logic between the Iceberg-managed and Deephaven-managed AWS clients which manifests itself as being able to browse
+    Catalog metadata, but not retrieve Table data.
 
     Other common properties include:
     - `uri` - the URI of the catalog
