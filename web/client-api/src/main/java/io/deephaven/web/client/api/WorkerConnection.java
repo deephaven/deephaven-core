@@ -10,13 +10,13 @@ import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.client.ClientRpcOptions;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.UnaryOutput;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
@@ -64,6 +64,7 @@ import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.grpc.UnaryWithHeaders;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
@@ -110,7 +111,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
@@ -159,6 +159,7 @@ public class WorkerConnection {
     }
 
     private final QueryConnectable<?> info;
+    private final ClientRpcOptions options = ClientRpcOptions.create();
     private final ClientConfiguration config;
     private final ReconnectState newSessionReconnect;
     private final TableReviver reviver;
@@ -204,28 +205,22 @@ public class WorkerConnection {
 
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
+
         this.config = new ClientConfiguration();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
-        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        tableServiceClient = new TableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        flightServiceClient = new FlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        applicationServiceClient =
-                new ApplicationServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        browserFlightServiceClient =
-                new BrowserFlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        inputTableServiceClient =
-                new InputTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        partitionedTableServiceClient =
-                new PartitionedTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        storageServiceClient = new StorageServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        configServiceClient = new ConfigServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-        hierarchicalTableServiceClient =
-                new HierarchicalTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
-
-        // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
+        sessionServiceClient = info.createClient(SessionServiceClient::new);
+        tableServiceClient = info.createClient(TableServiceClient::new);
+        consoleServiceClient = info.createClient(ConsoleServiceClient::new);
+        flightServiceClient = info.createClient(FlightServiceClient::new);
+        applicationServiceClient = info.createClient(ApplicationServiceClient::new);
+        browserFlightServiceClient = info.createClient(BrowserFlightServiceClient::new);
+        inputTableServiceClient = info.createClient(InputTableServiceClient::new);
+        objectServiceClient = info.createClient(ObjectServiceClient::new);
+        partitionedTableServiceClient = info.createClient(PartitionedTableServiceClient::new);
+        storageServiceClient = info.createClient(StorageServiceClient::new);
+        configServiceClient = info.createClient(ConfigServiceClient::new);
+        hierarchicalTableServiceClient = info.createClient(HierarchicalTableServiceClient::new);
 
         newSessionReconnect = new ReconnectState(this::connectToWorker);
 
@@ -253,21 +248,13 @@ public class WorkerConnection {
                     if (metadata().has(FLIGHT_AUTH_HEADER_NAME)) {
                         return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
                     }
-                    return Promise.all(
-                            info.getConnectToken().then(authToken -> {
-                                // set the proposed initial token and make the first call
-                                metadata.set(FLIGHT_AUTH_HEADER_NAME,
-                                        (authToken.getType() + " " + authToken.getValue()).trim());
-                                return Promise.resolve(authToken);
-                            }),
-                            info.getConnectOptions().then(options -> {
-                                // set other specified headers, if any
-                                JsObject.keys(options.headers).forEach((key, index) -> {
-                                    metadata.set(key, options.headers.get(key));
-                                    return null;
-                                });
-                                return Promise.resolve(options);
-                            })).then(ignore -> authUpdate()).then(ignore -> Promise.resolve(Boolean.TRUE));
+                    metadata.set(FLIGHT_AUTH_HEADER_NAME,
+                            (info.getToken().getType() + " " + info.getToken().getValue()).trim());
+                    JsObject.keys(info.getOptions().headers).forEach((key, index) -> {
+                        metadata.set(key, info.getOptions().headers.get(key));
+                        return null;
+                    });
+                    return authUpdate().then(ignore -> Promise.resolve(Boolean.TRUE));
                 }).then(newSession -> {
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
@@ -463,7 +450,9 @@ public class WorkerConnection {
             scheduledAuthUpdate = null;
         }
         return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(
-                this, ConfigService.GetConfigurationConstants, new ConfigurationConstantsRequest())
+                info.getServerUrl(),
+                metadata(), info.makeRpcOptions(), ConfigService.GetConfigurationConstants,
+                new ConfigurationConstantsRequest())
                 .then(result -> {
                     BrowserHeaders headers = result.getHeaders();
                     // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
@@ -475,9 +464,8 @@ public class WorkerConnection {
                         if (!existing.getAt(0).equals(authorization.getAt(0))) {
                             // use this new token
                             metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                            CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
-                            init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
-                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED,
+                                    new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
                         }
                     }
 
@@ -1002,7 +990,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt);
+        return new BiDiStream.Factory<>(info.useWebsockets(), this::metadata, config::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,

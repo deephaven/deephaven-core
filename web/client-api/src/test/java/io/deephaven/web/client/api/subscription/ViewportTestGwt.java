@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.subscription;
 
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEvent;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -12,10 +11,11 @@ import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.Format;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.event.Event;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -538,8 +538,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     // wait for the next tick, where we get the "first" row added, confirm that the viewport
                     // data is sane
-                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
-                        ViewportData viewport = e.detail;
+                    return waitForEventWhere(table, "updated", (Event<ViewportData> e) -> {
+                        ViewportData viewport = e.getDetail();
                         if (viewport.getRows().length != 1) {
                             return false; // wrong data, wait for another event
                         }
@@ -553,8 +553,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     // again wait for the table to go back to zero items, make sure it makes sense
-                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
-                        ViewportData emptyViewport = (ViewportData) e.detail;
+                    return waitForEventWhere(table, "updated", (Event<ViewportData> e) -> {
+                        ViewportData emptyViewport = e.getDetail();
                         if (emptyViewport.getRows().length != 0) {
                             return false; // wrong data, wait for another event
                         }
@@ -564,8 +564,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     // one more tick later, we'll see the item back again
-                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
-                        ViewportData viewport = (ViewportData) e.detail;
+                    return waitForEventWhere(table, "updated", (Event<ViewportData> e) -> {
+                        ViewportData viewport = e.getDetail();
                         if (viewport.getRows().length != 1) {
                             return false; // wrong data, wait for another event
                         }

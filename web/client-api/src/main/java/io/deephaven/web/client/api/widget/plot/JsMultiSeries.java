@@ -6,12 +6,9 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
 import java.util.Collections;
@@ -47,7 +44,7 @@ public class JsMultiSeries {
                         return null;
                     });
                     partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED, event -> {
-                        requestTable(partitionedTable, ((CustomEvent) event).detail);
+                        requestTable(partitionedTable, event.getDetail());
                     });
 
                 });
@@ -99,13 +96,10 @@ public class JsMultiSeries {
             series.setMultiSeries(this);
             series.initSources(Collections.singletonMap(tableId, table), Collections.emptyMap());
 
-            CustomEventInit init = CustomEventInit.create();
-            init.setDetail(series);
-
             parent.addSeriesFromMultiSeries(series);
 
-            figure.fireEvent(JsFigure.EVENT_SERIES_ADDED, init);
-            parent.fireEvent(JsChart.EVENT_SERIES_ADDED, init);
+            figure.fireEvent(JsFigure.EVENT_SERIES_ADDED, series);
+            parent.fireEvent(JsChart.EVENT_SERIES_ADDED, series);
             return null;
         });
     }

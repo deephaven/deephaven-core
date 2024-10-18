@@ -15,11 +15,12 @@ function bindTo(target, source) {
 
 var Scope = function () {
 };
-Scope.prototype = self;
+Scope.prototype = globalThis;
 var $doc, $entry, $moduleName, $moduleBase;
 var $wnd = new Scope();
-bindTo($wnd, self);
-var dh = {}
+bindTo($wnd, globalThis);
+var window = $wnd;
+var dh = {};
 $wnd.dh = dh;
 import {dhinternal} from './dh-internal.js';
 $wnd.dhinternal = dhinternal;

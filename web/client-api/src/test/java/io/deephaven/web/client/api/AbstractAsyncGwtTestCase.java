@@ -8,10 +8,11 @@ import com.google.gwt.junit.client.GWTTestCase;
 import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.JsString;
-import elemental2.dom.CustomEvent;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.event.Event;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.fu.CancellablePromise;
@@ -106,7 +107,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
             final String ev = events[i];
             undos[i] = handling.addEventListener(ev, e -> {
                 log("Did not expect", ev, "but fired event", e);
-                report("Expected " + ev + " to not be called; detail: " + (e.detail));
+                report("Expected " + ev + " to not be called; detail: " + (e.getDetail()));
             });
         }
         return () -> {
@@ -242,7 +243,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     protected Promise<JsTable> assertUpdateReceived(JsTable table, Consumer<ViewportData> check, int timeoutInMillis) {
         return Promise.race(this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
-            ViewportData viewportData = e.detail;
+            ViewportData viewportData = e.getDetail();
             check.accept(viewportData);
         }, timeoutInMillis),
                 table.nextEvent(JsTable.EVENT_REQUEST_FAILED, (double) timeoutInMillis).then(Promise::reject))
@@ -274,7 +275,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected <V extends HasEventHandling, T> Promise<V> waitForEventWhere(V evented, String eventName,
-            Predicate<CustomEvent<T>> check, int timeout) {
+            Predicate<Event<T>> check, int timeout) {
         // note that this roughly reimplements the 'kill timer' so this can be run in parallel with itself or other
         // similar steps
         return new Promise<>((resolve, reject) -> {
@@ -309,7 +310,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected <V extends HasEventHandling, T> Promise<V> waitForEvent(V evented, String eventName,
-            Consumer<CustomEvent<T>> check, int timeout) {
+            Consumer<Event<T>> check, int timeout) {
         return this.<V, T>waitForEventWhere(evented, eventName, e -> {
             check.accept(e);
             return true;
