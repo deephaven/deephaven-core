@@ -212,11 +212,13 @@ public class ParquetTableWriter {
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
             final long numBytesWritten;
-            try (final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
-                    tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
-                    tableInfoBuilder, metadataFileWriter)) {
+            {
+                final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
+                        tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
+                        tableInfoBuilder, metadataFileWriter);
                 // Given the transformation, do not use the original table's "definition" for writing
                 write(t, writeInstructions, parquetFileWriter, computedCache);
+                parquetFileWriter.close();
                 numBytesWritten = parquetFileWriter.getCount();
             }
             destOutputStream.done();
