@@ -33,7 +33,7 @@ _version = _compute_version()
 _system = platform.system()
 
 if _system == 'Windows':
-    dhinstall=os.environ.get('DHINSTALL')
+    dhinstall=os.environ['DHINSTALL']
     extra_compiler_args=['/std:c++17', f'/I{dhinstall}\\include']
     extra_link_args=[f'/LIBPATH:{dhinstall}\\lib']
 
