@@ -16,11 +16,13 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,12 +34,14 @@ public class TicketRouter {
             new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
     private final TicketResolver.Authorization authorization;
+    private final Set<TicketResolver> resolvers;
 
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
             final Set<TicketResolver> resolvers) {
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
+        this.resolvers = Objects.requireNonNull(resolvers);
         resolvers.forEach(resolver -> {
             if (!byteResolverMap.add(resolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
@@ -333,23 +337,40 @@ public class TicketRouter {
     }
 
     private TicketResolver getResolver(final Flight.FlightDescriptor descriptor, final String logId) {
-        if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
+        if (descriptor.getType() == Flight.FlightDescriptor.DescriptorType.PATH) {
+            if (descriptor.getPathCount() <= 0) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': flight descriptor does not have route path");
+            }
+            final String route = descriptor.getPath(0);
+            final TicketResolver resolver = descriptorResolverMap.get(route);
+            if (resolver == null) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
+            }
+            return resolver;
+        } else if (descriptor.getType() == DescriptorType.CMD) {
+            TicketResolver commandResolver = null;
+            for (TicketResolver resolver : resolvers) {
+                if (!resolver.supportsCommand(descriptor)) {
+                    continue;
+                }
+                if (commandResolver != null) {
+                    // Is there any good way to give a friendly string for unknown command bytes? Probably not.
+                    throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                            "Could not resolve '" + logId + "': multiple resolvers for command");
+                }
+                commandResolver = resolver;
+            }
+            if (commandResolver == null) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no resolver for command");
+            }
+            return commandResolver;
+        } else {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': flight descriptor is not a path");
+                    "Could not resolve '" + logId + "': unexpected type");
         }
-        if (descriptor.getPathCount() <= 0) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': flight descriptor does not have route path");
-        }
-
-        final String route = descriptor.getPath(0);
-        final TicketResolver resolver = descriptorResolverMap.get(route);
-        if (resolver == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
-        }
-
-        return resolver;
     }
 
     private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID =

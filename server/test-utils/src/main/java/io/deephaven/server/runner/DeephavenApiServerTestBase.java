@@ -34,6 +34,7 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.testing.GrpcCleanupRule;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -133,6 +134,10 @@ public abstract class DeephavenApiServerTestBase {
     @Inject
     RpcServerStateInterceptor serverStateInterceptor;
 
+    protected DeephavenApiServerTestBase.TestComponent.Builder testComponentBuilder() {
+        return DaggerDeephavenApiServerTestBase_TestComponent.builder();
+    }
+
     @Before
     public void setUp() throws Exception {
         logBuffer = new LogBuffer(128);
@@ -149,7 +154,7 @@ public abstract class DeephavenApiServerTestBase {
                 .port(-1)
                 .build();
 
-        DaggerDeephavenApiServerTestBase_TestComponent.builder()
+        testComponentBuilder()
                 .withServerConfig(config)
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)

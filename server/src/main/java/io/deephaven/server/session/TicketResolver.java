@@ -6,7 +6,11 @@ package io.deephaven.server.session;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.Action;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
+import org.apache.arrow.flight.impl.Flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -175,4 +179,23 @@ public interface TicketResolver {
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
+
+    default boolean supportsCommand(FlightDescriptor descriptor) {
+        // Unfortunately, there is no universal way to know whether a command belongs to a given Flight protocol or not;
+        // at best, we can assume (or mandate) that all of the supportable command bytes are sufficiently unique such
+        // that there is no potential for overlap amongst the installed Flight protocols and it's a "non-issue".
+        //
+        // For example there could be command protocols built on top of Flight that simply use integer ordinals as their
+        // command serialization format. In such a case, only one such protocol could safely be installed; otherwise,
+        // there would be no reliable way of differentiating between them from the command bytes. (It's possible that
+        // other means of differentiating could be established, like header values.)
+        //
+        // If we are ever in a position to create a protocol that uses Flight commands, or advise on their creation, it
+        // would probably be wise to use a command serialization format that has a "unique" magic value as its prefix.
+        //
+        // The FlightSQL approach is to use the protobuf message Any to wrap up the respective protobuf FlightSQL
+        // command message. While this approach is very likely to produce a sufficiently unique selection criteria, it
+        // requires non-trivial parsing to determine whether the command is supported or not.
+        return false;
+    }
 }

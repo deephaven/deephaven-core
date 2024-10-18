@@ -69,6 +69,7 @@ public final class CommunityComponentFactory
      */
     @Module(includes = {
             JettyServerModule.class,
+            JettyServerOptionalModule.class,
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,
