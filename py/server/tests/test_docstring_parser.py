@@ -112,4 +112,4 @@ class DocstringParser(BaseTestCase):
     @create_test("truncate_keyword", truncate_keyword_str, truncate_keyword, "1, aaaaaa12=")
     def test_truncate_keyword_1(self, signature: Signature, docs: Docstring):
         self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_keyword(..., aaaaaa012=1)")
+        self.assertEqual(_generate_display_sig(signature), "truncate_keyword(..., aaaaaa12=1)")
