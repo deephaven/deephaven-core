@@ -351,6 +351,31 @@ class TableTestCase(BaseTestCase):
                 pa_table2 = rt_default.to_arrow()
                 self.assertNotEqual(pa_table2, pa_table1)
 
+    def test_slice(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+
+        with self.subTest("0, positive"):
+            result_table = test_table.slice(0, 50)
+            self.assertEqual(result_table.size, 50)
+        
+        with self.subTest("negative, 0"):
+            result_table = test_table.slice(-50, 0)
+            self.assertEqual(result_table.size, 50)
+
+        with self.subTest("positive, negative"):
+            result_table = test_table.slice(50, -50)
+            self.assertEqual(result_table.size, test_table.size - 100)
+
+        with self.subTest("positive, negative"):
+            result_table = test_table.slice(-1 * (test_table.size - 50), test_table.size - 50)
+            self.assertEqual(result_table.size, test_table.size - 100)
+
+        with self.subTest("negative, positive - empty"):
+            result_table = test_table.slice(-1, 1)
+            self.assertEqual(result_table.size, 0)
+
+
 
 if __name__ == '__main__':
     unittest.main()
