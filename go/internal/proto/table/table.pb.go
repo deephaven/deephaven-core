@@ -3695,6 +3695,7 @@ type Aggregation struct {
 	//	*Aggregation_FirstRowKey
 	//	*Aggregation_LastRowKey
 	//	*Aggregation_Partition
+	//	*Aggregation_Formula
 	Type isAggregation_Type `protobuf_oneof:"type"`
 }
 
@@ -3772,6 +3773,13 @@ func (x *Aggregation) GetPartition() *Aggregation_AggregationPartition {
 	return nil
 }
 
+func (x *Aggregation) GetFormula() *Aggregation_AggregationFormula {
+	if x, ok := x.GetType().(*Aggregation_Formula); ok {
+		return x.Formula
+	}
+	return nil
+}
+
 type isAggregation_Type interface {
 	isAggregation_Type()
 }
@@ -3796,6 +3804,10 @@ type Aggregation_Partition struct {
 	Partition *Aggregation_AggregationPartition `protobuf:"bytes,5,opt,name=partition,proto3,oneof"`
 }
 
+type Aggregation_Formula struct {
+	Formula *Aggregation_AggregationFormula `protobuf:"bytes,6,opt,name=formula,proto3,oneof"`
+}
+
 func (*Aggregation_Columns) isAggregation_Type() {}
 
 func (*Aggregation_Count) isAggregation_Type() {}
@@ -3805,6 +3817,8 @@ func (*Aggregation_FirstRowKey) isAggregation_Type() {}
 func (*Aggregation_LastRowKey) isAggregation_Type() {}
 
 func (*Aggregation_Partition) isAggregation_Type() {}
+
+func (*Aggregation_Formula) isAggregation_Type() {}
 
 type SortDescriptor struct {
 	state         protoimpl.MessageState
@@ -8969,6 +8983,61 @@ func (x *Aggregation_AggregationPartition) GetIncludeGroupByColumns() bool {
 	return false
 }
 
+type Aggregation_AggregationFormula struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ColumnName string `protobuf:"bytes,1,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
+	Formula    string `protobuf:"bytes,2,opt,name=formula,proto3" json:"formula,omitempty"`
+}
+
+func (x *Aggregation_AggregationFormula) Reset() {
+	*x = Aggregation_AggregationFormula{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_deephaven_proto_table_proto_msgTypes[118]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Aggregation_AggregationFormula) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Aggregation_AggregationFormula) ProtoMessage() {}
+
+func (x *Aggregation_AggregationFormula) ProtoReflect() protoreflect.Message {
+	mi := &file_deephaven_proto_table_proto_msgTypes[118]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Aggregation_AggregationFormula.ProtoReflect.Descriptor instead.
+func (*Aggregation_AggregationFormula) Descriptor() ([]byte, []int) {
+	return file_deephaven_proto_table_proto_rawDescGZIP(), []int{36, 4}
+}
+
+func (x *Aggregation_AggregationFormula) GetColumnName() string {
+	if x != nil {
+		return x.ColumnName
+	}
+	return ""
+}
+
+func (x *Aggregation_AggregationFormula) GetFormula() string {
+	if x != nil {
+		return x.Formula
+	}
+	return ""
+}
+
 type RunChartDownsampleRequest_ZoomRange struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8981,7 +9050,7 @@ type RunChartDownsampleRequest_ZoomRange struct {
 func (x *RunChartDownsampleRequest_ZoomRange) Reset() {
 	*x = RunChartDownsampleRequest_ZoomRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[118]
+		mi := &file_deephaven_proto_table_proto_msgTypes[119]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8994,7 +9063,7 @@ func (x *RunChartDownsampleRequest_ZoomRange) String() string {
 func (*RunChartDownsampleRequest_ZoomRange) ProtoMessage() {}
 
 func (x *RunChartDownsampleRequest_ZoomRange) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[118]
+	mi := &file_deephaven_proto_table_proto_msgTypes[119]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9039,7 +9108,7 @@ type CreateInputTableRequest_InputTableKind struct {
 func (x *CreateInputTableRequest_InputTableKind) Reset() {
 	*x = CreateInputTableRequest_InputTableKind{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[119]
+		mi := &file_deephaven_proto_table_proto_msgTypes[120]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9052,7 +9121,7 @@ func (x *CreateInputTableRequest_InputTableKind) String() string {
 func (*CreateInputTableRequest_InputTableKind) ProtoMessage() {}
 
 func (x *CreateInputTableRequest_InputTableKind) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[119]
+	mi := &file_deephaven_proto_table_proto_msgTypes[120]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9131,7 +9200,7 @@ type CreateInputTableRequest_InputTableKind_InMemoryAppendOnly struct {
 func (x *CreateInputTableRequest_InputTableKind_InMemoryAppendOnly) Reset() {
 	*x = CreateInputTableRequest_InputTableKind_InMemoryAppendOnly{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[120]
+		mi := &file_deephaven_proto_table_proto_msgTypes[121]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9144,7 +9213,7 @@ func (x *CreateInputTableRequest_InputTableKind_InMemoryAppendOnly) String() str
 func (*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly) ProtoMessage() {}
 
 func (x *CreateInputTableRequest_InputTableKind_InMemoryAppendOnly) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[120]
+	mi := &file_deephaven_proto_table_proto_msgTypes[121]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9172,7 +9241,7 @@ type CreateInputTableRequest_InputTableKind_InMemoryKeyBacked struct {
 func (x *CreateInputTableRequest_InputTableKind_InMemoryKeyBacked) Reset() {
 	*x = CreateInputTableRequest_InputTableKind_InMemoryKeyBacked{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[121]
+		mi := &file_deephaven_proto_table_proto_msgTypes[122]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9185,7 +9254,7 @@ func (x *CreateInputTableRequest_InputTableKind_InMemoryKeyBacked) String() stri
 func (*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked) ProtoMessage() {}
 
 func (x *CreateInputTableRequest_InputTableKind_InMemoryKeyBacked) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[121]
+	mi := &file_deephaven_proto_table_proto_msgTypes[122]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9217,7 +9286,7 @@ type CreateInputTableRequest_InputTableKind_Blink struct {
 func (x *CreateInputTableRequest_InputTableKind_Blink) Reset() {
 	*x = CreateInputTableRequest_InputTableKind_Blink{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[122]
+		mi := &file_deephaven_proto_table_proto_msgTypes[123]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9230,7 +9299,7 @@ func (x *CreateInputTableRequest_InputTableKind_Blink) String() string {
 func (*CreateInputTableRequest_InputTableKind_Blink) ProtoMessage() {}
 
 func (x *CreateInputTableRequest_InputTableKind_Blink) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[122]
+	mi := &file_deephaven_proto_table_proto_msgTypes[123]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9299,7 +9368,7 @@ type BatchTableRequest_Operation struct {
 func (x *BatchTableRequest_Operation) Reset() {
 	*x = BatchTableRequest_Operation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_deephaven_proto_table_proto_msgTypes[123]
+		mi := &file_deephaven_proto_table_proto_msgTypes[124]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9312,7 +9381,7 @@ func (x *BatchTableRequest_Operation) String() string {
 func (*BatchTableRequest_Operation) ProtoMessage() {}
 
 func (x *BatchTableRequest_Operation) ProtoReflect() protoreflect.Message {
-	mi := &file_deephaven_proto_table_proto_msgTypes[123]
+	mi := &file_deephaven_proto_table_proto_msgTypes[124]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11250,7 +11319,7 @@ var file_deephaven_proto_table_proto_rawDesc = []byte{
 	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x28, 0x0a, 0x10, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x62,
 	0x79, 0x5f, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x09, 0x52,
 	0x0e, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x42, 0x79, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x22,
-	0xd4, 0x06, 0x0a, 0x0b, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x84, 0x08, 0x0a, 0x0b, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12,
 	0x5d, 0x0a, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
 	0x32, 0x41, 0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e,
@@ -11281,28 +11350,39 @@ var file_deephaven_proto_table_proto_rawDesc = []byte{
 	0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e, 0x41, 0x67, 0x67,
 	0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61,
 	0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x48, 0x00, 0x52,
-	0x09, 0x70, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x75, 0x0a, 0x12, 0x41, 0x67,
-	0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73,
-	0x12, 0x3e, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2a,
-	0x2e, 0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72,
-	0x70, 0x63, 0x2e, 0x41, 0x67, 0x67, 0x53, 0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63,
-	0x12, 0x1f, 0x0a, 0x0b, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x5f, 0x70, 0x61, 0x69, 0x72, 0x73, 0x18,
-	0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x50, 0x61, 0x69, 0x72,
-	0x73, 0x1a, 0x33, 0x0a, 0x10, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f,
-	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x75,
-	0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x34, 0x0a, 0x11, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x6f, 0x77, 0x4b, 0x65, 0x79, 0x12, 0x1f, 0x0a, 0x0b, 0x63,
-	0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x70, 0x0a, 0x14,
-	0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x72, 0x74, 0x69,
-	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e,
+	0x09, 0x70, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x5d, 0x0a, 0x07, 0x66, 0x6f,
+	0x72, 0x6d, 0x75, 0x6c, 0x61, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x41, 0x2e, 0x69, 0x6f,
+	0x2e, 0x64, 0x65, 0x65, 0x70, 0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70, 0x63, 0x2e,
+	0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x41, 0x67, 0x67, 0x72,
+	0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x6f, 0x72, 0x6d, 0x75, 0x6c, 0x61, 0x48, 0x00,
+	0x52, 0x07, 0x66, 0x6f, 0x72, 0x6d, 0x75, 0x6c, 0x61, 0x1a, 0x75, 0x0a, 0x12, 0x41, 0x67, 0x67,
+	0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x12,
+	0x3e, 0x0a, 0x04, 0x73, 0x70, 0x65, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2a, 0x2e,
+	0x69, 0x6f, 0x2e, 0x64, 0x65, 0x65, 0x70, 0x68, 0x61, 0x76, 0x65, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2e, 0x62, 0x61, 0x63, 0x6b, 0x70, 0x6c, 0x61, 0x6e, 0x65, 0x2e, 0x67, 0x72, 0x70,
+	0x63, 0x2e, 0x41, 0x67, 0x67, 0x53, 0x70, 0x65, 0x63, 0x52, 0x04, 0x73, 0x70, 0x65, 0x63, 0x12,
+	0x1f, 0x0a, 0x0b, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x5f, 0x70, 0x61, 0x69, 0x72, 0x73, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x50, 0x61, 0x69, 0x72, 0x73,
+	0x1a, 0x33, 0x0a, 0x10, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43,
+	0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x75, 0x6d,
-	0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x37, 0x0a, 0x18, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65,
-	0x5f, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x62, 0x79, 0x5f, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e,
-	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x15, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65,
-	0x47, 0x72, 0x6f, 0x75, 0x70, 0x42, 0x79, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x42, 0x06,
+	0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x34, 0x0a, 0x11, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x6f, 0x77, 0x4b, 0x65, 0x79, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f,
+	0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0a, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x1a, 0x70, 0x0a, 0x14, 0x41,
+	0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x72, 0x74, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e,
+	0x4e, 0x61, 0x6d, 0x65, 0x12, 0x37, 0x0a, 0x18, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f,
+	0x67, 0x72, 0x6f, 0x75, 0x70, 0x5f, 0x62, 0x79, 0x5f, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x15, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x47,
+	0x72, 0x6f, 0x75, 0x70, 0x42, 0x79, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x1a, 0x4f, 0x0a,
+	0x12, 0x41, 0x67, 0x67, 0x72, 0x65, 0x67, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x6f, 0x72, 0x6d,
+	0x75, 0x6c, 0x61, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e,
+	0x4e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x66, 0x6f, 0x72, 0x6d, 0x75, 0x6c, 0x61, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x66, 0x6f, 0x72, 0x6d, 0x75, 0x6c, 0x61, 0x42, 0x06,
 	0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x84, 0x02, 0x0a, 0x0e, 0x53, 0x6f, 0x72, 0x74, 0x44,
 	0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x12, 0x1f, 0x0a, 0x0b, 0x63, 0x6f, 0x6c,
 	0x75, 0x6d, 0x6e, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a,
@@ -12401,7 +12481,7 @@ func file_deephaven_proto_table_proto_rawDescGZIP() []byte {
 }
 
 var file_deephaven_proto_table_proto_enumTypes = make([]protoimpl.EnumInfo, 12)
-var file_deephaven_proto_table_proto_msgTypes = make([]protoimpl.MessageInfo, 124)
+var file_deephaven_proto_table_proto_msgTypes = make([]protoimpl.MessageInfo, 125)
 var file_deephaven_proto_table_proto_goTypes = []interface{}{
 	(BadDataBehavior)(0),                                     // 0: io.deephaven.proto.backplane.grpc.BadDataBehavior
 	(UpdateByNullBehavior)(0),                                // 1: io.deephaven.proto.backplane.grpc.UpdateByNullBehavior
@@ -12533,25 +12613,26 @@ var file_deephaven_proto_table_proto_goTypes = []interface{}{
 	(*Aggregation_AggregationCount)(nil),                                                            // 127: io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount
 	(*Aggregation_AggregationRowKey)(nil),                                                           // 128: io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey
 	(*Aggregation_AggregationPartition)(nil),                                                        // 129: io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition
-	(*RunChartDownsampleRequest_ZoomRange)(nil),                                                     // 130: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange
-	(*CreateInputTableRequest_InputTableKind)(nil),                                                  // 131: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind
-	(*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)(nil),                               // 132: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly
-	(*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)(nil),                                // 133: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked
-	(*CreateInputTableRequest_InputTableKind_Blink)(nil),                                            // 134: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink
-	(*BatchTableRequest_Operation)(nil),                                                             // 135: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation
-	(*ticket.Ticket)(nil),                                                                           // 136: io.deephaven.proto.backplane.grpc.Ticket
+	(*Aggregation_AggregationFormula)(nil),                                                          // 130: io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula
+	(*RunChartDownsampleRequest_ZoomRange)(nil),                                                     // 131: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange
+	(*CreateInputTableRequest_InputTableKind)(nil),                                                  // 132: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind
+	(*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)(nil),                               // 133: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly
+	(*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)(nil),                                // 134: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked
+	(*CreateInputTableRequest_InputTableKind_Blink)(nil),                                            // 135: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink
+	(*BatchTableRequest_Operation)(nil),                                                             // 136: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation
+	(*ticket.Ticket)(nil),                                                                           // 137: io.deephaven.proto.backplane.grpc.Ticket
 }
 var file_deephaven_proto_table_proto_depIdxs = []int32{
-	136, // 0: io.deephaven.proto.backplane.grpc.TableReference.ticket:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 0: io.deephaven.proto.backplane.grpc.TableReference.ticket:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 1: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse.result_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 2: io.deephaven.proto.backplane.grpc.FetchTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 3: io.deephaven.proto.backplane.grpc.FetchTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 3: io.deephaven.proto.backplane.grpc.FetchTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 4: io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 5: io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	136, // 6: io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage.export_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	136, // 7: io.deephaven.proto.backplane.grpc.EmptyTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	136, // 8: io.deephaven.proto.backplane.grpc.TimeTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	136, // 9: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 5: io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 6: io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage.export_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 7: io.deephaven.proto.backplane.grpc.EmptyTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 8: io.deephaven.proto.backplane.grpc.TimeTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 9: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 10: io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	5,   // 11: io.deephaven.proto.backplane.grpc.MathContext.rounding_mode:type_name -> io.deephaven.proto.backplane.grpc.MathContext.RoundingMode
 	75,  // 12: io.deephaven.proto.backplane.grpc.UpdateByWindowScale.ticks:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks
@@ -12563,61 +12644,61 @@ var file_deephaven_proto_table_proto_depIdxs = []int32{
 	0,   // 18: io.deephaven.proto.backplane.grpc.UpdateByEmOptions.on_zero_delta_time:type_name -> io.deephaven.proto.backplane.grpc.BadDataBehavior
 	21,  // 19: io.deephaven.proto.backplane.grpc.UpdateByEmOptions.big_value_context:type_name -> io.deephaven.proto.backplane.grpc.MathContext
 	1,   // 20: io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions.null_behavior:type_name -> io.deephaven.proto.backplane.grpc.UpdateByNullBehavior
-	136, // 21: io.deephaven.proto.backplane.grpc.UpdateByRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 21: io.deephaven.proto.backplane.grpc.UpdateByRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 22: io.deephaven.proto.backplane.grpc.UpdateByRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	77,  // 23: io.deephaven.proto.backplane.grpc.UpdateByRequest.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions
 	78,  // 24: io.deephaven.proto.backplane.grpc.UpdateByRequest.operations:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation
-	136, // 25: io.deephaven.proto.backplane.grpc.SelectDistinctRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 25: io.deephaven.proto.backplane.grpc.SelectDistinctRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 26: io.deephaven.proto.backplane.grpc.SelectDistinctRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 27: io.deephaven.proto.backplane.grpc.DropColumnsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 27: io.deephaven.proto.backplane.grpc.DropColumnsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 28: io.deephaven.proto.backplane.grpc.DropColumnsRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 29: io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 29: io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 30: io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 31: io.deephaven.proto.backplane.grpc.HeadOrTailRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 31: io.deephaven.proto.backplane.grpc.HeadOrTailRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 32: io.deephaven.proto.backplane.grpc.HeadOrTailRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 33: io.deephaven.proto.backplane.grpc.HeadOrTailByRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 33: io.deephaven.proto.backplane.grpc.HeadOrTailByRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 34: io.deephaven.proto.backplane.grpc.HeadOrTailByRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 35: io.deephaven.proto.backplane.grpc.UngroupRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 35: io.deephaven.proto.backplane.grpc.UngroupRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 36: io.deephaven.proto.backplane.grpc.UngroupRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 37: io.deephaven.proto.backplane.grpc.MergeTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 37: io.deephaven.proto.backplane.grpc.MergeTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 38: io.deephaven.proto.backplane.grpc.MergeTablesRequest.source_ids:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 39: io.deephaven.proto.backplane.grpc.SnapshotTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 39: io.deephaven.proto.backplane.grpc.SnapshotTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 40: io.deephaven.proto.backplane.grpc.SnapshotTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 41: io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 41: io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 42: io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest.base_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 43: io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest.trigger_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 44: io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 44: io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 45: io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 46: io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 47: io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 47: io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 48: io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 49: io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 50: io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 50: io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 51: io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 52: io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 53: io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 53: io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 54: io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 55: io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 56: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 56: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 57: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 58: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	6,   // 59: io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.as_of_match_rule:type_name -> io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule
-	136, // 60: io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 60: io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 61: io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 62: io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 63: io.deephaven.proto.backplane.grpc.MultiJoinInput.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 64: io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 64: io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	41,  // 65: io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest.multi_join_inputs:type_name -> io.deephaven.proto.backplane.grpc.MultiJoinInput
-	136, // 66: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 66: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 67: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 68: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	7,   // 69: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_start_rule:type_name -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule
 	8,   // 70: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.range_end_rule:type_name -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule
 	48,  // 71: io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.aggregations:type_name -> io.deephaven.proto.backplane.grpc.Aggregation
-	136, // 72: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 72: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 73: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	102, // 74: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.aggregates:type_name -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate
-	136, // 75: io.deephaven.proto.backplane.grpc.AggregateAllRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 75: io.deephaven.proto.backplane.grpc.AggregateAllRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 76: io.deephaven.proto.backplane.grpc.AggregateAllRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	46,  // 77: io.deephaven.proto.backplane.grpc.AggregateAllRequest.spec:type_name -> io.deephaven.proto.backplane.grpc.AggSpec
 	115, // 78: io.deephaven.proto.backplane.grpc.AggSpec.abs_sum:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum
@@ -12643,7 +12724,7 @@ var file_deephaven_proto_table_proto_depIdxs = []int32{
 	114, // 98: io.deephaven.proto.backplane.grpc.AggSpec.weighted_avg:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted
 	114, // 99: io.deephaven.proto.backplane.grpc.AggSpec.weighted_sum:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted
 	125, // 100: io.deephaven.proto.backplane.grpc.AggSpec.var:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar
-	136, // 101: io.deephaven.proto.backplane.grpc.AggregateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	137, // 101: io.deephaven.proto.backplane.grpc.AggregateRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
 	12,  // 102: io.deephaven.proto.backplane.grpc.AggregateRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	12,  // 103: io.deephaven.proto.backplane.grpc.AggregateRequest.initial_groups_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
 	48,  // 104: io.deephaven.proto.backplane.grpc.AggregateRequest.aggregations:type_name -> io.deephaven.proto.backplane.grpc.Aggregation
@@ -12652,263 +12733,264 @@ var file_deephaven_proto_table_proto_depIdxs = []int32{
 	128, // 107: io.deephaven.proto.backplane.grpc.Aggregation.first_row_key:type_name -> io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey
 	128, // 108: io.deephaven.proto.backplane.grpc.Aggregation.last_row_key:type_name -> io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey
 	129, // 109: io.deephaven.proto.backplane.grpc.Aggregation.partition:type_name -> io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition
-	10,  // 110: io.deephaven.proto.backplane.grpc.SortDescriptor.direction:type_name -> io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection
-	136, // 111: io.deephaven.proto.backplane.grpc.SortTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 112: io.deephaven.proto.backplane.grpc.SortTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	49,  // 113: io.deephaven.proto.backplane.grpc.SortTableRequest.sorts:type_name -> io.deephaven.proto.backplane.grpc.SortDescriptor
-	136, // 114: io.deephaven.proto.backplane.grpc.FilterTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 115: io.deephaven.proto.backplane.grpc.FilterTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	57,  // 116: io.deephaven.proto.backplane.grpc.FilterTableRequest.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
-	136, // 117: io.deephaven.proto.backplane.grpc.SeekRowRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	55,  // 118: io.deephaven.proto.backplane.grpc.SeekRowRequest.seek_value:type_name -> io.deephaven.proto.backplane.grpc.Literal
-	54,  // 119: io.deephaven.proto.backplane.grpc.Value.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
-	55,  // 120: io.deephaven.proto.backplane.grpc.Value.literal:type_name -> io.deephaven.proto.backplane.grpc.Literal
-	58,  // 121: io.deephaven.proto.backplane.grpc.Condition.and:type_name -> io.deephaven.proto.backplane.grpc.AndCondition
-	59,  // 122: io.deephaven.proto.backplane.grpc.Condition.or:type_name -> io.deephaven.proto.backplane.grpc.OrCondition
-	60,  // 123: io.deephaven.proto.backplane.grpc.Condition.not:type_name -> io.deephaven.proto.backplane.grpc.NotCondition
-	61,  // 124: io.deephaven.proto.backplane.grpc.Condition.compare:type_name -> io.deephaven.proto.backplane.grpc.CompareCondition
-	62,  // 125: io.deephaven.proto.backplane.grpc.Condition.in:type_name -> io.deephaven.proto.backplane.grpc.InCondition
-	63,  // 126: io.deephaven.proto.backplane.grpc.Condition.invoke:type_name -> io.deephaven.proto.backplane.grpc.InvokeCondition
-	64,  // 127: io.deephaven.proto.backplane.grpc.Condition.is_null:type_name -> io.deephaven.proto.backplane.grpc.IsNullCondition
-	65,  // 128: io.deephaven.proto.backplane.grpc.Condition.matches:type_name -> io.deephaven.proto.backplane.grpc.MatchesCondition
-	66,  // 129: io.deephaven.proto.backplane.grpc.Condition.contains:type_name -> io.deephaven.proto.backplane.grpc.ContainsCondition
-	67,  // 130: io.deephaven.proto.backplane.grpc.Condition.search:type_name -> io.deephaven.proto.backplane.grpc.SearchCondition
-	57,  // 131: io.deephaven.proto.backplane.grpc.AndCondition.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
-	57,  // 132: io.deephaven.proto.backplane.grpc.OrCondition.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
-	57,  // 133: io.deephaven.proto.backplane.grpc.NotCondition.filter:type_name -> io.deephaven.proto.backplane.grpc.Condition
-	11,  // 134: io.deephaven.proto.backplane.grpc.CompareCondition.operation:type_name -> io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation
-	3,   // 135: io.deephaven.proto.backplane.grpc.CompareCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
-	56,  // 136: io.deephaven.proto.backplane.grpc.CompareCondition.lhs:type_name -> io.deephaven.proto.backplane.grpc.Value
-	56,  // 137: io.deephaven.proto.backplane.grpc.CompareCondition.rhs:type_name -> io.deephaven.proto.backplane.grpc.Value
-	56,  // 138: io.deephaven.proto.backplane.grpc.InCondition.target:type_name -> io.deephaven.proto.backplane.grpc.Value
-	56,  // 139: io.deephaven.proto.backplane.grpc.InCondition.candidates:type_name -> io.deephaven.proto.backplane.grpc.Value
-	3,   // 140: io.deephaven.proto.backplane.grpc.InCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
-	4,   // 141: io.deephaven.proto.backplane.grpc.InCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
-	56,  // 142: io.deephaven.proto.backplane.grpc.InvokeCondition.target:type_name -> io.deephaven.proto.backplane.grpc.Value
-	56,  // 143: io.deephaven.proto.backplane.grpc.InvokeCondition.arguments:type_name -> io.deephaven.proto.backplane.grpc.Value
-	54,  // 144: io.deephaven.proto.backplane.grpc.IsNullCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
-	54,  // 145: io.deephaven.proto.backplane.grpc.MatchesCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
-	3,   // 146: io.deephaven.proto.backplane.grpc.MatchesCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
-	4,   // 147: io.deephaven.proto.backplane.grpc.MatchesCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
-	54,  // 148: io.deephaven.proto.backplane.grpc.ContainsCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
-	3,   // 149: io.deephaven.proto.backplane.grpc.ContainsCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
-	4,   // 150: io.deephaven.proto.backplane.grpc.ContainsCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
-	54,  // 151: io.deephaven.proto.backplane.grpc.SearchCondition.optional_references:type_name -> io.deephaven.proto.backplane.grpc.Reference
-	136, // 152: io.deephaven.proto.backplane.grpc.FlattenRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 153: io.deephaven.proto.backplane.grpc.FlattenRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 154: io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 155: io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 156: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 157: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	130, // 158: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.zoom_range:type_name -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange
-	136, // 159: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 160: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.source_table_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	131, // 161: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.kind:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind
-	136, // 162: io.deephaven.proto.backplane.grpc.WhereInRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 163: io.deephaven.proto.backplane.grpc.WhereInRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	12,  // 164: io.deephaven.proto.backplane.grpc.WhereInRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	136, // 165: io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
-	12,  // 166: io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
-	135, // 167: io.deephaven.proto.backplane.grpc.BatchTableRequest.ops:type_name -> io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation
-	21,  // 168: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.math_context:type_name -> io.deephaven.proto.backplane.grpc.MathContext
-	79,  // 169: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.column:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn
-	80,  // 170: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.spec:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec
-	81,  // 171: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.sum:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum
-	82,  // 172: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin
-	83,  // 173: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax
-	84,  // 174: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.product:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct
-	85,  // 175: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.fill:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill
-	86,  // 176: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ema:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma
-	92,  // 177: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_sum:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum
-	93,  // 178: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_group:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup
-	94,  // 179: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_avg:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg
-	95,  // 180: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin
-	96,  // 181: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax
-	97,  // 182: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_product:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct
-	91,  // 183: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta
-	87,  // 184: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms
-	88,  // 185: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin
-	89,  // 186: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax
-	90,  // 187: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd
-	98,  // 188: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount
-	99,  // 189: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd
-	100, // 190: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg
-	101, // 191: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula
-	23,  // 192: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
-	22,  // 193: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	23,  // 194: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
-	22,  // 195: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	23,  // 196: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
-	22,  // 197: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	23,  // 198: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
-	22,  // 199: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	23,  // 200: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
-	22,  // 201: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	24,  // 202: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions
-	22,  // 203: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 204: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 205: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 206: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 207: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 208: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 209: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 210: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 211: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 212: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 213: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 214: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 215: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 216: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 217: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 218: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 219: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 220: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 221: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	22,  // 222: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
-	9,   // 223: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate.type:type_name -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType
-	110, // 224: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted.columns:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn
-	113, // 225: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique.non_unique_sentinel:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel
-	2,   // 226: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel.null_value:type_name -> io.deephaven.proto.backplane.grpc.NullValue
-	46,  // 227: io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.spec:type_name -> io.deephaven.proto.backplane.grpc.AggSpec
-	132, // 228: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_append_only:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly
-	133, // 229: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_key_backed:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked
-	134, // 230: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink
-	18,  // 231: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.empty_table:type_name -> io.deephaven.proto.backplane.grpc.EmptyTableRequest
-	19,  // 232: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.time_table:type_name -> io.deephaven.proto.backplane.grpc.TimeTableRequest
-	27,  // 233: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.drop_columns:type_name -> io.deephaven.proto.backplane.grpc.DropColumnsRequest
-	20,  // 234: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 235: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.lazy_update:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 236: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.view:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 237: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update_view:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 238: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.select:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	26,  // 239: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.select_distinct:type_name -> io.deephaven.proto.backplane.grpc.SelectDistinctRequest
-	51,  // 240: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.filter:type_name -> io.deephaven.proto.backplane.grpc.FilterTableRequest
-	28,  // 241: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.unstructured_filter:type_name -> io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest
-	50,  // 242: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.sort:type_name -> io.deephaven.proto.backplane.grpc.SortTableRequest
-	29,  // 243: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.head:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
-	29,  // 244: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.tail:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
-	30,  // 245: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.head_by:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
-	30,  // 246: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.tail_by:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
-	31,  // 247: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.ungroup:type_name -> io.deephaven.proto.backplane.grpc.UngroupRequest
-	32,  // 248: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.merge:type_name -> io.deephaven.proto.backplane.grpc.MergeTablesRequest
-	44,  // 249: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.combo_aggregate:type_name -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest
-	68,  // 250: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.flatten:type_name -> io.deephaven.proto.backplane.grpc.FlattenRequest
-	70,  // 251: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.run_chart_downsample:type_name -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest
-	35,  // 252: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.cross_join:type_name -> io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest
-	36,  // 253: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.natural_join:type_name -> io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest
-	37,  // 254: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.exact_join:type_name -> io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest
-	38,  // 255: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join:type_name -> io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest
-	39,  // 256: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join:type_name -> io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest
-	14,  // 257: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.fetch_table:type_name -> io.deephaven.proto.backplane.grpc.FetchTableRequest
-	15,  // 258: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.apply_preview_columns:type_name -> io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest
-	71,  // 259: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.create_input_table:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest
-	25,  // 260: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update_by:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest
-	72,  // 261: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.where_in:type_name -> io.deephaven.proto.backplane.grpc.WhereInRequest
-	45,  // 262: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aggregate_all:type_name -> io.deephaven.proto.backplane.grpc.AggregateAllRequest
-	47,  // 263: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aggregate:type_name -> io.deephaven.proto.backplane.grpc.AggregateRequest
-	33,  // 264: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.snapshot:type_name -> io.deephaven.proto.backplane.grpc.SnapshotTableRequest
-	34,  // 265: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.snapshot_when:type_name -> io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest
-	69,  // 266: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table:type_name -> io.deephaven.proto.backplane.grpc.MetaTableRequest
-	43,  // 267: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.range_join:type_name -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest
-	40,  // 268: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj:type_name -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
-	40,  // 269: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj:type_name -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
-	73,  // 270: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics:type_name -> io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest
-	42,  // 271: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join:type_name -> io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest
-	136, // 272: io.deephaven.proto.backplane.grpc.TableService.GetExportedTableCreationResponse:input_type -> io.deephaven.proto.backplane.grpc.Ticket
-	14,  // 273: io.deephaven.proto.backplane.grpc.TableService.FetchTable:input_type -> io.deephaven.proto.backplane.grpc.FetchTableRequest
-	15,  // 274: io.deephaven.proto.backplane.grpc.TableService.ApplyPreviewColumns:input_type -> io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest
-	18,  // 275: io.deephaven.proto.backplane.grpc.TableService.EmptyTable:input_type -> io.deephaven.proto.backplane.grpc.EmptyTableRequest
-	19,  // 276: io.deephaven.proto.backplane.grpc.TableService.TimeTable:input_type -> io.deephaven.proto.backplane.grpc.TimeTableRequest
-	27,  // 277: io.deephaven.proto.backplane.grpc.TableService.DropColumns:input_type -> io.deephaven.proto.backplane.grpc.DropColumnsRequest
-	20,  // 278: io.deephaven.proto.backplane.grpc.TableService.Update:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 279: io.deephaven.proto.backplane.grpc.TableService.LazyUpdate:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 280: io.deephaven.proto.backplane.grpc.TableService.View:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 281: io.deephaven.proto.backplane.grpc.TableService.UpdateView:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	20,  // 282: io.deephaven.proto.backplane.grpc.TableService.Select:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
-	25,  // 283: io.deephaven.proto.backplane.grpc.TableService.UpdateBy:input_type -> io.deephaven.proto.backplane.grpc.UpdateByRequest
-	26,  // 284: io.deephaven.proto.backplane.grpc.TableService.SelectDistinct:input_type -> io.deephaven.proto.backplane.grpc.SelectDistinctRequest
-	51,  // 285: io.deephaven.proto.backplane.grpc.TableService.Filter:input_type -> io.deephaven.proto.backplane.grpc.FilterTableRequest
-	28,  // 286: io.deephaven.proto.backplane.grpc.TableService.UnstructuredFilter:input_type -> io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest
-	50,  // 287: io.deephaven.proto.backplane.grpc.TableService.Sort:input_type -> io.deephaven.proto.backplane.grpc.SortTableRequest
-	29,  // 288: io.deephaven.proto.backplane.grpc.TableService.Head:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
-	29,  // 289: io.deephaven.proto.backplane.grpc.TableService.Tail:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
-	30,  // 290: io.deephaven.proto.backplane.grpc.TableService.HeadBy:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
-	30,  // 291: io.deephaven.proto.backplane.grpc.TableService.TailBy:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
-	31,  // 292: io.deephaven.proto.backplane.grpc.TableService.Ungroup:input_type -> io.deephaven.proto.backplane.grpc.UngroupRequest
-	32,  // 293: io.deephaven.proto.backplane.grpc.TableService.MergeTables:input_type -> io.deephaven.proto.backplane.grpc.MergeTablesRequest
-	35,  // 294: io.deephaven.proto.backplane.grpc.TableService.CrossJoinTables:input_type -> io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest
-	36,  // 295: io.deephaven.proto.backplane.grpc.TableService.NaturalJoinTables:input_type -> io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest
-	37,  // 296: io.deephaven.proto.backplane.grpc.TableService.ExactJoinTables:input_type -> io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest
-	38,  // 297: io.deephaven.proto.backplane.grpc.TableService.LeftJoinTables:input_type -> io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest
-	39,  // 298: io.deephaven.proto.backplane.grpc.TableService.AsOfJoinTables:input_type -> io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest
-	40,  // 299: io.deephaven.proto.backplane.grpc.TableService.AjTables:input_type -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
-	40,  // 300: io.deephaven.proto.backplane.grpc.TableService.RajTables:input_type -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
-	42,  // 301: io.deephaven.proto.backplane.grpc.TableService.MultiJoinTables:input_type -> io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest
-	43,  // 302: io.deephaven.proto.backplane.grpc.TableService.RangeJoinTables:input_type -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest
-	44,  // 303: io.deephaven.proto.backplane.grpc.TableService.ComboAggregate:input_type -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest
-	45,  // 304: io.deephaven.proto.backplane.grpc.TableService.AggregateAll:input_type -> io.deephaven.proto.backplane.grpc.AggregateAllRequest
-	47,  // 305: io.deephaven.proto.backplane.grpc.TableService.Aggregate:input_type -> io.deephaven.proto.backplane.grpc.AggregateRequest
-	33,  // 306: io.deephaven.proto.backplane.grpc.TableService.Snapshot:input_type -> io.deephaven.proto.backplane.grpc.SnapshotTableRequest
-	34,  // 307: io.deephaven.proto.backplane.grpc.TableService.SnapshotWhen:input_type -> io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest
-	68,  // 308: io.deephaven.proto.backplane.grpc.TableService.Flatten:input_type -> io.deephaven.proto.backplane.grpc.FlattenRequest
-	70,  // 309: io.deephaven.proto.backplane.grpc.TableService.RunChartDownsample:input_type -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest
-	71,  // 310: io.deephaven.proto.backplane.grpc.TableService.CreateInputTable:input_type -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest
-	72,  // 311: io.deephaven.proto.backplane.grpc.TableService.WhereIn:input_type -> io.deephaven.proto.backplane.grpc.WhereInRequest
-	74,  // 312: io.deephaven.proto.backplane.grpc.TableService.Batch:input_type -> io.deephaven.proto.backplane.grpc.BatchTableRequest
-	16,  // 313: io.deephaven.proto.backplane.grpc.TableService.ExportedTableUpdates:input_type -> io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest
-	52,  // 314: io.deephaven.proto.backplane.grpc.TableService.SeekRow:input_type -> io.deephaven.proto.backplane.grpc.SeekRowRequest
-	69,  // 315: io.deephaven.proto.backplane.grpc.TableService.MetaTable:input_type -> io.deephaven.proto.backplane.grpc.MetaTableRequest
-	73,  // 316: io.deephaven.proto.backplane.grpc.TableService.ComputeColumnStatistics:input_type -> io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest
-	13,  // 317: io.deephaven.proto.backplane.grpc.TableService.GetExportedTableCreationResponse:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 318: io.deephaven.proto.backplane.grpc.TableService.FetchTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 319: io.deephaven.proto.backplane.grpc.TableService.ApplyPreviewColumns:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 320: io.deephaven.proto.backplane.grpc.TableService.EmptyTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 321: io.deephaven.proto.backplane.grpc.TableService.TimeTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 322: io.deephaven.proto.backplane.grpc.TableService.DropColumns:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 323: io.deephaven.proto.backplane.grpc.TableService.Update:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 324: io.deephaven.proto.backplane.grpc.TableService.LazyUpdate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 325: io.deephaven.proto.backplane.grpc.TableService.View:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 326: io.deephaven.proto.backplane.grpc.TableService.UpdateView:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 327: io.deephaven.proto.backplane.grpc.TableService.Select:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 328: io.deephaven.proto.backplane.grpc.TableService.UpdateBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 329: io.deephaven.proto.backplane.grpc.TableService.SelectDistinct:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 330: io.deephaven.proto.backplane.grpc.TableService.Filter:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 331: io.deephaven.proto.backplane.grpc.TableService.UnstructuredFilter:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 332: io.deephaven.proto.backplane.grpc.TableService.Sort:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 333: io.deephaven.proto.backplane.grpc.TableService.Head:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 334: io.deephaven.proto.backplane.grpc.TableService.Tail:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 335: io.deephaven.proto.backplane.grpc.TableService.HeadBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 336: io.deephaven.proto.backplane.grpc.TableService.TailBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 337: io.deephaven.proto.backplane.grpc.TableService.Ungroup:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 338: io.deephaven.proto.backplane.grpc.TableService.MergeTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 339: io.deephaven.proto.backplane.grpc.TableService.CrossJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 340: io.deephaven.proto.backplane.grpc.TableService.NaturalJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 341: io.deephaven.proto.backplane.grpc.TableService.ExactJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 342: io.deephaven.proto.backplane.grpc.TableService.LeftJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 343: io.deephaven.proto.backplane.grpc.TableService.AsOfJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 344: io.deephaven.proto.backplane.grpc.TableService.AjTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 345: io.deephaven.proto.backplane.grpc.TableService.RajTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 346: io.deephaven.proto.backplane.grpc.TableService.MultiJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 347: io.deephaven.proto.backplane.grpc.TableService.RangeJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 348: io.deephaven.proto.backplane.grpc.TableService.ComboAggregate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 349: io.deephaven.proto.backplane.grpc.TableService.AggregateAll:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 350: io.deephaven.proto.backplane.grpc.TableService.Aggregate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 351: io.deephaven.proto.backplane.grpc.TableService.Snapshot:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 352: io.deephaven.proto.backplane.grpc.TableService.SnapshotWhen:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 353: io.deephaven.proto.backplane.grpc.TableService.Flatten:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 354: io.deephaven.proto.backplane.grpc.TableService.RunChartDownsample:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 355: io.deephaven.proto.backplane.grpc.TableService.CreateInputTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 356: io.deephaven.proto.backplane.grpc.TableService.WhereIn:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 357: io.deephaven.proto.backplane.grpc.TableService.Batch:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	17,  // 358: io.deephaven.proto.backplane.grpc.TableService.ExportedTableUpdates:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage
-	53,  // 359: io.deephaven.proto.backplane.grpc.TableService.SeekRow:output_type -> io.deephaven.proto.backplane.grpc.SeekRowResponse
-	13,  // 360: io.deephaven.proto.backplane.grpc.TableService.MetaTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	13,  // 361: io.deephaven.proto.backplane.grpc.TableService.ComputeColumnStatistics:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
-	317, // [317:362] is the sub-list for method output_type
-	272, // [272:317] is the sub-list for method input_type
-	272, // [272:272] is the sub-list for extension type_name
-	272, // [272:272] is the sub-list for extension extendee
-	0,   // [0:272] is the sub-list for field type_name
+	130, // 110: io.deephaven.proto.backplane.grpc.Aggregation.formula:type_name -> io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula
+	10,  // 111: io.deephaven.proto.backplane.grpc.SortDescriptor.direction:type_name -> io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection
+	137, // 112: io.deephaven.proto.backplane.grpc.SortTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 113: io.deephaven.proto.backplane.grpc.SortTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	49,  // 114: io.deephaven.proto.backplane.grpc.SortTableRequest.sorts:type_name -> io.deephaven.proto.backplane.grpc.SortDescriptor
+	137, // 115: io.deephaven.proto.backplane.grpc.FilterTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 116: io.deephaven.proto.backplane.grpc.FilterTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	57,  // 117: io.deephaven.proto.backplane.grpc.FilterTableRequest.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
+	137, // 118: io.deephaven.proto.backplane.grpc.SeekRowRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	55,  // 119: io.deephaven.proto.backplane.grpc.SeekRowRequest.seek_value:type_name -> io.deephaven.proto.backplane.grpc.Literal
+	54,  // 120: io.deephaven.proto.backplane.grpc.Value.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
+	55,  // 121: io.deephaven.proto.backplane.grpc.Value.literal:type_name -> io.deephaven.proto.backplane.grpc.Literal
+	58,  // 122: io.deephaven.proto.backplane.grpc.Condition.and:type_name -> io.deephaven.proto.backplane.grpc.AndCondition
+	59,  // 123: io.deephaven.proto.backplane.grpc.Condition.or:type_name -> io.deephaven.proto.backplane.grpc.OrCondition
+	60,  // 124: io.deephaven.proto.backplane.grpc.Condition.not:type_name -> io.deephaven.proto.backplane.grpc.NotCondition
+	61,  // 125: io.deephaven.proto.backplane.grpc.Condition.compare:type_name -> io.deephaven.proto.backplane.grpc.CompareCondition
+	62,  // 126: io.deephaven.proto.backplane.grpc.Condition.in:type_name -> io.deephaven.proto.backplane.grpc.InCondition
+	63,  // 127: io.deephaven.proto.backplane.grpc.Condition.invoke:type_name -> io.deephaven.proto.backplane.grpc.InvokeCondition
+	64,  // 128: io.deephaven.proto.backplane.grpc.Condition.is_null:type_name -> io.deephaven.proto.backplane.grpc.IsNullCondition
+	65,  // 129: io.deephaven.proto.backplane.grpc.Condition.matches:type_name -> io.deephaven.proto.backplane.grpc.MatchesCondition
+	66,  // 130: io.deephaven.proto.backplane.grpc.Condition.contains:type_name -> io.deephaven.proto.backplane.grpc.ContainsCondition
+	67,  // 131: io.deephaven.proto.backplane.grpc.Condition.search:type_name -> io.deephaven.proto.backplane.grpc.SearchCondition
+	57,  // 132: io.deephaven.proto.backplane.grpc.AndCondition.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
+	57,  // 133: io.deephaven.proto.backplane.grpc.OrCondition.filters:type_name -> io.deephaven.proto.backplane.grpc.Condition
+	57,  // 134: io.deephaven.proto.backplane.grpc.NotCondition.filter:type_name -> io.deephaven.proto.backplane.grpc.Condition
+	11,  // 135: io.deephaven.proto.backplane.grpc.CompareCondition.operation:type_name -> io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation
+	3,   // 136: io.deephaven.proto.backplane.grpc.CompareCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
+	56,  // 137: io.deephaven.proto.backplane.grpc.CompareCondition.lhs:type_name -> io.deephaven.proto.backplane.grpc.Value
+	56,  // 138: io.deephaven.proto.backplane.grpc.CompareCondition.rhs:type_name -> io.deephaven.proto.backplane.grpc.Value
+	56,  // 139: io.deephaven.proto.backplane.grpc.InCondition.target:type_name -> io.deephaven.proto.backplane.grpc.Value
+	56,  // 140: io.deephaven.proto.backplane.grpc.InCondition.candidates:type_name -> io.deephaven.proto.backplane.grpc.Value
+	3,   // 141: io.deephaven.proto.backplane.grpc.InCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
+	4,   // 142: io.deephaven.proto.backplane.grpc.InCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
+	56,  // 143: io.deephaven.proto.backplane.grpc.InvokeCondition.target:type_name -> io.deephaven.proto.backplane.grpc.Value
+	56,  // 144: io.deephaven.proto.backplane.grpc.InvokeCondition.arguments:type_name -> io.deephaven.proto.backplane.grpc.Value
+	54,  // 145: io.deephaven.proto.backplane.grpc.IsNullCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
+	54,  // 146: io.deephaven.proto.backplane.grpc.MatchesCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
+	3,   // 147: io.deephaven.proto.backplane.grpc.MatchesCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
+	4,   // 148: io.deephaven.proto.backplane.grpc.MatchesCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
+	54,  // 149: io.deephaven.proto.backplane.grpc.ContainsCondition.reference:type_name -> io.deephaven.proto.backplane.grpc.Reference
+	3,   // 150: io.deephaven.proto.backplane.grpc.ContainsCondition.case_sensitivity:type_name -> io.deephaven.proto.backplane.grpc.CaseSensitivity
+	4,   // 151: io.deephaven.proto.backplane.grpc.ContainsCondition.match_type:type_name -> io.deephaven.proto.backplane.grpc.MatchType
+	54,  // 152: io.deephaven.proto.backplane.grpc.SearchCondition.optional_references:type_name -> io.deephaven.proto.backplane.grpc.Reference
+	137, // 153: io.deephaven.proto.backplane.grpc.FlattenRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 154: io.deephaven.proto.backplane.grpc.FlattenRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	137, // 155: io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 156: io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	137, // 157: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 158: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	131, // 159: io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.zoom_range:type_name -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange
+	137, // 160: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 161: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.source_table_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	132, // 162: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.kind:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind
+	137, // 163: io.deephaven.proto.backplane.grpc.WhereInRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 164: io.deephaven.proto.backplane.grpc.WhereInRequest.left_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	12,  // 165: io.deephaven.proto.backplane.grpc.WhereInRequest.right_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	137, // 166: io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.result_id:type_name -> io.deephaven.proto.backplane.grpc.Ticket
+	12,  // 167: io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest.source_id:type_name -> io.deephaven.proto.backplane.grpc.TableReference
+	136, // 168: io.deephaven.proto.backplane.grpc.BatchTableRequest.ops:type_name -> io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation
+	21,  // 169: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.math_context:type_name -> io.deephaven.proto.backplane.grpc.MathContext
+	79,  // 170: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.column:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn
+	80,  // 171: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.spec:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec
+	81,  // 172: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.sum:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum
+	82,  // 173: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin
+	83,  // 174: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax
+	84,  // 175: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.product:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct
+	85,  // 176: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.fill:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill
+	86,  // 177: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ema:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma
+	92,  // 178: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_sum:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum
+	93,  // 179: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_group:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup
+	94,  // 180: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_avg:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg
+	95,  // 181: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin
+	96,  // 182: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax
+	97,  // 183: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_product:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct
+	91,  // 184: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.delta:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta
+	87,  // 185: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ems:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms
+	88,  // 186: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_min:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin
+	89,  // 187: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_max:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax
+	90,  // 188: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.em_std:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd
+	98,  // 189: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_count:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount
+	99,  // 190: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_std:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd
+	100, // 191: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_wavg:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg
+	101, // 192: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_formula:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula
+	23,  // 193: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
+	22,  // 194: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	23,  // 195: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
+	22,  // 196: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	23,  // 197: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
+	22,  // 198: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMin.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	23,  // 199: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
+	22,  // 200: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmMax.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	23,  // 201: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByEmOptions
+	22,  // 202: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEmStd.window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	24,  // 203: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByDelta.options:type_name -> io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions
+	22,  // 204: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 205: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 206: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 207: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 208: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 209: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 210: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 211: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 212: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 213: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 214: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 215: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 216: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 217: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingCount.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 218: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 219: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingStd.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 220: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 221: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingWAvg.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 222: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.reverse_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	22,  // 223: io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingFormula.forward_window_scale:type_name -> io.deephaven.proto.backplane.grpc.UpdateByWindowScale
+	9,   // 224: io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate.type:type_name -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType
+	110, // 225: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSorted.columns:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSortedColumn
+	113, // 226: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique.non_unique_sentinel:type_name -> io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel
+	2,   // 227: io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel.null_value:type_name -> io.deephaven.proto.backplane.grpc.NullValue
+	46,  // 228: io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.spec:type_name -> io.deephaven.proto.backplane.grpc.AggSpec
+	133, // 229: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_append_only:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly
+	134, // 230: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_key_backed:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked
+	135, // 231: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.blink:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.Blink
+	18,  // 232: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.empty_table:type_name -> io.deephaven.proto.backplane.grpc.EmptyTableRequest
+	19,  // 233: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.time_table:type_name -> io.deephaven.proto.backplane.grpc.TimeTableRequest
+	27,  // 234: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.drop_columns:type_name -> io.deephaven.proto.backplane.grpc.DropColumnsRequest
+	20,  // 235: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 236: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.lazy_update:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 237: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.view:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 238: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update_view:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 239: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.select:type_name -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	26,  // 240: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.select_distinct:type_name -> io.deephaven.proto.backplane.grpc.SelectDistinctRequest
+	51,  // 241: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.filter:type_name -> io.deephaven.proto.backplane.grpc.FilterTableRequest
+	28,  // 242: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.unstructured_filter:type_name -> io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest
+	50,  // 243: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.sort:type_name -> io.deephaven.proto.backplane.grpc.SortTableRequest
+	29,  // 244: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.head:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
+	29,  // 245: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.tail:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
+	30,  // 246: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.head_by:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
+	30,  // 247: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.tail_by:type_name -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
+	31,  // 248: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.ungroup:type_name -> io.deephaven.proto.backplane.grpc.UngroupRequest
+	32,  // 249: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.merge:type_name -> io.deephaven.proto.backplane.grpc.MergeTablesRequest
+	44,  // 250: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.combo_aggregate:type_name -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest
+	68,  // 251: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.flatten:type_name -> io.deephaven.proto.backplane.grpc.FlattenRequest
+	70,  // 252: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.run_chart_downsample:type_name -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest
+	35,  // 253: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.cross_join:type_name -> io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest
+	36,  // 254: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.natural_join:type_name -> io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest
+	37,  // 255: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.exact_join:type_name -> io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest
+	38,  // 256: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join:type_name -> io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest
+	39,  // 257: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join:type_name -> io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest
+	14,  // 258: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.fetch_table:type_name -> io.deephaven.proto.backplane.grpc.FetchTableRequest
+	15,  // 259: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.apply_preview_columns:type_name -> io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest
+	71,  // 260: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.create_input_table:type_name -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest
+	25,  // 261: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.update_by:type_name -> io.deephaven.proto.backplane.grpc.UpdateByRequest
+	72,  // 262: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.where_in:type_name -> io.deephaven.proto.backplane.grpc.WhereInRequest
+	45,  // 263: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aggregate_all:type_name -> io.deephaven.proto.backplane.grpc.AggregateAllRequest
+	47,  // 264: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aggregate:type_name -> io.deephaven.proto.backplane.grpc.AggregateRequest
+	33,  // 265: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.snapshot:type_name -> io.deephaven.proto.backplane.grpc.SnapshotTableRequest
+	34,  // 266: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.snapshot_when:type_name -> io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest
+	69,  // 267: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table:type_name -> io.deephaven.proto.backplane.grpc.MetaTableRequest
+	43,  // 268: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.range_join:type_name -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest
+	40,  // 269: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj:type_name -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
+	40,  // 270: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj:type_name -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
+	73,  // 271: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.column_statistics:type_name -> io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest
+	42,  // 272: io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.multi_join:type_name -> io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest
+	137, // 273: io.deephaven.proto.backplane.grpc.TableService.GetExportedTableCreationResponse:input_type -> io.deephaven.proto.backplane.grpc.Ticket
+	14,  // 274: io.deephaven.proto.backplane.grpc.TableService.FetchTable:input_type -> io.deephaven.proto.backplane.grpc.FetchTableRequest
+	15,  // 275: io.deephaven.proto.backplane.grpc.TableService.ApplyPreviewColumns:input_type -> io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest
+	18,  // 276: io.deephaven.proto.backplane.grpc.TableService.EmptyTable:input_type -> io.deephaven.proto.backplane.grpc.EmptyTableRequest
+	19,  // 277: io.deephaven.proto.backplane.grpc.TableService.TimeTable:input_type -> io.deephaven.proto.backplane.grpc.TimeTableRequest
+	27,  // 278: io.deephaven.proto.backplane.grpc.TableService.DropColumns:input_type -> io.deephaven.proto.backplane.grpc.DropColumnsRequest
+	20,  // 279: io.deephaven.proto.backplane.grpc.TableService.Update:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 280: io.deephaven.proto.backplane.grpc.TableService.LazyUpdate:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 281: io.deephaven.proto.backplane.grpc.TableService.View:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 282: io.deephaven.proto.backplane.grpc.TableService.UpdateView:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	20,  // 283: io.deephaven.proto.backplane.grpc.TableService.Select:input_type -> io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest
+	25,  // 284: io.deephaven.proto.backplane.grpc.TableService.UpdateBy:input_type -> io.deephaven.proto.backplane.grpc.UpdateByRequest
+	26,  // 285: io.deephaven.proto.backplane.grpc.TableService.SelectDistinct:input_type -> io.deephaven.proto.backplane.grpc.SelectDistinctRequest
+	51,  // 286: io.deephaven.proto.backplane.grpc.TableService.Filter:input_type -> io.deephaven.proto.backplane.grpc.FilterTableRequest
+	28,  // 287: io.deephaven.proto.backplane.grpc.TableService.UnstructuredFilter:input_type -> io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest
+	50,  // 288: io.deephaven.proto.backplane.grpc.TableService.Sort:input_type -> io.deephaven.proto.backplane.grpc.SortTableRequest
+	29,  // 289: io.deephaven.proto.backplane.grpc.TableService.Head:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
+	29,  // 290: io.deephaven.proto.backplane.grpc.TableService.Tail:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailRequest
+	30,  // 291: io.deephaven.proto.backplane.grpc.TableService.HeadBy:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
+	30,  // 292: io.deephaven.proto.backplane.grpc.TableService.TailBy:input_type -> io.deephaven.proto.backplane.grpc.HeadOrTailByRequest
+	31,  // 293: io.deephaven.proto.backplane.grpc.TableService.Ungroup:input_type -> io.deephaven.proto.backplane.grpc.UngroupRequest
+	32,  // 294: io.deephaven.proto.backplane.grpc.TableService.MergeTables:input_type -> io.deephaven.proto.backplane.grpc.MergeTablesRequest
+	35,  // 295: io.deephaven.proto.backplane.grpc.TableService.CrossJoinTables:input_type -> io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest
+	36,  // 296: io.deephaven.proto.backplane.grpc.TableService.NaturalJoinTables:input_type -> io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest
+	37,  // 297: io.deephaven.proto.backplane.grpc.TableService.ExactJoinTables:input_type -> io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest
+	38,  // 298: io.deephaven.proto.backplane.grpc.TableService.LeftJoinTables:input_type -> io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest
+	39,  // 299: io.deephaven.proto.backplane.grpc.TableService.AsOfJoinTables:input_type -> io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest
+	40,  // 300: io.deephaven.proto.backplane.grpc.TableService.AjTables:input_type -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
+	40,  // 301: io.deephaven.proto.backplane.grpc.TableService.RajTables:input_type -> io.deephaven.proto.backplane.grpc.AjRajTablesRequest
+	42,  // 302: io.deephaven.proto.backplane.grpc.TableService.MultiJoinTables:input_type -> io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest
+	43,  // 303: io.deephaven.proto.backplane.grpc.TableService.RangeJoinTables:input_type -> io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest
+	44,  // 304: io.deephaven.proto.backplane.grpc.TableService.ComboAggregate:input_type -> io.deephaven.proto.backplane.grpc.ComboAggregateRequest
+	45,  // 305: io.deephaven.proto.backplane.grpc.TableService.AggregateAll:input_type -> io.deephaven.proto.backplane.grpc.AggregateAllRequest
+	47,  // 306: io.deephaven.proto.backplane.grpc.TableService.Aggregate:input_type -> io.deephaven.proto.backplane.grpc.AggregateRequest
+	33,  // 307: io.deephaven.proto.backplane.grpc.TableService.Snapshot:input_type -> io.deephaven.proto.backplane.grpc.SnapshotTableRequest
+	34,  // 308: io.deephaven.proto.backplane.grpc.TableService.SnapshotWhen:input_type -> io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest
+	68,  // 309: io.deephaven.proto.backplane.grpc.TableService.Flatten:input_type -> io.deephaven.proto.backplane.grpc.FlattenRequest
+	70,  // 310: io.deephaven.proto.backplane.grpc.TableService.RunChartDownsample:input_type -> io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest
+	71,  // 311: io.deephaven.proto.backplane.grpc.TableService.CreateInputTable:input_type -> io.deephaven.proto.backplane.grpc.CreateInputTableRequest
+	72,  // 312: io.deephaven.proto.backplane.grpc.TableService.WhereIn:input_type -> io.deephaven.proto.backplane.grpc.WhereInRequest
+	74,  // 313: io.deephaven.proto.backplane.grpc.TableService.Batch:input_type -> io.deephaven.proto.backplane.grpc.BatchTableRequest
+	16,  // 314: io.deephaven.proto.backplane.grpc.TableService.ExportedTableUpdates:input_type -> io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest
+	52,  // 315: io.deephaven.proto.backplane.grpc.TableService.SeekRow:input_type -> io.deephaven.proto.backplane.grpc.SeekRowRequest
+	69,  // 316: io.deephaven.proto.backplane.grpc.TableService.MetaTable:input_type -> io.deephaven.proto.backplane.grpc.MetaTableRequest
+	73,  // 317: io.deephaven.proto.backplane.grpc.TableService.ComputeColumnStatistics:input_type -> io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest
+	13,  // 318: io.deephaven.proto.backplane.grpc.TableService.GetExportedTableCreationResponse:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 319: io.deephaven.proto.backplane.grpc.TableService.FetchTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 320: io.deephaven.proto.backplane.grpc.TableService.ApplyPreviewColumns:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 321: io.deephaven.proto.backplane.grpc.TableService.EmptyTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 322: io.deephaven.proto.backplane.grpc.TableService.TimeTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 323: io.deephaven.proto.backplane.grpc.TableService.DropColumns:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 324: io.deephaven.proto.backplane.grpc.TableService.Update:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 325: io.deephaven.proto.backplane.grpc.TableService.LazyUpdate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 326: io.deephaven.proto.backplane.grpc.TableService.View:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 327: io.deephaven.proto.backplane.grpc.TableService.UpdateView:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 328: io.deephaven.proto.backplane.grpc.TableService.Select:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 329: io.deephaven.proto.backplane.grpc.TableService.UpdateBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 330: io.deephaven.proto.backplane.grpc.TableService.SelectDistinct:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 331: io.deephaven.proto.backplane.grpc.TableService.Filter:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 332: io.deephaven.proto.backplane.grpc.TableService.UnstructuredFilter:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 333: io.deephaven.proto.backplane.grpc.TableService.Sort:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 334: io.deephaven.proto.backplane.grpc.TableService.Head:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 335: io.deephaven.proto.backplane.grpc.TableService.Tail:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 336: io.deephaven.proto.backplane.grpc.TableService.HeadBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 337: io.deephaven.proto.backplane.grpc.TableService.TailBy:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 338: io.deephaven.proto.backplane.grpc.TableService.Ungroup:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 339: io.deephaven.proto.backplane.grpc.TableService.MergeTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 340: io.deephaven.proto.backplane.grpc.TableService.CrossJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 341: io.deephaven.proto.backplane.grpc.TableService.NaturalJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 342: io.deephaven.proto.backplane.grpc.TableService.ExactJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 343: io.deephaven.proto.backplane.grpc.TableService.LeftJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 344: io.deephaven.proto.backplane.grpc.TableService.AsOfJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 345: io.deephaven.proto.backplane.grpc.TableService.AjTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 346: io.deephaven.proto.backplane.grpc.TableService.RajTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 347: io.deephaven.proto.backplane.grpc.TableService.MultiJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 348: io.deephaven.proto.backplane.grpc.TableService.RangeJoinTables:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 349: io.deephaven.proto.backplane.grpc.TableService.ComboAggregate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 350: io.deephaven.proto.backplane.grpc.TableService.AggregateAll:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 351: io.deephaven.proto.backplane.grpc.TableService.Aggregate:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 352: io.deephaven.proto.backplane.grpc.TableService.Snapshot:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 353: io.deephaven.proto.backplane.grpc.TableService.SnapshotWhen:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 354: io.deephaven.proto.backplane.grpc.TableService.Flatten:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 355: io.deephaven.proto.backplane.grpc.TableService.RunChartDownsample:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 356: io.deephaven.proto.backplane.grpc.TableService.CreateInputTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 357: io.deephaven.proto.backplane.grpc.TableService.WhereIn:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 358: io.deephaven.proto.backplane.grpc.TableService.Batch:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	17,  // 359: io.deephaven.proto.backplane.grpc.TableService.ExportedTableUpdates:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage
+	53,  // 360: io.deephaven.proto.backplane.grpc.TableService.SeekRow:output_type -> io.deephaven.proto.backplane.grpc.SeekRowResponse
+	13,  // 361: io.deephaven.proto.backplane.grpc.TableService.MetaTable:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	13,  // 362: io.deephaven.proto.backplane.grpc.TableService.ComputeColumnStatistics:output_type -> io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse
+	318, // [318:363] is the sub-list for method output_type
+	273, // [273:318] is the sub-list for method input_type
+	273, // [273:273] is the sub-list for extension type_name
+	273, // [273:273] is the sub-list for extension extendee
+	0,   // [0:273] is the sub-list for field type_name
 }
 
 func init() { file_deephaven_proto_table_proto_init() }
@@ -14334,7 +14416,7 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[118].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RunChartDownsampleRequest_ZoomRange); i {
+			switch v := v.(*Aggregation_AggregationFormula); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14346,7 +14428,7 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[119].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInputTableRequest_InputTableKind); i {
+			switch v := v.(*RunChartDownsampleRequest_ZoomRange); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14358,7 +14440,7 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[120].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly); i {
+			switch v := v.(*CreateInputTableRequest_InputTableKind); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14370,7 +14452,7 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[121].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked); i {
+			switch v := v.(*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14382,7 +14464,7 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[122].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInputTableRequest_InputTableKind_Blink); i {
+			switch v := v.(*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14394,6 +14476,18 @@ func file_deephaven_proto_table_proto_init() {
 			}
 		}
 		file_deephaven_proto_table_proto_msgTypes[123].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CreateInputTableRequest_InputTableKind_Blink); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_deephaven_proto_table_proto_msgTypes[124].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BatchTableRequest_Operation); i {
 			case 0:
 				return &v.state
@@ -14451,6 +14545,7 @@ func file_deephaven_proto_table_proto_init() {
 		(*Aggregation_FirstRowKey)(nil),
 		(*Aggregation_LastRowKey)(nil),
 		(*Aggregation_Partition)(nil),
+		(*Aggregation_Formula)(nil),
 	}
 	file_deephaven_proto_table_proto_msgTypes[43].OneofWrappers = []interface{}{
 		(*Literal_StringValue)(nil),
@@ -14525,13 +14620,13 @@ func file_deephaven_proto_table_proto_init() {
 		(*AggSpec_AggSpecNonUniqueSentinel_ShortValue)(nil),
 		(*AggSpec_AggSpecNonUniqueSentinel_CharValue)(nil),
 	}
-	file_deephaven_proto_table_proto_msgTypes[118].OneofWrappers = []interface{}{}
-	file_deephaven_proto_table_proto_msgTypes[119].OneofWrappers = []interface{}{
+	file_deephaven_proto_table_proto_msgTypes[119].OneofWrappers = []interface{}{}
+	file_deephaven_proto_table_proto_msgTypes[120].OneofWrappers = []interface{}{
 		(*CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_)(nil),
 		(*CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_)(nil),
 		(*CreateInputTableRequest_InputTableKind_Blink_)(nil),
 	}
-	file_deephaven_proto_table_proto_msgTypes[123].OneofWrappers = []interface{}{
+	file_deephaven_proto_table_proto_msgTypes[124].OneofWrappers = []interface{}{
 		(*BatchTableRequest_Operation_EmptyTable)(nil),
 		(*BatchTableRequest_Operation_TimeTable)(nil),
 		(*BatchTableRequest_Operation_DropColumns)(nil),
@@ -14580,7 +14675,7 @@ func file_deephaven_proto_table_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_deephaven_proto_table_proto_rawDesc,
 			NumEnums:      12,
-			NumMessages:   124,
+			NumMessages:   125,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
