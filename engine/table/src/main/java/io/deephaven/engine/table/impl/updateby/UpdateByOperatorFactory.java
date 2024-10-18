@@ -4,14 +4,11 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.Pair;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -1444,13 +1441,16 @@ public class UpdateByOperatorFactory {
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
             // Extract the output column name and formula from the formula string
-            final Selectable column = Selectable.parse(rs.formula());
-
-            Assert.eqTrue(column.expression() instanceof RawString, "column.expression() instanceof RawString");
+            final int ix = rs.formula().indexOf('=');
+            if (ix < 0 || ix + 1 == rs.formula().length() || rs.formula().charAt(ix + 1) == '=') {
+                throw new IllegalArgumentException(String.format(
+                        "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", rs.formula()));
+            }
+            final String outputColumn = rs.formula().substring(0, ix);
+            final String expression = rs.formula().substring(ix + 1);
 
             // Create a new column pair with the same name for the left and right columns
-            final MatchPair pair = new MatchPair(column.newColumn().name(), column.newColumn().name());
-            final String expression = ((RawString) column.expression()).value();
+            final MatchPair pair = new MatchPair(outputColumn, outputColumn);
 
             return new RollingFormulaMultiColumnOperator(pair, affectingColumns,
                     rs.revWindowScale().timestampCol(), expression,

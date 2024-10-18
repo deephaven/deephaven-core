@@ -1489,7 +1489,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 .target().merge();
 
         actual = pt.proxy()
-                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "intCol_count=count(intColXX)"))
+                .updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "intCol_count=count(intCol)"))
                 .target().merge();
     }
 
