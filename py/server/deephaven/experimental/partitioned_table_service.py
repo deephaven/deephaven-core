@@ -74,7 +74,7 @@ class PartitionedTableServiceBackend(ABC):
         The table should have a single row for the particular partition location key provided in the 1st argument,
         with the values for the partition columns in the row.
 
-        TODO JF: This is invoked for tables created when make_table's `live` is False.
+        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=False
 
         Args:
             table_key (TableKey): the table key
@@ -92,10 +92,10 @@ class PartitionedTableServiceBackend(ABC):
         have a single row for the particular partition location key provided in the 1st argument, with the values for
         the partition columns in the row.
 
-        TODO JF: This is invoked for tables created when make_table's `live` is True.
-        TODO: add comment if test_make_live_table_observe_subscription_cancellations demonstrates that the subscription
-        needs to callback for any existing partitions, too (or if existing_partitions will also be invoked when
-        live == True)
+        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True.
+        Any existing partitions created before this method is called should be passed to the callback.
+
+        Note that the callback must not be called before this method has returned.
 
         The return value is a function that can be called to unsubscribe from the new partitions.
 
@@ -111,7 +111,7 @@ class PartitionedTableServiceBackend(ABC):
         """ Provides a callback for the backend service to pass the size of the partition with the given table key
         and partition location key. The callback should be called with the size of the partition in number of rows.
 
-        TODO JF: This is invoked for tables created when make_table's `live` is False.
+        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=False.
 
         Args:
             table_key (TableKey): the table key
@@ -127,9 +127,10 @@ class PartitionedTableServiceBackend(ABC):
         table key and partition location key. The callback should be called with the size of the partition in number of
         rows.
 
-        TODO JF: This is invoked for tables created when make_table's `live` is True.
-        This callback cannot be invoked until after this method has returned.
-        This callback must be invoked with the initial size of the partition.
+        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True
+
+        Note that the callback must be called with the initial size of the partition after this method has returned and
+        must not be called before this method has returned.
 
         The return value is a function that can be called to unsubscribe from the partition size changes.
 
