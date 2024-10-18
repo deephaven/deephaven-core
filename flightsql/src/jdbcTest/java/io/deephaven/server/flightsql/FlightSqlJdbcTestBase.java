@@ -78,7 +78,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 preparedStatement.executeUpdate();
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                assertThat((Throwable) e).getRootCause().hasMessageContaining("FlightSQL descriptors cannot be published to");
+                assertThat((Throwable) e).getRootCause()
+                        .hasMessageContaining("FlightSQL descriptors cannot be published to");
             }
         }
     }
@@ -96,12 +97,14 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
     void preparedUpdate() throws SQLException {
         try (
                 final Connection connection = connect(true);
-                final PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO fake(name) VALUES('Smith')")) {
+                final PreparedStatement preparedStatement =
+                        connection.prepareStatement("INSERT INTO fake(name) VALUES('Smith')")) {
             try {
                 preparedStatement.executeUpdate();
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                assertThat((Throwable) e).getRootCause().hasMessageContaining("FlightSQL descriptors cannot be published to");
+                assertThat((Throwable) e).getRootCause()
+                        .hasMessageContaining("FlightSQL descriptors cannot be published to");
             }
         }
     }

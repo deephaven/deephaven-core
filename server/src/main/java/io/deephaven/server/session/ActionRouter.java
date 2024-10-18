@@ -37,7 +37,8 @@ public final class ActionRouter {
     }
 
     /**
-     * Routes {@code action} to the appropriate {@link ActionResolver}. Used as the basis for implementing FlightService DoAction.
+     * Routes {@code action} to the appropriate {@link ActionResolver}. Used as the basis for implementing FlightService
+     * DoAction.
      *
      * @param session the session
      * @param action the action

@@ -103,7 +103,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -312,21 +311,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw error(Code.FAILED_PRECONDITION,
                     String.format("Unsupported descriptor type '%s'", descriptor.getType()));
         }
-        // todo: scope, nugget?
-//        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
-//        final TicketHandler ticketHandler = commandHandler.initialize(command);
-//        final FlightInfo info = ticketHandler.flightInfo(descriptor);
-//        return SessionState.wrapAsExport(info);
+        final Any command = parseOrThrow(descriptor.getCmd());
+        return session.<FlightInfo>nonExport().submit(() -> flightInfo(session, descriptor, command));
+    }
 
-        return session.<FlightInfo>nonExport().submit(() -> {
-            final Any command = parseOrThrow(descriptor.getCmd());
-            final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
-            final TicketHandler ticketHandler = commandHandler.initialize(command);
-            return ticketHandler.flightInfo(descriptor);
-        });
-
-//        final FlightInfo info = ticketHandler.flightInfo(descriptor);
-//        return SessionState.wrapAsExport(info);
+    private FlightInfo flightInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
+        // todo scope nugget perf
+        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
+        final TicketHandler ticketHandler = commandHandler.initialize(command);
+        return ticketHandler.flightInfo(descriptor);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -334,19 +327,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @Override
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
-//        // todo: scope, nugget?
-//        final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
-//        final TicketHandler handler = ticketHandler(session, message);
-//        final Table table = handler.takeTable(session);
-//        // noinspection unchecked
-//        return (ExportObject<T>) SessionState.wrapAsExport(table);
+        final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
+        // noinspection unchecked
+        return (ExportObject<T>) session.<Table>nonExport().submit(() -> resolve(session, message));
+    }
 
-        //noinspection unchecked
-        return (ExportObject<T>) session.<Table>nonExport().submit(() -> {
-            final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
-            final TicketHandler handler = ticketHandler(session, message);
-            return handler.takeTable(session);
-        });
+    private Table resolve(final SessionState session, final Any message) {
+        // todo scope nugget perf
+        return ticketHandler(session, message).takeTable(session);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
