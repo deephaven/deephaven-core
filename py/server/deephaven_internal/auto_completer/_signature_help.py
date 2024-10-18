@@ -76,25 +76,11 @@ def _get_params(signature: Signature, docs: Docstring) -> list[Any]:
 
 
 def _get_raises(docs: Docstring) -> list[Any]:
-    raises = []
-    for raise_ in docs.raises:
-        raises.append({
-            "name": raise_.type_name,
-            "description": raise_.description
-        })
-    
-    return raises
+    return [dict(name=raise_.type_name, description=raise_.description) for raise_ in docs.raises]
 
 
 def _get_returns(docs: Docstring) -> list[Any]:
-    returns = []
-    for return_ in docs.many_returns:
-        returns.append({
-            "name": return_.type_name,
-            "description": return_.description
-        })
-    
-    return returns
+    return [dict(name=return_.type_name, description=return_.description) for return_ in docs.many_returns]
 
 
 def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
@@ -185,7 +171,7 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
         param = params[i]
         description = f"##### **{param['name']}**"
         if param['type'] is not None:
-            description += f": *{param['type']}*"
+            description += f" : *{param['type']}*"
         description += "\n\n"
         if param['description'] is not None:
             description += f"{param['description']}\n\n"
@@ -219,7 +205,10 @@ def _get_signature_result(signature: Signature) -> list[Any]:
     # Parse the docstring to extract information
     docs = parse(docstring)
     # Nothing parsed, revert to plaintext
-    if docstring == docs.description:
+    # Based on code, the meta attribute seems to be a list of parsed items. Then, the parse function returns the
+    #   style with the most amount of items in meta. If there are no items, that should be mean nothing was parsed.
+    # https://github.com/rr-/docstring_parser/blob/4951137875e79b438d52a18ac971ec0c28ef269c/docstring_parser/parser.py#L46
+    if len(docs.meta) == 0:
         return [
             signature.to_string(),
             signature.docstring(raw=True).replace(" ", "&nbsp;").replace("\n", "  \n"),
