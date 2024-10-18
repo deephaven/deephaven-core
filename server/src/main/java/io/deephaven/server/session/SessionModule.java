@@ -39,6 +39,10 @@ public interface SessionModule {
     @IntoSet
     TicketResolver bindSharedTicketResolver(SharedTicketResolver resolver);
 
+    @Binds
+    @IntoSet
+    TicketResolver bindSqlTicketResolver(FlightSqlTicketResolver resolver);
+
     @Provides
     @ElementsIntoSet
     static Set<SessionListener> primeSessionListeners() {

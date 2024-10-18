@@ -194,9 +194,15 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (isComplete) {
                 return;
             }
-            responseObserver.onError(
-                    Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "no authentication details provided"));
+            responseObserver.onCompleted();
+//            responseObserver.onError(
+//                    Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "no authentication details provided"));
         }
+    }
+
+    @Override
+    public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
+        super.doAction(request, responseObserver);
     }
 
     @Override
