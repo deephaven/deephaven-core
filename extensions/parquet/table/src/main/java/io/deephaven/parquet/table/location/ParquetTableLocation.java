@@ -197,6 +197,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
             final long subRegionSize = rowGroups[rgi].getNum_rows();
+            if (subRegionSize == 0) {
+                // Skip empty row groups
+                continue;
+            }
             final long subRegionFirstKey = (long) rgi << regionParameters.regionMaskNumBits;
             final long subRegionLastKey = subRegionFirstKey + subRegionSize - 1;
             sequentialBuilder.appendRange(subRegionFirstKey, subRegionLastKey);

@@ -7,13 +7,16 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
-import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import org.apache.iceberg.rest.RESTCatalog;
+import org.apache.iceberg.rest.ResourcePaths;
 
 import java.util.*;
 
@@ -35,8 +38,39 @@ public class IcebergCatalogAdapter {
     private final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
-     * Construct an IcebergCatalogAdapter from a catalog.
+     * Construct an IcebergCatalogAdapter from a Catalog. The properties supplied are provided to support
+     * {@link DataInstructionsProviderPlugin} resolution. In the case where {@code catalog} is a {@link RESTCatalog},
+     * {@link RESTCatalog#properties()} will be used instead.
+     *
+     * @param catalog the catalog
+     * @return the catalog adapter
      */
+    static IcebergCatalogAdapter of(Catalog catalog, Map<String, String> properties) {
+        if (catalog instanceof RESTCatalog) {
+            return of((RESTCatalog) catalog);
+        }
+        return new IcebergCatalogAdapter(catalog, properties);
+    }
+
+    /**
+     * Construct an IcebergCatalogAdapter from a REST catalog. This passes along {@link RESTCatalog#properties()} which
+     * will include any additional properties the REST Catalog implementation sent back as part of the initial
+     * {@link ResourcePaths#config() config} call. These properties will be used for resolving
+     * {@link io.deephaven.iceberg.internal.DataInstructionsProviderPlugin}.
+     *
+     * @param restCatalog the rest catalog
+     * @return the catalog adapter
+     */
+    static IcebergCatalogAdapter of(RESTCatalog restCatalog) {
+        return new IcebergCatalogAdapter(restCatalog, restCatalog.properties());
+    }
+
+    /**
+     * Construct an IcebergCatalogAdapter from a catalog.
+     *
+     * @deprecated use a method or constructor which is more explicit about the properties it uses
+     */
+    @Deprecated(forRemoval = true)
     IcebergCatalogAdapter(@NotNull final Catalog catalog) {
         this(catalog, Map.of());
     }

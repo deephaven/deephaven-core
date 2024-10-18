@@ -417,9 +417,9 @@ def adapter(
             implementing Java class should be provided (e.g. `org.apache.iceberg.rest.RESTCatalog` or
             `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
-    - `uri` - the URI of the catalog
 
     Other common properties include:
+    - `uri` - the URI of the catalog
     - `warehouse` - the root path of the data warehouse.
     - `client.region` - the region of the AWS client.
     - `s3.access-key-id` - the S3 access key for reading files.

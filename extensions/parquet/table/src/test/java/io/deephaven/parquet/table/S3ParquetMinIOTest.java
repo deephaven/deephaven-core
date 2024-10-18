@@ -5,7 +5,6 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
-import io.deephaven.extensions.s3.testlib.SingletonContainers;
 import io.deephaven.stats.util.OSUtil;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -27,7 +26,27 @@ public class S3ParquetMinIOTest extends S3ParquetTestBase {
     }
 
     @Override
+    public String s3Endpoint() {
+        return MinIO.s3Endpoint();
+    }
+
+    @Override
+    public String region() {
+        return MinIO.region();
+    }
+
+    @Override
+    public String accessKey() {
+        return MinIO.accessKey();
+    }
+
+    @Override
+    public String secretAccessKey() {
+        return MinIO.secretAccessKey();
+    }
+
+    @Override
     public S3AsyncClient s3AsyncClient() {
-        return SingletonContainers.MinIO.s3AsyncClient();
+        return MinIO.s3AsyncClient();
     }
 }

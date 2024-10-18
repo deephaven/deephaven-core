@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.table.impl.AsOfJoinMatchFactory.AsOfJoinResult;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
@@ -661,31 +662,31 @@ public class QueryTableAjTest {
             for (int leftSize = 10; leftSize <= maxLeftSize; leftSize *= leftFactor) {
                 for (int rightSize = 10; rightSize <= maxRightSize; rightSize *= rightFactor) {
                     System.out.println("Seed=" + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, false, false);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, true, false);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, false, true);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStep, seed, leftSize, rightSize, true, false, true, true);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, false,
                                 false);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, true,
                                 false);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, false,
                                 true);
                     }
-                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                         testAjRandomIncremental(base.leftStepShift, seed, leftSize, rightSize, true, false, true, true);
                     }
                 }
