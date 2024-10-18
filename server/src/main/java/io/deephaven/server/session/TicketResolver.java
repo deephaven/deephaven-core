@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.session;
 
+import com.google.protobuf.ByteString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -149,10 +150,20 @@ public interface TicketResolver {
     }
 
     /**
+     * Retrieve the ByteString Schema for a given FlightDescriptor.
+     *
+     * @param descriptor the flight descriptor to retrieve a schema for
+     * @param logId an end-user friendly identification of the descriptor should an error occur
+     * @return a FlightInfo describing this flight
+     */
+    SessionState.ExportObject<ByteString> getSchema(@Nullable SessionState session, Flight.FlightDescriptor descriptor,
+            String logId);
+
+    /**
      * Retrieve a FlightInfo for a given FlightDescriptor.
      *
-     * @param descriptor the flight descriptor to retrieve a ticket for
-     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @param descriptor the flight descriptor to retrieve flight info for
+     * @param logId an end-user friendly identification of the descriptor should an error occur
      * @return a FlightInfo describing this flight
      */
     SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session,
