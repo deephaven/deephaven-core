@@ -147,6 +147,61 @@ returns_various_result = """\
 > **bar**  
 > bar description"""
 
+def example_string():
+    """
+    Description
+
+    Examples:
+        Plain text
+    """
+
+example_string_str = """
+def example_string():
+    \"\"\"
+    Description
+
+    Examples:
+        Plain text
+    \"\"\"
+"""
+
+example_string_result = """\
+Description
+
+#### **Examples**
+
+Plain text"""
+
+def example_code():
+    """
+    Description
+
+    Examples:
+        >>> Code
+        Still code
+    """
+
+example_code_str = """
+def example_code():
+    \"\"\"
+    Description
+
+    Examples:
+        >>> Code
+        Still code
+    \"\"\"
+"""
+
+example_code_result = """\
+Description
+
+#### **Examples**
+
+```
+>>> Code
+Still code
+```"""
+
 def original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09):
     """
     :returns a: b

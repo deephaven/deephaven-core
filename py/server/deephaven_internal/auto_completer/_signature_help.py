@@ -75,18 +75,7 @@ def _get_params(signature: Signature, docs: Docstring) -> list[Any]:
     return params
 
 
-def _get_raises(docs: Docstring) -> list[Any]:
-    return [dict(name=raise_.type_name, description=raise_.description) for raise_ in docs.raises]
-
-
-def _get_returns(docs: Docstring) -> list[Any]:
-    return [dict(name=return_.type_name, description=return_.description) for return_ in docs.many_returns]
-
-
 def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
-    raises = _get_raises(docs)
-    returns = _get_returns(docs)
-
     if docs.description is None:
         description = ""
     else:
@@ -109,22 +98,31 @@ def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
                 description += f"> {param['description']}".replace('\n\n', '\n\n> ')
             description += "\n\n"
 
-    if len(returns) > 0:
+    if len(docs.many_returns) > 0:
         description += "#### **Returns**\n\n"
-        for return_ in returns:
-            if return_["name"] is not None:
-                description += f"> **{return_['name']}**  \n"
-            if return_["description"] is not None:
-                description += f"> {return_['description']}"
+        for return_ in docs.many_returns:
+            if return_.type_name is not None:
+                description += f"> **{return_.type_name}**  \n"
+            if return_.description is not None:
+                description += f"> {return_.description}"
             description += "\n\n"
 
-    if len(raises) > 0:
+    if len(docs.raises) > 0:
         description += "#### **Raises**\n\n"
-        for raises_ in raises:
-            if raises_["name"] is not None:
-                description += f"> **{raises_['name']}**  \n"
-            if raises_["description"] is not None:
-                description += f"> {raises_['description']}"
+        for raises_ in docs.raises:
+            if raises_.type_name is not None:
+                description += f"> **{raises_.type_name}**  \n"
+            if raises_.description is not None:
+                description += f"> {raises_.description}"
+            description += "\n\n"
+
+    if len(docs.examples) > 0:
+        description += "#### **Examples**\n\n"
+        for example in docs.examples:
+            if example.description is not None and example.description.startswith(">>> "):
+                description += f"```\n{example.description}\n```"
+            else:
+                description += example.description
             description += "\n\n"
 
     return description.strip()
@@ -231,3 +229,14 @@ def _get_signature_result(signature: Signature) -> list[Any]:
         param_docs,
         signature.index if signature.index is not None else -1,
     ]
+
+def test():
+    """
+    dtest
+
+    Returns:
+        a: asdas
+
+    Examples:
+        >>> 123
+    """

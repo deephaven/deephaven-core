@@ -66,6 +66,22 @@ class DocstringParser(BaseTestCase):
             returns_various_result
         )
 
+    @create_test("example_string", example_string_str, example_string)
+    def test_example_string(self, signature: Signature, docs: Docstring):
+        self.assertNotEqual(len(docs.meta), 0)
+        self.assertEqual(
+            _generate_description_markdown(docs, _get_params(signature, docs)),
+            example_string_result
+        )
+
+    @create_test("example_code", example_code_str, example_code)
+    def test_example_code(self, signature: Signature, docs: Docstring):
+        self.assertNotEqual(len(docs.meta), 0)
+        self.assertEqual(
+            _generate_description_markdown(docs, _get_params(signature, docs)),
+            example_code_result
+        )
+
     @create_test("original_signature", original_signature_str, original_signature)
     def test_original_signature(self, signature: Signature, docs: Docstring):
         self.assertNotEqual(len(docs.meta), 0)
