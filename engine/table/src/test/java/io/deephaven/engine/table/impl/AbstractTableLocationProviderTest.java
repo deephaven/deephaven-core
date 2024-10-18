@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 @Category(OutOfBandTest.class)
 public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
@@ -160,7 +161,11 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
 
         // Get a list of the LiveSupplier<> keys
         final List<LiveSupplier<ImmutableTableLocationKey>> initialTrackedKeys = new ArrayList<>();
-        provider.getTableLocationKeys(initialTrackedKeys::add);
+        provider.getTableLocationKeys(lstlk -> {
+            // Externally manage all keys (simulate a TLSB)
+            manager.manage(lstlk);
+            initialTrackedKeys.add(lstlk);
+        });
 
         // Resolve and create all the table locations
         final List<TestTableLocation> tableLocations = new ArrayList<>();
@@ -169,18 +174,17 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
             tableLocations.add(tl);
         }
 
-        // Externally manage keys 2 & 3 (simulate a TLSB)
-        manager.manage(initialTrackedKeys.get(2));
-        manager.manage(initialTrackedKeys.get(3));
-
-        // Also manage the table locations for key 3 (simulate a filtered RCSM)
-        manager.manage(tableLocations.get(3));
-
         // Drop the first 4 keys from the provider
         for (int i = 0; i < 4; i++) {
             final TableLocationKey removedKey = initialKeys.get(i);
             provider.removeKey(removedKey);
         }
+
+        // Simulate delivering the initial keys to the RCSM
+        final List<TableLocation> includedLocations = new ArrayList<>();
+        includedLocations.add(provider.getTableLocation(initialKeys.get(2)));
+        includedLocations.forEach(manager::manage);
+        initialTrackedKeys.forEach(manager::unmanage);
 
         // Verify only the last key is present for new listeners
         keys = new HashSet<>(provider.getTableLocationKeys());
@@ -188,43 +192,36 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
         Assert.eq(keys.size(), "keys.size()", 1);
 
         // Verify that we CAN'T retrieve the unmanaged locations from the provider (they were dropped)
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(0)),
-                "provider.hasTableLocationKey(initialKeys.get(0))");
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(1)),
-                "provider.hasTableLocationKey(initialKeys.get(1))");
+        IntStream.range(0, 4).forEach(
+                i -> {
+                    Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(i)),
+                            "provider.hasTableLocationKey(initialKeys.get(" + i + "))");
+                });
 
-        // Verify the tableLocations for the unmanaged keys are destroyed
+        // Verify the tableLocations for only the unmanaged keys are destroyed
         Assert.eqTrue(tableLocations.get(0).isDestroyed(), "tableLocations.get(0).isDestroyed()");
         Assert.eqTrue(tableLocations.get(1).isDestroyed(), "tableLocations.get(1).isDestroyed()");
-
-        // Verify that we CAN retrieve the managed locations from the provider (they are still live)
-        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(2)),
-                "provider.hasTableLocationKey(initialKeys.get(2))");
-        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(3)),
-                "provider.hasTableLocationKey(initialKeys.get(3))");
-
-        // Verify the tableLocations for the managed keys are NOT destroyed
-        Assert.eqFalse(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
-        Assert.eqFalse(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
-
-        // Un-manage the two keys
-        manager.unmanage(initialTrackedKeys.get(2));
-        manager.unmanage(initialTrackedKeys.get(3));
-
-        // location #2 should be destroyed, location #3 should not (because an RCSM is managing it)
-        Assert.eqTrue(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
-        Assert.eqFalse(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
-
-        // Verify that we CAN'T retrieve the (now) unmanaged locations from the provider (they were dropped)
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(2)),
-                "provider.hasTableLocationKey(initialKeys.get(2))");
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(3)),
-                "provider.hasTableLocationKey(initialKeys.get(3))");
-
-        // Release the table location being held by the RCSM
-        manager.unmanage(tableLocations.get(3));
         Assert.eqTrue(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
+        Assert.eqFalse(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
+
+        // Verify the tableLocations for the previously included keys are destroyed
+        includedLocations.forEach(manager::unmanage);
+        Assert.eqTrue(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
+
+        // Verify that we CAN retrieve the last key from the provider and the location is not destroyed
+        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(4)),
+                "provider.hasTableLocationKey(initialKeys.get(4))");
+        Assert.eqFalse(tableLocations.get(4).isDestroyed(), "tableLocations.get(4).isDestroyed()");
+
+        // Drop the final key from the provider
+        provider.removeKey(initialKeys.get(4));
+
+        // Verify that we CAN retrieve the last key from the provider and the location is not destroyed
+        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(4)),
+                "provider.hasTableLocationKey(initialKeys.get(4))");
+        Assert.eqTrue(tableLocations.get(4).isDestroyed(), "tableLocations.get(4).isDestroyed()");
     }
+
 
     /**
      * Test the management and release of the liveness of table location keys is correct when using transactions.
@@ -233,12 +230,12 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
     public void testTableLocationKeyTransactionManagement() {
 
         // Create a test table location provider
-        final TestTableLocationProvider provider = new TestTableLocationProvider(true);
+        final TestTableLocationProvider provider = new TestTableLocationProvider(false);
 
         // Create a set of table location keys
         final List<TableLocationKey> initialKeys = createKeys(5);
 
-        // Add the keys to the table location provider
+        // Add the keys to the table location provider in a single tranasction
         provider.beginTransaction(provider);
         for (final TableLocationKey locationKey : initialKeys) {
             provider.addKey(locationKey, provider);
@@ -256,7 +253,11 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
 
         // Get a list of the LiveSupplier<> keys
         final List<LiveSupplier<ImmutableTableLocationKey>> initialTrackedKeys = new ArrayList<>();
-        provider.getTableLocationKeys(initialTrackedKeys::add);
+        provider.getTableLocationKeys(lstlk -> {
+            // Externally manage all keys (simulate a TLSB)
+            manager.manage(lstlk);
+            initialTrackedKeys.add(lstlk);
+        });
 
         // Resolve and create all the table locations
         final List<TestTableLocation> tableLocations = new ArrayList<>();
@@ -265,14 +266,7 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
             tableLocations.add(tl);
         }
 
-        // Externally manage keys 2 & 3 (simulate a TLSB)
-        manager.manage(initialTrackedKeys.get(2));
-        manager.manage(initialTrackedKeys.get(3));
-
-        // Also manage the table locations for key 3 (simulate a filtered RCSM)
-        manager.manage(tableLocations.get(3));
-
-        // Drop the first 4 keys from the provider
+        // Drop the first 4 keys from the provider in a single tranasction
         provider.beginTransaction(provider);
         for (int i = 0; i < 4; i++) {
             final TableLocationKey removedKey = initialKeys.get(i);
@@ -280,47 +274,45 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
         }
         provider.endTransaction(provider);
 
+        // Simulate delivering the initial keys to the RCSM
+        final List<TableLocation> includedLocations = new ArrayList<>();
+        includedLocations.add(provider.getTableLocation(initialKeys.get(2)));
+        includedLocations.forEach(manager::manage);
+        initialTrackedKeys.forEach(manager::unmanage);
+
         // Verify only the last key is present for new listeners
         keys = new HashSet<>(provider.getTableLocationKeys());
         Assert.eqTrue(keys.contains(initialKeys.get(4)), "keys.contains(initialKeys.get(4))");
         Assert.eq(keys.size(), "keys.size()", 1);
 
         // Verify that we CAN'T retrieve the unmanaged locations from the provider (they were dropped)
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(0)),
-                "provider.hasTableLocationKey(initialKeys.get(0))");
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(1)),
-                "provider.hasTableLocationKey(initialKeys.get(1))");
+        IntStream.range(0, 4).forEach(
+                i -> {
+                    Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(i)),
+                            "provider.hasTableLocationKey(initialKeys.get(" + i + "))");
+                });
 
-        // Verify the tableLocations for the unmanaged keys are destroyed
+        // Verify the tableLocations for only the unmanaged keys are destroyed
         Assert.eqTrue(tableLocations.get(0).isDestroyed(), "tableLocations.get(0).isDestroyed()");
         Assert.eqTrue(tableLocations.get(1).isDestroyed(), "tableLocations.get(1).isDestroyed()");
-
-        // Verify that we CAN retrieve the managed locations from the provider (they are still live)
-        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(2)),
-                "provider.hasTableLocationKey(initialKeys.get(2))");
-        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(3)),
-                "provider.hasTableLocationKey(initialKeys.get(3))");
-
-        // Verify the tableLocations for the managed keys are NOT destroyed
-        Assert.eqFalse(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
-        Assert.eqFalse(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
-
-        // Un-manage the two keys
-        manager.unmanage(initialTrackedKeys.get(2));
-        manager.unmanage(initialTrackedKeys.get(3));
-
-        // location #2 should be destroyed, location #3 should not (because an RCSM is managing it)
-        Assert.eqTrue(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
-        Assert.eqFalse(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
-
-        // Verify that we CAN'T retrieve the (now) unmanaged locations from the provider (they were dropped)
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(2)),
-                "provider.hasTableLocationKey(initialKeys.get(2))");
-        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(3)),
-                "provider.hasTableLocationKey(initialKeys.get(3))");
-
-        // Release the table location being held by the RCSM and verify its destruction.
-        manager.unmanage(tableLocations.get(3));
         Assert.eqTrue(tableLocations.get(3).isDestroyed(), "tableLocations.get(3).isDestroyed()");
+        Assert.eqFalse(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
+
+        // Verify the tableLocations for the previously included keys are destroyed
+        includedLocations.forEach(manager::unmanage);
+        Assert.eqTrue(tableLocations.get(2).isDestroyed(), "tableLocations.get(2).isDestroyed()");
+
+        // Verify that we CAN retrieve the last key from the provider and the location is not destroyed
+        Assert.eqTrue(provider.hasTableLocationKey(initialKeys.get(4)),
+                "provider.hasTableLocationKey(initialKeys.get(4))");
+        Assert.eqFalse(tableLocations.get(4).isDestroyed(), "tableLocations.get(4).isDestroyed()");
+
+        // Drop the final key from the provider
+        provider.removeKey(initialKeys.get(4));
+
+        // Verify that we CAN retrieve the last key from the provider and the location is not destroyed
+        Assert.eqFalse(provider.hasTableLocationKey(initialKeys.get(4)),
+                "provider.hasTableLocationKey(initialKeys.get(4))");
+        Assert.eqTrue(tableLocations.get(4).isDestroyed(), "tableLocations.get(4).isDestroyed()");
     }
 }

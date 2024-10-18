@@ -34,13 +34,13 @@ _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
 
 class IcebergUpdateMode(JObjectWrapper):
     """
-    This class specifies the update mode for the Iceberg table to be loaded into Deephaven. The modes are:
+    This class specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes are:
 
-    - `static()`: The table is loaded once and does not change
-    - `manual_refresh()`: The table can be manually refreshed by the user.
-    - `auto_refresh()`: The table will be automatically refreshed at a system-defined interval (also can call
-            `auto_refreshing(auto_refresh_ms: int)` to specify an interval rather than use the system default
-            of 60 seconds).
+    - :py:func:`static() <IcebergUpdateMode.static>`: The table is loaded once and does not change
+    - :py:func:`manual_refresh() <IcebergUpdateMode.manual_refresh>`: The table can be manually refreshed by the user.
+    - :py:func:`auto_refresh() <IcebergUpdateMode.auto_refresh>`: The table will be automatically refreshed at a
+            system-defined interval (also can call :py:func:`auto_refresh(auto_refresh_ms: int) <IcebergUpdateMode.auto_refresh>`
+            to specify an interval rather than use the system default of 60 seconds).
     """
     j_object_type = _JIcebergUpdateMode
 
@@ -64,9 +64,11 @@ class IcebergUpdateMode(JObjectWrapper):
     @classmethod
     def auto_refresh(cls, auto_refresh_ms:Optional[int] = None) -> IcebergUpdateMode:
         """
-        Creates an IcebergUpdateMode with auto-refreshing mode enabled using the provided refresh interval.
+        Creates an IcebergUpdateMode with auto-refreshing enabled.
 
-        :param auto_refresh_ms (int): the refresh interval in milliseconds.
+        Args:
+            auto_refresh_ms (int): the refresh interval in milliseconds; if omitted, the default of 60 seconds
+                is used.
         """
         if auto_refresh_ms is None:
             return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshingMode())
@@ -102,7 +104,7 @@ class IcebergInstructions(JObjectWrapper):
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
                 the output table.
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
-                mode of `IcebergUpdateMode.STATIC` is used.
+                mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -145,10 +147,12 @@ class IcebergTable(Table):
 
     def update(self, snapshot_id:Optional[int] = None):
         """
-        Updates the table with a specific snapshot. If no snapshot is provided, the most recent snapshot is used.
+        Updates the table to match the contents of the specified snapshot. This may result in row removes and additions
+        that will be propagated asynchronously via this IcebergTable's UpdateGraph. If no snapshot is provided, the
+        most recent snapshot is used.
 
-        NOTE: this method is only valid when the table is in `MANUAL_REFRESHING` mode. `STATIC` and `AUTO_REFRESHING`
-        Iceberg tables cannot be updated manually and will throw an exception if this method is called.
+        NOTE: this method is only valid when the table is in `manual_refresh()` mode. Iceberg tables in `static()` or
+        `auto_refresh()` mode cannot be updated manually and will throw an exception if this method is called.
 
         Args:
             snapshot_id (Optional[int]): the snapshot id to update to; if omitted the most recent snapshot will be used.
@@ -172,8 +176,8 @@ class IcebergTable(Table):
 
 class IcebergTableAdapter(JObjectWrapper):
     """
-    This class provides an interface for interacting with Iceberg tables. It allows listing snapshots, table
-    definitions, as well as reading Iceberg tables into Deephaven tables.
+    This class provides an interface for interacting with Iceberg tables. It allows the user to list snapshots,
+    retrieve table definitions and reading Iceberg tables into Deephaven tables.
     """
     j_object_type = _JIcebergTableAdapter or type(None)
 
@@ -200,13 +204,16 @@ class IcebergTableAdapter(JObjectWrapper):
 
     def definition(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
         """
-        Returns information on the tables in the specified namespace as a Deephaven table.
+        Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            namespace (str): the namespace from which to list tables.
+            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+                can include column renames, table definition, and specific data instructions for reading the data files
+                from the provider. If omitted, the table will be read with default instructions.
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
-            a table containing the tables in the provided namespace.
+            a table containing the table definition.
         """
 
         if snapshot_id is not None:
@@ -215,14 +222,14 @@ class IcebergTableAdapter(JObjectWrapper):
 
     def table(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
         """
-        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to
-        read a specific snapshot of the table.
+        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
+        snapshot of the table.
 
         Args:
-            table_identifier (str): the table to read.
             instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
                 can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read with default instructions.
+                from the provider. If omitted, the table will be read in `static()` mode without column renames or data
+                instructions.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
@@ -290,27 +297,6 @@ class IcebergCatalogAdapter(JObjectWrapper):
         """
 
         return IcebergTableAdapter(self.j_object.loadTable(table_identifier))
-
-    def snapshots(self, table_identifier: str) -> Table:
-        """
-        NOTE: deprecated, use `load_table(table_identifier).snapshots()` instead.
-
-        Returns information on the snapshots of the specified table as a Deephaven table. The table contains the
-        following columns:
-        - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
-        - `TimestampMs`: the timestamp of the snapshot.
-        - `Operation`: the data operation that created this snapshot.
-        - `Summary`: additional information about this snapshot from the Iceberg metadata.
-        - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
-
-        Args:
-            table_identifier (str): the table from which to list snapshots.
-
-        Returns:
-            a table containing the snapshot information.
-        """
-
-        return self.j_object.snapshots(table_identifier)
 
     @property
     def j_object(self) -> jpy.JType:

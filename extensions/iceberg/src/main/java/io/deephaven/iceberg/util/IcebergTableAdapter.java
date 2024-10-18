@@ -209,7 +209,7 @@ public class IcebergTableAdapter {
      */
     public synchronized Map<Integer, Schema> schemas() {
         refresh();
-        return table.schemas();
+        return Map.copyOf(table.schemas());
     }
 
     /**
