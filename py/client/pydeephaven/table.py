@@ -775,8 +775,8 @@ class Table(TableInterface, ServerObject):
         table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
-            start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            first_position_inclusive (int): the first row position to include in the result
+            last_position_exclusive (int): the last row position to include in the result
 
         Returns:
             a new Table
