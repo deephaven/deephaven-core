@@ -2278,7 +2278,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 
-    def slice(self, start: int, stop: int) -> Table:
+    def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
         If both the start and the stop are positive, then both are counted from the beginning of the table.
@@ -2296,8 +2296,8 @@ class Table(JObjectWrapper):
         table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
-            start (int): the first row position to include in the result
-            stop (int): the last row position to include in the result
+            first_position_inclusive (int): the first row position to include in the result
+            last_position_exclusive (int): the last row position to include in the result
 
         Returns:
             a new Table
@@ -2306,7 +2306,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=self.j_table.slice(start, stop))
+            return Table(j_table=self.j_table.slice(first_position_inclusive, last_position_exclusive))
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
 
