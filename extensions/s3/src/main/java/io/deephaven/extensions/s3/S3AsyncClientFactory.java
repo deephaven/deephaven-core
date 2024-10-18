@@ -64,18 +64,22 @@ class S3AsyncClientFactory {
                         b -> b.advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
                                 ensureAsyncFutureCompletionExecutor()))
                 .httpClient(getOrBuildHttpAsyncClient(instructions))
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        // If we find that the STANDARD retry policy does not work well in all situations, we might
-                        // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
-                        // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                        .retryPolicy(RetryMode.STANDARD)
-                        .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
-                        .apiCallTimeout(instructions.readTimeout())
-                        // Adding a metrics publisher may be useful for debugging, but it's very verbose.
-                        // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
-                        .scheduledExecutorService(ensureScheduledExecutor())
-                        .build())
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
+
+        final ClientOverrideConfiguration.Builder overrideConfiguration = ClientOverrideConfiguration.builder()
+                // If we find that the STANDARD retry policy does not work well in all situations, we might
+                // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
+                // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
+                .retryPolicy(RetryMode.STANDARD)
+                .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
+                .apiCallTimeout(instructions.readTimeout())
+                // Adding a metrics publisher may be useful for debugging, but it's very verbose.
+                // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
+                .scheduledExecutorService(ensureScheduledExecutor());
+        instructions.profileName().ifPresent(overrideConfiguration::defaultProfileName);
+        instructions.aggregatedProfileFile().ifPresent(overrideConfiguration::defaultProfileFile);
+        builder.overrideConfiguration(overrideConfiguration.build());
+
         if (instructions.regionName().isPresent()) {
             builder.region(Region.of(instructions.regionName().get()));
         } else {

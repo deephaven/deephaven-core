@@ -3,6 +3,8 @@
 //
 package io.deephaven.server.session;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
@@ -38,10 +40,10 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.lang.Object;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
     /**
@@ -344,8 +346,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final byte[] altToken = metadata.get(AuthConstants.TOKEN_KEY);
             if (altToken != null) {
                 try {
-                    session = service.getSessionForToken(UUID.fromString(new String(altToken)));
-                } catch (IllegalArgumentException ignored) {
+                    session = service.getSessionForToken(
+                            UuidCreator.fromString(new String(altToken, StandardCharsets.US_ASCII)));
+                } catch (IllegalArgumentException | InvalidUuidException ignored) {
                 }
             }
 
