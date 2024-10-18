@@ -82,9 +82,7 @@ public class AggregationAdapter {
     }
 
     public static Formula adapt(AggregationFormula formula) {
-        // TODO: until the deprecated AggFormula() that uses paramToken is removed, we must re-create this as a
-        // combined string
-        return Aggregation.AggFormula(formula.getColumnName() + "=" + formula.getFormula());
+        return Formula.of(formula.getColumnName(), formula.getFormula());
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {

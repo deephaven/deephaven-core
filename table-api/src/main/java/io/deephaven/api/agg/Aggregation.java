@@ -5,8 +5,6 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
-import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
@@ -303,15 +301,11 @@ public interface Aggregation {
      * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
      * }
      *
-     * @param formula The {@link AggSpecFormula#formula() formula} to use to produce the output column
+     * @param formulaString The formula to use to produce the output column
      * @return The aggregation
      */
-    static Formula AggFormula(String formula) {
-        // Parse the supplied formula for the output column name and formula
-        final Selectable column = Selectable.parse(formula);
-        final String parsedFormula = ((RawString) column.expression()).value();
-
-        return Formula.of(column.newColumn(), parsedFormula);
+    static Formula AggFormula(String formulaString) {
+        return Formula.parse(formulaString);
     }
 
     /**

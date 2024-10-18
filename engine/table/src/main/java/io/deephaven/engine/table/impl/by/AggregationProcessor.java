@@ -396,10 +396,6 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public final void visit(@NotNull final ColumnAggregation columnAgg) {
-            if (columnAgg.pair() == null) {
-                columnAgg.spec().walk(this);
-                return;
-            }
             resultPairs = List.of(columnAgg.pair());
             columnAgg.spec().walk(this);
             resultPairs = List.of();

@@ -11,12 +11,19 @@ import org.immutables.value.Value.Parameter;
 /**
  * An {@link Aggregation aggregation} that provides a single output column that is computed by applying a formula to a
  * set of input columns.
- *
- * @see io.deephaven.api.TableOperations#countBy
  */
 @Immutable
 @SimpleStyle
 public abstract class Formula implements Aggregation {
+
+    public static Formula parse(String formulaString) {
+        final int ix = formulaString.indexOf('=');
+        if (ix < 0 || ix + 1 == formulaString.length() || formulaString.charAt(ix + 1) == '=') {
+            throw new IllegalArgumentException(String.format(
+                    "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", formulaString));
+        }
+        return of(formulaString.substring(0, ix), formulaString.substring(ix + 1));
+    }
 
     public static Formula of(ColumnName name, String formula) {
         return ImmutableFormula.of(name, formula);
