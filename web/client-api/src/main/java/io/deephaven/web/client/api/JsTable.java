@@ -88,10 +88,10 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  */
 @TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
-    @JsProperty(namespace = "dh.Table")
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
+    @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             /**
              * event.detail is the currently visible window, the same as if getViewportData() was called and resolved.
@@ -136,6 +136,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             EVENT_REQUEST_FAILED = "requestfailed",
             EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
+    /**
+     * The size the table will have if it is uncoalesced.
+     */
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;
 
@@ -438,11 +441,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * The total count of rows in the table. The size can and will change; see the <b>sizechanged</b> event for details.
-     * Size will be negative in exceptional cases (e.g., the table is uncoalesced; see the <b>isUncoalesced</b>
-     * property). for details).
-     * 
-     * @return double
+     * The total count of rows in the table. If there is a viewport subscription active, this size will be updated when
+     * the subscription updates. If not, and {@link #isUncoalesced()} is true, the size will be
+     * {@link #SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes changes.
+     * <p>
+     * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
+     *
+     * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
+     *         uncoalesced.
      */
     @JsProperty
     public double getSize() {
@@ -465,12 +471,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * The total count of the rows in the table, excluding any filters. Unlike <b>size</b>, changes to this value will
-     * not result in any event. <b>Sort[] sort</b> an ordered list of Sorts to apply to the table. To update, call
-     * applySort(). Note that this getter will return the new value immediately, even though it may take a little time
-     * to update on the server. You may listen for the <b>sortchanged</b> event to know when to update the UI.
+     * The total count of the rows in the table, excluding any filters. Unlike {@link #getSize()}, changes to this value
+     * will not result in any event. If the table is unfiltered, this will return the same size as {@link #getSize()}.
+     * If this table was uncoalesced before it was filtered, this will return {@link #SIZE_UNCOALESCED}.
      * 
-     * @return double
+     * @return the size of the table before filters, or {@link #SIZE_UNCOALESCED}
      */
     @JsProperty
     public double getTotalSize() {
@@ -1522,11 +1527,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Read-only. True if this table is uncoalesced. Set a viewport or filter on the partition columns to coalesce the
-     * table. Check the <b>isPartitionColumn</b> property on the table columns to retrieve the partition columns. Size
-     * will be unavailable until table is coalesced.
-     * 
-     * @return boolean
+     * Read-only. True if this table is uncoalesced, indicating that work must be done before the table can be used.
+     * <p>
+     * Uncoalesced tables are expensive to operate on - filter to a single partition or range of partitions before
+     * subscribing to access only the desired data efficiently. A subscription can be specified without a filter, but
+     * this can be very expensive. To see which partitions are available, check each column on the table to see which
+     * have {@link Column#getIsPartitionColumn()} as {@code true}, and filter those columns. To read the possible values
+     * for those columns, use {@link #selectDistinct(Column[])}.
+     *
+     * @return True if the table is uncoaleced and should be filtered before operating on it, otherwise false.
      */
     @JsProperty(name = "isUncoalesced")
     public boolean isUncoalesced() {

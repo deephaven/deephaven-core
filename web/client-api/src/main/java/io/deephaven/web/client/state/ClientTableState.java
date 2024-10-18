@@ -426,6 +426,10 @@ public final class ClientTableState extends TableConfig {
     }
 
     public void setSize(long size) {
+        if (this.size == Long.MIN_VALUE) {
+            // Table is uncoalesced, ignore size change
+            return;
+        }
         boolean log = this.size != size;
         if (log) {
             JsLog.debug("CTS", this, " set size; was ", this.size, " is now ", size);

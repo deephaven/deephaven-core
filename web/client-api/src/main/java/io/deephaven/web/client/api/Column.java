@@ -179,11 +179,10 @@ public class Column {
     }
 
     /**
-     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables (see
-     * <b>isUncoalesced</b> property on <b>Table</b>)
+     * True if this column is a partition column. Partition columns are used for filtering uncoalesced tables - see
+     * {@link JsTable#isUncoalesced()}.
      *
-     * @return boolean
-     *
+     * @return true if the column is a partition column
      */
     @JsProperty
     public boolean getIsPartitionColumn() {
