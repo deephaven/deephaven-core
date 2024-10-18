@@ -844,202 +844,45 @@ public class IcebergCatalogAdapter {
      * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
      * will not change the schema of the existing table.
      *
-     * @param tableIdentifier The identifier string for the Iceberg table to append to
-     * @param dhTable The Deephaven table to append
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
+     * @param icebergAppend The {@link IcebergAppend} object containing the data/instructions for writing
      */
-    public void append(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        append(tableIdentifier, new Table[] {dhTable}, instructions);
+    public void append(@NotNull final IcebergAppend icebergAppend) {
+        writeImpl(TableIdentifier.parse(icebergAppend.tableIdentifier()),
+                icebergAppend.dhTables(),
+                icebergAppend.instructions(),
+                false,
+                true);
     }
 
     /**
-     * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
-     * will not change the schema of the existing table.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to append to
-     * @param dhTable The Deephaven table to append
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void append(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        append(tableIdentifier, new Table[] {dhTable}, instructions);
-    }
-
-    /**
-     * Append the provided Deephaven tables as new partitions to the existing Iceberg table in a single snapshot. All
-     * tables should have the same definition, else a table definition should be provided in the instructions. This will
-     * not change the schema of the existing table.
-     *
-     * @param tableIdentifier The identifier string for the Iceberg table to append to
-     * @param dhTables The Deephaven tables to append
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void append(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        append(TableIdentifier.parse(tableIdentifier), dhTables, instructions);
-    }
-
-    /**
-     * Append the provided Deephaven tables as new partitions to the existing Iceberg table in a single snapshot. All
-     * tables should have the same definition, else a table definition should be provided in the instructions. This will
-     * not change the schema of the existing table.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to append to
-     * @param dhTables The Deephaven tables to append
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void append(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        writeImpl(tableIdentifier, dhTables, instructions, false, true);
-    }
-
-    /**
-     * Overwrite the existing Iceberg table with the provided Deephaven table in a single snapshot. This will overwrite
+     * Overwrite the existing Iceberg table with the provided Deephaven tables in a single snapshot. This will overwrite
      * the schema of the existing table to match the provided Deephaven table if they do not match.
      * <p>
-     * Overwriting a table while racing with other writers can lead to undefined results.
+     * Overwriting a table while racing with other writers can lead to failure/undefined results.
      *
-     * @param tableIdentifier The identifier string for the Iceberg table to overwrite
-     * @param dhTable The Deephaven table to overwrite with; an empty array will overwrite with an empty table
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
+     * @param icebergOverwrite The {@link IcebergOverwrite} object containing the data/instructions for writing
      */
-    public void overwrite(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        overwrite(tableIdentifier, new Table[] {dhTable}, instructions);
-    }
-
-    /**
-     * Overwrite the existing Iceberg table with the provided Deephaven table in a single snapshot. This will overwrite
-     * the schema of the existing table to match the provided Deephaven table if they do not match.
-     * <p>
-     * Overwriting a table while racing with other writers can lead to undefined results.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to overwrite
-     * @param dhTable The Deephaven table to overwrite with; an empty array will overwrite with an empty table
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void overwrite(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        overwrite(tableIdentifier, new Table[] {dhTable}, instructions);
-    }
-
-    /**
-     * Overwrite the existing Iceberg table with the provided Deephaven table in a single snapshot. All tables should
-     * have the same definition, else a table definition should be provided in the instructions. This will overwrite the
-     * schema of the existing table to match the provided Deephaven table if they do not match.
-     * <p>
-     * Overwriting a table while racing with other writers can lead to undefined results.
-     *
-     * @param tableIdentifier The identifier string for the Iceberg table to overwrite
-     * @param dhTables The Deephaven tables to overwrite with; an empty array will overwrite with an empty table
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void overwrite(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        overwrite(TableIdentifier.parse(tableIdentifier), dhTables, instructions);
-    }
-
-    /**
-     * Overwrite the existing Iceberg table with the provided Deephaven tables in a single snapshot. All tables should
-     * have the same definition, else a table definition should be provided in the instructions. This will overwrite the
-     * schema of the existing table to match the provided Deephaven table if they do not match.
-     * <p>
-     * Overwriting a table while racing with other writers can lead to undefined results.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to overwrite
-     * @param dhTables The Deephaven tables to overwrite with; an empty array will overwrite with an empty table
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     */
-    public void overwrite(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        writeImpl(tableIdentifier, dhTables, instructions, true, true);
-    }
-
-    /**
-     * Writes data from a Deephaven table to an Iceberg table without creating a new snapshot. This method returns a
-     * list of data files that were written. Users can use this list to create a transaction/snapshot if needed.
-     *
-     * @param tableIdentifier The identifier string for the Iceberg table to write to.
-     * @param dhTable The Deephaven table containing the data to be written.
-     * @param instructions The instructions for customizations while writing, or null to use default instructions.
-     *
-     * @return A list of {@link DataFile} objects representing the written data files.
-     */
-    public List<DataFile> writeDataFiles(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        return writeDataFiles(tableIdentifier, new Table[] {dhTable}, instructions);
-    }
-
-    /**
-     * Writes data from a Deephaven table to an Iceberg table without creating a new snapshot. This method returns a
-     * list of data files that were written. Users can use this list to create a transaction/snapshot if needed.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to write to.
-     * @param dhTable The Deephaven table containing the data to be written.
-     * @param instructions The instructions for customizations while writing, or null to use default instructions.
-     *
-     * @return A list of {@link DataFile} objects representing the written data files.
-     */
-    public List<DataFile> writeDataFiles(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergWriteInstructions instructions) {
-        return writeDataFiles(tableIdentifier, new Table[] {dhTable}, instructions);
+    public void overwrite(@NotNull final IcebergOverwrite icebergOverwrite) {
+        writeImpl(TableIdentifier.parse(icebergOverwrite.tableIdentifier()),
+                icebergOverwrite.dhTables(),
+                icebergOverwrite.instructions(),
+                true,
+                true);
     }
 
     /**
      * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
-     * of data files that were written. Users can use this list to create a transaction/snapshot if needed. All tables
-     * should have the same definition, else a table definition should be provided in the instructions.
+     * of data files that were written. Users can use this list to create a transaction/snapshot if needed.
      *
-     * @param tableIdentifier The identifier string for the Iceberg table to write to.
-     * @param dhTables The Deephaven tables containing the data to be written.
-     * @param instructions The instructions for customizations while writing, or null to use default instructions.
-     *
-     * @return A list of {@link DataFile} objects representing the written data files.
+     * @param icebergWriteDataFiles The {@link IcebergWriteDataFiles} object containing the data/instructions for
+     *        writing
      */
-    public List<DataFile> writeDataFiles(
-            @NotNull final String tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        return writeDataFiles(TableIdentifier.parse(tableIdentifier), dhTables, instructions);
-    }
-
-    /**
-     * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
-     * of data files that were written. Users can use this list to create a transaction/snapshot if needed. All tables
-     * should have the same definition, else a table definition should be provided in the instructions.
-     *
-     * @param tableIdentifier The identifier for the Iceberg table to write to.
-     * @param dhTables The Deephaven tables containing the data to be written.
-     * @param instructions The instructions for customizations while writing, or null to use default instructions.
-     *
-     * @return A list of {@link DataFile} objects representing the written data files.
-     */
-    public List<DataFile> writeDataFiles(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions) {
-        return writeImpl(tableIdentifier, dhTables, instructions, false, false);
+    public List<DataFile> writeDataFiles(@NotNull final IcebergWriteDataFiles icebergWriteDataFiles) {
+        return writeImpl(TableIdentifier.parse(icebergWriteDataFiles.tableIdentifier()),
+                icebergWriteDataFiles.dhTables(),
+                icebergWriteDataFiles.instructions(),
+                false,
+                false);
     }
 
     /**
@@ -1056,20 +899,20 @@ public class IcebergCatalogAdapter {
      */
     private List<DataFile> writeImpl(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull Table[] dhTables,
-            @Nullable final IcebergWriteInstructions instructions,
+            @NotNull List<Table> dhTables,
+            @NotNull final IcebergWriteInstructions instructions,
             final boolean overwrite,
             final boolean addSnapshot) {
         if (overwrite && !addSnapshot) {
             throw new IllegalArgumentException("Cannot overwrite an Iceberg table without adding a snapshot");
         }
-        if (dhTables.length == 0) {
+        if (dhTables.isEmpty()) {
             if (!overwrite) {
                 // Nothing to append
                 return Collections.emptyList();
             }
             // Overwrite with an empty table
-            dhTables = new Table[] {TableTools.emptyTable(0)};
+            dhTables = List.of(TableTools.emptyTable(0));
         }
 
         IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
@@ -1082,9 +925,10 @@ public class IcebergCatalogAdapter {
             useDefinition = writeInstructions.tableDefinition().get();
         } else {
             // Verify that all tables have the same definition
-            final TableDefinition firstDefinition = dhTables[0].getDefinition();
-            for (int idx = 1; idx < dhTables.length; idx++) {
-                if (!firstDefinition.equals(dhTables[idx].getDefinition())) {
+            final TableDefinition firstDefinition = dhTables.get(0).getDefinition();
+            final int numTables = dhTables.size();
+            for (int idx = 1; idx < numTables; idx++) {
+                if (!firstDefinition.equals(dhTables.get(idx).getDefinition())) {
                     throw new IllegalArgumentException(
                             "All Deephaven tables must have the same definition, else table definition should be " +
                                     "provided when writing multiple tables with different definitions");
@@ -1160,10 +1004,7 @@ public class IcebergCatalogAdapter {
     }
 
     private static IcebergParquetWriteInstructions verifyWriteInstructions(
-            @Nullable final IcebergWriteInstructions instructions) {
-        if (instructions == null) {
-            return IcebergParquetWriteInstructions.DEFAULT;
-        }
+            @NotNull final IcebergWriteInstructions instructions) {
         // We ony support writing to Parquet files
         if (!(instructions instanceof IcebergParquetWriteInstructions)) {
             throw new IllegalArgumentException("Unsupported instructions of class " + instructions.getClass() + " for" +
@@ -1220,10 +1061,10 @@ public class IcebergCatalogAdapter {
     @NotNull
     private static List<CompletedParquetWrite> writeParquet(
             @NotNull final org.apache.iceberg.Table icebergTable,
-            @NotNull final Table[] dhTables,
+            @NotNull final Collection<Table> dhTables,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
         // Build the parquet instructions
-        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.length);
+        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted =
                 (destination, numRows, numBytes) -> parquetFilesWritten
                         .add(new CompletedParquetWrite(destination, numRows, numBytes));
@@ -1258,10 +1099,15 @@ public class IcebergCatalogAdapter {
             final boolean schemaVerified) {
         final Transaction icebergTransaction = icebergTable.newTransaction();
         if (overwrite) {
-            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite();
+            // Fail if the table gets changed concurrently
+            final Snapshot currentSnapshot = icebergTable.currentSnapshot();
+            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite()
+                    .validateFromSnapshot(currentSnapshot.snapshotId())
+                    .validateNoConflictingDeletes()
+                    .validateNoConflictingData();
 
             // Delete all the existing data files in the table
-            try (final Stream<DataFile> dataFiles = allDataFiles(icebergTable, icebergTable.currentSnapshot())) {
+            try (final Stream<DataFile> dataFiles = allDataFiles(icebergTable, currentSnapshot)) {
                 dataFiles.forEach(overwriteFiles::deleteFile);
             }
             appendFiles.forEach(overwriteFiles::addFile);
