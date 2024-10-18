@@ -7,4 +7,3 @@ wheel
 sphinx
 bitstring
 unittest-xml-reporting
-timeout-decorator

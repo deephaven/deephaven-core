@@ -109,7 +109,7 @@ t1 = empty_table(0) if t.is_blink else None
         pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table2, pa_table)
         df = pa_table2.to_pandas()
-        self.assertEquals(1000, len(df.index))
+        self.assertEqual(1000, len(df.index))
 
     def test_import_table_time64(self):
         pa_array = pa.array([1, 2], type=pa.time64('ns'))
