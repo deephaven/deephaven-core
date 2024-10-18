@@ -124,6 +124,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         });
     }
 
+    @JsIgnore
     @Override
     public TypedTicket typedTicket() {
         return widget.typedTicket();
