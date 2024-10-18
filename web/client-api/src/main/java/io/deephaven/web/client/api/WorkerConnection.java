@@ -209,7 +209,6 @@ public class WorkerConnection {
         this.config = new ClientConfiguration();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
-        info.createClient(SessionServiceClient::new);
         sessionServiceClient = info.createClient(SessionServiceClient::new);
         tableServiceClient = info.createClient(TableServiceClient::new);
         consoleServiceClient = info.createClient(ConsoleServiceClient::new);
