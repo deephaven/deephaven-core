@@ -229,14 +229,9 @@ class IcebergTableAdapter(JObjectWrapper):
             Table: the table read from the catalog.
         """
 
-        if instructions is not None:
-            instructions_object = instructions.j_object
-        else:
-            instructions_object = _JIcebergInstructions.DEFAULT
-
-        if snapshot_id is not None:
-            return IcebergTable(self.j_object.table(snapshot_id, instructions_object))
-        return IcebergTable(self.j_object.readTable(instructions_object))
+        if snapshot_id:
+            return IcebergTable(self.j_object.table(snapshot_id, instructions))
+        return IcebergTable(self.j_object.table(instructions))
 
     @property
     def j_object(self) -> jpy.JType:
@@ -316,33 +311,6 @@ class IcebergCatalogAdapter(JObjectWrapper):
         """
 
         return self.j_object.snapshots(table_identifier)
-
-    def read_table(self, table_identifier: str, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
-        """
-        NOTE: deprecated, use `load_table(table_identifier).table()` instead.
-
-        Reads the table from the catalog using the provided instructions. Optionally, a snapshot id can be provided to
-        read a specific snapshot of the table.
-
-        Args:
-            table_identifier (str): the table to read.
-            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
-                can include column renames, table definition, and specific data instructions for reading the data files
-                from the provider. If omitted, the table will be read with default instructions.
-            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
-
-        Returns:
-            Table: the table read from the catalog.
-        """
-
-        if instructions is not None:
-            instructions_object = instructions.j_object
-        else:
-            instructions_object = _JIcebergInstructions.DEFAULT
-
-        if snapshot_id is not None:
-            return IcebergTable(self.j_object.readTable(table_identifier, snapshot_id, instructions_object))
-        return IcebergTable(self.j_object.readTable(table_identifier, instructions_object))
 
     @property
     def j_object(self) -> jpy.JType:
