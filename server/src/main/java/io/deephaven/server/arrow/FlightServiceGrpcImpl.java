@@ -265,8 +265,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 description, session == null ? null : session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-            final SessionState.ExportObject<Flight.FlightInfo> export =
-                    ticketRouter.flightInfoFor(session, request, "request");
+            final SessionState.ExportObject<ByteString> export =
+                    ticketRouter.getSchema(session, request, "request");
 
             if (session != null) {
                 session.nonExport()
@@ -275,7 +275,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         .onError(responseObserver)
                         .submit(() -> {
                             responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                                    .setSchema(export.get().getSchema())
+                                    .setSchema(export.get())
                                     .build());
                             responseObserver.onCompleted();
                         });
@@ -287,7 +287,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
                         GrpcUtil.safelyOnNext(responseObserver, Flight.SchemaResult.newBuilder()
-                                .setSchema(export.get().getSchema())
+                                .setSchema(export.get())
                                 .build());
                         GrpcUtil.safelyComplete(responseObserver);
                     }
@@ -295,7 +295,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     export.dropReference();
                 }
             } else {
-                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
+                exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find schema");
                 responseObserver.onError(exception);
             }
 

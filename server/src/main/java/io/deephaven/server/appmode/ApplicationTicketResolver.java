@@ -19,6 +19,7 @@ import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,34 +93,14 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+    protected Flight.Ticket getTicket(FlightDescriptor descriptor, String logId) {
         final AppFieldId id = appFieldIdFor(descriptor, logId);
-        if (id.app == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': field does not belong to an application");
-        }
+        return flightTicketForName(id.app, id.fieldName);
+    }
 
-        final Flight.FlightInfo info;
-        synchronized (id.app) {
-            Field<?> field = id.app.getField(id.fieldName);
-            if (field == null) {
-                throw newNotFoundSRE(logId, id);
-            }
-            Object value = field.value();
-            if (value instanceof Table) {
-                // may return null if the table is not authorized
-                value = authorization.transform(value);
-            }
-
-            if (value instanceof Table) {
-                info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
-            } else {
-                throw newNotFoundSRE(logId, id);
-            }
-        }
-
-        return SessionState.wrapAsExport(info);
+    @Override
+    protected StatusRuntimeException notFound(FlightDescriptor descriptor, String logId) {
+        return newNotFoundSRE(logId, appFieldIdFor(descriptor, logId));
     }
 
     @Override

@@ -55,6 +55,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
@@ -117,7 +118,7 @@ public class SessionState {
      */
     public static <T> ExportObject<T> wrapAsFailedExport(final Exception caughtException) {
         ExportObject<T> exportObject = new ExportObject<>(null);
-        exportObject.caughtException = caughtException;
+        exportObject.caughtException = Objects.requireNonNull(caughtException);
         return exportObject;
     }
 
@@ -631,6 +632,43 @@ public class SessionState {
          */
         public boolean isNonExport() {
             return exportId == NON_EXPORT_ID;
+        }
+
+        /**
+         * Applies the function {@code f} to the results of {@code this} export.
+         *
+         * <p>
+         * In the case where {@code this} export was built with a {@link SessionState}, the function {@code f} will be
+         * invoked inside {@link ExportBuilder#submit(Callable) submit} with the same session.
+         *
+         * <p>
+         * In the case where {@code this} export was not built with a {@link SessionState}, the function {@code f} will
+         * be invoked on this thread.
+         *
+         * <p>
+         * In both cases, the resulting export is a "non-export".
+         *
+         * @param f the function
+         * @return the new export after applying
+         * @param <R> the new exported type
+         */
+        public <R> ExportObject<R> map(Function<? super T, ? extends R> f) {
+            if (session == null) {
+                final T localResult = result;
+                if (localResult == null) {
+                    return wrapAsFailedExport(caughtException);
+                }
+                final R r;
+                try {
+                    r = f.apply(localResult);
+                } catch (RuntimeException e) {
+                    return wrapAsFailedExport(e);
+                }
+                return wrapAsExport(r);
+            }
+            return session.<R>nonExport()
+                    .require(this)
+                    .submit(() -> f.apply(ExportObject.this.get()));
         }
 
         private synchronized void setQueryPerformanceRecorder(

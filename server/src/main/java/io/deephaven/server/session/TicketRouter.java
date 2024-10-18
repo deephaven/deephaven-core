@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.session;
 
+import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -266,6 +267,16 @@ public class TicketRouter {
         }
     }
 
+    public SessionState.ExportObject<ByteString> getSchema(
+            @Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId) {
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
+                "getSchemaDescriptor:" + descriptor)) {
+            return getResolver(descriptor, logId).getSchema(session, descriptor, logId);
+        }
+    }
+
     /**
      * Create a human readable string to identify this ticket.
      *
@@ -307,6 +318,10 @@ public class TicketRouter {
      */
     public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
+    }
+
+    public static ByteString getSchema(final Table table) {
+        return BarrageUtil.schemaBytesFromTable(table);
     }
 
     public static Flight.FlightInfo getFlightInfo(final Table table,
