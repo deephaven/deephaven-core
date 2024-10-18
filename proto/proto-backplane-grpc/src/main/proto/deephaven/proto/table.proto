@@ -295,8 +295,6 @@ message ExportedTableCreationResponse {
   // size isn't known without scanning partitions. Typically, the client should filter the data by the
   // partitioning columns first.
   sint64 size = 6 [jstype=JS_STRING];
-
-  // TODO: attributes
 }
 
 message FetchTableRequest {

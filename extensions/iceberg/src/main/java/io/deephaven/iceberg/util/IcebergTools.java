@@ -19,7 +19,7 @@ public final class IcebergTools {
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             final Catalog catalog) {
-        return new IcebergCatalogAdapter(catalog);
+        return IcebergCatalogAdapter.of(catalog, Map.of());
     }
 
     /**
@@ -37,12 +37,12 @@ public final class IcebergTools {
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HIVE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HADOOP},
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_REST}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_GLUE},
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_NESSIE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_JDBC}.</li>
-     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
      * </ul>
      * <p>
      * Other common properties include:
      * </p>
      * <ul>
+     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
      * <li>{@value CatalogProperties#WAREHOUSE_LOCATION} - the location of the data warehouse.</li>
      * <li>{@code "client.region"} - the region of the AWS client.</li>
      * <li>{@code "s3.access-key-id"} - the S3 access key for reading files.</li>
@@ -80,12 +80,12 @@ public final class IcebergTools {
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HIVE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_HADOOP},
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_REST}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_GLUE},
      * {@value CatalogUtil#ICEBERG_CATALOG_TYPE_NESSIE}, {@value CatalogUtil#ICEBERG_CATALOG_TYPE_JDBC}.</li>
-     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
      * </ul>
      * <p>
      * Other common properties include:
      * </p>
      * <ul>
+     * <li>{@value CatalogProperties#URI} - the URI of the catalog.</li>
      * <li>{@value CatalogProperties#WAREHOUSE_LOCATION} - the location of the data warehouse.</li>
      * <li>{@code "client.region"} - the region of the AWS client.</li>
      * <li>{@code "s3.access-key-id"} - the S3 access key for reading files.</li>
@@ -114,13 +114,11 @@ public final class IcebergTools {
                     String.format("Catalog type '%s' or implementation class '%s' is required",
                             CatalogUtil.ICEBERG_CATALOG_TYPE, CatalogProperties.CATALOG_IMPL));
         }
-        if (!properties.containsKey(CatalogProperties.URI)) {
-            throw new IllegalArgumentException(String.format("Catalog URI property '%s' is required",
-                    CatalogProperties.URI));
-        }
 
         final String catalogUri = properties.get(CatalogProperties.URI);
-        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogUri;
+        final String catalogName = name != null
+                ? name
+                : "IcebergCatalog" + (catalogUri == null ? "" : "-" + catalogUri);
 
         // Load the Hadoop configuration with the provided properties
         final Configuration hadoopConf = new Configuration();
@@ -129,7 +127,7 @@ public final class IcebergTools {
         // Create the Iceberg catalog from the properties
         final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, properties, hadoopConf);
 
-        return new IcebergCatalogAdapter(catalog, properties);
+        return IcebergCatalogAdapter.of(catalog, properties);
     }
 
 }

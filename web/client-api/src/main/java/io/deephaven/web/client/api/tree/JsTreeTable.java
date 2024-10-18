@@ -959,6 +959,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     @Override
+    @JsIgnore
     public TypedTicket typedTicket() {
         return widget.typedTicket();
     }

@@ -77,6 +77,8 @@ public class TestCodecColumns {
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S);
 
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
+
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
@@ -85,12 +87,13 @@ public class TestCodecColumns {
     @Before
     public void setUp() {
         table = TableTools.newTable(TABLE_DEFINITION,
-                TableTools.col("VWBA", new byte[] {0, 1, 2}, null, new byte[] {3, 4, 5, 6}),
-                TableTools.col("VWCD", null, new ArrayTuple(0, 2, 4, 6), new ArrayTuple(1, 3, 5, 7)),
+                TableTools.col("VWBA", new byte[] {0, 1, 2}, null, new byte[] {3, 4, 5, 6}, EMPTY_BYTE_ARRAY),
+                TableTools.col("VWCD", null, new ArrayTuple(0, 2, 4, 6), new ArrayTuple(1, 3, 5, 7), null),
                 TableTools.col("FWBA", new byte[] {7, 8, 9, 10, 11, 12, 13, 14, 15},
-                        new byte[] {16, 17, 18, 19, 20, 21, 22, 23, 24}, new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0}),
-                TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null),
-                TableTools.col("VWBIS", BigInteger.valueOf(94), null, BigInteger.valueOf(111111111111112L)));
+                        new byte[] {16, 17, 18, 19, 20, 21, 22, 23, 24}, new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        EMPTY_BYTE_ARRAY),
+                TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null, null),
+                TableTools.col("VWBIS", BigInteger.valueOf(94), null, BigInteger.valueOf(111111111111112L), null));
     }
 
     @Test
@@ -99,18 +102,30 @@ public class TestCodecColumns {
         final File dest = new File(dir, "Test.parquet");
         try {
             ParquetTools.writeTable(table, dest.getPath(), writeInstructions);
-            final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
-            final Table result =
-                    ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
-            TableTools.show(result);
-            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
-            final ParquetInstructions readInstructions = instructionsOut.getValue();
-            TestCase.assertTrue(
-                    ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
-            TstUtils.assertTableEquals(table, result);
+            doColumnsTestHelper(dest);
         } finally {
             FileUtils.deleteRecursively(dir);
         }
+    }
+
+    @Test
+    public void doLegacyColumnsTest() {
+        // Make sure that we can read legacy data encoded with the old codec implementations.
+        final String path =
+                TestCodecColumns.class.getResource("/ReferenceParquetWithCodecColumns.parquet").getFile();
+        doColumnsTestHelper(new File(path));
+    }
+
+    private void doColumnsTestHelper(final File dest) {
+        final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
+        final Table result =
+                ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
+        TableTools.show(result);
+        TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+        final ParquetInstructions readInstructions = instructionsOut.getValue();
+        TestCase.assertTrue(
+                ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
+        TstUtils.assertTableEquals(table, result);
     }
 
     @Test

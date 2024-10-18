@@ -264,7 +264,6 @@ def adapter(
             implementing Java class should be provided (e.g. `org.apache.iceberg.rest.RESTCatalog` or
             `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
-    - `uri` - the URI of the catalog
 
     If the user is responsible for connecting to an AWS catalog or S3-compatible API for the warehouse, setting
     s3_instructions is the recommended way of configuring these details, as it allows Deephaven to own the creation of
@@ -273,6 +272,7 @@ def adapter(
     warehouse credentials, in which case the user is not responsible for setting this.
 
     Other common properties include:
+    - `uri` - the URI of the catalog
     - `warehouse` - the root path of the data warehouse.
 
     Example usage #1 - REST catalog with an S3 backend:
