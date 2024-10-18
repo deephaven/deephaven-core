@@ -39,8 +39,8 @@ if _system == 'Windows':
 
     # Ensure distutils uses the compiler and linker in %PATH%
     # You need an installation of Visual Studio 2022 with
-    # * Python Development Workspace
-    # * Python native option enabled
+    # * Python Development Workload
+    # * Option "Python native development tools" enabled
     # And this should be run from the "x64 Native Tools Command Prompt" installed by VS
     # Note "x64_x86 Cross Tools Command Prompt" will NOT work.
     os.environ['DISTUTILS_USE_SDK']='y'
