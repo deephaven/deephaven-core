@@ -14,8 +14,10 @@ import io.deephaven.iceberg.junit5.CatalogAdapterBase;
 import io.deephaven.iceberg.util.IcebergAppend;
 import io.deephaven.iceberg.util.IcebergOverwrite;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
+import io.deephaven.iceberg.util.IcebergWriteDataFiles;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import io.deephaven.parquet.table.ParquetTools;
+import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
@@ -533,18 +535,8 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
         // assertTableEquals(source, fromIceberg);
 
-        // Verify that the column names in the parquet file are same as the table written
         final TableIdentifier tableIdentifier = TableIdentifier.of("MyNamespace", "MyTable");
-        final String firstParquetFilePath;
-        {
-            final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-            final List<DataFile> dataFileList =
-                    IcebergUtils.allDataFiles(table, table.currentSnapshot()).collect(Collectors.toList());
-            assertThat(dataFileList).hasSize(1);
-            firstParquetFilePath = dataFileList.get(0).path().toString();
-            final Table fromParquet = ParquetTools.readTable(firstParquetFilePath);
-            assertTableEquals(source, fromParquet);
-        }
+        verifyDataFiles(tableIdentifier, List.of(source));
 
         // TODO Verify that the column ID is set correctly after #6156 is merged
 
@@ -563,25 +555,86 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .instructions(writeInstructions)
                 .build());
 
-        // Verify that the column names in the parquet file are same as the table written
-        {
-            final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
-            final List<DataFile> dataFileList =
-                    IcebergUtils.allDataFiles(table, table.currentSnapshot()).collect(Collectors.toList());
-            assertThat(dataFileList).hasSize(2);
-            String secondParquetFilePath = null;
-            for (final DataFile df : dataFileList) {
-                final String parquetFilePath = df.path().toString();
-                if (!parquetFilePath.equals(firstParquetFilePath)) {
-                    secondParquetFilePath = parquetFilePath;
-                    break;
-                }
-            }
-            assertThat(secondParquetFilePath).isNotNull();
-            final Table fromParquet = ParquetTools.readTable(secondParquetFilePath);
-            assertTableEquals(moreData, fromParquet);
-        }
+        // Verify the data files in the table. Note that we are assuming an order here.
+        verifyDataFiles(tableIdentifier, List.of(moreData, source));
 
         // TODO Verify that the column ID is set correctly after #6156 is merged
+    }
+
+    /**
+     * Verify that the data files in the table match the Deephaven tables in the given sequence.
+     */
+    private void verifyDataFiles(
+            final TableIdentifier tableIdentifier,
+            final List<Table> dhTables) {
+        final org.apache.iceberg.Table table = catalogAdapter.catalog().loadTable(tableIdentifier);
+        final List<DataFile> dataFileList = IcebergUtils.allDataFiles(table, table.currentSnapshot())
+                .collect(Collectors.toList());
+        assertThat(dataFileList).hasSize(dhTables.size());
+
+        // Check that each Deephaven table matches the corresponding data file in sequence
+        for (int i = 0; i < dhTables.size(); i++) {
+            final Table dhTable = dhTables.get(i);
+            final DataFile dataFile = dataFileList.get(i);
+            final String parquetFilePath = dataFile.path().toString();
+            final Table fromParquet = ParquetTools.readTable(parquetFilePath);
+            assertTableEquals(dhTable, fromParquet);
+        }
+    }
+
+    @Test
+    void writeDataFilesBasicTest() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table anotherSource = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final String tableIdentifier = "MyNamespace.MyTable";
+        try {
+            catalogAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
+                    .tableIdentifier(tableIdentifier)
+                    .addDhTables(source)
+                    .build());
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).contains("Table does not exist");
+        }
+        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
+                .createTableIfNotExist(true)
+                .build();
+        final List<DataFile> dataFilesWritten = catalogAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
+                .tableIdentifier(tableIdentifier)
+                .addDhTables(source, anotherSource)
+                .instructions(writeInstructions)
+                .build());
+        verifySnapshots(tableIdentifier, List.of());
+        assertThat(dataFilesWritten).hasSize(2);
+
+        // Append some data to the table
+        final Table moreData = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        catalogAdapter.append(IcebergAppend.builder()
+                .tableIdentifier(tableIdentifier)
+                .addDhTables(moreData)
+                .instructions(writeInstructions)
+                .build());
+        {
+            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            assertTableEquals(moreData, fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append"));
+            verifyDataFiles(TableIdentifier.parse(tableIdentifier), List.of(moreData));
+        }
+
+        // Now commit those data files to the table
+        final org.apache.iceberg.Table icebergTable =
+                catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier));
+        final AppendFiles append = icebergTable.newAppend();
+        dataFilesWritten.forEach(append::appendFile);
+        append.commit();
+
+        // Verify that the data files are now in the table
+        verifySnapshots(tableIdentifier, List.of("append", "append"));
+        verifyDataFiles(TableIdentifier.parse(tableIdentifier), List.of(source, anotherSource, moreData));
     }
 }

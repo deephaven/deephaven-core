@@ -979,7 +979,7 @@ public class IcebergCatalogAdapter {
                     writeParquet(icebergTable, dhTables, writeInstructions);
             final List<DataFile> appendFiles = dataFilesFromParquet(parquetFileInfo);
             if (addSnapshot) {
-                commit(icebergTable, newSpecAndSchema, appendFiles, overwrite && !newTableCreated, verifySchema);
+                commit(icebergTable, newSpecAndSchema, appendFiles, overwrite, verifySchema);
             }
             return appendFiles;
         } catch (final Throwable throwable) {
@@ -1098,9 +1098,10 @@ public class IcebergCatalogAdapter {
             final boolean overwrite,
             final boolean schemaVerified) {
         final Transaction icebergTransaction = icebergTable.newTransaction();
-        if (overwrite) {
+        final Snapshot currentSnapshot = icebergTable.currentSnapshot();
+        // For a null current snapshot, we are creating a new table. So we can just append instead of overwriting.
+        if (overwrite && currentSnapshot != null) {
             // Fail if the table gets changed concurrently
-            final Snapshot currentSnapshot = icebergTable.currentSnapshot();
             final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite()
                     .validateFromSnapshot(currentSnapshot.snapshotId())
                     .validateNoConflictingDeletes()
