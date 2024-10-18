@@ -17,7 +17,10 @@ public class UnaryWithHeaders {
     /**
      * Improbable-eng's grpc-web implementation doesn't pass headers to api callers - this changes the contract a bit so
      * that we can get a typed UnaryOutput with the headers/trailers intact.
-     * 
+     *
+     * @param host the server to connect to
+     * @param metadata gRPC metadata to set on the request
+     * @param options options to use when sending the request
      * @param methodDescriptor the service method to invoke
      * @return a promise that will resolve to the response plus headers/trailers, or reject with the headers/trailers
      * @param <Res> type of the message object
