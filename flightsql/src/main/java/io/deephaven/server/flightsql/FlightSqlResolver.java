@@ -11,6 +11,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
+import io.deephaven.engine.context.EmptyQueryScope;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.sql.Sql;
@@ -32,24 +33,22 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.session.ActionResolver;
+import io.deephaven.server.session.CommandResolver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.sql.SqlParseException;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.arrow.flight.impl.Flight.Action;
 import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.apache.arrow.flight.impl.Flight.FlightEndpoint;
 import org.apache.arrow.flight.impl.Flight.FlightInfo;
-import org.apache.arrow.flight.impl.Flight.Result;
 import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
@@ -77,6 +76,11 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
+import org.apache.arrow.vector.ipc.WriteChannel;
+import org.apache.arrow.vector.ipc.message.MessageSerializer;
+import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.jetbrains.annotations.NotNull;
@@ -84,17 +88,22 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -107,8 +116,19 @@ import java.util.stream.Stream;
 import static io.deephaven.server.flightsql.FlightSqlTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
 import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
 
+/**
+ * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">FlightSQL</a> resolver.
+ *
+ * <p>
+ * Supported commands: {@link CommandStatementQuery}, {@link CommandPreparedStatementQuery}, {@link CommandGetTables},
+ * {@link CommandGetCatalogs}, {@link CommandGetDbSchemas}, and {@link CommandGetTableTypes}.
+ *
+ * <p>
+ * Supported actions: {@link FlightSqlUtils#FLIGHT_SQL_CREATE_PREPARED_STATEMENT} and
+ * {@link FlightSqlUtils#FLIGHT_SQL_CLOSE_PREPARED_STATEMENT}.
+ */
 @Singleton
-public final class FlightSqlResolver extends TicketResolverBase implements ActionResolver {
+public final class FlightSqlResolver extends TicketResolverBase implements ActionResolver, CommandResolver {
 
     @VisibleForTesting
     static final String CREATE_PREPARED_STATEMENT_ACTION_TYPE = "CreatePreparedStatement";
@@ -239,6 +259,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     };
 
+    @VisibleForTesting
+    static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
+
+    private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES = serializeMetadata(DATASET_SCHEMA_SENTINEL);
+
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
     // TicketResolvers).
     // private final TicketRouter router;
@@ -263,6 +288,96 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         this.preparedStatements = new KeyedLongObjectHashMap<>(PREPARED_STATEMENT_KEY);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public boolean handlesCommand(Flight.FlightDescriptor descriptor) {
+        if (descriptor.getType() != DescriptorType.CMD) {
+            throw new IllegalStateException("descriptor is not a command");
+        }
+        // No good way to check if this is a valid command without parsing to Any first.
+        final Any command = parse(descriptor.getCmd()).orElse(null);
+        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_TYPE_PREFIX);
+    }
+
+    // We should probably plumb optional TicketResolver support that allows efficient
+    // io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema without needing to go through flightInfoFor
+
+    @Override
+    public ExportObject<FlightInfo> flightInfoFor(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        if (descriptor.getType() != DescriptorType.CMD) {
+            // TODO: we should extract a PathResolver (like CommandResolver) so this can be elevated to a server
+            // implementation issue instead of user facing error
+            throw error(Code.FAILED_PRECONDITION,
+                    String.format("Unsupported descriptor type '%s'", descriptor.getType()));
+        }
+        // todo: scope, nugget?
+//        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
+//        final TicketHandler ticketHandler = commandHandler.initialize(command);
+//        final FlightInfo info = ticketHandler.flightInfo(descriptor);
+//        return SessionState.wrapAsExport(info);
+
+        return session.<FlightInfo>nonExport().submit(() -> {
+            final Any command = parseOrThrow(descriptor.getCmd());
+            final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
+            final TicketHandler ticketHandler = commandHandler.initialize(command);
+            return ticketHandler.flightInfo(descriptor);
+        });
+
+//        final FlightInfo info = ticketHandler.flightInfo(descriptor);
+//        return SessionState.wrapAsExport(info);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
+//        // todo: scope, nugget?
+//        final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
+//        final TicketHandler handler = ticketHandler(session, message);
+//        final Table table = handler.takeTable(session);
+//        // noinspection unchecked
+//        return (ExportObject<T>) SessionState.wrapAsExport(table);
+
+        //noinspection unchecked
+        return (ExportObject<T>) session.<Table>nonExport().submit(() -> {
+            final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
+            final TicketHandler handler = ticketHandler(session, message);
+            return handler.takeTable(session);
+        });
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public void listActions(@Nullable SessionState session, Consumer<ActionType> visitor) {
+        if (session != null) {
+            visitor.accept(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT);
+            visitor.accept(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
+        }
+    }
+
+    @Override
+    public boolean handlesActionType(String type) {
+        // There is no prefix for FlightSQL action types, so the best we can do is a set-based lookup. This also means
+        // that this resolver will not be able to respond with an appropriately scoped error message for new FlightSQL
+        // action types (io.deephaven.server.flightsql.FlightSqlResolver.UnsupportedAction).
+        return FLIGHT_SQL_ACTION_TYPES.contains(type);
+    }
+
+    @Override
+    public void doAction(@Nullable SessionState session, org.apache.arrow.flight.Action action,
+            Consumer<org.apache.arrow.flight.Result> visitor) {
+        if (!handlesActionType(action.getType())) {
+            throw new IllegalStateException(String.format("FlightSQL does not handle type '%s'", action.getType()));
+        }
+        executeAction(session, action(action), action, visitor);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+
     @Override
     public String getLogNameFor(final ByteBuffer ticket, final String logId) {
         // This is a bit different than the other resolvers; a ticket may be a very long byte string here since it
@@ -273,43 +388,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @Override
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
 
-    }
-
-    @Override
-    public <T> SessionState.ExportObject<T> resolve(
-            @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
-        if (session == null) {
-            // TODO: this is not true anymore
-            throw error(Code.UNAUTHENTICATED,
-                    "Could not resolve '" + logId + "': no FlightSQL tickets can exist without an active session");
-        }
-        // todo: scope, nugget?
-        final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
-        final TicketHandler handler = ticketHandler(session, message);
-        final Table table = handler.takeTable(session);
-        // noinspection unchecked
-        return (ExportObject<T>) SessionState.wrapAsExport(table);
-    }
-
-    private TicketHandler ticketHandler(SessionState session, Any message) {
-        final String typeUrl = message.getTypeUrl();
-        if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
-            final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
-            final TicketHandler ticketHandler = queries.get(id(ticketStatementQuery));
-            if (ticketHandler == null) {
-                throw error(Code.NOT_FOUND,
-                        "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
-            }
-            return ticketHandler;
-        }
-        final CommandHandler commandHandler = commandHandler(session, typeUrl, true);
-        try {
-            return commandHandler.initialize(message);
-        } catch (StatusRuntimeException e) {
-            // This should not happen with well-behaved clients; or it means there is an bug in our command/ticket logic
-            throw error(Code.INVALID_ARGUMENT,
-                    "Invalid ticket; please ensure client is using an opaque ticket", e);
-        }
     }
 
     @Override
@@ -341,47 +419,32 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean supportsCommand(FlightDescriptor descriptor) {
-        // No good way to check if this is a valid command without parsing to Any first.
-        final Any command = parse(descriptor.getCmd()).orElse(null);
-        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_TYPE_PREFIX);
+    interface CommandHandler {
+
+        TicketHandler initialize(Any any);
     }
 
-    // We should probably plumb optional TicketResolver support that allows efficient
-    // io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema without needing to go through flightInfoFor
+    interface TicketHandler {
 
-    @Override
-    public ExportObject<FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw error(Code.UNAUTHENTICATED, String.format(
-                    "Could not resolve '%s': no session to handoff to", logId));
-        }
-        if (descriptor.getType() != DescriptorType.CMD) {
-            throw error(Code.FAILED_PRECONDITION,
-                    String.format("Unsupported descriptor type '%s'", descriptor.getType()));
-        }
-        // todo: scope, nugget?
-        final Any command = parseOrThrow(descriptor.getCmd());
-        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
-        final TicketHandler ticketHandler = commandHandler.initialize(command);
-        final FlightInfo info = ticketHandler.flightInfo(descriptor);
-        return SessionState.wrapAsExport(info);
+        FlightInfo flightInfo(FlightDescriptor descriptor);
+
+        Table takeTable(SessionState session);
     }
 
-    private CommandHandler commandHandler(SessionState sessionState, String typeUrl, boolean fromTicket) {
+    private CommandHandler commandHandler(SessionState session, String typeUrl, boolean fromTicket) {
         switch (typeUrl) {
             case COMMAND_STATEMENT_QUERY_TYPE_URL:
                 if (fromTicket) {
                     // This should not happen with well-behaved clients; or it means there is an bug in our
                     // command/ticket logic
-                    throw new StatusRuntimeException(Status.INVALID_ARGUMENT
-                            .withDescription("Invalid ticket; please ensure client is using opaque ticket"));
+                    throw error(Code.INVALID_ARGUMENT, "Invalid ticket; please ensure client is using opaque ticket");
                 }
-                return new CommandStatementQueryImpl(sessionState);
+                return new CommandStatementQueryImpl(session);
             case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
-                return new CommandPreparedStatementQueryImpl(sessionState);
+                if (session == null) {
+                    throw noAuthForPrepared();
+                }
+                return new CommandPreparedStatementQueryImpl(session);
             case COMMAND_GET_TABLE_TYPES_TYPE_URL:
                 return CommandGetTableTypesImpl.INSTANCE;
             case COMMAND_GET_CATALOGS_TYPE_URL:
@@ -414,11 +477,33 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 String.format("FlightSQL command '%s' is unknown", typeUrl));
     }
 
-    private Table executeSqlQuery(SessionState sessionState, String sql) {
+    private TicketHandler ticketHandler(SessionState session, Any message) {
+        final String typeUrl = message.getTypeUrl();
+        if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
+            final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
+            final TicketHandler ticketHandler = queries.get(id(ticketStatementQuery));
+            if (ticketHandler == null) {
+                throw error(Code.NOT_FOUND,
+                        "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
+            }
+            return ticketHandler;
+        }
+        final CommandHandler commandHandler = commandHandler(session, typeUrl, true);
+        try {
+            return commandHandler.initialize(message);
+        } catch (StatusRuntimeException e) {
+            // This should not happen with well-behaved clients; or it means there is an bug in our command/ticket logic
+            throw error(Code.INVALID_ARGUMENT,
+                    "Invalid ticket; please ensure client is using an opaque ticket", e);
+        }
+    }
+
+    private Table executeSqlQuery(SessionState session, String sql) {
         // See SQLTODO(catalog-reader-implementation)
         // final QueryScope queryScope = sessionState.getExecutionContext().getQueryScope();
         // Note: ScopeTicketResolver uses from ExecutionContext.getContext() instead of session...
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final QueryScope queryScope =
+                session == null ? EmptyQueryScope.INSTANCE : ExecutionContext.getContext().getQueryScope();
         // noinspection unchecked,rawtypes
         final Map<String, Table> queryScopeTables =
                 (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
@@ -426,19 +511,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
         return tableSpec.logic()
-                .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, sessionState));
-    }
-
-    interface CommandHandler {
-
-        TicketHandler initialize(Any any);
-    }
-
-    interface TicketHandler {
-
-        FlightInfo flightInfo(FlightDescriptor descriptor);
-
-        Table takeTable(SessionState session);
+                .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
     }
 
     /**
@@ -563,7 +636,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         private final long handleId;
         protected final SessionState session;
 
-        private final ScheduledFuture<?> watchdog;
+        private ScheduledFuture<?> watchdog;
 
         private boolean initialized;
         // protected ByteString schemaBytes;
@@ -573,7 +646,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             this.handleId = handleIdGenerator.getAndIncrement();
             this.session = session;
             queries.put(handleId, this);
-            watchdog = scheduler.schedule(this::onWatchdog, 5, TimeUnit.SECONDS);
         }
 
         @Override
@@ -597,8 +669,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             execute(any);
             if (table == null) {
                 throw new IllegalStateException(
-                        "QueryBase implementation has a bug, should have set schemaBytes and table");
+                        "QueryBase implementation has a bug, should have set table");
             }
+            watchdog = scheduler.schedule(this::onWatchdog, 5, TimeUnit.SECONDS);
             return this;
         }
 
@@ -647,18 +720,20 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         public void close() {
-            closeImpl();
-            watchdog.cancel(true);
+            closeImpl(true);
         }
 
         private void onWatchdog() {
             log.debug().append("Watchdog cleaning up query ").append(handleId).endl();
-            closeImpl();
+            closeImpl(false);
         }
 
-        private synchronized void closeImpl() {
+        private synchronized void closeImpl(boolean cancelWatchdog) {
             queries.remove(handleId, this);
             table = null;
+            if (cancelWatchdog && watchdog != null) {
+                watchdog.cancel(true);
+            }
         }
 
         private ByteString handle() {
@@ -697,7 +772,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         PreparedStatement prepared;
 
         CommandPreparedStatementQueryImpl(SessionState session) {
-            super(session);
+            super(Objects.requireNonNull(session));
         }
 
         @Override
@@ -952,31 +1027,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public boolean supportsDoActionType(String type) {
-        return FLIGHT_SQL_ACTION_TYPES.contains(type);
-    }
-
-    @Override
-    public void forAllFlightActionType(@Nullable SessionState session, Consumer<ActionType> visitor) {
-        visitor.accept(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT);
-        visitor.accept(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
-    }
-
-    @Override
-    public void doAction(@Nullable SessionState session, Flight.Action request, Consumer<Result> visitor) {
-        executeAction(session, action(request), request, visitor);
-    }
-
     private <Request, Response extends Message> void executeAction(
             @Nullable SessionState session,
             ActionHandler<Request, Response> handler,
-            Action request,
-            Consumer<Result> visitor) {
+            org.apache.arrow.flight.Action request,
+            Consumer<org.apache.arrow.flight.Result> visitor) {
         handler.execute(session, handler.parse(request), new ResultVisitorAdapter<>(visitor));
     }
 
-    private ActionHandler<?, ? extends Message> action(Action action) {
+    private ActionHandler<?, ? extends Message> action(org.apache.arrow.flight.Action action) {
         final String type = action.getType();
         switch (type) {
             case CREATE_PREPARED_STATEMENT_ACTION_TYPE:
@@ -1001,19 +1060,19 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN,
                         ActionCreatePreparedSubstraitPlanRequest.class);
         }
-        // Should not get to this point, should not be routed here if it's unknown
-        throw error(Code.INTERNAL,
-                String.format("FlightSQL Action type '%s' is unknown", type));
+        // Should not get here unless handlesActionType is implemented incorrectly.
+        throw new IllegalStateException(String.format("Unexpected FlightSQL Action type '%s'", type));
     }
 
-    private static <T extends com.google.protobuf.Message> T unpack(Action action, Class<T> clazz) {
+    private static <T extends com.google.protobuf.Message> T unpack(org.apache.arrow.flight.Action action,
+            Class<T> clazz) {
         // A more efficient DH version of org.apache.arrow.flight.sql.FlightSqlUtils.unpackAndParseOrThrow
         final Any any = parseOrThrow(action.getBody());
         return unpackOrThrow(any, clazz);
     }
 
-    private static Result pack(com.google.protobuf.Message message) {
-        return Result.newBuilder().setBody(Any.pack(message).toByteString()).build();
+    private static org.apache.arrow.flight.Result pack(com.google.protobuf.Message message) {
+        return new org.apache.arrow.flight.Result(Any.pack(message).toByteArray());
     }
 
     private PreparedStatement getPreparedStatement(SessionState session, ByteString handle) {
@@ -1027,7 +1086,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     interface ActionHandler<Request, Response> {
-        Request parse(Flight.Action action);
+        Request parse(org.apache.arrow.flight.Action action);
 
         void execute(SessionState session, Request request, Consumer<Response> visitor);
     }
@@ -1044,7 +1103,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public final Request parse(Action action) {
+        public final Request parse(org.apache.arrow.flight.Action action) {
             if (!type.getType().equals(action.getType())) {
                 // should be routed correctly earlier
                 throw new IllegalStateException();
@@ -1062,6 +1121,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         @Override
         public void execute(SessionState session, ActionCreatePreparedStatementRequest request,
                 Consumer<ActionCreatePreparedStatementResult> visitor) {
+            if (session == null) {
+                throw noAuthForPrepared();
+            }
             if (request.hasTransactionId()) {
                 throw transactionIdsNotSupported();
             }
@@ -1070,33 +1132,55 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             // when the client tries to do a DoPut for the parameter value, or during the Ticket execution, if the query
             // is invalid.
             final PreparedStatement prepared = new PreparedStatement(session, request.getQuery());
-            // Note: we are _not_ providing the client with any proposed schema at this point in time; regardless, the
-            // client is not allowed to assume correctness. For example, the parameterized query
-            // `SELECT ?` is undefined at this point in time. We may need to re-examine this if we eventually support
-            // non-trivial parameterized queries (it may be necessary to set setParameterSchema, even if we don't know
-            // exactly what they will be).
+
+            // Note: we are providing a fake dataset schema here since the FlightSQL JDBC driver uses the results as an
+            // indication of whether the query is a SELECT or UPDATE, see
+            // org.apache.arrow.driver.jdbc.client.ArrowFlightSqlClientHandler.PreparedStatement.getType. There should
+            // likely be some better way the driver could be implemented...
             //
-            // Here is some guidance from https://arrow.apache.org/docs/format/FlightSql.html#query-execution
+            // Regardless, the client is not allowed to assume correctness of the returned schema. For example, the
+            // parameterized query `SELECT ?` is undefined at this point in time. We may need to re-examine this if we
+            // eventually support non-trivial parameterized queries (it may be necessary to set setParameterSchema, even
+            // if we don't know exactly what they will be).
             //
-            // The response will contain an opaque handle used to identify the prepared statement. It may also contain
+            // There does seem to be some conflicting guidance on whether dataset_schema is actually required or not.
+            //
+            // From the FlightSql.proto:
+            //
+            // > If a result set generating query was provided, dataset_schema contains the schema of the result set.
+            // It should be an IPC-encapsulated Schema, as described in Schema.fbs. For some queries, the schema of the
+            // results may depend on the schema of the parameters. The server should provide its best guess as to the
+            // schema at this point. Clients must not assume that this schema, if provided, will be accurate.
+            //
+            // From https://arrow.apache.org/docs/format/FlightSql.html#query-execution
+            //
+            // > The response will contain an opaque handle used to identify the prepared statement. It may also contain
             // two optional schemas: the Arrow schema of the result set, and the Arrow schema of the bind parameters (if
             // any). Because the schema of the result set may depend on the bind parameters, the schemas may not
             // necessarily be provided here as a result, or if provided, they may not be accurate. Clients should not
             // assume the schema provided here will be the schema of any data actually returned by executing the
             // prepared statement.
             //
-            // Some statements may have bind parameters without any specific type. (As a trivial example for SQL,
+            // > Some statements may have bind parameters without any specific type. (As a trivial example for SQL,
             // consider SELECT ?.) It is not currently specified how this should be handled in the bind parameter schema
             // above. We suggest either using a union type to enumerate the possible types, or using the NA (null) type
             // as a wildcard/placeholder.
-            //
-            // See protobuf / javadoc on ActionCreatePreparedStatementResult for additional documentation.
             final ActionCreatePreparedStatementResult response = ActionCreatePreparedStatementResult.newBuilder()
                     .setPreparedStatementHandle(prepared.handle())
-                    // .setDatasetSchema(...)
+                    .setDatasetSchema(DATASET_SCHEMA_SENTINEL_BYTES)
                     // .setParameterSchema(...)
                     .build();
             visitor.accept(response);
+        }
+    }
+
+    private static ByteString serializeMetadata(final Schema schema) {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            MessageSerializer.serialize(new WriteChannel(Channels.newChannel(outputStream)), schema);
+            return ByteStringAccess.wrap(outputStream.toByteArray());
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to serialize schema", e);
         }
     }
 
@@ -1109,6 +1193,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         @Override
         public void execute(SessionState session, ActionClosePreparedStatementRequest request,
                 Consumer<Empty> visitor) {
+            if (session == null) {
+                throw noAuthForPrepared();
+            }
             final PreparedStatement prepared = getPreparedStatement(session, request.getPreparedStatementHandle());
             prepared.close();
             // no responses
@@ -1128,9 +1215,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     private static class ResultVisitorAdapter<Response extends Message> implements Consumer<Response> {
-        private final Consumer<Result> delegate;
+        private final Consumer<org.apache.arrow.flight.Result> delegate;
 
-        public ResultVisitorAdapter(Consumer<Result> delegate) {
+        public ResultVisitorAdapter(Consumer<org.apache.arrow.flight.Result> delegate) {
             this.delegate = Objects.requireNonNull(delegate);
         }
 
@@ -1148,6 +1235,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private static StatusRuntimeException queryParametersNotSupported(RuntimeException cause) {
         return error(Code.INVALID_ARGUMENT, "FlightSQL query parameters are not supported", cause);
+    }
+
+    private static StatusRuntimeException noAuthForPrepared() {
+        return error(Code.UNAUTHENTICATED, "Must have an authenticated session to use prepared statements");
     }
 
     private static StatusRuntimeException error(Code code, String message) {
@@ -1175,7 +1266,19 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     }
 
+    private static Optional<Any> parse(byte[] data) {
+        try {
+            return Optional.of(Any.parseFrom(data));
+        } catch (final InvalidProtocolBufferException e) {
+            return Optional.empty();
+        }
+    }
+
     private static Any parseOrThrow(ByteString data) {
+        return parse(data).orElseThrow(() -> error(Code.INVALID_ARGUMENT, "Received invalid message from remote."));
+    }
+
+    private static Any parseOrThrow(byte[] data) {
         return parse(data).orElseThrow(() -> error(Code.INVALID_ARGUMENT, "Received invalid message from remote."));
     }
 
@@ -1213,7 +1316,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         PreparedStatement(SessionState session, String parameterizedQuery) {
             this.handleId = handleIdGenerator.getAndIncrement();
-            this.session = session;
+            this.session = Objects.requireNonNull(session);
             this.parameterizedQuery = Objects.requireNonNull(parameterizedQuery);
             this.queries = new HashSet<>();
             preparedStatements.put(handleId, this);
@@ -1230,7 +1333,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         public void verifyOwner(SessionState session) {
             // todo throw error if not same session
-            if (this.session != session) {
+            if (!this.session.equals(session)) {
                 // TODO: what if original session is null? (should not be allowed?)
                 throw error(Code.UNAUTHENTICATED, "Must use same session for Prepared queries");
             }

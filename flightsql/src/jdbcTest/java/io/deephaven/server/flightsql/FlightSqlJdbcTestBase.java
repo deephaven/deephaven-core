@@ -4,7 +4,6 @@
 package io.deephaven.server.flightsql;
 
 import io.deephaven.server.DeephavenServerTestBase;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
@@ -31,9 +30,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         return DriverManager.getConnection(jdbcUrl(requestCookie));
     }
 
-    @Disabled("Need to update Arrow FlightSQL JDBC version - this one tries to execute this as an UPDATE (doPut)")
     @Test
-    void executeSelect1() throws SQLException {
+    void execute() throws SQLException {
         try (
                 final Connection connection = connect(true);
                 final Statement statement = connection.createStatement()) {
@@ -43,10 +41,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         }
     }
 
-    // this one is even dumber than above; we are saying executeQuery _not_ executeUpdate... :/
-    @Disabled("Need to update Arrow FlightSQL JDBC version - this one tries to execute this as an UPDATE (doPut)")
     @Test
-    void executeQuerySelect1() throws SQLException {
+    void executeQuery() throws SQLException {
         try (
                 final Connection connection = connect(true);
                 final Statement statement = connection.createStatement()) {
@@ -55,56 +51,89 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
     }
 
     @Test
-    void select1Prepared() throws SQLException {
+    void executeUpdate() throws SQLException {
+        try (
+                final Connection connection = connect(true);
+                final Statement statement = connection.createStatement()) {
+            try {
+                statement.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
+                failBecauseExceptionWasNotThrown(SQLException.class);
+            } catch (SQLException e) {
+                assertThat((Throwable) e).getRootCause()
+                        .hasMessageContaining("Object 'fake' not found");
+            }
+        }
+    }
+
+    @Test
+    void preparedExecute() throws SQLException {
         try (
                 final Connection connection = connect(true);
                 final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 as Foo, 2 as Bar")) {
             if (preparedStatement.execute()) {
                 consume(preparedStatement.getResultSet(), 2, 1);
             }
-            if (preparedStatement.execute()) {
-                consume(preparedStatement.getResultSet(), 2, 1);
-            }
-        }
-    }
-
-    @Test
-    void executeUpdate() throws SQLException {
-        try (
-                final Connection connection = connect(true);
-                final Statement statement = connection.createStatement()) {
-            statement.close();
+            consume(preparedStatement.executeQuery(), 2, 1);
             try {
-                statement.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
+                preparedStatement.executeUpdate();
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("FlightSQL descriptors cannot be published to");
+                assertThat((Throwable) e).getRootCause().hasMessageContaining("FlightSQL descriptors cannot be published to");
             }
         }
     }
 
-    @Disabled("Need to update Arrow FlightSQL JDBC version - this one tries to execute this as an UPDATE (doPut)")
     @Test
-    void adHocNoCookie() throws SQLException {
+    void preparedExecuteQuery() throws SQLException {
         try (
-                final Connection connection = connect(false);
-                final Statement statement = connection.createStatement()) {
+                final Connection connection = connect(true);
+                final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 as Foo, 2 as Bar")) {
+            consume(preparedStatement.executeQuery(), 2, 1);
+        }
+    }
+
+    @Test
+    void preparedUpdate() throws SQLException {
+        try (
+                final Connection connection = connect(true);
+                final PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO fake(name) VALUES('Smith')")) {
+            try {
+                preparedStatement.executeUpdate();
+                failBecauseExceptionWasNotThrown(SQLException.class);
+            } catch (SQLException e) {
+                assertThat((Throwable) e).getRootCause().hasMessageContaining("FlightSQL descriptors cannot be published to");
+            }
+        }
+    }
+
+    // @Disabled("Need to update Arrow FlightSQL JDBC version - this one tries to execute this as an UPDATE (doPut)")
+    @Test
+    void executeQueryNoCookie() throws SQLException {
+        try (final Connection connection = connect(false)) {
+            final Statement statement = connection.createStatement();
             try {
                 statement.executeQuery("SELECT 1 as Foo, 2 as Bar");
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                assertThat((Throwable) e).getRootCause().hasMessageContaining("Must use same session for queries");
+                assertThat((Throwable) e).getRootCause()
+                        .hasMessageContaining("Must use same session for Prepared queries");
+            }
+            try {
+                statement.close();
+                failBecauseExceptionWasNotThrown(SQLException.class);
+            } catch (SQLException e) {
+                assertThat((Throwable) e).getRootCause()
+                        .hasMessageContaining("Must use same session for Prepared queries");
             }
         }
     }
 
     @Test
-    void preparedNoCookie() throws SQLException {
+    void preparedExecuteQueryNoCookie() throws SQLException {
         try (final Connection connection = connect(false)) {
             final PreparedStatement preparedStatement = connection.prepareStatement("SELECT 1 as Foo, 2 as Bar");
             try {
-                preparedStatement.execute();
+                preparedStatement.executeQuery();
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()

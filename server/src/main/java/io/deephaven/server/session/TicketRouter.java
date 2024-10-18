@@ -16,15 +16,16 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @Singleton
 public class TicketRouter {
@@ -34,14 +35,17 @@ public class TicketRouter {
             new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
     private final TicketResolver.Authorization authorization;
-    private final Set<TicketResolver> resolvers;
+    private final Set<CommandResolver> commandResolvers;
 
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
             final Set<TicketResolver> resolvers) {
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
-        this.resolvers = Objects.requireNonNull(resolvers);
+        this.commandResolvers = resolvers.stream()
+                .filter(CommandResolver.class::isInstance)
+                .map(CommandResolver.class::cast)
+                .collect(Collectors.toSet());
         resolvers.forEach(resolver -> {
             if (!byteResolverMap.add(resolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
@@ -338,39 +342,61 @@ public class TicketRouter {
 
     private TicketResolver getResolver(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() == Flight.FlightDescriptor.DescriptorType.PATH) {
-            if (descriptor.getPathCount() <= 0) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': flight descriptor does not have route path");
-            }
-            final String route = descriptor.getPath(0);
-            final TicketResolver resolver = descriptorResolverMap.get(route);
-            if (resolver == null) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
-            }
-            return resolver;
-        } else if (descriptor.getType() == DescriptorType.CMD) {
-            TicketResolver commandResolver = null;
-            for (TicketResolver resolver : resolvers) {
-                if (!resolver.supportsCommand(descriptor)) {
-                    continue;
-                }
-                if (commandResolver != null) {
-                    // Is there any good way to give a friendly string for unknown command bytes? Probably not.
-                    throw Exceptions.statusRuntimeException(Code.INTERNAL,
-                            "Could not resolve '" + logId + "': multiple resolvers for command");
-                }
-                commandResolver = resolver;
-            }
-            if (commandResolver == null) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': no resolver for command");
-            }
-            return commandResolver;
-        } else {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': unexpected type");
+            return getPathResolver(descriptor, logId);
         }
+        if (descriptor.getType() == DescriptorType.CMD) {
+            return getCommandResolver(descriptor, logId);
+        }
+        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "Could not resolve '" + logId + "': unexpected type");
+    }
+
+    private TicketResolver getPathResolver(FlightDescriptor descriptor, String logId) {
+        if (descriptor.getType() != DescriptorType.PATH) {
+            throw new IllegalStateException("descriptor is not a path");
+        }
+        if (descriptor.getPathCount() <= 0) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': flight descriptor does not have route path");
+        }
+        final String route = descriptor.getPath(0);
+        final TicketResolver resolver = descriptorResolverMap.get(route);
+        if (resolver == null) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
+        }
+        return resolver;
+    }
+
+    private CommandResolver getCommandResolver(FlightDescriptor descriptor, String logId) {
+        if (descriptor.getType() != DescriptorType.CMD) {
+            throw new IllegalStateException("descriptor is not a command");
+        }
+        // This is the most "naive" resolution logic; it scales linearly with the number of command resolvers, but it is
+        // the most general and may be the best we can do for certain types of command protocols built on top of Flight.
+        // If we find the number of command resolvers scaling up, we could devise a more efficient strategy in some
+        // cases either based on a prefix model and/or a fixed set model (which could be communicated either through new
+        // method(s) on CommandResolver, or through subclasses).
+        //
+        // Regardless, even with a moderate amount of command resolvers, the linear nature of this should not be a
+        // bottleneck.
+        CommandResolver commandResolver = null;
+        for (CommandResolver resolver : commandResolvers) {
+            if (!resolver.handlesCommand(descriptor)) {
+                continue;
+            }
+            if (commandResolver != null) {
+                // Is there any good way to give a friendly string for unknown command bytes? Probably not.
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                        "Could not resolve '" + logId + "': multiple resolvers for command");
+            }
+            commandResolver = resolver;
+        }
+        if (commandResolver == null) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no resolver for command");
+        }
+        return commandResolver;
     }
 
     private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID =

@@ -345,13 +345,14 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void select1Prepared() throws Exception {
         final Schema expectedSchema = new Schema(
                 List.of(new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null)));
-        try (final PreparedStatement preparedStatement = flightSqlClient.prepare("SELECT 1 as Foo")) {
+        try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT 1 as Foo")) {
+            assertThat(prepared.getResultSetSchema()).isEqualTo(FlightSqlResolver.DATASET_SCHEMA_SENTINEL);
             {
-                final SchemaResult schema = preparedStatement.fetchSchema();
+                final SchemaResult schema = prepared.fetchSchema();
                 assertThat(schema.getSchema()).isEqualTo(expectedSchema);
             }
             {
-                final FlightInfo info = preparedStatement.execute();
+                final FlightInfo info = prepared.execute();
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 consume(info, 1, 1, false);
             }
@@ -385,6 +386,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             final Schema expectedSchema = flatTableSchema(
                     new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
             try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT * FROM foo_table")) {
+                assertThat(prepared.getResultSetSchema()).isEqualTo(FlightSqlResolver.DATASET_SCHEMA_SENTINEL);
                 {
                     final SchemaResult schema = prepared.fetchSchema();
                     assertThat(schema.getSchema()).isEqualTo(expectedSchema);
@@ -404,6 +406,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     @Test
     public void preparedStatementIsLazy() throws Exception {
         try (final PreparedStatement prepared = flightSqlClient.prepare("SELECT * FROM foo_table")) {
+            assertThat(prepared.getResultSetSchema()).isEqualTo(FlightSqlResolver.DATASET_SCHEMA_SENTINEL);
             expectException(prepared::fetchSchema, FlightStatusCode.NOT_FOUND, "Object 'foo_table' not found");
             expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "Object 'foo_table' not found");
             // If the state-of-the-world changes, this will be reflected in new calls against the prepared statement.
@@ -491,6 +494,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         expectException(() -> flightSqlClient.getExecuteSchema(query), expectedCode, expectedMessage);
         expectException(() -> flightSqlClient.execute(query), expectedCode, expectedMessage);
         try (final PreparedStatement prepared = flightSqlClient.prepare(query)) {
+            assertThat(prepared.getResultSetSchema()).isEqualTo(FlightSqlResolver.DATASET_SCHEMA_SENTINEL);
             expectException(prepared::fetchSchema, expectedCode, expectedMessage);
             expectException(prepared::execute, expectedCode, expectedMessage);
         }

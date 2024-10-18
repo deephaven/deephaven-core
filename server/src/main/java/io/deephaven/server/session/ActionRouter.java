@@ -4,13 +4,10 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
+import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
-import org.apache.arrow.flight.impl.Flight.Action;
-import org.apache.arrow.flight.impl.Flight.Result;
-import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.apache.arrow.flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -20,8 +17,6 @@ import java.util.function.Consumer;
 
 public final class ActionRouter {
 
-    private static final Logger log = LoggerFactory.getLogger(ActionRouter.class);
-
     private final Set<ActionResolver> resolvers;
 
     @Inject
@@ -29,17 +24,42 @@ public final class ActionRouter {
         this.resolvers = Objects.requireNonNull(resolvers);
     }
 
-    public void listActions(@Nullable final SessionState session, Consumer<ActionType> visitor) {
+    /**
+     * Invokes {@code visitor} for all of the resolvers. Used as the basis for implementing FlightService ListActions.
+     *
+     * @param session the session
+     * @param visitor the visitor
+     */
+    public void listActions(@Nullable final SessionState session, final Consumer<ActionType> visitor) {
         for (ActionResolver resolver : resolvers) {
-            resolver.forAllFlightActionType(session, visitor);
+            resolver.listActions(session, visitor);
         }
     }
 
-    public void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor) {
-        final String type = request.getType();
+    /**
+     * Routes {@code action} to the appropriate {@link ActionResolver}. Used as the basis for implementing FlightService DoAction.
+     *
+     * @param session the session
+     * @param action the action
+     * @param visitor the results visitor
+     * @throws io.grpc.StatusRuntimeException if zero or more than one resolver is found
+     */
+    public void doAction(@Nullable final SessionState session, final Action action, final Consumer<Result> visitor) {
+        getResolver(action.getType()).doAction(session, action, visitor);
+    }
+
+    private ActionResolver getResolver(final String type) {
         ActionResolver actionResolver = null;
+        // This is the most "naive" resolution logic; it scales linearly with the number of resolvers, but it is the
+        // most general and may be the best we can do for certain types of action protocols built on top of Flight. If
+        // we find the number of action resolvers scaling up, we could devise a more efficient strategy in some cases
+        // either based on a prefix model and/or a fixed set model (which could be communicated either through new
+        // method(s) on ActionResolver, or through subclasses).
+        //
+        // Regardless, even with a moderate amount of action resolvers, the linear nature of this should not be a
+        // bottleneck.
         for (ActionResolver resolver : resolvers) {
-            if (!resolver.supportsDoActionType(type)) {
+            if (!resolver.handlesActionType(type)) {
                 continue;
             }
             if (actionResolver != null) {
@@ -54,6 +74,6 @@ public final class ActionRouter {
             throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
                     String.format("No action resolver found for action type '%s'", type));
         }
-        actionResolver.doAction(session, request, visitor);
+        return actionResolver;
     }
 }

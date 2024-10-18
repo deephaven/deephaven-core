@@ -3,22 +3,54 @@
 //
 package io.deephaven.server.session;
 
+import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
-import org.apache.arrow.flight.impl.Flight.Action;
-import org.apache.arrow.flight.impl.Flight.Result;
+import org.apache.arrow.flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
 public interface ActionResolver {
 
-    // this is a _routing_ question after a client has already sent a request
-    boolean supportsDoActionType(String type);
+    /**
+     * Invokes the {@code visitor} for the specific action types that this implementation supports for the given
+     * {@code session}; it should be the case that all consumed action types return {@code true} against
+     * {@link #handlesActionType(String)}. Unlike {@link #handlesActionType(String)}, the implementations should
+     * <b>not</b> invoke the visitor for action types in their domain that they do not implement.
+     *
+     * <p>
+     * This is called in the context of {@link ActionRouter#listActions(SessionState, Consumer)} to allow flight
+     * consumers to understand the capabilities of this flight service.
+     *
+     * @param session the session
+     * @param visitor the visitor
+     */
+    void listActions(@Nullable SessionState session, Consumer<ActionType> visitor);
 
-    // this is a _capabilities_ question a client can inquire about
-    // note this is the Flight object and not the gRPC object (like TicketResolver)
-    // todo: is listActions a better name?
-    void forAllFlightActionType(@Nullable SessionState session, Consumer<ActionType> visitor);
+    /**
+     * Returns {@code true} if this resolver is responsible for handling the action {@code type}. Implementations should
+     * prefer to return {@code true} if they know the action type is in their domain even if they don't implement it;
+     * this allows them to provide a more specific error message for unimplemented action types.
+     *
+     * <p>
+     * This is used in support of routing in {@link ActionRouter#doAction(SessionState, Action, Consumer)} calls.
+     *
+     * @param type the action type
+     * @return {@code true} if this resolver handles the action type
+     */
+    boolean handlesActionType(String type);
 
-    void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor);
+    /**
+     * Executes the given {@code action}. Should only be called if {@link #handlesActionType(String)} is {@code true}
+     * for the given {@code action}.
+     *
+     * <p>
+     * This is called in the context of {@link ActionRouter#doAction(SessionState, Action, Consumer)} to allow flight
+     * consumers to execute an action against this flight service.
+     *
+     * @param session the session
+     * @param action the action
+     * @param visitor the visitor
+     */
+    void doAction(@Nullable final SessionState session, Action action, Consumer<Result> visitor);
 }

@@ -53,7 +53,7 @@ public class FlightSqlTicketResolverTest {
     }
 
     @Test
-    public void commandTypeUrls() {
+    public void packedTypeUrls() {
         checkPackedType(FlightSqlResolver.COMMAND_STATEMENT_QUERY_TYPE_URL,
                 CommandStatementQuery.getDefaultInstance());
         checkPackedType(FlightSqlResolver.COMMAND_STATEMENT_UPDATE_TYPE_URL,

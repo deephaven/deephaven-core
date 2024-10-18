@@ -16,19 +16,19 @@ import java.util.Objects;
 final class TableCreatorScopeTickets extends TableCreatorDelegate<Table> {
 
     private final ScopeTicketResolver scopeTicketResolver;
-    private final SessionState sessionState;
+    private final SessionState session;
 
     TableCreatorScopeTickets(TableCreator<Table> delegate, ScopeTicketResolver scopeTicketResolver,
-            SessionState sessionState) {
+            SessionState session) {
         super(delegate);
         this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
-        this.sessionState = sessionState;
+        this.session = session;
     }
 
     @Override
     public Table of(TicketTable ticketTable) {
         // This does not wrap in a nugget like TicketRouter.resolve; is that important?
-        return scopeTicketResolver.<Table>resolve(sessionState, ByteBuffer.wrap(ticketTable.ticket()),
+        return scopeTicketResolver.<Table>resolve(session, ByteBuffer.wrap(ticketTable.ticket()),
                 TableCreatorScopeTickets.class.getSimpleName()).get();
     }
 }
