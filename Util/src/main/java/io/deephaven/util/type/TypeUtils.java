@@ -339,8 +339,8 @@ public class TypeUtils {
 
     public static boolean isConvertibleToPrimitive(Class<?> type) {
         final Class<?> unboxedType = TypeUtils.getUnboxedType(type);
-        return unboxedType != null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) ==
-                                                                    // false ???
+        // (Note: Booleans must be boxed because primitive boolean does not support null.)
+        return unboxedType != null && unboxedType != boolean.class;
     }
 
     public static boolean isBoxedType(Class<?> exprType) {
@@ -627,5 +627,159 @@ public class TypeUtils {
 
     public static short unbox(Short value) {
         return (value == null ? NULL_SHORT : value);
+    }
+
+    public static Byte[] box(byte[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Byte[] boxed = new Byte[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Character[] box(char[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Character[] boxed = new Character[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Double[] box(double[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Double[] boxed = new Double[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Float[] box(float[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Float[] boxed = new Float[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Integer[] box(int[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Integer[] boxed = new Integer[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Long[] box(long[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Long[] boxed = new Long[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static Short[] box(short[] values) {
+        if (values == null) {
+            return null;
+        }
+        final Short[] boxed = new Short[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            boxed[ii] = box(values[ii]);
+        }
+        return boxed;
+    }
+
+    public static byte[] unbox(Byte[] values) {
+        if (values == null) {
+            return null;
+        }
+        final byte[] unboxed = new byte[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static char[] unbox(Character[] values) {
+        if (values == null) {
+            return null;
+        }
+        final char[] unboxed = new char[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static double[] unbox(Double[] values) {
+        if (values == null) {
+            return null;
+        }
+        final double[] unboxed = new double[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static float[] unbox(Float[] values) {
+        if (values == null) {
+            return null;
+        }
+        final float[] unboxed = new float[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static int[] unbox(Integer[] values) {
+        if (values == null) {
+            return null;
+        }
+        final int[] unboxed = new int[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static long[] unbox(Long[] values) {
+        if (values == null) {
+            return null;
+        }
+        final long[] unboxed = new long[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
+    }
+
+    public static short[] unbox(Short[] values) {
+        if (values == null) {
+            return null;
+        }
+        final short[] unboxed = new short[values.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            unboxed[ii] = unbox(values[ii]);
+        }
+        return unboxed;
     }
 }
