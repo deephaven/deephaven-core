@@ -18,6 +18,15 @@ class DocstringParser(BaseTestCase):
 
     @staticmethod
     def create_test(name: str, code: str, func: Callable, func_call_append: str = ""):
+        """
+        Wraps an autocomplete test to run it in a both Jedi Script and Interpreter.
+
+        Args:
+            name: the name of the function being autocompleted
+            code: the string version of the function, for Jedi Script
+            func: the function object, for Jedi Interpreter
+            func_call_append: the string to append at the end of the function call
+        """
         def decorator(f):
             @wraps(f)
             def wrapper(self):

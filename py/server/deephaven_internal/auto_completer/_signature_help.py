@@ -129,6 +129,12 @@ def _generate_description_markdown(docs: Docstring, params: list[Any]) -> str:
 
 
 def _generate_display_sig(signature: Signature) -> str:
+    """
+    Generate the signature text for the signature help. Truncates the signature if it is too long. If the current
+    argument is positional, it will display the next 2 arguments. If the current argument is keyword, it will only
+    display the current argument.
+    """
+
     if len(signature.to_string()) <= MAX_DISPLAY_SIG_LEN:
         return signature.to_string()
     
@@ -161,6 +167,10 @@ def _generate_display_sig(signature: Signature) -> str:
 
 
 def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[Any]:
+    """
+    Generate markdown for each parameter in the signature. This will be shown on top of the description markdown.
+    """
+
     param_docs = []
     for i in range(len(signature.params)):
         if signature.params[i].to_string().strip() in IGNORE_PARAM_NAMES:
@@ -180,8 +190,11 @@ def _generate_param_markdowns(signature: Signature, params: list[Any]) -> list[A
     return param_docs
 
 
-def _get_signature_result(signature: Signature) -> list[Any]:
+def _get_signature_help(signature: Signature) -> list[Any]:
     """ Gets the result of a signature to be used by `do_signature_help`
+
+    If no docstring information is parsed, then the signature will be displayed in Markdown but with plaintext style
+    whitespace. Any cached docstring must have some docstring information.
 
     Returns:
         A list that contains [signature name, docstring, param docstrings, index]
@@ -209,6 +222,7 @@ def _get_signature_result(signature: Signature) -> list[Any]:
     if len(docs.meta) == 0:
         return [
             signature.to_string(),
+            # Since signature is a markdown, replace whitespace in a way to preserve how it originally looks
             signature.docstring(raw=True).replace(" ", "&nbsp;").replace("\n", "  \n"),
             [[param.to_string().strip(), ""] for param in signature.params],
             signature.index if signature.index is not None else -1,
@@ -229,14 +243,3 @@ def _get_signature_result(signature: Signature) -> list[Any]:
         param_docs,
         signature.index if signature.index is not None else -1,
     ]
-
-def test():
-    """
-    dtest
-
-    Returns:
-        a: asdas
-
-    Examples:
-        >>> 123
-    """
