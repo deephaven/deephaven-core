@@ -38,10 +38,10 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
      */
     public static Runnable addToProperties(S3Instructions instructions, Map<String, String> propertiesOut) {
         Objects.requireNonNull(instructions);
-        put(propertiesOut, AwsProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
-        put(propertiesOut, S3FileIOProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
+        putOrThrow(propertiesOut, AwsProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
+        putOrThrow(propertiesOut, S3FileIOProperties.CLIENT_FACTORY, DeephavenAwsClientFactory.class.getName());
         final String uuid = UUID.randomUUID().toString();
-        put(propertiesOut, UUID_KEY, uuid);
+        putOrThrow(propertiesOut, UUID_KEY, uuid);
         S3_INSTRUCTIONS_MAP.put(uuid, instructions);
         return () -> S3_INSTRUCTIONS_MAP.remove(uuid);
     }
@@ -54,7 +54,7 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
      * @param properties the properties
      * @return the instructions
      */
-    public static Optional<S3Instructions> get(Map<String, String> properties) {
+    public static Optional<S3Instructions> getInstructions(Map<String, String> properties) {
         final String uuid = properties.get(UUID_KEY);
         if (uuid == null) {
             return Optional.empty();
@@ -67,9 +67,9 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         return Optional.of(instructions);
     }
 
-    private static <K, V> void put(Map<K, V> map, K key, V value) {
+    private static <K, V> void putOrThrow(Map<K, V> map, K key, V value) {
         if (map.putIfAbsent(key, value) != null) {
-            throw new IllegalArgumentException(String.format("Key '%s' already exist in map", key));
+            throw new IllegalArgumentException(String.format("Key '%s' already exists in map", key));
         }
     }
 
@@ -77,16 +77,22 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
 
     private S3Instructions instructions;
 
-    @Override
-    public void initialize(Map<String, String> properties) {
-        this.instructions = get(properties).orElseThrow(() -> new IllegalArgumentException(
-                "DeephavenAwsClientFactory was setup improperly; it must be configured with DeephavenAwsClientFactory.addToProperties"));
+    public DeephavenAwsClientFactory() {
+        // This follows the pattern established by other Iceberg classes that have an initialize method; they have a
+        // default value that is set in construction, with the expectation that they are properly constructed in the
+        // initialize call. While those implementations likely could be stricter and implemented defensively (throwing
+        // an exception if any other methods are called before initialize), that does not seem to be the pattern in use.
+        // We do not _expect_ the default instructions as set here to ever be used, but we are choosing to follow the
+        // "established convention" in the rare case there is some caller misusing this in a way that does not effect
+        // the
+        // correctness of the end Catalog.
+        this.instructions = S3Instructions.DEFAULT;
     }
 
-    private void checkInit() {
-        if (instructions == null) {
-            throw new IllegalStateException("Must initialize before use");
-        }
+    @Override
+    public void initialize(Map<String, String> properties) {
+        this.instructions = getInstructions(properties).orElseThrow(() -> new IllegalArgumentException(
+                "DeephavenAwsClientFactory was setup improperly; it must be configured with DeephavenAwsClientFactory.addToProperties"));
     }
 
     @Override
@@ -94,7 +100,6 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // Iceberg calls this from org.apache.iceberg.aws.s3.S3FileIO which multiple Catalog implementations use. This
         // implementation is backed by the same configuration primitives that our own async S3 client uses. It is well
         // tested and provides parity between how Iceberg S3 and Deephaven S3 clients are initialized.
-        checkInit();
         return S3ClientFactory.getSyncClient(instructions);
     }
 
@@ -103,7 +108,6 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // Iceberg calls this from org.apache.iceberg.aws.glue.GlueCatalog, and it's possible that other
         // custom Catalog implementations could make use out of this interface. This implementation has been manually
         // tested and confirmed to work in simple cases.
-        checkInit();
         return GlueClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();
@@ -116,7 +120,6 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // as well, with their own custom AwsClientFactory, so it's not clear if this implementation will be of value.
         // That said, it is easy to build and follows the same pattern as the other clients, so it is provided in a
         // "best-effort" basis without further testing.
-        checkInit();
         return KmsClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();
@@ -128,7 +131,6 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // custom Catalog implementations could make use out of this interface. This implementation is easy to build
         // and follows the same pattern as the other clients, so it is provided in a "best-effort" basis without further
         // testing.
-        checkInit();
         return DynamoDbClient.builder()
                 .applyMutation(b -> S3ClientFactory.applyAllSharedSync(b, instructions))
                 .build();

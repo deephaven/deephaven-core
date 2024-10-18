@@ -62,6 +62,15 @@ final class S3ClientFactory {
         return buildForS3(S3ClientFactory::getSyncClientBuilder, instructions, S3Client.class);
     }
 
+    static <Builder extends AwsAsyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedAsync(
+            @NotNull final Builder builder,
+            @NotNull final S3Instructions instructions) {
+        builder
+                .applyMutation(b -> applyAsyncHttpClient(b, instructions))
+                .applyMutation(b -> applyAsyncConfiguration(b, instructions))
+                .applyMutation(b -> applyAllSharedCommon(b, instructions));
+    }
+
     static <Builder extends AwsSyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedSync(
             @NotNull final Builder builder,
             @NotNull final S3Instructions instructions) {
@@ -101,15 +110,6 @@ final class S3ClientFactory {
         return S3Client.builder()
                 .applyMutation(b -> applyAllSharedSync(b, instructions))
                 .applyMutation(b -> applyCrossRegionAccess(b, instructions));
-    }
-
-    private static <Builder extends AwsAsyncClientBuilder<Builder, Client> & AwsClientBuilder<Builder, Client>, Client> void applyAllSharedAsync(
-            @NotNull final Builder builder,
-            @NotNull final S3Instructions instructions) {
-        builder
-                .applyMutation(b -> applyAsyncHttpClient(b, instructions))
-                .applyMutation(b -> applyAsyncConfiguration(b, instructions))
-                .applyMutation(b -> applyAllSharedCommon(b, instructions));
     }
 
     private static <Builder extends AwsClientBuilder<Builder, Client>, Client> void applyAllSharedCommon(

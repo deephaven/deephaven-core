@@ -16,14 +16,17 @@ import java.net.URI;
 import java.util.Map;
 
 /**
- * {@link DataInstructionsProviderPlugin} implementation used for reading files from S3.
+ * {@link DataInstructionsProviderPlugin} implementation for producing a {@link S3Instructions}. The produced
+ * instructions will be from {@link DeephavenAwsClientFactory#getInstructions(Map)} if present, and otherwise will make
+ * a best-effort attempt to create an equivalent instructions based on properties from {@link AwsClientProperties} and
+ * {@link S3FileIOProperties}.
  */
 @AutoService(DataInstructionsProviderPlugin.class)
 @SuppressWarnings("unused")
 public final class S3InstructionsProviderPlugin implements DataInstructionsProviderPlugin {
     @Override
-    public Object createInstructions(@NotNull final URI uri, @NotNull final Map<String, String> properties) {
-        final S3Instructions s3Instructions = DeephavenAwsClientFactory.get(properties).orElse(null);
+    public S3Instructions createInstructions(@NotNull final URI uri, @NotNull final Map<String, String> properties) {
+        final S3Instructions s3Instructions = DeephavenAwsClientFactory.getInstructions(properties).orElse(null);
         if (s3Instructions != null) {
             return s3Instructions;
         }

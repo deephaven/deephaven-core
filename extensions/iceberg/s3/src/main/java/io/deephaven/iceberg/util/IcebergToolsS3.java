@@ -110,17 +110,26 @@ public final class IcebergToolsS3 {
     }
 
     /**
-     * Create an Iceberg catalog adapter. Instead of the AWS clients being configured via the various Iceberg-specific
-     * properties (found amongst {@link S3FileIOProperties}, {@link HttpClientProperties}, and {@link AwsProperties}),
-     * the clients are created in the same way that Deephaven's AWS clients are configured with respect to
-     * {@code instructions} via {@link DeephavenAwsClientFactory#addToProperties(S3Instructions, Map)}. This ensures,
-     * amongst other things, that Iceberg's AWS configuration and credentials are in-sync with Deephaven's AWS
-     * configuration and credentials for S3 access. The {@code instructions} will automatically be used as special
-     * instructions if {@link IcebergInstructions#dataInstructions()} if not explicitly set.
+     * Create an Iceberg catalog adapter.
      *
      * <p>
-     * The caller is still responsible for providing the properties necessary as specified in
-     * {@link IcebergTools#createAdapter(String, Map, Map)}.
+     * This is the preferred way to configure an Iceberg catalog adapter when the caller is responsible for providing
+     * AWS / S3 connectivity details; specifically, this allows for the parity of construction logic between
+     * Iceberg-managed and Deephaven-managed AWS clients. For advanced use-cases, users are encouraged to use
+     * {@link S3Instructions#profileName() profiles} which allows a rich degree of configurability. The
+     * {@code instructions} will automatically be used as special instructions if
+     * {@link IcebergInstructions#dataInstructions()} is not explicitly set. The caller is still responsible for
+     * providing any other properties necessary to configure their {@link org.apache.iceberg.catalog.Catalog}
+     * implementation.
+     *
+     * <p>
+     * In cases where the caller prefers to use Iceberg's AWS properties (found amongst {@link AwsProperties},
+     * {@link S3FileIOProperties}, and {@link HttpClientProperties}), they should use
+     * {@link IcebergTools#createAdapter(String, Map, Map) IcebergTools} directly. In this case, parity will be limited
+     * to what {@link S3InstructionsProviderPlugin} is able to infer; in advanced cases, it's possible that there will
+     * be a difference in construction logic between the Iceberg-managed and Deephaven-managed AWS clients which
+     * manifests itself as being able to browse {@link org.apache.iceberg.catalog.Catalog} metadata, but not retrieve
+     * {@link org.apache.iceberg.Table} data.
      *
      * <p>
      * Note: this method does not explicitly set, nor impose, that {@link org.apache.iceberg.aws.s3.S3FileIO} be used.
