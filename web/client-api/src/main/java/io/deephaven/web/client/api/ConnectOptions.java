@@ -36,12 +36,13 @@ public class ConnectOptions {
     @JsNullable
     public Boolean useWebsockets;
 
-    /**
-     * Optional fetch implementation to use instead of the global {@code fetch()} call, allowing callers to provide a
-     * polyfill rather than add a new global.
-     */
-    @JsNullable
-    public Function fetch;
+    // TODO (deephaven-core#6214) provide our own grpc-web library that can replace fetch
+    // /**
+    // * Optional fetch implementation to use instead of the global {@code fetch()} call, allowing callers to provide a
+    // * polyfill rather than add a new global.
+    // */
+    // @JsNullable
+    // public Function fetch;
 
     public ConnectOptions() {
 
@@ -60,8 +61,9 @@ public class ConnectOptions {
         if (map.has("useWebsockets")) {
             useWebsockets = map.getAsAny("useWebsockets").asBoolean();
         }
-        if (map.has("fetch")) {
-            fetch = map.getAsAny("fetch").uncheckedCast();
-        }
+        // TODO (deephaven-core#6214) provide our own grpc-web library that can replace fetch
+        // if (map.has("fetch")) {
+        // fetch = map.getAsAny("fetch").uncheckedCast();
+        // }
     }
 }
