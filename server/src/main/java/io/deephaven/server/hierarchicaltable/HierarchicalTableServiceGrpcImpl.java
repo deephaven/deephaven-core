@@ -86,6 +86,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     ticketRouter.resolve(session, request.getSourceTableId(), "sourceTableId");
 
             session.newExport(request.getResultRollupTableId(), "resultRollupTableId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
@@ -142,6 +143,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     ticketRouter.resolve(session, request.getSourceTableId(), "sourceTableId");
 
             session.newExport(request.getResultTreeTableId(), "resultTreeTableId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
@@ -203,6 +205,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     ticketRouter.resolve(session, request.getInputHierarchicalTableId(), "inputHierarchicalTableId");
 
             session.newExport(request.getResultHierarchicalTableId(), "resultHierarchicalTableId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(inputHierarchicalTableExport)
                     .onError(responseObserver)
@@ -393,6 +396,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             }
 
             resultExportBuilder
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
                     .submit(() -> {
@@ -484,6 +488,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     ticketRouter.resolve(session, request.getHierarchicalTableId(), "hierarchicalTableId");
 
             session.newExport(request.getResultTableId(), "resultTableId")
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(hierarchicalTableExport)
                     .onError(responseObserver)

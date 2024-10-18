@@ -128,6 +128,7 @@ public interface TicketResolver {
      * Publish the result of the source object as the result represented by the destination ticket.
      *
      * @param session the user session context
+     * @param description a description of the publish operation for logging
      * @param ticket the ticket to publish to
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @param onPublish an optional callback to invoke when the result is published
@@ -137,12 +138,14 @@ public interface TicketResolver {
      */
     default <T> void publish(
             final SessionState session,
+            final String description,
             final ByteBuffer ticket,
             final String logId,
             @Nullable final Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
         publish(session, ticket, logId, onPublish)
+                .description(description)
                 .onError(errorHandler)
                 .require(source)
                 .submit(source::get);

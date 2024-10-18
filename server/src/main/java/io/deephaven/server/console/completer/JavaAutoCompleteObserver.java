@@ -96,6 +96,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                         value.hasConsoleId() ? value.getConsoleId() : value.getGetCompletionItems().getConsoleId();
                 SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(consoleId, "consoleId");
                 session.nonExport()
+                        .description("JavaAutoCompleteObserver#onNext")
                         .require(exportedConsole)
                         .onError(responseObserver)
                         .submit(() -> {
