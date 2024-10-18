@@ -51,9 +51,8 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
     }
 
     @Override
-    public synchronized void refresh() {
-        // There is no refresh service for this provider, but this is called as part of the initialization process.
-        refreshLocations();
+    public void refresh() {
+        ensureInitialized();
     }
 
     @Override
@@ -72,8 +71,16 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     public synchronized void update(final Snapshot snapshot) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("Input snapshot cannot be null");
+        }
         // Update the snapshot.
         locationKeyFinder.updateSnapshot(snapshot);
+        refreshLocations();
+    }
+
+    @Override
+    protected synchronized void doInitialization() {
         refreshLocations();
     }
 

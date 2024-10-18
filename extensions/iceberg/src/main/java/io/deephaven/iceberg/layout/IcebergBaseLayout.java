@@ -170,7 +170,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * Update the snapshot to the latest snapshot from the catalog if
      */
-    protected boolean maybeUpdateSnapshot() {
+    protected synchronized boolean maybeUpdateSnapshot() {
         final Snapshot latestSnapshot = tableAdapter.currentSnapshot();
         if (latestSnapshot == null) {
             return false;
@@ -183,11 +183,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     }
 
     /**
-     * Update the snapshot to the user specified snapshot. This will fail with an {@link IllegalArgumentException} if
-     * the input snapshot is not newer (higher in sequence number) than the current snapshot or if the snapshot cannot
-     * be found.
-     *
-     * @param snapshotId the id of the snapshot to load
+     * Update the snapshot to the user specified snapshot. See
+     * {@link io.deephaven.iceberg.util.IcebergTable#update(long)} for more details.
      */
     protected void updateSnapshot(long snapshotId) {
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
@@ -205,23 +202,18 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     }
 
     /**
-     * Update the snapshot to the user specified snapshot. This will fail with an {@link IllegalArgumentException} if
-     * the input snapshot is not newer (higher in sequence number) than the current snapshot.
-     *
-     * @param snapshot the snapshot to load
+     * Update the snapshot to the user specified snapshot. See
+     * {@link io.deephaven.iceberg.util.IcebergTable#update(Snapshot)} for more details.
      */
-    protected void updateSnapshot(Snapshot snapshot) {
+    protected void updateSnapshot(@NotNull final Snapshot updateSnapshot) {
         // Validate that we are not trying to update to an older snapshot.
-        if (snapshot == null) {
-            throw new IllegalArgumentException("Input snapshot cannot be null");
-        }
-        if (this.snapshot != null && snapshot.sequenceNumber() <= this.snapshot.sequenceNumber()) {
+        if (snapshot != null && updateSnapshot.sequenceNumber() <= snapshot.sequenceNumber()) {
             throw new IllegalArgumentException(
-                    "Update snapshot sequence number (" + snapshot.sequenceNumber()
+                    "Update snapshot sequence number (" + updateSnapshot.sequenceNumber()
                             + ") must be higher than the current snapshot sequence number ("
-                            + this.snapshot.sequenceNumber() + ") for table " + tableAdapter);
+                            + snapshot.sequenceNumber() + ") for table " + tableAdapter);
         }
 
-        this.snapshot = snapshot;
+        snapshot = updateSnapshot;
     }
 }

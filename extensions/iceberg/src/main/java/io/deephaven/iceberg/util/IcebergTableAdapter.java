@@ -77,13 +77,22 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * List all {@link Snapshot snapshots} of the Iceberg table.
+     * Get the current list of all {@link Snapshot snapshots} of the Iceberg table.
      *
      * @return A list of all snapshots of the given table.
      */
     public synchronized List<Snapshot> listSnapshots() {
         // Refresh the table to update the snapshot list.
         refresh();
+        return getSnapshots();
+    }
+
+    /**
+     * Get a list of all {@link Snapshot snapshots} of the Iceberg table (without refreshing).
+     *
+     * @return A list of all snapshots of the given table.
+     */
+    private List<Snapshot> getSnapshots() {
         final List<Snapshot> snapshots = new ArrayList<>();
         table.snapshots().forEach(snapshots::add);
         return snapshots;
@@ -124,6 +133,7 @@ public class IcebergTableAdapter {
      * @return A Table containing a list of all tables in the given namespace.
      */
     public Table snapshots() {
+        // Retrieve the current list of snapshots
         final List<Snapshot> snapshots = listSnapshots();
         final long size = snapshots.size();
 
@@ -173,9 +183,17 @@ public class IcebergTableAdapter {
      * @return An Optional<Snapshot> containing the requested snapshot if it exists.
      */
     private Optional<Snapshot> snapshot(final long snapshotId) {
-        return listSnapshots().stream()
+        Optional<Snapshot> found = getSnapshots().stream()
                 .filter(snapshot -> snapshot.snapshotId() == snapshotId)
                 .findFirst();
+        if (found.isEmpty()) {
+            // Refresh the table to update the snapshot list, then try again.
+            refresh();
+            found = getSnapshots().stream()
+                    .filter(snapshot -> snapshot.snapshotId() == snapshotId)
+                    .findFirst();
+        }
+        return found;
     }
 
     /**
@@ -187,16 +205,26 @@ public class IcebergTableAdapter {
     }
 
     /**
+     * Retrieve the current {@link Schema schema} of an Iceberg table.
+     */
+    public synchronized Map<Integer, Schema> schemas() {
+        refresh();
+        return table.schemas();
+    }
+
+    /**
      * Retrieve a specific {@link Schema schema} of an Iceberg table.
      *
      * @param schemaId The identifier of the schema to load.
      */
-    public synchronized Schema schema(final int schemaId) {
-        // TODO: discuss refresh() strategy for this and other functions:
-        // 1) ALWAYS refresh() before searching for a match (safe, might be slow)
-        // 2) NEVER refresh() before searching (user should call refresh() manually)
-        // 3) HYBRID, refresh() if search fails, then re-search
-        return table.schemas().get(schemaId);
+    public synchronized Optional<Schema> schema(final int schemaId) {
+        Schema found = table.schemas().get(schemaId);
+        if (found == null) {
+            // Refresh the table to update the snapshot list, then try again.
+            refresh();
+            found = table.schemas().get(schemaId);
+        }
+        return Optional.ofNullable(found);
     }
 
     /**
@@ -252,21 +280,19 @@ public class IcebergTableAdapter {
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
 
-        final Snapshot snapshot;
         final Schema schema;
         final org.apache.iceberg.PartitionSpec partitionSpec;
 
         if (tableSnapshot == null) {
             synchronized (this) {
-                // Refresh only once and record the current snapshot, using its schema and spec.
+                // Refresh only once and record the current schema and partition spec.
                 refresh();
-                snapshot = table.currentSnapshot();
-                schema = snapshot != null ? schema(snapshot.schemaId()) : table.schema();
+                schema = table.schema();
                 partitionSpec = table.spec();
             }
         } else {
-            snapshot = tableSnapshot;
-            schema = schema(tableSnapshot.schemaId());
+            // Use the schema from the snapshot
+            schema = schema(tableSnapshot.schemaId()).get();
             partitionSpec = table.spec();
         }
 
@@ -388,15 +414,17 @@ public class IcebergTableAdapter {
 
         if (tableSnapshot == null) {
             synchronized (this) {
-                // Refresh only once and record the current snapshot, using its schema and spec.
+                // Refresh only once and record the current snapshot, schema (which may be newer than the
+                // snapshot schema), and partition spec.
                 refresh();
                 snapshot = table.currentSnapshot();
-                schema = snapshot != null ? schema(snapshot.schemaId()) : table.schema();
+                schema = table.schema();
                 partitionSpec = table.spec();
             }
         } else {
             snapshot = tableSnapshot;
-            schema = schema(tableSnapshot.schemaId());
+            // Use the schema from the snapshot
+            schema = schema(tableSnapshot.schemaId()).get();
             partitionSpec = table.spec();
         }
 
@@ -427,8 +455,7 @@ public class IcebergTableAdapter {
                     finalInstructions, dataInstructionsProviderLoader);
         }
 
-        if (instructions == null
-                || instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
+        if (finalInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
                     new IcebergStaticTableLocationProvider<>(
                             StandaloneTableKey.getInstance(),
@@ -447,7 +474,7 @@ public class IcebergTableAdapter {
         final UpdateSourceRegistrar updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
         final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
 
-        if (instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
+        if (finalInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
             locationProvider = new IcebergManualRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
@@ -460,7 +487,7 @@ public class IcebergTableAdapter {
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     TableDataRefreshService.getSharedRefreshService(),
-                    instructions.updateMode().autoRefreshMs(),
+                    finalInstructions.updateMode().autoRefreshMs(),
                     this,
                     tableIdentifier);
         }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
@@ -15,11 +16,7 @@ import java.util.Optional;
  * this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE,
-        strictBuilder = true,
-        weakInterning = true,
-        jdkOnly = true,
-        includeHashCode = "getClass().hashCode()")
+@CopyableStyle
 public abstract class IcebergInstructions {
     /**
      * The default {@link IcebergInstructions} to use when reading Iceberg data files. Providing this will use system
@@ -50,7 +47,7 @@ public abstract class IcebergInstructions {
     public abstract Map<String, String> columnRenames();
 
     /**
-     * Return a copy of this instructions object with the column renames updated to the provided entries.
+     * Return a copy of this instructions object with the column renames replaced by {@code entries}.
      */
     public abstract IcebergInstructions withColumnRenames(Map<String, ? extends String> entries);
 
