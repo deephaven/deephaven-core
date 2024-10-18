@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.junit5.CatalogAdapterBase;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -31,6 +32,8 @@ public class CatalogAdapterTest extends CatalogAdapterBase {
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTable");
         catalogAdapter.catalog().createTable(myTableId, schema);
 
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+
         assertThat(catalogAdapter.listNamespaces()).containsExactly(myNamespace);
         assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(myTableId);
         final Table table;
@@ -39,11 +42,11 @@ public class CatalogAdapterTest extends CatalogAdapterBase {
                     ColumnDefinition.ofString("Foo"),
                     ColumnDefinition.ofInt("Bar"),
                     ColumnDefinition.ofDouble("Baz"));
-            assertThat(catalogAdapter.getTableDefinition(myTableId, null)).isEqualTo(expectedDefinition);
-            table = catalogAdapter.readTable(myTableId, null);
+
+            assertThat(tableAdapter.definition()).isEqualTo(expectedDefinition);
+            table = tableAdapter.table();
             assertThat(table.getDefinition()).isEqualTo(expectedDefinition);
         }
-        // Note: this is failing w/ NPE, assumes that Snapshot is non-null.
-        // assertThat(table.isEmpty()).isTrue();
+        assertThat(table.isEmpty()).isTrue();
     }
 }

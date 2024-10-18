@@ -1,0 +1,206 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "533f8120-9943-4b64-a0cf-6cfab18e4a79",
+  "location" : "s3://warehouse/sales/sales_multi",
+  "last-sequence-number" : 6,
+  "last-updated-ms" : 1725396304540,
+  "last-column-id" : 5,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "Region",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 2,
+      "name" : "Item_Type",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 3,
+      "name" : "Units_Sold",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "Unit_Price",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "Order_Date",
+      "required" : false,
+      "type" : "timestamptz"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "root",
+    "created-at" : "2024-09-03T20:44:52.796187633Z",
+    "write.format.default" : "parquet",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 3825168261540020388,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 3825168261540020388,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 8121674823173822790,
+    "timestamp-ms" : 1725396294486,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "added-data-files" : "1",
+      "added-records" : "18073",
+      "added-files-size" : "175359",
+      "changed-partition-count" : "1",
+      "total-records" : "18073",
+      "total-files-size" : "175359",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-8121674823173822790-1-ddb2a84e-df73-4cb9-a92f-18d737a54489.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 2,
+    "snapshot-id" : 6040260770188877244,
+    "parent-snapshot-id" : 8121674823173822790,
+    "timestamp-ms" : 1725396298768,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "added-data-files" : "1",
+      "added-records" : "36360",
+      "added-files-size" : "333827",
+      "changed-partition-count" : "1",
+      "total-records" : "54433",
+      "total-files-size" : "509186",
+      "total-data-files" : "2",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-6040260770188877244-1-4b9446ba-c04a-440a-afad-f090aa27c81a.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 3,
+    "snapshot-id" : 5693547373255393922,
+    "parent-snapshot-id" : 6040260770188877244,
+    "timestamp-ms" : 1725396300069,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "added-data-files" : "1",
+      "added-records" : "18118",
+      "added-files-size" : "175594",
+      "changed-partition-count" : "1",
+      "total-records" : "72551",
+      "total-files-size" : "684780",
+      "total-data-files" : "3",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-5693547373255393922-1-e1bd1067-e40a-4222-bab9-959f5af4dd4d.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 4,
+    "snapshot-id" : 3445166522731196553,
+    "parent-snapshot-id" : 5693547373255393922,
+    "timestamp-ms" : 1725396301293,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "added-data-files" : "1",
+      "added-records" : "27449",
+      "added-files-size" : "257345",
+      "changed-partition-count" : "1",
+      "total-records" : "100000",
+      "total-files-size" : "942125",
+      "total-data-files" : "4",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-3445166522731196553-1-226480b9-ac20-4445-b67e-7cd3f7ef27d0.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 5,
+    "snapshot-id" : 1277776933184906785,
+    "timestamp-ms" : 1725396302818,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "added-data-files" : "1",
+      "added-records" : "100000",
+      "added-files-size" : "729342",
+      "changed-partition-count" : "1",
+      "total-records" : "100000",
+      "total-files-size" : "729342",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-1277776933184906785-1-bb0d7049-0780-4636-972a-7f46bb6c395a.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 6,
+    "snapshot-id" : 3825168261540020388,
+    "timestamp-ms" : 1725396304540,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1725396284766",
+      "changed-partition-count" : "0",
+      "total-records" : "0",
+      "total-files-size" : "0",
+      "total-data-files" : "0",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_multi/metadata/snap-3825168261540020388-1-bdc6d711-4699-4d21-a7f8-907c7740c70c.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "partition-statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1725396304540,
+    "snapshot-id" : 3825168261540020388
+  } ],
+  "metadata-log" : [ {
+    "timestamp-ms" : 1725396294486,
+    "metadata-file" : "s3://warehouse/sales/sales_multi/metadata/00000-e433b4ac-9c89-46e8-b0f7-b4ec128b0f5e.metadata.json"
+  }, {
+    "timestamp-ms" : 1725396298768,
+    "metadata-file" : "s3://warehouse/sales/sales_multi/metadata/00001-1e0eb3be-5f28-4965-b390-ab426779517b.metadata.json"
+  }, {
+    "timestamp-ms" : 1725396300069,
+    "metadata-file" : "s3://warehouse/sales/sales_multi/metadata/00002-b1745d7e-fa56-47ec-9639-079621849f5a.metadata.json"
+  }, {
+    "timestamp-ms" : 1725396301293,
+    "metadata-file" : "s3://warehouse/sales/sales_multi/metadata/00003-1d6e8486-a6bf-4d78-b6f0-d927d58feb4c.metadata.json"
+  }, {
+    "timestamp-ms" : 1725396302818,
+    "metadata-file" : "s3://warehouse/sales/sales_multi/metadata/00004-bdf13c5f-b50f-4ccf-94a0-14c7b9e6ccb7.metadata.json"
+  } ]
+}

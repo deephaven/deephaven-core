@@ -4,17 +4,17 @@
 package io.deephaven.iceberg.layout;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.*;
@@ -40,22 +40,18 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
     private final List<ColumnData> outputPartitioningColumns;
 
     /**
-     * @param tableDef The {@link TableDefinition} that will be used for the table.
-     * @param table The {@link Table} to discover locations for.
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param tableSnapshot The {@link Snapshot} from which to discover data files.
-     * @param fileIO The file IO to use for reading manifest data files.
      * @param partitionSpec The Iceberg {@link PartitionSpec partition spec} for the table.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergKeyValuePartitionedLayout(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final org.apache.iceberg.Table table,
-            @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
-            @NotNull final FileIO fileIO,
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @Nullable final Snapshot tableSnapshot,
             @NotNull final PartitionSpec partitionSpec,
             @NotNull final IcebergInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
+        super(tableAdapter, tableSnapshot, instructions, dataInstructionsProvider);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
@@ -83,7 +79,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     @Override
     public String toString() {
-        return IcebergKeyValuePartitionedLayout.class.getSimpleName() + '[' + table.name() + ']';
+        return IcebergKeyValuePartitionedLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     @Override

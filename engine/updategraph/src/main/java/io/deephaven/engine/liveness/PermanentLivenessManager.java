@@ -6,6 +6,8 @@ package io.deephaven.engine.liveness;
 import io.deephaven.util.Utils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.stream.Stream;
+
 /**
  * <p>
  * A {@link LivenessManager} implementation that will never release its referents.
@@ -30,5 +32,15 @@ public final class PermanentLivenessManager implements LivenessManager {
                     .endl();
         }
         return true;
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        throw new UnsupportedOperationException("PermanentLivenessManager cannot unmanage referents");
+    }
+
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        throw new UnsupportedOperationException("PermanentLivenessManager cannot unmanage referents");
     }
 }
