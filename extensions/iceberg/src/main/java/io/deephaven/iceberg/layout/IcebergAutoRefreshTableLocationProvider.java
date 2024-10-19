@@ -91,8 +91,10 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     protected final void activateUnderlyingDataSource() {
-        refresh();
+        ensureInitialized();
+        refreshLocations();
         subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this, refreshIntervalMs);
+        activationSuccessful(this);
     }
 
     @Override

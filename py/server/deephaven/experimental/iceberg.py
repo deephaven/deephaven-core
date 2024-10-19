@@ -236,6 +236,9 @@ class IcebergTableAdapter(JObjectWrapper):
             Table: the table read from the catalog.
         """
 
+        if instructions:
+            instructions = instructions.j_object
+
         if snapshot_id:
             return IcebergTable(self.j_object.table(snapshot_id, instructions))
         return IcebergTable(self.j_object.table(instructions))

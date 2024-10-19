@@ -15,6 +15,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.test.types.OutOfBandTest;
+import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
@@ -737,6 +738,14 @@ public abstract class IcebergToolsTest {
         io.deephaven.engine.table.Table table5 = tableAdapter.table(snapshots.get(5), instructions);
         Assert.eq(table5.size(), "table5.size()", 0, "expected rows in the table");
         Assert.equals(table5.getDefinition(), "table5.getDefinition()", SALES_MULTI_DEFINITION);
+
+        try {
+            io.deephaven.engine.table.Table missing = tableAdapter.table(987654321L, instructions);
+            Assert.statementNeverExecuted("Expected an exception for invalid snapshot");
+        } catch (final Exception e) {
+            Assert.assertion(e instanceof IllegalArgumentException, "e instanceof IllegalArgumentException");
+            Assert.eqTrue(e.getMessage().contains("Snapshot with id 987654321 not found"), "Exception message");
+        }
     }
 
     @Test
@@ -773,6 +782,28 @@ public abstract class IcebergToolsTest {
         // Use TableIdentifier and Snapshot
         tableDef = tableAdapter.definition(snapshots.get(0), null);
         Assert.equals(tableDef, "tableDef", SALES_MULTI_DEFINITION);
+    }
+
+    @Test
+    public void testTableSchema() {
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
+        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
+
+        // Request a schema that does not exist.
+        final Optional<Schema> missingSchema = tableAdapter.schema(1000);
+        Assert.eqFalse(missingSchema.isPresent(), "schema.isPresent()");
+
+        // Request a schema that does exist.
+        final Optional<Schema> schema0 = tableAdapter.schema(0);
+        Assert.eqTrue(schema0.isPresent(), "schema.isPresent()");
+
+        // Request the current schema, assert it matches schema0
+        final Schema currentSchema = tableAdapter.currentSchema();
+        Assert.eq(currentSchema, "currentSchema", schema0.get(), "schema0.get()");
+
+        // Request the schema map.
+        final Map<Integer, Schema> schemaMap = tableAdapter.schemas();
+        Assert.eq(schemaMap.size(), "schemaMap.size()", 1, "expected number of schemas");
     }
 
     @Test
