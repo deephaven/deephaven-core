@@ -14,7 +14,7 @@ _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools
 _JAddOnlyToBlinkTableAdapter = jpy.get_type("io.deephaven.engine.table.impl.AddOnlyToBlinkTableAdapter")
 
 def add_only_to_blink(table: Table) -> Table:
-    """ Creates a blink table from the given add-only table.
+    """ Creates a blink table from the given add-only table.  The blink table contains the rows added in the latest update cycle.
 
     Note that the use of this function should be limited to add-only tables that are not fully in-memory, or when
     blink table specific aggregation semantics are desired.
