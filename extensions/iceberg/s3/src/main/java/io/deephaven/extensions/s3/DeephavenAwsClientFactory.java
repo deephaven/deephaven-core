@@ -84,8 +84,7 @@ public final class DeephavenAwsClientFactory implements AwsClientFactory, S3File
         // an exception if any other methods are called before initialize), that does not seem to be the pattern in use.
         // We do not _expect_ the default instructions as set here to ever be used, but we are choosing to follow the
         // "established convention" in the rare case there is some caller misusing this in a way that does not effect
-        // the
-        // correctness of the end Catalog.
+        // the correctness of the end Catalog.
         this.instructions = S3Instructions.DEFAULT;
     }
 

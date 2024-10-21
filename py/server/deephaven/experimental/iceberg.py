@@ -269,7 +269,7 @@ def adapter(
     way of providing these details. This allows for the parity of construction logic between Iceberg-managed and
     Deephaven-managed AWS clients. For advanced use-cases, users are encouraged to use S3Instruction profiles which
     allows a rich degree of configurability. When set, these instructions will also be automatically included as part of
-    IcebergInstructions data_instructions.
+    :meth:`.IcebergInstructions.__init__` data_instructions.
 
     In cases where the caller prefers to use Iceberg's AWS properties, the parity of construction logic will be limited
     to what Deephaven is able to infer; in advanced cases, it's possible that there will be a difference in construction
