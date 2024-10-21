@@ -97,13 +97,20 @@ final class AsyncServletOutputStreamWriter {
                     logger.log(FINEST, "[" + logId + "] " + str, params);
                 }
             }
+
+            @Override
+            public boolean isFinestEnabled() {
+                return logger.isLoggable(FINEST);
+            }
         };
 
         ServletOutputStream outputStream = asyncContext.getResponse().getOutputStream();
         this.writeAction = (byte[] bytes, Integer numBytes) -> () -> {
             outputStream.write(bytes, 0, numBytes);
             transportState.runOnTransportThread(() -> transportState.onSentBytes(numBytes));
-            log.finest("outbound data: length={0}, bytes={1}", numBytes, toHexString(bytes, numBytes));
+            if (log.isFinestEnabled()) {
+                log.finest("outbound data: length={0}, bytes={1}", numBytes, toHexString(bytes, numBytes));
+            }
         };
         this.flushAction = () -> {
             log.finest("flushBuffer");
@@ -244,6 +251,10 @@ final class AsyncServletOutputStreamWriter {
         default void fine(String str, Object...params) {}
 
         default void finest(String str, Object...params) {}
+
+        default boolean isFinestEnabled() {
+            return false;
+        };
     }
 
     private static final class WriteState {
