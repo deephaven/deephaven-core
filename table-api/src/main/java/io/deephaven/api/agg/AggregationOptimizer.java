@@ -7,7 +7,10 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 /**

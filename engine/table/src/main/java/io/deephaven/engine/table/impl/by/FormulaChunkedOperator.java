@@ -25,7 +25,6 @@ import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,7 +74,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
             @NotNull final String formula,
-            @Nullable final String columnParamName,
+            @NotNull final String columnParamName,
             @NotNull final QueryCompilerRequestProcessor compilationProcessor,
             @NotNull final MatchPair... resultColumnPairs) {
         this.groupBy = groupBy;
@@ -380,7 +379,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         private final boolean[] columnsToFillMask;
         final FillFromContext[] fillFromContexts;
 
-        private DataFillerContext(@NotNull final boolean[] columnsToFillMask) {
+        private DataFillerContext(final boolean[] columnsToFillMask) {
             this.columnsToFillMask = columnsToFillMask;
             fillFromContexts = new FillFromContext[resultColumnNames.length];
             for (int ci = 0; ci < resultColumnNames.length; ++ci) {
