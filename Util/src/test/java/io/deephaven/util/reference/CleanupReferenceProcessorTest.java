@@ -14,8 +14,8 @@ import java.util.function.BiFunction;
 public class CleanupReferenceProcessorTest {
 
     @Test
-    public void register() throws InterruptedException, TimeoutException {
-        register(CleanupReferenceProcessor.getDefault()::register);
+    public void registerPhantom() throws InterruptedException, TimeoutException {
+        register(CleanupReferenceProcessor.getDefault()::registerPhantom);
     }
 
     @Test

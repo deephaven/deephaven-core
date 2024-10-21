@@ -125,69 +125,84 @@ public class CleanupReferenceProcessor {
     }
 
     /**
-     * Registers an object and a cleaning action to run when the object becomes phantom reachable.
+     * Registers a {@code referent} and a cleaning {@code action} to run when the {@code referent} becomes phantom
+     * reachable.
      *
      * <p>
-     * The most efficient use is to explicitly invoke the cleanup method when the object is closed or no longer needed.
-     * The cleaning action is a Runnable to be invoked at most once when the object has become phantom reachable unless
-     * it has already been explicitly cleaned. Note that the cleaning action must not refer to the object being
-     * registered. If so, the object will not become phantom reachable and the cleaning action will not be invoked
+     * The most efficient use is to explicitly invoke the {@link CleanupReference#cleanup() cleanup} method when the
+     * {@code referent} is closed or no longer needed. Otherwise, the cleaning {@code action} will be invoked when
+     * {@code referent} has become phantom reachable. The {@code action} will not be invoked more than once.
+     *
+     * <p>
+     * The cleaning {@code action} must <b>not</b> refer to the {@code referent} being registered. If so, the
+     * {@code referent} will never become phantom reachable and the cleaning {@code action} will never be invoked
      * automatically.
      *
      * <p>
-     * Note: while the caller is encouraged to hold onto the cleanup reference, they are not required to as this cleanup
-     * reference processor will hold onto the reference.
+     * Note: while the caller is encouraged to hold onto the cleanup reference to allow for explicit
+     * {@link CleanupReference#cleanup() cleanup} invocation, they are not required to as this cleanup reference
+     * processor will hold onto the reference.
      *
-     * @param obj the object to monitor
-     * @param action a {@code Runnable} to invoke when the object becomes phantom reachable
+     * @param referent the object to monitor
+     * @param action a {@code Runnable} to invoke when the referent becomes phantom reachable
      * @return a cleanup reference instance
      */
-    public <T> CleanupReference<T> register(T obj, Runnable action) {
-        return getDrainQueue().register(obj, action);
+    public <T> CleanupReference<T> registerPhantom(T referent, Runnable action) {
+        return getDrainQueue().registerPhantom(referent, action);
     }
 
     /**
-     * Registers an object and a cleaning action to run when the object becomes weakly reachable.
+     * Registers a {@code referent} and a cleaning {@code action} to run when the {@code referent} becomes weakly
+     * reachable.
      *
      * <p>
-     * The most efficient use is to explicitly invoke the cleanup method when the object is closed or no longer needed.
-     * The cleaning action is a Runnable to be invoked at most once when the object has become weakly reachable unless
-     * it has already been explicitly cleaned. Note that the cleaning action must not refer to the object being
-     * registered. If so, the object will not become weakly reachable and the cleaning action will not be invoked
+     * The most efficient use is to explicitly invoke the {@link CleanupReference#cleanup() cleanup} method when the
+     * {@code referent} is closed or no longer needed. Otherwise, the cleaning {@code action} will be invoked when
+     * {@code referent} has become weakly reachable. The {@code action} will not be invoked more than once.
+     *
+     * <p>
+     * The cleaning {@code action} must <b>not</b> refer to the {@code referent} being registered. If so, the
+     * {@code referent} will never become weakly reachable and the cleaning {@code action} will never be invoked
      * automatically.
      *
      * <p>
-     * Note: while the caller is encouraged to hold onto the cleanup reference, they are not required to as this cleanup
-     * reference processor will hold onto the reference.
+     * Note: while the caller is encouraged to hold onto the cleanup reference to allow for explicit
+     * {@link CleanupReference#cleanup() cleanup} invocation, they are not required to as this cleanup reference
+     * processor will hold onto the reference.
      *
-     * @param obj the object to monitor
-     * @param action a {@code Runnable} to invoke when the object becomes weakly reachable
+     * @param referent the object to monitor
+     * @param action a {@code Runnable} to invoke when the referent becomes weakly reachable
      * @return a cleanup reference instance
      */
-    public <T> CleanupReference<T> registerWeak(T obj, Runnable action) {
-        return getDrainQueue().registerWeak(obj, action);
+    public <T> CleanupReference<T> registerWeak(T referent, Runnable action) {
+        return getDrainQueue().registerWeak(referent, action);
     }
 
     /**
-     * Registers an object and a cleaning action to run when the object becomes softly reachable.
+     * Registers a {@code referent} and a cleaning {@code action} to run when the {@code referent} becomes softly
+     * reachable.
      *
      * <p>
-     * The most efficient use is to explicitly invoke the cleanup method when the object is closed or no longer needed.
-     * The cleaning action is a Runnable to be invoked at most once when the object has become softly reachable unless
-     * it has already been explicitly cleaned. Note that the cleaning action must not refer to the object being
-     * registered. If so, the object will not become softly reachable and the cleaning action will not be invoked
+     * The most efficient use is to explicitly invoke the {@link CleanupReference#cleanup() cleanup} method when the
+     * {@code referent} is closed or no longer needed. Otherwise, the cleaning {@code action} will be invoked when
+     * {@code referent} has become softly reachable. The {@code action} will not be invoked more than once.
+     *
+     * <p>
+     * The cleaning {@code action} must <b>not</b> refer to the {@code referent} being registered. If so, the
+     * {@code referent} will never become softly reachable and the cleaning {@code action} will never be invoked
      * automatically.
      *
      * <p>
-     * Note: while the caller is encouraged to hold onto the cleanup reference, they are not required to as this cleanup
-     * reference processor will hold onto the reference.
+     * Note: while the caller is encouraged to hold onto the cleanup reference to allow for explicit
+     * {@link CleanupReference#cleanup() cleanup} invocation, they are not required to as this cleanup reference
+     * processor will hold onto the reference.
      *
-     * @param obj the object to monitor
-     * @param action a {@code Runnable} to invoke when the object becomes softly reachable
+     * @param referent the object to monitor
+     * @param action a {@code Runnable} to invoke when the referent becomes softly reachable
      * @return a cleanup reference instance
      */
-    public <T> CleanupReference<T> registerSoft(T obj, Runnable action) {
-        return getDrainQueue().registerSoft(obj, action);
+    public <T> CleanupReference<T> registerSoft(T referent, Runnable action) {
+        return getDrainQueue().registerSoft(referent, action);
     }
 
     /**
@@ -221,20 +236,20 @@ public class CleanupReferenceProcessor {
             return (ReferenceQueue<T>) referenceQueue;
         }
 
-        public <T> CleanupReference<T> register(T obj, Runnable action) {
-            final PhantomCleanupRef<T> ref = new PhantomCleanupRef<>(obj, referenceQueue(), action);
+        public <T> CleanupReference<T> registerPhantom(T referent, Runnable action) {
+            final PhantomCleanupRef<T> ref = new PhantomCleanupRef<>(referent, referenceQueue(), action);
             registrations.add(ref);
             return ref;
         }
 
-        public <T> CleanupReference<T> registerWeak(T obj, Runnable action) {
-            final WeakCleanupRef<T> ref = new WeakCleanupRef<>(obj, referenceQueue(), action);
+        public <T> CleanupReference<T> registerWeak(T referent, Runnable action) {
+            final WeakCleanupRef<T> ref = new WeakCleanupRef<>(referent, referenceQueue(), action);
             registrations.add(ref);
             return ref;
         }
 
-        public <T> CleanupReference<T> registerSoft(T obj, Runnable action) {
-            final SoftCleanupRef<T> ref = new SoftCleanupRef<>(obj, referenceQueue(), action);
+        public <T> CleanupReference<T> registerSoft(T referent, Runnable action) {
+            final SoftCleanupRef<T> ref = new SoftCleanupRef<>(referent, referenceQueue(), action);
             registrations.add(ref);
             return ref;
         }
@@ -258,9 +273,10 @@ public class CleanupReferenceProcessor {
                         ref.cleanup();
                     } catch (Exception e) {
                         exceptionHandler.accept(log, ref, e);
-                    }
-                    if (ref instanceof RegisteredCleanupReference) {
-                        registrations.remove(ref);
+                    } finally {
+                        if (ref instanceof RegisteredCleanupReference) {
+                            registrations.remove(ref);
+                        }
                     }
                 }
             }
