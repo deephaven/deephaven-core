@@ -3,9 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
@@ -93,7 +91,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
-import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -157,9 +155,9 @@ public class AggregationProcessor implements AggregationContextFactory {
     private final Type type;
 
     /**
-     * For AggFormula we need a representation of the table definition with the column data types converted to
-     * {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all formula aggregations
-     * but does not need to be computed in their absence.
+     * For {@link Formula formula} aggregations we need a representation of the table definition with the column data
+     * types converted to {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all
+     * formula aggregations.
      */
     private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
 
@@ -719,10 +717,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Formula formula) {
-            final String resultColumnName = formula.column().name();
-
-            final FormulaColumn formulaColumn =
-                    FormulaColumn.createFormulaColumn(resultColumnName, formula.formula());
+            final SelectColumn selectColumn =
+                    SelectColumn.of(Selectable.of(formula.column(), RawString.of(formula.formula())));
 
             // Get or create a column definition map composed of vectors of the original column types.
             if (vectorColumnNameMap == null) {
@@ -736,18 +732,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
             // Get the input column names from the formula and provide them to the groupBy operator
             final String[] inputColumns =
-                    formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+                    selectColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
 
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
                             .toArray(MatchPair[]::new));
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(
-                    groupByChunkedOperator,
-                    true,
-                    formulaColumn,
-                    resultColumnName,
-                    compilationProcessor);
+                    groupByChunkedOperator, true, selectColumn);
             addNoInputOperator(op);
         }
 

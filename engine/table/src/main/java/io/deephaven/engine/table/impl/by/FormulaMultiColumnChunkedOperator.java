@@ -14,9 +14,8 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -33,11 +32,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
-    private final FormulaColumn formulaColumn;
-    private final String resultColumnName;
+    private final SelectColumn selectColumn;
+    private final WritableColumnSource<?> resultColumn;
 
     private ChunkSource<Values> formulaDataSource;
-    private WritableColumnSource<?> resultColumn;
 
     /**
      * Converts the upstream MCS to a downstream MCS.
@@ -56,23 +54,18 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
      *        be false if {@code groupBy} is updated by the helper (and {@code groupBy} must come before this operator
      *        if so), or if this is not the first operator sharing {@code groupBy}.
-     * @param formulaColumn The formula column that will produce the results
-     * @param resultColumnName The name of the result column
-     * @param compilationProcessor The {@link QueryCompilerRequestProcessor} to use for formula compilation
+     * @param selectColumn The formula column that will produce the results
      */
     FormulaMultiColumnChunkedOperator(
             @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
-            @NotNull final FormulaColumn formulaColumn,
-            @NotNull final String resultColumnName,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+            @NotNull final SelectColumn selectColumn) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
-        this.formulaColumn = formulaColumn;
-        this.resultColumnName = resultColumnName;
+        this.selectColumn = selectColumn;
 
         resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
-                0, formulaColumn.getReturnedType(), formulaColumn.getReturnedComponentType());
+                0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
     }
 
     @Override
@@ -210,7 +203,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Map.of(resultColumnName, resultColumn);
+        return Map.of(selectColumn.getName(), resultColumn);
     }
 
     @Override
@@ -219,8 +212,8 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             groupBy.propagateInitialState(resultTable, startingDestinationsCount);
         }
 
-        formulaColumn.initInputs(resultTable.getRowSet(), groupBy.getResultColumns());
-        formulaDataSource = formulaColumn.getDataView();
+        selectColumn.initInputs(resultTable.getRowSet(), groupBy.getResultColumns());
+        formulaDataSource = selectColumn.getDataView();
 
         try (final DataCopyContext dataCopyContext = new DataCopyContext()) {
             dataCopyContext.copyData(resultTable.getRowSet());
@@ -239,9 +232,8 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
         if (delegateToBy) {
-            // We cannot use the groupBy's result MCS factory, because the result column names are not guaranteed to be
-            // the
-            // same.
+            // We cannot use the groupBy's result MCS factory, because the result column names are not
+            // guaranteed to be the same.
             groupBy.initializeRefreshing(resultTable, aggregationUpdateListener);
         }
         // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
