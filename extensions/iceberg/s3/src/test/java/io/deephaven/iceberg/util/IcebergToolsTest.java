@@ -14,7 +14,6 @@ import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.base.IcebergUtils;
 import org.apache.iceberg.Snapshot;
-import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Type;
@@ -108,7 +107,7 @@ abstract class IcebergToolsTest {
     private final List<String> keys = new ArrayList<>();
 
     private String warehousePath;
-    private Catalog resourceCatalog;
+    private IcebergTestCatalog resourceCatalog;
 
     private final EngineCleanup engineCleanup = new EngineCleanup();
 
@@ -133,6 +132,7 @@ abstract class IcebergToolsTest {
 
     @AfterEach
     void tearDown() throws Exception {
+        resourceCatalog.close();
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
         }

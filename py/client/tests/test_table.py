@@ -55,8 +55,8 @@ class TableTestCase(BaseTestCase):
         new_table = self.session.import_table(pa_table).update(formulas=['Sum = a + b + c + d'])
         pa_table2 = new_table.to_arrow()
         df = pa_table2.to_pandas()
-        self.assertEquals(df.shape[1], 6)
-        self.assertEquals(1000, len(df.index))
+        self.assertEqual(df.shape[1], 6)
+        self.assertEqual(1000, len(df.index))
 
     def test_drop_columns(self):
         pa_table = csv.read_csv(self.csv_file)
@@ -65,7 +65,7 @@ class TableTestCase(BaseTestCase):
         for f in table1.schema:
             column_names.append(f.name)
         table2 = table1.drop_columns(cols=column_names[:-1])
-        self.assertEquals(1, len(table2.schema))
+        self.assertEqual(1, len(table2.schema))
 
     def test_usv(self):
         ops = [
