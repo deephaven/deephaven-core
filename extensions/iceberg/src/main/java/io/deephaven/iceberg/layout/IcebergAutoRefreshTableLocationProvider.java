@@ -64,6 +64,13 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
     }
 
     @Override
+    protected synchronized void doInitialization() {
+        if (!isInitialized()) {
+            refreshLocations();
+        }
+    }
+
+    @Override
     public synchronized void refresh() {
         if (locationKeyFinder.maybeUpdateSnapshot()) {
             refreshLocations();
@@ -91,8 +98,11 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     protected final void activateUnderlyingDataSource() {
-        ensureInitialized();
-        refreshLocations();
+        synchronized (this) {
+            if (locationKeyFinder.maybeUpdateSnapshot() || !isInitialized()) {
+                refreshLocations();
+            }
+        }
         subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this, refreshIntervalMs);
         activationSuccessful(this);
     }

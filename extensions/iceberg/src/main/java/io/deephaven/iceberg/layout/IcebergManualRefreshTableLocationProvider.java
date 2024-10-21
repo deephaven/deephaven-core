@@ -81,7 +81,9 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     protected synchronized void doInitialization() {
-        refreshLocations();
+        if (!isInitialized()) {
+            refreshLocations();
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------------
