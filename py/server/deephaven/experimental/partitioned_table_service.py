@@ -95,7 +95,7 @@ class PartitionedTableServiceBackend(ABC):
         This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True.
         Any existing partitions created before this method is called should be passed to the callback.
 
-        Note that the callback must not be called before this method has returned.
+        Note that any asynchronous calls to the callback will block until this method has returned.
 
         The return value is a function that can be called to unsubscribe from the new partitions.
 
@@ -129,8 +129,7 @@ class PartitionedTableServiceBackend(ABC):
 
         This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True
 
-        Note that the callback must be called with the initial size of the partition after this method has returned and
-        must not be called before this method has returned.
+        Note that any asynchronous calls to the callback will block until this method has returned.
 
         The return value is a function that can be called to unsubscribe from the partition size changes.
 
