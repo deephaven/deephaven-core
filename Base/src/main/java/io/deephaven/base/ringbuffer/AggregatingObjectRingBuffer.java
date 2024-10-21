@@ -431,14 +431,12 @@ public class AggregatingObjectRingBuffer<T> {
      * O(size).
      */
     public void clear() {
-        final long prevHead = internalBuffer.head;
-        final int prevSize = size();
-
         internalBuffer.clear();
 
         calcHead = calcTail = 0;
+
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, prevSize);
+        Arrays.fill(internalBuffer.storage, identityVal);
         // Reset the tree buffer with the identity value
         Arrays.fill(treeStorage, identityVal);
     }
