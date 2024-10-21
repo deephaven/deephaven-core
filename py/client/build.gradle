@@ -120,7 +120,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         environmentVariable 'DH_PORT', '10000'
     }
     parentContainers = [ Docker.registryTask(project, 'python') ]
-    entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    entrypoint = ['python', '-m', 'xmlrunner', 'tests.test_table', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

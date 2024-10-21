@@ -1294,8 +1294,8 @@ message ColumnStatisticsRequest {
 message SliceRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
-  sint64 first_position_inclusive = 3 [jstype=JS_STRING];
-  sint64 last_position_exclusive = 4 [jstype=JS_STRING];
+  sint64 start = 3 [jstype=JS_STRING];
+  sint64 stop = 4 [jstype=JS_STRING];
 }
 
 message BatchTableRequest {
