@@ -213,7 +213,7 @@ public abstract class UpdateByOperator {
     }
 
     /**
-     * Get an unmodifiable collection of column names that, when modified, affect the result of this computation.
+     * Get an array of column names that, when modified, affect the result of this computation.
      *
      * @return an array of column names that affect this operator.
      */

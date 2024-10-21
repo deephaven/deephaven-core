@@ -12,8 +12,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.RingBufferVectorWrapper;
@@ -21,8 +20,6 @@ import io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.windowc
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.vector.Vector;
-import io.deephaven.vector.VectorFactory;
-import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +32,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 512;
 
     private final TableDefinition tableDef;
-    private final FormulaColumn formulaColumn;
+    private final SelectColumn selectColumn;
     private final String[] inputColumnNames;
     private final Class<?>[] inputColumnTypes;
     private final Class<?>[] inputComponentTypes;
@@ -60,11 +57,11 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             outputValues = outputChunkType.makeWritableChunk(affectedChunkSize);
 
             // Make a copy of the operator formula column.
-            final FormulaColumn formulaCopy = (FormulaColumn) formulaColumn.copy();
+            final SelectColumn contextSelectColumn = selectColumn.copy();
 
             inputConsumers = new RingBufferWindowConsumer[inputColumnNames.length];
 
-            // To perform the calculation, we will leverage FormulaColumn and for its input sources we create a set of
+            // To perform the calculation, we will leverage SelectColumn and for its input sources we create a set of
             // SingleValueColumnSources, each containing a Vector of values. This vector will contain exactly the
             // values from the input columns that are appropriate for output row given the window configuration.
             // The formula column is evaluated once per output row and the result written to the output column
@@ -104,10 +101,10 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
                 inputConsumers[i] = RingBufferWindowConsumer.create(ringBuffer);
             }
-            formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(), inputSources);
+            contextSelectColumn.initInputs(RowSetFactory.flat(1).toTracking(), inputSources);
 
             final ColumnSource<?> formulaOutputSource =
-                    ReinterpretUtils.maybeConvertToPrimitive(formulaCopy.getDataView());
+                    ReinterpretUtils.maybeConvertToPrimitive(contextSelectColumn.getDataView());
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
@@ -209,81 +206,40 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     }
 
     /**
-     * Private constructor for efficient {@link #copy()} calls.
-     */
-    private RollingFormulaMultiColumnOperator(
-            @NotNull final MatchPair pair,
-            @NotNull final String[] affectingColumns,
-            @Nullable final String timestampColumnName,
-            final long reverseWindowScaleUnits,
-            final long forwardWindowScaleUnits,
-            @NotNull final TableDefinition tableDef,
-            @NotNull final FormulaColumn formulaColumn,
-            @NotNull final String[] inputColumnNames,
-            @NotNull final Class<?>[] inputColumnTypes,
-            @NotNull final Class<?>[] inputComponentTypes,
-            @NotNull final Class<?>[] inputVectorTypes) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-        this.tableDef = tableDef;
-        this.formulaColumn = formulaColumn;
-        this.inputColumnNames = inputColumnNames;
-        this.inputColumnTypes = inputColumnTypes;
-        this.inputComponentTypes = inputComponentTypes;
-        this.inputVectorTypes = inputVectorTypes;
-    }
-
-    /**
      * Create a new RollingFormulaMultiColumnOperator.
      *
      * @param pair Contains the output column name as a MatchPair
      * @param affectingColumns The names of the columns that when changed would affect this formula output
      * @param timestampColumnName The name of the column containing timestamps for time-based calculations (or null when
      *        not time-based)
-     * @param formula The formula specifying the calculation to be performed
      * @param reverseWindowScaleUnits The size of the reverse window in ticks (or nanoseconds when time-based)
      * @param forwardWindowScaleUnits The size of the forward window in ticks (or nanoseconds when time-based)
      * @param tableDef The table definition for the table containing the columns
-     * @param compilationProcessor The shared {@link QueryCompilerRequestProcessor} to use for formula compilation
+     * @param selectColumn The {@link SelectColumn} specifying the calculation to be performed
+     * @param inputColumnNames The names of the columns to be used as inputs
+     * @param inputColumnTypes The types of the columns to be used as inputs
+     * @param inputComponentTypes The component types of the columns to be used as inputs
+     * @param inputVectorTypes The vector types of the columns to be used as inputs
      */
     public RollingFormulaMultiColumnOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
-            @NotNull final String formula,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final TableDefinition tableDef,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+            @NotNull final SelectColumn selectColumn,
+            @NotNull final String[] inputColumnNames,
+            @NotNull final Class<?>[] inputColumnTypes,
+            @NotNull final Class<?>[] inputComponentTypes,
+            @NotNull final Class<?>[] inputVectorTypes) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-
         this.tableDef = tableDef;
-
-        final String outputColumnName = pair.leftColumn;
-
-        formulaColumn = FormulaColumn.createFormulaColumn(outputColumnName, formula);
-
-        final Map<String, ColumnDefinition<?>> columnDefinitionMap = tableDef.getColumnNameMap();
-
-        // Create a column definition map composed of vector types for the formula.
-        final Map<String, ColumnDefinition<?>> vectorColumnNameMap = new HashMap<>();
-        columnDefinitionMap.forEach((key, value) -> {
-            final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                    key, VectorFactory.forElementType(value.getDataType()).vectorType());
-            vectorColumnNameMap.put(key, columnDef);
-        });
-
-        // Get the input column names and data types from the formula.
-        inputColumnNames = formulaColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
-        inputColumnTypes = new Class[inputColumnNames.length];
-        inputComponentTypes = new Class[inputColumnNames.length];
-        inputVectorTypes = new Class[inputColumnNames.length];
-
-        for (int i = 0; i < inputColumnNames.length; i++) {
-            final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputColumnNames[i]);
-            inputColumnTypes[i] = columnDef.getDataType();
-            inputComponentTypes[i] = columnDef.getComponentType();
-            inputVectorTypes[i] = vectorColumnNameMap.get(inputColumnNames[i]).getDataType();
-        }
+        this.selectColumn = selectColumn;
+        this.inputColumnNames = inputColumnNames;
+        this.inputColumnTypes = inputColumnTypes;
+        this.inputComponentTypes = inputComponentTypes;
+        this.inputVectorTypes = inputVectorTypes;
     }
 
     @Override
@@ -295,7 +251,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 tableDef,
-                formulaColumn,
+                selectColumn,
                 inputColumnNames,
                 inputColumnTypes,
                 inputComponentTypes,
@@ -308,13 +264,13 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         if (rowRedirection != null) {
             // region create-dense
-            maybeInnerSource = ArrayBackedColumnSource.getMemoryColumnSource(0, formulaColumn.getReturnedType());
+            maybeInnerSource = ArrayBackedColumnSource.getMemoryColumnSource(0, selectColumn.getReturnedType());
             // endregion create-dense
             outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(0, formulaColumn.getReturnedType());
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(0, selectColumn.getReturnedType());
             // endregion create-sparse
         }
 
@@ -327,49 +283,52 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             final WritableChunk<? extends Values> valueChunk,
             final ColumnSource<?> formulaOutputSource) {
         final ChunkType chunkType = valueChunk.getChunkType();
-        if (chunkType == ChunkType.Boolean) {
-            throw new IllegalStateException(
-                    "Output chunk type should not be Boolean but should have been reinterpreted to byte");
+        switch (chunkType) {
+            case Boolean:
+                throw new IllegalStateException(
+                        "Output chunk type should not be Boolean but should have been reinterpreted to byte");
+            case Byte:
+                final WritableByteChunk<? extends Values> byteChunk = valueChunk.asWritableByteChunk();
+                return index -> byteChunk.set(index, formulaOutputSource.getByte(0));
+
+            case Char:
+                final WritableCharChunk<? extends Values> charChunk = valueChunk.asWritableCharChunk();
+                return index -> charChunk.set(index, formulaOutputSource.getChar(0));
+
+            case Double:
+                final WritableDoubleChunk<? extends Values> doubleChunk = valueChunk.asWritableDoubleChunk();
+                return index -> doubleChunk.set(index, formulaOutputSource.getDouble(0));
+
+            case Float:
+                final WritableFloatChunk<? extends Values> floatChunk = valueChunk.asWritableFloatChunk();
+                return index -> floatChunk.set(index, formulaOutputSource.getFloat(0));
+
+            case Int:
+                final WritableIntChunk<? extends Values> intChunk = valueChunk.asWritableIntChunk();
+                return index -> intChunk.set(index, formulaOutputSource.getInt(0));
+
+            case Long:
+                final WritableLongChunk<? extends Values> longChunk = valueChunk.asWritableLongChunk();
+                return index -> longChunk.set(index, formulaOutputSource.getLong(0));
+
+            case Short:
+                final WritableShortChunk<? extends Values> shortChunk = valueChunk.asWritableShortChunk();
+                return index -> shortChunk.set(index, formulaOutputSource.getShort(0));
+
+            default:
+                final WritableObjectChunk<Object, ? extends Values> objectChunk = valueChunk.asWritableObjectChunk();
+                return index -> {
+                    Object result = formulaOutputSource.get(0);
+                    if (result instanceof RingBufferVectorWrapper) {
+                        // Handle the rare (and probably not useful) case where the formula is an identity. We need to
+                        // copy the data in the RingBuffer and store that as a DirectVector. If not, we will point to
+                        // the
+                        // live data in the ring.
+                        result = ((Vector<?>) result).getDirect();
+                    }
+                    objectChunk.set(index, result);
+                };
         }
-        if (chunkType == ChunkType.Byte) {
-            final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getByte(0));
-        }
-        if (chunkType == ChunkType.Char) {
-            final WritableCharChunk<? extends Values> writableChunk = valueChunk.asWritableCharChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getChar(0));
-        }
-        if (chunkType == ChunkType.Double) {
-            final WritableDoubleChunk<? extends Values> writableChunk = valueChunk.asWritableDoubleChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getDouble(0));
-        }
-        if (chunkType == ChunkType.Float) {
-            final WritableFloatChunk<? extends Values> writableChunk = valueChunk.asWritableFloatChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getFloat(0));
-        }
-        if (chunkType == ChunkType.Int) {
-            final WritableIntChunk<? extends Values> writableChunk = valueChunk.asWritableIntChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getInt(0));
-        }
-        if (chunkType == ChunkType.Long) {
-            final WritableLongChunk<? extends Values> writableChunk = valueChunk.asWritableLongChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getLong(0));
-        }
-        if (chunkType == ChunkType.Short) {
-            final WritableShortChunk<? extends Values> writableChunk = valueChunk.asWritableShortChunk();
-            return index -> writableChunk.set(index, formulaOutputSource.getShort(0));
-        }
-        final WritableObjectChunk<Object, ? extends Values> writableChunk = valueChunk.asWritableObjectChunk();
-        return index -> {
-            Object result = formulaOutputSource.get(0);
-            if (result instanceof RingBufferVectorWrapper) {
-                // Handle the rare (and probably not useful) case where the formula is an identity. We need to
-                // copy the data in the RingBuffer and store that as a DirectVector. If not, we will point to the
-                // live data in the ring.
-                result = ((Vector<?>) result).getDirect();
-            }
-            writableChunk.set(index, result);
-        };
     }
 
     @Override
@@ -417,12 +376,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((SparseArrayColumnSource<?>) outputSource).shift(subRowSetToShift, delta);
-    }
-
-    @Override
-    @NotNull
-    protected String[] getAffectingColumnNames() {
-        return ArrayUtils.addAll(affectingColumns, inputColumnNames);
     }
 
     @Override

@@ -129,6 +129,9 @@ public class ObjectRingBuffer<T> implements RingBuffer, Serializable {
     @Override
     public void clear() {
         tail = head = 0;
+        // region object-bulk-clear
+        Arrays.fill(storage, null);
+        // endregion object-bulk-clear
     }
 
     /**

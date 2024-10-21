@@ -123,6 +123,8 @@ public class CharRingBuffer implements RingBuffer, Serializable {
     @Override
     public void clear() {
         tail = head = 0;
+        // region object-bulk-clear
+        // endregion object-bulk-clear
     }
 
     /**
