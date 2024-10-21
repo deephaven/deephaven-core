@@ -14,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.Con
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -28,8 +29,6 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 @JsType(namespace = "dh")
 public class CoreClient extends HasEventHandling {
@@ -48,13 +47,11 @@ public class CoreClient extends HasEventHandling {
     private final IdeConnection ideConnection;
 
     public CoreClient(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions) {
-        ideConnection = new IdeConnection(serverUrl, connectOptions, true);
+        ideConnection = new IdeConnection(serverUrl, connectOptions);
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
         // event here for the UI to listen to
-        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, event -> {
-            fireEvent(EVENT_REFRESH_TOKEN_UPDATED, event);
-        });
+        ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, this::fireEvent);
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
@@ -82,20 +79,20 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        return ideConnection.getConnectOptions().then(options -> {
-            BrowserHeaders metadata = new BrowserHeaders();
-            JsObject.keys(options.headers).forEach((key, index) -> {
-                metadata.set(key, options.headers.get(key));
-                return null;
-            });
-            return getConfigs(
-                    // Explicitly creating a new client, and not passing auth details, so this works pre-connection
-                    c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
-                            new AuthenticationConstantsRequest(),
-                            metadata,
-                            c::apply),
-                    AuthenticationConstantsResponse::getConfigValuesMap);
+        BrowserHeaders metadata = new BrowserHeaders();
+        JsPropertyMap<String> headers = ideConnection.getOptions().headers;
+        JsObject.keys(headers).forEach((key, index) -> {
+            metadata.set(key, headers.get(key));
+            return null;
         });
+        ConfigServiceClient configService = ideConnection.createClient(ConfigServiceClient::new);
+        return getConfigs(
+                // Explicitly creating a new client, and not passing auth details, so this works pre-connection
+                c -> configService.getAuthenticationConstants(
+                        new AuthenticationConstantsRequest(),
+                        metadata,
+                        c::apply),
+                AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
     public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
