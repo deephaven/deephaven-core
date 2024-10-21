@@ -717,7 +717,7 @@ class TableInterface(ABC):
         table_op = WhereInTableOp(filter_table=filter_table, cols=to_list(cols), inverted=True)
         return self.table_op_handler(table_op)
     
-    def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Union[Table, Query]:
+    def slice(self, start: int, stop: int) -> Union[Table, Query]:
         """The slice method creates a new table containing rows from the source table, from the first position
         (inclusive) to the last position (exclusive). 
 
@@ -733,8 +733,8 @@ class TableInterface(ABC):
           last_position is counted from the beginning
 
         Args:
-            first_position_inclusive (int): the first position (inclusive)
-            last_position_exclusive (int): the last position (exclusive)
+            start (int): the first position (inclusive)
+            stop (int): the last position (exclusive)
 
         Returns:
             a Table object
@@ -752,5 +752,5 @@ class TableInterface(ABC):
             >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
             >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
-        table_op = SliceOp(first_position_inclusive=first_position_inclusive, last_position_exclusive=last_position_exclusive)
+        table_op = SliceOp(first_position_inclusive=start, last_position_exclusive=stop)
         return self.table_op_handler(table_op)

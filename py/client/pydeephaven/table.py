@@ -757,7 +757,7 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).where_not_in(filter_table, cols)
     
-    def slice(self, first_position_inclusive: int, last_position_exclusive: int) -> Table:
+    def slice(self, start: int, stop: int) -> Table:
         """Extracts a subset of a table by row positions into a new Table.
 
         If both the start and the stop are positive, then both are counted from the beginning of the table.
@@ -775,16 +775,26 @@ class Table(TableInterface, ServerObject):
         table. For example, slice(-2, -1) returns the second to last row of the table.
 
         Args:
-            first_position_inclusive (int): the first row position to include in the result
-            last_position_exclusive (int): the last row position to include in the result
+            start (int): the first row position to include in the result
+            stop (int): the last row position to include in the result
 
         Returns:
             a new Table
 
         Raises:
             DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
-        return super(Table, self).slice(first_position_inclusive, last_position_exclusive)
+        return super(Table, self).slice(start, stop)
 
 
 class InputTable(Table):
