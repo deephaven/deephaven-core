@@ -113,17 +113,17 @@ class IcebergInstructions(JObjectWrapper):
         try:
             builder = self.j_object_type.builder()
 
-            if table_definition is not None:
+            if table_definition:
                 builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
 
-            if data_instructions is not None:
+            if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)
 
-            if column_renames is not None:
+            if column_renames:
                 for old_name, new_name in column_renames.items():
                     builder.putColumnRenames(old_name, new_name)
 
-            if update_mode is not None:
+            if update_mode:
                 builder.updateMode(update_mode.j_object)
 
             self._j_object = builder.build()
@@ -216,6 +216,9 @@ class IcebergTableAdapter(JObjectWrapper):
             a table containing the table definition.
         """
 
+        if instructions:
+            instructions = instructions.j_object
+
         if snapshot_id is not None:
             return Table(self.j_object.definitionTable(snapshot_id, instructions))
         return Table(self.j_object.definitionTable(instructions))
@@ -290,7 +293,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
     def load_table(self, table_identifier: str) -> IcebergTable:
         """
-        Load the table from the catalog using the provided instructions.
+        Load the table from the catalog.
 
         Args:
             table_identifier (str): the table to read.
