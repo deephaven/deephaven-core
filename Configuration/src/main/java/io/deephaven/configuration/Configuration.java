@@ -61,7 +61,7 @@ public class Configuration extends PropertyFile {
         String determinePropertyFile() {
             final String propFile = System.getProperty("Configuration." + name + ".rootFile");
             if (propFile == null) {
-                throw new ConfigurationException("Unable to load named configuration " + name);
+                throw new ConfigurationException("No property file defined for named configuration " + name);
             }
 
             return propFile;
