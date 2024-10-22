@@ -13,6 +13,8 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.sql.Sql;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -38,6 +40,7 @@ import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.sql.SqlParseException;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
@@ -273,6 +276,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     private final KeyedLongObjectHashMap<QueryBase> queries;
     private final KeyedLongObjectHashMap<PreparedStatement> preparedStatements;
     private final ScheduledExecutorService scheduler;
+    private final LivenessScope scope;
 
     @Inject
     public FlightSqlResolver(
@@ -285,6 +289,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         this.handleIdGenerator = new AtomicLong(100_000_000);
         this.queries = new KeyedLongObjectHashMap<>(QUERY_KEY);
         this.preparedStatements = new KeyedLongObjectHashMap<>(PREPARED_STATEMENT_KEY);
+        this.scope = new LivenessScope(false);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -506,8 +511,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
-        return tableSpec.logic()
-                .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+            return tableSpec.logic()
+                    .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
+        }
     }
 
     /**
@@ -725,6 +732,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         private synchronized void closeImpl(boolean cancelWatchdog) {
             queries.remove(handleId, this);
+            // can't unmanage, passes to resolver?
+            // scope.unmanage(table);
             table = null;
             if (cancelWatchdog && watchdog != null) {
                 watchdog.cancel(true);
@@ -960,10 +969,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     request.getTableTypesCount() == 0 || request.getTableTypesList().contains(TABLE_TYPE_TABLE);
 
             final boolean includeSchema = request.getIncludeSchema();
-            final Predicate<String> dbSchemaFilter = request.hasDbSchemaFilterPattern()
-                    ? flightSqlFilterPredicate(request.getDbSchemaFilterPattern())
-                    : null;
-            if (hasCatalog || !hasTableTypeTable || dbSchemaFilter != null) {
+            if (hasCatalog || !hasTableTypeTable || request.hasDbSchemaFilterPattern()) {
                 return getTablesEmpty(includeSchema, CommandGetTablesConstants.ATTRIBUTES);
             }
             final Predicate<String> tableNameFilter = request.hasTableNameFilterPattern()
@@ -989,24 +995,24 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             final String[] tableNames = new String[size];
             final String[] tableTypes = new String[size];
             final byte[][] tableSchemas = includeSchema ? new byte[size][] : null;
-            int ix = 0;
+            int count = 0;
             for (Entry<String, Table> e : queryScopeTables.entrySet()) {
                 final Table table = authorization.transform(e.getValue());
                 if (table == null) {
                     continue;
                 }
                 final String tableName = e.getKey();
-                if (tableNameFilter != null && !tableNameFilter.test(tableName)) {
+                if (!tableNameFilter.test(tableName)) {
                     continue;
                 }
-                catalogNames[ix] = null;
-                dbSchemaNames[ix] = null;
-                tableNames[ix] = tableName;
-                tableTypes[ix] = TABLE_TYPE_TABLE;
+                catalogNames[count] = null;
+                dbSchemaNames[count] = null;
+                tableNames[count] = tableName;
+                tableTypes[count] = TABLE_TYPE_TABLE;
                 if (includeSchema) {
-                    tableSchemas[ix] = BarrageUtil.schemaBytesFromTable(table).toByteArray();
+                    tableSchemas[count] = BarrageUtil.schemaBytesFromTable(table).toByteArray();
                 }
-                ++ix;
+                ++count;
             }
             final ColumnHolder<String> c1 = TableTools.stringCol(CATALOG_NAME, catalogNames);
             final ColumnHolder<String> c2 = TableTools.stringCol(DB_SCHEMA_NAME, dbSchemaNames);
@@ -1015,9 +1021,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             final ColumnHolder<byte[]> c5 = includeSchema
                     ? new ColumnHolder<>(TABLE_SCHEMA, byte[].class, byte.class, false, tableSchemas)
                     : null;
-            return includeSchema
+            final Table newTable = includeSchema
                     ? TableTools.newTable(CommandGetTablesConstants.DEFINITION, attributes, c1, c2, c3, c4, c5)
                     : TableTools.newTable(CommandGetTablesConstants.DEFINITION_NO_SCHEMA, attributes, c1, c2, c3, c4);
+            return count == size
+                    ? newTable
+                    : newTable.head(count);
         }
     }
 
@@ -1390,9 +1399,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             return x -> false;
         }
         if ("%".equals(flightSqlPattern)) {
-            // This is equivalent to if no filter pattern had been set at all; this case was explicitly seen via the
-            // FlightSQL JDBC driver
-            return null;
+            return x -> true;
         }
         if (flightSqlPattern.indexOf('%') == -1 && flightSqlPattern.indexOf('_') == -1) {
             // If there are no special characters, search for an exact match; this case was explicitly seen via the

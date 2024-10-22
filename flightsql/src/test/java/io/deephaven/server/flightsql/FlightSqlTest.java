@@ -128,7 +128,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             new Field("table_schema", new FieldType(true, MinorType.VARBINARY.getType(), null, DEEPHAVEN_BYTES), null);
 
     private static final TableRef FOO_TABLE_REF = TableRef.of(null, null, "foo_table");
-    public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "bar_table");
+    public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "barTable");
 
     @Module(includes = {
             TestModule.class,
@@ -251,12 +251,14 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
         for (final FlightInfo info : new FlightInfo[] {
                 flightSqlClient.getSchemas(null, null),
-                flightSqlClient.getSchemas("DoesNotExist", null)}) {
+                flightSqlClient.getSchemas("DoesNotExist", null),
+                flightSqlClient.getSchemas(null, ""),
+                flightSqlClient.getSchemas(null, "%"),
+                flightSqlClient.getSchemas(null, "SomeSchema"),
+        }) {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             consume(info, 0, 0, true);
         }
-        expectException(() -> flightSqlClient.getSchemas(null, "filter_pattern"), FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL arrow.flight.protocol.sql.CommandGetDbSchemas.db_schema_filter_pattern not supported at this time");
         unpackable(CommandGetDbSchemas.getDescriptor(), CommandGetDbSchemas.class);
     }
 
@@ -279,25 +281,47 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, null, List.of("TABLE"), includeSchema),
                     flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE", "TABLE"), includeSchema),
                     flightSqlClient.getTables(null, null, "%", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "%able", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 consume(info, 1, 2, true);
             }
-//            // Any of these queries will fetch an empty table
-//            for (final FlightInfo info : new FlightInfo[] {
-//                    flightSqlClient.getTables("DoesNotExistCatalog", null, null, null, includeSchema),
-//                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
-//            }) {
-//                assertThat(info.getSchema()).isEqualTo(expectedSchema);
-//                consume(info, 0, 0, true);
-//            }
-//            // We do not implement filtering right now
-//            expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
-//                    FlightStatusCode.INVALID_ARGUMENT,
-//                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.db_schema_filter_pattern not supported at this time");
-//            expectException(() -> flightSqlClient.getTables(null, null, "filter_pattern", null, includeSchema),
-//                    FlightStatusCode.INVALID_ARGUMENT,
-//                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.table_name_filter_pattern not supported at this time");
+
+            // Any of these queries will fetch foo_table
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables(null, null, "foo_table", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "foo_%", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "f%", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "%table", null, includeSchema),
+            }) {
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                consume(info, 1, 1, true);
+            }
+
+            // Any of these queries will fetch barTable
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables(null, null, "barTable", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "bar%", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "b%", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "%Table", null, includeSchema),
+            }) {
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                consume(info, 1, 1, true);
+            }
+
+            // Any of these queries will fetch an empty table
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables("DoesNotExistCatalog", null, null, null, includeSchema),
+                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
+                    flightSqlClient.getTables(null, "", null, null, includeSchema),
+                    flightSqlClient.getTables(null, "%", null, null, includeSchema),
+                    flightSqlClient.getTables(null, null, "", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "doesNotExist", null, includeSchema),
+                    flightSqlClient.getTables(null, null, "%_table2", null, includeSchema),
+            }) {
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                consume(info, 0, 0, true);
+            }
         }
         unpackable(CommandGetTables.getDescriptor(), CommandGetTables.class);
     }
@@ -777,7 +801,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     private static void setBarTable() {
-        setSimpleTable("bar_table", "Bar");
+        setSimpleTable("barTable", "Bar");
     }
 
     private static void setSimpleTable(String tableName, String columnName) {
