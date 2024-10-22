@@ -16,8 +16,6 @@ import jsinterop.base.Js;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
-import static io.deephaven.web.client.api.barrage.WebGrpcUtils.USE_WEBSOCKETS;
-
 public abstract class BiDiStream<Req, Resp> {
     public interface BiDiStreamFactory {
         /**
@@ -38,10 +36,12 @@ public abstract class BiDiStream<Req, Resp> {
         void nextStreamMessage(Req nextPayload, BrowserHeaders headers, JsBiConsumer<Object, Object> callback);
     }
     public static class Factory<ReqT, RespT> {
+        private final boolean useWebsockets;
         private final Supplier<BrowserHeaders> headers;
         private final IntSupplier nextIntTicket;
 
-        public Factory(Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket) {
+        public Factory(boolean useWebsockets, Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket) {
+            this.useWebsockets = useWebsockets;
             this.headers = headers;
             this.nextIntTicket = nextIntTicket;
         }
@@ -51,7 +51,7 @@ public abstract class BiDiStream<Req, Resp> {
                 OpenStreamFactory<ReqT> openEmulatedStream,
                 NextStreamMessageFactory<ReqT> nextEmulatedStream,
                 ReqT emptyReq) {
-            if (USE_WEBSOCKETS) {
+            if (useWebsockets) {
                 return websocket(bidirectionalStream.openBiDiStream(headers.get()));
             } else {
                 return new EmulatedBiDiStream<>(
