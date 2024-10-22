@@ -4,11 +4,14 @@
 package io.deephaven.configuration;
 
 import io.deephaven.internal.log.Bootstrap;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -18,15 +21,49 @@ import java.util.*;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class Configuration extends PropertyFile {
-
+    private static final String DEFAULT_CONF_NAME = "default";
     public static final String QUIET_PROPERTY = "configuration.quiet";
-
-    private static NullableConfiguration INSTANCE = null;
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
+    private static Configuration DEFAULT;
+    private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new HashMap<>();
+
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
+
+    /**
+     * ONLY the service factory is allowed to get null properties and ONLY for the purposes of using default profiles
+     * when one doesn't exist. This has been relocated here after many people are using defaults/nulls in the code when
+     * it's not allowed.
+     */
+    private static class DefaultConfiguration extends Configuration {
+        DefaultConfiguration() {
+            super();
+        }
+
+        @SuppressWarnings("unused")
+        public String getPropertyNullable(String propertyName) {
+            return properties.getProperty(propertyName);
+        }
+    }
+
+    private static class NamedConfiguration extends Configuration {
+        private final String name;
+        NamedConfiguration(final @NotNull String name) {
+            this.name = name;
+        }
+
+        @Override
+        String determinePropertyFile() {
+            final String propFile = System.getProperty("Configuration." + name + ".rootFile");
+            if(propFile == null) {
+                throw new ConfigurationException("Unable to load named configuration " + name);
+            }
+
+            return propFile;
+        }
+    }
 
     /**
      * Get the default Configuration instance.
@@ -34,14 +71,59 @@ public class Configuration extends PropertyFile {
      * @return the single instance of Configuration allowed in an application
      */
     public static Configuration getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new NullableConfiguration();
+        if (DEFAULT == null) {
+            DEFAULT = new DefaultConfiguration();
+            init(DEFAULT);
         }
-        return INSTANCE;
+        return DEFAULT;
+    }
+
+    public static Configuration getNamedOrDefault(@NotNull final String name) {
+        if(DEFAULT_CONF_NAME.equals(name)) {
+            return getInstance();
+        }
+
+        Configuration instance = NAMED_CONFIGURATIONS.get(name);
+        if (instance != null) {
+            return instance;
+        }
+
+        synchronized (Configuration.class) {
+            instance = NAMED_CONFIGURATIONS.get(name);
+            if (instance != null) {
+                return instance;
+            }
+
+            try {
+                instance = new NamedConfiguration(name);
+                init(instance);
+            } catch (ConfigurationException ex) {
+                // We couldn't load the named one, try to fall back to default.
+                instance = getInstance();
+            }
+            NAMED_CONFIGURATIONS.put(name, instance);
+            return instance;
+        }
+    }
+
+    private static void init(@NotNull final Configuration configuration) {
+        final String configurationFile;
+        try {
+            configurationFile = configuration.reloadProperties();
+        } catch (IOException x) {
+            throw new ConfigurationException("Could not process configuration from file", x);
+        }
+
+        // The quiet property is available because things like shell scripts may be parsing our System.out and they
+        // don't want to have to deal with these log messages
+        if (!isQuiet()) {
+            log.info().append("Configuration: configuration file is ").append(configurationFile).endl();
+        }
     }
 
     public static void reset() {
-        INSTANCE = null;
+        DEFAULT = null;
+        NAMED_CONFIGURATIONS.clear();
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -49,19 +131,7 @@ public class Configuration extends PropertyFile {
         return new Configuration();
     }
 
-    protected Configuration() {
-        final String configurationFile;
-        try {
-            configurationFile = reloadProperties();
-        } catch (IOException x) {
-            throw new ConfigurationException("Could not process configuration from file", x);
-        }
-        // The quiet property is available because things like shell scripts may be parsing our System.out and they
-        // don't want to have to deal with these log messages
-        if (!isQuiet()) {
-            log.info().append("Configuration: configuration file is ").append(configurationFile).endl();
-        }
-    }
+    protected Configuration() { }
 
     /**
      * Recursively load properties files allowing for overrides.
@@ -179,6 +249,10 @@ public class Configuration extends PropertyFile {
         return reloadProperties(false);
     }
 
+    String determinePropertyFile() {
+        return ConfigDir.defaultConfigurationFile();
+    }
+
     /**
      * Reload properties, optionally ignoring scope sections - used for testing
      *
@@ -188,29 +262,12 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     String reloadProperties(boolean ignoreScope) throws IOException, ConfigurationException {
-        final String propertyFile = ConfigDir.configurationFile();
+        final String propertyFile = determinePropertyFile();
         load(propertyFile, ignoreScope);
         // If any system properties exist with the same name as a property that's been declared final, that will
         // generate an exception the same way it would inside the properties file.
         properties.putAll(System.getProperties());
         return propertyFile;
-    }
-
-    /**
-     * ONLY the service factory is allowed to get null properties and ONLY for the purposes of using default profiles
-     * when one doesn't exist. This has been relocated here after many people are using defaults/nulls in the code when
-     * it's not allowed.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static class NullableConfiguration extends Configuration {
-        NullableConfiguration() {
-            super();
-        }
-
-        @SuppressWarnings("unused")
-        public String getPropertyNullable(String propertyName) {
-            return properties.getProperty(propertyName);
-        }
     }
 
     // only used by main() method below, normally configs are loaded from the classpath
@@ -219,7 +276,6 @@ public class Configuration extends PropertyFile {
         temp.load(new FileInputStream(path + "/" + propFileName));
         return temp;
     }
-
 
     /**
      * The following main method compares two directories of prop files and outputs a CSV report of the differences.

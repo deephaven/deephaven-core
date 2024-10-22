@@ -49,7 +49,7 @@ public final class ConfigDir {
      *
      * @return the configuration file
      */
-    public static String configurationFile() {
+    public static String defaultConfigurationFile() {
         Optional<String> optional = Optional.ofNullable(System.getProperty(ROOT_FILE_PROP));
         if(!optional.isPresent()) {
             optional = configDirectoryFileIfExists();
