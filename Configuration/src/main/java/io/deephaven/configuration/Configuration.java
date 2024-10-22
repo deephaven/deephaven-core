@@ -128,7 +128,9 @@ public class Configuration extends PropertyFile {
 
     @SuppressWarnings("UnusedReturnValue")
     public static Configuration newConfigurationForTesting() {
-        return new Configuration();
+        final Configuration newConfig = new Configuration();
+        init(newConfig);
+        return newConfig;
     }
 
     protected Configuration() { }
