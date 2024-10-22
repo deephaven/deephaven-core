@@ -194,9 +194,6 @@ class IcebergTableAdapter(JObjectWrapper):
         - `Summary`: additional information about this snapshot from the Iceberg metadata.
         - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
 
-        Args:
-            table_identifier (str): the table from which to list snapshots.
-
         Returns:
             a table containing the snapshot information.
         """
