@@ -81,7 +81,7 @@ public class Configuration extends PropertyFile {
     }
 
     /**
-     * Get the {@link Configuration} for the specified name.  If a unique property file is not set using the
+     * Get the {@link Configuration} for the specified name. If a unique property file is not set using the
      * `Configuration.name.rootFile` property then this will fall back to the Default configuration file.
      *
      * @param name the name of the configuration to load
@@ -142,6 +142,7 @@ public class Configuration extends PropertyFile {
 
     /**
      * Clear the specified named configuration so it may be loaded anew.
+     * 
      * @param name the configuration to clear.
      */
     public static void reset(final @NotNull String name) {
