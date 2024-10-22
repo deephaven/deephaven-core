@@ -55,7 +55,7 @@ public final class CacheDir {
 
     private static Optional<String> getOptional() {
         Optional<String> optional = viaProperty();
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = viaEnvVar();
         }
         return optional;

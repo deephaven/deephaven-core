@@ -51,7 +51,7 @@ public final class ConfigDir {
      */
     public static String defaultConfigurationFile() {
         Optional<String> optional = Optional.ofNullable(System.getProperty(ROOT_FILE_PROP));
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = configDirectoryFileIfExists();
         }
         return optional.orElse(DEFAULT_CONFIGURATION_FILE);
@@ -66,7 +66,7 @@ public final class ConfigDir {
 
     private static Optional<String> getConfigDirOptional() {
         Optional<String> optional = viaProperty();
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = viaEnvVar();
         }
         return optional;

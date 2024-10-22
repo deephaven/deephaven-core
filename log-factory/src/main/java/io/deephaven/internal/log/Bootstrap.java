@@ -9,7 +9,7 @@ public final class Bootstrap {
 
     public static boolean isQuiet() {
         Optional<String> optional = viaProperty();
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = viaEnvironment();
         }
         return optional.map(Boolean::parseBoolean)

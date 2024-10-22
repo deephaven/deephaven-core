@@ -50,6 +50,7 @@ public class Configuration extends PropertyFile {
 
     private static class NamedConfiguration extends Configuration {
         private final String name;
+
         NamedConfiguration(final @NotNull String name) {
             this.name = name;
         }
@@ -57,7 +58,7 @@ public class Configuration extends PropertyFile {
         @Override
         String determinePropertyFile() {
             final String propFile = System.getProperty("Configuration." + name + ".rootFile");
-            if(propFile == null) {
+            if (propFile == null) {
                 throw new ConfigurationException("Unable to load named configuration " + name);
             }
 
@@ -79,7 +80,7 @@ public class Configuration extends PropertyFile {
     }
 
     public static Configuration getNamedOrDefault(@NotNull final String name) {
-        if(DEFAULT_CONF_NAME.equals(name)) {
+        if (DEFAULT_CONF_NAME.equals(name)) {
             return getInstance();
         }
 
@@ -133,7 +134,7 @@ public class Configuration extends PropertyFile {
         return newConfig;
     }
 
-    protected Configuration() { }
+    protected Configuration() {}
 
     /**
      * Recursively load properties files allowing for overrides.

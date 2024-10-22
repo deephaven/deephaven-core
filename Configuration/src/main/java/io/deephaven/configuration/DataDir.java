@@ -45,10 +45,10 @@ public class DataDir {
 
     private static Optional<String> getOptional() {
         Optional<String> optional = viaProperty();
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = viaWorkspace();
         }
-        if(!optional.isPresent()) {
+        if (!optional.isPresent()) {
             optional = viaEnvironmentVariable();
         }
         return optional;
