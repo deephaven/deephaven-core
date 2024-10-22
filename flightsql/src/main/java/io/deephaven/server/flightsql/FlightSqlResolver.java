@@ -107,6 +107,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -873,11 +875,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                         // defensive check in case there is a time in the future where we have catalogs and forget to
                         // update this
                         // method.
-                        if (command.hasDbSchemaFilterPattern()) {
-                            throw error(Code.INVALID_ARGUMENT,
-                                    String.format("FlightSQL %s not supported at this time",
-                                            CommandGetDbSchemasConstants.GET_DB_SCHEMAS_FILTER_PATTERN));
-                        }
+//                        if (command.hasDbSchemaFilterPattern()) {
+//                            throw error(Code.INVALID_ARGUMENT,
+//                                    String.format("FlightSQL %s not supported at this time",
+//                                            CommandGetDbSchemasConstants.GET_DB_SCHEMAS_FILTER_PATTERN));
+//                        }
                     }
                 };
     }
@@ -919,16 +921,19 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         @Override
         void check(CommandGetTables command) {
-            if (command.hasDbSchemaFilterPattern()) {
-                throw error(Code.INVALID_ARGUMENT,
-                        String.format("FlightSQL %s not supported at this time",
-                                CommandGetTablesConstants.GET_TABLES_DB_SCHEMA_FILTER_PATTERN));
-            }
-            if (command.hasTableNameFilterPattern()) {
-                throw error(Code.INVALID_ARGUMENT,
-                        String.format("FlightSQL %s not supported at this time",
-                                CommandGetTablesConstants.GET_TABLES_TABLE_NAME_FILTER_PATTERN));
-            }
+//            if (command.hasDbSchemaFilterPattern()) {
+//                throw error(Code.INVALID_ARGUMENT,
+//                        String.format("FlightSQL %s not supported at this time",
+//                                CommandGetTablesConstants.GET_TABLES_DB_SCHEMA_FILTER_PATTERN));
+//            }
+//            FILTER_PATTERN: if (command.hasTableNameFilterPattern()) {
+//                if ("%".equals(command.getTableNameFilterPattern())) {
+//                    break FILTER_PATTERN;
+//                }
+////                throw error(Code.INVALID_ARGUMENT,
+////                        String.format("FlightSQL %s not supported at this time",
+////                                CommandGetTablesConstants.GET_TABLES_TABLE_NAME_FILTER_PATTERN));
+//            }
         }
 
         @Override
@@ -945,15 +950,27 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         @Override
         public Table table(CommandGetTables request) {
-            // already validated we don't have filter patterns
-            final boolean hasNullCatalog = !request.hasCatalog() || request.getCatalog().isEmpty();
+            // A not present `catalog` means "don't filter based on catalog".
+            // An empty `catalog` string explicitly means "only return tables that don't have a catalog".
+            // In our case (since we don't expose catalogs ATM), we can combine them.
+            final boolean hasCatalog = request.hasCatalog() && !request.getCatalog().isEmpty();
+
+            // `table_types` is a set that the user wants to include, empty means "include all".
             final boolean hasTableTypeTable =
                     request.getTableTypesCount() == 0 || request.getTableTypesList().contains(TABLE_TYPE_TABLE);
+
             final boolean includeSchema = request.getIncludeSchema();
-            return hasNullCatalog && hasTableTypeTable
-                    ? getTables(includeSchema, ExecutionContext.getContext().getQueryScope(),
-                            CommandGetTablesConstants.ATTRIBUTES)
-                    : getTablesEmpty(includeSchema, CommandGetTablesConstants.ATTRIBUTES);
+            final Predicate<String> dbSchemaFilter = request.hasDbSchemaFilterPattern()
+                    ? flightSqlFilterPredicate(request.getDbSchemaFilterPattern())
+                    : null;
+            if (hasCatalog || !hasTableTypeTable || dbSchemaFilter != null) {
+                return getTablesEmpty(includeSchema, CommandGetTablesConstants.ATTRIBUTES);
+            }
+            final Predicate<String> tableNameFilter = request.hasTableNameFilterPattern()
+                    ? flightSqlFilterPredicate(request.getTableNameFilterPattern())
+                    : x -> true;
+            return getTables(includeSchema, ExecutionContext.getContext().getQueryScope(),
+                    CommandGetTablesConstants.ATTRIBUTES, tableNameFilter);
         }
 
         private Table getTablesEmpty(boolean includeSchema, Map<String, Object> attributes) {
@@ -962,7 +979,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     : TableTools.newTable(CommandGetTablesConstants.DEFINITION_NO_SCHEMA, attributes);
         }
 
-        private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes) {
+        private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes, Predicate<String> tableNameFilter) {
             Objects.requireNonNull(attributes);
             final Map<String, Table> queryScopeTables =
                     (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
@@ -978,9 +995,13 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 if (table == null) {
                     continue;
                 }
+                final String tableName = e.getKey();
+                if (tableNameFilter != null && !tableNameFilter.test(tableName)) {
+                    continue;
+                }
                 catalogNames[ix] = null;
                 dbSchemaNames[ix] = null;
-                tableNames[ix] = e.getKey();
+                tableNames[ix] = tableName;
                 tableTypes[ix] = TABLE_TYPE_TABLE;
                 if (includeSchema) {
                     tableSchemas[ix] = BarrageUtil.schemaBytesFromTable(table).toByteArray();
@@ -1336,5 +1357,71 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
             queries.clear();
         }
+    }
+
+    /**
+     * The Arrow "specification" for filter pattern leaves a lot to be desired. In totality:
+     *
+     * <pre>
+     * In the pattern string, two special characters can be used to denote matching rules:
+     *    - "%" means to match any substring with 0 or more characters.
+     *    - "_" means to match any one character.
+     * </pre>
+     *
+     * There does not seem to be any potential for escaping, which means that underscores can't explicitly be matched
+     * against, which is a common pattern used in Deephaven table names. As mentioned below, it also follows that an
+     * empty string should only explicitly match against an empty string.
+     */
+    private static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {
+        // This is the technically correct, although likely represents a FlightSQL client mis-use, as the results will
+        // be empty (unless an empty db_schema_name is allowed).
+        //
+        // Unlike the "catalog" field in CommandGetDbSchemas (/ CommandGetTables) where an empty string means
+        // "retrieves those without a catalog", an empty filter pattern does not seem to be meant to match the
+        // respective field where the value is not present.
+        //
+        // The Arrow schema for CommandGetDbSchemas explicitly points out that the returned db_schema_name is not null,
+        // which implies that filter patterns are not meant to match against fields where the value is not present
+        // (null).
+        if (flightSqlPattern.isEmpty()) {
+            // If Deephaven supports catalog / db_schema_name in the future and db_schema_name can be empty, we'd need
+            // to match on that.
+            // return String::isEmpty;
+            return x -> false;
+        }
+        if ("%".equals(flightSqlPattern)) {
+            // This is equivalent to if no filter pattern had been set at all; this case was explicitly seen via the
+            // FlightSQL JDBC driver
+            return null;
+        }
+        if (flightSqlPattern.indexOf('%') == -1 && flightSqlPattern.indexOf('_') == -1) {
+            // If there are no special characters, search for an exact match; this case was explicitly seen via the
+            // FlightSQL JDBC driver.
+            return flightSqlPattern::equals;
+        }
+        final int L = flightSqlPattern.length();
+        final StringBuilder pattern = new StringBuilder();
+        final StringBuilder quoted = new StringBuilder();
+        final Runnable appendQuoted = () -> {
+            if (quoted.length() != 0) {
+                pattern.append(Pattern.quote(quoted.toString()));
+                quoted.setLength(0);
+            }
+        };
+        for (int i = 0; i < L; ++i) {
+            final char c = flightSqlPattern.charAt(i);
+            if (c == '%') {
+                appendQuoted.run();
+                pattern.append(".*");
+            } else if (c == '_') {
+                appendQuoted.run();
+                pattern.append('.');
+            } else {
+                quoted.append(c);
+            }
+        }
+        appendQuoted.run();
+        final Pattern p = Pattern.compile(pattern.toString());
+        return x -> p.matcher(x).matches();
     }
 }

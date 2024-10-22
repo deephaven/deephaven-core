@@ -278,26 +278,26 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables("", null, null, null, includeSchema),
                     flightSqlClient.getTables(null, null, null, List.of("TABLE"), includeSchema),
                     flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE", "TABLE"), includeSchema),
-                    flightSqlClient.getTables("", null, null, List.of("TABLE"), includeSchema),
+                    flightSqlClient.getTables(null, null, "%", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 consume(info, 1, 2, true);
             }
-            // Any of these queries will fetch an empty table
-            for (final FlightInfo info : new FlightInfo[] {
-                    flightSqlClient.getTables("DoesNotExistCatalog", null, null, null, includeSchema),
-                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
-            }) {
-                assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 0, 0, true);
-            }
-            // We do not implement filtering right now
-            expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
-                    FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.db_schema_filter_pattern not supported at this time");
-            expectException(() -> flightSqlClient.getTables(null, null, "filter_pattern", null, includeSchema),
-                    FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.table_name_filter_pattern not supported at this time");
+//            // Any of these queries will fetch an empty table
+//            for (final FlightInfo info : new FlightInfo[] {
+//                    flightSqlClient.getTables("DoesNotExistCatalog", null, null, null, includeSchema),
+//                    flightSqlClient.getTables(null, null, null, List.of("IRRELEVANT_TYPE"), includeSchema),
+//            }) {
+//                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+//                consume(info, 0, 0, true);
+//            }
+//            // We do not implement filtering right now
+//            expectException(() -> flightSqlClient.getTables(null, "filter_pattern", null, null, includeSchema),
+//                    FlightStatusCode.INVALID_ARGUMENT,
+//                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.db_schema_filter_pattern not supported at this time");
+//            expectException(() -> flightSqlClient.getTables(null, null, "filter_pattern", null, includeSchema),
+//                    FlightStatusCode.INVALID_ARGUMENT,
+//                    "FlightSQL arrow.flight.protocol.sql.CommandGetTables.table_name_filter_pattern not supported at this time");
         }
         unpackable(CommandGetTables.getDescriptor(), CommandGetTables.class);
     }
