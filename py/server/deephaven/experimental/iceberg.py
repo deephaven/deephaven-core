@@ -278,7 +278,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
             return Table(self.j_object.namespaces(namespace))
         return Table(self.j_object.namespaces())
 
-    def tables(self, namespace: str) -> IcebergTableAdapter:
+    def tables(self, namespace: str) -> Table:
         """
         Returns information on the tables in the specified namespace as a Deephaven table.
 
@@ -291,7 +291,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str) -> IcebergTable:
+    def load_table(self, table_identifier: str) -> IcebergCatalogAdapter:
         """
         Load the table from the catalog.
 
