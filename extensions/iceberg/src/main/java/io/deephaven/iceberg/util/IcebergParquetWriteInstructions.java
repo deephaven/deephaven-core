@@ -78,17 +78,19 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
      *
      * @param onWriteCompleted The callback to be invoked after writing the parquet file.
+     * @param tableDefinition The table definition to be populated inside the parquet file's schema
      * @param fieldIdToName Mapping of field id to field name, to be populated inside the parquet file's schema
      */
     ParquetInstructions toParquetInstructions(
             @NotNull final ParquetInstructions.OnWriteCompleted onWriteCompleted,
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<Integer, String> fieldIdToName) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
-        tableDefinition().ifPresent(builder::setTableDefinition);
         dataInstructions().ifPresent(builder::setSpecialInstructions);
 
         // Add parquet writing specific instructions.
+        builder.setTableDefinition(tableDefinition);
         builder.addFieldIdMapping(fieldIdToName);
         builder.setCompressionCodecName(compressionCodecName());
         builder.setMaximumDictionaryKeys(maximumDictionaryKeys());

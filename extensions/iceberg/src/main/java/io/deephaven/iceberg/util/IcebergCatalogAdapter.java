@@ -33,6 +33,7 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.OverwriteFiles;
+import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -64,6 +65,7 @@ import static io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
 import static io.deephaven.iceberg.base.IcebergUtils.allDataFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.createSpecAndSchema;
+import static io.deephaven.iceberg.base.IcebergUtils.partitionDataFromPaths;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyAppendCompatibility;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyOverwriteCompatibility;
 
@@ -849,6 +851,7 @@ public class IcebergCatalogAdapter {
     public void append(@NotNull final IcebergAppend icebergAppend) {
         writeImpl(TableIdentifier.parse(icebergAppend.tableIdentifier()),
                 icebergAppend.dhTables(),
+                icebergAppend.partitionPaths(),
                 icebergAppend.instructions(),
                 false,
                 true);
@@ -865,6 +868,7 @@ public class IcebergCatalogAdapter {
     public void overwrite(@NotNull final IcebergOverwrite icebergOverwrite) {
         writeImpl(TableIdentifier.parse(icebergOverwrite.tableIdentifier()),
                 icebergOverwrite.dhTables(),
+                icebergOverwrite.partitionPaths(),
                 icebergOverwrite.instructions(),
                 true,
                 true);
@@ -880,6 +884,7 @@ public class IcebergCatalogAdapter {
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteDataFiles icebergWriteDataFiles) {
         return writeImpl(TableIdentifier.parse(icebergWriteDataFiles.tableIdentifier()),
                 icebergWriteDataFiles.dhTables(),
+                icebergWriteDataFiles.partitionPaths(),
                 icebergWriteDataFiles.instructions(),
                 false,
                 false);
@@ -900,6 +905,7 @@ public class IcebergCatalogAdapter {
     private List<DataFile> writeImpl(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull List<Table> dhTables,
+            @NotNull final List<String> partitionPaths,
             @NotNull final IcebergWriteInstructions instructions,
             final boolean overwrite,
             final boolean addSnapshot) {
@@ -941,11 +947,20 @@ public class IcebergCatalogAdapter {
         // Try loading the table from the catalog, or create if required
         final org.apache.iceberg.Table icebergTable;
         final SpecAndSchema newSpecAndSchema;
+        final List<PartitionData> partitionData;
         final boolean newNamespaceCreated;
         final boolean newTableCreated;
         if (catalog.tableExists(tableIdentifier)) {
             icebergTable = catalog.loadTable(tableIdentifier);
-            newSpecAndSchema = createSpecAndSchema(useDefinition, writeInstructions);
+            if (overwrite) {
+                verifyPartitionPathsIfOverwritingOrCreating(partitionPaths, writeInstructions);
+                newSpecAndSchema = createSpecAndSchema(useDefinition, writeInstructions);
+            } else {
+                verifyPartitionPathsIfAppending(icebergTable, partitionPaths);
+                // Same spec and schema as the existing table
+                newSpecAndSchema = new SpecAndSchema(icebergTable.spec(), icebergTable.schema());
+            }
+            partitionData = partitionDataFromPaths(newSpecAndSchema.partitionSpec(), partitionPaths);
             newNamespaceCreated = false;
             newTableCreated = false;
             if (verifySchema) {
@@ -964,8 +979,10 @@ public class IcebergCatalogAdapter {
                 }
             }
         } else if (writeInstructions.createTableIfNotExist()) {
+            verifyPartitionPathsIfOverwritingOrCreating(partitionPaths, writeInstructions);
             newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
             newSpecAndSchema = createSpecAndSchema(useDefinition, writeInstructions);
+            partitionData = partitionDataFromPaths(newSpecAndSchema.partitionSpec(), partitionPaths);
             icebergTable = createNewIcebergTable(tableIdentifier, newSpecAndSchema, writeInstructions);
             newTableCreated = true;
         } else {
@@ -973,11 +990,11 @@ public class IcebergCatalogAdapter {
                     "Table does not exist: " + tableIdentifier + ", update the instructions " +
                             "to create the table if it does not exist and try again.");
         }
-
+        final PartitionSpec newPartitionSpec = newSpecAndSchema.partitionSpec();
         try {
             final List<CompletedParquetWrite> parquetFileInfo =
-                    writeParquet(icebergTable, dhTables, writeInstructions);
-            final List<DataFile> appendFiles = dataFilesFromParquet(parquetFileInfo);
+                    writeParquet(icebergTable, newPartitionSpec, dhTables, partitionPaths, writeInstructions);
+            final List<DataFile> appendFiles = dataFilesFromParquet(parquetFileInfo, partitionData, newPartitionSpec);
             if (addSnapshot) {
                 commit(icebergTable, newSpecAndSchema, appendFiles, overwrite, verifySchema);
             }
@@ -1000,6 +1017,32 @@ public class IcebergCatalogAdapter {
                 }
             }
             throw throwable;
+        }
+    }
+
+    private static void verifyPartitionPathsIfOverwritingOrCreating(
+            @NotNull final Collection<String> partitionPaths,
+            @NotNull final IcebergBaseInstructions instructions) {
+        if (!partitionPaths.isEmpty()) {
+            final TableDefinition tableDefinition = instructions.tableDefinition()
+                    .orElseThrow(() -> new IllegalArgumentException("Table definition expected"));
+            if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
+                throw new IllegalArgumentException("Cannot write un-partitioned table to partition paths. Please " +
+                        "remove partition paths from the Iceberg instructions or provide a table definition with " +
+                        "partitioning columns.");
+            }
+        }
+    }
+
+    private static void verifyPartitionPathsIfAppending(
+            final org.apache.iceberg.Table icebergTable,
+            final Collection<String> partitionPaths) {
+        if (icebergTable.spec().isPartitioned() && partitionPaths.isEmpty()) {
+            throw new IllegalArgumentException("Cannot write data to an existing partitioned table without " +
+                    "providing partition paths. Please provide partition paths in the Iceberg instructions.");
+        } else if (!icebergTable.spec().isPartitioned() && !partitionPaths.isEmpty()) {
+            throw new IllegalArgumentException("Cannot write data to an existing un-partitioned table with " +
+                    "partition paths. Please remove partition paths from the Iceberg instructions.");
         }
     }
 
@@ -1061,28 +1104,47 @@ public class IcebergCatalogAdapter {
     @NotNull
     private static List<CompletedParquetWrite> writeParquet(
             @NotNull final org.apache.iceberg.Table icebergTable,
-            @NotNull final Collection<Table> dhTables,
+            @NotNull final PartitionSpec partitionSpec,
+            @NotNull final List<Table> dhTables,
+            @NotNull final List<String> partitionPaths,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
         // Build the parquet instructions
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted =
                 (destination, numRows, numBytes) -> parquetFilesWritten
                         .add(new CompletedParquetWrite(destination, numRows, numBytes));
+
+        // Remove all partitioning columns from the table definition before writing parquet files
+        TableDefinition parquetTableDefinition = writeInstructions.tableDefinition()
+                .orElseThrow(() -> new IllegalArgumentException("Table definition expected"));
+        if (partitionSpec.isPartitioned()) {
+            parquetTableDefinition = TableDefinition.of(
+                    parquetTableDefinition.getColumnStream()
+                            .filter(columnDefinition -> !columnDefinition.isPartitioning())
+                            .collect(Collectors.toList()));
+        }
         final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                onWriteCompleted, icebergTable.schema().idToName());
+                onWriteCompleted, parquetTableDefinition, icebergTable.schema().idToName());
 
         // Write the data to parquet files
         int count = 0;
-        for (final Table dhTable : dhTables) {
+        for (int idx = 0; idx < dhTables.size(); idx++) {
+            final Table dhTable = dhTables.get(idx);
             if (dhTable.numColumns() == 0) {
                 // Skip writing empty tables with no columns
                 continue;
             }
-            final String filename = String.format(
+            final String fileName = String.format(
                     "00000-%d-%s.parquet",
                     count++,
                     UUID.randomUUID());
-            final String newDataLocation = icebergTable.locationProvider().newDataLocation(filename);
+            final String relativePath;
+            if (partitionSpec.isPartitioned()) {
+                relativePath = String.format("%s/%s", partitionPaths.get(idx), fileName);
+            } else {
+                relativePath = fileName;
+            }
+            final String newDataLocation = icebergTable.locationProvider().newDataLocation(relativePath);
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
         return parquetFilesWritten;
@@ -1149,15 +1211,23 @@ public class IcebergCatalogAdapter {
      * Generate a list of {@link DataFile} objects from a list of parquet files written.
      */
     private static List<DataFile> dataFilesFromParquet(
-            @NotNull final Collection<CompletedParquetWrite> parquetFilesWritten) {
-        // TODO This assumes no partition data is written, is that okay?
-        return parquetFilesWritten.stream()
-                .map(parquetFileWritten -> DataFiles.builder(PartitionSpec.unpartitioned())
-                        .withPath(parquetFileWritten.destination.toString())
-                        .withFormat(FileFormat.PARQUET)
-                        .withRecordCount(parquetFileWritten.numRows)
-                        .withFileSizeInBytes(parquetFileWritten.numBytes)
-                        .build())
-                .collect(Collectors.toList());
+            @NotNull final List<CompletedParquetWrite> parquetFilesWritten,
+            @NotNull final List<PartitionData> partitionDataList,
+            @NotNull final PartitionSpec partitionSpec) {
+        final int numFiles = parquetFilesWritten.size();
+        final List<DataFile> dataFiles = new ArrayList<>(numFiles);
+        for (int idx = 0; idx < numFiles; idx++) {
+            final CompletedParquetWrite completedWrite = parquetFilesWritten.get(idx);
+            final DataFiles.Builder dataFileBuilder = DataFiles.builder(partitionSpec)
+                    .withPath(completedWrite.destination.toString())
+                    .withFormat(FileFormat.PARQUET)
+                    .withRecordCount(completedWrite.numRows)
+                    .withFileSizeInBytes(completedWrite.numBytes);
+            if (partitionSpec.isPartitioned()) {
+                dataFileBuilder.withPartition(partitionDataList.get(idx));
+            }
+            dataFiles.add(dataFileBuilder.build());
+        }
+        return dataFiles;
     }
 }

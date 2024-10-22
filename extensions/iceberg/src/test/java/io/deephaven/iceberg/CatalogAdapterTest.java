@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
@@ -24,7 +25,6 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class CatalogAdapterTest extends CatalogAdapterBase {
     @Test
@@ -479,7 +480,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                     .addDhTables(badSource)
                     .instructions(writeInstructions)
                     .build());
-            Assertions.fail("Exception expected for invalid formula in table");
+            fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
             assertThat(e.getCause() instanceof FormulaEvaluationException).isTrue();
         }
@@ -503,7 +504,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                     .addDhTables(badSource)
                     .instructions(writeInstructions)
                     .build());
-            Assertions.fail("Exception expected for invalid formula in table");
+            fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
             assertThat(e.getCause() instanceof FormulaEvaluationException).isTrue();
         }
@@ -596,6 +597,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                     .tableIdentifier(tableIdentifier)
                     .addDhTables(source)
                     .build());
+            fail("Exception expected for table not existing");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Table does not exist");
         }
@@ -636,5 +638,69 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         // Verify that the data files are now in the table
         verifySnapshots(tableIdentifier, List.of("append", "append"));
         verifyDataFiles(TableIdentifier.parse(tableIdentifier), List.of(source, anotherSource, moreData));
+    }
+
+    @Test
+    void testPartitionedAppendBasic() {
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
+        final String tableIdentifier = "MyNamespace.MyTable";
+
+        try {
+            final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
+                    .createTableIfNotExist(true)
+                    .build();
+            catalogAdapter.append(IcebergAppend.builder()
+                    .tableIdentifier(tableIdentifier)
+                    .addDhTables(part1, part2)
+                    .addAllPartitionPaths(partitionPaths)
+                    .instructions(writeInstructions)
+                    .build());
+            fail("Exception expected since no partitioning table definition is provided");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).contains("table definition");
+        }
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("PC").withPartitioning());
+        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
+                .createTableIfNotExist(true)
+                .tableDefinition(tableDefinition)
+                .build();
+        catalogAdapter.append(IcebergAppend.builder()
+                .tableIdentifier(tableIdentifier)
+                .addDhTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .instructions(writeInstructions)
+                .build());
+        final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        assertThat(catalogAdapter.getTableDefinition(tableIdentifier, null)).isEqualTo(tableDefinition);
+        assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
+        assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
+        final Table expected = TableTools.merge(
+                part1.update("PC = `apple`"),
+                part2.update("PC = `boy`"));
+        assertTableEquals(expected, fromIceberg.select());
+
+        final Table part3 = TableTools.emptyTable(5)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final String partitionPath = "PC=cat";
+        catalogAdapter.append(IcebergAppend.builder()
+                .tableIdentifier(tableIdentifier)
+                .addDhTables(part3)
+                .addPartitionPaths(partitionPath)
+                .instructions(writeInstructions)
+                .build());
+        final Table fromIceberg2 = catalogAdapter.readTable(tableIdentifier, null);
+        final Table expected2 = TableTools.merge(part3.update("PC = `cat`"), expected);
+        assertTableEquals(expected2, fromIceberg2.select());
     }
 }

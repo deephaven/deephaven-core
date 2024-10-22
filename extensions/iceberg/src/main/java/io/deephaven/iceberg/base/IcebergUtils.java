@@ -8,8 +8,10 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
+import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -161,7 +163,7 @@ public final class IcebergUtils {
         private final PartitionSpec partitionSpec;
         private final Schema schema;
 
-        private SpecAndSchema(final PartitionSpec partitionSpec, final Schema schema) {
+        public SpecAndSchema(final PartitionSpec partitionSpec, final Schema schema) {
             this.partitionSpec = partitionSpec;
             this.schema = schema;
         }
@@ -323,5 +325,33 @@ public final class IcebergUtils {
             throw new IllegalArgumentException("Partitioning column mismatch, iceberg table partition spec: " +
                     partitionSpec + ", deephaven table definition: " + tableDefinition);
         }
+    }
+
+    /**
+     * Creates a list of {@link PartitionData} objects from a list of partition paths using the provided partition spec.
+     * Also, validates internally that the partition paths are compatible with the partition spec.
+     *
+     * @param partitionSpec The partition spec to use for validation
+     * @param partitionPaths The list of partition paths to create PartitionData objects from
+     *
+     * @return A list of PartitionData objects
+     */
+    public static List<PartitionData> partitionDataFromPaths(
+            final PartitionSpec partitionSpec,
+            final Collection<String> partitionPaths) {
+        if (!partitionSpec.isPartitioned() && !partitionPaths.isEmpty()) {
+            throw new IllegalArgumentException("Partition paths should be empty for un-partitioned tables");
+        }
+        final List<PartitionData> partitionDataList = new ArrayList<>(partitionPaths.size());
+        for (final String partitionPath : partitionPaths) {
+            // Following will internally validate the structure and values of the partition path
+            try {
+                partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
+            } catch (final Throwable e) {
+                throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
+                        " partition spec " + partitionSpec, e);
+            }
+        }
+        return partitionDataList;
     }
 }

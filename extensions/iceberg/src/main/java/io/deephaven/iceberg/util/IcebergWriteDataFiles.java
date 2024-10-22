@@ -24,6 +24,15 @@ public abstract class IcebergWriteDataFiles {
     public abstract List<Table> dhTables();
 
     /**
+     * The partition paths where each table will be written. For example, if the table is partitioned by "year" and
+     * "month", the partition path could be "year=2021/month=01".
+     * <p>
+     * Users must provide partition path for each table in {@link #dhTables()} in the same order if writing to a
+     * partitioned table. For writing to a non-partitioned tables, this should be an empty list.
+     */
+    public abstract List<String> partitionPaths();
+
+    /**
      * The instructions for customizations while writing, defaults to {@link IcebergParquetWriteInstructions#DEFAULT}.
      */
     @Value.Default
@@ -44,8 +53,22 @@ public abstract class IcebergWriteDataFiles {
 
         Builder addAllDhTables(Iterable<? extends Table> elements);
 
+        // TODO think about the API for partition paths
+        Builder addPartitionPaths(String element);
+
+        Builder addPartitionPaths(String... elements);
+
+        Builder addAllPartitionPaths(Iterable<String> elements);
+
         Builder instructions(IcebergWriteInstructions instructions);
 
         IcebergWriteDataFiles build();
+    }
+
+    @Value.Check
+    final void countCheckPartitionPaths() {
+        if (!partitionPaths().isEmpty() && partitionPaths().size() != dhTables().size()) {
+            throw new IllegalArgumentException("Partition path must be provided for each table");
+        }
     }
 }
