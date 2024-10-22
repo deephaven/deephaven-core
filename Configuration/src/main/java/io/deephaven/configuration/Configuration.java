@@ -33,9 +33,7 @@ public class Configuration extends PropertyFile {
     private Collection<String> contextKeys = Collections.emptySet();
 
     /**
-     * ONLY the service factory is allowed to get null properties and ONLY for the purposes of using default profiles
-     * when one doesn't exist. This has been relocated here after many people are using defaults/nulls in the code when
-     * it's not allowed.
+     * The default configuration implementation loading the property file from the default property file.
      */
     private static class DefaultConfiguration extends Configuration {
         DefaultConfiguration() {
@@ -48,6 +46,9 @@ public class Configuration extends PropertyFile {
         }
     }
 
+    /**
+     * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`
+     */
     private static class NamedConfiguration extends Configuration {
         private final String name;
 
@@ -79,6 +80,13 @@ public class Configuration extends PropertyFile {
         return DEFAULT;
     }
 
+    /**
+     * Get the {@link Configuration} for the specified name.  If a unique property file is not set using the
+     * `Configuration.name.rootFile` property then this will fall back to the Default configuration file.
+     *
+     * @param name the name of the configuration to load
+     * @return the named configuration, or the default if no named configuration was defined.
+     */
     public static Configuration getNamedOrDefault(@NotNull final String name) {
         if (DEFAULT_CONF_NAME.equals(name)) {
             return getInstance();
@@ -89,6 +97,8 @@ public class Configuration extends PropertyFile {
             return instance;
         }
 
+        // We could use a ConcurrentHashMap, but loading configuration can take significant time, and it
+        // seems wasteful to add contention to every Configuration.getInstance().
         synchronized (Configuration.class) {
             instance = NAMED_CONFIGURATIONS.get(name);
             if (instance != null) {
@@ -122,9 +132,20 @@ public class Configuration extends PropertyFile {
         }
     }
 
+    /**
+     * Clear all currently loaded configurations so that they may be loaded anew.
+     */
     public static void reset() {
         DEFAULT = null;
         NAMED_CONFIGURATIONS.clear();
+    }
+
+    /**
+     * Clear the specified named configuration so it may be loaded anew.
+     * @param name the configuration to clear.
+     */
+    public static void reset(final @NotNull String name) {
+        NAMED_CONFIGURATIONS.remove(name);
     }
 
     @SuppressWarnings("UnusedReturnValue")
