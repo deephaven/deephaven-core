@@ -221,6 +221,11 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     public void listFlights(
             @NotNull final Flight.Criteria request,
             @NotNull final StreamObserver<Flight.FlightInfo> responseObserver) {
+        if (!request.getExpression().isEmpty()) {
+            responseObserver.onError(
+                    Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Criteria expressions are not supported"));
+            return;
+        }
         ticketRouter.visitFlightInfo(sessionService.getOptionalSession(), responseObserver::onNext);
         responseObserver.onCompleted();
     }

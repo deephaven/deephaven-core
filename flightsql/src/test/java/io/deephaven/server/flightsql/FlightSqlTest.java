@@ -20,20 +20,7 @@ import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Builder;
 import io.grpc.ManagedChannel;
-import org.apache.arrow.flight.Action;
-import org.apache.arrow.flight.ActionType;
-import org.apache.arrow.flight.CancelFlightInfoRequest;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightConstants;
-import org.apache.arrow.flight.FlightDescriptor;
-import org.apache.arrow.flight.FlightEndpoint;
-import org.apache.arrow.flight.FlightGrpcUtilsExtension;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightRuntimeException;
-import org.apache.arrow.flight.FlightStatusCode;
-import org.apache.arrow.flight.FlightStream;
-import org.apache.arrow.flight.Result;
-import org.apache.arrow.flight.SchemaResult;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
 import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlClient.PreparedStatement;
@@ -224,6 +211,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         flightSqlClient.close();
         bufferAllocator.close();
         super.tearDown();
+    }
+
+    @Test
+    public void listFlights() {
+        assertThat(flightClient.listFlights(Criteria.ALL)).isEmpty();
     }
 
     @Test
@@ -439,7 +431,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void selectFooParam() {
         setFooTable();
         queryError("SELECT Foo FROM foo_table WHERE Foo = ?", FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL query parameters are not supported");
+                "FlightSQL: query parameters are not supported");
     }
 
     @Test

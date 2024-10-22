@@ -35,7 +35,7 @@ public abstract class FlightSqlJdbcUnauthenticatedTestBase extends DeephavenServ
                 statement.executeQuery("SELECT 1 as Foo, 2 as Bar");
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                authToUsePreparedStatement(e);
+                unauthenticated(e);
             }
         }
     }
@@ -50,7 +50,7 @@ public abstract class FlightSqlJdbcUnauthenticatedTestBase extends DeephavenServ
                 statement.execute("SELECT 1 as Foo, 2 as Bar");
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                authToUsePreparedStatement(e);
+                unauthenticated(e);
             }
         }
     }
@@ -65,7 +65,7 @@ public abstract class FlightSqlJdbcUnauthenticatedTestBase extends DeephavenServ
                 statement.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
-                authToUsePreparedStatement(e);
+                unauthenticated(e);
             }
         }
     }
@@ -77,13 +77,13 @@ public abstract class FlightSqlJdbcUnauthenticatedTestBase extends DeephavenServ
             try {
                 connection.prepareStatement("SELECT 1");
             } catch (SQLException e) {
-                authToUsePreparedStatement(e);
+                unauthenticated(e);
             }
         }
     }
 
-    private static void authToUsePreparedStatement(SQLException e) {
+    private static void unauthenticated(SQLException e) {
         assertThat((Throwable) e).getRootCause()
-                .hasMessageContaining("Must have an authenticated session to use prepared statements");
+                .hasMessageContaining("FlightSQL: Must be authenticated");
     }
 }

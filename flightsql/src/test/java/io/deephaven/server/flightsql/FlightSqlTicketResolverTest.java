@@ -7,10 +7,8 @@ import com.google.protobuf.Any;
 import com.google.protobuf.Message;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetCatalogsImpl;
-import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetDbSchemasImpl;
-import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetTableTypesImpl;
-import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetTablesImpl;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetCatalogsConstants;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetTableTypesConstants;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.sql.FlightSqlProducer.Schemas;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
@@ -93,13 +91,13 @@ public class FlightSqlTicketResolverTest {
 
     @Test
     void definitions() {
-        checkDefinition(CommandGetTableTypesImpl.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
-        checkDefinition(CommandGetCatalogsImpl.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
-        checkDefinition(CommandGetDbSchemasImpl.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
+        checkDefinition(CommandGetTableTypesConstants.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
+        checkDefinition(CommandGetCatalogsConstants.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
+        checkDefinition(FlightSqlResolver.CommandGetDbSchemasConstants.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
         // TODO: we can't use the straight schema b/c it's BINARY not byte[], and we don't know how to natively map
         // checkDefinition(CommandGetTablesImpl.DEFINITION, Schemas.GET_TABLES_SCHEMA);
-        checkDefinition(CommandGetTablesImpl.DEFINITION_NO_SCHEMA, Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
-
+        checkDefinition(FlightSqlResolver.CommandGetTablesConstants.DEFINITION_NO_SCHEMA,
+                Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
     }
 
     private static void checkActionType(String actionType, ActionType expected) {
