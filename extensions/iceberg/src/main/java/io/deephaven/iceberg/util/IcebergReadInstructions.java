@@ -17,16 +17,16 @@ import java.util.Optional;
  */
 @Immutable
 @CopyableStyle
-public abstract class IcebergInstructions {
+public abstract class IcebergReadInstructions {
     /**
-     * The default {@link IcebergInstructions} to use when reading Iceberg data files. Providing this will use system
-     * defaults for cloud provider-specific parameters
+     * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
+     * system defaults for cloud provider-specific parameters
      */
     @SuppressWarnings("unused")
-    public static final IcebergInstructions DEFAULT = builder().build();
+    public static final IcebergReadInstructions DEFAULT = builder().build();
 
     public static Builder builder() {
-        return ImmutableIcebergInstructions.builder();
+        return ImmutableIcebergReadInstructions.builder();
     }
 
     /**
@@ -49,7 +49,7 @@ public abstract class IcebergInstructions {
     /**
      * Return a copy of this instructions object with the column renames replaced by {@code entries}.
      */
-    public abstract IcebergInstructions withColumnRenames(Map<String, ? extends String> entries);
+    public abstract IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries);
 
     /**
      * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
@@ -76,6 +76,6 @@ public abstract class IcebergInstructions {
         @SuppressWarnings("unused")
         Builder updateMode(IcebergUpdateMode updateMode);
 
-        IcebergInstructions build();
+        IcebergReadInstructions build();
     }
 }

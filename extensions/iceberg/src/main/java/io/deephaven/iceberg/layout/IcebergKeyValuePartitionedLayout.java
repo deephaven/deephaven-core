@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
@@ -49,7 +49,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final IcebergTableAdapter tableAdapter,
             @Nullable final Snapshot tableSnapshot,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         super(tableAdapter, tableSnapshot, instructions, dataInstructionsProvider);
 

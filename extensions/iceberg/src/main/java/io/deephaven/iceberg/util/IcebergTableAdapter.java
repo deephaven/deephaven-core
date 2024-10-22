@@ -243,7 +243,7 @@ public class IcebergTableAdapter {
      * @param instructions The instructions for customizations while reading (or null for default instructions)
      * @return The table definition
      */
-    public TableDefinition definition(@Nullable final IcebergInstructions instructions) {
+    public TableDefinition definition(@Nullable final IcebergReadInstructions instructions) {
         // Load the table from the catalog.
         return definition(null, instructions);
     }
@@ -258,7 +258,7 @@ public class IcebergTableAdapter {
      */
     public TableDefinition definition(
             final long snapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergReadInstructions instructions) {
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot =
                 snapshot(snapshotId).orElseThrow(() -> new IllegalArgumentException(
@@ -278,7 +278,7 @@ public class IcebergTableAdapter {
      */
     public TableDefinition definition(
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergReadInstructions instructions) {
 
         final Schema schema;
         final org.apache.iceberg.PartitionSpec partitionSpec;
@@ -296,7 +296,8 @@ public class IcebergTableAdapter {
             partitionSpec = table.spec();
         }
 
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergReadInstructions userInstructions =
+                instructions == null ? IcebergReadInstructions.DEFAULT : instructions;
 
         return fromSchema(schema,
                 partitionSpec,
@@ -320,7 +321,7 @@ public class IcebergTableAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
-    public Table definitionTable(@Nullable final IcebergInstructions instructions) {
+    public Table definitionTable(@Nullable final IcebergReadInstructions instructions) {
         return TableTools.metaTable(definition(null, instructions));
     }
 
@@ -334,7 +335,7 @@ public class IcebergTableAdapter {
      */
     public Table definitionTable(
             final long snapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergReadInstructions instructions) {
         return TableTools.metaTable(definition(snapshotId, instructions));
     }
 
@@ -348,7 +349,7 @@ public class IcebergTableAdapter {
      */
     public Table definitionTable(
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergReadInstructions instructions) {
         return TableTools.metaTable(definition(tableSnapshot, instructions));
     }
 
@@ -367,7 +368,7 @@ public class IcebergTableAdapter {
      * @param instructions The instructions for customizations while reading (or null for default instructions)
      * @return The loaded table
      */
-    public IcebergTable table(@Nullable final IcebergInstructions instructions) {
+    public IcebergTable table(@Nullable final IcebergReadInstructions instructions) {
         return table(null, instructions);
     }
 
@@ -388,7 +389,7 @@ public class IcebergTableAdapter {
      * @param instructions The instructions for customizations while reading (or null for default instructions)
      * @return The loaded table
      */
-    public IcebergTable table(final long tableSnapshotId, @Nullable final IcebergInstructions instructions) {
+    public IcebergTable table(final long tableSnapshotId, @Nullable final IcebergReadInstructions instructions) {
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot =
                 snapshot(tableSnapshotId).orElseThrow(() -> new IllegalArgumentException(
@@ -406,7 +407,7 @@ public class IcebergTableAdapter {
      */
     public IcebergTable table(
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergReadInstructions instructions) {
 
         final Snapshot snapshot;
         final Schema schema;
@@ -429,7 +430,8 @@ public class IcebergTableAdapter {
         }
 
         // Get default instructions if none are provided
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergReadInstructions userInstructions =
+                instructions == null ? IcebergReadInstructions.DEFAULT : instructions;
 
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
@@ -442,7 +444,7 @@ public class IcebergTableAdapter {
         final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
 
         // Create the final instructions with the legalized column renames.
-        final IcebergInstructions finalInstructions = userInstructions.withColumnRenames(legalizedColumnRenames);
+        final IcebergReadInstructions finalInstructions = userInstructions.withColumnRenames(legalizedColumnRenames);
 
         final IcebergBaseLayout keyFinder;
         if (partitionSpec.isUnpartitioned()) {
@@ -525,7 +527,7 @@ public class IcebergTableAdapter {
     private Map<String, String> getRenameColumnMap(
             @NotNull final org.apache.iceberg.Table table,
             @NotNull final Schema schema,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergReadInstructions instructions) {
 
         final Set<String> takenNames = new HashSet<>();
 

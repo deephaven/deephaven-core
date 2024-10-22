@@ -3,7 +3,7 @@
 #
 """ This module adds Iceberg table support into Deephaven. """
 from __future__ import annotations
-from typing import List, Optional, Union, Dict, Sequence
+from typing import Optional, Dict
 
 import jpy
 
@@ -14,7 +14,7 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 from deephaven.jcompat import j_hashmap
 
-_JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
+_JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
 _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
@@ -79,13 +79,13 @@ class IcebergUpdateMode(JObjectWrapper):
         return self._j_object
 
 
-class IcebergInstructions(JObjectWrapper):
+class IcebergReadInstructions(JObjectWrapper):
     """
     This class specifies the instructions for reading an Iceberg table into Deephaven. These include column rename
     instructions and table definitions, as well as special data instructions for loading data files from the cloud.
     """
 
-    j_object_type = _JIcebergInstructions
+    j_object_type = _JIcebergReadInstructions
 
     def __init__(self,
                  table_definition: Optional[TableDefinitionLike] = None,
@@ -199,12 +199,12 @@ class IcebergTableAdapter(JObjectWrapper):
         """
         return Table(self.j_object.snapshots())
 
-    def definition(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
+    def definition(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
         """
         Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
                 can include column renames, table definition, and specific data instructions for reading the data files
                 from the provider. If omitted, the table will be read with default instructions.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
@@ -220,13 +220,13 @@ class IcebergTableAdapter(JObjectWrapper):
             return Table(self.j_object.definitionTable(snapshot_id, instructions))
         return Table(self.j_object.definitionTable(instructions))
 
-    def table(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
+    def table(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
         """
         Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
         snapshot of the table.
 
         Args:
-            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
                 can include column renames, table definition, and specific data instructions for reading the data files
                 from the provider. If omitted, the table will be read in `static()` mode without column renames or data
                 instructions.

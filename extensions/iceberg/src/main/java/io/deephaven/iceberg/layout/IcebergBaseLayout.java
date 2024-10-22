@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
@@ -40,7 +40,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * The instructions for customizations while reading.
      */
-    final IcebergInstructions instructions;
+    final IcebergReadInstructions instructions;
 
     /**
      * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
@@ -83,7 +83,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     }
                 }
 
-                // Add the data instructions if provided as part of the IcebergInstructions.
+                // Add the data instructions if provided as part of the IcebergReadInstructions.
                 if (instructions.dataInstructions().isPresent()) {
                     builder.setSpecialInstructions(instructions.dataInstructions().get());
                 } else {
@@ -110,7 +110,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
             @Nullable final Snapshot tableSnapshot,
-            @NotNull final IcebergInstructions instructions,
+            @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
         this.snapshot = tableSnapshot;
