@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Message;
 import dagger.BindsInstance;
 import dagger.Component;
 import dagger.Module;
@@ -20,8 +21,25 @@ import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.server.runner.DeephavenApiServerTestBase.TestComponent.Builder;
 import io.grpc.ManagedChannel;
-import org.apache.arrow.flight.*;
+import org.apache.arrow.flight.Action;
+import org.apache.arrow.flight.ActionType;
+import org.apache.arrow.flight.CancelFlightInfoRequest;
+import org.apache.arrow.flight.Criteria;
+import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightConstants;
+import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightEndpoint;
+import org.apache.arrow.flight.FlightGrpcUtilsExtension;
+import org.apache.arrow.flight.FlightInfo;
+import org.apache.arrow.flight.FlightRuntimeException;
+import org.apache.arrow.flight.FlightStatusCode;
+import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.flight.ProtocolExposer;
+import org.apache.arrow.flight.Result;
+import org.apache.arrow.flight.SchemaResult;
+import org.apache.arrow.flight.Ticket;
 import org.apache.arrow.flight.auth.ClientAuthHandler;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlClient.PreparedStatement;
 import org.apache.arrow.flight.sql.FlightSqlClient.Savepoint;
@@ -73,7 +91,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
+import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -109,18 +129,76 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
 
+    private static final Map<String, String> DEEPHAVEN_SHORT = Map.of(
+            "deephaven:isSortable", "true",
+            "deephaven:isRowStyle", "false",
+            "deephaven:isPartitioning", "false",
+            "deephaven:type", "short",
+            "deephaven:isNumberFormat", "false",
+            "deephaven:isStyle", "false",
+            "deephaven:isDateFormat", "false");
+
     private static final Map<String, String> FLAT_ATTRIBUTES = Map.of(
             "deephaven:attribute_type.IsFlat", "java.lang.Boolean",
             "deephaven:attribute.IsFlat", "true");
 
-    private static final Field CATALOG_NAME_FIELD =
+    private static final Field CATALOG_NAME =
             new Field("catalog_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field PK_CATALOG_NAME =
+            new Field("pk_catalog_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field FK_CATALOG_NAME =
+            new Field("fk_catalog_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
     private static final Field DB_SCHEMA_NAME =
             new Field("db_schema_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field PK_DB_SCHEMA_NAME =
+            new Field("pk_db_schema_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field FK_DB_SCHEMA_NAME =
+            new Field("fk_db_schema_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
     private static final Field TABLE_NAME =
             new Field("table_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field COLUMN_NAME =
+            new Field("column_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field KEY_NAME =
+            new Field("key_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field PK_TABLE_NAME =
+            new Field("pk_table_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field FK_TABLE_NAME =
+            new Field("fk_table_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
     private static final Field TABLE_TYPE =
             new Field("table_type", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field PK_COLUMN_NAME =
+            new Field("pk_column_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field FK_COLUMN_NAME =
+            new Field("fk_column_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field KEY_SEQUENCE =
+            new Field("key_sequence", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null);
+
+    private static final Field PK_KEY_NAME =
+            new Field("pk_key_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field FK_KEY_NAME =
+            new Field("fk_key_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
+
+    private static final Field UPDATE_RULE =
+            new Field("update_rule", new FieldType(true, MinorType.SMALLINT.getType(), null, DEEPHAVEN_SHORT), null);
+
+    private static final Field DELETE_RULE =
+            new Field("delete_rule", new FieldType(true, MinorType.SMALLINT.getType(), null, DEEPHAVEN_SHORT), null);
+
     // private static final Field TABLE_SCHEMA =
     // new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
     // List.of(Field.nullable("", MinorType.TINYINT.getType())));
@@ -229,7 +307,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void getCatalogs() throws Exception {
-        final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD);
+        final Schema expectedSchema = flatTableSchema(CATALOG_NAME);
         {
             final SchemaResult schemaResult = flightSqlClient.getCatalogsSchema();
             assertThat(schemaResult.getSchema()).isEqualTo(expectedSchema);
@@ -244,7 +322,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void getSchemas() throws Exception {
-        final Schema expectedSchema = flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME);
+        final Schema expectedSchema = flatTableSchema(CATALOG_NAME, DB_SCHEMA_NAME);
         {
             final SchemaResult schemasSchema = flightSqlClient.getSchemasSchema();
             assertThat(schemasSchema.getSchema()).isEqualTo(expectedSchema);
@@ -268,8 +346,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         setBarTable();
         for (final boolean includeSchema : new boolean[] {false, true}) {
             final Schema expectedSchema = includeSchema
-                    ? flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE, TABLE_SCHEMA)
-                    : flatTableSchema(CATALOG_NAME_FIELD, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
+                    ? flatTableSchema(CATALOG_NAME, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE, TABLE_SCHEMA)
+                    : flatTableSchema(CATALOG_NAME, DB_SCHEMA_NAME, TABLE_NAME, TABLE_TYPE);
             {
                 final SchemaResult schema = flightSqlClient.getTablesSchema(includeSchema);
                 assertThat(schema.getSchema()).isEqualTo(expectedSchema);
@@ -488,6 +566,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 CommandStatementSubstraitPlan.getDescriptor());
         commandUnimplemented(() -> flightSqlClient.executeSubstrait(fakePlan()),
                 CommandStatementSubstraitPlan.getDescriptor());
+        misbehave(CommandStatementSubstraitPlan.getDefaultInstance(), CommandStatementSubstraitPlan.getDescriptor());
         unpackable(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
     }
 
@@ -547,6 +626,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void getSqlInfo() {
         getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), CommandGetSqlInfo.getDescriptor());
         commandUnimplemented(() -> flightSqlClient.getSqlInfo(), CommandGetSqlInfo.getDescriptor());
+        misbehave(CommandGetSqlInfo.getDefaultInstance(), CommandGetSqlInfo.getDescriptor());
         unpackable(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
     }
 
@@ -554,6 +634,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void getXdbcTypeInfo() {
         getSchemaUnimplemented(() -> flightSqlClient.getXdbcTypeInfoSchema(), CommandGetXdbcTypeInfo.getDescriptor());
         commandUnimplemented(() -> flightSqlClient.getXdbcTypeInfo(), CommandGetXdbcTypeInfo.getDescriptor());
+        misbehave(CommandGetXdbcTypeInfo.getDefaultInstance(), CommandGetXdbcTypeInfo.getDescriptor());
         unpackable(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
     }
 
@@ -565,33 +646,130 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 CommandGetCrossReference.getDescriptor());
         commandUnimplemented(() -> flightSqlClient.getCrossReference(FOO_TABLE_REF, BAR_TABLE_REF),
                 CommandGetCrossReference.getDescriptor());
+        misbehave(CommandGetCrossReference.getDefaultInstance(), CommandGetCrossReference.getDescriptor());
         unpackable(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
     }
 
     @Test
-    public void getPrimaryKeys() {
+    public void getPrimaryKeys() throws Exception {
         setFooTable();
-        getSchemaUnimplemented(() -> flightSqlClient.getPrimaryKeysSchema(), CommandGetPrimaryKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getPrimaryKeys(FOO_TABLE_REF),
-                CommandGetPrimaryKeys.getDescriptor());
+        final Schema expectedSchema =
+                flatTableSchema(CATALOG_NAME, DB_SCHEMA_NAME, TABLE_NAME, COLUMN_NAME, KEY_NAME, KEY_SEQUENCE);
+        {
+            final SchemaResult exportedKeysSchema = flightSqlClient.getPrimaryKeysSchema();
+            assertThat(exportedKeysSchema.getSchema()).isEqualTo(expectedSchema);
+        }
+        {
+            final FlightInfo info = flightSqlClient.getPrimaryKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            consume(info, 0, 0, true);
+        }
+        // Note: the info must remain valid even if the server state goes away.
+        {
+            final FlightInfo info = flightSqlClient.getPrimaryKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            removeFooTable();
+            // resolve should still be OK
+            consume(info, 0, 0, true);
+        }
+        expectException(() -> flightSqlClient.getPrimaryKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
+                "FlightSQL table not found");
+
+        // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
+        // information on whether the tables actually exist or not since the returned table is always empty.
+        for (final CommandGetPrimaryKeys command : new CommandGetPrimaryKeys[] {
+                CommandGetPrimaryKeys.newBuilder().setTable("DoesNotExist").build(),
+                CommandGetPrimaryKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
+                        .setTable("DoesNotExist").build()
+        }) {
+            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
+                consume(stream, 0, 0);
+            }
+        }
         unpackable(CommandGetPrimaryKeys.getDescriptor(), CommandGetPrimaryKeys.class);
     }
 
     @Test
-    public void getExportedKeys() {
+    public void getExportedKeys() throws Exception {
         setFooTable();
-        getSchemaUnimplemented(() -> flightSqlClient.getExportedKeysSchema(), CommandGetExportedKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getExportedKeys(FOO_TABLE_REF),
-                CommandGetExportedKeys.getDescriptor());
+        final Schema expectedSchema = flatTableSchema(PK_CATALOG_NAME, PK_DB_SCHEMA_NAME, PK_TABLE_NAME, PK_COLUMN_NAME,
+                FK_CATALOG_NAME, FK_DB_SCHEMA_NAME, FK_TABLE_NAME, FK_COLUMN_NAME, KEY_SEQUENCE, FK_KEY_NAME,
+                PK_KEY_NAME, UPDATE_RULE, DELETE_RULE);
+        {
+            final SchemaResult exportedKeysSchema = flightSqlClient.getExportedKeysSchema();
+            assertThat(exportedKeysSchema.getSchema()).isEqualTo(expectedSchema);
+        }
+        {
+            final FlightInfo info = flightSqlClient.getExportedKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            consume(info, 0, 0, true);
+        }
+        // Note: the info must remain valid even if the server state goes away.
+        {
+            final FlightInfo info = flightSqlClient.getExportedKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            removeFooTable();
+            // resolve should still be OK
+            consume(info, 0, 0, true);
+        }
+        expectException(() -> flightSqlClient.getExportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
+                "FlightSQL table not found");
+
+        // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
+        // information on whether the tables actually exist or not since the returned table is always empty.
+        for (final CommandGetExportedKeys command : new CommandGetExportedKeys[] {
+                CommandGetExportedKeys.newBuilder().setTable("DoesNotExist").build(),
+                CommandGetExportedKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
+                        .setTable("DoesNotExist").build()
+        }) {
+            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
+                consume(stream, 0, 0);
+            }
+        }
         unpackable(CommandGetExportedKeys.getDescriptor(), CommandGetExportedKeys.class);
     }
 
     @Test
-    public void getImportedKeys() {
+    public void getImportedKeys() throws Exception {
         setFooTable();
-        getSchemaUnimplemented(() -> flightSqlClient.getImportedKeysSchema(), CommandGetImportedKeys.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getImportedKeys(FOO_TABLE_REF),
-                CommandGetImportedKeys.getDescriptor());
+        final Schema expectedSchema = flatTableSchema(PK_CATALOG_NAME, PK_DB_SCHEMA_NAME, PK_TABLE_NAME, PK_COLUMN_NAME,
+                FK_CATALOG_NAME, FK_DB_SCHEMA_NAME, FK_TABLE_NAME, FK_COLUMN_NAME, KEY_SEQUENCE, FK_KEY_NAME,
+                PK_KEY_NAME, UPDATE_RULE, DELETE_RULE);
+        {
+            final SchemaResult importedKeysSchema = flightSqlClient.getImportedKeysSchema();
+            assertThat(importedKeysSchema.getSchema()).isEqualTo(expectedSchema);
+        }
+        {
+            final FlightInfo info = flightSqlClient.getImportedKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            consume(info, 0, 0, true);
+        }
+        // Note: the info must remain valid even if the server state goes away.
+        {
+            final FlightInfo info = flightSqlClient.getImportedKeys(FOO_TABLE_REF);
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            removeFooTable();
+            // resolve should still be OK
+            consume(info, 0, 0, true);
+        }
+
+        expectException(() -> flightSqlClient.getImportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
+                "FlightSQL table not found");
+
+        // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
+        // information on whether the tables actually exist or not since the returned table is always empty.
+        for (final CommandGetImportedKeys command : new CommandGetImportedKeys[] {
+                CommandGetImportedKeys.newBuilder().setTable("DoesNotExist").build(),
+                CommandGetImportedKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
+                        .setTable("DoesNotExist").build()
+        }) {
+            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
+                consume(stream, 0, 0);
+            }
+        }
         unpackable(CommandGetImportedKeys.getDescriptor(), CommandGetImportedKeys.class);
     }
 
@@ -704,6 +882,16 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         return result;
     }
 
+    private void misbehave(Message message, Descriptor descriptor) {
+        final Ticket ticket = ProtocolExposer.fromProtocol(Flight.Ticket.newBuilder()
+                .setTicket(
+                        ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX}).concat(Any.pack(message).toByteString()))
+                .build());
+        expectException(() -> flightSqlClient.getStream(ticket).next(), FlightStatusCode.INVALID_ARGUMENT,
+                String.format("FlightSQL client is misbehaving, should use getInfo for command '%s'",
+                        descriptor.getFullName()));
+    }
+
     private static FlightDescriptor unpackableCommand(Descriptor descriptor) {
         return unpackableCommand("type.googleapis.com/" + descriptor.getFullName());
     }
@@ -804,10 +992,22 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         setSimpleTable("barTable", "Bar");
     }
 
+    private static void removeFooTable() {
+        removeTable("foo_table");
+    }
+
+    private static void removeBarTable() {
+        removeTable("barTable");
+    }
+
     private static void setSimpleTable(String tableName, String columnName) {
         final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt(columnName));
         final Table table = TableTools.newTable(td, TableTools.intCol(columnName, 1, 2, 3));
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
+    }
+
+    private static void removeTable(String tableName) {
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, null);
     }
 
     private void consume(FlightInfo info, int expectedFlightCount, int expectedNumRows, boolean expectReusable)

@@ -94,6 +94,10 @@ public class FlightSqlTicketResolverTest {
         checkDefinition(CommandGetTableTypesConstants.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
         checkDefinition(CommandGetCatalogsConstants.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
         checkDefinition(FlightSqlResolver.CommandGetDbSchemasConstants.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
+        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_IMPORTED_KEYS_SCHEMA);
+        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_EXPORTED_KEYS_SCHEMA);
+        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_CROSS_REFERENCE_SCHEMA);
+
         // TODO: we can't use the straight schema b/c it's BINARY not byte[], and we don't know how to natively map
         // checkDefinition(CommandGetTablesImpl.DEFINITION, Schemas.GET_TABLES_SCHEMA);
         checkDefinition(FlightSqlResolver.CommandGetTablesConstants.DEFINITION_NO_SCHEMA,

@@ -7,7 +7,6 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
@@ -239,6 +238,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     private static final String TABLE_TYPE = "table_type";
     private static final String TABLE_NAME = "table_name";
     private static final String TABLE_SCHEMA = "table_schema";
+    private static final String COLUMN_NAME = "column_name";
+    private static final String KEY_NAME = "key_name";
+    private static final String KEY_SEQUENCE = "key_sequence";
 
     private static final String TABLE_TYPE_TABLE = "TABLE";
 
@@ -320,14 +322,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     String.format("Unsupported descriptor type '%s'", descriptor.getType()));
         }
         final Any command = parseOrThrow(descriptor.getCmd());
-        return session.<FlightInfo>nonExport().submit(() -> flightInfo(session, descriptor, command));
+        return session.<FlightInfo>nonExport().submit(() -> getInfo(session, descriptor, command));
     }
 
-    private FlightInfo flightInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
+    private FlightInfo getInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
         // todo scope nugget perf
-        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), false);
+        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), true);
         final TicketHandler ticketHandler = commandHandler.initialize(command);
-        return ticketHandler.flightInfo(descriptor);
+        return ticketHandler.getInfo(descriptor);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -344,7 +346,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     }
 
     private Table resolve(final SessionState session, final Any message) {
-        return ticketHandler(session, message).takeTable(session);
+        return ticketHandler(session, message).resolve(session);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -432,15 +434,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     interface TicketHandler {
 
-        FlightInfo flightInfo(FlightDescriptor descriptor);
+        FlightInfo getInfo(FlightDescriptor descriptor);
 
-        Table takeTable(SessionState session);
+        Table resolve(SessionState session);
     }
 
-    private CommandHandler commandHandler(SessionState session, String typeUrl, boolean fromTicket) {
+    private CommandHandler commandHandler(SessionState session, String typeUrl, boolean forFlightInfo) {
         switch (typeUrl) {
             case COMMAND_STATEMENT_QUERY_TYPE_URL:
-                if (fromTicket) {
+                if (!forFlightInfo) {
                     // This should not happen with well-behaved clients; or it means there is a bug in our
                     // command/ticket logic
                     throw error(Code.INVALID_ARGUMENT, "Invalid ticket; please ensure client is using opaque ticket");
@@ -454,10 +456,18 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return CommandGetCatalogsConstants.HANDLER;
             case COMMAND_GET_DB_SCHEMAS_TYPE_URL:
                 return CommandGetDbSchemasConstants.HANDLER;
+            case COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
+                return commandGetPrimaryKeysHandler;
+            case COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
+                return commandGetImportedKeysHandler;
+            case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
+                return commandGetExportedKeysHandler;
             case COMMAND_GET_TABLES_TYPE_URL:
                 return new CommandGetTablesImpl();
             case COMMAND_STATEMENT_UPDATE_TYPE_URL:
                 return new UnsupportedCommand<>(CommandStatementUpdate.class);
+            case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
+                return new UnsupportedCommand<>(CommandGetCrossReference.class);
             case COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
                 return new UnsupportedCommand<>(CommandStatementSubstraitPlan.class);
             case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
@@ -465,14 +475,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             case COMMAND_GET_SQL_INFO_TYPE_URL:
                 // Need dense_union support to implement this.
                 return new UnsupportedCommand<>(CommandGetSqlInfo.class);
-            case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetCrossReference.class);
-            case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetExportedKeys.class);
-            case COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetImportedKeys.class);
-            case COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetPrimaryKeys.class);
             case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
                 return new UnsupportedCommand<>(CommandGetXdbcTypeInfo.class);
         }
@@ -491,7 +493,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
             return ticketHandler;
         }
-        final CommandHandler commandHandler = commandHandler(session, typeUrl, true);
+        final CommandHandler commandHandler = commandHandler(session, typeUrl, false);
         try {
             return commandHandler.initialize(message);
         } catch (StatusRuntimeException e) {
@@ -528,7 +530,20 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             this.clazz = Objects.requireNonNull(clazz);
         }
 
-        void check(T command) {
+        /**
+         * This is called as the first part of {@link TicketHandler#getInfo(FlightDescriptor)} for the handler returned
+         * during {@link #initialize(Any)}. It can be used as an early signal to let clients know that the command is
+         * not supported, or one of the arguments is not valid.
+         */
+        void checkForGetInfo(T command) {
+
+        }
+
+        /**
+         * This is called as the first part of {@link TicketHandler#resolve(SessionState)} for the handler returned
+         * during {@link #initialize(Any)}.
+         */
+        void checkForResolve(T command) {
 
         }
 
@@ -553,7 +568,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         @Override
         public final TicketHandler initialize(Any any) {
             final T command = unpackOrThrow(any, clazz);
-            check(command);
             return new TicketHandlerFixed(command);
         }
 
@@ -565,7 +579,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
 
             @Override
-            public FlightInfo flightInfo(FlightDescriptor descriptor) {
+            public FlightInfo getInfo(FlightDescriptor descriptor) {
+                checkForGetInfo(command);
                 return FlightInfo.newBuilder()
                         .setFlightDescriptor(descriptor)
                         .setSchema(schemaBytes(command))
@@ -579,7 +594,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
 
             @Override
-            public Table takeTable(SessionState session) {
+            public Table resolve(SessionState session) {
+                checkForResolve(command);
                 final Table table = CommandHandlerFixedBase.this.table(command);
                 final long totalRecords = totalRecords();
                 if (totalRecords != -1) {
@@ -603,25 +619,32 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        void check(T command) {
+        void checkForGetInfo(T command) {
             final Descriptor descriptor = command.getDescriptorForType();
             throw error(Code.UNIMPLEMENTED,
                     String.format("FlightSQL command '%s' is unimplemented", descriptor.getFullName()));
         }
 
         @Override
+        void checkForResolve(T command) {
+            final Descriptor descriptor = command.getDescriptorForType();
+            throw error(Code.INVALID_ARGUMENT, String.format(
+                    "FlightSQL client is misbehaving, should use getInfo for command '%s'", descriptor.getFullName()));
+        }
+
+        @Override
         Ticket ticket(T command) {
-            throw new UnsupportedOperationException();
+            throw new IllegalStateException();
         }
 
         @Override
         ByteString schemaBytes(T command) {
-            throw new UnsupportedOperationException();
+            throw new IllegalStateException();
         }
 
         @Override
         public Table table(T command) {
-            throw new UnsupportedOperationException();
+            throw new IllegalStateException();
         }
     }
 
@@ -705,12 +728,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public synchronized final FlightInfo flightInfo(FlightDescriptor descriptor) {
+        public synchronized final FlightInfo getInfo(FlightDescriptor descriptor) {
             return TicketRouter.getFlightInfo(table, descriptor, ticket());
         }
 
         @Override
-        public synchronized final Table takeTable(SessionState session) {
+        public synchronized final Table resolve(SessionState session) {
             try {
                 if (!this.session.equals(session)) {
                     throw unauthenticatedError();
@@ -871,27 +894,157 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 ColumnDefinition.ofString(DB_SCHEMA_NAME));
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
-        private static final FieldDescriptor GET_DB_SCHEMAS_FILTER_PATTERN =
-                CommandGetDbSchemas.getDescriptor()
-                        .findFieldByNumber(CommandGetDbSchemas.DB_SCHEMA_FILTER_PATTERN_FIELD_NUMBER);
-
         public static final CommandHandler HANDLER =
-                new CommandStaticTable<>(CommandGetDbSchemas.class, TABLE, FlightSqlTicketHelper::ticketFor) {
-                    @Override
-                    void check(CommandGetDbSchemas command) {
-                        // Note: even though we technically support this field right now since we _always_ return empty,
-                        // this is a
-                        // defensive check in case there is a time in the future where we have catalogs and forget to
-                        // update this
-                        // method.
-//                        if (command.hasDbSchemaFilterPattern()) {
-//                            throw error(Code.INVALID_ARGUMENT,
-//                                    String.format("FlightSQL %s not supported at this time",
-//                                            CommandGetDbSchemasConstants.GET_DB_SCHEMAS_FILTER_PATTERN));
-//                        }
-                    }
-                };
+                new CommandStaticTable<>(CommandGetDbSchemas.class, TABLE, FlightSqlTicketHelper::ticketFor);
     }
+
+    @VisibleForTesting
+    static final class CommandGetKeysConstants {
+
+        @VisibleForTesting
+        static final TableDefinition DEFINITION = TableDefinition.of(
+                ColumnDefinition.ofString("pk_catalog_name"),
+                ColumnDefinition.ofString("pk_db_schema_name"),
+                ColumnDefinition.ofString("pk_table_name"),
+                ColumnDefinition.ofString("pk_column_name"),
+                ColumnDefinition.ofString("fk_catalog_name"),
+                ColumnDefinition.ofString("fk_db_schema_name"),
+                ColumnDefinition.ofString("fk_table_name"),
+                ColumnDefinition.ofString("fk_column_name"),
+                ColumnDefinition.ofInt(KEY_SEQUENCE),
+                ColumnDefinition.ofString("fk_key_name"),
+                ColumnDefinition.ofString("pk_key_name"),
+                // TODO: these would ideally be better as bytes, but we would need better config wrt
+                // io.deephaven.extensions.barrage.util.BarrageUtil.getDefaultType
+                ColumnDefinition.ofShort("update_rule"),
+                ColumnDefinition.ofShort("delete_rule"));
+
+        private static final Map<String, Object> ATTRIBUTES = Map.of();
+        private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
+    }
+
+    @VisibleForTesting
+    static final class CommandGetPrimaryKeysConstants {
+
+        @VisibleForTesting
+        static final TableDefinition DEFINITION = TableDefinition.of(
+                ColumnDefinition.ofString(CATALOG_NAME),
+                ColumnDefinition.ofString(DB_SCHEMA_NAME),
+                ColumnDefinition.ofString(TABLE_NAME),
+                ColumnDefinition.ofString(COLUMN_NAME),
+                ColumnDefinition.ofString(KEY_NAME),
+                ColumnDefinition.ofInt(KEY_SEQUENCE));
+
+        private static final Map<String, Object> ATTRIBUTES = Map.of();
+        private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
+    }
+
+    private boolean hasTable(String catalog, String dbSchema, String table) {
+        if (catalog != null && !catalog.isEmpty()) {
+            return false;
+        }
+        if (dbSchema != null && !dbSchema.isEmpty()) {
+            return false;
+        }
+        final Object obj;
+        {
+            final QueryScope scope = ExecutionContext.getContext().getQueryScope();
+            try {
+                obj = scope.readParamValue(table);
+            } catch (QueryScope.MissingVariableException e) {
+                return false;
+            }
+        }
+        if (!(obj instanceof Table)) {
+            return false;
+        }
+        return authorization.transform((Table) obj) != null;
+    }
+
+    private final CommandHandler commandGetPrimaryKeysHandler = new CommandStaticTable<>(CommandGetPrimaryKeys.class,
+            CommandGetPrimaryKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
+        @Override
+        void checkForGetInfo(CommandGetPrimaryKeys command) {
+            if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
+                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
+                // We need to pretend that CommandGetPrimaryKeys.getDefaultInstance() is a valid command until we can
+                // plumb getSchema through to the resolvers.
+                return;
+            }
+            if (!hasTable(
+                    command.hasCatalog() ? command.getCatalog() : null,
+                    command.hasDbSchema() ? command.getDbSchema() : null,
+                    command.getTable())) {
+                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+            }
+        }
+
+        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
+        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
+        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
+        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
+        // for client.
+        // @Override
+        // void checkForResolve(CommandGetPrimaryKeys command) {
+        // }
+    };
+
+    private final CommandHandler commandGetImportedKeysHandler = new CommandStaticTable<>(CommandGetImportedKeys.class,
+            CommandGetKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
+        @Override
+        void checkForGetInfo(CommandGetImportedKeys command) {
+            if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
+                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
+                // We need to pretend that CommandGetImportedKeys.getDefaultInstance() is a valid command until we can
+                // plumb getSchema through to the resolvers.
+                return;
+            }
+            if (!hasTable(
+                    command.hasCatalog() ? command.getCatalog() : null,
+                    command.hasDbSchema() ? command.getDbSchema() : null,
+                    command.getTable())) {
+                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+            }
+        }
+
+        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
+        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
+        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
+        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
+        // for client.
+        // @Override
+        // void checkForResolve(CommandGetImportedKeys command) {
+        // }
+    };
+
+    private final CommandHandler commandGetExportedKeysHandler = new CommandStaticTable<>(CommandGetExportedKeys.class,
+            CommandGetKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
+        @Override
+        void checkForGetInfo(CommandGetExportedKeys command) {
+            if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
+                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
+                // We need to pretend that CommandGetExportedKeys.getDefaultInstance() is a valid command until we can
+                // plumb getSchema through to the resolvers.
+                return;
+            }
+            if (!hasTable(
+                    command.hasCatalog() ? command.getCatalog() : null,
+                    command.hasDbSchema() ? command.getDbSchema() : null,
+                    command.getTable())) {
+                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+            }
+        }
+
+        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
+        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
+        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
+        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
+        // for client.
+        // @Override
+        // void checkForResolve(CommandGetExportedKeys command) {
+        //
+        // }
+    };
 
     @VisibleForTesting
     static final class CommandGetTablesConstants {
@@ -914,35 +1067,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 BarrageUtil.schemaBytesFromTableDefinition(DEFINITION_NO_SCHEMA, ATTRIBUTES, true);
         private static final ByteString SCHEMA_BYTES =
                 BarrageUtil.schemaBytesFromTableDefinition(DEFINITION, ATTRIBUTES, true);
-        private static final FieldDescriptor GET_TABLES_DB_SCHEMA_FILTER_PATTERN =
-                CommandGetTables.getDescriptor()
-                        .findFieldByNumber(CommandGetTables.DB_SCHEMA_FILTER_PATTERN_FIELD_NUMBER);
-        private static final FieldDescriptor GET_TABLES_TABLE_NAME_FILTER_PATTERN =
-                CommandGetTables.getDescriptor()
-                        .findFieldByNumber(CommandGetTables.TABLE_NAME_FILTER_PATTERN_FIELD_NUMBER);
     }
 
     private class CommandGetTablesImpl extends CommandHandlerFixedBase<CommandGetTables> {
 
         CommandGetTablesImpl() {
             super(CommandGetTables.class);
-        }
-
-        @Override
-        void check(CommandGetTables command) {
-//            if (command.hasDbSchemaFilterPattern()) {
-//                throw error(Code.INVALID_ARGUMENT,
-//                        String.format("FlightSQL %s not supported at this time",
-//                                CommandGetTablesConstants.GET_TABLES_DB_SCHEMA_FILTER_PATTERN));
-//            }
-//            FILTER_PATTERN: if (command.hasTableNameFilterPattern()) {
-//                if ("%".equals(command.getTableNameFilterPattern())) {
-//                    break FILTER_PATTERN;
-//                }
-////                throw error(Code.INVALID_ARGUMENT,
-////                        String.format("FlightSQL %s not supported at this time",
-////                                CommandGetTablesConstants.GET_TABLES_TABLE_NAME_FILTER_PATTERN));
-//            }
         }
 
         @Override
@@ -985,7 +1115,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     : TableTools.newTable(CommandGetTablesConstants.DEFINITION_NO_SCHEMA, attributes);
         }
 
-        private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes, Predicate<String> tableNameFilter) {
+        private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes,
+                Predicate<String> tableNameFilter) {
             Objects.requireNonNull(attributes);
             final Map<String, Table> queryScopeTables =
                     (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);

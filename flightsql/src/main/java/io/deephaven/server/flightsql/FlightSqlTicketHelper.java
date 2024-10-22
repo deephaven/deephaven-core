@@ -5,25 +5,20 @@ package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.rpc.Code;
-import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.Exceptions;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Ticket;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 final class FlightSqlTicketHelper {
 
@@ -68,7 +63,23 @@ final class FlightSqlTicketHelper {
         return packedTicket(command);
     }
 
+    public static Ticket ticketFor(FlightSql.CommandGetImportedKeys command) {
+        return packedTicket(command);
+    }
+
+    public static Ticket ticketFor(FlightSql.CommandGetExportedKeys command) {
+        return packedTicket(command);
+    }
+
+    public static Ticket ticketFor(FlightSql.CommandGetPrimaryKeys command) {
+        return packedTicket(command);
+    }
+
     public static Flight.Ticket ticketFor(CommandGetTables command) {
+        return packedTicket(command);
+    }
+
+    public static Flight.Ticket ticketFor(FlightSql.CommandGetSqlInfo command) {
         return packedTicket(command);
     }
 

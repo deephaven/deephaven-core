@@ -43,4 +43,12 @@ public final class ProtocolExposer {
     public static FlightDescriptor fromProtocol(Flight.FlightDescriptor descriptor) {
         return new FlightDescriptor(descriptor);
     }
+
+    public static Flight.Ticket toProtocol(Ticket ticket) {
+        return ticket.toProtocol();
+    }
+
+    public static Ticket fromProtocol(Flight.Ticket ticket) {
+        return new Ticket(ticket);
+    }
 }
