@@ -426,11 +426,15 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     protected void destroy() {
         super.destroy();
         for (final EmptyTableLocationEntry entry : emptyTableLocations.values()) {
-            entry.subscriptionBuffer.reset();
+            if (entry.subscriptionBuffer != null) {
+                entry.subscriptionBuffer.reset();
+            }
         }
         emptyTableLocations.clear();
         for (final IncludedTableLocationEntry entry : includedTableLocations.values()) {
-            entry.subscriptionBuffer.reset();
+            if (entry.subscriptionBuffer != null) {
+                entry.subscriptionBuffer.reset();
+            }
         }
         includedTableLocations.clear();
     }

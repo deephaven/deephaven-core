@@ -165,6 +165,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     @Override
     public void tearDown() throws Exception {
         try {
+            allowLivenessRelease();
             super.tearDown();
         } finally {
             if (coalesced != null) {
@@ -172,6 +173,22 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 coalesced = null;
             }
         }
+    }
+
+    private void allowLivenessRelease() {
+        checking(new Expectations() {
+            {
+                allowing(locationProvider).supportsSubscriptions();
+                allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
+                will(returnValue(true));
+                for (int li = 0; li < tableLocations.length; ++li) {
+                    final TableLocation tableLocation = tableLocations[li];
+                    allowing(tableLocation).supportsSubscriptions();
+                    will(returnValue(true));
+                    allowing(tableLocation).unsubscribe(with(any(TableLocation.Listener.class)));
+                }
+            }
+        });
     }
 
     private Map<String, ? extends ColumnSource<?>> getIncludedColumnsMap(final int... indices) {
@@ -396,6 +413,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         errorNotification.reset();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
+            allowLivenessRelease();
             SUT.refresh();
             updateGraph.markSourcesRefreshedForUnitTests();
         }, false);
