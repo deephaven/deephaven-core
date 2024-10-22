@@ -60,6 +60,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     private final Map<String, ? extends ColumnSource<?>> sharedColumnSources =
             Collections.unmodifiableMap(columnSources);
 
+
     /**
      * State for table locations that have been added, but have never been found to exist with non-zero size.
      */
@@ -419,6 +420,19 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @Override
     public final Map<String, ? extends ColumnSource<?>> getColumnSources() {
         return sharedColumnSources;
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        for (final EmptyTableLocationEntry entry : emptyTableLocations.values()) {
+            entry.subscriptionBuffer.reset();
+        }
+        emptyTableLocations.clear();
+        for (final IncludedTableLocationEntry entry : includedTableLocations.values()) {
+            entry.subscriptionBuffer.reset();
+        }
+        includedTableLocations.clear();
     }
 
     /**

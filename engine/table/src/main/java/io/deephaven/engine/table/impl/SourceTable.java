@@ -70,7 +70,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     /**
      * The update source object for refreshing locations and location sizes.
      */
-    private Runnable locationChangePoller;
+    private LocationChangePoller locationChangePoller;
 
     /**
      * Construct a new disk-backed table.
@@ -312,6 +312,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         if (updateSourceRegistrar != null) {
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
+                locationChangePoller.locationBuffer.reset();
             }
         }
     }

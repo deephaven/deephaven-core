@@ -223,11 +223,6 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         with liveness_scope():
             table = data_service.make_table(TableKey("test"), live=True)
             self.wait_ticking_table_update(table, 100, 5)
-        #     table = None
-        #
-        # garbage_collect()
-        # time.sleep(10)
-        # print(backend.partitions_size_subscriptions.values())
         self.assertEqual(backend.sub_new_partition_cancelled, 1)
         self.assertFalse(all(backend.partitions_size_subscriptions.values()))
 

@@ -68,7 +68,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
             } else {
-                // NB: Providers that don't support subscriptions don't tick - this single call to run is
+                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is
                 // sufficient.
                 tableLocationProvider.refresh();
                 tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);
