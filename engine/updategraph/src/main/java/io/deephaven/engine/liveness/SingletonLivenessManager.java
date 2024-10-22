@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 /**
  * {@link ReleasableLivenessManager} to manage exactly one object, passed at construction time or managed later.
@@ -58,6 +59,32 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
             referent.dropReference();
             throw new UnsupportedOperationException("SingletonLivenessManager can only manage one referent");
         }
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     * @implNote This is equivalent to {@link #release()} if {@code referent} is the one managed by this manager.
+     */
+    @Override
+    public boolean tryUnmanage(@NotNull LivenessReferent referent) {
+        final WeakReference<? extends LivenessReferent> localRetainedReference;
+        if (!Liveness.REFERENCE_TRACKING_DISABLED
+                && (localRetainedReference = retainedReference) != null
+                && localRetainedReference.get() == referent) {
+            release();
+        }
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     * @implNote This is equivalent to {@link #release()} if any element of {@code referents} is the one managed by this
+     *           manager.
+     */
+    @Override
+    public boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        referents.forEach(this::tryUnmanage);
         return true;
     }
 
