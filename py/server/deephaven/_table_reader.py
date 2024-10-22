@@ -62,7 +62,7 @@ def _table_reader_all(table: Table, cols: Optional[Union[str, Sequence[str]]] = 
     col_defs = _col_defs(table, cols)
 
     col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
-    j_reader_context = _JTableUpdateDataReader.makeContext(row_set.size(), *col_sources)
+    j_reader_context = _JTableUpdateDataReader.makeContext(min(4096, row_set.size()), *col_sources)
     with update_graph.auto_locking_ctx(table):
         try:
             j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, row_set, col_sources, prev)

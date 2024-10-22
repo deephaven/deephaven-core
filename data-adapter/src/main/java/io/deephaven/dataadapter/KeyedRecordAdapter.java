@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.util.ToMapListener;
 import io.deephaven.dataadapter.consumers.*;
-import io.deephaven.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.dataadapter.locking.GetDataLockType;
 import io.deephaven.dataadapter.locking.QueryDataRetrievalOperation;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
@@ -92,9 +91,6 @@ public class KeyedRecordAdapter<K, T> {
     private final String[] keyColumns;
 
     @NotNull
-    protected final SingleRowRecordAdapter<T> singleRowRecordAdapter;
-
-    @NotNull
     protected final MultiRowRecordAdapter<T> multiRowRecordAdapter;
 
     /**
@@ -110,7 +106,6 @@ public class KeyedRecordAdapter<K, T> {
      */
     protected final boolean isSingleKeyCol;
     protected final List<Class<?>> keyColumnTypesList;
-    private final RecordAdapterDescriptor<T> rowRecordAdapterDescriptor;
 
     /**
      * Create a KeyedRecordAdapter that translates rows of {@code sourceTable} into instances of type {@code T} using
@@ -128,7 +123,6 @@ public class KeyedRecordAdapter<K, T> {
         }
 
         this.keyColumns = keyColumns;
-        this.rowRecordAdapterDescriptor = rowRecordAdapterDescriptor;
 
         isSingleKeyCol = keyColumns.length == 1;
 
@@ -137,6 +131,12 @@ public class KeyedRecordAdapter<K, T> {
 
         // use tuples as ToMapListener keys
         tupleSource = isSingleKeyCol ? null : TupleSourceFactory.makeTupleSource(keyColumnSources);
+        // TODO: use io.deephaven.engine.table.impl.by.AggregationRowLookup.get. But read its documentation! e.g. about reinterpreting. you can get this for any aggregation result
+        // To get teh AggregationRowLookup, use io.deephaven.engine.table.impl.by.AggregationProcessor.getRowLookup. Call it on the exact table you're going to get data from (ie. the lastBy result itself).
+        // Also, might need to do some magic to make sure this thing is turned on. (Making a ContextFactory??)
+        // TODO: ticket about tracking the key columns of a table? or rather, 'automatically add data indexes to agg results'
+
+        // TODO: for also look at io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex.computeTable / io.deephaven.engine.table.impl.dataindex.TableBackedDataIndex.rowKeyLookup
         toMapListener = ToMapListener.make(
                 sourceTable,
                 isSingleKeyCol ? keyColumnSources[0]::get : tupleSource::createTuple,
@@ -150,6 +150,7 @@ public class KeyedRecordAdapter<K, T> {
         // ToMapListener's baselineMap/currentMap stuff.
         // I bet it's specifically broken to introduce the notification-awareness but
         // to only pay attention to the table.
+        // TODO: don't use ToMapListener and the confusion goes away. make sure that the notificationSources are either: (1) the lastBy table, or (2) both the DataIndex.table() and the source table
         final NotificationStepSource notificationSource =
                 sourceTable instanceof BaseTable ? (BaseTable) sourceTable : null;
         // final NotificationStepSource notificationSource = toMapListener;
@@ -176,12 +177,11 @@ public class KeyedRecordAdapter<K, T> {
 
         final RecordAdapterDescriptor<T> recordAdapterDescriptorNoKeys = recordAdapterDescriptorBuilderNoKeys.build();
 
-        singleRowRecordAdapter = recordAdapterDescriptorNoKeys.createSingleRowRecordAdapter(sourceTable);
         multiRowRecordAdapter = recordAdapterDescriptorNoKeys.createMultiRowRecordAdapter(sourceTable);
 
         final Class<?>[] keyColumnTypes =
                 Arrays.stream(keyColumnSources).map(ColumnSource::getType).toArray(Class[]::new);
-        keyColumnTypesList = Collections.unmodifiableList(Arrays.asList(keyColumnTypes));
+        keyColumnTypesList = List.of(keyColumnTypes);
 
         // Set the dataKeyToMapKey, dataKeysListToMapKeys, and updateRecordWithKeyData lambdas depending on
         // whether the key is a simple key from a single column or a composite key from multiple columns:
@@ -469,12 +469,7 @@ public class KeyedRecordAdapter<K, T> {
      * @return A record containing data for the key, if the key is present in the table. Otherwise, {@code null}.
      */
     public T getRecord(K dataKey) {
-        final Object mapKey = dataKeyToMapKey.apply(dataKey);
-        final T result = singleRecordLockedRetriever(mapKey);
-        if (result != null) {
-            updateRecordWithKeyData(result, dataKey);
-        }
-        return result;
+        return getRecords(dataKey).get(dataKey);
     }
 
     /**
@@ -511,19 +506,6 @@ public class KeyedRecordAdapter<K, T> {
         if (recordKeyDataUpdater != null) {
             recordKeyDataUpdater.accept(record, dataKey);
         }
-    }
-
-    private T singleRecordLockedRetriever(final Object mapKey) {
-        final MutableObject<T> result = new MutableObject<>();
-        DO_LOCKED_FUNCTION.accept(
-                usePrev -> {
-                    result.setValue(toMapListener.get(
-                            mapKey,
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, false),
-                            k -> singleRowRecordAdapter.retrieveDataSingleKey(k, true)));
-                    return true;
-                }, "KeyedRecordAdapter.getRecord()");
-        return result.getValue();
     }
 
     @SuppressWarnings("unused")

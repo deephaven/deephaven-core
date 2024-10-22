@@ -67,10 +67,10 @@ public class DefaultMultiRowRecordAdapter<T> extends BaseMultiRowRecordAdapter<T
 
     }
 
-    public void populateRecords(final T[] results, final Object[] recordDataArrs) {
+    public void populateRecords(final T[] results, final Object[] dataArrs) {
         // Populate the records with the data, one column at a time.
         for (int ii = 0; ii < nCols; ii++) {
-            Object arr = recordDataArrs[ii];
+            Object arr = dataArrs[ii];
             // noinspection unchecked
             arrayToRecordAdapters[ii].updateRecordsFromArr(results.length, results, arr);
         }

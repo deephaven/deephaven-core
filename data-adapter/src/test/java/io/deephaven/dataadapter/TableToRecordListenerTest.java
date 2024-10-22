@@ -61,8 +61,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                 TableTools.doubleCol("DoubleCol", 1.1d, QueryConstants.NULL_DOUBLE, 3.3d, 4.4d));
         TableTools.show(source);
 
-        Queue<ObjectNode> addedUpdated = new ConcurrentLinkedDeque<>();
-        Queue<ObjectNode> removed = new ConcurrentLinkedDeque<>();
+        Queue<ObjectNode> addedModified = new ConcurrentLinkedDeque<>();
+        Queue<ObjectNode> removedModifiedPrev = new ConcurrentLinkedDeque<>();
 
         ReentrantLock l = !async ? null : new ReentrantLock();
         Condition recordsProcessedCondition = !async ? null : l.newCondition();
@@ -77,10 +77,11 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
                         JsonRecordAdapterUtil.createJsonRecordAdapterDescriptor(source,
                                 Arrays.asList("KeyCol1", "KeyCol2", "StringCol", "CharCol", "ByteCol", "ShortCol",
                                         "IntCol", "FloatCol", "LongCol", "DoubleCol")),
-                        addedUpdated::add,
-                        removed::add,
+                        addedModified::add,
+                        removedModifiedPrev::add,
                         processInitialData,
                         async,
+                        // TODO: wtf was this for?
                         !async ? null : nUpdatesProcessed -> {
                             try {
                                 l.lock();
@@ -119,7 +120,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
             };
         }
 
-        ObjectNode record = addedUpdated.remove();
+        ObjectNode record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyA", record.get("KeyCol1").textValue());
@@ -133,7 +134,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(10_000_000_000L, record.get("LongCol").longValue());
         assertEquals(1.1d, record.get("DoubleCol").doubleValue());
 
-        record = addedUpdated.remove();
+        record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
@@ -147,7 +148,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(NULL_JSON_NODE, record.get("LongCol"));
         assertEquals(NULL_JSON_NODE, record.get("DoubleCol"));
 
-        record = addedUpdated.remove();
+        record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyA", record.get("KeyCol1").textValue());
@@ -161,7 +162,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(30_000_000_000L, record.get("LongCol").longValue());
         assertEquals(3.3d, record.get("DoubleCol").doubleValue());
 
-        record = addedUpdated.remove();
+        record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
@@ -175,8 +176,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(40_000_000_000L, record.get("LongCol").longValue());
         assertEquals(4.4d, record.get("DoubleCol").doubleValue());
 
-        assertTrue(addedUpdated.isEmpty());
-        assertTrue(removed.isEmpty());
+        assertTrue(addedModified.isEmpty());
+        assertTrue(removedModifiedPrev.isEmpty());
 
         // modify a row
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -198,7 +199,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         awaitRecordProcessing.run();
 
         // check the new row at the modified index
-        record = addedUpdated.remove();
+        record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
@@ -213,7 +214,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(9.9d, record.get("DoubleCol").doubleValue());
 
         // check the old row at the modified index
-        record = removed.remove();
+        record = removedModifiedPrev.remove();
         assertNotNull(record);
 
         assertEquals("KeyB", record.get("KeyCol1").textValue());
@@ -227,8 +228,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(NULL_JSON_NODE, record.get("LongCol"));
         assertEquals(NULL_JSON_NODE, record.get("DoubleCol"));
 
-        assertTrue(addedUpdated.isEmpty());
-        assertTrue(removed.isEmpty());
+        assertTrue(addedModified.isEmpty());
+        assertTrue(removedModifiedPrev.isEmpty());
 
         // remove a row
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -239,7 +240,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         awaitRecordProcessing.run();
 
-        record = removed.remove();
+        record = removedModifiedPrev.remove();
         assertNotNull(record);
 
         assertEquals("KeyA", record.get("KeyCol1").textValue());
@@ -253,8 +254,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(30_000_000_000L, record.get("LongCol").longValue());
         assertEquals(3.3d, record.get("DoubleCol").doubleValue());
 
-        assertTrue(addedUpdated.isEmpty());
-        assertTrue(removed.isEmpty());
+        assertTrue(addedModified.isEmpty());
+        assertTrue(removedModifiedPrev.isEmpty());
 
         // add a row (same one that was removed, but new index)
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -275,7 +276,7 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
 
         awaitRecordProcessing.run();
 
-        record = addedUpdated.remove();
+        record = addedModified.remove();
         assertNotNull(record);
 
         assertEquals("KeyA", record.get("KeyCol1").textValue());
@@ -289,8 +290,8 @@ public class TableToRecordListenerTest extends RefreshingTableTestCase {
         assertEquals(30_000_000_000L, record.get("LongCol").longValue());
         assertEquals(3.3d, record.get("DoubleCol").doubleValue());
 
-        assertTrue(addedUpdated.isEmpty());
-        assertTrue(removed.isEmpty());
+        assertTrue(addedModified.isEmpty());
+        assertTrue(removedModifiedPrev.isEmpty());
     }
 
 }

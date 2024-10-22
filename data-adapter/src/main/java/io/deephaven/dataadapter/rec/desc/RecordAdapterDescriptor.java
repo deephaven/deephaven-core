@@ -6,7 +6,6 @@ package io.deephaven.dataadapter.rec.desc;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
-import io.deephaven.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.updaters.RecordUpdater;
 import io.deephaven.dataadapter.rec.updaters.ObjRecordUpdater;
@@ -69,16 +68,8 @@ public interface RecordAdapterDescriptor<T> {
     @NotNull
     T getEmptyRecord();
 
-    default SingleRowRecordAdapter<T> createSingleRowRecordAdapter(Table sourceTable) {
-        return getSingleRowAdapterSupplier().apply(sourceTable, this);
-    }
-
     default MultiRowRecordAdapter<T> createMultiRowRecordAdapter(Table sourceTable) {
         return getMultiRowAdapterSupplier().apply(sourceTable, this);
-    }
-
-    default BiFunction<Table, RecordAdapterDescriptor<T>, SingleRowRecordAdapter<T>> getSingleRowAdapterSupplier() {
-        return SingleRowRecordAdapter::create;
     }
 
     default BiFunction<Table, RecordAdapterDescriptor<T>, MultiRowRecordAdapter<T>> getMultiRowAdapterSupplier() {

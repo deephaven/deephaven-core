@@ -5,7 +5,6 @@ package io.deephaven.dataadapter.rec.desc;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.datafetch.bulk.DefaultMultiRowRecordAdapter;
-import io.deephaven.dataadapter.datafetch.single.SingleRowRecordAdapter;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.updaters.*;
 import org.jetbrains.annotations.NotNull;
@@ -26,8 +25,6 @@ public class RecordAdapterDescriptorBuilder<R> {
     private final Map<String, RecordUpdater<R, ?>> colNameToAdapterMap = new LinkedHashMap<>();
     private final Supplier<R> emptyRecordSupplier;
 
-    private BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier =
-            SingleRowRecordAdapter::create;
     private BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier =
             DefaultMultiRowRecordAdapter::create;
 
@@ -57,7 +54,6 @@ public class RecordAdapterDescriptorBuilder<R> {
     public static <T> RecordAdapterDescriptorBuilder<T> create(RecordAdapterDescriptor<T> base) {
         final RecordAdapterDescriptorBuilder<T> copy = new RecordAdapterDescriptorBuilder<>(base::getEmptyRecord);
         copy.colNameToAdapterMap.putAll(base.getColumnAdapters());
-        copy.singleRowAdapterSupplier = base.getSingleRowAdapterSupplier();
         copy.multiRowAdapterSupplier = base.getMultiRowAdapterSupplier();
         return copy;
     }
@@ -130,11 +126,6 @@ public class RecordAdapterDescriptorBuilder<R> {
         return colNameToAdapterMap.remove(colName);
     }
 
-    public void setSingleRowAdapterSupplier(
-            @NotNull BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier) {
-        this.singleRowAdapterSupplier = singleRowAdapterSupplier;
-    }
-
     public void setMultiRowAdapterSupplier(
             @NotNull BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
         this.multiRowAdapterSupplier = multiRowAdapterSupplier;
@@ -144,7 +135,6 @@ public class RecordAdapterDescriptorBuilder<R> {
         return new RecordAdapterDescriptorImpl<R>(
                 Collections.unmodifiableMap(new LinkedHashMap<>(colNameToAdapterMap)),
                 emptyRecordSupplier,
-                singleRowAdapterSupplier,
                 multiRowAdapterSupplier);
     }
 
@@ -153,17 +143,14 @@ public class RecordAdapterDescriptorBuilder<R> {
         private final Map<String, RecordUpdater<R, ?>> colNameToAdapterMap;
         private final Supplier<R> emptyRecordSupplier;
 
-        private final BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier;
         private final BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier;
 
         private RecordAdapterDescriptorImpl(
                 Map<String, RecordUpdater<R, ?>> colNameToAdapterMap,
                 Supplier<R> emptyRecordSupplier,
-                BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> singleRowAdapterSupplier,
                 BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> multiRowAdapterSupplier) {
             this.colNameToAdapterMap = colNameToAdapterMap;
             this.emptyRecordSupplier = emptyRecordSupplier;
-            this.singleRowAdapterSupplier = singleRowAdapterSupplier;
             this.multiRowAdapterSupplier = multiRowAdapterSupplier;
         }
 
@@ -176,10 +163,6 @@ public class RecordAdapterDescriptorBuilder<R> {
         @Override
         public R getEmptyRecord() {
             return emptyRecordSupplier.get();
-        }
-
-        public BiFunction<Table, RecordAdapterDescriptor<R>, SingleRowRecordAdapter<R>> getSingleRowAdapterSupplier() {
-            return singleRowAdapterSupplier;
         }
 
         public BiFunction<Table, RecordAdapterDescriptor<R>, MultiRowRecordAdapter<R>> getMultiRowAdapterSupplier() {

@@ -57,18 +57,6 @@ public interface TableDataArrayRetriever {
     void fillDataArrays(boolean usePrev, RowSet tableIndex, Object[] dataArrs, LongConsumer keyConsumer);
 
     static TableDataArrayRetriever makeDefault(final ColumnSource<?>... columnSources) {
-        try {
-            final TableDataRetrieverGenerator tableDataRetrieverGenerator =
-                    new TableDataRetrieverGenerator(columnSources);
-            // noinspection unchecked
-            final Class<? extends AbstractGeneratedTableDataArrayRetriever> tableDataRetrieverClass =
-                    (Class<? extends AbstractGeneratedTableDataArrayRetriever>) tableDataRetrieverGenerator.generate();
-
-            final Constructor<? extends AbstractGeneratedTableDataArrayRetriever> tableDataRetrieverConstructor =
-                    tableDataRetrieverClass.getConstructor(ColumnSource[].class);
-            return tableDataRetrieverConstructor.newInstance((Object) columnSources);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not create generated table data retriever", ex);
-        }
+        return new TableDataArrayRetrieverImpl(columnSources);
     }
 }

@@ -9,13 +9,14 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
 import io.deephaven.dataadapter.rec.json.JsonRecordAdapterGenerator;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Adapter to convert multiple rows of table data into instances of {@code T}.
  * <p>
  * The {@link DefaultMultiRowRecordAdapter} implementation will work for all datatypes. More efficient implementations
- * can be created manually (like {@link ExampleGeneratedMultiRowDataArrayRetriever}) or generated (as
- * {@link JsonRecordAdapterGenerator} does for JSON {@code ObjectNode} records).
+ * can be created manually or generated (as {@link JsonRecordAdapterGenerator} does for JSON {@code ObjectNode}
+ * records).
  *
  * @param <T> The record data type.
  */
@@ -54,7 +55,7 @@ public abstract class BaseMultiRowRecordAdapter<T> implements MultiRowRecordAdap
         return tableDataArrayRetriever;
     }
 
-    public T[] createRecordsFromData(final Object[] recordDataArrs, final int nRecords) {
+    public T[] createRecordsFromData(@NotNull final Object[] recordDataArrs, final int nRecords) {
         Assert.eq(recordDataArrs.length, "recordDataArrs.length", nCols, "nCols");
         final T[] results = createEmptyRecordsArr(nRecords);
 

@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.dataadapter.datafetch.bulk.TableDataArrayRetriever;
 import io.deephaven.dataadapter.rec.MultiRowRecordAdapter;
 import io.deephaven.dataadapter.rec.desc.RecordAdapterDescriptor;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,9 +77,11 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
      * @param recordsProcessedListener Listener notified when record processing is complete, after the
      *        {@link #recordConsumer}/{@link #removedRecordConsumer} are called for a batch of records. If not
      *        {@code null}, this is invoked at the end of {@link #onUpdate} when {@code async==false}, and after each
-     *        time the queue is drained/processed when {@code async==true}.
+     *        time the queue is drained/processed when {@code async==true}. For example, a {@link TerminalNotification}
+     *        can be added to the update graph for further processing at the end of the cycle.
      */
-    public TableToRecordListener(@NotNull final String description,
+    public TableToRecordListener(
+            @NotNull final String description,
             @NotNull final Table table,
             @NotNull final RecordAdapterDescriptor<T> recordAdapterDescriptor,
             @NotNull final Consumer<T> recordConsumer,
@@ -201,6 +204,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
      */
     @Override
     public void onUpdate(TableUpdate upstream) {
+        //noinspection resource
         final RowSet newRecordsIndex = upstream.added().union(upstream.modified());
         final int newRecordsSize = newRecordsIndex.intSize();
 
@@ -217,7 +221,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
             dataArraysRemoved = tableDataArrayRetriever.createDataArrays(removedRecordsSize);
             tableDataArrayRetriever.fillDataArrays(true, dataArraysRemoved, removedRecordsIndex);
         } else {
-            removedRecordsSize = 0;
+            removedRecordsSize = Integer.MIN_VALUE;
             dataArraysRemoved = null;
         }
 
@@ -226,14 +230,14 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
                 Assert.eqFalse(isShutdown.get(), "isShutdown");
                 recordsQueue.add(new TableUpdates(UpdateType.ADDED_UPDATED, newRecordsSize, dataArraysAddModify));
                 if (processRemoved) {
-                    recordsQueue.add(new TableUpdates(UpdateType.REMOVED, removedRecordsSize, dataArraysRemoved));
+                    recordsQueue.add(new TableUpdates(UpdateType.REMOVED_REPLACED, removedRecordsSize, dataArraysRemoved));
                 }
                 recordsQueue.notify();
             }
         } else {
             processUpdateRecords(UpdateType.ADDED_UPDATED, newRecordsSize, dataArraysAddModify);
             if (processRemoved) {
-                processUpdateRecords(UpdateType.REMOVED, removedRecordsSize, dataArraysRemoved);
+                processUpdateRecords(UpdateType.REMOVED_REPLACED, removedRecordsSize, dataArraysRemoved);
             }
 
             notifyUpdatesProcessed(newRecordsSize + removedRecordsSize);
@@ -244,7 +248,7 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
         processUpdateRecords(tableDataUpdates.updateType, tableDataUpdates.nUpdates, tableDataUpdates.dataArrays);
     }
 
-    private void processUpdateRecords(final UpdateType updateType, final int nUpdates, final Object[] dataArrays) {
+    private void processUpdateRecords(@NotNull final UpdateType updateType, final int nUpdates, @NotNull final Object[] dataArrays) {
         final T[] records = recordAdapter.createRecordsFromData(dataArrays, nUpdates);
         final Consumer<T> updateConsumer =
                 updateType == UpdateType.ADDED_UPDATED ? recordConsumer : removedRecordConsumer;
@@ -253,16 +257,43 @@ public class TableToRecordListener<T> extends InstrumentedTableUpdateListenerAda
         }
     }
 
-    enum UpdateType {
-        ADDED_UPDATED, REMOVED
+    /**
+     * Shut down this {@code TableToRecordsListener} by removing the listener from its source table and, if running in
+     * asynchronous mode, marking that it has been shut down so that the processing thread can exit.
+     */
+    public void shutdown() {
+        super.source.removeUpdateListener(this);
+        if (isShutdown != null) {
+            isShutdown.set(true);
+        }
     }
 
-    private static class TableUpdates {
-        private final UpdateType updateType;
-        private final int nUpdates;
-        private final Object[] dataArrays;
+    public enum UpdateType {
+        /**
+         * Records from the current data in the table, i.e. current values in new rows or rows that were modified
+         */
+        ADDED_UPDATED,
+        /**
+         * Records from the previous data in the table, i.e. removed rows or the 'old' values in rows that were modified
+         */
+        REMOVED_REPLACED
+    }
 
-        private TableUpdates(UpdateType updateType, int nUpdates, Object[] dataArrays) {
+    public static class TableUpdates {
+
+        public final UpdateType updateType;
+
+        /**
+         * The number of updates (i.e. the length of all arrays in {@link #dataArrays}
+         */
+        public final int nUpdates;
+
+        /**
+         * An array of typed arrays of data corresponding to the updates.
+         */
+        public final Object[] dataArrays;
+
+        private TableUpdates(final UpdateType updateType, final int nUpdates, final Object[] dataArrays) {
             this.updateType = updateType;
             this.nUpdates = nUpdates;
             this.dataArrays = dataArrays;
