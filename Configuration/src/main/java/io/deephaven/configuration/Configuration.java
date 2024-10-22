@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class to provide an enhanced view and common access point for java properties files, as well as common
@@ -27,7 +28,7 @@ public class Configuration extends PropertyFile {
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
     private static Configuration DEFAULT;
-    private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new HashMap<>();
+    private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new ConcurrentHashMap<>();
 
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
@@ -81,40 +82,26 @@ public class Configuration extends PropertyFile {
     }
 
     /**
-     * Get the {@link Configuration} for the specified name. If a unique property file is not set using the
-     * `Configuration.name.rootFile` property then this will fall back to the Default configuration file.
+     * Get the {@link Configuration} for the specified name.
      *
      * @param name the name of the configuration to load
-     * @return the named configuration, or the default if no named configuration was defined.
+     * @return the named configuration.
+     * @throws ConfigurationException if the named configuration could not be loaded.
      */
-    public static Configuration getNamedOrDefault(@NotNull final String name) {
+    public static Configuration getNamed(@NotNull final String name) throws ConfigurationException {
         if (DEFAULT_CONF_NAME.equals(name)) {
             return getInstance();
         }
 
-        Configuration instance = NAMED_CONFIGURATIONS.get(name);
-        if (instance != null) {
-            return instance;
-        }
-
-        // We could use a ConcurrentHashMap, but loading configuration can take significant time, and it
-        // seems wasteful to add contention to every Configuration.getInstance().
-        synchronized (Configuration.class) {
-            instance = NAMED_CONFIGURATIONS.get(name);
-            if (instance != null) {
-                return instance;
-            }
-
+        return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
             try {
-                instance = new NamedConfiguration(name);
+                final Configuration instance = new NamedConfiguration(name);
                 init(instance);
+                return instance;
             } catch (ConfigurationException ex) {
-                // We couldn't load the named one, try to fall back to default.
-                instance = getInstance();
+                throw new ConfigurationException("Unable to load named configuration " + name, ex);
             }
-            NAMED_CONFIGURATIONS.put(name, instance);
-            return instance;
-        }
+        });
     }
 
     private static void init(@NotNull final Configuration configuration) {
