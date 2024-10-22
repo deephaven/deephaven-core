@@ -20,6 +20,8 @@ _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
+_JIcebergDefinitionTable = jpy.get_type("io.deephaven.iceberg.util.IcebergDefinitionTable")
+_JIcebergReadTable = jpy.get_type("io.deephaven.iceberg.util.IcebergReadTable")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -213,12 +215,16 @@ class IcebergTableAdapter(JObjectWrapper):
             a table containing the table definition.
         """
 
-        if instructions:
-            instructions = instructions.j_object
+        builder = _JIcebergDefinitionTable.builder()
 
         if snapshot_id is not None:
-            return Table(self.j_object.definitionTable(snapshot_id, instructions))
-        return Table(self.j_object.definitionTable(instructions))
+            builder.tableSnapshotId(snapshot_id)
+
+        if instructions is not None:
+            builder.instructions(instructions.j_object)
+
+        return Table(self.j_object.definitionTable(builder.build()))
+
 
     def table(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
         """
@@ -236,12 +242,15 @@ class IcebergTableAdapter(JObjectWrapper):
             Table: the table read from the catalog.
         """
 
-        if instructions:
-            instructions = instructions.j_object
+        builder = _JIcebergReadTable.builder()
 
-        if snapshot_id:
-            return IcebergTable(self.j_object.table(snapshot_id, instructions))
-        return IcebergTable(self.j_object.table(instructions))
+        if snapshot_id is not None:
+            builder.tableSnapshotId(snapshot_id)
+
+        if instructions is not None:
+            builder.instructions(instructions.j_object)
+
+        return IcebergTable(self.j_object.table(builder.build()))
 
     @property
     def j_object(self) -> jpy.JType:
