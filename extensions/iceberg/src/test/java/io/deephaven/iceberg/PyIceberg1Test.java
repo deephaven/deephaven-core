@@ -85,12 +85,12 @@ public class PyIceberg1Test {
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
             final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
-                    .tableSnapshotId(SNAPSHOT_1_ID)
+                    .snapshotId(SNAPSHOT_1_ID)
                     .build());
             assertThat(td).isEqualTo(CITIES_1_TD);
 
             cities1 = tableAdapter.table(IcebergReadInstructions.builder()
-                    .tableSnapshotId(SNAPSHOT_1_ID)
+                    .snapshotId(SNAPSHOT_1_ID)
                     .build());
             assertThat(cities1.getDefinition()).isEqualTo(CITIES_1_TD);
         }
@@ -107,12 +107,12 @@ public class PyIceberg1Test {
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
             final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
-                    .tableSnapshotId(SNAPSHOT_2_ID)
+                    .snapshotId(SNAPSHOT_2_ID)
                     .build());
             assertThat(td).isEqualTo(CITIES_2_TD);
 
             cities2 = tableAdapter.table(IcebergReadInstructions.builder()
-                    .tableSnapshotId(SNAPSHOT_2_ID)
+                    .snapshotId(SNAPSHOT_2_ID)
                     .build());
             assertThat(cities2.getDefinition()).isEqualTo(CITIES_2_TD);
         }

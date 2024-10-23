@@ -20,8 +20,6 @@ _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
-_JIcebergDefinitionTable = jpy.get_type("io.deephaven.iceberg.util.IcebergDefinitionTable")
-_JIcebergReadTable = jpy.get_type("io.deephaven.iceberg.util.IcebergReadTable")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -93,7 +91,8 @@ class IcebergReadInstructions(JObjectWrapper):
                  table_definition: Optional[TableDefinitionLike] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None,
-                 update_mode: Optional[IcebergUpdateMode] = None):
+                 update_mode: Optional[IcebergUpdateMode] = None,
+                 snapshot_id: Optional[int] = None):
         """
         Initializes the instructions using the provided parameters.
 
@@ -107,6 +106,7 @@ class IcebergReadInstructions(JObjectWrapper):
                 the output table.
             update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
                 mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -127,6 +127,9 @@ class IcebergReadInstructions(JObjectWrapper):
 
             if update_mode:
                 builder.updateMode(update_mode.j_object)
+
+            if snapshot_id:
+                builder.snapshotId(snapshot_id)
 
             self._j_object = builder.build()
         except Exception as e:
@@ -201,7 +204,7 @@ class IcebergTableAdapter(JObjectWrapper):
         """
         return Table(self.j_object.snapshots())
 
-    def definition(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
+    def definition(self, instructions: Optional[IcebergReadInstructions] = None) -> Table:
         """
         Returns the Deephaven table definition as a Deephaven table.
 
@@ -209,24 +212,16 @@ class IcebergTableAdapter(JObjectWrapper):
             instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
                 can include column renames, table definition, and specific data instructions for reading the data files
                 from the provider. If omitted, the table will be read with default instructions.
-            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
             a table containing the table definition.
         """
 
-        builder = _JIcebergDefinitionTable.builder()
-
-        if snapshot_id is not None:
-            builder.tableSnapshotId(snapshot_id)
-
         if instructions is not None:
-            builder.instructions(instructions.j_object)
+            return Table(self.j_object.definitionTable(instructions.j_object))
+        return Table(self.j_object.definitionTable())
 
-        return Table(self.j_object.definitionTable(builder.build()))
-
-
-    def table(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
+    def table(self, instructions: Optional[IcebergReadInstructions] = None) -> IcebergTable:
         """
         Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
         snapshot of the table.
@@ -236,21 +231,15 @@ class IcebergTableAdapter(JObjectWrapper):
                 can include column renames, table definition, and specific data instructions for reading the data files
                 from the provider. If omitted, the table will be read in `static()` mode without column renames or data
                 instructions.
-            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
             Table: the table read from the catalog.
         """
 
-        builder = _JIcebergReadTable.builder()
-
-        if snapshot_id is not None:
-            builder.tableSnapshotId(snapshot_id)
-
         if instructions is not None:
-            builder.instructions(instructions.j_object)
+            return IcebergTable(self.j_object.table(instructions.j_object))
+        return IcebergTable(self.j_object.table())
 
-        return IcebergTable(self.j_object.table(builder.build()))
 
     @property
     def j_object(self) -> jpy.JType:

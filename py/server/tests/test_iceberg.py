@@ -72,3 +72,7 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(col_names[1] == "x")
         self.assertTrue(col_names[2] == "y")
         self.assertTrue(col_names[3] == "z")
+
+    def test_instruction_create_with_snapshot_id(self):
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(snapshot_id=12345)
+        self.assertTrue(iceberg_read_instructions.j_object.snapshotId().get() == 12345)

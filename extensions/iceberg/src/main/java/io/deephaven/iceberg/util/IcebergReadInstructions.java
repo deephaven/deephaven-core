@@ -67,11 +67,16 @@ public abstract class IcebergReadInstructions {
      * {@link Snapshot#snapshotId()} should match this. Otherwise, only one of them should be provided. If neither is
      * provided, the latest snapshot will be loaded.
      */
-    public abstract OptionalLong tableSnapshotId();
+    public abstract OptionalLong snapshotId();
 
     /**
-     * The snapshot to load for reading. If both this and {@link #tableSnapshotId()} are provided, the
-     * {@link Snapshot#snapshotId()} should match the {@link #tableSnapshotId()}. Otherwise, only one of them should be
+     * Return a copy of this instructions object with the snapshot ID replaced by {@code value}.
+     */
+    public abstract IcebergReadInstructions withSnapshotId(long value);
+
+    /**
+     * The snapshot to load for reading. If both this and {@link #snapshotId()} are provided, the
+     * {@link Snapshot#snapshotId()} should match the {@link #snapshotId()}. Otherwise, only one of them should be
      * provided. If neither is provided, the latest snapshot will be loaded.
      */
     public abstract Optional<Snapshot> snapshot();
@@ -92,7 +97,7 @@ public abstract class IcebergReadInstructions {
 
         Builder updateMode(IcebergUpdateMode updateMode);
 
-        Builder tableSnapshotId(long tableSnapshotId);
+        Builder snapshotId(long snapshotId);
 
         Builder snapshot(Snapshot snapshot);
 
@@ -101,10 +106,10 @@ public abstract class IcebergReadInstructions {
 
     @Value.Check
     final void checkSnapshotId() {
-        if (tableSnapshotId().isPresent() && snapshot().isPresent() &&
-                tableSnapshotId().getAsLong() != snapshot().get().snapshotId()) {
-            throw new IllegalArgumentException("If both tableSnapshotId and snapshot are provided, the snapshotId " +
-                    "must match");
+        if (snapshotId().isPresent() && snapshot().isPresent() &&
+                snapshotId().getAsLong() != snapshot().get().snapshotId()) {
+            throw new IllegalArgumentException("If both snapshotID and snapshot are provided, the snapshot Ids " +
+                    "must match, found " + snapshotId().getAsLong() + " and " + snapshot().get().snapshotId());
         }
     }
 }

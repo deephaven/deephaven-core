@@ -236,10 +236,10 @@ public class IcebergTableAdapter {
     private Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
         if (readInstructions.snapshot().isPresent()) {
             return readInstructions.snapshot().get();
-        } else if (readInstructions.tableSnapshotId().isPresent()) {
-            return snapshot(readInstructions.tableSnapshotId().getAsLong())
+        } else if (readInstructions.snapshotId().isPresent()) {
+            return snapshot(readInstructions.snapshotId().getAsLong())
                     .orElseThrow(() -> new IllegalArgumentException(
-                            "Snapshot with id " + readInstructions.tableSnapshotId().getAsLong() + " not found for " +
+                            "Snapshot with id " + readInstructions.snapshotId().getAsLong() + " not found for " +
                                     "table " + tableIdentifier));
         }
         return null;
