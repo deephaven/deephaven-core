@@ -267,7 +267,7 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, update the
+     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, populate the
      * read instructions with the requested snapshot, or the latest snapshot if none is requested.
      */
     private SpecAndSchema getSpecAndSchema(@NotNull IcebergReadInstructions readInstructions) {
