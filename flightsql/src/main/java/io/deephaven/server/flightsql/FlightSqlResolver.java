@@ -22,9 +22,8 @@ import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.hash.KeyedLongObjectHashMap;
-import io.deephaven.hash.KeyedLongObjectKey;
-import io.deephaven.hash.KeyedLongObjectKey.BasicStrict;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
@@ -96,7 +95,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.time.Duration;
 import java.time.Instant;
@@ -107,11 +105,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -274,19 +272,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private static final Logger log = LoggerFactory.getLogger(FlightSqlResolver.class);
 
-    private static final KeyedLongObjectKey<QueryBase> QUERY_KEY = new BasicStrict<>() {
-        @Override
-        public long getLongKey(QueryBase queryBase) {
-            return queryBase.handleId;
-        }
-    };
+    private static final KeyedObjectKey<ByteString, QueryBase> QUERY_KEY =
+            new KeyedObjectKey.BasicAdapter<>(QueryBase::handleId);
 
-    private static final KeyedLongObjectKey<PreparedStatement> PREPARED_STATEMENT_KEY = new BasicStrict<>() {
-        @Override
-        public long getLongKey(PreparedStatement preparedStatement) {
-            return preparedStatement.handleId;
-        }
-    };
+    private static final KeyedObjectKey<ByteString, PreparedStatement> PREPARED_STATEMENT_KEY =
+            new KeyedObjectKey.BasicAdapter<>(PreparedStatement::handleId);
 
     @VisibleForTesting
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
@@ -312,9 +302,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     // private final TicketRouter router;
     private final ScopeTicketResolver scopeTicketResolver;
     private final ScheduledExecutorService scheduler;
-    private final AtomicLong handleIdGenerator;
-    private final KeyedLongObjectHashMap<QueryBase> queries;
-    private final KeyedLongObjectHashMap<PreparedStatement> preparedStatements;
+    private final KeyedObjectHashMap<ByteString, QueryBase> queries;
+    private final KeyedObjectHashMap<ByteString, PreparedStatement> preparedStatements;
 
     @Inject
     public FlightSqlResolver(
@@ -324,9 +313,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
         this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
         this.scheduler = Objects.requireNonNull(scheduler);
-        this.handleIdGenerator = new AtomicLong(100_000_000);
-        this.queries = new KeyedLongObjectHashMap<>(QUERY_KEY);
-        this.preparedStatements = new KeyedLongObjectHashMap<>(PREPARED_STATEMENT_KEY);
+        this.queries = new KeyedObjectHashMap<>(QUERY_KEY);
+        this.preparedStatements = new KeyedObjectHashMap<>(PREPARED_STATEMENT_KEY);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -503,7 +491,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         @Override
         public Table call() {
             handler = export.get();
-            if (!handler.isAuthorized(session)) {
+            if (!handler.isOwner(session)) {
                 throw new IllegalStateException("Expected TicketHandler to already be authorized for session");
             }
             return handler.resolve();
@@ -674,7 +662,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     interface TicketHandler {
 
-        boolean isAuthorized(SessionState session);
+        boolean isOwner(SessionState session);
 
         FlightInfo getInfo(FlightDescriptor descriptor);
 
@@ -731,10 +719,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final String typeUrl = message.getTypeUrl();
         if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
             final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
-            final TicketHandler ticketHandler = queries.get(id(ticketStatementQuery));
-            if (ticketHandler == null || !ticketHandler.isAuthorized(session)) {
+            final TicketHandler ticketHandler = queries.get(ticketStatementQuery.getStatementHandle());
+            if (ticketHandler == null) {
                 throw error(Code.NOT_FOUND,
                         "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
+            }
+            if (!ticketHandler.isOwner(session)) {
+                // We should not be concerned about returning "NOT_FOUND" here; the handleId is sufficiently random that
+                // it is much more likely an authentication setup issue.
+                throw permissionDeniedWithHelpfulMessage();
             }
             return ticketHandler;
         }
@@ -762,7 +755,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
             table.retainReference();
-            //scope.manage(table);
+            // scope.manage(table);
             return table;
         }
     }
@@ -832,7 +825,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
 
             @Override
-            public boolean isAuthorized(SessionState session) {
+            public boolean isOwner(SessionState session) {
                 return true;
             }
 
@@ -887,7 +880,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public boolean isAuthorized(SessionState session) {
+        public boolean isOwner(SessionState session) {
             return true;
         }
 
@@ -904,19 +897,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     }
 
-    public static long id(TicketStatementQuery query) {
-        if (query.getStatementHandle().size() != 8) {
-            throw error(Code.INVALID_ARGUMENT, "Invalid FlightSQL ticket handle");
-        }
-        return query.getStatementHandle()
-                .asReadOnlyByteBuffer()
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .getLong();
-    }
-
     // TODO: consider this owning Table instead (SingletonLivenessManager or has + patch from Ryan)
     abstract class QueryBase implements CommandHandler, TicketHandlerReleasable {
-        private final long handleId;
+        private final ByteString handleId;
         protected final SessionState session;
 
         private ScheduledFuture<?> watchdog;
@@ -928,10 +911,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         protected Table table;
 
         QueryBase(SessionState session) {
-            this.handleId = handleIdGenerator.getAndIncrement();
+            this.handleId = ByteString.copyFromUtf8(UUID.randomUUID().toString());
             this.session = Objects.requireNonNull(session);
-            //this.manager = new SingletonLivenessManager();
+            // this.manager = new SingletonLivenessManager();
             queries.put(handleId, this);
+        }
+
+        public ByteString handleId() {
+            return handleId;
         }
 
         @Override
@@ -988,7 +975,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // ----------------------------------------------------------------------------------------------------------
 
         @Override
-        public final boolean isAuthorized(SessionState session) {
+        public final boolean isOwner(SessionState session) {
             return this.session.equals(session);
         }
 
@@ -1017,7 +1004,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // ----------------------------------------------------------------------------------------------------------
 
         private void onWatchdog() {
-            log.debug().append("Watchdog cleaning up query ").append(handleId).endl();
+            log.debug().append("Watchdog cleaning up query ").append(handleId.toString()).endl();
             cleanup(false);
         }
 
@@ -1033,16 +1020,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             queries.remove(handleId, this);
         }
 
-        private ByteString handle() {
-            final ByteBuffer bb = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
-            bb.putLong(handleId);
-            bb.flip();
-            return ByteStringAccess.wrap(bb);
-        }
-
         private Ticket ticket() {
             return FlightSqlTicketHelper.ticketFor(TicketStatementQuery.newBuilder()
-                    .setStatementHandle(handle())
+                    .setStatementHandle(handleId)
                     .build());
         }
     }
@@ -1571,8 +1551,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private PreparedStatement getPreparedStatement(SessionState session, ByteString handle) {
         Objects.requireNonNull(session);
-        final long id = preparedStatementHandleId(handle);
-        final PreparedStatement preparedStatement = preparedStatements.get(id);
+        final PreparedStatement preparedStatement = preparedStatements.get(handle);
         if (preparedStatement == null) {
             throw error(Code.NOT_FOUND, "Unknown Prepared Statement");
         }
@@ -1660,7 +1639,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             // above. We suggest either using a union type to enumerate the possible types, or using the NA (null) type
             // as a wildcard/placeholder.
             final ActionCreatePreparedStatementResult response = ActionCreatePreparedStatementResult.newBuilder()
-                    .setPreparedStatementHandle(prepared.handle())
+                    .setPreparedStatementHandle(prepared.handleId())
                     .setDatasetSchema(DATASET_SCHEMA_SENTINEL_BYTES)
                     // .setParameterSchema(...)
                     .build();
@@ -1726,8 +1705,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         return error(Code.UNAUTHENTICATED, "Must be authenticated");
     }
 
-    private static StatusRuntimeException deniedError() {
-        return error(Code.PERMISSION_DENIED, "Must be authorized");
+    private static StatusRuntimeException permissionDeniedWithHelpfulMessage() {
+        return error(Code.PERMISSION_DENIED,
+                "Must use the original session; is the client echoing the authentication token properly? Some clients may need to explicitly enable cookie-based authentication with the header x-deephaven-auth-cookie-request=true (namely, Java FlightSQL JDBC drivers, and maybe others).");
     }
 
     private static StatusRuntimeException tableNotFound() {
@@ -1792,22 +1772,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
     }
 
-    private static ByteString preparedStatementHandle(long handleId) {
-        final ByteBuffer bb = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
-        bb.putLong(handleId);
-        bb.flip();
-        return ByteStringAccess.wrap(bb);
-    }
-
-    private static long preparedStatementHandleId(ByteString handle) {
-        if (handle.size() != 8) {
-            throw error(Code.INVALID_ARGUMENT, "Invalid Prepared Statement handle");
-        }
-        return handle.asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN).getLong();
-    }
-
     private class PreparedStatement {
-        private final long handleId;
+        private final ByteString handleId;
         private final SessionState session;
         private final String parameterizedQuery;
         private final Set<CommandPreparedStatementQueryImpl> queries;
@@ -1816,23 +1782,25 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         PreparedStatement(SessionState session, String parameterizedQuery) {
             this.session = Objects.requireNonNull(session);
             this.parameterizedQuery = Objects.requireNonNull(parameterizedQuery);
-            this.handleId = handleIdGenerator.getAndIncrement();
+            this.handleId = ByteString.copyFromUtf8(UUID.randomUUID().toString());
             this.queries = new HashSet<>();
             preparedStatements.put(handleId, this);
             this.session.addOnCloseCallback(onSessionClosedCallback = this::onSessionClosed);
+        }
+
+        public ByteString handleId() {
+            return handleId;
         }
 
         public String parameterizedQuery() {
             return parameterizedQuery;
         }
 
-        public ByteString handle() {
-            return preparedStatementHandle(handleId);
-        }
-
         public void verifyOwner(SessionState session) {
             if (!this.session.equals(session)) {
-                throw error(Code.UNAUTHENTICATED, "Must use same session");
+                // We should not be concerned about returning "NOT_FOUND" here; the handleId is sufficiently random that
+                // it is much more likely an authentication setup issue.
+                throw permissionDeniedWithHelpfulMessage();
             }
         }
 
@@ -1850,7 +1818,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         private void onSessionClosed() {
-            log.debug().append("onSessionClosed: removing prepared statement ").append(handleId).endl();
+            log.debug().append("onSessionClosed: removing prepared statement ").append(handleId.toString()).endl();
             closeImpl();
         }
 

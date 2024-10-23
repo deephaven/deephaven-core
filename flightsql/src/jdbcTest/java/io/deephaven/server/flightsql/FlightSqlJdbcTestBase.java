@@ -109,7 +109,6 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
         }
     }
 
-    // @Disabled("Need to update Arrow FlightSQL JDBC version - this one tries to execute this as an UPDATE (doPut)")
     @Test
     void executeQueryNoCookie() throws SQLException {
         try (final Connection connection = connect(false)) {
@@ -119,14 +118,16 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("Must use same session");
+                        .hasMessageContaining(
+                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
             }
             try {
                 statement.close();
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("Must use same session");
+                        .hasMessageContaining(
+                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
             }
         }
     }
@@ -140,7 +141,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("Must use same session");
+                        .hasMessageContaining(
+                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
             }
             // If our authentication is bad, we won't be able to close the prepared statement either. If we want to
             // solve for this scenario, we would probably need to use randomized handles for the prepared statements
@@ -152,7 +154,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 // Note: this is arguably a JDBC implementation bug; it should be throwing SQLException, but it's
                 // exposing shadowed internal error from Flight.
                 assertThat(e.getClass().getName()).isEqualTo("cfjd.org.apache.arrow.flight.FlightRuntimeException");
-                assertThat(e).hasMessageContaining("Must use same session");
+                assertThat(e).hasMessageContaining(
+                        "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
             }
         }
     }
