@@ -1,5 +1,5 @@
 [versions]
-airlift = "0.27"
+airlift = "2.0.2"
 arrow = "13.0.0"
 autoservice = "1.1.1"
 avro = "1.11.3"
