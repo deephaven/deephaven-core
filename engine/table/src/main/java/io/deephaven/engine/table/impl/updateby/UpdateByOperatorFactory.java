@@ -14,6 +14,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.updateby.cumcount.CumCountOperator;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -380,6 +381,14 @@ public class UpdateByOperatorFactory {
         public Void visit(@NotNull final FillBySpec fbs) {
             Arrays.stream(pairs)
                     .map(fc -> makeForwardFillOperator(fc, tableDef))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final CumCountSpec spec) {
+            Arrays.stream(pairs)
+                    .map(fc -> makeCumCountOperator(fc, tableDef))
                     .forEach(ops::add);
             return null;
         }
@@ -837,6 +846,10 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
+        }
+
+        private UpdateByOperator makeCumCountOperator(MatchPair pair, TableDefinition tableDef) {
+            return new CumCountOperator(pair);
         }
 
         private UpdateByOperator makeCumSumOperator(MatchPair pair, TableDefinition tableDef) {

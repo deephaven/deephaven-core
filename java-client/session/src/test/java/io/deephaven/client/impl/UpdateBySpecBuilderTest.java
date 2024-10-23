@@ -102,6 +102,12 @@ public class UpdateBySpecBuilderTest {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
+            return UpdateByColumn.UpdateBySpec.newBuilder().setCount(UpdateByCumulativeCount.getDefaultInstance())
+                    .build();
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(CumSumSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setSum(UpdateByCumulativeSum.getDefaultInstance()).build();
         }
@@ -411,6 +417,11 @@ public class UpdateBySpecBuilderTest {
                                 .setTicks(UpdateByWindowScale.UpdateByWindowTicks.newBuilder().setTicks(100L).build())
                                 .build())
                         .build()).build());
+    }
+
+    @Test
+    void cumulativeCount() {
+        check(CumCountSpec.of());
     }
 
     @Test

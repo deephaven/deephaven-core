@@ -132,6 +132,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static UpdateBySpec adaptSpec(UpdateByColumn.UpdateBySpec spec) {
         switch (spec.getTypeCase()) {
+            case COUNT:
+                return adaptCount(spec.getCount());
             case SUM:
                 return adaptSum(spec.getSum());
             case MIN:
@@ -180,6 +182,10 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
             default:
                 throw new IllegalArgumentException("Unexpected spec type: " + spec.getTypeCase());
         }
+    }
+
+    private static CumCountSpec adaptCount(@SuppressWarnings("unused") UpdateByCumulativeCount count) {
+        return CumCountSpec.of();
     }
 
     private static CumSumSpec adaptSum(@SuppressWarnings("unused") UpdateByCumulativeSum sum) {

@@ -814,6 +814,31 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -3, -6, -12}, diff(-2, new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 4, 8, 16})));
     }
 
+    public void test${pt.boxed}CumCountArray() {
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount(new ${pt.primitive}[]{5, 4, 3, 2, 1}));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcount(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcount(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1}));
+        assertEquals(new long[]{0, 1, 2, 3, 4}, cumcount(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[]{0, 1, 2, 3, 4}, cumcount(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}));
+        assertEquals(new long[0], cumcount(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumcount(new ${pt.boxed}[0]));
+        assertEquals(null, cumcount((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, 4, 3, 2, 1})));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1})));
+        assertEquals(new long[]{0, 1, 2, 3, 4}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[]{0, 1, 2, 3, 4}, cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1})));
+        assertEquals(new long[0], cumcount(new ${pt.vectorDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cumcount((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
+    }    
+
     public void test${pt.boxed}CumMinArray() {
         assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new ${pt.primitive}[]{5, 4, 3, 2, 1}, cummin(new ${pt.primitive}[]{5, 4, 3, 2, 1}));

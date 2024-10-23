@@ -162,6 +162,13 @@ class UpdateByBuilder {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setCount(UpdateByCumulativeCount.getDefaultInstance())
+                    .build();
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(CumSumSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setSum(UpdateByCumulativeSum.getDefaultInstance())

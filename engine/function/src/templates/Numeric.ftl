@@ -1909,6 +1909,67 @@ public class Numeric {
     }
 
     /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcount(${pt.boxed}[] values) {
+        return cumcount(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcount(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcount(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcount(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcount");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (!isNull(v)) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.
