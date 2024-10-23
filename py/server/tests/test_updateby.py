@@ -7,7 +7,7 @@ import unittest
 from deephaven import read_csv, time_table, update_graph
 from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick, ema_time, \
     ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, emstd_tick, emstd_time,\
-    cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
+    cum_count, cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
     rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time, rolling_formula_tick, rolling_formula_time
@@ -74,6 +74,7 @@ class UpdateByTestCase(BaseTestCase):
             cum_prod(cols=simple_op_pairs),
             cum_min(cols=simple_op_pairs),
             cum_max(cols=simple_op_pairs),
+            cum_count(cols=simple_op_pairs),
             forward_fill(cols=simple_op_pairs),
             delta(cols=simple_op_pairs),
             delta(cols=simple_op_pairs, delta_control=DeltaControl.NULL_DOMINATES),

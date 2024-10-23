@@ -571,6 +571,10 @@ message UpdateByRequest {
           string param_token = 4;
         }
 
+        message UpdateByCumulativeCount {
+
+        }
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -593,6 +597,7 @@ message UpdateByRequest {
           UpdateByRollingStd rolling_std = 19;
           UpdateByRollingWAvg rolling_wavg = 20;
           UpdateByRollingFormula rolling_formula = 21;
+          UpdateByCumulativeCount count = 22;
         }
       }
 

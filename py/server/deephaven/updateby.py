@@ -477,12 +477,30 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Std UpdateByOperation.") from e
 
+def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of non-null values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCount(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cumulative count UpdateByOperation.") from e
 
 def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
     """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
-
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the applicable
             columns.

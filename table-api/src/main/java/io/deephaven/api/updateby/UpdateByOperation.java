@@ -47,6 +47,16 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create a {@link CumCountSpec cumulative count} of non-null values for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCount(String... pairs) {
+        return CumCountSpec.of().clause(pairs);
+    }
+
+    /**
      * Create a {@link CumProdSpec cumulative product} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
