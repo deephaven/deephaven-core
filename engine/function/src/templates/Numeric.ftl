@@ -3445,7 +3445,7 @@ public class Numeric {
      * @return the hyperbolic cosine of the value.  If the value is null, returns null.
      */
     static public double cosh(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3459,7 +3459,7 @@ public class Numeric {
      * @return e^x-1.  If the value is null, returns null.
      */
      static public double expm1(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3488,7 +3488,7 @@ public class Numeric {
      * @return the base 10 logarithm of the value.  If the value is null, returns null.
      */
      static public double log10(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3502,7 +3502,7 @@ public class Numeric {
       * @return the natural logarithm of the sum of the argument and 1.  If the value is null, returns null.
       */
      static public double log1p(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3520,7 +3520,7 @@ public class Numeric {
       *     member of the double value set.  If the either value is null, returns null.
       */
      static public ${pt.primitive} scalb(${pt.primitive} x, int scaleFactor) {
-        if(isNull(x) || isNull(scaleFactor)) {
+        if (isNull(x) || isNull(scaleFactor)) {
             return ${pt.null};
         }
 
@@ -3535,7 +3535,7 @@ public class Numeric {
       * @return the hyperbolic sine of the value.  If the value is null, returns null.
       */
      static public double sinh(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3549,7 +3549,7 @@ public class Numeric {
       * @return the hyperbolic tangent of the value.  If the value is null, returns null.
       */
      static public double tanh(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3593,7 +3593,7 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.addExact(x, y);
 
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} ) {
             throw new ArithmeticException("Overflow: " + x + " + " + y);
         }
 
@@ -3621,7 +3621,7 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short">
             int val = Math.subtractExact(x, y);
 
-            if( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
+            if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
             throw new ArithmeticException("Overflow: " + x + " + " + y);
         }
 
@@ -3629,7 +3629,7 @@ public class Numeric {
         <#else>
         ${pt.primitive} val = Math.subtractExact(x, y);
 
-        if( isNull(val) ) {
+        if ( isNull(val) ) {
             throw new ArithmeticException("Overflow: " + x + " + " + y);
         }
 
@@ -3655,7 +3655,7 @@ public class Numeric {
          <#if pt.primitive == "byte" || pt.primitive == "short">
          int val = Math.multiplyExact(x, y);
 
-         if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+         if ( val > ${pt.maxValue} || val < ${pt.minValue} ) {
             throw new ArithmeticException("Overflow: " + x + " * " + y);
          }
 
@@ -3682,7 +3682,7 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.incrementExact(x);
 
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} ) {
             throw new ArithmeticException("Overflow: " + x);
         }
 
@@ -3713,7 +3713,7 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.decrementExact(x);
 
-        if( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} ) {
             throw new ArithmeticException("Overflow: " + x);
         }
 
@@ -3744,7 +3744,7 @@ public class Numeric {
          <#if pt.primitive == "byte" || pt.primitive == "short">
          int val = Math.negateExact(x);
 
-         if( val > ${pt.maxValue} || val < ${pt.minValue}) {
+         if ( val > ${pt.maxValue} || val < ${pt.minValue}) {
             throw new ArithmeticException("Overflow: -" + x);
          }
 
@@ -3854,7 +3854,7 @@ public class Numeric {
       *    If the value is null, returns null.
       */
      static public ${pt.primitive} nextUp(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return ${pt.null};
         }
 
@@ -3873,7 +3873,7 @@ public class Numeric {
       *    If the value is null, returns null.
       */
      static public ${pt.primitive} nextDown(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return ${pt.null};
         }
 
@@ -3890,7 +3890,7 @@ public class Numeric {
      * @return the measurement of the angle x in degrees.  If the value is null, returns null.
      */
     static public double toDegrees(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3904,7 +3904,7 @@ public class Numeric {
      * @return the measurement of the angle x in radians.  If the value is null, returns null.
      */
     static public double toRadians(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return NULL_DOUBLE;
         }
 
@@ -3992,7 +3992,7 @@ public class Numeric {
      * @return the size of an ulp of the argument.  If the value is null, returns null.
      */
     static public ${pt.primitive} ulp(${pt.primitive} x) {
-        if(isNull(x)) {
+        if (isNull(x)) {
             return ${pt.null};
         }
 
