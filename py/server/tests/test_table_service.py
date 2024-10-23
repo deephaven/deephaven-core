@@ -5,18 +5,18 @@
 import threading
 import time
 import unittest
-from typing import Callable, Tuple, Optional, Generator, List
+from typing import Callable, Tuple, Optional, Generator
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from deephaven import new_table, garbage_collect
+from deephaven import new_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, string_col, \
     datetime_col, bool_col, ColumnType
 from deephaven.execution_context import get_exec_ctx, ExecutionContext
-from deephaven.experimental.partitioned_table_service import PartitionedTableServiceBackend, TableKey, \
-    PartitionedTableLocationKey, PythonTableDataService
+from deephaven.experimental.table_service import PartitionedTableServiceBackend, TableKey, \
+    TableLocationKey, TableDataService
 import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
 
@@ -28,9 +28,10 @@ class TestBackend(PartitionedTableServiceBackend):
         self.pt_schema = pt_schema
         self.pc_schema = pc_schema
         self.gen_pa_table = gen_pa_table
+        self.subscriptions_enabled_for_test = True
         self.sub_new_partition_cancelled = False
-        self.partitions: dict[PartitionedTableLocationKey, pa.Table] = {}
-        self.partitions_size_subscriptions: dict[PartitionedTableLocationKey, bool] = {}
+        self.partitions: dict[TableLocationKey, pa.Table] = {}
+        self.partitions_size_subscriptions: dict[TableLocationKey, bool] = {}
         self.existing_partitions_called = 0
         self.partition_size_called = 0
 
@@ -39,35 +40,35 @@ class TestBackend(PartitionedTableServiceBackend):
              return self.pt_schema, self.pc_schema
         return pa.Schema(), None
 
-    def existing_partitions(self, table_key: TableKey, callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> None:
+    def existing_partitions(self, table_key: TableKey, callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         pa_table = next(self.gen_pa_table)
         if table_key.key == "test":
             ticker = str(pa_table.column("Ticker")[0])
 
-            partition_key = PartitionedTableLocationKey(f"{ticker}/NYSE")
+            partition_key = TableLocationKey(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
             callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             self.existing_partitions_called += 1
 
-    def partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
+    def partition_size(self, table_key: TableKey, table_location_key: TableLocationKey,
                        callback: Callable[[int], None]) -> None:
         callback(self.partitions[table_location_key].num_rows)
         self.partition_size_called += 1
 
-    def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
+    def column_values(self, table_key: TableKey, table_location_key: TableLocationKey,
                       col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
         if table_key.key == "test":
             return self.partitions[table_location_key].select([col]).slice(offset, max_rows)
         else:
             return pa.table([])
 
-    def _th_new_partitions(self, table_key: TableKey, exec_ctx: ExecutionContext, callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> None:
+    def _th_new_partitions(self, table_key: TableKey, exec_ctx: ExecutionContext, callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         if table_key.key != "test":
             return
 
-        while not self.sub_new_partition_cancelled:
+        while not self.sub_new_partition_cancelled and self.subscriptions_enabled_for_test:
             try:
                 with exec_ctx:
                     pa_table = next(self.gen_pa_table)
@@ -75,7 +76,7 @@ class TestBackend(PartitionedTableServiceBackend):
                 break
 
             ticker = str(pa_table.column("Ticker")[0])
-            partition_key = PartitionedTableLocationKey(f"{ticker}/NYSE")
+            partition_key = TableLocationKey(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
@@ -86,24 +87,35 @@ class TestBackend(PartitionedTableServiceBackend):
         if table_key.key != "test":
             return lambda: None
 
+        # simulate an existing partition
+        pa_table = next(self.gen_pa_table)
+        if table_key.key == "test":
+            ticker = str(pa_table.column("Ticker")[0])
+
+            partition_key = TableLocationKey(f"{ticker}/NYSE")
+            self.partitions[partition_key] = pa_table
+
+            expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
+            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+
         exec_ctx = get_exec_ctx()
         th = threading.Thread(target=self._th_new_partitions, args=(table_key, exec_ctx, callback))
         th.start()
 
         def _cancellation_callback():
-            self.sub_new_partition_cancelled += 1
+            self.sub_new_partition_cancelled = True
 
         return _cancellation_callback
 
 
-    def _th_partition_size_changes(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, callback: Callable[[int], None]) -> None:
+    def _th_partition_size_changes(self, table_key: TableKey, table_location_key: TableLocationKey, callback: Callable[[int], None]) -> None:
         if table_key.key != "test":
             return
 
         if table_location_key not in self.partitions_size_subscriptions:
             return
 
-        while self.partitions_size_subscriptions[table_location_key]:
+        while self.subscriptions_enabled_for_test and self.partitions_size_subscriptions[table_location_key]:
             pa_table = self.partitions[table_location_key]
             rbs = pa_table.to_batches()
             rbs.append(pa_table.to_batches()[0])
@@ -114,13 +126,16 @@ class TestBackend(PartitionedTableServiceBackend):
 
 
     def subscribe_to_partition_size_changes(self, table_key: TableKey,
-                                            table_location_key: PartitionedTableLocationKey,
+                                            table_location_key: TableLocationKey,
                                             callback: Callable[[int], None]) -> Callable[[], None]:
         if table_key.key != "test":
             return lambda: None
 
         if table_location_key not in self.partitions:
             return lambda: None
+
+        # need to initial size
+        callback(self.partitions[table_location_key].num_rows)
 
         self.partitions_size_subscriptions[table_location_key] = True
         th = threading.Thread(target=self._th_partition_size_changes, args=(table_key, table_location_key, callback))
@@ -136,9 +151,9 @@ class PartitionedTableServiceTestCase(BaseTestCase):
     tickers = ["AAPL", "FB", "GOOG", "MSFT", "NVDA", "TMSC", "TSLA", "VZ", "WMT", "XOM"]
 
     def gen_pa_table(self) -> Generator[pa.Table, None, None]:
-        for t in self.tickers:
+        for tikcer in self.tickers:
             cols = [
-                string_col(name="Ticker", data=[t, t]),
+                string_col(name="Ticker", data=[tikcer, tikcer]),
                 string_col(name="Exchange", data=["NYSE", "NYSE"]),
                 bool_col(name="Boolean", data=[True, False]),
                 byte_col(name="Byte", data=(1, -1)),
@@ -161,17 +176,16 @@ class PartitionedTableServiceTestCase(BaseTestCase):
 
     def test_make_table_without_partition_schema(self):
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
-        data_service = PythonTableDataService(backend)
+        data_service = TableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
         self.assertIsNotNone(table)
         self.assertEqual(table.columns, self.test_table.columns)
-        table = None # what happens when table is GC'd? LivenessScope will release it?
 
     def test_make_static_table_with_partition_schema(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
+        data_service = TableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=False)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
@@ -180,19 +194,20 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         self.assertEqual(table.size, 2)
         self.assertEqual(backend.existing_partitions_called, 1)
         self.assertEqual(backend.partition_size_called, 1)
-        # how is the table different from the PartitionedTable?
 
     def test_make_live_table_with_partition_schema(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
+        data_service = TableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
         self.assertEqual(table.columns[2:], self.test_table.columns[2:])
+
         self.wait_ticking_table_update(table, 20, 5)
+
         self.assertGreaterEqual(table.size, 20)
         self.assertEqual(backend.existing_partitions_called, 0)
         self.assertEqual(backend.partition_size_called, 0)
@@ -201,7 +216,7 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
+        data_service = TableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
@@ -219,25 +234,24 @@ class PartitionedTableServiceTestCase(BaseTestCase):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        data_service = PythonTableDataService(backend)
+        data_service = TableDataService(backend)
         with liveness_scope():
             table = data_service.make_table(TableKey("test"), live=True)
             self.wait_ticking_table_update(table, 100, 5)
-        self.assertEqual(backend.sub_new_partition_cancelled, 1)
+        self.assertTrue(backend.sub_new_partition_cancelled)
         self.assertFalse(all(backend.partitions_size_subscriptions.values()))
 
     def test_make_live_table_ensure_initial_partitions_exist(self):
-        # disable new partition subscriptions
-        # coalesce the PartitionAwareSourceTable
-        # ensure that all existing partitions were added to the table
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
-        backend.sub_new_partition_cancelled = True
-        data_service = PythonTableDataService(backend)
+        backend.subscriptions_enabled_for_test = False
+        data_service = TableDataService(backend)
         table = data_service.make_table(TableKey("test"), live=True)
         table.coalesce()
-        self.assertEqual(backend.existing_partitions_called, 0)
+        # the initial partitions should be created
+        self.assertEqual(table.size, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

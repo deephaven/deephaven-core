@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+"""This module defines a table service backend interface that users can implement to provide partitioned external data
+to Deephaven tables."""
 
 from abc import ABC, abstractmethod
 from typing import Tuple, Optional, Any, Callable
@@ -17,7 +19,6 @@ _JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.Py
 _JTableKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableKeyImpl")
 _JTableLocationKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableLocationKeyImpl")
 
-
 class TableKey:
     """A key that identifies a table. The key should be unique for each table. The key can be any Python object and
     should include sufficient information to uniquely identify the table for the backend service."""
@@ -31,18 +32,18 @@ class TableKey:
         return self._key
 
 
-class PartitionedTableLocationKey:
+class TableLocationKey:
     """A key that identifies a specific partition of a table. The key should be unique for each partition of the table.
     The key can be any Python object and should include sufficient information to uniquely identify the partition for
     the backend service to fetch the partition data.
     """
 
-    def __init__(self, pt_location_key: Any):
-        self._pt_location_key = pt_location_key
+    def __init__(self, location_key: Any):
+        self._location_key = location_key
 
     @property
-    def pt_location_key(self) -> Any:
-        return self._pt_location_key
+    def key(self) -> Any:
+        return self._location_key
 
 
 
@@ -67,7 +68,7 @@ class PartitionedTableServiceBackend(ABC):
 
     @abstractmethod
     def existing_partitions(self, table_key: TableKey,
-                            callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> None:
+                            callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         """ Provides a callback for the backend service to pass the existing partitions for the table with the given
         table key. The 2nd argument of the callback is an optional pa.Table that contains the values for the partitions.
         The schema of the table should match the optional partition schema returned by table_schema() for the table_key.
@@ -84,7 +85,7 @@ class PartitionedTableServiceBackend(ABC):
 
     @abstractmethod
     def subscribe_to_new_partitions(self, table_key: TableKey,
-                                      callback: Callable[[PartitionedTableLocationKey, Optional[pa.Table]], None]) -> \
+                                    callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> \
     Callable[[], None]:
         """ Provides a callback for the backend service to pass new partitions for the table with the given table key.
         The 2nd argument of the callback is a pa.Table that contains the values for the partitions. The schema of the
@@ -106,7 +107,7 @@ class PartitionedTableServiceBackend(ABC):
         pass
 
     @abstractmethod
-    def partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
+    def partition_size(self, table_key: TableKey, table_location_key: TableLocationKey,
                        callback: Callable[[int], None]) -> None:
         """ Provides a callback for the backend service to pass the size of the partition with the given table key
         and partition location key. The callback should be called with the size of the partition in number of rows.
@@ -115,13 +116,13 @@ class PartitionedTableServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             callback (Callable[[int], None]): the callback function
         """
         pass
 
     @abstractmethod
-    def subscribe_to_partition_size_changes(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
+    def subscribe_to_partition_size_changes(self, table_key: TableKey, table_location_key: TableLocationKey,
                                             callback: Callable[[int], None]) -> Callable[[], None]:
         """ Provides a callback for the backend service to pass the changed size of the partition with the given
         table key and partition location key. The callback should be called with the size of the partition in number of
@@ -135,7 +136,7 @@ class PartitionedTableServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             callback (Callable[[int], None]): the callback function
 
         Returns:
@@ -144,7 +145,7 @@ class PartitionedTableServiceBackend(ABC):
         pass
 
     @abstractmethod
-    def column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
+    def column_values(self, table_key: TableKey, table_location_key: TableLocationKey, col: str, offset: int,
                       min_rows: int, max_rows: int) -> pa.Table:
         """ Returns the values for the column with the given name for the partition with the given table key and
         partition location key. The returned pa.Table should have a single column with values of the specified range
@@ -152,7 +153,7 @@ class PartitionedTableServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             col (str): the column name
             offset (int): the starting row index
             min_rows (int): the minimum number of rows to return
@@ -164,9 +165,10 @@ class PartitionedTableServiceBackend(ABC):
         pass
 
 
-class PythonTableDataService(JObjectWrapper):
-    """ A Python wrapper for the Java PythonTableDataService class. It also serves as an adapter between the Java backend
-    interface and the Python backend interface.
+class TableDataService(JObjectWrapper):
+    """ A TableDataService serves as a bridge between the Deephaven data service and the Python data service backend.
+    It supports the creation of Deephaven tables from the Python backend service that provides partitioned data to the
+    Deephaven tables.
     """
     j_object_type = _JPythonTableDataService
     _backend: PartitionedTableServiceBackend
@@ -265,13 +267,13 @@ class PythonTableDataService(JObjectWrapper):
 
         return self._backend.subscribe_to_new_partitions(table_key, callback_proxy)
 
-    def _partition_size(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, callback: jpy.JType):
+    def _partition_size(self, table_key: TableKey, table_location_key: TableLocationKey, callback: jpy.JType):
         """ Provides the size of the partition with the given table key and partition location key to the table service
         in the engine.
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             callback (jpy.JType): the Java callback function with one argument: the size of the partition in number of
                 rows
         """
@@ -280,14 +282,14 @@ class PythonTableDataService(JObjectWrapper):
 
         self._backend.partition_size(table_key, table_location_key, callback_proxy)
 
-    def _subscribe_to_partition_size_changes(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey,
+    def _subscribe_to_partition_size_changes(self, table_key: TableKey, table_location_key: TableLocationKey,
                                              callback: jpy.JType) -> jpy.JType:
         """ Provides the changed size of the partition with the given table key and partition location key to the table
         service in the engine.
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             callback (jpy.JType): the Java callback function with one argument: the size of the partition in number of
                 rows
         """
@@ -296,14 +298,14 @@ class PythonTableDataService(JObjectWrapper):
 
         return self._backend.subscribe_to_partition_size_changes(table_key, table_location_key, callback_proxy)
 
-    def _column_values(self, table_key: TableKey, table_location_key: PartitionedTableLocationKey, col: str, offset: int,
+    def _column_values(self, table_key: TableKey, table_location_key: TableLocationKey, col: str, offset: int,
                        min_rows: int, max_rows: int, callback: jpy.JType) -> None:
         """ Returns the values for the column with the given name for the partition with the given table key and
         partition location key to the table service in the engine.
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (PartitionedTableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the partition location key
             col (str): the column name
             offset (int): the starting row index
             min_rows (int): the minimum number of rows to return
