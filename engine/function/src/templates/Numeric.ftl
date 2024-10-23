@@ -3453,7 +3453,7 @@ public class Numeric {
     }
 
     /**
-     * Returns e^x -1.
+     * Returns e^x - 1.
      *
      * @param x the value
      * @return e^x-1.  If the value is null, returns null.
