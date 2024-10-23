@@ -171,7 +171,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public Void visit(SliceTable sliceTable) {
-        addOp(sliceTable, parentOps(sliceTable).slice(sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive()));
+        addOp(sliceTable,
+                parentOps(sliceTable).slice(sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive()));
         return null;
     }
 
