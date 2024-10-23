@@ -775,10 +775,6 @@ public class SessionState {
             if (session != null && session.isExpired()) {
                 throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
-            return getIgnoreExpiration();
-        }
-
-        public T getIgnoreExpiration() {
             final T localResult = result;
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
             // still valid

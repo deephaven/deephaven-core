@@ -54,6 +54,7 @@ import org.apache.arrow.flight.impl.Flight.FlightInfo;
 import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
@@ -291,8 +292,21 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES = serializeMetadata(DATASET_SCHEMA_SENTINEL);
 
+    // Need dense_union support to implement this.
+    private static final UnsupportedCommand GET_SQL_INFO_HANDLER =
+            new UnsupportedCommand(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
+    private static final UnsupportedCommand STATEMENT_UPDATE_HANDLER =
+            new UnsupportedCommand(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
+    private static final UnsupportedCommand GET_CROSS_REFERENCE_HANDLER =
+            new UnsupportedCommand(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
+    private static final UnsupportedCommand STATEMENT_SUBSTRAIT_PLAN_HANDLER =
+            new UnsupportedCommand(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
+    private static final UnsupportedCommand PREPARED_STATEMENT_UPDATE_HANDLER = new UnsupportedCommand(
+            CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
+    private static final UnsupportedCommand GET_XDBC_TYPE_INFO_HANDLER =
+            new UnsupportedCommand(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
 
-    // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
+    // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all the
     // TicketResolvers).
     // private final TicketRouter router;
     private final ScopeTicketResolver scopeTicketResolver;
@@ -431,7 +445,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     private FlightInfo getInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
         final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), true);
         final TicketHandler ticketHandler = commandHandler.initialize(command);
-        return ticketHandler.getInfo(descriptor);
+        try {
+            return ticketHandler.getInfo(descriptor);
+        } catch (Throwable t) {
+            if (ticketHandler instanceof TicketHandlerReleasable) {
+                ((TicketHandlerReleasable) ticketHandler).release();
+            }
+            throw t;
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -454,24 +475,26 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
 
         final ExportObject<TicketHandler> ticketHandler = session.<TicketHandler>nonExport()
-                .submit(() -> ticketHandler(session, message));
+                .submit(() -> ticketHandlerForResolve(session, message));
 
-        //noinspection unchecked
-        return (ExportObject<T>) new Resolver(ticketHandler, session).submit();
+        // noinspection unchecked
+        return (ExportObject<T>) new TableResolver(ticketHandler, session).submit();
     }
 
-    private static class Resolver implements Callable<Table>, Runnable, SessionState.ExportErrorHandler {
+    private static class TableResolver implements Callable<Table>, Runnable, SessionState.ExportErrorHandler {
         private final ExportObject<TicketHandler> export;
         private final SessionState session;
+        private TicketHandler handler;
 
-        private TicketHandler ticketHandler;
-
-        public Resolver(ExportObject<TicketHandler> export, SessionState session) {
+        public TableResolver(ExportObject<TicketHandler> export, SessionState session) {
             this.export = Objects.requireNonNull(export);
             this.session = Objects.requireNonNull(session);
         }
 
         public ExportObject<Table> submit() {
+            // We need to provide clean handoff of the Table for Liveness management between the resolver and the
+            // export; as such, we _can't_ unmanage the Table during a call to TicketHandler.resolve, so we must rely
+            // on onSuccess / onError callbacks (after export has started managing the Table).
             return session.<Table>nonExport()
                     .require(export)
                     .onSuccess(this)
@@ -482,26 +505,37 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // submit
         @Override
         public Table call() {
-            ticketHandler = export.get();
-            return ticketHandler.resolve(session);
+            handler = export.get();
+            if (!handler.isAuthorized(session)) {
+                throw new IllegalStateException("Expected TicketHandler to already be authorized for session");
+            }
+            return handler.resolve();
         }
 
         // onSuccess
         @Override
         public void run() {
-            if (ticketHandler == null) {
+            if (handler == null) {
+                // Should only be run onSuccess, so export.get() must have succeeded
                 throw new IllegalStateException();
             }
-            if (ticketHandler instanceof TicketHandlerReleasable) {
-                ((TicketHandlerReleasable)ticketHandler).release();
-            }
+            release();
         }
 
         @Override
-        public void onError(ExportNotification.State resultState, String errorContext, @Nullable Exception cause, @Nullable String dependentExportId) {
-            if (ticketHandler != null && ticketHandler instanceof TicketHandlerReleasable) {
-                ((TicketHandlerReleasable)ticketHandler).release();
+        public void onError(ExportNotification.State resultState, String errorContext, @Nullable Exception cause,
+                @Nullable String dependentExportId) {
+            if (handler == null) {
+                return;
             }
+            release();
+        }
+
+        private void release() {
+            if (!(handler instanceof TicketHandlerReleasable)) {
+                return;
+            }
+            ((TicketHandlerReleasable) handler).release();
         }
     }
 
@@ -642,13 +676,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     interface TicketHandler {
 
+        boolean isAuthorized(SessionState session);
+
         FlightInfo getInfo(FlightDescriptor descriptor);
 
-        Table resolve(SessionState session);
-
-//        void onSuccess();
-//
-//        void onError();
+        Table resolve();
     }
 
     interface TicketHandlerReleasable extends TicketHandler {
@@ -667,6 +699,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return new CommandStatementQueryImpl(session);
             case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
                 return new CommandPreparedStatementQueryImpl(session);
+            case COMMAND_GET_TABLES_TYPE_URL:
+                return new CommandGetTablesImpl();
             case COMMAND_GET_TABLE_TYPES_TYPE_URL:
                 return CommandGetTableTypesConstants.HANDLER;
             case COMMAND_GET_CATALOGS_TYPE_URL:
@@ -679,27 +713,23 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return commandGetImportedKeysHandler;
             case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
                 return commandGetExportedKeysHandler;
-            case COMMAND_GET_TABLES_TYPE_URL:
-                return new CommandGetTablesImpl();
             case COMMAND_GET_SQL_INFO_TYPE_URL:
-                // Need dense_union support to implement this.
-                return new UnsupportedCommand<>(CommandGetSqlInfo.class);
+                return GET_SQL_INFO_HANDLER;
             case COMMAND_STATEMENT_UPDATE_TYPE_URL:
-                return new UnsupportedCommand<>(CommandStatementUpdate.class);
+                return STATEMENT_UPDATE_HANDLER;
             case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetCrossReference.class);
+                return GET_CROSS_REFERENCE_HANDLER;
             case COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
-                return new UnsupportedCommand<>(CommandStatementSubstraitPlan.class);
+                return STATEMENT_SUBSTRAIT_PLAN_HANDLER;
             case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
-                return new UnsupportedCommand<>(CommandPreparedStatementUpdate.class);
+                return PREPARED_STATEMENT_UPDATE_HANDLER;
             case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
-                return new UnsupportedCommand<>(CommandGetXdbcTypeInfo.class);
+                return GET_XDBC_TYPE_INFO_HANDLER;
         }
-        throw error(Code.UNIMPLEMENTED,
-                String.format("FlightSQL command '%s' is unknown", typeUrl));
+        throw error(Code.UNIMPLEMENTED, String.format("command '%s' is unknown", typeUrl));
     }
 
-    private TicketHandler ticketHandler(SessionState session, Any message) {
+    private TicketHandler ticketHandlerForResolve(SessionState session, Any message) {
         final String typeUrl = message.getTypeUrl();
         if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
             final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
@@ -707,6 +737,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             if (ticketHandler == null) {
                 throw error(Code.NOT_FOUND,
                         "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
+            }
+            if (!ticketHandler.isAuthorized(session)) {
+                throw error(Code.PERMISSION_DENIED, "Must be the owner to resolve");
             }
             return ticketHandler;
         }
@@ -730,12 +763,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
-
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-
             // TODO: computeEnclosed
-
-
             return tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
         }
@@ -762,7 +791,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         /**
-         * This is called as the first part of {@link TicketHandler#resolve(SessionState)} for the handler returned from
+         * This is called as the first part of {@link TicketHandler#resolve()} for the handler returned from
          * {@link #initialize(Any)}.
          */
         void checkForResolve(T command) {
@@ -790,7 +819,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         /**
          * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
          * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
-         * part of {@link TicketHandler#resolve(SessionState)}.
+         * part of {@link TicketHandler#resolve()}.
          */
         @Override
         public final TicketHandler initialize(Any any) {
@@ -803,6 +832,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
             private TicketHandlerFixed(T command) {
                 this.command = Objects.requireNonNull(command);
+            }
+
+            @Override
+            public boolean isAuthorized(SessionState session) {
+                return true;
             }
 
             @Override
@@ -821,7 +855,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
 
             @Override
-            public Table resolve(SessionState session) {
+            public Table resolve() {
                 checkForResolve(command);
                 final Table table = CommandHandlerFixedBase.this.table(command);
                 final long totalRecords = totalRecords();
@@ -837,51 +871,39 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 }
                 return table;
             }
-
-            @Override
-            public void onSuccess() {
-                // no-op, not managing the tables
-            }
-
-            @Override
-            public void onError() {
-                // no-op, not managing the tables
-            }
         }
     }
 
-    static final class UnsupportedCommand<T extends Message> extends CommandHandlerFixedBase<T> {
-        UnsupportedCommand(Class<T> clazz) {
-            super(clazz);
+    private static final class UnsupportedCommand implements CommandHandler, TicketHandler {
+        private final Descriptor descriptor;
+        private final Class<? extends Message> clazz;
+
+        UnsupportedCommand(Descriptor descriptor, Class<? extends Message> clazz) {
+            this.descriptor = Objects.requireNonNull(descriptor);
+            this.clazz = Objects.requireNonNull(clazz);
         }
 
         @Override
-        void checkForGetInfo(T command) {
-            final Descriptor descriptor = command.getDescriptorForType();
+        public TicketHandler initialize(Any any) {
+            unpackOrThrow(any, clazz);
+            return this;
+        }
+
+        @Override
+        public boolean isAuthorized(SessionState session) {
+            return true;
+        }
+
+        @Override
+        public FlightInfo getInfo(FlightDescriptor descriptor) {
             throw error(Code.UNIMPLEMENTED,
-                    String.format("FlightSQL command '%s' is unimplemented", descriptor.getFullName()));
+                    String.format("command '%s' is unimplemented", this.descriptor.getFullName()));
         }
 
         @Override
-        void checkForResolve(T command) {
-            final Descriptor descriptor = command.getDescriptorForType();
+        public Table resolve() {
             throw error(Code.INVALID_ARGUMENT, String.format(
-                    "FlightSQL client is misbehaving, should use getInfo for command '%s'", descriptor.getFullName()));
-        }
-
-        @Override
-        Ticket ticket(T command) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        ByteString schemaBytes(T command) {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        public Table table(T command) {
-            throw new IllegalStateException();
+                    "client is misbehaving, should use getInfo for command '%s'", this.descriptor.getFullName()));
         }
     }
 
@@ -903,9 +925,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         private ScheduledFuture<?> watchdog;
 
         private boolean initialized;
-        // protected ByteString schemaBytes;
-        protected Table table;
         private boolean resolved;
+        protected Table table;
 
         QueryBase(SessionState session) {
             this.handleId = handleIdGenerator.getAndIncrement();
@@ -914,11 +935,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public final TicketHandler initialize(Any any) {
+        public final TicketHandlerReleasable initialize(Any any) {
             try {
                 return initializeImpl(any);
             } catch (Throwable t) {
-                close();
+                release();
                 throw t;
             }
         }
@@ -964,15 +985,17 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
+        public final boolean isAuthorized(SessionState session) {
+            return this.session.equals(session);
+        }
+
+        @Override
         public synchronized final FlightInfo getInfo(FlightDescriptor descriptor) {
             return TicketRouter.getFlightInfo(table, descriptor, ticket());
         }
 
         @Override
-        public synchronized final Table resolve(SessionState session) {
-            if (!this.session.equals(session)) {
-                throw deniedError();
-            }
+        public synchronized final Table resolve() {
             if (resolved) {
                 throw error(Code.FAILED_PRECONDITION, "Should only resolve once");
             }
@@ -983,36 +1006,26 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             return table;
         }
 
-
-
         @Override
-        public void onSuccess() {
-            closeImpl(true);
-        }
-
-        @Override
-        public void onError() {
-            closeImpl(true);
-        }
-
-        public void close() {
-            closeImpl(true);
+        public void release() {
+            cleanup(true);
         }
 
         private void onWatchdog() {
             log.debug().append("Watchdog cleaning up query ").append(handleId).endl();
-            closeImpl(false);
+            cleanup(false);
         }
 
-        private synchronized void closeImpl(boolean cancelWatchdog) {
-            queries.remove(handleId, this);
+        private synchronized void cleanup(boolean cancelWatchdog) {
+            if (cancelWatchdog && watchdog != null) {
+                watchdog.cancel(true);
+                watchdog = null;
+            }
             if (table != null) {
                 scope.unmanage(table);
                 table = null;
             }
-            if (cancelWatchdog && watchdog != null) {
-                watchdog.cancel(true);
-            }
+            queries.remove(handleId, this);
         }
 
         private ByteString handle() {
@@ -1028,7 +1041,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     .build());
         }
     }
-
 
     final class CommandStatementQueryImpl extends QueryBase {
 
@@ -1065,17 +1077,16 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
 
         @Override
-        public void close() {
-            closeImpl(true);
+        public void release() {
+            releaseImpl(true);
         }
 
-        private void closeImpl(boolean detach) {
+        private void releaseImpl(boolean detach) {
             if (detach && prepared != null) {
                 prepared.detach(this);
             }
-            super.close();
+            super.release();
         }
-
     }
 
     private static class CommandStaticTable<T extends Message> extends CommandHandlerFixedBase<T> {
@@ -1843,7 +1854,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return;
             }
             for (CommandPreparedStatementQueryImpl query : queries) {
-                query.closeImpl(false);
+                query.releaseImpl(false);
             }
             queries.clear();
         }

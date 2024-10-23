@@ -457,20 +457,28 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     @Test
     public void selectStarFromQueryScopeTable() throws Exception {
         setFooTable();
+
+        final Schema expectedSchema = flatTableSchema(
+                new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
         {
-            final Schema expectedSchema = flatTableSchema(
-                    new Field("Foo", new FieldType(true, MinorType.INT.getType(), null, DEEPHAVEN_INT), null));
-            {
-                final SchemaResult schema = flightSqlClient.getExecuteSchema("SELECT * FROM foo_table");
-                assertThat(schema.getSchema()).isEqualTo(expectedSchema);
-            }
-            {
-                final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
-                assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 1, 3, false);
-            }
-            unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
+            final SchemaResult schema = flightSqlClient.getExecuteSchema("SELECT * FROM foo_table");
+            assertThat(schema.getSchema()).isEqualTo(expectedSchema);
         }
+        {
+            final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            consume(info, 1, 3, false);
+        }
+        // The FlightSQL resolver will maintain state to ensure results are resolvable, even if the underlying table
+        // goes away between flightInfo and doGet.
+        {
+            final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
+            assertThat(info.getSchema()).isEqualTo(expectedSchema);
+            removeFooTable();
+            consume(info, 1, 3, false);
+        }
+        unpackable(CommandStatementQuery.getDescriptor(), CommandStatementQuery.class);
+
     }
 
     @Test
@@ -490,6 +498,18 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
                     consume(info, 1, 3, false);
                 }
+                // The FlightSQL resolver will maintain state to ensure results are resolvable, even if the underlying
+                // table
+                // goes away between flightInfo and doGet.
+                {
+                    final FlightInfo info = prepared.execute();
+                    assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                    removeFooTable();
+                    consume(info, 1, 3, false);
+                }
+                // The states in _not_ maintained by the PreparedStatement state though, and will not be available for
+                // the next execute
+                expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "Object 'foo_table' not found");
                 unpackable(CommandPreparedStatementQuery.getDescriptor(), CommandPreparedStatementQuery.class);
             }
             unpackable(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT, ActionCreatePreparedStatementRequest.class);
@@ -888,7 +908,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                         ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX}).concat(Any.pack(message).toByteString()))
                 .build());
         expectException(() -> flightSqlClient.getStream(ticket).next(), FlightStatusCode.INVALID_ARGUMENT,
-                String.format("FlightSQL client is misbehaving, should use getInfo for command '%s'",
+                String.format("FlightSQL: client is misbehaving, should use getInfo for command '%s'",
                         descriptor.getFullName()));
     }
 
@@ -908,7 +928,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private void commandUnimplemented(Runnable r, Descriptor command) {
         expectException(r, FlightStatusCode.UNIMPLEMENTED,
-                String.format("FlightSQL command '%s' is unimplemented", command.getFullName()));
+                String.format("FlightSQL: command '%s' is unimplemented", command.getFullName()));
     }
 
     private void getSchemaUnknown(Runnable r, String command) {
@@ -917,7 +937,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     private void commandUnknown(Runnable r, String command) {
-        expectException(r, FlightStatusCode.UNIMPLEMENTED, String.format("FlightSQL command '%s' is unknown", command));
+        expectException(r, FlightStatusCode.UNIMPLEMENTED,
+                String.format("FlightSQL: command '%s' is unknown", command));
     }
 
     private void unpackable(Descriptor descriptor, Class<?> clazz) {
