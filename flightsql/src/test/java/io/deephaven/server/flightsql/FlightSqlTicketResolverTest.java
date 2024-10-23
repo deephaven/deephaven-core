@@ -130,7 +130,7 @@ public class FlightSqlTicketResolverTest {
         isSimilar(CommandGetKeysConstants.DEFINITION, Schemas.GET_EXPORTED_KEYS_SCHEMA);
     }
 
-    @Disabled("Arrow Java FlightSQL has a bug in ordering, not the same as documented in the protobuf spec")
+    @Disabled("Arrow Java FlightSQL has a bug in ordering, not the same as documented in the protobuf spec, see https://github.com/apache/arrow/issues/44521")
     @Test
     void getPrimaryKeysSchema() throws IOException {
         isSimilar(CommandGetPrimaryKeysConstants.DEFINITION, Schemas.GET_PRIMARY_KEYS_SCHEMA);
@@ -178,6 +178,6 @@ public class FlightSqlTicketResolverTest {
 
     private static void isSimilar(FieldType actual, FieldType expected) {
         assertThat(actual.getType()).isEqualTo(expected.getType());
-        assertThat(actual.getDictionary()).isEqualTo(expected.getDictionary());;
+        assertThat(actual.getDictionary()).isEqualTo(expected.getDictionary());
     }
 }

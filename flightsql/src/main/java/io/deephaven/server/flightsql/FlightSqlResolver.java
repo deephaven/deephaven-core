@@ -311,13 +311,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     // TicketResolvers).
     // private final TicketRouter router;
     private final ScopeTicketResolver scopeTicketResolver;
-
+    private final ScheduledExecutorService scheduler;
     private final AtomicLong handleIdGenerator;
-
     private final KeyedLongObjectHashMap<QueryBase> queries;
     private final KeyedLongObjectHashMap<PreparedStatement> preparedStatements;
-    private final ScheduledExecutorService scheduler;
-    private final LivenessScope scope;
 
     @Inject
     public FlightSqlResolver(
@@ -330,7 +327,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         this.handleIdGenerator = new AtomicLong(100_000_000);
         this.queries = new KeyedLongObjectHashMap<>(QUERY_KEY);
         this.preparedStatements = new KeyedLongObjectHashMap<>(PREPARED_STATEMENT_KEY);
-        this.scope = new LivenessScope(false);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -527,6 +523,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         public void onError(ExportNotification.State resultState, String errorContext, @Nullable Exception cause,
                 @Nullable String dependentExportId) {
             if (handler == null) {
+                // Will be null if the upstream export has failed
                 return;
             }
             release();
@@ -735,12 +732,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
             final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
             final TicketHandler ticketHandler = queries.get(id(ticketStatementQuery));
-            if (ticketHandler == null) {
+            if (ticketHandler == null || !ticketHandler.isAuthorized(session)) {
                 throw error(Code.NOT_FOUND,
                         "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
-            }
-            if (!ticketHandler.isAuthorized(session)) {
-                throw error(Code.PERMISSION_DENIED, "Must be the owner to resolve");
             }
             return ticketHandler;
         }
@@ -764,10 +758,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
-        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
-            // TODO: computeEnclosed
-            return tableSpec.logic()
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(), true)) {
+            final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
+            table.retainReference();
+            //scope.manage(table);
+            return table;
         }
     }
 
@@ -927,11 +923,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         private boolean initialized;
         private boolean resolved;
+
+        // private final SingletonLivenessManager manager;
         protected Table table;
 
         QueryBase(SessionState session) {
             this.handleId = handleIdGenerator.getAndIncrement();
             this.session = Objects.requireNonNull(session);
+            //this.manager = new SingletonLivenessManager();
             queries.put(handleId, this);
         }
 
@@ -986,6 +985,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             }
         }
 
+        // ----------------------------------------------------------------------------------------------------------
+
         @Override
         public final boolean isAuthorized(SessionState session) {
             return this.session.equals(session);
@@ -1013,6 +1014,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             cleanup(true);
         }
 
+        // ----------------------------------------------------------------------------------------------------------
+
         private void onWatchdog() {
             log.debug().append("Watchdog cleaning up query ").append(handleId).endl();
             cleanup(false);
@@ -1024,7 +1027,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 watchdog = null;
             }
             if (table != null) {
-                scope.unmanage(table);
+                table.dropReference();
                 table = null;
             }
             queries.remove(handleId, this);
