@@ -265,6 +265,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 _registered_method=True)
+        self.Slice = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/Slice',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SliceRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                _registered_method=True)
 
 
 class TableServiceServicer(object):
@@ -655,6 +660,16 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Slice(self, request, context):
+        """*
+        Returns a new table representing a sliced subset of the original table. The start position is inclusive
+        and the end position is exclusive. If a negative value is given, then the position is counted from the end of
+        the table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -881,6 +896,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'ComputeColumnStatistics': grpc.unary_unary_rpc_method_handler(
                     servicer.ComputeColumnStatistics,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'Slice': grpc.unary_unary_rpc_method_handler(
+                    servicer.Slice,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SliceRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
     }
@@ -2097,6 +2117,33 @@ class TableService(object):
             target,
             '/io.deephaven.proto.backplane.grpc.TableService/ComputeColumnStatistics',
             deephaven_dot_proto_dot_table__pb2.ColumnStatisticsRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Slice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/io.deephaven.proto.backplane.grpc.TableService/Slice',
+            deephaven_dot_proto_dot_table__pb2.SliceRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options,
             channel_credentials,
