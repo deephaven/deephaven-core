@@ -90,7 +90,7 @@ jobs:
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
+        if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
