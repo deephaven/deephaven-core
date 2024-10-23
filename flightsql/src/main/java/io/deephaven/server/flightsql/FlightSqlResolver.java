@@ -27,6 +27,7 @@ import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.hash.KeyedLongObjectKey.BasicStrict;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.type.Type;
@@ -104,6 +105,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -245,7 +247,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     private static final String PK_DB_SCHEMA_NAME = "pk_db_schema_name";
     private static final String FK_DB_SCHEMA_NAME = "fk_db_schema_name";
 
-
     private static final String TABLE_NAME = "table_name";
     private static final String PK_TABLE_NAME = "pk_table_name";
     private static final String FK_TABLE_NAME = "fk_table_name";
@@ -384,7 +385,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
      * does not exist (or the user is not authorized), a {@link Code#NOT_FOUND} exception will be thrown. The
      * {@value PK_TABLE_NAME}, {@value PK_COLUMN_NAME}, {@value FK_TABLE_NAME}, {@value FK_COLUMN_NAME}, and
      * {@value KEY_SEQUENCE} will be out-of-spec as nullable columns (the returned data for these columns will never be
-     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int16}
+     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int8}
      * types instead of {@code uint8} (the returned data for these columns will never be {@code null}). Currently,
      * always an empty table.
      *
@@ -393,7 +394,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
      * does not exist (or the user is not authorized), a {@link Code#NOT_FOUND} exception will be thrown. The
      * {@value PK_TABLE_NAME}, {@value PK_COLUMN_NAME}, {@value FK_TABLE_NAME}, {@value FK_COLUMN_NAME}, and
      * {@value KEY_SEQUENCE} will be out-of-spec as nullable columns (the returned data for these columns will never be
-     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int16}
+     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int8}
      * types instead of {@code uint8} (the returned data for these columns will never be {@code null}). Currently,
      * always an empty table.
      *
@@ -451,13 +452,59 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw unauthenticatedError();
         }
         final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
-        // noinspection unchecked
-        return (ExportObject<T>) session.<Table>nonExport().submit(() -> resolve(session, message));
+
+        final ExportObject<TicketHandler> ticketHandler = session.<TicketHandler>nonExport()
+                .submit(() -> ticketHandler(session, message));
+
+        //noinspection unchecked
+        return (ExportObject<T>) new Resolver(ticketHandler, session).submit();
     }
 
-    private Table resolve(final SessionState session, final Any message) {
-        return ticketHandler(session, message).resolve(session);
+    private static class Resolver implements Callable<Table>, Runnable, SessionState.ExportErrorHandler {
+        private final ExportObject<TicketHandler> export;
+        private final SessionState session;
+
+        private TicketHandler ticketHandler;
+
+        public Resolver(ExportObject<TicketHandler> export, SessionState session) {
+            this.export = Objects.requireNonNull(export);
+            this.session = Objects.requireNonNull(session);
+        }
+
+        public ExportObject<Table> submit() {
+            return session.<Table>nonExport()
+                    .require(export)
+                    .onSuccess(this)
+                    .onError(this)
+                    .submit((Callable<Table>) this);
+        }
+
+        // submit
+        @Override
+        public Table call() {
+            ticketHandler = export.get();
+            return ticketHandler.resolve(session);
+        }
+
+        // onSuccess
+        @Override
+        public void run() {
+            if (ticketHandler == null) {
+                throw new IllegalStateException();
+            }
+            if (ticketHandler instanceof TicketHandlerReleasable) {
+                ((TicketHandlerReleasable)ticketHandler).release();
+            }
+        }
+
+        @Override
+        public void onError(ExportNotification.State resultState, String errorContext, @Nullable Exception cause, @Nullable String dependentExportId) {
+            if (ticketHandler != null && ticketHandler instanceof TicketHandlerReleasable) {
+                ((TicketHandlerReleasable)ticketHandler).release();
+            }
+        }
     }
+
 
     @Override
     public <T> SessionState.ExportObject<T> resolve(
@@ -598,6 +645,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         FlightInfo getInfo(FlightDescriptor descriptor);
 
         Table resolve(SessionState session);
+
+//        void onSuccess();
+//
+//        void onError();
+    }
+
+    interface TicketHandlerReleasable extends TicketHandler {
+
+        void release();
     }
 
     private CommandHandler commandHandler(SessionState session, String typeUrl, boolean forFlightInfo) {
@@ -658,7 +714,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         try {
             return commandHandler.initialize(message);
         } catch (StatusRuntimeException e) {
-            // This should not happen with well-behaved clients; or it means there is an bug in our command/ticket logic
+            // This should not happen with well-behaved clients; or it means there is a bug in our command/ticket logic
             throw error(Code.INVALID_ARGUMENT,
                     "Invalid ticket; please ensure client is using an opaque ticket", e);
         }
@@ -674,7 +730,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
+
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
+
+            // TODO: computeEnclosed
+
+
             return tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
         }
@@ -776,6 +837,16 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 }
                 return table;
             }
+
+            @Override
+            public void onSuccess() {
+                // no-op, not managing the tables
+            }
+
+            @Override
+            public void onError() {
+                // no-op, not managing the tables
+            }
         }
     }
 
@@ -824,7 +895,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 .getLong();
     }
 
-    abstract class QueryBase implements CommandHandler, TicketHandler {
+    // TODO: consider this owning Table instead (SingletonLivenessManager or has + patch from Ryan)
+    abstract class QueryBase implements CommandHandler, TicketHandlerReleasable {
         private final long handleId;
         protected final SessionState session;
 
@@ -833,6 +905,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         private boolean initialized;
         // protected ByteString schemaBytes;
         protected Table table;
+        private boolean resolved;
 
         QueryBase(SessionState session) {
             this.handleId = handleIdGenerator.getAndIncrement();
@@ -897,14 +970,29 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         @Override
         public synchronized final Table resolve(SessionState session) {
-            try {
-                if (!this.session.equals(session)) {
-                    throw unauthenticatedError();
-                }
-                return table;
-            } finally {
-                close();
+            if (!this.session.equals(session)) {
+                throw deniedError();
             }
+            if (resolved) {
+                throw error(Code.FAILED_PRECONDITION, "Should only resolve once");
+            }
+            resolved = true;
+            if (table == null) {
+                throw error(Code.FAILED_PRECONDITION, "Should resolve table quicker");
+            }
+            return table;
+        }
+
+
+
+        @Override
+        public void onSuccess() {
+            closeImpl(true);
+        }
+
+        @Override
+        public void onError() {
+            closeImpl(true);
         }
 
         public void close() {
@@ -918,9 +1006,10 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         private synchronized void closeImpl(boolean cancelWatchdog) {
             queries.remove(handleId, this);
-            // can't unmanage; ownership really needs to pass to the resolver
-            // scope.unmanage(table);
-            table = null;
+            if (table != null) {
+                scope.unmanage(table);
+                table = null;
+            }
             if (cancelWatchdog && watchdog != null) {
                 watchdog.cancel(true);
             }
@@ -1128,8 +1217,8 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 ColumnDefinition.ofInt(KEY_SEQUENCE), // out-of-spec
                 ColumnDefinition.ofString(FK_KEY_NAME), // yes, this does come _before_ the PK version
                 ColumnDefinition.ofString(PK_KEY_NAME),
-                ColumnDefinition.ofShort(UPDATE_RULE), // out-of-spec
-                ColumnDefinition.ofShort(DELETE_RULE) // out-of-spec
+                ColumnDefinition.ofByte(UPDATE_RULE), // out-of-spec
+                ColumnDefinition.ofByte(DELETE_RULE) // out-of-spec
         );
 
         private static final Map<String, Object> ATTRIBUTES = Map.of();
@@ -1202,7 +1291,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     command.hasCatalog() ? command.getCatalog() : null,
                     command.hasDbSchema() ? command.getDbSchema() : null,
                     command.getTable())) {
-                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+                throw tableNotFound();
             }
         }
 
@@ -1230,7 +1319,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     command.hasCatalog() ? command.getCatalog() : null,
                     command.hasDbSchema() ? command.getDbSchema() : null,
                     command.getTable())) {
-                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+                throw tableNotFound();
             }
         }
 
@@ -1258,7 +1347,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     command.hasCatalog() ? command.getCatalog() : null,
                     command.hasDbSchema() ? command.getDbSchema() : null,
                     command.getTable())) {
-                throw error(Code.NOT_FOUND, "FlightSQL table not found");
+                throw tableNotFound();
             }
         }
 
@@ -1618,28 +1707,36 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     // ---------------------------------------------------------------------------------------------------------------
 
     private static StatusRuntimeException unauthenticatedError() {
-        return error(Code.UNAUTHENTICATED, "FlightSQL: Must be authenticated");
+        return error(Code.UNAUTHENTICATED, "Must be authenticated");
+    }
+
+    private static StatusRuntimeException deniedError() {
+        return error(Code.PERMISSION_DENIED, "Must be authorized");
+    }
+
+    private static StatusRuntimeException tableNotFound() {
+        return error(Code.NOT_FOUND, "table not found");
     }
 
     private static StatusRuntimeException transactionIdsNotSupported() {
-        return error(Code.INVALID_ARGUMENT, "FlightSQL: transaction ids are not supported");
+        return error(Code.INVALID_ARGUMENT, "transaction ids are not supported");
     }
 
     private static StatusRuntimeException queryParametersNotSupported(RuntimeException cause) {
-        return error(Code.INVALID_ARGUMENT, "FlightSQL: query parameters are not supported", cause);
+        return error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
     }
 
     private static StatusRuntimeException error(Code code, String message) {
         return code
                 .toStatus()
-                .withDescription(message)
+                .withDescription("FlightSQL: " + message)
                 .asRuntimeException();
     }
 
     private static StatusRuntimeException error(Code code, String message, Throwable cause) {
         return code
                 .toStatus()
-                .withDescription(message)
+                .withDescription("FlightSQL: " + message)
                 .withCause(cause)
                 .asRuntimeException();
     }

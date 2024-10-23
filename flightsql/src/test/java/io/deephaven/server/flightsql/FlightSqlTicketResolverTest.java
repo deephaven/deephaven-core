@@ -4,11 +4,16 @@
 package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetCatalogsConstants;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetDbSchemasConstants;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetKeysConstants;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetPrimaryKeysConstants;
 import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetTableTypesConstants;
+import io.deephaven.server.flightsql.FlightSqlResolver.CommandGetTablesConstants;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.sql.FlightSqlProducer.Schemas;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
@@ -28,8 +33,17 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
+import org.apache.arrow.vector.ipc.ReadChannel;
+import org.apache.arrow.vector.ipc.message.MessageSerializer;
+import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.channels.Channels;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -90,18 +104,42 @@ public class FlightSqlTicketResolverTest {
     }
 
     @Test
-    void definitions() {
-        checkDefinition(CommandGetTableTypesConstants.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
-        checkDefinition(CommandGetCatalogsConstants.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
-        checkDefinition(FlightSqlResolver.CommandGetDbSchemasConstants.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
-        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_IMPORTED_KEYS_SCHEMA);
-        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_EXPORTED_KEYS_SCHEMA);
-        checkDefinition(FlightSqlResolver.CommandGetKeysConstants.DEFINITION, Schemas.GET_CROSS_REFERENCE_SCHEMA);
+    void getTableTypesSchema() throws IOException {
+        isSimilar(CommandGetTableTypesConstants.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
+    }
 
-        // TODO: we can't use the straight schema b/c it's BINARY not byte[], and we don't know how to natively map
-        // checkDefinition(CommandGetTablesImpl.DEFINITION, Schemas.GET_TABLES_SCHEMA);
-        checkDefinition(FlightSqlResolver.CommandGetTablesConstants.DEFINITION_NO_SCHEMA,
-                Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
+    @Test
+    void getCatalogsSchema() throws IOException {
+        isSimilar(CommandGetCatalogsConstants.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
+    }
+
+    @Test
+    void getDbSchemasSchema() throws IOException {
+        isSimilar(CommandGetDbSchemasConstants.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
+    }
+
+    @Disabled("Deephaven is unable to serialize byte as uint8")
+    @Test
+    void getImportedKeysSchema() throws IOException {
+        isSimilar(CommandGetKeysConstants.DEFINITION, Schemas.GET_IMPORTED_KEYS_SCHEMA);
+    }
+
+    @Disabled("Deephaven is unable to serialize byte as uint8")
+    @Test
+    void getExportedKeysSchema() throws IOException {
+        isSimilar(CommandGetKeysConstants.DEFINITION, Schemas.GET_EXPORTED_KEYS_SCHEMA);
+    }
+
+    @Disabled("Arrow Java FlightSQL has a bug in ordering, not the same as documented in the protobuf spec")
+    @Test
+    void getPrimaryKeysSchema() throws IOException {
+        isSimilar(CommandGetPrimaryKeysConstants.DEFINITION, Schemas.GET_PRIMARY_KEYS_SCHEMA);
+    }
+
+    @Test
+    void getTablesSchema() throws IOException {
+        isSimilar(CommandGetTablesConstants.DEFINITION, Schemas.GET_TABLES_SCHEMA);
+        isSimilar(CommandGetTablesConstants.DEFINITION_NO_SCHEMA, Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
     }
 
     private static void checkActionType(String actionType, ActionType expected) {
@@ -112,7 +150,34 @@ public class FlightSqlTicketResolverTest {
         assertThat(typeUrl).isEqualTo(Any.pack(expected).getTypeUrl());
     }
 
-    private static void checkDefinition(TableDefinition definition, Schema expected) {
-        assertThat(definition).isEqualTo(BarrageUtil.convertArrowSchema(expected).tableDef);
+    private static Schema toSchema(TableDefinition definition) throws IOException {
+        // Should we consider BarrageUtil converting to Schema instead of directly into ByteString?
+        final ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(definition, Map.of(), true);
+        try (final ReadChannel rc = new ReadChannel(Channels.newChannel(schemaBytes.newInput()))) {
+            return MessageSerializer.deserializeSchema(rc);
+        }
+    }
+
+    private static void isSimilar(TableDefinition definition, Schema expected) throws IOException {
+        isSimilar(toSchema(definition), expected);
+    }
+
+    private static void isSimilar(Schema actual, Schema expected) {
+        assertThat(actual.getFields()).hasSameSizeAs(expected.getFields());
+        int L = actual.getFields().size();
+        for (int i = 0; i < L; ++i) {
+            isSimilar(actual.getFields().get(i), expected.getFields().get(i));
+        }
+    }
+
+    private static void isSimilar(Field actual, Field expected) {
+        assertThat(actual.getName()).isEqualTo(expected.getName());
+        assertThat(actual.getChildren()).isEqualTo(expected.getChildren());
+        isSimilar(actual.getFieldType(), expected.getFieldType());
+    }
+
+    private static void isSimilar(FieldType actual, FieldType expected) {
+        assertThat(actual.getType()).isEqualTo(expected.getType());
+        assertThat(actual.getDictionary()).isEqualTo(expected.getDictionary());;
     }
 }

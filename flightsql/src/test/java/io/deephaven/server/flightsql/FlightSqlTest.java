@@ -129,11 +129,11 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
 
-    private static final Map<String, String> DEEPHAVEN_SHORT = Map.of(
+    private static final Map<String, String> DEEPHAVEN_BYTE = Map.of(
             "deephaven:isSortable", "true",
             "deephaven:isRowStyle", "false",
             "deephaven:isPartitioning", "false",
-            "deephaven:type", "short",
+            "deephaven:type", "byte",
             "deephaven:isNumberFormat", "false",
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
@@ -194,10 +194,10 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             new Field("fk_key_name", new FieldType(true, Utf8.INSTANCE, null, DEEPHAVEN_STRING), null);
 
     private static final Field UPDATE_RULE =
-            new Field("update_rule", new FieldType(true, MinorType.SMALLINT.getType(), null, DEEPHAVEN_SHORT), null);
+            new Field("update_rule", new FieldType(true, MinorType.TINYINT.getType(), null, DEEPHAVEN_BYTE), null);
 
     private static final Field DELETE_RULE =
-            new Field("delete_rule", new FieldType(true, MinorType.SMALLINT.getType(), null, DEEPHAVEN_SHORT), null);
+            new Field("delete_rule", new FieldType(true, MinorType.TINYINT.getType(), null, DEEPHAVEN_BYTE), null);
 
     // private static final Field TABLE_SCHEMA =
     // new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
@@ -673,7 +673,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getPrimaryKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL table not found");
+                "FlightSQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.
@@ -714,7 +714,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getExportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL table not found");
+                "FlightSQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.
@@ -756,7 +756,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
 
         expectException(() -> flightSqlClient.getImportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL table not found");
+                "FlightSQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.

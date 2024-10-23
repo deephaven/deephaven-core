@@ -36,7 +36,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.grpc.Context;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -776,6 +775,10 @@ public class SessionState {
             if (session != null && session.isExpired()) {
                 throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
+            return getIgnoreExpiration();
+        }
+
+        public T getIgnoreExpiration() {
             final T localResult = result;
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
             // still valid
