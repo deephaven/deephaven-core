@@ -233,7 +233,7 @@ public class IcebergTableAdapter {
      * if no snapshot is provided.
      */
     @Nullable
-    private Snapshot getSnapshotHelper(final IcebergReadInstructions readInstructions) {
+    private Snapshot getSnapshot(final IcebergReadInstructions readInstructions) {
         final Snapshot snapshot;
         if (readInstructions.snapshot().isPresent()) {
             snapshot = readInstructions.snapshot().get();
@@ -254,7 +254,7 @@ public class IcebergTableAdapter {
      * @return The table definition
      */
     public TableDefinition definition() {
-        return definitionImpl(null, IcebergReadInstructions.DEFAULT);
+        return definition(IcebergReadInstructions.DEFAULT);
     }
 
     /**
@@ -263,34 +263,38 @@ public class IcebergTableAdapter {
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The table definition
      */
-    public TableDefinition definition(final IcebergReadInstructions readInstructions) {
-        return definitionImpl(getSnapshotHelper(readInstructions), readInstructions);
-    }
-
-    TableDefinition definitionImpl(
-            @Nullable final Snapshot tableSnapshot,
-            @NotNull final IcebergReadInstructions userInstructions) {
-
+    public TableDefinition definition(@NotNull IcebergReadInstructions readInstructions) {
+        final Snapshot snapshot;
         final Schema schema;
         final org.apache.iceberg.PartitionSpec partitionSpec;
 
-        if (tableSnapshot == null) {
-            synchronized (this) {
-                // Refresh only once and record the current schema and partition spec.
-                refresh();
-                schema = table.schema();
+        {
+            final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
+            if (snapshotFromInstructions == null) {
+                synchronized (this) {
+                    // Refresh only once and record the current schema and partition spec.
+                    refresh();
+                    snapshot = table.currentSnapshot();
+                    schema = table.schema();
+                    partitionSpec = table.spec();
+                }
+                if (snapshot != null) {
+                    // Update the read instructions with the snapshot.
+                    readInstructions = readInstructions.withSnapshot(snapshot);
+                }
+            } else {
+                // Use the schema from the snapshot
+                snapshot = snapshotFromInstructions;
+                schema = schema(snapshot.schemaId()).get();
                 partitionSpec = table.spec();
+                readInstructions = readInstructions.withSnapshot(snapshot);
             }
-        } else {
-            // Use the schema from the snapshot
-            schema = schema(tableSnapshot.schemaId()).get();
-            partitionSpec = table.spec();
         }
 
         return fromSchema(schema,
                 partitionSpec,
-                userInstructions.tableDefinition().orElse(null),
-                getRenameColumnMap(table, schema, userInstructions));
+                readInstructions.tableDefinition().orElse(null),
+                getRenameColumnMap(table, schema, readInstructions));
     }
 
     /**
@@ -299,7 +303,7 @@ public class IcebergTableAdapter {
      * @return The table definition as a Deephaven table
      */
     public Table definitionTable() {
-        return TableTools.metaTable(definitionImpl(null, IcebergReadInstructions.DEFAULT));
+        return definitionTable(IcebergReadInstructions.DEFAULT);
     }
 
     /**
@@ -309,7 +313,7 @@ public class IcebergTableAdapter {
      * @return The table definition as a Deephaven table
      */
     public Table definitionTable(final IcebergReadInstructions readInstructions) {
-        return TableTools.metaTable(definitionImpl(getSnapshotHelper(readInstructions), readInstructions));
+        return TableTools.metaTable(definition(readInstructions));
     }
 
     /**
@@ -318,7 +322,7 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table() {
-        return tableImpl(null, IcebergReadInstructions.DEFAULT);
+        return table(IcebergReadInstructions.DEFAULT);
     }
 
     /**
@@ -327,56 +331,57 @@ public class IcebergTableAdapter {
      * @param readInstructions The instructions for customizations while reading the table.
      * @return The loaded table
      */
-    public IcebergTable table(final IcebergReadInstructions readInstructions) {
-        return tableImpl(getSnapshotHelper(readInstructions), readInstructions);
-    }
-
-    private IcebergTable tableImpl(
-            @Nullable final Snapshot tableSnapshot,
-            @NotNull final IcebergReadInstructions userInstructions) {
-
+    public IcebergTable table(@NotNull IcebergReadInstructions readInstructions) {
         final Snapshot snapshot;
         final Schema schema;
         final org.apache.iceberg.PartitionSpec partitionSpec;
 
-        if (tableSnapshot == null) {
-            synchronized (this) {
-                // Refresh only once and record the current snapshot, schema (which may be newer than the
-                // snapshot schema), and partition spec.
-                refresh();
-                snapshot = table.currentSnapshot();
-                schema = table.schema();
+        {
+            // Find the snapshot to use.
+            final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
+            if (snapshotFromInstructions == null) {
+                synchronized (this) {
+                    // Refresh only once and record the current snapshot, schema (which may be newer than the
+                    // snapshot schema), and partition spec.
+                    refresh();
+                    snapshot = table.currentSnapshot();
+                    schema = table.schema();
+                    partitionSpec = table.spec();
+                }
+                if (snapshot != null) {
+                    // Update the read instructions with the snapshot.
+                    readInstructions = readInstructions.withSnapshot(snapshot);
+                }
+            } else {
+                snapshot = snapshotFromInstructions;
+                // Use the schema from the snapshot
+                schema = schema(snapshot.schemaId()).get();
                 partitionSpec = table.spec();
+                readInstructions = readInstructions.withSnapshot(snapshot);
             }
-        } else {
-            snapshot = tableSnapshot;
-            // Use the schema from the snapshot
-            schema = schema(tableSnapshot.schemaId()).get();
-            partitionSpec = table.spec();
         }
 
         // Get the user supplied table definition.
-        final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
+        final TableDefinition userTableDef = readInstructions.tableDefinition().orElse(null);
 
         // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = getRenameColumnMap(table, schema, userInstructions);
+        final Map<String, String> legalizedColumnRenames = getRenameColumnMap(table, schema, readInstructions);
 
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
         final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
 
         // Create the final instructions with the legalized column renames.
-        final IcebergReadInstructions finalInstructions = userInstructions.withColumnRenames(legalizedColumnRenames);
+        final IcebergReadInstructions finalInstructions = readInstructions.withColumnRenames(legalizedColumnRenames);
 
         final IcebergBaseLayout keyFinder;
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(this, snapshot, finalInstructions,
-                    dataInstructionsProviderLoader);
+            keyFinder = new IcebergFlatLayout(this, finalInstructions, dataInstructionsProviderLoader);
         } else {
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(this, snapshot, partitionSpec,
-                    finalInstructions, dataInstructionsProviderLoader);
+            keyFinder = new IcebergKeyValuePartitionedLayout(this, partitionSpec, finalInstructions,
+                    dataInstructionsProviderLoader);
         }
 
         if (finalInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {

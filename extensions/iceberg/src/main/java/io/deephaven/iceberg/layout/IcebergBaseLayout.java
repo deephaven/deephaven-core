@@ -104,24 +104,17 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @Nullable final Snapshot tableSnapshot,
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
-        this.snapshot = tableSnapshot;
+        this.snapshot = instructions.snapshot().orElse(null);
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
-
-        if (snapshot == null) {
-            this.tableDef = tableAdapter.definition(instructions);
-        } else {
-            this.tableDef = tableAdapter.definition(instructions.withSnapshot(snapshot));
-        }
+        this.tableDef = tableAdapter.definition(instructions);
 
         this.cache = new HashMap<>();
     }

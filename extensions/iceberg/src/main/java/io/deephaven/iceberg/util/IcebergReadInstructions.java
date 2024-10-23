@@ -76,6 +76,9 @@ public abstract class IcebergReadInstructions {
      */
     public abstract Optional<Snapshot> snapshot();
 
+    /**
+     * Return a copy of this instructions object with the snapshot replaced by {@code value}.
+     */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
     public interface Builder {

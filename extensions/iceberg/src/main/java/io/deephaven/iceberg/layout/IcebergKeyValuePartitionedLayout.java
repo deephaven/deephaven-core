@@ -41,17 +41,15 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
      * @param partitionSpec The Iceberg {@link PartitionSpec partition spec} for the table.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergKeyValuePartitionedLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @Nullable final Snapshot tableSnapshot,
             @NotNull final PartitionSpec partitionSpec,
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableAdapter, tableSnapshot, instructions, dataInstructionsProvider);
+        super(tableAdapter, instructions, dataInstructionsProvider);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
