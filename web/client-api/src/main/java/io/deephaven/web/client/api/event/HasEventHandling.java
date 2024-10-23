@@ -1,16 +1,15 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.web.client.api;
+package io.deephaven.web.client.api.event;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.CoreClient;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -70,7 +69,7 @@ public class HasEventHandling {
             private EventFn<T> self;
 
             @Override
-            public void onEvent(CustomEvent<T> e) {
+            public void onEvent(Event<T> e) {
                 removeEventListener(name, self);
                 callback.onEvent(e);
             }
@@ -100,14 +99,14 @@ public class HasEventHandling {
                     return;
                 }
                 seen[0] = true;
-                pair.callback.onEvent((CustomEvent) e);
+                pair.callback.onEvent((Event) e);
             });
         }
     }
 
     @JsMethod
-    public <T> Promise<CustomEvent<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
-        LazyPromise<CustomEvent<T>> promise = new LazyPromise<>();
+    public <T> Promise<Event<T>> nextEvent(String eventName, @JsOptional Double timeoutInMillis) {
+        LazyPromise<Event<T>> promise = new LazyPromise<>();
 
         addEventListenerOneShot(eventName, promise::succeed);
 
@@ -158,31 +157,26 @@ public class HasEventHandling {
     }
 
     public void fireEvent(String type) {
-        fireEvent(type, CustomEventInit.create());
+        fireEvent(new Event<>(type, null));
     }
 
-    public <T> void fireEventWithDetail(String type, @DoNotAutobox T detail) {
-        final CustomEventInit<T> evt = CustomEventInit.create();
-        evt.setDetail(detail);
-        fireEvent(type, evt);
+    public <T> void fireEvent(String type, @DoNotAutobox T detail) {
+        fireEvent(new Event<>(type, detail));
     }
 
-    public <T> void fireEvent(String type, CustomEventInit<T> init) {
-        fireEvent(type, new CustomEvent<>(type, init));
-    }
-
-    public <T> void fireEvent(String type, CustomEvent<T> e) {
+    public <T> void fireEvent(Event<T> e) {
         if (suppress) {
-            JsLog.debug("Event suppressed", type, e);
+            JsLog.debug("Event suppressed", e.getType(), e);
             return;
         }
-        if (map.has(e.type)) {
-            final JsArray<EventFn<T>> callbacks = Js.cast(JsArray.from((JsArrayLike<EventFn<?>>) map.get(e.type)));
+        if (map.has(e.getType())) {
+            final JsArray<EventFn<T>> callbacks = Js.cast(JsArray.from((JsArrayLike<EventFn<?>>) map.get(e.getType())));
             callbacks.forEach((item, ind) -> {
                 try {
                     item.onEvent(e);
                 } catch (Throwable t) {
-                    DomGlobal.console.error(logPrefix() + "User callback (", item, ") of type ", type, " failed: ", t);
+                    DomGlobal.console.error(logPrefix() + "User callback (", item, ") of type ", e.getType(),
+                            " failed: ", t);
                     t.printStackTrace();
                 }
                 return true;
@@ -190,18 +184,28 @@ public class HasEventHandling {
         }
     }
 
-    public boolean failureHandled(String failure) {
-        if (failure != null) {
-            if (hasListeners(CoreClient.EVENT_REQUEST_FAILED)) {
-                final CustomEventInit<String> event = CustomEventInit.create();
-                event.setDetail(failure);
-                fireEvent(CoreClient.EVENT_REQUEST_FAILED, event);
-            } else {
-                DomGlobal.console.error(logPrefix() + failure);
-            }
-            return true;
+    public <T> void fireCriticalEvent(String type) {
+        if (hasListeners(type)) {
+            fireEvent(type);
+        } else {
+            DomGlobal.console.error(logPrefix() + type, "(to prevent this log message, handle the " + type + " event)");
         }
-        return false;
+    }
+
+    public <T> void fireCriticalEvent(String type, T detail) {
+        if (hasListeners(type)) {
+            fireEvent(type, detail);
+        } else {
+            DomGlobal.console.error(logPrefix(), detail,
+                    "(to prevent this log message, handle the " + type + " event)");
+        }
+    }
+
+    public void failureHandled(String failure) {
+        if (failure == null) {
+            return;
+        }
+        fireCriticalEvent(CoreClient.EVENT_REQUEST_FAILED, failure);
     }
 
     public void suppressEvents() {
