@@ -431,12 +431,19 @@ public class AggregatingLongRingBuffer {
      * O(size).
      */
     public void clear() {
-        internalBuffer.clear();
+        final long prevHead = internalBuffer.head;
+        final int prevSize = size();
+
+        // Reset the pointers in the ring buffer without clearing the storage array. This leaves existing `identityVal`
+        // entries in place for the next `evaluate()` call.
+        internalBuffer.head = internalBuffer.tail = 0;
 
         calcHead = calcTail = 0;
 
-        // Reset the cleared storage entries to the identity value
-        Arrays.fill(internalBuffer.storage, identityVal);
+        // Reset the previously populated storage entries to the identity value. After this call, all entries in the
+        // storage buffer are `identityVal`
+        fillWithIdentityVal(prevHead, prevSize);
+
         // Reset the tree buffer with the identity value
         Arrays.fill(treeStorage, identityVal);
     }
