@@ -79,4 +79,9 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
         out.put(partition.column().name(), "partition sub-table"
                 + (partition.includeGroupByColumns() ? " (including group-by columns)" : ""));
     }
+
+    @Override
+    public void visit(Formula formula) {
+        out.put(formula.column().name(), "from formula `" + formula.formula() + "`");
+    }
 }

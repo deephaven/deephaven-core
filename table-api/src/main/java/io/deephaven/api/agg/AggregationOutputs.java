@@ -63,4 +63,10 @@ public class AggregationOutputs implements Aggregation.Visitor {
     public void visit(Partition partition) {
         out = Stream.of(partition.column());
     }
+
+
+    @Override
+    public void visit(Formula formula) {
+        out = Stream.of(formula.column());
+    }
 }
