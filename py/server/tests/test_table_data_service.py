@@ -15,7 +15,7 @@ from deephaven import new_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, string_col, \
     datetime_col, bool_col, ColumnType
 from deephaven.execution_context import get_exec_ctx, ExecutionContext
-from deephaven.experimental.table_service import PartitionedTableServiceBackend, TableKey, \
+from deephaven.experimental.table_data_service import PartitionedTableServiceBackend, TableKey, \
     TableLocationKey, TableDataService
 import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
@@ -147,7 +147,7 @@ class TestBackend(PartitionedTableServiceBackend):
         return _cancellation_callback
 
 
-class PartitionedTableServiceTestCase(BaseTestCase):
+class TableDataServiceTestCase(BaseTestCase):
     tickers = ["AAPL", "FB", "GOOG", "MSFT", "NVDA", "TMSC", "TSLA", "VZ", "WMT", "XOM"]
 
     def gen_pa_table(self) -> Generator[pa.Table, None, None]:
