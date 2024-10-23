@@ -249,6 +249,57 @@ public class IcebergTableAdapter {
     }
 
     /**
+     * Used to hold return value for {@link #getSpecAndSchema(IcebergReadInstructions)}.
+     */
+    private static final class SpecAndSchema {
+        private final Schema schema;
+        private final PartitionSpec partitionSpec;
+        private final IcebergReadInstructions readInstructions;
+
+        private SpecAndSchema(
+                @NotNull final Schema schema,
+                @NotNull final PartitionSpec partitionSpec,
+                @NotNull final IcebergReadInstructions readInstructions) {
+            this.schema = schema;
+            this.partitionSpec = partitionSpec;
+            this.readInstructions = readInstructions;
+        }
+    }
+
+    /**
+     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, update the
+     * read instructions with the requested snapshot, or the latest snapshot if none is requested.
+     */
+    private SpecAndSchema getSpecAndSchema(@NotNull IcebergReadInstructions readInstructions) {
+        final Snapshot snapshot;
+        final Schema schema;
+        final PartitionSpec partitionSpec;
+
+        final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
+        if (snapshotFromInstructions == null) {
+            synchronized (this) {
+                // Refresh only once and record the current schema and partition spec.
+                refresh();
+                snapshot = table.currentSnapshot();
+                schema = table.schema();
+                partitionSpec = table.spec();
+            }
+            if (snapshot != null) {
+                // Update the read instructions with the snapshot.
+                readInstructions = readInstructions.withSnapshot(snapshot);
+            }
+        } else {
+            // Use the schema from the snapshot
+            snapshot = snapshotFromInstructions;
+            schema = schema(snapshot.schemaId()).get();
+            partitionSpec = table.spec();
+            readInstructions = readInstructions.withSnapshot(snapshot);
+        }
+
+        return new SpecAndSchema(schema, partitionSpec, readInstructions);
+    }
+
+    /**
      * Return {@link TableDefinition table definition} corresponding to this iceberg table
      *
      * @return The table definition
@@ -264,32 +315,10 @@ public class IcebergTableAdapter {
      * @return The table definition
      */
     public TableDefinition definition(@NotNull IcebergReadInstructions readInstructions) {
-        final Snapshot snapshot;
-        final Schema schema;
-        final org.apache.iceberg.PartitionSpec partitionSpec;
-
-        {
-            final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
-            if (snapshotFromInstructions == null) {
-                synchronized (this) {
-                    // Refresh only once and record the current schema and partition spec.
-                    refresh();
-                    snapshot = table.currentSnapshot();
-                    schema = table.schema();
-                    partitionSpec = table.spec();
-                }
-                if (snapshot != null) {
-                    // Update the read instructions with the snapshot.
-                    readInstructions = readInstructions.withSnapshot(snapshot);
-                }
-            } else {
-                // Use the schema from the snapshot
-                snapshot = snapshotFromInstructions;
-                schema = schema(snapshot.schemaId()).get();
-                partitionSpec = table.spec();
-                readInstructions = readInstructions.withSnapshot(snapshot);
-            }
-        }
+        final SpecAndSchema specAndSchema = getSpecAndSchema(readInstructions);
+        final Schema schema = specAndSchema.schema;
+        final PartitionSpec partitionSpec = specAndSchema.partitionSpec;
+        readInstructions = specAndSchema.readInstructions;
 
         return fromSchema(schema,
                 partitionSpec,
@@ -332,34 +361,10 @@ public class IcebergTableAdapter {
      * @return The loaded table
      */
     public IcebergTable table(@NotNull IcebergReadInstructions readInstructions) {
-        final Snapshot snapshot;
-        final Schema schema;
-        final org.apache.iceberg.PartitionSpec partitionSpec;
-
-        {
-            // Find the snapshot to use.
-            final Snapshot snapshotFromInstructions = getSnapshot(readInstructions);
-            if (snapshotFromInstructions == null) {
-                synchronized (this) {
-                    // Refresh only once and record the current snapshot, schema (which may be newer than the
-                    // snapshot schema), and partition spec.
-                    refresh();
-                    snapshot = table.currentSnapshot();
-                    schema = table.schema();
-                    partitionSpec = table.spec();
-                }
-                if (snapshot != null) {
-                    // Update the read instructions with the snapshot.
-                    readInstructions = readInstructions.withSnapshot(snapshot);
-                }
-            } else {
-                snapshot = snapshotFromInstructions;
-                // Use the schema from the snapshot
-                schema = schema(snapshot.schemaId()).get();
-                partitionSpec = table.spec();
-                readInstructions = readInstructions.withSnapshot(snapshot);
-            }
-        }
+        final SpecAndSchema specAndSchema = getSpecAndSchema(readInstructions);
+        final Schema schema = specAndSchema.schema;
+        final PartitionSpec partitionSpec = specAndSchema.partitionSpec;
+        readInstructions = specAndSchema.readInstructions;
 
         // Get the user supplied table definition.
         final TableDefinition userTableDef = readInstructions.tableDefinition().orElse(null);
