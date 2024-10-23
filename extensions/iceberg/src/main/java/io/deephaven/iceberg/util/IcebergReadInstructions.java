@@ -5,11 +5,13 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.Snapshot;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * This class provides instructions intended for reading Iceberg catalogs and tables. The default values documented in
@@ -60,22 +62,46 @@ public abstract class IcebergReadInstructions {
         return IcebergUpdateMode.staticMode();
     }
 
+    /**
+     * The identifier of the snapshot to load for reading. If both this and {@link #snapshot()} are provided, the
+     * {@link Snapshot#snapshotId()} should match this. Otherwise, only one of them should be provided. If neither is
+     * provided, the latest snapshot will be loaded.
+     */
+    public abstract OptionalLong tableSnapshotId();
+
+    /**
+     * The snapshot to load for reading. If both this and {@link #tableSnapshotId()} are provided, the
+     * {@link Snapshot#snapshotId()} should match the {@link #tableSnapshotId()}. Otherwise, only one of them should be
+     * provided. If neither is provided, the latest snapshot will be loaded.
+     */
+    public abstract Optional<Snapshot> snapshot();
+
+    public abstract IcebergReadInstructions withSnapshot(Snapshot value);
+
     public interface Builder {
-        @SuppressWarnings("unused")
         Builder tableDefinition(TableDefinition tableDefinition);
 
-        @SuppressWarnings("unused")
         Builder dataInstructions(Object s3Instructions);
 
-        @SuppressWarnings("unused")
         Builder putColumnRenames(String key, String value);
 
-        @SuppressWarnings("unused")
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
-        @SuppressWarnings("unused")
         Builder updateMode(IcebergUpdateMode updateMode);
 
+        Builder tableSnapshotId(long tableSnapshotId);
+
+        Builder snapshot(Snapshot snapshot);
+
         IcebergReadInstructions build();
+    }
+
+    @Value.Check
+    final void checkSnapshotId() {
+        if (tableSnapshotId().isPresent() && snapshot().isPresent() &&
+                tableSnapshotId().getAsLong() != snapshot().get().snapshotId()) {
+            throw new IllegalArgumentException("If both tableSnapshotId and snapshot are provided, the snapshotId " +
+                    "must match");
+        }
     }
 }

@@ -10,7 +10,6 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.util.IcebergDefinition;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -118,11 +117,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
 
-        final IcebergDefinition.Builder builder = IcebergDefinition.builder().instructions(instructions);
-        if (snapshot != null) {
-            builder.tableSnapshotId(snapshot.snapshotId());
+        if (snapshot == null) {
+            this.tableDef = tableAdapter.definition(instructions);
+        } else {
+            this.tableDef = tableAdapter.definition(instructions.withSnapshot(snapshot));
         }
-        this.tableDef = tableAdapter.definition(builder.build());
 
         this.cache = new HashMap<>();
     }

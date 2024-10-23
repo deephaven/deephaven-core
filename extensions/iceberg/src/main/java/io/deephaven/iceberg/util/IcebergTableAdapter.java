@@ -228,15 +228,20 @@ public class IcebergTableAdapter {
         return Optional.ofNullable(found);
     }
 
+    /**
+     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergReadInstructions}, or {@code null}
+     * if no snapshot is provided.
+     */
     @Nullable
-    private Snapshot getSnapshotHelper(final Optional<Snapshot> optSnapshot, final OptionalLong snapshotId) {
+    private Snapshot getSnapshotHelper(final IcebergReadInstructions readInstructions) {
         final Snapshot snapshot;
-        if (optSnapshot.isPresent()) {
-            snapshot = optSnapshot.get();
-        } else if (snapshotId.isPresent()) {
-            snapshot = snapshot(snapshotId.getAsLong()).orElseThrow(() -> new IllegalArgumentException(
-                    "Snapshot with id " + snapshotId.getAsLong() + " not found for table " +
-                            tableIdentifier));
+        if (readInstructions.snapshot().isPresent()) {
+            snapshot = readInstructions.snapshot().get();
+        } else if (readInstructions.tableSnapshotId().isPresent()) {
+            snapshot = snapshot(readInstructions.tableSnapshotId().getAsLong())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Snapshot with id " + readInstructions.tableSnapshotId().getAsLong() + " not found for " +
+                                    "table " + tableIdentifier));
         } else {
             snapshot = null;
         }
@@ -246,12 +251,20 @@ public class IcebergTableAdapter {
     /**
      * Return {@link TableDefinition table definition} corresponding to this iceberg table
      *
-     * @param definition The instructions for reading the definition
      * @return The table definition
      */
-    public TableDefinition definition(final IcebergDefinition definition) {
-        final Snapshot snapshot = getSnapshotHelper(definition.snapshot(), definition.tableSnapshotId());
-        return definitionImpl(snapshot, definition.instructions());
+    public TableDefinition definition() {
+        return definitionImpl(null, IcebergReadInstructions.DEFAULT);
+    }
+
+    /**
+     * Return {@link TableDefinition table definition} corresponding to this iceberg table
+     *
+     * @param readInstructions The instructions for customizations while reading the table.
+     * @return The table definition
+     */
+    public TableDefinition definition(final IcebergReadInstructions readInstructions) {
+        return definitionImpl(getSnapshotHelper(readInstructions), readInstructions);
     }
 
     TableDefinition definitionImpl(
@@ -283,23 +296,39 @@ public class IcebergTableAdapter {
     /**
      * Return {@link Table table} containing the {@link TableDefinition definition} of this Iceberg table.
      *
-     * @param definitionTable The instructions for reading the definition
      * @return The table definition as a Deephaven table
      */
-    public Table definitionTable(final IcebergDefinitionTable definitionTable) {
-        final Snapshot snapshot = getSnapshotHelper(definitionTable.snapshot(), definitionTable.tableSnapshotId());
-        return TableTools.metaTable(definitionImpl(snapshot, definitionTable.instructions()));
+    public Table definitionTable() {
+        return TableTools.metaTable(definitionImpl(null, IcebergReadInstructions.DEFAULT));
+    }
+
+    /**
+     * Return {@link Table table} containing the {@link TableDefinition definition} of this Iceberg table.
+     *
+     * @param readInstructions The instructions for customizations while reading the table.
+     * @return The table definition as a Deephaven table
+     */
+    public Table definitionTable(final IcebergReadInstructions readInstructions) {
+        return TableTools.metaTable(definitionImpl(getSnapshotHelper(readInstructions), readInstructions));
+    }
+
+    /**
+     * Read the latest snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
+     *
+     * @return The loaded table
+     */
+    public IcebergTable table() {
+        return tableImpl(null, IcebergReadInstructions.DEFAULT);
     }
 
     /**
      * Read a snapshot of this Iceberg table from the Iceberg catalog as a Deephaven {@link Table table}.
      *
-     * @param readTable The read table instructions
+     * @param readInstructions The instructions for customizations while reading the table.
      * @return The loaded table
      */
-    public IcebergTable table(final IcebergReadTable readTable) {
-        final Snapshot snapshot = getSnapshotHelper(readTable.snapshot(), readTable.tableSnapshotId());
-        return tableImpl(snapshot, readTable.instructions());
+    public IcebergTable table(final IcebergReadInstructions readInstructions) {
+        return tableImpl(getSnapshotHelper(readInstructions), readInstructions);
     }
 
     private IcebergTable tableImpl(

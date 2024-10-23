@@ -7,8 +7,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.iceberg.junit5.CatalogAdapterBase;
-import io.deephaven.iceberg.util.IcebergDefinition;
-import io.deephaven.iceberg.util.IcebergReadTable;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
@@ -45,8 +43,8 @@ public class CatalogAdapterTest extends CatalogAdapterBase {
                     ColumnDefinition.ofInt("Bar"),
                     ColumnDefinition.ofDouble("Baz"));
 
-            assertThat(tableAdapter.definition(IcebergDefinition.builder().build())).isEqualTo(expectedDefinition);
-            table = tableAdapter.table(IcebergReadTable.builder().build());
+            assertThat(tableAdapter.definition()).isEqualTo(expectedDefinition);
+            table = tableAdapter.table();
             assertThat(table.getDefinition()).isEqualTo(expectedDefinition);
         }
         assertThat(table.isEmpty()).isTrue();

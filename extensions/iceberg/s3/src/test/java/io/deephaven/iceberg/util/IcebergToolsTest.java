@@ -277,9 +277,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(instructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -292,9 +290,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(instructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // This table ends up with zero records
         Assert.eq(table.size(), "table.size()", 0, "expected rows in the table");
@@ -307,9 +303,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_single");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(instructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -322,9 +316,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(instructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -337,9 +329,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(instructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
@@ -366,10 +356,9 @@ public abstract class IcebergToolsTest {
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
 
         for (Runnable runnable : Arrays.<Runnable>asList(
-                () -> tableAdapter.table(IcebergReadTable.builder().instructions(localInstructions).build()),
-                () -> tableAdapter.definition(IcebergDefinition.builder().instructions(localInstructions).build()),
-                () -> tableAdapter
-                        .definitionTable(IcebergDefinitionTable.builder().instructions(localInstructions).build()))) {
+                () -> tableAdapter.table(localInstructions),
+                () -> tableAdapter.definition(localInstructions),
+                () -> tableAdapter.definitionTable(localInstructions))) {
             try {
                 runnable.run();
                 Assert.statementNeverExecuted("Expected an exception for missing columns");
@@ -406,9 +395,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
         final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_partitioned");
-        final io.deephaven.engine.table.Table table = tableAdapter.table(IcebergReadTable.builder()
-                .instructions(localInstructions)
-                .build());
+        final io.deephaven.engine.table.Table table = tableAdapter.table(localInstructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "expected rows in the table");
