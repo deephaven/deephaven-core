@@ -95,6 +95,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                         value.hasConsoleId() ? value.getConsoleId() : value.getGetCompletionItems().getConsoleId();
                 SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(consoleId, "consoleId");
                 session.nonExport()
+                        .description("PythonAutoCompleteObserver#onNext")
                         .require(exportedConsole)
                         .onError(responseObserver)
                         .submit(() -> {
