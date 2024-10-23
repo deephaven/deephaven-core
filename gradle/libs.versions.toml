@@ -89,7 +89,7 @@ junit = "5.11.3"
 junit4 = "4.13.2"
 testcontainers = "1.20.0"
 jmh = "1.37"
-spockframework = "2.0-groovy-3.0"
+spockframework = "2.3-groovy-3.0"
 
 [libraries]
 airlift-aircompressor = { module = "io.airlift:aircompressor", version.ref = "airlift"}
