@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.subscription;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -14,7 +13,6 @@ import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
@@ -26,6 +24,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
@@ -243,9 +242,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 rowsRemoved,
                 totalMods,
                 shifted);
-        CustomEventInit<UpdateEventData> event = CustomEventInit.create();
-        event.setDetail(detail);
-        fireEvent(TableSubscription.EVENT_UPDATED, event);
+        fireEvent(TableSubscription.EVENT_UPDATED, detail);
     }
 
     public static class SubscriptionRow implements TableData.Row {

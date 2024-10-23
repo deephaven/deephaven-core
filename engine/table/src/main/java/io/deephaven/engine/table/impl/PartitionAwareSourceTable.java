@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -204,7 +205,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 reference, null, viewColumns, null);
     }
 
-    private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
+    private static final String KEY_SUPPLIER_COLUMN_NAME = "__PartitionAwareSourceTable_KeySupplier__";
 
     private static <T> ColumnSource<? super T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
             @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
@@ -221,30 +222,42 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final Collection<ImmutableTableLocationKey> filterLocationKeys(
-            @NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
+    protected final Collection<LiveSupplier<ImmutableTableLocationKey>> filterLocationKeys(
+            @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> foundLocationKeys) {
         if (partitioningColumnFilters.length == 0) {
             return foundLocationKeys;
         }
+
+        final Collection<ImmutableTableLocationKey> immutableTableLocationKeys = foundLocationKeys.stream()
+                .map(LiveSupplier::get)
+                .collect(Collectors.toList());
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
-                Stream.of(LOCATION_KEY_COLUMN_NAME)).collect(Collectors.toList());
+                Stream.of(KEY_SUPPLIER_COLUMN_NAME)).collect(Collectors.toList());
         final List<ColumnSource<?>> partitionTableColumnSources =
                 new ArrayList<>(partitioningColumnDefinitions.size() + 1);
         for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
-            partitionTableColumnSources.add(makePartitionSource(columnDefinition, foundLocationKeys));
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
-        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
-                ImmutableTableLocationKey.class, null));
+        // Add the key suppliers to the table
+        // noinspection unchecked,rawtypes
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(
+                (Collection<LiveSupplier>) (Collection) foundLocationKeys,
+                LiveSupplier.class,
+                null));
+
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .where(Filter.and(partitioningColumnFilters));
         if (filteredColumnPartitionTable.size() == foundLocationKeys.size()) {
             return foundLocationKeys;
         }
-        final Iterable<ImmutableTableLocationKey> iterable =
-                () -> filteredColumnPartitionTable.columnIterator(LOCATION_KEY_COLUMN_NAME);
+
+        // Return the filtered keys
+        final Iterable<LiveSupplier<ImmutableTableLocationKey>> iterable =
+                () -> filteredColumnPartitionTable.columnIterator(KEY_SUPPLIER_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
     }
 

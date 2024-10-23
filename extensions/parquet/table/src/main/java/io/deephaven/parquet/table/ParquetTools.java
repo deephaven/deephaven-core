@@ -16,6 +16,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -828,7 +829,9 @@ public class ParquetTools {
                 StandaloneTableKey.getInstance(),
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
-                null);
+                null,
+                TableUpdateMode.STATIC, // exactly one location here
+                TableUpdateMode.STATIC); // parquet files are static
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -888,7 +891,14 @@ public class ParquetTools {
                         StandaloneTableKey.getInstance(),
                         keyFinder,
                         new ParquetTableLocationFactory(useInstructions),
-                        refreshService),
+                        refreshService,
+                        // If refreshing, new locations can be discovered but they will be appended
+                        // to the locations list
+                        useInstructions.isRefreshing()
+                                ? TableUpdateMode.APPEND_ONLY
+                                : TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC // parquet files are static
+                ),
                 updateSourceRegistrar);
     }
 
@@ -973,10 +983,6 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.METADATA_PARTITIONED);
-        if (readInstructions.getTableDefinition().isPresent()) {
-            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
-                    "metadata files with custom table definition is currently not supported");
-        }
         final ParquetMetadataFileLayout layout =
                 ParquetMetadataFileLayout.create(sourceURI, readInstructions, channelsProvider);
         return readTable(layout,
