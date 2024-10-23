@@ -4,6 +4,7 @@
 package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
@@ -58,7 +59,8 @@ public class IcebergToolsS3 extends IcebergTools {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
-        final Catalog catalog = new RESTCatalog();
+        final RESTCatalog catalog = new RESTCatalog();
+        catalog.setConf(new Configuration());
         return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
     }
 
@@ -81,7 +83,8 @@ public class IcebergToolsS3 extends IcebergTools {
         // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
 
-        final Catalog catalog = new GlueCatalog();
+        final GlueCatalog catalog = new GlueCatalog();
+        catalog.setConf(new Configuration());
         return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
     }
 

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.junit5.CatalogAdapterBase;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergAppend;
 import io.deephaven.iceberg.util.IcebergOverwrite;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
@@ -51,6 +52,8 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTable");
         catalogAdapter.catalog().createTable(myTableId, schema);
 
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+
         assertThat(catalogAdapter.listNamespaces()).containsExactly(myNamespace);
         assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(myTableId);
         final Table table;
@@ -59,12 +62,12 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                     ColumnDefinition.ofString("Foo"),
                     ColumnDefinition.ofInt("Bar"),
                     ColumnDefinition.ofDouble("Baz"));
-            assertThat(catalogAdapter.getTableDefinition(myTableId, null)).isEqualTo(expectedDefinition);
-            table = catalogAdapter.readTable(myTableId, null);
+
+            assertThat(tableAdapter.definition()).isEqualTo(expectedDefinition);
+            table = tableAdapter.table();
             assertThat(table.getDefinition()).isEqualTo(expectedDefinition);
         }
-        // Note: this is failing w/ NPE, assumes that Snapshot is non-null.
-        // assertThat(table.isEmpty()).isTrue();
+        assertThat(table.isEmpty()).isTrue();
     }
 
     @Test
@@ -72,24 +75,18 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
-        final String tableIdentifier = "MyNamespace.MyTable";
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         try {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdentifier)
-                    .addDhTables(source)
-                    .build());
+            catalogAdapter.loadTable(tableIdentifier);
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Table does not exist");
         }
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
-                .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(source)
-                .instructions(writeInstructions)
-                .build());
-        Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+
+        final IcebergTableAdapter tableAdapter =
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .build());
+        Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append"));
 
@@ -100,12 +97,11 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final IcebergWriteInstructions writeInstructionsLZ4 = IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("LZ4")
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(moreData)
                 .instructions(writeInstructionsLZ4)
                 .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        fromIceberg = tableAdapter.table();
         final Table expected = TableTools.merge(moreData, source);
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append"));
@@ -114,12 +110,10 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table emptyTable = TableTools.emptyTable(0)
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(emptyTable)
-                .instructions(writeInstructions)
                 .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        fromIceberg = tableAdapter.table();
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
 
@@ -130,87 +124,18 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final IcebergWriteInstructions writeInstructionsGZIP = IcebergParquetWriteInstructions.builder()
                 .compressionCodecName("GZIP")
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(someMoreData, moreData, emptyTable)
                 .instructions(writeInstructionsGZIP)
                 .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        fromIceberg = tableAdapter.table();
         final Table expected2 = TableTools.merge(someMoreData, moreData, expected);
         assertTableEquals(expected2, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append", "append", "append"));
     }
 
-    @Test
-    void overwriteTablesBasicTest() {
-        final Table source = TableTools.emptyTable(10)
-                .update("intCol = (int) 2 * i + 10",
-                        "doubleCol = (double) 2.5 * i + 10");
-        final String tableIdentifier = "MyNamespace.MyTable";
-        try {
-            catalogAdapter.overwrite(IcebergOverwrite.builder()
-                    .tableIdentifier(tableIdentifier)
-                    .addDhTables(source)
-                    .build());
-        } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Table does not exist");
-        }
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
-                .build();
-        catalogAdapter.overwrite(IcebergOverwrite.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(source)
-                .instructions(writeInstructions)
-                .build());
-        Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertTableEquals(source, fromIceberg);
-        verifySnapshots(tableIdentifier, List.of("append"));
-
-        // Overwrite with more data
-        final Table moreData = TableTools.emptyTable(5)
-                .update("intCol = (int) 3 * i + 20",
-                        "doubleCol = (double) 3.5 * i + 20");
-        catalogAdapter.overwrite(IcebergOverwrite.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(moreData)
-                .instructions(writeInstructions)
-                .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertTableEquals(moreData, fromIceberg);
-        verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
-
-        // Overwrite with an empty table
-        final Table emptyTable = TableTools.emptyTable(0)
-                .update("intCol = (int) 4 * i + 30",
-                        "doubleCol = (double) 4.5 * i + 30");
-        catalogAdapter.overwrite(IcebergOverwrite.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(emptyTable)
-                .instructions(writeInstructions)
-                .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertTableEquals(emptyTable, fromIceberg);
-        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite"));
-
-        // Overwrite with multiple tables in a single call
-        final Table someMoreData = TableTools.emptyTable(3)
-                .update("intCol = (int) 5 * i + 40",
-                        "doubleCol = (double) 5.5 * i + 40");
-        catalogAdapter.overwrite(IcebergOverwrite.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(someMoreData, moreData, emptyTable)
-                .instructions(writeInstructions)
-                .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        final Table expected2 = TableTools.merge(someMoreData, moreData);
-        assertTableEquals(expected2, fromIceberg);
-        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite", "overwrite"));
-    }
-
-    private void verifySnapshots(final String tableIdentifier, final List<String> expectedOperations) {
-        final Iterable<Snapshot> snapshots =
-                catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier)).snapshots();
+    private void verifySnapshots(final TableIdentifier tableIdentifier, final List<String> expectedOperations) {
+        final Iterable<Snapshot> snapshots = catalogAdapter.catalog().loadTable(tableIdentifier).snapshots();
         assertThat(snapshots).hasSize(expectedOperations.size());
         final Iterator<Snapshot> snapshotIter = snapshots.iterator();
         for (final String expectedOperation : expectedOperations) {
@@ -219,23 +144,74 @@ class CatalogAdapterTest extends CatalogAdapterBase {
     }
 
     @Test
+    void overwriteTablesBasicTest() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        try {
+            catalogAdapter.loadTable(tableIdentifier);
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).contains("Table does not exist");
+        }
+
+        // Add some data to the table
+        final IcebergTableAdapter tableAdapter =
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .build());
+
+        // Overwrite with more data
+        final Table moreData = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        tableAdapter.overwrite(IcebergOverwrite.builder()
+                .addDhTables(moreData)
+                .build());
+        Table fromIceberg = tableAdapter.table();
+        assertTableEquals(moreData, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
+
+        // Overwrite with an empty table
+        final Table emptyTable = TableTools.emptyTable(0)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        tableAdapter.overwrite(IcebergOverwrite.builder()
+                .addDhTables(emptyTable)
+                .build());
+        fromIceberg = tableAdapter.table();
+        assertTableEquals(emptyTable, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite"));
+
+        // Overwrite with multiple tables in a single call
+        final Table someMoreData = TableTools.emptyTable(3)
+                .update("intCol = (int) 5 * i + 40",
+                        "doubleCol = (double) 5.5 * i + 40");
+        tableAdapter.overwrite(IcebergOverwrite.builder()
+                .addDhTables(someMoreData, moreData, emptyTable)
+                .build());
+        fromIceberg = tableAdapter.table();
+        final Table expected2 = TableTools.merge(someMoreData, moreData);
+        assertTableEquals(expected2, fromIceberg);
+        verifySnapshots(tableIdentifier, List.of("append", "overwrite", "overwrite", "overwrite"));
+    }
+
+    @Test
     void overwriteWithDifferentDefinition() {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
-        final String tableIdentifier = "MyNamespace.MyTable";
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergWriteInstructions writeInstructionsWithSchemaMatching = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .verifySchema(true)
                 .build();
-
+        final IcebergTableAdapter tableAdapter =
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .instructions(writeInstructionsWithSchemaMatching)
+                        .build());
         {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdentifier)
-                    .addDhTables(source)
-                    .instructions(writeInstructionsWithSchemaMatching)
-                    .build());
-            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(source, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append"));
         }
@@ -243,8 +219,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table differentSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10");
         try {
-            catalogAdapter.overwrite(IcebergOverwrite.builder()
-                    .tableIdentifier(tableIdentifier)
+            tableAdapter.overwrite(IcebergOverwrite.builder()
                     .addDhTables(differentSource)
                     .instructions(writeInstructionsWithSchemaMatching)
                     .build());
@@ -256,12 +231,11 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final IcebergWriteInstructions writeInstructionsWithoutSchemaMatching =
                 IcebergParquetWriteInstructions.builder().build();
         {
-            catalogAdapter.overwrite(IcebergOverwrite.builder()
-                    .tableIdentifier(tableIdentifier)
+            tableAdapter.overwrite(IcebergOverwrite.builder()
                     .addDhTables(differentSource)
                     .instructions(writeInstructionsWithoutSchemaMatching)
                     .build());
-            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(differentSource, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
         }
@@ -270,12 +244,11 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         {
             final Table moreData = TableTools.emptyTable(5)
                     .update("intCol = (int) 3 * i + 20");
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdentifier)
+            tableAdapter.append(IcebergAppend.builder()
                     .addDhTables(moreData)
                     .instructions(writeInstructionsWithoutSchemaMatching)
                     .build());
-            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table fromIceberg = tableAdapter.table();
             final Table expected = TableTools.merge(moreData, differentSource);
             assertTableEquals(expected, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append"));
@@ -283,11 +256,10 @@ class CatalogAdapterTest extends CatalogAdapterBase {
 
         // Overwrite with an empty list
         {
-            catalogAdapter.overwrite(IcebergOverwrite.builder()
-                    .tableIdentifier(tableIdentifier)
+            tableAdapter.overwrite(IcebergOverwrite.builder()
                     .instructions(writeInstructionsWithoutSchemaMatching)
                     .build());
-            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.emptyTable(0), fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "overwrite"));
         }
@@ -298,28 +270,22 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
-        final String tableIdentifier = "MyNamespace.MyTable";
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
         // By default, schema verification should be enabled for appending
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
-                .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(source)
-                .instructions(writeInstructions)
-                .build());
-        Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .build());
+        Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append"));
 
         final Table differentSource = TableTools.emptyTable(10)
                 .update("shortCol = (short) 2 * i + 10");
         try {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdentifier)
+            tableAdapter.append(IcebergAppend.builder()
                     .addDhTables(differentSource)
-                    .instructions(writeInstructions)
                     .build());
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Schema verification failed");
@@ -328,12 +294,10 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         // Append a table with just the int column, should be compatible with the existing schema
         final Table compatibleSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 5 * i + 10");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(compatibleSource)
-                .instructions(writeInstructions)
                 .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        fromIceberg = tableAdapter.table();
         final Table expected = TableTools.merge(compatibleSource.update("doubleCol = NULL_DOUBLE"), source);
         assertTableEquals(expected, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append"));
@@ -342,22 +306,17 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(moreData)
-                .instructions(writeInstructions)
                 .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        fromIceberg = tableAdapter.table();
         final Table expected2 = TableTools.merge(moreData, expected);
         assertTableEquals(expected2, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
 
         // Append an empty list
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
-                .instructions(writeInstructions)
-                .build());
-        fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+        tableAdapter.append(IcebergAppend.builder().build());
+        fromIceberg = tableAdapter.table();
         assertTableEquals(expected2, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
     }
@@ -367,16 +326,16 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .verifySchema(true)
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier("MyNamespace.MyTable")
-                .addDhTables(source)
-                .instructions(writeInstructions)
-                .build());
-        Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .instructions(writeInstructions)
+                        .build());
+        Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
 
         final Table appendTable1 = TableTools.emptyTable(5)
@@ -389,8 +348,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                         "doubleCol = (double) 4.5 * i + 30");
 
         try {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier("MyNamespace.MyTable")
+            tableAdapter.append(IcebergAppend.builder()
                     .addDhTables(appendTable1, appendTable2)
                     .instructions(writeInstructions)
                     .build());
@@ -403,16 +361,14 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"));
         final IcebergWriteInstructions writeInstructionsWithDefinition = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .verifySchema(true)
                 .tableDefinition(writeDefinition)
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier("MyNamespace.MyTable")
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(appendTable1, appendTable2)
                 .instructions(writeInstructionsWithDefinition)
                 .build());
-        fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
+        fromIceberg = tableAdapter.table();
         final Table expected = TableTools.merge(
                 appendTable1.dropColumns("shortCol"),
                 appendTable2.dropColumns("charCol"),
@@ -451,11 +407,9 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                         "localDateCol = java.time.LocalDate.now()",
                         "localTimeCol = java.time.LocalTime.now()",
                         "binaryCol = new byte[] {(byte) i}");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(myTableId.toString())
-                .addDhTables(source)
-                .build());
-        final Table fromIceberg = catalogAdapter.readTable(myTableId, null);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
+        tableAdapter.append(IcebergAppend.builder().addDhTables(source).build());
+        final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
 
@@ -467,19 +421,17 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                         "stringCol = ii % 2 == 0 ? Long.toString(ii) : null",
                         "intCol = (int) stringCol.charAt(0)");
         final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .verifySchema(true)
                 .build();
         final Namespace myNamespace = Namespace.of("MyNamespace");
-        final TableIdentifier myTableId = TableIdentifier.of(myNamespace, "MyTable");
-        final String tableIdString = myTableId.toString();
+        final TableIdentifier tableIdentifier = TableIdentifier.of(myNamespace, "MyTable");
 
         try {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdString)
-                    .addDhTables(badSource)
-                    .instructions(writeInstructions)
-                    .build());
+            catalogAdapter.createTableAndAppend(
+                    tableIdentifier, IcebergAppend.builder()
+                            .addDhTables(badSource)
+                            .instructions(writeInstructions)
+                            .build());
             fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
             assertThat(e.getCause() instanceof FormulaEvaluationException).isTrue();
@@ -490,17 +442,16 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table goodSource = TableTools.emptyTable(5)
                 .update("stringCol = Long.toString(ii)",
                         "intCol = (int) i");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdString)
-                .addDhTables(goodSource)
-                .instructions(writeInstructions)
-                .build());
-        Table fromIceberg = catalogAdapter.readTable(tableIdString, null);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(goodSource)
+                        .instructions(writeInstructions)
+                        .build());
+        Table fromIceberg = tableAdapter.table();
         assertTableEquals(goodSource, fromIceberg);
 
         try {
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdString)
+            tableAdapter.append(IcebergAppend.builder()
                     .addDhTables(badSource)
                     .instructions(writeInstructions)
                     .build());
@@ -511,8 +462,8 @@ class CatalogAdapterTest extends CatalogAdapterBase {
 
         // Make sure existing good data is not deleted
         assertThat(catalogAdapter.listNamespaces()).contains(myNamespace);
-        assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(myTableId);
-        fromIceberg = catalogAdapter.readTable(myTableId, null);
+        assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(tableIdentifier);
+        fromIceberg = tableAdapter.table();
         assertTableEquals(goodSource, fromIceberg);
     }
 
@@ -521,22 +472,21 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .verifySchema(true)
                 .build();
 
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier("MyNamespace.MyTable")
-                .addDhTables(source)
-                .instructions(writeInstructions)
-                .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(source)
+                        .instructions(writeInstructions)
+                        .build());
         // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment when this
         // is fixed.
         // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
         // assertTableEquals(source, fromIceberg);
 
-        final TableIdentifier tableIdentifier = TableIdentifier.of("MyNamespace", "MyTable");
         verifyDataFiles(tableIdentifier, List.of(source));
 
         // TODO Verify that the column ID is set correctly after #6156 is merged
@@ -550,8 +500,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .putDhToIcebergColumnRenames("newIntCol", "intCol")
                 .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier("MyNamespace.MyTable")
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(moreData)
                 .instructions(writeInstructions)
                 .build());
@@ -591,23 +540,12 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table anotherSource = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        final String tableIdentifier = "MyNamespace.MyTable";
-        try {
-            catalogAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
-                    .tableIdentifier(tableIdentifier)
-                    .addDhTables(source)
-                    .build());
-            fail("Exception expected for table not existing");
-        } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Table does not exist");
-        }
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
-                .build();
-        final List<DataFile> dataFilesWritten = catalogAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
-                .tableIdentifier(tableIdentifier)
+
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+
+        final List<DataFile> dataFilesWritten = tableAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
                 .addDhTables(source, anotherSource)
-                .instructions(writeInstructions)
                 .build());
         verifySnapshots(tableIdentifier, List.of());
         assertThat(dataFilesWritten).hasSize(2);
@@ -616,28 +554,25 @@ class CatalogAdapterTest extends CatalogAdapterBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(moreData)
-                .instructions(writeInstructions)
                 .build());
         {
-            final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
+            final Table fromIceberg = tableAdapter.table();
             assertTableEquals(moreData, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append"));
-            verifyDataFiles(TableIdentifier.parse(tableIdentifier), List.of(moreData));
+            verifyDataFiles(tableIdentifier, List.of(moreData));
         }
 
         // Now commit those data files to the table
-        final org.apache.iceberg.Table icebergTable =
-                catalogAdapter.catalog().loadTable(TableIdentifier.parse(tableIdentifier));
+        final org.apache.iceberg.Table icebergTable = catalogAdapter.catalog().loadTable(tableIdentifier);
         final AppendFiles append = icebergTable.newAppend();
         dataFilesWritten.forEach(append::appendFile);
         append.commit();
 
         // Verify that the data files are now in the table
         verifySnapshots(tableIdentifier, List.of("append", "append"));
-        verifyDataFiles(TableIdentifier.parse(tableIdentifier), List.of(source, anotherSource, moreData));
+        verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
     }
 
     @Test
@@ -649,21 +584,17 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
         final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
-        final String tableIdentifier = "MyNamespace.MyTable";
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
         try {
-            final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                    .createTableIfNotExist(true)
-                    .build();
-            catalogAdapter.append(IcebergAppend.builder()
-                    .tableIdentifier(tableIdentifier)
-                    .addDhTables(part1, part2)
-                    .addAllPartitionPaths(partitionPaths)
-                    .instructions(writeInstructions)
-                    .build());
+            catalogAdapter.createTableAndAppend(
+                    tableIdentifier, IcebergAppend.builder()
+                            .addDhTables(part1, part2)
+                            .addAllPartitionPaths(partitionPaths)
+                            .build());
             fail("Exception expected since no partitioning table definition is provided");
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("table definition");
+            assertThat(e.getMessage()).contains("partition paths");
         }
 
         final TableDefinition tableDefinition = TableDefinition.of(
@@ -671,17 +602,16 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
         final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
                 .tableDefinition(tableDefinition)
                 .build();
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
-                .addDhTables(part1, part2)
-                .addAllPartitionPaths(partitionPaths)
-                .instructions(writeInstructions)
-                .build());
-        final Table fromIceberg = catalogAdapter.readTable(tableIdentifier, null);
-        assertThat(catalogAdapter.getTableDefinition(tableIdentifier, null)).isEqualTo(tableDefinition);
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, IcebergAppend.builder()
+                        .addDhTables(part1, part2)
+                        .addAllPartitionPaths(partitionPaths)
+                        .instructions(writeInstructions)
+                        .build());
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
@@ -693,13 +623,12 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
         final String partitionPath = "PC=cat";
-        catalogAdapter.append(IcebergAppend.builder()
-                .tableIdentifier(tableIdentifier)
+        tableAdapter.append(IcebergAppend.builder()
                 .addDhTables(part3)
                 .addPartitionPaths(partitionPath)
                 .instructions(writeInstructions)
                 .build());
-        final Table fromIceberg2 = catalogAdapter.readTable(tableIdentifier, null);
+        final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(part3.update("PC = `cat`"), expected);
         assertTableEquals(expected2, fromIceberg2.select());
     }

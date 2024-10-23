@@ -13,11 +13,6 @@ import java.util.List;
 @BuildableStyle
 public abstract class IcebergAppend {
     /**
-     * The identifier string for the Iceberg table to append to
-     */
-    public abstract String tableIdentifier();
-
-    /**
      * The Deephaven tables to append. All tables should have the same definition, else a table definition should be
      * provided in the {@link #instructions()}.
      */
@@ -45,8 +40,6 @@ public abstract class IcebergAppend {
     }
 
     public interface Builder {
-        Builder tableIdentifier(String tableIdentifier);
-
         Builder addDhTables(Table element);
 
         Builder addDhTables(Table... elements);

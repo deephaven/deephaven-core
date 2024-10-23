@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """ This module adds Iceberg table support into Deephaven. """
+from __future__ import annotations
 from typing import List, Optional, Union, Dict, Sequence
 
 import jpy
@@ -13,9 +14,12 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 from deephaven.jcompat import j_hashmap
 
+_JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
 _JIcebergParquetWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergParquetWriteInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
+_JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JIcebergAppend = jpy.get_type("io.deephaven.iceberg.util.IcebergAppend")
 _JIcebergOverwrite = jpy.get_type("io.deephaven.iceberg.util.IcebergOverwrite")
@@ -32,6 +36,53 @@ _JTableIdentifier = jpy.get_type("org.apache.iceberg.catalog.TableIdentifier")
 _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
 
 
+class IcebergUpdateMode(JObjectWrapper):
+    """
+    This class specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes are:
+
+    - :py:func:`static() <IcebergUpdateMode.static>`: The table is loaded once and does not change
+    - :py:func:`manual_refresh() <IcebergUpdateMode.manual_refresh>`: The table can be manually refreshed by the user.
+    - :py:func:`auto_refresh() <IcebergUpdateMode.auto_refresh>`: The table will be automatically refreshed at a
+            system-defined interval (also can call :py:func:`auto_refresh(auto_refresh_ms: int) <IcebergUpdateMode.auto_refresh>`
+            to specify an interval rather than use the system default of 60 seconds).
+    """
+    j_object_type = _JIcebergUpdateMode
+
+    def __init__(self, mode: _JIcebergUpdateMode):
+        self._j_object = mode
+
+    @classmethod
+    def static(cls) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with no refreshing supported.
+        """
+        return IcebergUpdateMode(_JIcebergUpdateMode.staticMode())
+
+    @classmethod
+    def manual_refresh(cls) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with manual refreshing enabled.
+        """
+        return IcebergUpdateMode(_JIcebergUpdateMode.manualRefreshingMode())
+
+    @classmethod
+    def auto_refresh(cls, auto_refresh_ms:Optional[int] = None) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with auto-refreshing enabled.
+
+        Args:
+            auto_refresh_ms (int): the refresh interval in milliseconds; if omitted, the default of 60 seconds
+                is used.
+        """
+        if auto_refresh_ms is None:
+            return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshingMode())
+        return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshingMode(auto_refresh_ms))
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+
 class IcebergReadInstructions(JObjectWrapper):
     """
     This class specifies the instructions for reading an Iceberg table into Deephaven. These include column rename
@@ -43,7 +94,8 @@ class IcebergReadInstructions(JObjectWrapper):
     def __init__(self,
                  table_definition: Optional[TableDefinitionLike] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
-                 column_renames: Optional[Dict[str, str]] = None):
+                 column_renames: Optional[Dict[str, str]] = None,
+                 update_mode: Optional[IcebergUpdateMode] = None):
         """
         Initializes the instructions using the provided parameters.
 
@@ -55,6 +107,8 @@ class IcebergReadInstructions(JObjectWrapper):
                 reading files from a non-local file system, like S3.
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
                 the output table.
+            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+                mode of :py:func:`IcebergUpdateMode.static() <IcebergUpdateMode.static>` is used.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -63,15 +117,18 @@ class IcebergReadInstructions(JObjectWrapper):
         try:
             builder = self.j_object_type.builder()
 
-            if table_definition is not None:
+            if table_definition:
                 builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
 
-            if data_instructions is not None:
+            if data_instructions:
                 builder.dataInstructions(data_instructions.j_object)
 
-            if column_renames is not None:
+            if column_renames:
                 for old_name, new_name in column_renames.items():
                     builder.putColumnRenames(old_name, new_name)
+
+            if update_mode:
+                builder.updateMode(update_mode.j_object)
 
             self._j_object = builder.build()
         except Exception as e:
@@ -95,7 +152,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                  maximum_dictionary_keys: Optional[int] = None,
                  maximum_dictionary_size: Optional[int] = None,
                  target_page_size: Optional[int] = None,
-                 create_table_if_not_exist: Optional[bool] = None,
                  verify_schema: Optional[bool] = None,
                  dh_to_iceberg_column_renames: Optional[Dict[str, str]] = None,
                  table_definition: Optional[TableDefinitionLike] = None,
@@ -114,8 +170,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 2^20 (1,048,576)
             target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to
                 2^20 bytes (1 MiB)
-            create_table_if_not_exist (Optional[bool]): if true, the table will be created if it does not exist,
-                defaults to false
             verify_schema (Optional[bool]): Specifies whether to verify that the partition spec and schema of the table
                 being written are consistent with the Iceberg table. Verification behavior differs based on the
                 operation type:
@@ -152,9 +206,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
             if target_page_size is not None:
                 builder.targetPageSize(target_page_size)
 
-            if create_table_if_not_exist is not None:
-                builder.createTableIfNotExist(create_table_if_not_exist)
-
             if verify_schema is not None:
                 builder.verifySchema(verify_schema)
 
@@ -178,51 +229,64 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
         return self._j_object
 
 
-class IcebergCatalogAdapter(JObjectWrapper):
+class IcebergTable(Table):
     """
-    This class provides an interface for interacting with Iceberg catalogs. It allows listing namespaces, tables and
-    snapshots, as well as reading Iceberg tables into Deephaven tables.
+    IcebergTable is a subclass of Table that allows users to dynamically update the table with new snapshots from
+    the Iceberg catalog.
     """
-    j_object_type = _JIcebergCatalogAdapter or type(None)
+    j_object_type = _JIcebergTable
 
-    def __init__(self, j_object: _JIcebergCatalogAdapter):
-        self.j_catalog_adapter = j_object
+    def __init__(self, j_table: jpy.JType):
+        super().__init__(j_table)
 
-    def namespaces(self, namespace: Optional[str] = None) -> Table:
+    def update(self, snapshot_id:Optional[int] = None):
         """
-        Returns information on the namespaces in the catalog as a Deephaven table. If a namespace is specified, the
-        tables in that namespace are listed; otherwise the top-level namespaces are listed.
+        Updates the table to match the contents of the specified snapshot. This may result in row removes and additions
+        that will be propagated asynchronously via this IcebergTable's UpdateGraph. If no snapshot is provided, the
+        most recent snapshot is used.
+
+        NOTE: this method is only valid when the table is in `manual_refresh()` mode. Iceberg tables in `static()` or
+        `auto_refresh()` mode cannot be updated manually and will throw an exception if this method is called.
 
         Args:
-            namespace (Optional[str]): the higher-level namespace from which to list namespaces; if omitted, the
-                top-level namespaces are listed.
+            snapshot_id (Optional[int]): the snapshot id to update to; if omitted the most recent snapshot will be used.
 
-        Returns:
-            a table containing the namespaces.
+        Raises:
+            DHError: If unable to update the Iceberg table.
+
         """
+        try:
+            if snapshot_id is not None:
+                self.j_object.update(snapshot_id)
+                return
+            self.j_object.update()
+        except Exception as e:
+            raise DHError(e, "Failed to update Iceberg table") from e
 
-        if namespace is not None:
-            return Table(self.j_object.listNamespaces(namespace))
-        return Table(self.j_object.listNamespacesAsTable())
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table
 
-    def tables(self, namespace: str) -> Table:
+
+class IcebergTableAdapter(JObjectWrapper):
+    """
+    This class provides an interface for interacting with Iceberg tables. It allows the user to list snapshots,
+    retrieve table definitions and reading Iceberg tables into Deephaven tables.
+    """
+    j_object_type = _JIcebergTableAdapter or type(None)
+
+    def __init__(self, j_object: _JIcebergTableAdapter):
+        self.j_table_adapter = j_object
+
+    def snapshots(self) -> Table:
         """
-        Returns information on the tables in the specified namespace as a Deephaven table.
-
-        Args:
-            namespace (str): the namespace from which to list tables.
-
-        Returns:
-            a table containing the tables in the provided namespace.
-        """
-
-        if namespace is not None:
-            return Table(self.j_object.listTablesAsTable(namespace))
-        return Table(self.j_object.listTablesAsTable())
-
-    def snapshots(self, table_identifier: str) -> Table:
-        """
-        Returns information on the snapshots of the specified table as a Deephaven table.
+        Returns information on the snapshots of this table as a Deephaven table. The table contains the
+        following columns:
+        - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
+        - `TimestampMs`: the timestamp of the snapshot.
+        - `Operation`: the data operation that created this snapshot.
+        - `Summary`: additional information about this snapshot from the Iceberg metadata.
+        - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
 
         Args:
             table_identifier (str): the table from which to list snapshots.
@@ -230,37 +294,51 @@ class IcebergCatalogAdapter(JObjectWrapper):
         Returns:
             a table containing the snapshot information.
         """
+        return Table(self.j_object.snapshots())
 
-        return self.j_object.listSnapshotsAsTable(table_identifier)
-
-    def read_table(
-            self,
-            table_identifier: str,
-            instructions: Optional[IcebergReadInstructions] = None,
-            snapshot_id: Optional[int] = None) -> Table:
+    def definition(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
         """
-        Reads the table from the catalog using the provided instructions. Optionally, a snapshot id can be provided to
-        read a specific snapshot of the table.
+        Returns the Deephaven table definition as a Deephaven table.
 
         Args:
-            table_identifier (str): the table to read.
-            instructions (Optional[IcebergReadInstructions]): the instructions for reading the table. These instructions
+            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
                 can include column renames, table definition, and specific data instructions for reading the data files
                 from the provider. If omitted, the table will be read with default instructions.
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
+
+        Returns:
+            a table containing the table definition.
+        """
+
+        if instructions:
+            instructions = instructions.j_object
+
+        if snapshot_id is not None:
+            return Table(self.j_object.definitionTable(snapshot_id, instructions))
+        return Table(self.j_object.definitionTable(instructions))
+
+    def table(self, instructions: Optional[IcebergReadInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
+        """
+        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to read a specific
+        snapshot of the table.
+
+        Args:
+            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+                can include column renames, table definition, and specific data instructions for reading the data files
+                from the provider. If omitted, the table will be read in `static()` mode without column renames or data
+                instructions.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
             Table: the table read from the catalog.
         """
 
-        if instructions is not None:
-            instructions_object = instructions.j_object
-        else:
-            instructions_object = _JIcebergReadInstructions.DEFAULT
+        if instructions:
+            instructions = instructions.j_object
 
-        if snapshot_id is not None:
-            return Table(self.j_object.readTable(table_identifier, snapshot_id, instructions_object))
-        return Table(self.j_object.readTable(table_identifier, instructions_object))
+        if snapshot_id:
+            return IcebergTable(self.j_object.table(snapshot_id, instructions))
+        return IcebergTable(self.j_object.table(instructions))
 
     def append(self,
                table_identifier: str,
@@ -350,6 +428,64 @@ class IcebergCatalogAdapter(JObjectWrapper):
             builder.instructions(instructions.j_object)
 
         return self.j_object.writeDataFiles(builder.build())
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_adapter
+
+
+class IcebergCatalogAdapter(JObjectWrapper):
+    """
+    This class provides an interface for interacting with Iceberg catalogs. It allows listing namespaces, tables and
+    snapshots, as well as reading Iceberg tables into Deephaven tables.
+    """
+    j_object_type = _JIcebergCatalogAdapter or type(None)
+
+    def __init__(self, j_object: _JIcebergCatalogAdapter):
+        self.j_catalog_adapter = j_object
+
+    def namespaces(self, namespace: Optional[str] = None) -> Table:
+        """
+        Returns information on the namespaces in the catalog as a Deephaven table. If a namespace is specified, the
+        tables in that namespace are listed; otherwise the top-level namespaces are listed.
+
+        Args:
+            namespace (Optional[str]): the higher-level namespace from which to list namespaces; if omitted, the
+                top-level namespaces are listed.
+
+        Returns:
+            a table containing the namespaces.
+        """
+
+        if namespace is not None:
+            return Table(self.j_object.namespaces(namespace))
+        return Table(self.j_object.namespaces())
+
+    def tables(self, namespace: str) -> Table:
+        """
+        Returns information on the tables in the specified namespace as a Deephaven table.
+
+        Args:
+            namespace (str): the namespace from which to list tables.
+
+        Returns:
+            a table containing the tables in the provided namespace.
+        """
+
+        return Table(self.j_object.tables(namespace))
+
+    def load_table(self, table_identifier: str) -> IcebergTableAdapter:
+        """
+        Load the table from the catalog.
+
+        Args:
+            table_identifier (str): the table to read.
+
+        Returns:
+            Table: the table read from the catalog.
+        """
+
+        return IcebergTableAdapter(self.j_object.loadTable(table_identifier))
 
     @property
     def j_object(self) -> jpy.JType:
@@ -508,7 +644,7 @@ def adapter(
             _JIcebergTools.createAdapter(
                 name,
                 j_hashmap(properties if properties is not None else {}),
-                j_hashmap(hadoop_config if hadoopConfig is not None else {})))
+                j_hashmap(hadoop_config if hadoop_config is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

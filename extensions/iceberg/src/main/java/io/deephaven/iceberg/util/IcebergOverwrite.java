@@ -13,11 +13,6 @@ import java.util.List;
 @BuildableStyle
 public abstract class IcebergOverwrite {
     /**
-     * The identifier string for the Iceberg table to overwrite
-     */
-    public abstract String tableIdentifier();
-
-    /**
      * The Deephaven tables to overwrite with. All tables should have the same definition, else a table definition
      * should be provided in the {@link #instructions()}. An empty list will overwrite with an empty table.
      */
@@ -45,8 +40,6 @@ public abstract class IcebergOverwrite {
     }
 
     public interface Builder {
-        Builder tableIdentifier(String tableIdentifier);
-
         Builder addDhTables(Table element);
 
         Builder addDhTables(Table... elements);

@@ -21,21 +21,11 @@ class IcebergParquetWriteInstructionsTest {
         assertThat(instructions.tableDefinition().isEmpty()).isTrue();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
         assertThat(instructions.dhToIcebergColumnRenames().isEmpty()).isTrue();
-        assertThat(instructions.createTableIfNotExist()).isFalse();
         assertThat(instructions.verifySchema()).isEmpty();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);
         assertThat(instructions.targetPageSize()).isEqualTo(65536);
-    }
-
-    @Test
-    void testSetCreateTableIfNotExist() {
-        assertThat(IcebergParquetWriteInstructions.builder()
-                .createTableIfNotExist(true)
-                .build()
-                .createTableIfNotExist())
-                .isTrue();
     }
 
     @Test

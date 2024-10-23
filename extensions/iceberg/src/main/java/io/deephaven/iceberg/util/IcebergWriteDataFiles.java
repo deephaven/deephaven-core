@@ -13,11 +13,6 @@ import java.util.List;
 @BuildableStyle
 public abstract class IcebergWriteDataFiles {
     /**
-     * The identifier string for the Iceberg table to write to.
-     */
-    public abstract String tableIdentifier();
-
-    /**
      * The Deephaven tables to be written. All tables should have the same definition, else a table definition should be
      * provided in the {@link #instructions()}.
      */
@@ -45,8 +40,6 @@ public abstract class IcebergWriteDataFiles {
     }
 
     public interface Builder {
-        Builder tableIdentifier(String tableIdentifier);
-
         Builder addDhTables(Table element);
 
         Builder addDhTables(Table... elements);

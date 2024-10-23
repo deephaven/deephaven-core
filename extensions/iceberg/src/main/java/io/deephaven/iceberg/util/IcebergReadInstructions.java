@@ -3,7 +3,8 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Map;
  * this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@BuildableStyle
+@CopyableStyle
 public abstract class IcebergReadInstructions implements IcebergBaseInstructions {
     /**
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
@@ -31,11 +32,28 @@ public abstract class IcebergReadInstructions implements IcebergBaseInstructions
      */
     public abstract Map<String, String> columnRenames();
 
+    /**
+     * Return a copy of this instructions object with the column renames replaced by {@code entries}.
+     */
+    public abstract IcebergReadInstructions withColumnRenames(Map<String, ? extends String> entries);
+
+    /**
+     * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
+     * {@link IcebergUpdateMode#staticMode()}.
+     */
+    @Value.Default
+    public IcebergUpdateMode updateMode() {
+        return IcebergUpdateMode.staticMode();
+    }
+
     public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
         Builder putColumnRenames(String key, String value);
 
         @SuppressWarnings("unused")
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
+
+        @SuppressWarnings("unused")
+        Builder updateMode(IcebergUpdateMode updateMode);
 
         IcebergReadInstructions build();
     }

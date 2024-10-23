@@ -80,7 +80,6 @@ class IcebergTestCase(BaseTestCase):
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionaryKeys(), 1048576)
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionarySize(), 1048576)
         self.assertEqual(iceberg_write_instructions.j_object.targetPageSize(), 65536)
-        self.assertFalse(iceberg_write_instructions.j_object.createTableIfNotExist())
 
     def test_write_instruction_create_with_s3_instructions(self):
         s3_instructions = s3.S3Instructions(region_name="us-east-1",
@@ -145,10 +144,6 @@ class IcebergTestCase(BaseTestCase):
     def test_write_instruction_create_with_target_page_size(self):
         iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(target_page_size=4096)
         self.assertEqual(iceberg_write_instructions.j_object.targetPageSize(), 4096)
-
-    def test_write_instruction_create_with_create_table_if_not_exist(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(create_table_if_not_exist=True)
-        self.assertTrue(iceberg_write_instructions.j_object.createTableIfNotExist())
 
     def test_write_instruction_create_with_verify_schema(self):
         iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(verify_schema=True)
