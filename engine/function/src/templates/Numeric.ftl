@@ -3957,7 +3957,13 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short" || pt.primitive == "int" >
         return x;
         <#else>
-        return Math.toIntExact(x);
+        ${pt.primitive} val = Math.toIntExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in an int" + x);
+        }
+
+        return val;
         </#if>
     }
     </#if>
@@ -3978,11 +3984,13 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short" >
         return x;
         <#else>
-        if (x > Short.MAX_VALUE || x < Short.MIN_VALUE) {
+        ${pt.primitive} val = (short) x;
+
+        if (x > Short.MAX_VALUE || x < Short.MIN_VALUE || isNull(val) ) {
             throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a short" + x);
         }
 
-        return (short) x;
+        return val;
         </#if>
     }
     </#if>
@@ -4003,11 +4011,13 @@ public class Numeric {
         <#if pt.primitive == "byte" >
         return x;
         <#else>
-        if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE) {
+        ${pt.primitive} val = (byte) x;
+
+        if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE || isNull(val) ) {
             throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a byte" + x);
         }
 
-        return (byte) x;
+        return val;
         </#if>
     }
     </#if>
