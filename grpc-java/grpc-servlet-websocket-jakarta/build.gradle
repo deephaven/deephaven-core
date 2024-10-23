@@ -6,11 +6,10 @@ plugins {
 dependencies {
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.core
-//    compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
     implementation libs.jakarata.servlet.api
 
-//    compileOnly 'javax.websocket:javax.websocket-api:1.1'
     implementation libs.jakarta.websocket.api
+    implementation libs.jakarta.websocket.client.api
 
     implementation libs.guava
 }
