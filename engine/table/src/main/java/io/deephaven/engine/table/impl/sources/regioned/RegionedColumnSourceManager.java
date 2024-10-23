@@ -60,7 +60,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     private final Map<String, ? extends ColumnSource<?>> sharedColumnSources =
             Collections.unmodifiableMap(columnSources);
 
-
     /**
      * State for table locations that have been added, but have never been found to exist with non-zero size.
      */
@@ -425,18 +424,19 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @Override
     protected void destroy() {
         super.destroy();
+        // NB: we do not want to null out any subscriptionBuffers here, as they may still be in use by a notification
+        // delivery running currently with this destroy. We also do not want to clear the table location maps as these
+        // locations may still be useful for static tables.
         for (final EmptyTableLocationEntry entry : emptyTableLocations.values()) {
             if (entry.subscriptionBuffer != null) {
                 entry.subscriptionBuffer.reset();
             }
         }
-        emptyTableLocations.clear();
         for (final IncludedTableLocationEntry entry : includedTableLocations.values()) {
             if (entry.subscriptionBuffer != null) {
                 entry.subscriptionBuffer.reset();
             }
         }
-        includedTableLocations.clear();
     }
 
     /**

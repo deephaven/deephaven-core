@@ -15,15 +15,22 @@ from deephaven import new_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, string_col, \
     datetime_col, bool_col, ColumnType
 from deephaven.execution_context import get_exec_ctx, ExecutionContext
-from deephaven.experimental.table_data_service import PartitionedTableServiceBackend, TableKey, \
+from deephaven.experimental.table_data_service import TableDataServiceBackend, TableKey, \
     TableLocationKey, TableDataService
 import deephaven.arrow as dharrow
 from deephaven.liveness_scope import liveness_scope
 
 from tests.testbase import BaseTestCase
 
+class TableKeyImpl(TableKey):
+    def __hash__(self):
+        return hash(self.key)
 
-class TestBackend(PartitionedTableServiceBackend):
+class TableLocationKeyImpl(TableLocationKey):
+    def __hash__(self):
+        return hash(self.key)
+
+class TestBackend(TableDataServiceBackend):
     def __init__(self, gen_pa_table: Generator[pa.Table, None, None], pt_schema: pa.Schema,  pc_schema: Optional[pa.Schema] = None):
         self.pt_schema = pt_schema
         self.pc_schema = pc_schema
@@ -40,19 +47,19 @@ class TestBackend(PartitionedTableServiceBackend):
              return self.pt_schema, self.pc_schema
         return pa.Schema(), None
 
-    def existing_partitions(self, table_key: TableKey, callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
+    def table_locations(self, table_key: TableKey, callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         pa_table = next(self.gen_pa_table)
         if table_key.key == "test":
             ticker = str(pa_table.column("Ticker")[0])
 
-            partition_key = TableLocationKey(f"{ticker}/NYSE")
+            partition_key = TableLocationKeyImpl(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
             callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             self.existing_partitions_called += 1
 
-    def partition_size(self, table_key: TableKey, table_location_key: TableLocationKey,
+    def table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
                        callback: Callable[[int], None]) -> None:
         callback(self.partitions[table_location_key].num_rows)
         self.partition_size_called += 1
@@ -76,14 +83,14 @@ class TestBackend(PartitionedTableServiceBackend):
                 break
 
             ticker = str(pa_table.column("Ticker")[0])
-            partition_key = TableLocationKey(f"{ticker}/NYSE")
+            partition_key = TableLocationKeyImpl(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
             callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             time.sleep(0.1)
 
-    def subscribe_to_new_partitions(self, table_key: TableKey, callback) -> Callable[[], None]:
+    def subscribe_to_table_locations(self, table_key: TableKey, callback) -> Callable[[], None]:
         if table_key.key != "test":
             return lambda: None
 
@@ -92,7 +99,7 @@ class TestBackend(PartitionedTableServiceBackend):
         if table_key.key == "test":
             ticker = str(pa_table.column("Ticker")[0])
 
-            partition_key = TableLocationKey(f"{ticker}/NYSE")
+            partition_key = TableLocationKeyImpl(f"{ticker}/NYSE")
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
@@ -125,7 +132,7 @@ class TestBackend(PartitionedTableServiceBackend):
             time.sleep(0.1)
 
 
-    def subscribe_to_partition_size_changes(self, table_key: TableKey,
+    def subscribe_to_table_location_size(self, table_key: TableKey,
                                             table_location_key: TableLocationKey,
                                             callback: Callable[[int], None]) -> Callable[[], None]:
         if table_key.key != "test":
@@ -145,6 +152,7 @@ class TestBackend(PartitionedTableServiceBackend):
             self.partitions_size_subscriptions[table_location_key] = False
 
         return _cancellation_callback
+
 
 
 class TableDataServiceTestCase(BaseTestCase):
@@ -177,7 +185,7 @@ class TableDataServiceTestCase(BaseTestCase):
     def test_make_table_without_partition_schema(self):
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
         data_service = TableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=False)
+        table = data_service.make_table(TableKeyImpl("test"), live=False)
         self.assertIsNotNone(table)
         self.assertEqual(table.columns, self.test_table.columns)
 
@@ -186,7 +194,7 @@ class TableDataServiceTestCase(BaseTestCase):
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=False)
+        table = data_service.make_table(TableKeyImpl("test"), live=False)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
@@ -200,7 +208,7 @@ class TableDataServiceTestCase(BaseTestCase):
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=True)
+        table = data_service.make_table(TableKeyImpl("test"), live=True)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
@@ -217,7 +225,7 @@ class TableDataServiceTestCase(BaseTestCase):
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=True)
+        table = data_service.make_table(TableKeyImpl("test"), live=True)
         self.assertIsNotNone(table)
         self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
@@ -236,7 +244,7 @@ class TableDataServiceTestCase(BaseTestCase):
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         data_service = TableDataService(backend)
         with liveness_scope():
-            table = data_service.make_table(TableKey("test"), live=True)
+            table = data_service.make_table(TableKeyImpl("test"), live=True)
             self.wait_ticking_table_update(table, 100, 5)
         self.assertTrue(backend.sub_new_partition_cancelled)
         self.assertFalse(all(backend.partitions_size_subscriptions.values()))
@@ -247,7 +255,7 @@ class TableDataServiceTestCase(BaseTestCase):
         backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
         backend.subscriptions_enabled_for_test = False
         data_service = TableDataService(backend)
-        table = data_service.make_table(TableKey("test"), live=True)
+        table = data_service.make_table(TableKeyImpl("test"), live=True)
         table.coalesce()
         # the initial partitions should be created
         self.assertEqual(table.size, 2)

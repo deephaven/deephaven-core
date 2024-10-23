@@ -6,9 +6,8 @@ package io.deephaven.extensions.barrage.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
@@ -40,35 +39,55 @@ import org.jpy.PyObject;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
 
 @ScriptApi
 public class PythonTableDataService extends AbstractTableDataService {
 
-    private static final int PAGE_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(PythonTableDataService.class, "PAGE_SIZE", 1 << 16);
+    private static final int DEFAULT_PAGE_SIZE = Configuration.getInstance()
+            .getIntegerForClassWithDefault(PythonTableDataService.class, "DEFAULT_PAGE_SIZE", 1 << 16);
     private static final long REGION_MASK = RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
 
     private final BackendAccessor backend;
+    private final ChunkReader.Factory chunkReaderFactory;
+    private final StreamReaderOptions streamReaderOptions;
+    private final int pageSize;
 
     @ScriptApi
-    public static PythonTableDataService create(@NotNull final PyObject pyTableDataService) {
-        return new PythonTableDataService(pyTableDataService);
+    public static PythonTableDataService create(
+            @NotNull final PyObject pyTableDataService,
+            @Nullable final ChunkReader.Factory chunkReaderFactory,
+            @Nullable final StreamReaderOptions streamReaderOptions,
+            final int pageSize) {
+        return new PythonTableDataService(
+                pyTableDataService,
+                chunkReaderFactory == null ? DefaultChunkReadingFactory.INSTANCE : chunkReaderFactory,
+                streamReaderOptions == null ? BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS : streamReaderOptions,
+                pageSize <= 0 ? DEFAULT_PAGE_SIZE : pageSize);
     }
 
     /**
      * Construct a Deephaven {@link io.deephaven.engine.table.impl.locations.TableDataService TableDataService} wrapping
-     * the provided {@link BackendAccessor}.
+     * the provided Python TableDataServiceBackend.
+     *
+     * @param pyTableDataService The Python TableDataService
+     * @param pageSize The page size to use for all regions
      */
-    private PythonTableDataService(@NotNull final PyObject pyTableDataService) {
+    private PythonTableDataService(
+            @NotNull final PyObject pyTableDataService,
+            @NotNull final ChunkReader.Factory chunkReaderFactory,
+            @NotNull final StreamReaderOptions streamReaderOptions,
+            final int pageSize) {
         super("PythonTableDataService");
         this.backend = new BackendAccessor(pyTableDataService);
+        this.chunkReaderFactory = chunkReaderFactory;
+        this.streamReaderOptions = streamReaderOptions;
+        this.pageSize = pageSize <= 0 ? DEFAULT_PAGE_SIZE : pageSize;
     }
 
     /**
@@ -95,7 +114,7 @@ public class PythonTableDataService extends AbstractTableDataService {
      * object translation here, we can keep the Python TableDataService implementation simple and focused on the Python
      * side of the implementation.
      */
-    private static class BackendAccessor {
+    private class BackendAccessor {
         private final PyObject pyTableDataService;
 
         private BackendAccessor(
@@ -104,20 +123,23 @@ public class PythonTableDataService extends AbstractTableDataService {
         }
 
         /**
-         * Get the schema for the table and partition columns.
+         * Get two schemas, the first for partitioning columns whose values will be derived from TableLocationKey and
+         * applied to all rows in the associated TableLocation, and the second specifying the table data to be read
+         * chunk-wise (in columnar fashion) from theTableLocations.
          *
          * @param tableKey the table key
          * @return the schemas
          */
         public BarrageUtil.ConvertedArrowSchema[] getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
+            // The schemas are
             final BarrageUtil.ConvertedArrowSchema[] schemas = new BarrageUtil.ConvertedArrowSchema[2];
             final Consumer<ByteBuffer[]> onRawSchemas = byteBuffers -> {
-                if (byteBuffers.length != 2) {
+                if (byteBuffers.length != schemas.length) {
                     throw new IllegalArgumentException("Expected two Arrow IPC messages: found " + byteBuffers.length);
                 }
 
-                for (int ii = 0; ii < 2; ++ii) {
+                for (int ii = 0; ii < schemas.length; ++ii) {
                     schemas[ii] = BarrageUtil.convertArrowSchema(ArrowToTableConverter.parseArrowSchema(
                             ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[ii])));
                 }
@@ -129,39 +151,50 @@ public class PythonTableDataService extends AbstractTableDataService {
         }
 
         /**
-         * Get the existing partitions for the table.
+         * Get the existing table locations for the provided {@code tableKey}.
          *
+         * @param definition the table definition to validate partitioning columns against
          * @param tableKey the table key
-         * @param listener the listener to call with each partition's table location key
+         * @param listener the listener to call with each existing table location key
          */
-        public void getExistingPartitions(
+        public void getTableLocations(
+                @NotNull final TableDefinition definition,
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> processNewPartition(listener, tableLocationKey, byteBuffers);
+                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey, listener,
+                            tableLocationKey, byteBuffers);
 
-            pyTableDataService.call("_existing_partitions", tableKey.key, convertingListener);
+            pyTableDataService.call("_table_locations", tableKey.key, convertingListener);
         }
 
         /**
-         * Subscribe to new partitions for the table.
+         * Subscribe to table location updates for the provided {@code tableKey}.
+         * <p>
+         * The listener must be called with all existing table locations before returning. If the listener is invoked
+         * asynchronously then those callers will block until this method has completed.
          *
+         * @param definition the table definition to validate partitioning columns against
          * @param tableKey the table key
-         * @param listener the listener to call with each partition's table location key
+         * @param listener the listener to call with each table location key
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
-        public SafeCloseable subscribeToNewPartitions(
+        public SafeCloseable subscribeToTableLocations(
+                @NotNull final TableDefinition definition,
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> processNewPartition(listener, tableLocationKey, byteBuffers);
+                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey, listener,
+                            tableLocationKey, byteBuffers);
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "_subscribe_to_new_partitions", tableKey.key, convertingListener);
+                    "_subscribe_to_table_locations", tableKey.key, convertingListener);
             return () -> cancellationCallback.call("__call__");
         }
 
-        private void processNewPartition(
+        private void processTableLocationKey(
+                @NotNull final TableDefinition definition,
+                @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final ByteBuffer[] byteBuffers) {
@@ -171,26 +204,26 @@ public class PythonTableDataService extends AbstractTableDataService {
             }
 
             if (byteBuffers.length != 2) {
-                throw new IllegalArgumentException("Expected Single Record Batch: found "
-                        + byteBuffers.length);
+                throw new IllegalArgumentException("Expected Single Record Batch: found " + byteBuffers.length);
             }
 
-            final Map<String, Comparable<?>> partitionValues = new LinkedHashMap<>();
-            final Schema schema = ArrowToTableConverter.parseArrowSchema(
+            // note that we recompute chunk readers for each location to support some schema evolution
+            final Map<String, Comparable<?>> partitioningValuesUnordered = new HashMap<>();
+            final Schema partitioningValuesSchema = ArrowToTableConverter.parseArrowSchema(
                     ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[0]));
-            final BarrageUtil.ConvertedArrowSchema arrowSchema = BarrageUtil.convertArrowSchema(schema);
+            final BarrageUtil.ConvertedArrowSchema schemaPlus =
+                    BarrageUtil.convertArrowSchema(partitioningValuesSchema);
 
-            final ArrayList<ChunkReader> readers = new ArrayList<>();
-            final ChunkType[] columnChunkTypes = arrowSchema.computeWireChunkTypes();
-            final Class<?>[] columnTypes = arrowSchema.computeWireTypes();
-            final Class<?>[] componentTypes = arrowSchema.computeWireComponentTypes();
-            for (int i = 0; i < columnTypes.length; i++) {
-                final int factor = (arrowSchema.conversionFactors == null) ? 1 : arrowSchema.conversionFactors[i];
-                ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(
-                        BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS, factor,
-                        typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
-                readers.add(reader);
+            try {
+                definition.checkCompatibility(schemaPlus.tableDef);
+            } catch (TableDefinition.IncompatibleTableDefinitionException err) {
+                throw new IllegalArgumentException("Partitioning schema is incompatible with table schema", err);
             }
+
+            final ChunkReader[] readers = schemaPlus.computeChunkReaders(
+                    DefaultChunkReadingFactory.INSTANCE,
+                    partitioningValuesSchema,
+                    BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS);
 
             final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(byteBuffers[1]);
             if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
@@ -204,60 +237,62 @@ public class PythonTableDataService extends AbstractTableDataService {
 
             final PrimitiveIterator.OfLong bufferInfoIter = ArrowToTableConverter.extractBufferInfo(batch);
 
-            // populate the partition values
-            for (int ci = 0; ci < schema.fieldsLength(); ++ci) {
-                try (final WritableChunk<Values> columnValues = readers.get(ci).readChunk(
+            // extract partitioning values and box them to be used as Comparable in the map
+            for (int ci = 0; ci < partitioningValuesSchema.fieldsLength(); ++ci) {
+                try (final WritableChunk<Values> columnValues = readers[ci].readChunk(
                         fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0)) {
 
                     if (columnValues.size() != 1) {
                         throw new IllegalArgumentException("Expected Single Row: found " + columnValues.size());
                     }
 
-                    // partition values are always boxed to make partition value comparisons easier
-                    try (final ChunkBoxer.BoxerKernel boxer =
-                            ChunkBoxer.getBoxer(columnValues.getChunkType(), columnValues.size())) {
-                        // noinspection unchecked
-                        final ObjectChunk<Comparable<?>, ? extends Values> boxedValues =
-                                (ObjectChunk<Comparable<?>, ? extends Values>) boxer.box(columnValues);
-                        partitionValues.put(schema.fields(ci).name(), boxedValues.get(0));
-                    }
+                    partitioningValuesUnordered.put(
+                            partitioningValuesSchema.fields(ci).name(), ChunkBoxer.boxedGet(columnValues, 0));
                 } catch (final IOException unexpected) {
                     throw new UncheckedDeephavenException(unexpected);
                 }
             }
 
-            listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, partitionValues));
+            // partitioning values must be in the same order as the partitioning keys
+            final Map<String, Comparable<?>> partitioningValues = definition.getPartitioningColumns().stream()
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toMap(
+                            key -> key,
+                            partitioningValuesUnordered::get,
+                            Assert::neverInvoked,
+                            LinkedHashMap::new));
+            listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, partitioningValues));
         }
 
         /**
-         * Get the size of a partition.
+         * Get the size of the given {@code tableLocationKey}.
          *
          * @param tableKey the table key
          * @param tableLocationKey the table location key
-         * @param listener the listener to call with the partition size
+         * @param listener the listener to call with the table location size
          */
-        public void getPartitionSize(
+        public void getTableLocationSize(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final LongConsumer listener) {
-            pyTableDataService.call("_partition_size", tableKey.key, tableLocationKey.locationKey, listener);
+            pyTableDataService.call("_table_location_size", tableKey.key, tableLocationKey.locationKey, listener);
         }
 
         /**
-         * Subscribe to changes in the size of a partition.
+         * Subscribe to the existing size and future size changes of a table location.
          *
          * @param tableKey the table key
          * @param tableLocationKey the table location key
          * @param listener the listener to call with the partition size
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
-        public SafeCloseable subscribeToPartitionSizeChanges(
+        public SafeCloseable subscribeToTableLocationSize(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final LongConsumer listener) {
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "_subscribe_to_partition_size_changes", tableKey.key, tableLocationKey.locationKey, listener);
+                    "_subscribe_to_table_location_size", tableKey.key, tableLocationKey.locationKey, listener);
 
             return () -> cancellationCallback.call("__call__");
         }
@@ -270,6 +305,7 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @param columnDefinition the column definition
          * @param firstRowPosition the first row position
          * @param minimumSize the minimum size
+         * @param maximumSize the maximum size
          * @return the column values
          */
         public List<WritableChunk<Values>> getColumnValues(
@@ -280,29 +316,27 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final int minimumSize,
                 final int maximumSize) {
 
-            final List<WritableChunk<Values>> resultChunks = new ArrayList<>();
+            final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>();
             final Consumer<ByteBuffer[]> onMessages = messages -> {
                 if (messages.length < 2) {
                     throw new IllegalArgumentException("Expected at least two Arrow IPC messages: found "
                             + messages.length);
                 }
+                resultChunks.ensureCapacity(messages.length - 1);
 
                 final Schema schema = ArrowToTableConverter.parseArrowSchema(
                         ArrowToTableConverter.parseArrowIpcMessage(messages[0]));
-                final BarrageUtil.ConvertedArrowSchema arrowSchema = BarrageUtil.convertArrowSchema(schema);
+                final BarrageUtil.ConvertedArrowSchema schemaPlus = BarrageUtil.convertArrowSchema(schema);
 
                 if (schema.fieldsLength() > 1) {
                     throw new UnsupportedOperationException("More columns returned than requested.");
                 }
+                if (!columnDefinition.isCompatible(schemaPlus.tableDef.getColumns().get(0))) {
+                    throw new IllegalArgumentException("Returned column is not compatible with requested column");
+                }
 
-                final int factor = (arrowSchema.conversionFactors == null) ? 1 : arrowSchema.conversionFactors[0];
-                final ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(
-                        BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS, factor,
-                        typeInfo(arrowSchema.computeWireChunkTypes()[0],
-                                arrowSchema.computeWireTypes()[0],
-                                arrowSchema.computeWireComponentTypes()[0],
-                                schema.fields(0)));
-
+                final ChunkReader reader = schemaPlus.computeChunkReaders(
+                        chunkReaderFactory, schema, streamReaderOptions)[0];
                 try {
                     for (int ii = 1; ii < messages.length; ++ii) {
                         final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[ii]);
@@ -349,6 +383,7 @@ public class PythonTableDataService extends AbstractTableDataService {
     public static class TableKeyImpl implements ImmutableTableKey {
 
         private final PyObject key;
+        private int cachedHashCode;
 
         public TableKeyImpl(@NotNull final PyObject key) {
             this.key = key;
@@ -359,7 +394,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             if (this == other) {
                 return true;
             }
-            if (other == null || getClass() != other.getClass()) {
+            if (!(other instanceof TableKeyImpl)) {
                 return false;
             }
             final TableKeyImpl otherTableKey = (TableKeyImpl) other;
@@ -368,16 +403,23 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public int hashCode() {
-            // TODO NOCOMMIT @ryan: PyObject's hash is based on pointer location of object which would change if
-            // two different Python objects have the same value.
-            return key.hashCode();
+            if (cachedHashCode == 0) {
+                final int computedHashCode = Long.hashCode(key.call("__hash__").getLongValue());
+                // Don't use 0; that's used by StandaloneTableKey, and also our sentinel for the need to compute
+                if (computedHashCode == 0) {
+                    final int fallbackHashCode = TableKeyImpl.class.hashCode();
+                    cachedHashCode = fallbackHashCode == 0 ? 1 : fallbackHashCode;
+                } else {
+                    cachedHashCode = computedHashCode;
+                }
+            }
+            return cachedHashCode;
         }
 
         @Override
         public LogOutput append(@NotNull final LogOutput logOutput) {
-            return logOutput.append("PythonTableDataService.TableKey[name=")
-                    .append(key.toString())
-                    .append(']');
+            return logOutput.append(getImplementationName())
+                    .append("[key=").append(key.toString()).append(']');
         }
 
         @Override
@@ -387,12 +429,9 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public String getImplementationName() {
-            return "PythonTableDataService.TableKey";
+            return "PythonTableDataService.TableKeyImpl";
         }
     }
-
-    private static final AtomicReferenceFieldUpdater<TableLocationProviderImpl, Subscription> TABLE_LOC_PROVIDER_SUBSCRIPTION_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(TableLocationProviderImpl.class, Subscription.class, "subscription");
 
     /**
      * {@link TableLocationProvider} implementation for TableService.
@@ -401,30 +440,32 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         private final TableDefinition tableDefinition;
 
-        volatile Subscription subscription = null;
+        private Subscription subscription = null;
 
         private TableLocationProviderImpl(@NotNull final TableKeyImpl tableKey) {
             super(tableKey, true);
             final BarrageUtil.ConvertedArrowSchema[] schemas = backend.getTableSchema(tableKey);
 
-            final TableDefinition tableDef = schemas[0].tableDef;
-            final TableDefinition partitionDef = schemas[1].tableDef;
-            final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(tableDef.numColumns());
+            final TableDefinition partitioningDef = schemas[0].tableDef;
+            final TableDefinition tableDataDef = schemas[1].tableDef;
+            final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(tableDataDef.numColumns());
 
-            for (final ColumnDefinition<?> column : tableDef.getColumns()) {
-                columns.put(column.getName(), column);
+            // all partitioning columns default to the front
+            for (final ColumnDefinition<?> column : partitioningDef.getColumns()) {
+                columns.put(column.getName(), column.withPartitioning());
             }
 
-            for (final ColumnDefinition<?> column : partitionDef.getColumns()) {
+            for (final ColumnDefinition<?> column : tableDataDef.getColumns()) {
                 final ColumnDefinition<?> existingDef = columns.get(column.getName());
-                // validate that both definitions are the same
-                if (existingDef != null && !existingDef.equals(column)) {
+
+                if (existingDef == null) {
+                    columns.put(column.getName(), column);
+                } else if (!existingDef.isCompatible(column)) {
+                    // validate that both definitions are the same
                     throw new IllegalArgumentException(String.format(
-                            "Column %s has conflicting definitions in table and partition schemas: %s vs %s",
+                            "Column %s has conflicting definitions in table data and partitioning schemas: %s vs %s",
                             column.getName(), existingDef, column));
                 }
-
-                columns.put(column.getName(), column.withPartitioning());
             }
 
             tableDefinition = TableDefinition.of(columns.values());
@@ -442,31 +483,23 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public void refresh() {
             TableKeyImpl key = (TableKeyImpl) getKey();
-            backend.getExistingPartitions(key, this::handleTableLocationKey);
+            backend.getTableLocations(tableDefinition, key, this::handleTableLocationKey);
         }
 
         @Override
         protected void activateUnderlyingDataSource() {
             TableKeyImpl key = (TableKeyImpl) getKey();
             final Subscription localSubscription = subscription = new Subscription();
-            // TODO NOCOMMIT @ryan: should we let the python table service impl activate so that they may invoke the
-            // callback immediately?
-            localSubscription.cancellationCallback = backend.subscribeToNewPartitions(key, tableLocationKey -> {
-                if (localSubscription != subscription) {
-                    // we've been cancelled and/or replaced
-                    return;
-                }
-
-                handleTableLocationKey(tableLocationKey);
-            });
+            localSubscription.cancellationCallback = backend.subscribeToTableLocations(
+                    tableDefinition, key, this::handleTableLocationKey);
             activationSuccessful(localSubscription);
         }
 
         @Override
         protected void deactivateUnderlyingDataSource() {
             final Subscription localSubscription = subscription;
-            if (localSubscription != null
-                    && TABLE_LOC_PROVIDER_SUBSCRIPTION_UPDATER.compareAndSet(this, localSubscription, null)) {
+            subscription = null;
+            if (localSubscription != null) {
                 localSubscription.cancellationCallback.close();
             }
         }
@@ -488,6 +521,7 @@ public class PythonTableDataService extends AbstractTableDataService {
     public static class TableLocationKeyImpl extends PartitionedTableLocationKey {
 
         private final PyObject locationKey;
+        private int cachedHashCode;
 
         /**
          * Construct a TableLocationKeyImpl. Used by the Python adapter.
@@ -511,18 +545,27 @@ public class PythonTableDataService extends AbstractTableDataService {
             if (this == other) {
                 return true;
             }
-            if (other == null || getClass() != other.getClass()) {
+            if (!(other instanceof TableLocationKeyImpl)) {
                 return false;
             }
-            final TableLocationKeyImpl otherTableLocationKey = (TableLocationKeyImpl) other;
-            return this.locationKey.equals(otherTableLocationKey.locationKey);
+            final TableLocationKeyImpl otherTyped = (TableLocationKeyImpl) other;
+            return partitions.equals((otherTyped).partitions) && locationKey.equals(otherTyped.locationKey);
         }
 
         @Override
         public int hashCode() {
-            // TODO NOCOMMIT @ryan: PyObject's hash is based on pointer location of object which would change if
-            // two different Python objects have the same value.
-            return locationKey.hashCode();
+            if (cachedHashCode == 0) {
+                final int computedHashCode =
+                        31 * partitions.hashCode() + Long.hashCode(locationKey.call("__hash__").getLongValue());
+                // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
+                if (computedHashCode == 0) {
+                    final int fallbackHashCode = TableLocationKeyImpl.class.hashCode();
+                    cachedHashCode = fallbackHashCode == 0 ? 1 : fallbackHashCode;
+                } else {
+                    cachedHashCode = computedHashCode;
+                }
+            }
+            return cachedHashCode;
         }
 
         @Override
@@ -536,8 +579,9 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public LogOutput append(@NotNull final LogOutput logOutput) {
-            return logOutput.append("PythonTableDataService.TableLocationKeyImpl[partitions=")
-                    .append(PartitionsFormatter.INSTANCE, partitions)
+            return logOutput.append(getImplementationName())
+                    .append(":[key=").append(locationKey.toString())
+                    .append(", partitions=").append(PartitionsFormatter.INSTANCE, partitions)
                     .append(']');
         }
 
@@ -551,9 +595,6 @@ public class PythonTableDataService extends AbstractTableDataService {
             return "PythonTableDataService.TableLocationKeyImpl";
         }
     }
-
-    private static final AtomicReferenceFieldUpdater<TableLocationImpl, Subscription> TABLE_LOC_SUBSCRIPTION_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(TableLocationImpl.class, Subscription.class, "subscription");
 
     /**
      * {@link TableLocation} implementation for TableService.
@@ -570,12 +611,10 @@ public class PythonTableDataService extends AbstractTableDataService {
             super(tableKey, locationKey, true);
         }
 
-        private synchronized void checkSizeChange(final long newSize) {
-            // TODO NOCOMMIT @ryan: should we throw if python tells us size decreased? or just ignore smaller sizes?
-            if (size >= newSize) {
+        private synchronized void onSizeChanged(final long newSize) {
+            if (size == newSize) {
                 return;
             }
-
             size = newSize;
             handleUpdate(RowSetFactory.flat(size), System.currentTimeMillis());
         }
@@ -589,7 +628,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         public void refresh() {
             final TableKeyImpl key = (TableKeyImpl) getTableKey();
             final TableLocationKeyImpl location = (TableLocationKeyImpl) getKey();
-            backend.getPartitionSize(key, location, this::checkSizeChange);
+            backend.getTableLocationSize(key, location, this::onSizeChanged);
         }
 
         @Override
@@ -618,13 +657,13 @@ public class PythonTableDataService extends AbstractTableDataService {
             final TableLocationKeyImpl location = (TableLocationKeyImpl) getKey();
 
             final Subscription localSubscription = subscription = new Subscription();
-            localSubscription.cancellationCallback = backend.subscribeToPartitionSizeChanges(key, location, newSize -> {
+            localSubscription.cancellationCallback = backend.subscribeToTableLocationSize(key, location, newSize -> {
                 if (localSubscription != subscription) {
                     // we've been cancelled and/or replaced
                     return;
                 }
 
-                checkSizeChange(newSize);
+                onSizeChanged(newSize);
             });
             activationSuccessful(localSubscription);
         }
@@ -632,8 +671,8 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         protected void deactivateUnderlyingDataSource() {
             final Subscription localSubscription = subscription;
-            if (localSubscription != null
-                    && TABLE_LOC_SUBSCRIPTION_UPDATER.compareAndSet(this, localSubscription, null)) {
+            subscription = null;
+            if (localSubscription != null) {
                 localSubscription.cancellationCallback.close();
             }
         }
@@ -662,36 +701,36 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         @Override
         public boolean exists() {
-            // Schema is consistent across all partitions with the same segment ID. This implementation should be
-            // changed when/if we add support for schema evolution.
+            // Schema is consistent across all column locations with the same segment ID. This implementation should be
+            // changed when/if we add support for rich schema evolution.
             return true;
         }
 
         @Override
         public ColumnRegionChar<Values> makeColumnRegionChar(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionChar<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionChar<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionByte<Values> makeColumnRegionByte(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionByte<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionByte<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionShort<Values> makeColumnRegionShort(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionShort<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionShort<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionInt<Values> makeColumnRegionInt(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionInt<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionInt<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
 
         }
@@ -699,7 +738,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public ColumnRegionLong<Values> makeColumnRegionLong(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionLong<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionLong<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
 
         }
@@ -707,21 +746,21 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public ColumnRegionFloat<Values> makeColumnRegionFloat(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionFloat<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionFloat<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public ColumnRegionDouble<Values> makeColumnRegionDouble(
                 @NotNull final ColumnDefinition<?> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionDouble<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionDouble<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
         @Override
         public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
                 @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-            return new AppendOnlyFixedSizePageRegionObject<>(REGION_MASK, PAGE_SIZE,
+            return new AppendOnlyFixedSizePageRegionObject<>(REGION_MASK, pageSize,
                     new TableServiceGetRangeAdapter(columnDefinition));
         }
 
@@ -762,7 +801,7 @@ public class PythonTableDataService extends AbstractTableDataService {
 
                 int offset = 0;
                 for (final Chunk<Values> rbChunk : values) {
-                    int length = Math.min(destination.capacity() - offset, rbChunk.size());
+                    final int length = Math.min(destination.capacity() - offset, rbChunk.size());
                     destination.copyFromChunk(rbChunk, 0, offset, length);
                     offset += length;
                 }
