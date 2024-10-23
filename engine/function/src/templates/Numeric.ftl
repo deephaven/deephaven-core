@@ -3777,7 +3777,7 @@ public class Numeric {
          ${pt.primitive} val = Math.negateExact(x);
 
          if ( isNull(val) ) {
-             throw new ArithmeticException("Overflow: -" + x");
+             throw new ArithmeticException("Overflow: -" + x);
          }
 
          return val;
