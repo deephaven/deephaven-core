@@ -3622,7 +3622,7 @@ public class Numeric {
         int val = Math.subtractExact(x, y);
 
         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
         }
 
         return (${pt.primitive}) val;
@@ -3630,7 +3630,7 @@ public class Numeric {
         ${pt.primitive} val = Math.subtractExact(x, y);
 
         if ( isNull(val) ) {
-            throw new ArithmeticException("Overflow: " + x + " + " + y);
+            throw new ArithmeticException("Overflow: " + x + " - " + y);
         }
 
         return val;
