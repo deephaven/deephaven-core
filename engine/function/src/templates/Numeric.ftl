@@ -3704,7 +3704,13 @@ public class Numeric {
             throw new ArithmeticException("Overflow: " + x);
         }
 
-        return Math.incrementExact(x);
+        ${pt.primitive} val = Math.incrementExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return val;
         </#if>
     }
     </#if>
@@ -3735,7 +3741,13 @@ public class Numeric {
             throw new ArithmeticException("Overflow: " + x);
         }
 
-        return Math.decrementExact(x);
+        ${pt.primitive} val = Math.decrementExact(x);
+
+        if ( isNull(val) ) {
+            throw new ArithmeticException("Overflow: " + x);
+        }
+
+        return val;
         </#if>
     }
     </#if>
@@ -3756,13 +3768,19 @@ public class Numeric {
          <#if pt.primitive == "byte" || pt.primitive == "short">
          int val = Math.negateExact(x);
 
-         if ( val > ${pt.maxValue} || val < ${pt.minValue}) {
+         if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
             throw new ArithmeticException("Overflow: -" + x);
          }
 
          return (${pt.primitive}) val;
          <#else>
-         return Math.negateExact(x);
+         ${pt.primitive} val = Math.negateExact(x);
+
+         if ( isNull(val) ) {
+             throw new ArithmeticException("Overflow: -" + x");
+         }
+
+         return val;
          </#if>
      }
      </#if>
