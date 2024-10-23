@@ -3593,7 +3593,7 @@ public class Numeric {
         <#if pt.primitive == "byte" || pt.primitive == "short">
         int val = Math.addExact(x, y);
 
-        if ( val > ${pt.maxValue} || val < ${pt.minValue} ) {
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val) ) {
             throw new ArithmeticException("Overflow: " + x + " + " + y);
         }
 
@@ -3619,9 +3619,9 @@ public class Numeric {
         }
 
         <#if pt.primitive == "byte" || pt.primitive == "short">
-            int val = Math.subtractExact(x, y);
+        int val = Math.subtractExact(x, y);
 
-            if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
+        if ( val > ${pt.maxValue} || val < ${pt.minValue} || isNull(val)) {
             throw new ArithmeticException("Overflow: " + x + " + " + y);
         }
 
