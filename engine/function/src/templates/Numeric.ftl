@@ -3482,7 +3482,7 @@ public class Numeric {
     }
 
     /**
-     * Returns the base 10 logarithm of a double value.
+     * Returns the base 10 logarithm of a value.
      *
      * @param x the value.
      * @return the base 10 logarithm of the value.  If the value is null, returns null.
@@ -3984,8 +3984,8 @@ public class Numeric {
 
     <#if pt.valueType.isFloat>
     /**
-     * Returns the size of an ulp of the argument. An ulp, unit in the last place, of a double value is the positive
-     * distance between this floating-point value and the double value next larger in magnitude.
+     * Returns the size of an ulp of the argument. An ulp, unit in the last place, of a value is the positive
+     * distance between this floating-point value and the value next larger in magnitude.
      * Note that for non-NaN x, ulp(-x) == ulp(x).
      *
      * @param x the value.
