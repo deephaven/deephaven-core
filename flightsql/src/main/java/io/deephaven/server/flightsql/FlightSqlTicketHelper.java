@@ -25,7 +25,7 @@ final class FlightSqlTicketHelper {
     public static final char TICKET_PREFIX = 'q';
 
     // TODO: this is a farce, we should not support path routes.
-    public static final String FLIGHT_DESCRIPTOR_ROUTE = "flight-sql";
+    public static final String FLIGHT_DESCRIPTOR_ROUTE = "flight-sql-do-not-use";
 
     private static final ByteString PREFIX = ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX});
 

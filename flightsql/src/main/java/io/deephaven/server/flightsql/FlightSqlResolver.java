@@ -51,6 +51,7 @@ import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.apache.arrow.flight.impl.Flight.FlightEndpoint;
 import org.apache.arrow.flight.impl.Flight.FlightInfo;
 import org.apache.arrow.flight.impl.Flight.Ticket;
+import org.apache.arrow.flight.sql.FlightSqlProducer;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
@@ -118,15 +119,17 @@ import static io.deephaven.server.flightsql.FlightSqlTicketHelper.FLIGHT_DESCRIP
 import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
 
 /**
- * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">FlightSQL</a> resolver.
+ * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">FlightSQL</a> resolver. This supports the read-only
+ * querying of the global query scope, which is presented simply with the query scope variables names as the table names
+ * without a catalog and schema name.
  *
  * <p>
- * Supported commands: {@link CommandStatementQuery}, {@link CommandPreparedStatementQuery}, {@link CommandGetTables},
- * {@link CommandGetCatalogs}, {@link CommandGetDbSchemas}, and {@link CommandGetTableTypes}.
+ * This implementation does not currently follow the FlightSQL protocol to exact specification. Namely, all the returned
+ * {@link Schema Flight schemas} have nullable {@link Field fields}, and some of the fields on specific commands have
+ * different types (see {@link #flightInfoFor(SessionState, FlightDescriptor, String)} for specifics).
  *
  * <p>
- * Supported actions: {@link FlightSqlUtils#FLIGHT_SQL_CREATE_PREPARED_STATEMENT} and
- * {@link FlightSqlUtils#FLIGHT_SQL_CLOSE_PREPARED_STATEMENT}.
+ * All commands, actions, and resolution must be called by authenticated users.
  */
 @Singleton
 public final class FlightSqlResolver extends TicketResolverBase implements ActionResolver, CommandResolver {
@@ -176,71 +179,90 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             .collect(Collectors.toSet());
 
     private static final String FLIGHT_SQL_TYPE_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
+    private static final String FLIGHT_SQL_COMMAND_TYPE_PREFIX = FLIGHT_SQL_TYPE_PREFIX + "Command";
 
     @VisibleForTesting
-    static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandStatementQuery";
+    static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementQuery";
 
     // This is a server-implementation detail, but happens to be the same scheme that FlightSQL
     // org.apache.arrow.flight.sql.FlightSqlProducer uses
     static final String TICKET_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "TicketStatementQuery";
 
     @VisibleForTesting
-    static final String COMMAND_STATEMENT_UPDATE_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandStatementUpdate";
+    static final String COMMAND_STATEMENT_UPDATE_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementUpdate";
 
     // Need to update to newer FlightSql version for this
     // @VisibleForTesting
-    // static final String COMMAND_STATEMENT_INGEST_TYPE_URL = FLIGHT_SQL_COMMAND_PREFIX + "CommandStatementIngest";
+    // static final String COMMAND_STATEMENT_INGEST_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementIngest";
 
     @VisibleForTesting
     static final String COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL =
-            FLIGHT_SQL_TYPE_PREFIX + "CommandStatementSubstraitPlan";
+            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementSubstraitPlan";
 
     @VisibleForTesting
     static final String COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL =
-            FLIGHT_SQL_TYPE_PREFIX + "CommandPreparedStatementQuery";
+            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "PreparedStatementQuery";
 
     @VisibleForTesting
     static final String COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL =
-            FLIGHT_SQL_TYPE_PREFIX + "CommandPreparedStatementUpdate";
+            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "PreparedStatementUpdate";
 
     @VisibleForTesting
-    static final String COMMAND_GET_TABLE_TYPES_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetTableTypes";
+    static final String COMMAND_GET_TABLE_TYPES_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetTableTypes";
 
     @VisibleForTesting
-    static final String COMMAND_GET_CATALOGS_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetCatalogs";
+    static final String COMMAND_GET_CATALOGS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetCatalogs";
 
     @VisibleForTesting
-    static final String COMMAND_GET_DB_SCHEMAS_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetDbSchemas";
+    static final String COMMAND_GET_DB_SCHEMAS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetDbSchemas";
 
     @VisibleForTesting
-    static final String COMMAND_GET_TABLES_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetTables";
+    static final String COMMAND_GET_TABLES_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetTables";
 
     @VisibleForTesting
-    static final String COMMAND_GET_SQL_INFO_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetSqlInfo";
+    static final String COMMAND_GET_SQL_INFO_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetSqlInfo";
 
     @VisibleForTesting
-    static final String COMMAND_GET_CROSS_REFERENCE_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetCrossReference";
+    static final String COMMAND_GET_CROSS_REFERENCE_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetCrossReference";
 
     @VisibleForTesting
-    static final String COMMAND_GET_EXPORTED_KEYS_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetExportedKeys";
+    static final String COMMAND_GET_EXPORTED_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetExportedKeys";
 
     @VisibleForTesting
-    static final String COMMAND_GET_IMPORTED_KEYS_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetImportedKeys";
+    static final String COMMAND_GET_IMPORTED_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetImportedKeys";
 
     @VisibleForTesting
-    static final String COMMAND_GET_PRIMARY_KEYS_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetPrimaryKeys";
+    static final String COMMAND_GET_PRIMARY_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetPrimaryKeys";
 
     @VisibleForTesting
-    static final String COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "CommandGetXdbcTypeInfo";
+    static final String COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetXdbcTypeInfo";
 
     private static final String CATALOG_NAME = "catalog_name";
+    private static final String PK_CATALOG_NAME = "pk_catalog_name";
+    private static final String FK_CATALOG_NAME = "fk_catalog_name";
+
     private static final String DB_SCHEMA_NAME = "db_schema_name";
-    private static final String TABLE_TYPE = "table_type";
+    private static final String PK_DB_SCHEMA_NAME = "pk_db_schema_name";
+    private static final String FK_DB_SCHEMA_NAME = "fk_db_schema_name";
+
+
     private static final String TABLE_NAME = "table_name";
-    private static final String TABLE_SCHEMA = "table_schema";
+    private static final String PK_TABLE_NAME = "pk_table_name";
+    private static final String FK_TABLE_NAME = "fk_table_name";
+
     private static final String COLUMN_NAME = "column_name";
+    private static final String PK_COLUMN_NAME = "pk_column_name";
+    private static final String FK_COLUMN_NAME = "fk_column_name";
+
     private static final String KEY_NAME = "key_name";
+    private static final String PK_KEY_NAME = "pk_key_name";
+    private static final String FK_KEY_NAME = "fk_key_name";
+
+    private static final String TABLE_TYPE = "table_type";
     private static final String KEY_SEQUENCE = "key_sequence";
+    private static final String TABLE_SCHEMA = "table_schema";
+    private static final String UPDATE_RULE = "update_rule";
+    private static final String DELETE_RULE = "delete_rule";
 
     private static final String TABLE_TYPE_TABLE = "TABLE";
 
@@ -267,6 +289,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
 
     private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES = serializeMetadata(DATASET_SCHEMA_SENTINEL);
+
 
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
     // TicketResolvers).
@@ -296,6 +319,14 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     // ---------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Returns {@code true} if the given command {@code descriptor} appears to be a valid FlightSQL command; that is, it
+     * is parsable as an {@code Any} protobuf message with the type URL prefixed with
+     * {@value FLIGHT_SQL_COMMAND_TYPE_PREFIX}.
+     *
+     * @param descriptor the descriptor
+     * @return {@code true} if the given command appears to be a valid FlightSQL command
+     */
     @Override
     public boolean handlesCommand(Flight.FlightDescriptor descriptor) {
         if (descriptor.getType() != DescriptorType.CMD) {
@@ -303,12 +334,77 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         }
         // No good way to check if this is a valid command without parsing to Any first.
         final Any command = parse(descriptor.getCmd()).orElse(null);
-        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_TYPE_PREFIX);
+        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX);
     }
 
     // We should probably plumb optional TicketResolver support that allows efficient
     // io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema without needing to go through flightInfoFor
 
+    /**
+     * Executes the given {@code descriptor} command. Only supports authenticated access.
+     *
+     * <p>
+     * {@link CommandStatementQuery}: Executes the given SQL query. The returned Flight info should be promptly
+     * resolved, and resolved at most once. Transactions are not currently supported.
+     *
+     * <p>
+     * {@link CommandPreparedStatementQuery}: Executes the prepared SQL query (must be executed within the scope of a
+     * {@link FlightSqlUtils#FLIGHT_SQL_CREATE_PREPARED_STATEMENT} /
+     * {@link FlightSqlUtils#FLIGHT_SQL_CLOSE_PREPARED_STATEMENT}). The returned Flight info should be promptly
+     * resolved, and resolved at most once.
+     *
+     * <p>
+     * {@link CommandGetTables}: Retrieve the tables authorized for the user. The {@value TABLE_NAME},
+     * {@value TABLE_TYPE}, and (optional) {@value TABLE_SCHEMA} fields will be out-of-spec as nullable columns (the
+     * returned data for these columns will never be {@code null}).
+     *
+     * <p>
+     * {@link CommandGetCatalogs}: Retrieves the catalogs authorized for the user. The {@value CATALOG_NAME} field will
+     * be out-of-spec as a nullable column (the returned data for this column will never be {@code null}). Currently,
+     * always an empty table.
+     *
+     * <p>
+     * {@link CommandGetDbSchemas}: Retrieves the catalogs and schemas authorized for the user. The
+     * {@value DB_SCHEMA_NAME} field will be out-of-spec as a nullable (the returned data for this column will never be
+     * {@code null}). Currently, always an empty table.
+     *
+     * <p>
+     * {@link CommandGetTableTypes}: Retrieves the table types authorized for the user. The {@value TABLE_TYPE} field
+     * will be out-of-spec as a nullable (the returned data for this column will never be {@code null}). Currently,
+     * always a table with a single row with value {@value TABLE_TYPE_TABLE}.
+     *
+     * <p>
+     * {@link CommandGetPrimaryKeys}: Retrieves the primary keys for a table if the user is authorized. If the table
+     * does not exist (or the user is not authorized), a {@link Code#NOT_FOUND} exception will be thrown. The
+     * {@value TABLE_NAME}, {@value COLUMN_NAME}, and {@value KEY_SEQUENCE} will be out-of-spec as nullable columns (the
+     * returned data for these columns will never be {@code null}). Currently, always an empty table.
+     *
+     * <p>
+     * {@link CommandGetImportedKeys}: Retrieves the imported keys for a table if the user is authorized. If the table
+     * does not exist (or the user is not authorized), a {@link Code#NOT_FOUND} exception will be thrown. The
+     * {@value PK_TABLE_NAME}, {@value PK_COLUMN_NAME}, {@value FK_TABLE_NAME}, {@value FK_COLUMN_NAME}, and
+     * {@value KEY_SEQUENCE} will be out-of-spec as nullable columns (the returned data for these columns will never be
+     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int16}
+     * types instead of {@code uint8} (the returned data for these columns will never be {@code null}). Currently,
+     * always an empty table.
+     *
+     * <p>
+     * {@link CommandGetExportedKeys}: Retrieves the exported keys for a table if the user is authorized. If the table
+     * does not exist (or the user is not authorized), a {@link Code#NOT_FOUND} exception will be thrown. The
+     * {@value PK_TABLE_NAME}, {@value PK_COLUMN_NAME}, {@value FK_TABLE_NAME}, {@value FK_COLUMN_NAME}, and
+     * {@value KEY_SEQUENCE} will be out-of-spec as nullable columns (the returned data for these columns will never be
+     * {@code null}). The {@value UPDATE_RULE} and {@value DELETE_RULE} will be out-of-spec as nullable {@code int16}
+     * types instead of {@code uint8} (the returned data for these columns will never be {@code null}). Currently,
+     * always an empty table.
+     *
+     * <p>
+     * All other commands will throw an {@link Code#UNIMPLEMENTED} exception.
+     *
+     * @param session the session
+     * @param descriptor the flight descriptor to retrieve a ticket for
+     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @return the flight info for the given {@code descriptor} command
+     */
     @Override
     public ExportObject<FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
@@ -316,17 +412,22 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw unauthenticatedError();
         }
         if (descriptor.getType() != DescriptorType.CMD) {
-            // TODO: we should extract a PathResolver (like CommandResolver) so this can be elevated to a server
-            // implementation issue instead of user facing error
-            throw error(Code.FAILED_PRECONDITION,
-                    String.format("Unsupported descriptor type '%s'", descriptor.getType()));
+            // We _should_ be able to eventually elevate this to an IllegalStateException since we should be able to
+            // pass along context that FlightSQL does not support any PATH-based Descriptors. This may involve
+            // extracting a PathResolver interface (like CommandResolver) and potentially breaking
+            // io.deephaven.server.session.TicketResolverBase.flightDescriptorRoute
+            throw error(Code.FAILED_PRECONDITION, "FlightSQL only supports Command-based descriptors");
         }
         final Any command = parseOrThrow(descriptor.getCmd());
+        if (!command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
+            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
+            // handlesCommand
+            throw new IllegalStateException(String.format("Unexpected command typeUrl '%s'", command.getTypeUrl()));
+        }
         return session.<FlightInfo>nonExport().submit(() -> getInfo(session, descriptor, command));
     }
 
     private FlightInfo getInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
-        // todo scope nugget perf
         final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), true);
         final TicketHandler ticketHandler = commandHandler.initialize(command);
         return ticketHandler.getInfo(descriptor);
@@ -334,6 +435,15 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     // ---------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Only supports authenticated access.
+     *
+     * @param session the user session context
+     * @param ticket (as ByteByffer) the ticket to resolve
+     * @param logId an end-user friendly identification of the ticket should an error occur
+     * @return the exported table
+     * @param <T> the type, must be Table
+     */
     @Override
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
@@ -349,8 +459,25 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         return ticketHandler(session, message).resolve(session);
     }
 
+    @Override
+    public <T> SessionState.ExportObject<T> resolve(
+            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+        // This general interface does not make sense; resolution should always be done against a _ticket_. Nothing
+        // calls io.deephaven.server.session.TicketRouter.resolve(SessionState, FlightDescriptor, String)
+        throw new IllegalStateException();
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Supports unauthenticated access. When unauthenticated, will not return any actions types. When authenticated,
+     * will return the action types the user is authorized to access. Currently, supports
+     * {@link FlightSqlUtils#FLIGHT_SQL_CREATE_PREPARED_STATEMENT} and
+     * {@link FlightSqlUtils#FLIGHT_SQL_CLOSE_PREPARED_STATEMENT}.
+     *
+     * @param session the session
+     * @param visitor the visitor
+     */
     @Override
     public void listActions(@Nullable SessionState session, Consumer<ActionType> visitor) {
         if (session == null) {
@@ -360,6 +487,13 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         visitor.accept(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
     }
 
+    /**
+     * Returns {@code true} if {@code type} is a known FlightSQL action type (even if this implementation does not
+     * implement it).
+     *
+     * @param type the action type
+     * @return if {@code type} is a known FlightSQL action type
+     */
     @Override
     public boolean handlesActionType(String type) {
         // There is no prefix for FlightSQL action types, so the best we can do is a set-based lookup. This also means
@@ -368,6 +502,16 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         return FLIGHT_SQL_ACTION_TYPES.contains(type);
     }
 
+    /**
+     * Executes the given {@code action}. Only supports authenticated access. Currently, supports
+     * {@link FlightSqlUtils#FLIGHT_SQL_CREATE_PREPARED_STATEMENT} and
+     * {@link FlightSqlUtils#FLIGHT_SQL_CLOSE_PREPARED_STATEMENT}; all other action types will throw an
+     * {@link Code#UNIMPLEMENTED} exception. Transactions are not currently supported.
+     *
+     * @param session the session
+     * @param action the action
+     * @param visitor the visitor
+     */
     @Override
     public void doAction(@Nullable SessionState session, org.apache.arrow.flight.Action action,
             Consumer<org.apache.arrow.flight.Result> visitor) {
@@ -375,10 +519,62 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw unauthenticatedError();
         }
         if (!handlesActionType(action.getType())) {
-            // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction
+            // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction /
+            // handlesActionType
             throw new IllegalStateException(String.format("Unexpected action type '%s'", action.getType()));
         }
         executeAction(session, action(action), action, visitor);
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Supports unauthenticated access. When unauthenticated, will not return any Flight info. When authenticated, this
+     * may return Flight info the user is authorized to access. Currently, no Flight info is returned.
+     *
+     * @param session optional session that the resolver can use to filter which flights a visitor sees
+     * @param visitor the callback to invoke per descriptor path
+     */
+    @Override
+    public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
+        if (session == null) {
+            return;
+        }
+        // Potential support for listing here in the future
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Publishing to FlightSQL descriptors is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
+     */
+    @Override
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session,
+            final Flight.FlightDescriptor descriptor,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        if (session == null) {
+            throw unauthenticatedError();
+        }
+        throw error(Code.FAILED_PRECONDITION,
+                "Could not publish '" + logId + "': FlightSQL descriptors cannot be published to");
+    }
+
+    /**
+     * Publishing to FlightSQL tickets is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
+     */
+    @Override
+    public <T> SessionState.ExportBuilder<T> publish(
+            final SessionState session,
+            final ByteBuffer ticket,
+            final String logId,
+            @Nullable final Runnable onPublish) {
+        if (session == null) {
+            throw unauthenticatedError();
+        }
+        throw error(Code.FAILED_PRECONDITION,
+                "Could not publish '" + logId + "': FlightSQL tickets cannot be published to");
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -388,41 +584,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
         // This is a bit different from the other resolvers; a ticket may be a very long byte string here since it
         // may represent a command.
         return FlightSqlTicketHelper.toReadableString(ticket, logId);
-    }
-
-    @Override
-    public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-
-    }
-
-    @Override
-    public <T> SessionState.ExportObject<T> resolve(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw unauthenticatedError();
-        }
-        // this general interface does not make sense
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session,
-            final ByteBuffer ticket,
-            final String logId,
-            @Nullable final Runnable onPublish) {
-        throw error(Code.FAILED_PRECONDITION,
-                "Could not publish '" + logId + "': FlightSQL tickets cannot be published to");
-    }
-
-    @Override
-    public <T> SessionState.ExportBuilder<T> publish(
-            final SessionState session,
-            final Flight.FlightDescriptor descriptor,
-            final String logId,
-            @Nullable final Runnable onPublish) {
-        throw error(Code.FAILED_PRECONDITION,
-                "Could not publish '" + logId + "': FlightSQL descriptors cannot be published to");
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -464,6 +625,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return commandGetExportedKeysHandler;
             case COMMAND_GET_TABLES_TYPE_URL:
                 return new CommandGetTablesImpl();
+            case COMMAND_GET_SQL_INFO_TYPE_URL:
+                // Need dense_union support to implement this.
+                return new UnsupportedCommand<>(CommandGetSqlInfo.class);
             case COMMAND_STATEMENT_UPDATE_TYPE_URL:
                 return new UnsupportedCommand<>(CommandStatementUpdate.class);
             case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
@@ -472,9 +636,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 return new UnsupportedCommand<>(CommandStatementSubstraitPlan.class);
             case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
                 return new UnsupportedCommand<>(CommandPreparedStatementUpdate.class);
-            case COMMAND_GET_SQL_INFO_TYPE_URL:
-                // Need dense_union support to implement this.
-                return new UnsupportedCommand<>(CommandGetSqlInfo.class);
             case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
                 return new UnsupportedCommand<>(CommandGetXdbcTypeInfo.class);
         }
@@ -532,16 +693,16 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         /**
          * This is called as the first part of {@link TicketHandler#getInfo(FlightDescriptor)} for the handler returned
-         * during {@link #initialize(Any)}. It can be used as an early signal to let clients know that the command is
-         * not supported, or one of the arguments is not valid.
+         * from {@link #initialize(Any)}. It can be used as an early signal to let clients know that the command is not
+         * supported, or one of the arguments is not valid.
          */
         void checkForGetInfo(T command) {
 
         }
 
         /**
-         * This is called as the first part of {@link TicketHandler#resolve(SessionState)} for the handler returned
-         * during {@link #initialize(Any)}.
+         * This is called as the first part of {@link TicketHandler#resolve(SessionState)} for the handler returned from
+         * {@link #initialize(Any)}.
          */
         void checkForResolve(T command) {
 
@@ -565,6 +726,11 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                     .build();
         }
 
+        /**
+         * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
+         * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
+         * part of {@link TicketHandler#resolve(SessionState)}.
+         */
         @Override
         public final TicketHandler initialize(Any any) {
             final T command = unpackOrThrow(any, clazz);
@@ -689,9 +855,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 throw new IllegalStateException("initialize on Query should only be called once");
             }
             initialized = true;
-            // TODO: nugget, scopes.
-            // TODO: some attribute to set on table to force the schema / schemaBytes?
-            // TODO: query scope, exex context
             execute(any);
             if (table == null) {
                 throw new IllegalStateException(
@@ -755,7 +918,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
         private synchronized void closeImpl(boolean cancelWatchdog) {
             queries.remove(handleId, this);
-            // can't unmanage, passes to resolver?
+            // can't unmanage; ownership really needs to pass to the resolver
             // scope.unmanage(table);
             table = null;
             if (cancelWatchdog && watchdog != null) {
@@ -864,8 +1027,19 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     @VisibleForTesting
     static final class CommandGetTableTypesConstants {
+
+        /**
+         * Models return type for {@link CommandGetTableTypes},
+         * {@link FlightSqlProducer.Schemas#GET_TABLE_TYPES_SCHEMA}.
+         *
+         * <pre>
+         * table_type: utf8 not null
+         * </pre>
+         */
         @VisibleForTesting
-        static final TableDefinition DEFINITION = TableDefinition.of(ColumnDefinition.ofString(TABLE_TYPE));
+        static final TableDefinition DEFINITION = TableDefinition.of(
+                ColumnDefinition.ofString(TABLE_TYPE) // out-of-spec
+        );
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE =
                 TableTools.newTable(DEFINITION, ATTRIBUTES, TableTools.stringCol(TABLE_TYPE, TABLE_TYPE_TABLE));
@@ -876,8 +1050,18 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     @VisibleForTesting
     static final class CommandGetCatalogsConstants {
+
+        /**
+         * Models return type for {@link CommandGetCatalogs}, {@link FlightSqlProducer.Schemas#GET_CATALOGS_SCHEMA}.
+         * 
+         * <pre>
+         * catalog_name: utf8 not null
+         * </pre>
+         */
         @VisibleForTesting
-        static final TableDefinition DEFINITION = TableDefinition.of(ColumnDefinition.ofString(CATALOG_NAME));
+        static final TableDefinition DEFINITION = TableDefinition.of(
+                ColumnDefinition.ofString(CATALOG_NAME) // out-of-spec
+        );
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
 
@@ -888,10 +1072,19 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @VisibleForTesting
     static final class CommandGetDbSchemasConstants {
 
+        /**
+         * Models return type for {@link CommandGetDbSchemas}, {@link FlightSqlProducer.Schemas#GET_SCHEMAS_SCHEMA}.
+         * 
+         * <pre>
+         * catalog_name: utf8,
+         * db_schema_name: utf8 not null
+         * </pre>
+         */
         @VisibleForTesting
         static final TableDefinition DEFINITION = TableDefinition.of(
                 ColumnDefinition.ofString(CATALOG_NAME),
-                ColumnDefinition.ofString(DB_SCHEMA_NAME));
+                ColumnDefinition.ofString(DB_SCHEMA_NAME) // out-of-spec
+        );
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
         public static final CommandHandler HANDLER =
@@ -901,23 +1094,43 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @VisibleForTesting
     static final class CommandGetKeysConstants {
 
+        /**
+         * Models return type for {@link CommandGetImportedKeys} / {@link CommandGetExportedKeys},
+         * {@link FlightSqlProducer.Schemas#GET_IMPORTED_KEYS_SCHEMA},
+         * {@link FlightSqlProducer.Schemas#GET_EXPORTED_KEYS_SCHEMA}.
+         * 
+         * <pre>
+         * pk_catalog_name: utf8,
+         * pk_db_schema_name: utf8,
+         * pk_table_name: utf8 not null,
+         * pk_column_name: utf8 not null,
+         * fk_catalog_name: utf8,
+         * fk_db_schema_name: utf8,
+         * fk_table_name: utf8 not null,
+         * fk_column_name: utf8 not null,
+         * key_sequence: int32 not null,
+         * fk_key_name: utf8,
+         * pk_key_name: utf8,
+         * update_rule: uint8 not null,
+         * delete_rule: uint8 not null
+         * </pre>
+         */
         @VisibleForTesting
         static final TableDefinition DEFINITION = TableDefinition.of(
-                ColumnDefinition.ofString("pk_catalog_name"),
-                ColumnDefinition.ofString("pk_db_schema_name"),
-                ColumnDefinition.ofString("pk_table_name"),
-                ColumnDefinition.ofString("pk_column_name"),
-                ColumnDefinition.ofString("fk_catalog_name"),
-                ColumnDefinition.ofString("fk_db_schema_name"),
-                ColumnDefinition.ofString("fk_table_name"),
-                ColumnDefinition.ofString("fk_column_name"),
-                ColumnDefinition.ofInt(KEY_SEQUENCE),
-                ColumnDefinition.ofString("fk_key_name"),
-                ColumnDefinition.ofString("pk_key_name"),
-                // TODO: these would ideally be better as bytes, but we would need better config wrt
-                // io.deephaven.extensions.barrage.util.BarrageUtil.getDefaultType
-                ColumnDefinition.ofShort("update_rule"),
-                ColumnDefinition.ofShort("delete_rule"));
+                ColumnDefinition.ofString(PK_CATALOG_NAME),
+                ColumnDefinition.ofString(PK_DB_SCHEMA_NAME),
+                ColumnDefinition.ofString(PK_TABLE_NAME), // out-of-spec
+                ColumnDefinition.ofString(PK_COLUMN_NAME), // out-of-spec
+                ColumnDefinition.ofString(FK_CATALOG_NAME),
+                ColumnDefinition.ofString(FK_DB_SCHEMA_NAME),
+                ColumnDefinition.ofString(FK_TABLE_NAME), // out-of-spec
+                ColumnDefinition.ofString(FK_COLUMN_NAME), // out-of-spec
+                ColumnDefinition.ofInt(KEY_SEQUENCE), // out-of-spec
+                ColumnDefinition.ofString(FK_KEY_NAME), // yes, this does come _before_ the PK version
+                ColumnDefinition.ofString(PK_KEY_NAME),
+                ColumnDefinition.ofShort(UPDATE_RULE), // out-of-spec
+                ColumnDefinition.ofShort(DELETE_RULE) // out-of-spec
+        );
 
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
@@ -926,14 +1139,28 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @VisibleForTesting
     static final class CommandGetPrimaryKeysConstants {
 
+        /**
+         * Models return type for {@link CommandGetPrimaryKeys} /
+         * {@link FlightSqlProducer.Schemas#GET_PRIMARY_KEYS_SCHEMA}.
+         * 
+         * <pre>
+         * catalog_name: utf8,
+         * db_schema_name: utf8,
+         * table_name: utf8 not null,
+         * column_name: utf8 not null,
+         * key_name: utf8,
+         * key_sequence: int32 not null
+         * </pre>
+         */
         @VisibleForTesting
         static final TableDefinition DEFINITION = TableDefinition.of(
                 ColumnDefinition.ofString(CATALOG_NAME),
                 ColumnDefinition.ofString(DB_SCHEMA_NAME),
-                ColumnDefinition.ofString(TABLE_NAME),
-                ColumnDefinition.ofString(COLUMN_NAME),
+                ColumnDefinition.ofString(TABLE_NAME), // out-of-spec
+                ColumnDefinition.ofString(COLUMN_NAME), // out-of-spec
                 ColumnDefinition.ofString(KEY_NAME),
-                ColumnDefinition.ofInt(KEY_SEQUENCE));
+                ColumnDefinition.ofInt(KEY_SEQUENCE) // out-of-spec
+        );
 
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
@@ -1049,22 +1276,49 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     @VisibleForTesting
     static final class CommandGetTablesConstants {
 
+        /**
+         * Models return type for {@link CommandGetTables} / {@link FlightSqlProducer.Schemas#GET_TABLES_SCHEMA}.
+         * 
+         * <pre>
+         * catalog_name: utf8,
+         * db_schema_name: utf8,
+         * table_name: utf8 not null,
+         * table_type: utf8 not null,
+         * table_schema: bytes not null
+         * </pre>
+         */
         @VisibleForTesting
         static final TableDefinition DEFINITION = TableDefinition.of(
                 ColumnDefinition.ofString(CATALOG_NAME),
                 ColumnDefinition.ofString(DB_SCHEMA_NAME),
-                ColumnDefinition.ofString(TABLE_NAME),
-                ColumnDefinition.ofString(TABLE_TYPE),
-                ColumnDefinition.of(TABLE_SCHEMA, Type.byteType().arrayType()));
+                ColumnDefinition.ofString(TABLE_NAME), // out-of-spec
+                ColumnDefinition.ofString(TABLE_TYPE), // out-of-spec
+                ColumnDefinition.of(TABLE_SCHEMA, Type.byteType().arrayType()) // out-of-spec
+        );
+
+        /**
+         * Models return type for {@link CommandGetTables} /
+         * {@link FlightSqlProducer.Schemas#GET_TABLES_SCHEMA_NO_SCHEMA}.
+         * 
+         * <pre>
+         * catalog_name: utf8,
+         * db_schema_name: utf8,
+         * table_name: utf8 not null,
+         * table_type: utf8 not null,
+         * </pre>
+         */
         @VisibleForTesting
         static final TableDefinition DEFINITION_NO_SCHEMA = TableDefinition.of(
                 ColumnDefinition.ofString(CATALOG_NAME),
-                ColumnDefinition.ofString(DB_SCHEMA_NAME),
-                ColumnDefinition.ofString(TABLE_NAME),
+                ColumnDefinition.ofString(DB_SCHEMA_NAME), // out-of-spec
+                ColumnDefinition.ofString(TABLE_NAME), // out-of-spec
                 ColumnDefinition.ofString(TABLE_TYPE));
+
         private static final Map<String, Object> ATTRIBUTES = Map.of();
+
         private static final ByteString SCHEMA_BYTES_NO_SCHEMA =
                 BarrageUtil.schemaBytesFromTableDefinition(DEFINITION_NO_SCHEMA, ATTRIBUTES, true);
+
         private static final ByteString SCHEMA_BYTES =
                 BarrageUtil.schemaBytesFromTableDefinition(DEFINITION, ATTRIBUTES, true);
     }
@@ -1202,7 +1456,6 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
 
     private static <T extends com.google.protobuf.Message> T unpack(org.apache.arrow.flight.Action action,
             Class<T> clazz) {
-        // A more efficient DH version of org.apache.arrow.flight.sql.FlightSqlUtils.unpackAndParseOrThrow
         final Any any = parseOrThrow(action.getBody());
         return unpackOrThrow(any, clazz);
     }
