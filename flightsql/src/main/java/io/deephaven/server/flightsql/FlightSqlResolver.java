@@ -40,6 +40,7 @@ import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.sql.SqlParseException;
+import io.deephaven.sql.UnsupportedSqlOperation;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status.Code;
@@ -54,7 +55,6 @@ import org.apache.arrow.flight.impl.Flight.FlightInfo;
 import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
-import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
@@ -85,6 +85,7 @@ import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.runtime.CalciteContextException;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.jetbrains.annotations.Nullable;
@@ -966,11 +967,12 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
                 table = executeSqlQuery(session, sql);
             } catch (SqlParseException e) {
                 throw error(Code.INVALID_ARGUMENT, "FlightSQL query can't be parsed", e);
-            } catch (UnsupportedOperationException e) {
-                if (e.getMessage().contains("org.apache.calcite.rex.RexDynamicParam")) {
+            } catch (UnsupportedSqlOperation e) {
+                if (e.clazz() == RexDynamicParam.class) {
                     throw queryParametersNotSupported(e);
                 }
-                throw e;
+                throw error(Code.INVALID_ARGUMENT, String.format("Unsupported calcite type '%s'", e.clazz().getName()),
+                        e);
             } catch (CalciteContextException e) {
                 // See org.apache.calcite.runtime.CalciteResource for the various messages we might encounter
                 final Throwable cause = e.getCause();

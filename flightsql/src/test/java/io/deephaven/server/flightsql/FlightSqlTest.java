@@ -77,7 +77,6 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -91,7 +90,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -615,30 +613,24 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
     }
 
-    @Ignore("need to fix server, should error out before")
     @Test
-    public void insert1Prepared() {
-        try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO fake(name) VALUES('Smith')")) {
-            // final SchemaResult schema = prepared.fetchSchema();
-            // // TODO: note the lack of a useful error from perspective of client.
-            // // INVALID_ARGUMENT: Export in state DEPENDENCY_FAILED
-            // //
-            // // final SessionState.ExportObject<Flight.FlightInfo> export =
-            // // ticketRouter.flightInfoFor(session, request, "request");
-            // //
-            // // if (session != null) {
-            // // session.nonExport()
-            // // .queryPerformanceRecorder(queryPerformanceRecorder)
-            // // .require(export)
-            // // .onError(responseObserver)
-            // // .submit(() -> {
-            // // responseObserver.onNext(export.get());
-            // // responseObserver.onCompleted();
-            // // });
-            // // return;
-            // // }
-            //
-            // unpackable(CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
+    public void insertPrepared() {
+        setFooTable();
+        try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO foo_table(Foo) VALUES(42)")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
+            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
+        }
+        try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO foo_table(MyArg) VALUES(42)")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL: Unknown target column 'MyArg'");
+            expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
+                    "FlightSQL: Unknown target column 'MyArg'");
+        }
+        try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO x(Foo) VALUES(42)")) {
+            expectException(prepared::fetchSchema, FlightStatusCode.NOT_FOUND, "FlightSQL: Object 'x' not found");
+            expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "FlightSQL: Object 'x' not found");
         }
     }
 
