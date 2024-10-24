@@ -5,6 +5,7 @@ package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -88,6 +89,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -273,15 +275,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     @VisibleForTesting
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
-
-    private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES;
-    static {
-        try {
-            DATASET_SCHEMA_SENTINEL_BYTES = ArrowIpcUtil.serializeToByteString(DATASET_SCHEMA_SENTINEL);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
 
     // Need dense_union support to implement this.
     private static final UnsupportedCommand GET_SQL_INFO_HANDLER =
@@ -1662,9 +1655,15 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // consider SELECT ?.) It is not currently specified how this should be handled in the bind parameter schema
             // above. We suggest either using a union type to enumerate the possible types, or using the NA (null) type
             // as a wildcard/placeholder.
+            final ByteString datasetSchemaBytes;
+            try {
+                datasetSchemaBytes = serializeToByteString(DATASET_SCHEMA_SENTINEL);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             final ActionCreatePreparedStatementResult response = ActionCreatePreparedStatementResult.newBuilder()
                     .setPreparedStatementHandle(prepared.handleId())
-                    .setDatasetSchema(DATASET_SCHEMA_SENTINEL_BYTES)
+                    .setDatasetSchema(datasetSchemaBytes)
                     // .setParameterSchema(...)
                     .build();
             visitor.accept(response);
@@ -1905,5 +1904,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         appendQuoted.run();
         final Pattern p = Pattern.compile(pattern.toString());
         return x -> p.matcher(x).matches();
+    }
+
+    public static ByteString serializeToByteString(Schema schema) throws IOException {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ArrowIpcUtil.serialize(outputStream, schema);
+        return ByteStringAccess.wrap(outputStream.toByteArray());
     }
 }
