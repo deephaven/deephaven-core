@@ -5,11 +5,13 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -193,6 +195,15 @@ public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
                                     (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8), outChunk, outOffset,
                                     totalRows);
                 }
+                // TODO (core#58): add custom barrage serialization/deserialization support
+                // // Migrate Schema to custom format when available.
+                if (typeInfo.type() == Schema.class) {
+                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                            totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is,
+                                    fieldNodeIter, bufferInfoIter, ArrowIpcUtil::deserialize, outChunk, outOffset,
+                                    totalRows);
+                }
+                // TODO (core#936): support column conversion modes
                 throw new UnsupportedOperationException(
                         "Do not yet support column conversion mode: " + options.columnConversionMode());
             default:
