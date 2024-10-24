@@ -149,7 +149,7 @@ public class Configuration extends PropertyFile {
 
     @SuppressWarnings("UnusedReturnValue")
     public static Configuration newConfigurationForTesting(final @NotNull String name,
-                                                           final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+            final @NotNull Supplier<ConfigurationContext> contextSupplier) {
         final Configuration newConfig = DEFAULT_CONF_NAME.equals(name)
                 ? new DefaultConfiguration(contextSupplier)
                 : new NamedConfiguration(name, contextSupplier);
