@@ -16,15 +16,6 @@ import java.util.stream.Collectors;
  * change in the future. As such, callers may wish to explicitly set the values.
  */
 public abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
-    /**
-     * While writing to an iceberg table, whether to create the iceberg table if it does not exist, defaults to
-     * {@code false}.
-     */
-    @Default
-    public boolean createTableIfNotExist() {
-        return false;
-    }
-
     // @formatter:off
     /**
      * Specifies whether to verify that the partition spec and schema of the table being written are consistent with the
@@ -64,8 +55,6 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     }
 
     public interface Builder<INSTRUCTIONS_BUILDER> extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
-        INSTRUCTIONS_BUILDER createTableIfNotExist(boolean createTableIfNotExist);
-
         INSTRUCTIONS_BUILDER verifySchema(boolean verifySchema);
 
         INSTRUCTIONS_BUILDER putDhToIcebergColumnRenames(String key, String value);
