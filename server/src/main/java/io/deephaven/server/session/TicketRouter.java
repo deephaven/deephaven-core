@@ -80,7 +80,8 @@ public class TicketRouter {
                 "resolveTicket:" + ticketName)) {
             return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -133,7 +134,8 @@ public class TicketRouter {
                 "resolveDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).resolve(session, descriptor, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -276,7 +278,8 @@ public class TicketRouter {
                 "flightInfoForDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 

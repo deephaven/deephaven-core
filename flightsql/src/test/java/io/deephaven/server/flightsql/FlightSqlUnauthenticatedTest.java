@@ -40,7 +40,6 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 @RunWith(JUnit4.class)
 public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
 
-
     private static final TableRef FOO_TABLE_REF = TableRef.of(null, null, "foo_table");
     public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "bar_table");
 
@@ -124,7 +123,6 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
     public void getCatalogs() {
         unauthenticated(() -> flightSqlClient.getCatalogsSchema());
         unauthenticated(() -> flightSqlClient.getCatalogs());
-
     }
 
     @Test
