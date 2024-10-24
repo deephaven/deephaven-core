@@ -95,7 +95,17 @@ public class ParsedProperties extends Properties {
     @SuppressWarnings("WeakerAccess")
     // This is used from an external utility for showing useful information about prop files.
     public ParsedProperties() {
-        this(false, new DefaultConfigurationContext());
+        this(false);
+    }
+
+    /**
+     * A constructor that starts with no existing scoped or final properties.
+     *
+     * @param ignoreScopes True if this parser should ignore scope restrictions, false otherwise. Used by the
+     *        PropertyInspector when checking whether required or disallowed properties are present.
+     */
+    public ParsedProperties(final boolean ignoreScopes) {
+        this(ignoreScopes, new DefaultConfigurationContext());
     }
 
     /**
