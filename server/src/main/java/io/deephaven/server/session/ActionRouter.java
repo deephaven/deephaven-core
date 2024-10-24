@@ -42,11 +42,12 @@ public final class ActionRouter {
      *
      * @param session the session
      * @param action the action
-     * @param visitor the results visitor
+     * @param observer the results observer
      * @throws io.grpc.StatusRuntimeException if zero or more than one resolver is found
      */
-    public void doAction(@Nullable final SessionState session, final Action action, final Consumer<Result> visitor) {
-        getResolver(action.getType()).doAction(session, action, visitor);
+    public void doAction(@Nullable final SessionState session, final Action action,
+            final ActionResolver.ActionObserver observer) {
+        getResolver(action.getType()).doAction(session, action, observer);
     }
 
     private ActionResolver getResolver(final String type) {

@@ -43,6 +43,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Empty;
@@ -415,19 +416,24 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @Override
     public ExportObject<FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw unauthenticatedError();
-        }
         if (descriptor.getType() != DescriptorType.CMD) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
             // handlesPath
             throw new IllegalStateException("FlightSQL only supports Command-based descriptors");
         }
-        final Any command = parseOrThrow(descriptor.getCmd());
+        final Any command = parse(descriptor.getCmd()).orElse(null);
+        if (command == null) {
+            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
+            // handlesCommand
+            throw new IllegalStateException("Received invalid message from remote.");
+        }
         if (!command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
             // handlesCommand
             throw new IllegalStateException(String.format("Unexpected command typeUrl '%s'", command.getTypeUrl()));
+        }
+        if (session == null) {
+            throw unauthenticatedError();
         }
         return session.<FlightInfo>nonExport().submit(() -> getInfo(session, descriptor, command));
     }
@@ -582,20 +588,19 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      *
      * @param session the session
      * @param action the action
-     * @param visitor the visitor
+     * @param observer the observer
      */
     @Override
-    public void doAction(@Nullable SessionState session, org.apache.arrow.flight.Action action,
-            Consumer<org.apache.arrow.flight.Result> visitor) {
-        if (session == null) {
-            throw unauthenticatedError();
-        }
+    public void doAction(@Nullable SessionState session, Action action, ActionObserver observer) {
         if (!handlesActionType(action.getType())) {
             // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction /
             // handlesActionType
             throw new IllegalStateException(String.format("Unexpected action type '%s'", action.getType()));
         }
-        executeAction(session, action(action), action, visitor);
+        if (session == null) {
+            throw unauthenticatedError();
+        }
+        executeAction(session, action(action), action, observer);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -1511,8 +1516,19 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             final SessionState session,
             final ActionHandler<Request, Response> handler,
             final org.apache.arrow.flight.Action request,
-            final Consumer<org.apache.arrow.flight.Result> visitor) {
-        handler.execute(session, handler.parse(request), new ResultVisitorAdapter<>(visitor));
+            final ActionObserver observer) {
+        // If there was complicated logic going on (actual building of tables), or needed to block, we would instead use
+        // exports or some other mechanism of doing this work off-thread. For now, it's simple enough that we can do it
+        // all on-thread.
+        try {
+            handler.execute(session, handler.parse(request), new ResultVisitorAdapter<>(observer::onNext));
+        } catch (StatusRuntimeException e) {
+            // We expect other Throwables to be wrapped and transformed if necessary via
+            // io.deephaven.server.session.SessionServiceGrpcImpl.rpcWrapper
+            observer.onError(e);
+            return;
+        }
+        observer.onCompleted();
     }
 
     private ActionHandler<?, ? extends Message> action(org.apache.arrow.flight.Action action) {
@@ -1756,10 +1772,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         } catch (final InvalidProtocolBufferException e) {
             return Optional.empty();
         }
-    }
-
-    private static Any parseOrThrow(ByteString data) {
-        return parse(data).orElseThrow(() -> error(Code.INVALID_ARGUMENT, "Received invalid message from remote."));
     }
 
     private static Any parseOrThrow(byte[] data) {
