@@ -20,6 +20,7 @@ import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,28 +49,13 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
-        final String scopeName = nameForDescriptor(descriptor, logId);
+    protected Flight.Ticket getTicket(FlightDescriptor descriptor, String logId) {
+        return descriptorToTicket(descriptor, logId);
+    }
 
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        final Object scopeVar = queryScope.unwrapObject(queryScope.readParamValue(scopeName, null));
-        if (scopeVar == null) {
-            throw newNotFoundSRE(logId, scopeName);
-        }
-        if (!(scopeVar instanceof Table)) {
-            throw newNotFoundSRE(logId, scopeName);
-        }
-
-        final Table transformed = authorization.transform((Table) scopeVar);
-        if (transformed == null) {
-            throw newNotFoundSRE(logId, scopeName);
-        }
-        final Flight.FlightInfo flightInfo =
-                TicketRouter.getFlightInfo(transformed, descriptor, flightTicketForName(scopeName));
-
-        return SessionState.wrapAsExport(flightInfo);
+    @Override
+    protected StatusRuntimeException notFound(FlightDescriptor descriptor, String logId) {
+        return newNotFoundSRE(logId, nameForDescriptor(descriptor, logId));
     }
 
     @Override
