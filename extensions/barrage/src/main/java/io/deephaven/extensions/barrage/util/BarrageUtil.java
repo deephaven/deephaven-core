@@ -9,10 +9,12 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,20 +29,18 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.ColumnFormatting;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.util.ColumnFormatting;
-import io.deephaven.engine.util.input.InputTableUpdater;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
@@ -49,7 +49,6 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
-import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -58,6 +57,8 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -67,8 +68,21 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.function.*;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -188,7 +202,8 @@ public class BarrageUtil {
             Instant.class,
             Boolean.class,
             LocalDate.class,
-            LocalTime.class));
+            LocalTime.class,
+            Schema.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -200,6 +215,14 @@ public class BarrageUtil {
             final boolean isFlat) {
         return schemaBytes(fbb -> makeTableSchemaPayload(
                 fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes, isFlat));
+    }
+
+    public static Schema schemaFromTable(@NotNull final Table table) {
+        return makeSchema(DEFAULT_SNAPSHOT_DESER_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+    }
+
+    public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
+        return makeSchema(DEFAULT_SNAPSHOT_DESER_OPTIONS, definition, attributes, isFlat);
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -221,8 +244,15 @@ public class BarrageUtil {
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
-        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
+        return makeSchema(options, tableDefinition, attributes, isFlat).getSchema(builder);
+    }
 
+    public static Schema makeSchema(
+            @NotNull final StreamReaderOptions options,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat) {
+        final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
@@ -230,8 +260,7 @@ public class BarrageUtil {
                 ignored -> new HashMap<>(),
                 attributes, options.columnsAsList())
                 .collect(Collectors.toList());
-
-        return new Schema(fields, schemaMetadata).getSchema(builder);
+        return new Schema(fields, schemaMetadata);
     }
 
     @NotNull
@@ -752,7 +781,8 @@ public class BarrageUtil {
                     return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                        || type == BigInteger.class
+                        || type == Schema.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == Instant.class || type == ZonedDateTime.class) {

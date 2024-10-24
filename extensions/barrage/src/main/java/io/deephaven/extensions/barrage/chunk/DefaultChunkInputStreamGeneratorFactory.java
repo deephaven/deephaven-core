@@ -10,9 +10,11 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.extensions.barrage.util.ArrowUtil;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.Vector;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -91,6 +93,10 @@ public class DefaultChunkInputStreamGeneratorFactory implements ChunkInputStream
                                 out.write(0xFF & (v >> 24));
                                 out.write(normal.unscaledValue().toByteArray());
                             });
+                }
+                if (type == Schema.class) {
+                    return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                            ArrowUtil::serialize);
                 }
                 if (type == Instant.class) {
                     // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.

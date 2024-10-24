@@ -5,11 +5,13 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
+import io.deephaven.extensions.barrage.util.ArrowUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -99,6 +101,12 @@ public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
                                         return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
                                     },
                                     outChunk, outOffset, totalRows);
+                }
+                if (typeInfo.type() == Schema.class) {
+                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                            totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is,
+                                    fieldNodeIter, bufferInfoIter, ArrowUtil::deserialize, outChunk, outOffset,
+                                    totalRows);
                 }
                 if (typeInfo.type() == Instant.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
