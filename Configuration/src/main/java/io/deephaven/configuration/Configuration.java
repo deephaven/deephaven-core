@@ -15,6 +15,7 @@ import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Utility class to provide an enhanced view and common access point for java properties files, as well as common
@@ -29,6 +30,7 @@ public class Configuration extends PropertyFile {
 
     private static Configuration DEFAULT;
     private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new ConcurrentHashMap<>();
+    private final Supplier<ConfigurationContext> contextSupplier;
 
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
@@ -37,8 +39,8 @@ public class Configuration extends PropertyFile {
      * The default configuration implementation loading the property file from the default property file.
      */
     private static class DefaultConfiguration extends Configuration {
-        DefaultConfiguration() {
-            super();
+        DefaultConfiguration(final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
         }
 
         @SuppressWarnings("unused")
@@ -53,7 +55,8 @@ public class Configuration extends PropertyFile {
     private static class NamedConfiguration extends Configuration {
         private final String name;
 
-        NamedConfiguration(final @NotNull String name) {
+        NamedConfiguration(final @NotNull String name, final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
             this.name = name;
         }
 
@@ -75,7 +78,7 @@ public class Configuration extends PropertyFile {
      */
     public static Configuration getInstance() {
         if (DEFAULT == null) {
-            DEFAULT = new DefaultConfiguration();
+            DEFAULT = new DefaultConfiguration(DefaultConfigurationContext::new);
             init(DEFAULT);
         }
         return DEFAULT;
@@ -95,7 +98,7 @@ public class Configuration extends PropertyFile {
 
         return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
             try {
-                final Configuration instance = new NamedConfiguration(name);
+                final Configuration instance = new NamedConfiguration(name, DefaultConfigurationContext::new);
                 init(instance);
                 return instance;
             } catch (ConfigurationException ex) {
@@ -136,14 +139,27 @@ public class Configuration extends PropertyFile {
         NAMED_CONFIGURATIONS.remove(name);
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public static Configuration newConfigurationForTesting() {
-        final Configuration newConfig = new Configuration();
+        return newConfigurationForTesting(DEFAULT_CONF_NAME, DefaultConfigurationContext::new);
+    }
+
+    public static Configuration newConfigurationForTesting(final @NotNull String name) {
+        return newConfigurationForTesting(name, DefaultConfigurationContext::new);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static Configuration newConfigurationForTesting(final @NotNull String name,
+                                                           final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+        final Configuration newConfig = DEFAULT_CONF_NAME.equals(name)
+                ? new DefaultConfiguration(contextSupplier)
+                : new NamedConfiguration(name, contextSupplier);
         init(newConfig);
         return newConfig;
     }
 
-    protected Configuration() {}
+    protected Configuration(final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+        this.contextSupplier = contextSupplier;
+    }
 
     /**
      * Recursively load properties files allowing for overrides.
@@ -154,7 +170,7 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     private void load(String fileName, boolean ignoreScope) throws IOException, ConfigurationException {
-        final ParsedProperties temp = new ParsedProperties(ignoreScope);
+        final ParsedProperties temp = new ParsedProperties(ignoreScope, contextSupplier.get());
         // we explicitly want to set 'properties' here so that if we get an error while loading, anything before that
         // error shows up.
         // That is very helpful in debugging.
@@ -329,7 +345,7 @@ public class Configuration extends PropertyFile {
     private static String propFileDiffReport(Set<String> includedProperties, String dir1, String file1, String dir2,
             String file2, String dir3, String file3, boolean useDiffKeys) throws IOException {
         StringBuilder out = new StringBuilder();
-        Configuration configuration = new Configuration();
+        Configuration configuration = new Configuration(DefaultConfigurationContext::new);
         Properties leftProperties = configuration.load(dir1, file1);
         Properties rightProperties = configuration.load(dir2, file2);
         Properties right2Properties;
