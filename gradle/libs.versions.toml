@@ -37,7 +37,7 @@ gwt = "2.11.0"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.0"
-hdrhistogram = "2.1.12"
+hdrhistogram = "2.2.2"
 iceberg = "1.6.1"
 immutables = "2.10.1"
 jackson = "2.18.0"
