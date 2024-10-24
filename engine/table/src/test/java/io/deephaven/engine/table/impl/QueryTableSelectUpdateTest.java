@@ -42,6 +42,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -1299,5 +1301,29 @@ public class QueryTableSelectUpdateTest {
             final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii", "J = I_[ii - 1]");
             Assert.assertTrue(result.isBlink());
         }
+    }
+
+    @Test
+    public void testRegressionGH5998_BigDecimal_negate() {
+        ExecutionContext.getContext().getQueryScope().putParam("bd_val", BigDecimal.valueOf(123.456));
+        emptyTable(0).update("A = 0 < -bd_val");
+    }
+
+    @Test
+    public void testRegressionGH5998_BigInteger_negate() {
+        ExecutionContext.getContext().getQueryScope().putParam("bi_val", BigInteger.valueOf(123));
+        emptyTable(0).update("A = 0 < -bi_val");
+    }
+
+    @Test
+    public void testRegressionGH5998_Double_QSP() {
+        ExecutionContext.getContext().getQueryScope().putParam("d_val", 123.456);
+        emptyTable(0).update("A = 0 < -d_val");
+    }
+
+    @Test
+    public void testRegressionGH5998_Double_NewCol() {
+        ExecutionContext.getContext().getQueryScope().putParam("d_val", 123.456);
+        emptyTable(0).update("B = d_val", "A = 0 < -B");
     }
 }
