@@ -5,7 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
-import io.deephaven.stats.util.OSUtil;
+import io.deephaven.base.OSUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
