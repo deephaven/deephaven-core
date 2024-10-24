@@ -62,14 +62,6 @@ public interface TicketResolver {
     byte ticketRoute();
 
     /**
-     * The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve
-     * the descriptor.
-     *
-     * @return the string that will route from flight descriptor to this resolver
-     */
-    String flightDescriptorRoute();
-
-    /**
      * Resolve a flight ticket to an export object future.
      *
      * @param session the user session context

@@ -16,38 +16,59 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Singleton
 public class TicketRouter {
     private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap =
             new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
-    private final KeyedObjectHashMap<String, TicketResolver> descriptorResolverMap =
+    private final KeyedObjectHashMap<String, PathResolverPrefixedBase> prefixedPathResolverMap =
             new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
     private final TicketResolver.Authorization authorization;
+    private final Set<CommandResolver> commandResolvers;
+    private final Set<PathResolver> genericPathResolvers;
 
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
             final Set<TicketResolver> resolvers) {
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
-        resolvers.forEach(resolver -> {
+        this.commandResolvers = resolvers.stream()
+                .filter(CommandResolver.class::isInstance)
+                .map(CommandResolver.class::cast)
+                .collect(Collectors.toSet());
+        this.genericPathResolvers = resolvers.stream()
+                .filter(PathResolver.class::isInstance)
+                .filter(Predicate.not(PathResolverPrefixedBase.class::isInstance))
+                .map(PathResolver.class::cast)
+                .collect(Collectors.toSet());
+        for (TicketResolver resolver : resolvers) {
             if (!byteResolverMap.add(resolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
                         + resolver.ticketRoute());
             }
-            if (!descriptorResolverMap.add(resolver)) {
-                throw new IllegalArgumentException("Duplicate ticket resolver for descriptor route "
-                        + resolver.flightDescriptorRoute());
+            if (!(resolver instanceof PathResolverPrefixedBase)) {
+                continue;
             }
-        });
+            final PathResolverPrefixedBase prefixedPathResolver = (PathResolverPrefixedBase) resolver;
+            if (!prefixedPathResolverMap.add(prefixedPathResolver)) {
+                throw new IllegalArgumentException("Duplicate ticket resolver for descriptor route "
+                        + prefixedPathResolver.flightDescriptorRoute());
+            }
+        }
     }
 
     /**
@@ -72,7 +93,8 @@ public class TicketRouter {
                 "resolveTicket:" + ticketName)) {
             return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -125,7 +147,8 @@ public class TicketRouter {
                 "resolveDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).resolve(session, descriptor, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -268,7 +291,8 @@ public class TicketRouter {
                 "flightInfoForDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
         } catch (RuntimeException e) {
-            return SessionState.wrapAsFailedExport(e);
+            throw e;
+            // return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -339,37 +363,96 @@ public class TicketRouter {
     }
 
     private TicketResolver getResolver(final Flight.FlightDescriptor descriptor, final String logId) {
-        if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': flight descriptor is not a path");
+        if (descriptor.getType() == Flight.FlightDescriptor.DescriptorType.PATH) {
+            return getPathResolver(descriptor, logId);
+        }
+        if (descriptor.getType() == DescriptorType.CMD) {
+            return getCommandResolver(descriptor, logId);
+        }
+        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "Could not resolve '" + logId + "': unexpected type");
+    }
+
+    private PathResolver getPathResolver(FlightDescriptor descriptor, String logId) {
+        if (descriptor.getType() != DescriptorType.PATH) {
+            throw new IllegalStateException("descriptor is not a path");
         }
         if (descriptor.getPathCount() <= 0) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': flight descriptor does not have route path");
         }
-
         final String route = descriptor.getPath(0);
-        final TicketResolver resolver = descriptorResolverMap.get(route);
-        if (resolver == null) {
+        final PathResolverPrefixedBase prefixedResolver = prefixedPathResolverMap.get(route);
+        final PathResolver genericResolver = getGenericPathResolver(descriptor, logId, route).orElse(null);
+        if (prefixedResolver == null && genericResolver == null) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
+                    "Could not resolve '" + logId + "': no resolver for path route '" + route + "'");
         }
+        if (prefixedResolver != null && genericResolver != null) {
+            throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                    "Could not resolve '" + logId + "': multiple resolvers for path route '" + route + "'");
+        }
+        return prefixedResolver != null ? prefixedResolver : Objects.requireNonNull(genericResolver);
+    }
 
-        return resolver;
+    private Optional<PathResolver> getGenericPathResolver(FlightDescriptor descriptor, String logId, String route) {
+        PathResolver genericResolver = null;
+        for (PathResolver resolver : genericPathResolvers) {
+            if (!resolver.handlesPath(descriptor)) {
+                continue;
+            }
+            if (genericResolver != null) {
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                        "Could not resolve '" + logId + "': multiple resolvers for path route '" + route + "'");
+            }
+            genericResolver = resolver;
+        }
+        return Optional.ofNullable(genericResolver);
+    }
+
+    private CommandResolver getCommandResolver(FlightDescriptor descriptor, String logId) {
+        if (descriptor.getType() != DescriptorType.CMD) {
+            throw new IllegalStateException("descriptor is not a command");
+        }
+        // This is the most "naive" resolution logic; it scales linearly with the number of command resolvers, but it is
+        // the most general and may be the best we can do for certain types of command protocols built on top of Flight.
+        // If we find the number of command resolvers scaling up, we could devise a more efficient strategy in some
+        // cases either based on a prefix model and/or a fixed set model (which could be communicated either through new
+        // method(s) on CommandResolver, or through subclasses).
+        //
+        // Regardless, even with a moderate amount of command resolvers, the linear nature of this should not be a
+        // bottleneck.
+        CommandResolver commandResolver = null;
+        for (CommandResolver resolver : commandResolvers) {
+            if (!resolver.handlesCommand(descriptor)) {
+                continue;
+            }
+            if (commandResolver != null) {
+                // Is there any good way to give a friendly string for unknown command bytes? Probably not.
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                        "Could not resolve '" + logId + "': multiple resolvers for command");
+            }
+            commandResolver = resolver;
+        }
+        if (commandResolver == null) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no resolver for command");
+        }
+        return commandResolver;
     }
 
     private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID =
-            new KeyedIntObjectKey.BasicStrict<TicketResolver>() {
+            new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
                 public int getIntKey(final TicketResolver ticketResolver) {
                     return ticketResolver.ticketRoute();
                 }
             };
 
-    private static final KeyedObjectKey<String, TicketResolver> RESOLVER_OBJECT_DESCRIPTOR_ID =
-            new KeyedObjectKey.Basic<String, TicketResolver>() {
+    private static final KeyedObjectKey<String, PathResolverPrefixedBase> RESOLVER_OBJECT_DESCRIPTOR_ID =
+            new KeyedObjectKey.Basic<>() {
                 @Override
-                public String getKey(TicketResolver ticketResolver) {
+                public String getKey(PathResolverPrefixedBase ticketResolver) {
                     return ticketResolver.flightDescriptorRoute();
                 }
             };

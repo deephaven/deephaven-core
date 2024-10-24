@@ -5,27 +5,24 @@ package io.deephaven.server.session;
 
 import io.deephaven.server.auth.AuthorizationProvider;
 
-public abstract class TicketResolverBase implements TicketResolver {
+import java.util.Objects;
+
+public abstract class TicketResolverBase extends PathResolverPrefixedBase {
 
     protected final Authorization authorization;
     private final byte ticketPrefix;
-    private final String flightDescriptorRoute;
 
     public TicketResolverBase(
             final AuthorizationProvider authProvider,
-            final byte ticketPrefix, final String flightDescriptorRoute) {
-        this.authorization = authProvider.getTicketResolverAuthorization();
+            final byte ticketPrefix,
+            final String flightDescriptorRoute) {
+        super(flightDescriptorRoute);
+        this.authorization = Objects.requireNonNull(authProvider.getTicketResolverAuthorization());
         this.ticketPrefix = ticketPrefix;
-        this.flightDescriptorRoute = flightDescriptorRoute;
     }
 
     @Override
-    public byte ticketRoute() {
+    public final byte ticketRoute() {
         return ticketPrefix;
-    }
-
-    @Override
-    public String flightDescriptorRoute() {
-        return flightDescriptorRoute;
     }
 }
