@@ -358,6 +358,9 @@ project(':util-processenvironment').projectDir = file('Util/processenvironment')
 include(':util-thread')
 project(':util-thread').projectDir = file('Util/thread')
 
+include(':util-pool')
+project(':util-pool').projectDir = file('Util/pool')
+
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
 

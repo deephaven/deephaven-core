@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api project(':engine-query-constants')
+    api project(':util-pool')
     implementation project(':Base')
     implementation project(':log-factory')
     implementation libs.jdom2
