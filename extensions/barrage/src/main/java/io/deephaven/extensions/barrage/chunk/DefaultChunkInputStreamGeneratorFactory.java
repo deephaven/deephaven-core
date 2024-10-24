@@ -94,10 +94,6 @@ public class DefaultChunkInputStreamGeneratorFactory implements ChunkInputStream
                                 out.write(normal.unscaledValue().toByteArray());
                             });
                 }
-                if (type == Schema.class) {
-                    return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
-                            ArrowIpcUtil::serialize);
-                }
                 if (type == Instant.class) {
                     // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.
                     ObjectChunk<Instant, Values> objChunk = chunk.asObjectChunk();
@@ -173,8 +169,13 @@ public class DefaultChunkInputStreamGeneratorFactory implements ChunkInputStream
                                 return nanoOfDay;
                             });
                 }
+                // TODO (core#58): add custom barrage serialization/deserialization support
+                // Migrate Schema to custom format when available.
+                if (type == Schema.class) {
+                    return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                            ArrowIpcUtil::serialize);
+                }
                 // TODO (core#936): support column conversion modes
-
                 return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
                         (out, item) -> out.write(item.toString().getBytes(Charsets.UTF_8)));
             default:
