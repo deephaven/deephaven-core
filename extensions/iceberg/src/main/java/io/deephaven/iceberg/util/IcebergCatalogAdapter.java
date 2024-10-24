@@ -7,18 +7,26 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Schema;
+import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.exceptions.AlreadyExistsException;
+import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.jetbrains.annotations.NotNull;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.apache.iceberg.rest.ResourcePaths;
 
 import java.util.*;
+
+import static io.deephaven.iceberg.util.IcebergTableAdapter.verifyAndFillDefinition;
 
 public class IcebergCatalogAdapter {
 
@@ -85,7 +93,6 @@ public class IcebergCatalogAdapter {
 
         dataInstructionsProvider = DataInstructionsProviderLoader.create(Map.copyOf(properties));
     }
-
 
     /**
      * List all {@link Namespace namespaces} in the catalog. This method is only supported if the catalog implements
@@ -249,8 +256,124 @@ public class IcebergCatalogAdapter {
     /**
      * Returns the underlying Iceberg {@link Catalog catalog} used by this adapter.
      */
-    @SuppressWarnings("unused")
     public Catalog catalog() {
         return catalog;
+    }
+
+    /**
+     * Create a new Iceberg table in the catalog with the given table identifier and definition.
+     * <p>
+     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
+     * partition spec for the table.
+     *
+     * @param tableIdentifier The identifier of the new table.
+     * @param definition The {@link TableDefinition} of the new table.
+     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     */
+    public IcebergTableAdapter createTable(
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final TableDefinition definition) {
+        // TODO Add these APIs to python code once finalized
+        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(
+                definition, IcebergParquetWriteInstructions.DEFAULT);
+        return createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
+    }
+
+    /**
+     * Create a new Iceberg table in the catalog with the given table identifier, schema, and partition spec.
+     *
+     * @param tableIdentifier The identifier of the new table.
+     * @param schema The schema of the new table.
+     * @param partitionSpec The partition spec of the new table.
+     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     */
+    private IcebergTableAdapter createTable(
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull Schema schema,
+            @NotNull PartitionSpec partitionSpec) {
+        final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
+        try {
+            final org.apache.iceberg.Table table =
+                    catalog.createTable(tableIdentifier, schema, partitionSpec,
+                            Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
+            return new IcebergTableAdapter(tableIdentifier, table, dataInstructionsProvider);
+        } catch (final Throwable throwable) {
+            if (newNamespaceCreated) {
+                // Delete it to avoid leaving a partial namespace in the catalog
+                try {
+                    dropNamespaceIfExists(tableIdentifier.namespace());
+                } catch (final RuntimeException dropException) {
+                    throwable.addSuppressed(dropException);
+                }
+            }
+            throw throwable;
+        }
+    }
+
+    public IcebergTableAdapter createTableAndAppend(
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final IcebergAppend append) {
+        if (catalog.tableExists(tableIdentifier)) {
+            throw new IllegalArgumentException("Table already exists: " + tableIdentifier);
+        }
+        if (append.dhTables().isEmpty()) {
+            return createTable(tableIdentifier, new Schema(), PartitionSpec.unpartitioned());
+        }
+
+        // Extract the definition from the append instructions to build the spec and schema
+        final IcebergParquetWriteInstructions writeInstructions =
+                verifyAndFillDefinition(append.instructions(), append.dhTables());
+        final TableDefinition useDefinition = writeInstructions.tableDefinition().get();
+        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(
+                useDefinition, writeInstructions);
+
+        final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
+        final IcebergTableAdapter tableAdapter;
+        try {
+            tableAdapter = createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
+            tableAdapter.append(append);
+        } catch (final Throwable throwable) {
+            // Delete it to avoid leaving a partial table in the catalog
+            try {
+                catalog.dropTable(tableIdentifier, true);
+            } catch (final RuntimeException dropException) {
+                throwable.addSuppressed(dropException);
+            }
+            if (newNamespaceCreated) {
+                // Delete it to avoid leaving a partial namespace in the catalog
+                try {
+                    dropNamespaceIfExists(tableIdentifier.namespace());
+                } catch (final RuntimeException dropException) {
+                    throwable.addSuppressed(dropException);
+                }
+            }
+            throw throwable;
+        }
+        return tableAdapter;
+    }
+
+    private boolean createNamespaceIfNotExists(@NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
+            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
+            try {
+                nsCatalog.createNamespace(namespace);
+                return true;
+            } catch (final AlreadyExistsException | UnsupportedOperationException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean dropNamespaceIfExists(@NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
+            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
+            try {
+                return nsCatalog.dropNamespace(namespace);
+            } catch (final NamespaceNotEmptyException e) {
+                return false;
+            }
+        }
+        return false;
     }
 }

@@ -596,12 +596,15 @@ public class ParquetTools {
                     // Write the tables without any index info
                     for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
                         final Table source = sources[tableIdx];
+                        final URI tableDestination = destinations[tableIdx];
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                                tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
-                        ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
-                                metadataFileWriter, computedCache);
+                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
+                                tableDestination, outputStream, Collections.emptyMap(),
+                                (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter, computedCache);
+                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
+                                tableDestination, source.size(), numBytes));
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -622,9 +625,12 @@ public class ParquetTools {
                         for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
                             outputStreams.add(info.destOutputStream);
                         }
-                        final Table sourceTable = sources[tableIdx];
-                        ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
+                        final Table source = sources[tableIdx];
+                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
+                                tableDestination, outputStream, Collections.emptyMap(), indexInfoList,
+                                metadataFileWriter, computedCache);
+                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
+                                tableDestination, source.size(), numBytes));
                     }
                 }
 
