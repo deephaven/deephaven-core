@@ -163,8 +163,35 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
+            final UpdateByCumulativeCount.CountType countType;
+            switch (spec.countType()) {
+                case NULL:
+                    countType = UpdateByCumulativeCount.CountType.NULL;
+                    break;
+                case NEGATIVE:
+                    countType = UpdateByCumulativeCount.CountType.NEGATIVE;
+                    break;
+                case POSITIVE:
+                    countType = UpdateByCumulativeCount.CountType.POSITIVE;
+                    break;
+                case ZERO:
+                    countType = UpdateByCumulativeCount.CountType.ZERO;
+                    break;
+                case NAN:
+                    countType = UpdateByCumulativeCount.CountType.NAN;
+                    break;
+                case INFINITE:
+                    countType = UpdateByCumulativeCount.CountType.INFINITE;
+                    break;
+                case FINITE:
+                    countType = UpdateByCumulativeCount.CountType.FINITE;
+                    break;
+                default:
+                    countType = UpdateByCumulativeCount.CountType.NON_NULL;
+            }
+
             return UpdateByColumn.UpdateBySpec.newBuilder()
-                    .setCount(UpdateByCumulativeCount.getDefaultInstance())
+                    .setCount(UpdateByCumulativeCount.newBuilder().setCountType(countType))
                     .build();
         }
 

@@ -572,9 +572,20 @@ message UpdateByRequest {
         }
 
         message UpdateByCumulativeCount {
-
+            enum CountType {
+              COUNT_TYPE_NOT_SPECIFIED = 0;
+              NON_NULL = 1;
+              NULL = 2;
+              NEGATIVE = 3;
+              POSITIVE = 4;
+              ZERO = 5;
+              NAN = 6;
+              INFINITE = 7;
+              FINITE = 8;
+            }
+            CountType count_type = 1;
         }
-
+        
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;

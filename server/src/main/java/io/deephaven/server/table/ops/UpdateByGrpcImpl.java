@@ -185,7 +185,26 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     }
 
     private static CumCountSpec adaptCount(@SuppressWarnings("unused") UpdateByCumulativeCount count) {
-        return CumCountSpec.of();
+        switch (count.getCountType()) {
+            case NULL:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NULL);
+            case NEGATIVE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE);
+            case POSITIVE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE);
+            case ZERO:
+                return CumCountSpec.of(CumCountSpec.CumCountType.ZERO);
+            case NAN:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NAN);
+            case INFINITE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE);
+            case FINITE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.FINITE);
+            case NON_NULL:
+            case COUNT_TYPE_NOT_SPECIFIED: // default to non-null when not specified
+            default:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL);
+        }
     }
 
     private static CumSumSpec adaptSum(@SuppressWarnings("unused") UpdateByCumulativeSum sum) {

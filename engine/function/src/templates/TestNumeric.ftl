@@ -837,7 +837,152 @@ public class TestNumeric extends BaseArrayTestCase {
         // check that functions can be resolved with varargs
         assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
         assertEquals(new long[]{1, 2, 3, 4, 5}, cumcount((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
-    }    
+    }
+
+    public void test${pt.boxed}CumCountNullArray() {
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull(new ${pt.primitive}[]{5, 4, 3, 2, 1}));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountnull(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountnull(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1}));
+        assertEquals(new long[]{1, 1, 1, 1, 1}, cumcountnull(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[]{1, 1, 1, 1, 1}, cumcountnull(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1}));
+        assertEquals(new long[0], cumcountnull(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumcountnull(new ${pt.boxed}[0]));
+        assertEquals(null, cumcountnull((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, 4, 3, 2, 1})));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, 4, 3, ${pt.null}, 1})));
+        assertEquals(new long[]{1, 1, 1, 1, 1}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[]{1, 1, 1, 1, 1}, cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 4, 3, 2, 1})));
+        assertEquals(new long[0], cumcountnull(new ${pt.vectorDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cumcountnull((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull((${pt.primitive})1, (${pt.primitive})2, (${pt.primitive})3, (${pt.primitive})4, (${pt.primitive})5));
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountnull((${pt.primitive})5, (${pt.primitive})4, (${pt.primitive})3, (${pt.primitive})2, (${pt.primitive})1));
+    }
+
+    public void test${pt.boxed}CumCountNegArray() {
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountneg(new ${pt.primitive}[]{-2, -1, 0, 1, 2}));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.primitive}[]{2, 1, 0, -1, -2}));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountneg(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2}));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountneg(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2}));
+        assertEquals(new long[]{0, 1, 1, 1, 1}, cumcountneg(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2}));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2}));
+        assertEquals(new long[0], cumcountneg(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumcountneg(new ${pt.boxed}[0]));
+        assertEquals(null, cumcountneg((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, 1, 2})));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, -1, -2})));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2})));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2})));
+        assertEquals(new long[]{0, 1, 1, 1, 1}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2})));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2})));
+        assertEquals(new long[0], cumcountneg(new ${pt.vectorDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cumcountneg((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountneg((${pt.primitive})-2, (${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg((${pt.primitive})2, (${pt.primitive})1, (${pt.primitive})0, (${pt.primitive})-1, (${pt.primitive})-2));
+    }
+
+<#if pt.valueType.isFloat >
+    public void test${pt.boxed}CumCountNegArrayBounds() {
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, 5}));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, -5}));
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, 5}));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, -5}));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 0, 1, 1}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 0, 0, 0}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NaN, 5}));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountneg(new ${pt.primitive}[]{1, 2, 3, Float.NaN, -5}));
+    }
+</#if>
+
+    public void test${pt.boxed}CumCountPosArray() {
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountpos(new ${pt.primitive}[]{-2, -1, 0, 1, 2}));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountpos(new ${pt.primitive}[]{2, 1, 0, -1, -2}));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountpos(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2}));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountpos(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2}));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountpos(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2}));
+        assertEquals(new long[]{0, 1, 1, 1, 1}, cumcountpos(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2}));
+        assertEquals(new long[0], cumcountpos(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumcountpos(new ${pt.boxed}[0]));
+        assertEquals(null, cumcountpos((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, 1, 2})));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, -1, -2})));
+        assertEquals(new long[]{0, 0, 0, 0, 1}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2})));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2})));
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2})));
+        assertEquals(new long[]{0, 1, 1, 1, 1}, cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2})));
+        assertEquals(new long[0], cumcountpos(new ${pt.vectorDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cumcountpos((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{0, 0, 0, 1, 2}, cumcountpos((${pt.primitive})-2, (${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(new long[]{1, 2, 2, 2, 2}, cumcountpos((${pt.primitive})2, (${pt.primitive})1, (${pt.primitive})0, (${pt.primitive})-1, (${pt.primitive})-2));
+    }
+
+<#if pt.valueType.isFloat >
+    public void test${pt.boxed}CumCountPosArrayBounds() {
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, 5}));
+        assertEquals(new long[]{1, 2, 3, 4, 4}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, -5}));
+        assertEquals(new long[]{1, 2, 3, 4, 5}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, 5}));
+        assertEquals(new long[]{1, 2, 3, 3, 3}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, -5}));
+        assertEquals(new long[]{1, 2, 3, 3, 3}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{1, 2, 3, 4, 4}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{1, 2, 3, 3, 4}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NaN, 5}));
+        assertEquals(new long[]{1, 2, 3, 3, 3}, cumcountpos(new ${pt.primitive}[]{1, 2, 3, Float.NaN, -5}));
+    }
+</#if>
+
+    public void test${pt.boxed}CumCountZeroArray() {
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{-2, -1, 0, 1, 2}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{2, 1, 0, -1, -2}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2}));
+        assertEquals(new long[0], cumcountzero(new ${pt.primitive}[0]));
+        assertEquals(new long[0], cumcountzero(new ${pt.boxed}[0]));
+        assertEquals(null, cumcountzero((${pt.primitive}[]) null));
+
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, 1, 2})));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, -1, -2})));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{-2, -1, 0, ${pt.null}, 2})));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{2, 1, 0, ${pt.null}, -2})));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, -1, 0, 1, 2})));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 1, 0, -1, -2})));
+        assertEquals(new long[0], cumcountzero(new ${pt.vectorDirect}(new ${pt.primitive}[0])));
+        assertEquals(null, cumcountzero((${pt.vector}) null));
+
+        // check that functions can be resolved with varargs
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero((${pt.primitive})-2, (${pt.primitive})-1, (${pt.primitive})0, (${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero((${pt.primitive})2, (${pt.primitive})1, (${pt.primitive})0, (${pt.primitive})-1, (${pt.primitive})-2));
+    }
+
+<#if pt.valueType.isFloat >
+    public void test${pt.boxed}CumCountZeroArrayBounds() {
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.POSITIVE_INFINITY, 5}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.POSITIVE_INFINITY, -5}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NEGATIVE_INFINITY, 5}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NEGATIVE_INFINITY, -5}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NaN, 5}));
+        assertEquals(new long[]{0, 0, 1, 1, 1}, cumcountzero(new ${pt.primitive}[]{1, 2, 0, Float.NaN, -5}));
+    }
+</#if>
 
     public void test${pt.boxed}CumMinArray() {
         assertEquals(new ${pt.primitive}[]{1, 1, 1, 1, 1}, cummin(new ${pt.primitive}[]{1, 2, 3, 4, 5}));

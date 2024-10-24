@@ -1970,6 +1970,252 @@ public class Numeric {
     }
 
     /**
+     * Returns the cumulative count of null values.
+     *
+     * @param values values.
+     * @return cumulative count of null values.
+     */
+    public static long[] cumcountnull(${pt.boxed}[] values) {
+        return cumcountnull(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of null values.
+     *
+     * @param values values.
+     * @return cumulative count of null values.
+     */
+    public static long[] cumcountnull(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountnull(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of null values.
+     *
+     * @param values values.
+     * @return cumulative count of null values.
+     */
+    public static long[] cumcountnull(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountnull");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (isNull(v)) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative count of non-null negative values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null negative values.
+     */
+    public static long[] cumcountneg(${pt.boxed}[] values) {
+        return cumcountneg(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null negative values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null negative values.
+     */
+    public static long[] cumcountneg(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountneg(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null negative values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null negative values.
+     */
+    public static long[] cumcountneg(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountneg");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                // Not null or NaN and negative
+                if (!isNull(v) && !isNaN(v) && v < 0) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative count of non-null positive values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null positive values.
+     */
+    public static long[] cumcountpos(${pt.boxed}[] values) {
+        return cumcountpos(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null positive values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null positive values.
+     */
+    public static long[] cumcountpos(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountpos(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null positive values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null positive values.
+     */
+    public static long[] cumcountpos(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountpos");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                // Not null or NaN and negative
+                if (!isNull(v) && !isNaN(v) && v > 0) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative count of zero values.
+     *
+     * @param values values.
+     * @return cumulative count of zero values.
+     */
+    public static long[] cumcountzero(${pt.boxed}[] values) {
+        return cumcountzero(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of zero values.
+     *
+     * @param values values.
+     * @return cumulative count of zero values.
+     */
+    public static long[] cumcountzero(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountzero(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of zero values.
+     *
+     * @param values values.
+     * @return cumulative count of zero values.
+     */
+    public static long[] cumcountzero(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountzero");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (v == 0) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.

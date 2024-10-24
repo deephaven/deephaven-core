@@ -495,7 +495,154 @@ def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
         cols = to_sequence(cols)
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCount(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cumulative count UpdateByOperation.") from e
+        raise DHError(e, "failed to create a cum_count UpdateByOperation.") from e
+
+
+def cum_count_null(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of null values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountNull(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_null UpdateByOperation.") from e
+
+
+def cum_count_neg(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of non-null negative values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountNegative(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_neg UpdateByOperation.") from e
+
+
+def cum_count_pos(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of non-null positive values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountPositive(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_pos UpdateByOperation.") from e
+
+def cum_count_zero(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of zero values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountZero(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_zero UpdateByOperation.") from e
+
+
+def cum_count_nan(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of NaN values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountNaN(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_nan UpdateByOperation.") from e
+
+
+def cum_count_inf(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of infinite values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountInfinite(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_inf UpdateByOperation.") from e
+
+
+def cum_count_finite(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of non-null finite values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative count operation on all the applicable
+            columns.
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountFinte(cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a cum_count_inf UpdateByOperation.") from e
+
 
 def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
     """Creates a cumulative sum UpdateByOperation for the supplied column names.

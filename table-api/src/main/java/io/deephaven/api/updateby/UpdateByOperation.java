@@ -53,7 +53,84 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCount(String... pairs) {
-        return CumCountSpec.of().clause(pairs);
+        return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL).clause(pairs);
+    }
+
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of null values for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountNull(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.NULL).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of negative values for the supplied column name pairs. Null values
+     * are ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountNegative(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of positive values for the supplied column name pairs. Null values
+     * are ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountPositive(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of zero values for the supplied column name pairs. Null values are
+     * ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountZero(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.ZERO).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of NaN values for the supplied column name pairs. Null values are
+     * ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountNaN(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.NAN).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of infinite values for the supplied column name pairs. Null values
+     * are ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountInfinite(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE).clause(pairs);
+    }
+
+    /**
+     * Create a {@link CumCountSpec cumulative count} of finite values for the supplied column name pairs. Null values
+     * are ignored.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountFinite(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.FINITE).clause(pairs);
     }
 
     /**

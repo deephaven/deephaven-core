@@ -103,8 +103,38 @@ public class UpdateBySpecBuilderTest {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
-            return UpdateByColumn.UpdateBySpec.newBuilder().setCount(UpdateByCumulativeCount.getDefaultInstance())
-                    .build();
+            final UpdateByCumulativeCount.CountType countType;
+            switch (spec.countType()) {
+                case NULL:
+                    countType = UpdateByCumulativeCount.CountType.NULL;
+                    break;
+                case NEGATIVE:
+                    countType = UpdateByCumulativeCount.CountType.NEGATIVE;
+                    break;
+                case POSITIVE:
+                    countType = UpdateByCumulativeCount.CountType.POSITIVE;
+                    break;
+                case ZERO:
+                    countType = UpdateByCumulativeCount.CountType.ZERO;
+                    break;
+                case NAN:
+                    countType = UpdateByCumulativeCount.CountType.NAN;
+                    break;
+                case INFINITE:
+                    countType = UpdateByCumulativeCount.CountType.INFINITE;
+                    break;
+                case FINITE:
+                    countType = UpdateByCumulativeCount.CountType.FINITE;
+                    break;
+                case NON_NULL:
+                default:
+                    countType = UpdateByCumulativeCount.CountType.NON_NULL;
+                    break;
+            }
+
+
+            return UpdateByColumn.UpdateBySpec.newBuilder().setCount(UpdateByCumulativeCount
+                    .newBuilder().setCountType(countType).build()).build();
         }
 
         @Override
@@ -421,7 +451,42 @@ public class UpdateBySpecBuilderTest {
 
     @Test
     void cumulativeCount() {
-        check(CumCountSpec.of());
+        check(CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL));
+    }
+
+    @Test
+    void cumulativeCountNull() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.NULL));
+    }
+
+    @Test
+    void cumulativeCountNegative() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE));
+    }
+
+    @Test
+    void cumulativeCountPositive() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE));
+    }
+
+    @Test
+    void cumulativeCountZero() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.ZERO));
+    }
+
+    @Test
+    void cumulativeCountNan() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.NAN));
+    }
+
+    @Test
+    void cumulativeCountInfinite() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.INFINITE));
+    }
+
+    @Test
+    void cumulativeCountFinite() {
+        check(CumCountSpec.of(CumCountSpec.CumCountType.FINITE));
     }
 
     @Test
