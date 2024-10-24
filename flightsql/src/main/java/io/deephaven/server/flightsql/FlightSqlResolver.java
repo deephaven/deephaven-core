@@ -36,7 +36,6 @@ import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.CommandResolver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
-import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.sql.SqlParseException;
 import io.deephaven.sql.UnsupportedSqlOperation;
@@ -117,9 +116,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.server.flightsql.FlightSqlTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
-import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
-
 /**
  * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">FlightSQL</a> resolver. This supports the read-only
  * querying of the global query scope, which is presented simply with the query scope variables names as the table names
@@ -134,7 +130,7 @@ import static io.deephaven.server.flightsql.FlightSqlTicketHelper.TICKET_PREFIX;
  * All commands, actions, and resolution must be called by authenticated users.
  */
 @Singleton
-public final class FlightSqlResolver extends TicketResolverBase implements ActionResolver, CommandResolver {
+public final class FlightSqlResolver implements ActionResolver, CommandResolver {
 
     @VisibleForTesting
     static final String CREATE_PREPARED_STATEMENT_ACTION_TYPE = "CreatePreparedStatement";
@@ -302,6 +298,7 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
     // private final TicketRouter router;
     private final ScopeTicketResolver scopeTicketResolver;
     private final ScheduledExecutorService scheduler;
+    private final Authorization authorization;
     private final KeyedObjectHashMap<ByteString, QueryBase> queries;
     private final KeyedObjectHashMap<ByteString, PreparedStatement> preparedStatements;
 
@@ -310,11 +307,21 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             final AuthorizationProvider authProvider,
             final ScopeTicketResolver scopeTicketResolver,
             final ScheduledExecutorService scheduler) {
-        super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+        this.authorization = Objects.requireNonNull(authProvider.getTicketResolverAuthorization());
         this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.queries = new KeyedObjectHashMap<>(QUERY_KEY);
         this.preparedStatements = new KeyedObjectHashMap<>(PREPARED_STATEMENT_KEY);
+    }
+
+    /**
+     * The FlightSQL ticket route, equal to {@value FlightSqlTicketHelper#TICKET_PREFIX}.
+     *
+     * @return the FlightSQL ticket route
+     */
+    @Override
+    public byte ticketRoute() {
+        return FlightSqlTicketHelper.TICKET_PREFIX;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -412,11 +419,9 @@ public final class FlightSqlResolver extends TicketResolverBase implements Actio
             throw unauthenticatedError();
         }
         if (descriptor.getType() != DescriptorType.CMD) {
-            // We _should_ be able to eventually elevate this to an IllegalStateException since we should be able to
-            // pass along context that FlightSQL does not support any PATH-based Descriptors. This may involve
-            // extracting a PathResolver interface (like CommandResolver) and potentially breaking
-            // io.deephaven.server.session.TicketResolverBase.flightDescriptorRoute
-            throw error(Code.FAILED_PRECONDITION, "FlightSQL only supports Command-based descriptors");
+            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
+            // handlesPath
+            throw new IllegalStateException("FlightSQL only supports Command-based descriptors");
         }
         final Any command = parseOrThrow(descriptor.getCmd());
         if (!command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {

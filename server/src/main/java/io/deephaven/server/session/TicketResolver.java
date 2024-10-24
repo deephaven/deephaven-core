@@ -6,11 +6,7 @@ package io.deephaven.server.session;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
-import org.apache.arrow.flight.impl.Flight.Action;
-import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
-import org.apache.arrow.flight.impl.Flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -64,14 +60,6 @@ public interface TicketResolver {
      * @return the single byte prefix used as a route on the ticket
      */
     byte ticketRoute();
-
-    /**
-     * The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve
-     * the descriptor.
-     *
-     * @return the string that will route from flight descriptor to this resolver
-     */
-    String flightDescriptorRoute();
 
     /**
      * Resolve a flight ticket to an export object future.
