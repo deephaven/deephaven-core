@@ -4,7 +4,6 @@
 package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -33,8 +32,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
-import org.apache.arrow.vector.ipc.ReadChannel;
-import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -42,7 +39,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.channels.Channels;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -104,40 +100,40 @@ public class FlightSqlTicketResolverTest {
     }
 
     @Test
-    void getTableTypesSchema() throws IOException {
+    void getTableTypesSchema() {
         isSimilar(CommandGetTableTypesConstants.DEFINITION, Schemas.GET_TABLE_TYPES_SCHEMA);
     }
 
     @Test
-    void getCatalogsSchema() throws IOException {
+    void getCatalogsSchema() {
         isSimilar(CommandGetCatalogsConstants.DEFINITION, Schemas.GET_CATALOGS_SCHEMA);
     }
 
     @Test
-    void getDbSchemasSchema() throws IOException {
+    void getDbSchemasSchema() {
         isSimilar(CommandGetDbSchemasConstants.DEFINITION, Schemas.GET_SCHEMAS_SCHEMA);
     }
 
     @Disabled("Deephaven is unable to serialize byte as uint8")
     @Test
-    void getImportedKeysSchema() throws IOException {
+    void getImportedKeysSchema() {
         isSimilar(CommandGetKeysConstants.DEFINITION, Schemas.GET_IMPORTED_KEYS_SCHEMA);
     }
 
     @Disabled("Deephaven is unable to serialize byte as uint8")
     @Test
-    void getExportedKeysSchema() throws IOException {
+    void getExportedKeysSchema() {
         isSimilar(CommandGetKeysConstants.DEFINITION, Schemas.GET_EXPORTED_KEYS_SCHEMA);
     }
 
     @Disabled("Arrow Java FlightSQL has a bug in ordering, not the same as documented in the protobuf spec, see https://github.com/apache/arrow/issues/44521")
     @Test
-    void getPrimaryKeysSchema() throws IOException {
+    void getPrimaryKeysSchema() {
         isSimilar(CommandGetPrimaryKeysConstants.DEFINITION, Schemas.GET_PRIMARY_KEYS_SCHEMA);
     }
 
     @Test
-    void getTablesSchema() throws IOException {
+    void getTablesSchema() {
         isSimilar(CommandGetTablesConstants.DEFINITION, Schemas.GET_TABLES_SCHEMA);
         isSimilar(CommandGetTablesConstants.DEFINITION_NO_SCHEMA, Schemas.GET_TABLES_SCHEMA_NO_SCHEMA);
     }
@@ -150,16 +146,8 @@ public class FlightSqlTicketResolverTest {
         assertThat(typeUrl).isEqualTo(Any.pack(expected).getTypeUrl());
     }
 
-    private static Schema toSchema(TableDefinition definition) throws IOException {
-        // Should we consider BarrageUtil converting to Schema instead of directly into ByteString?
-        final ByteString schemaBytes = BarrageUtil.schemaBytesFromTableDefinition(definition, Map.of(), true);
-        try (final ReadChannel rc = new ReadChannel(Channels.newChannel(schemaBytes.newInput()))) {
-            return MessageSerializer.deserializeSchema(rc);
-        }
-    }
-
-    private static void isSimilar(TableDefinition definition, Schema expected) throws IOException {
-        isSimilar(toSchema(definition), expected);
+    private static void isSimilar(TableDefinition definition, Schema expected) {
+        isSimilar(BarrageUtil.toSchema(definition, Map.of(), true), expected);
     }
 
     private static void isSimilar(Schema actual, Schema expected) {

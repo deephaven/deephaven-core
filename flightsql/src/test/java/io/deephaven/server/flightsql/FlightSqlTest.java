@@ -136,6 +136,15 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
 
+    private static final Map<String, String> DEEPHAVEN_SCHEMA = Map.of(
+            "deephaven:isSortable", "false",
+            "deephaven:isRowStyle", "false",
+            "deephaven:isPartitioning", "false",
+            "deephaven:type", "org.apache.arrow.vector.types.pojo.Schema",
+            "deephaven:isNumberFormat", "false",
+            "deephaven:isStyle", "false",
+            "deephaven:isDateFormat", "false");
+
     private static final Map<String, String> FLAT_ATTRIBUTES = Map.of(
             "deephaven:attribute_type.IsFlat", "java.lang.Boolean",
             "deephaven:attribute.IsFlat", "true");
@@ -197,11 +206,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     private static final Field DELETE_RULE =
             new Field("delete_rule", new FieldType(true, MinorType.TINYINT.getType(), null, DEEPHAVEN_BYTE), null);
 
-    // private static final Field TABLE_SCHEMA =
-    // new Field("table_schema", new FieldType(true, ArrowType.List.INSTANCE, null, DEEPHAVEN_BYTES),
-    // List.of(Field.nullable("", MinorType.TINYINT.getType())));
     private static final Field TABLE_SCHEMA =
-            new Field("table_schema", new FieldType(true, MinorType.VARBINARY.getType(), null, DEEPHAVEN_BYTES), null);
+            new Field("table_schema", new FieldType(true, MinorType.VARBINARY.getType(), null, DEEPHAVEN_SCHEMA), null);
 
     private static final TableRef FOO_TABLE_REF = TableRef.of(null, null, "foo_table");
     public static final TableRef BAR_TABLE_REF = TableRef.of(null, null, "barTable");

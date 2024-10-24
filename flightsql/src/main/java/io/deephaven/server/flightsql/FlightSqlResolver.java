@@ -5,11 +5,11 @@ package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -21,6 +21,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.util.ArrowUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -29,7 +30,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.session.ActionResolver;
@@ -79,8 +79,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
-import org.apache.arrow.vector.ipc.WriteChannel;
-import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -91,11 +89,10 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -278,7 +275,14 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @VisibleForTesting
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
 
-    private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES = serializeMetadata(DATASET_SCHEMA_SENTINEL);
+    private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES;
+    static {
+        try {
+            DATASET_SCHEMA_SENTINEL_BYTES = ArrowUtil.serializeToByteString(DATASET_SCHEMA_SENTINEL);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     // Need dense_union support to implement this.
     private static final UnsupportedCommand GET_SQL_INFO_HANDLER =
@@ -1388,7 +1392,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 ColumnDefinition.ofString(DB_SCHEMA_NAME),
                 ColumnDefinition.ofString(TABLE_NAME), // out-of-spec
                 ColumnDefinition.ofString(TABLE_TYPE), // out-of-spec
-                ColumnDefinition.of(TABLE_SCHEMA, Type.byteType().arrayType()) // out-of-spec
+                ColumnDefinition.fromGenericType(TABLE_SCHEMA, Schema.class) // out-of-spec
         );
 
         /**
@@ -1474,7 +1478,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             final String[] dbSchemaNames = new String[size];
             final String[] tableNames = new String[size];
             final String[] tableTypes = new String[size];
-            final byte[][] tableSchemas = includeSchema ? new byte[size][] : null;
+            final Schema[] tableSchemas = includeSchema ? new Schema[size] : null;
             int count = 0;
             for (Entry<String, Table> e : queryScopeTables.entrySet()) {
                 final Table table = authorization.transform(e.getValue());
@@ -1490,7 +1494,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 tableNames[count] = tableName;
                 tableTypes[count] = TABLE_TYPE_TABLE;
                 if (includeSchema) {
-                    tableSchemas[count] = BarrageUtil.schemaBytesFromTable(table).toByteArray();
+                    tableSchemas[count] = BarrageUtil.schemaFromTable(table);
                 }
                 ++count;
             }
@@ -1498,8 +1502,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             final ColumnHolder<String> c2 = TableTools.stringCol(DB_SCHEMA_NAME, dbSchemaNames);
             final ColumnHolder<String> c3 = TableTools.stringCol(TABLE_NAME, tableNames);
             final ColumnHolder<String> c4 = TableTools.stringCol(TABLE_TYPE, tableTypes);
-            final ColumnHolder<byte[]> c5 = includeSchema
-                    ? new ColumnHolder<>(TABLE_SCHEMA, byte[].class, byte.class, false, tableSchemas)
+            final ColumnHolder<Schema> c5 = includeSchema
+                    ? new ColumnHolder<>(TABLE_SCHEMA, Schema.class, null, false, tableSchemas)
                     : null;
             final Table newTable = includeSchema
                     ? TableTools.newTable(CommandGetTablesConstants.DEFINITION, attributes, c1, c2, c3, c4, c5)
@@ -1665,16 +1669,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                     // .setParameterSchema(...)
                     .build();
             visitor.accept(response);
-        }
-    }
-
-    private static ByteString serializeMetadata(final Schema schema) {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            MessageSerializer.serialize(new WriteChannel(Channels.newChannel(outputStream)), schema);
-            return ByteStringAccess.wrap(outputStream.toByteArray());
-        } catch (final IOException e) {
-            throw new RuntimeException("Failed to serialize schema", e);
         }
     }
 
