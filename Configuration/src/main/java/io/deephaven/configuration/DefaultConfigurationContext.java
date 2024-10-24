@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * A class for determining the environment that a configuration is running within.
  */
-class DefaultConfigurationContext implements ConfigurationContext {
+public class DefaultConfigurationContext implements ConfigurationContext {
     // Note that we explicitly use 'host' as a value in the configuration files.
     // If a system property named 'host' exists, it will be ignored.
     private static final String HOSTNAME = "host";
