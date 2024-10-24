@@ -10,7 +10,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
-import io.deephaven.extensions.barrage.util.ArrowUtil;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.Vector;
@@ -96,7 +96,7 @@ public class DefaultChunkInputStreamGeneratorFactory implements ChunkInputStream
                 }
                 if (type == Schema.class) {
                     return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
-                            ArrowUtil::serialize);
+                            ArrowIpcUtil::serialize);
                 }
                 if (type == Instant.class) {
                     // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.

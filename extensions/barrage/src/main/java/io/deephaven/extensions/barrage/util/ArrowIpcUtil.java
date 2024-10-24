@@ -17,7 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.Channels;
 
-public class ArrowUtil {
+public class ArrowIpcUtil {
     public static long serialize(OutputStream outputStream, Schema schema) throws IOException {
         // not buffered. no flushing needed. not closing write channel
         return MessageSerializer.serialize(new WriteChannel(Channels.newChannel(outputStream)), schema);
@@ -25,7 +25,7 @@ public class ArrowUtil {
 
     public static ByteString serializeToByteString(Schema schema) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ArrowUtil.serialize(outputStream, schema);
+        ArrowIpcUtil.serialize(outputStream, schema);
         return ByteStringAccess.wrap(outputStream.toByteArray());
     }
 

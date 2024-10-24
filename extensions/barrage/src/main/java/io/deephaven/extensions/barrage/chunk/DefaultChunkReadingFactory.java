@@ -5,7 +5,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
-import io.deephaven.extensions.barrage.util.ArrowUtil;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -105,7 +105,7 @@ public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
                 if (typeInfo.type() == Schema.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is,
-                                    fieldNodeIter, bufferInfoIter, ArrowUtil::deserialize, outChunk, outOffset,
+                                    fieldNodeIter, bufferInfoIter, ArrowIpcUtil::deserialize, outChunk, outOffset,
                                     totalRows);
                 }
                 if (typeInfo.type() == Instant.class) {

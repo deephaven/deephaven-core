@@ -9,7 +9,6 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
-import io.deephaven.base.ArrayUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -21,7 +20,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.util.ArrowUtil;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -278,7 +277,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     private static final ByteString DATASET_SCHEMA_SENTINEL_BYTES;
     static {
         try {
-            DATASET_SCHEMA_SENTINEL_BYTES = ArrowUtil.serializeToByteString(DATASET_SCHEMA_SENTINEL);
+            DATASET_SCHEMA_SENTINEL_BYTES = ArrowIpcUtil.serializeToByteString(DATASET_SCHEMA_SENTINEL);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
