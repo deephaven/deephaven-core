@@ -18,6 +18,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.*;
@@ -443,7 +444,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         private Subscription subscription = null;
 
         private TableLocationProviderImpl(@NotNull final TableKeyImpl tableKey) {
-            super(tableKey, true);
+            super(tableKey, true, TableUpdateMode.ADD_ONLY, TableUpdateMode.ADD_REMOVE);
             final BarrageUtil.ConvertedArrowSchema[] schemas = backend.getTableSchema(tableKey);
 
             final TableDefinition partitioningDef = schemas[0].tableDef;
@@ -483,7 +484,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         public void refresh() {
             TableKeyImpl key = (TableKeyImpl) getKey();
-            backend.getTableLocations(tableDefinition, key, this::handleTableLocationKey);
+            backend.getTableLocations(tableDefinition, key, this::handleTableLocationKeyAdded);
         }
 
         @Override
@@ -491,7 +492,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             TableKeyImpl key = (TableKeyImpl) getKey();
             final Subscription localSubscription = subscription = new Subscription();
             localSubscription.cancellationCallback = backend.subscribeToTableLocations(
-                    tableDefinition, key, this::handleTableLocationKey);
+                    tableDefinition, key, this::handleTableLocationKeyAdded);
             activationSuccessful(localSubscription);
         }
 
