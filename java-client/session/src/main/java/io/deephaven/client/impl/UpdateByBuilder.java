@@ -312,7 +312,7 @@ class UpdateByBuilder {
                             .setReverseWindowScale(adapt(rs.revWindowScale()))
                             .setForwardWindowScale(adapt(rs.fwdWindowScale()))
                             .setFormula(rs.formula())
-                            .setParamToken(rs.paramToken());
+                            .setParamToken(rs.paramToken().orElse(null));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingFormula(builder.build())
                     .build();

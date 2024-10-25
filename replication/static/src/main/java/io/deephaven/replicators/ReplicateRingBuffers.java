@@ -65,6 +65,11 @@ public class ReplicateRingBuffers {
                                 "        System.arraycopy(storage, 0, result, firstCopyLen, secondCopyLen);\n" +
                                 "        Arrays.fill(storage, 0, secondCopyLen, null);" +
                                 "\n"));
+
+        lines = ReplicationUtils.replaceRegion(lines, "object-bulk-clear",
+                Collections.singletonList(
+                        "        Arrays.fill(storage, null);"));
+
         FileUtils.writeLines(objectFile, lines);
 
         charToAllButBoolean(TASK,

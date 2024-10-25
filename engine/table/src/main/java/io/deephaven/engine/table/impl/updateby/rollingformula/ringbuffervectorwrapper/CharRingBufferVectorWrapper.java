@@ -9,7 +9,7 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.CharVectorSlice;
 
-public class CharRingBufferVectorWrapper implements CharVector, RingBufferVectorWrapper {
+public class CharRingBufferVectorWrapper implements CharVector, RingBufferVectorWrapper<CharVector> {
     private final CharRingBuffer ringBuffer;
 
     public CharRingBufferVectorWrapper(final CharRingBuffer ringBuffer) {

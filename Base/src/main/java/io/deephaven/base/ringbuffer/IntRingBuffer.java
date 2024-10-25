@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
  * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
  * determination of storage indices through a mask operation.
  */
-public class IntRingBuffer implements Serializable {
+public class IntRingBuffer implements RingBuffer, Serializable {
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
     int[] storage;
@@ -32,7 +32,7 @@ public class IntRingBuffer implements Serializable {
      *
      * @param capacity minimum capacity of the ring buffer
      */
-    public IntRingBuffer(int capacity) {
+    public IntRingBuffer(final int capacity) {
         this(capacity, true);
     }
 
@@ -42,7 +42,7 @@ public class IntRingBuffer implements Serializable {
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
-    public IntRingBuffer(int capacity, boolean growable) {
+    public IntRingBuffer(final int capacity, final boolean growable) {
         Assert.leq(capacity, "IntRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
         this.growable = growable;
@@ -59,7 +59,7 @@ public class IntRingBuffer implements Serializable {
      * 
      * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
      */
-    protected void grow(int increase) {
+    protected void grow(final int increase) {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
@@ -83,7 +83,7 @@ public class IntRingBuffer implements Serializable {
      * 
      * @param dest The destination buffer.
      */
-    protected void copyRingBufferToArray(int[] dest) {
+    protected void copyRingBufferToArray(final int[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
@@ -99,28 +99,36 @@ public class IntRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
+    @Override
     public boolean isFull() {
         return size() == storage.length;
     }
 
+    @Override
     public boolean isEmpty() {
         return tail == head;
     }
 
+    @Override
     public int size() {
         return Math.toIntExact(tail - head);
     }
 
+    @Override
     public int capacity() {
         return storage.length;
     }
 
+    @Override
     public int remaining() {
         return storage.length - size();
     }
 
+    @Override
     public void clear() {
         tail = head = 0;
+        // region object-bulk-clear
+        // endregion object-bulk-clear
     }
 
     /**
@@ -131,7 +139,7 @@ public class IntRingBuffer implements Serializable {
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      * @return {@code true} if the int was added successfully
      */
-    public boolean add(int e) {
+    public boolean add(final int e) {
         if (isFull()) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -151,7 +159,7 @@ public class IntRingBuffer implements Serializable {
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
-    public void ensureRemaining(int count) {
+    public void ensureRemaining(final int count) {
         if (remaining() < count) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -168,7 +176,7 @@ public class IntRingBuffer implements Serializable {
      *
      * @param e the value to add to the buffer
      */
-    public void addUnsafe(int e) {
+    public void addUnsafe(final int e) {
         // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
         // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
@@ -188,7 +196,7 @@ public class IntRingBuffer implements Serializable {
      * @param notFullResult value to return is the buffer is not full
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
-    public int addOverwrite(int e, int notFullResult) {
+    public int addOverwrite(final int e, final int notFullResult) {
         int val = notFullResult;
         if (isFull()) {
             val = remove();
@@ -204,7 +212,7 @@ public class IntRingBuffer implements Serializable {
      * @param e the int to be added to the buffer
      * @return true if the value was added successfully, false otherwise
      */
-    public boolean offer(int e) {
+    public boolean offer(final int e) {
         if (isFull()) {
             return false;
         }
@@ -218,7 +226,7 @@ public class IntRingBuffer implements Serializable {
      * @param count The number of elements to remove.
      * @throws NoSuchElementException if the buffer is empty
      */
-    public int[] remove(int count) {
+    public int[] remove(final int count) {
         final int size = size();
         if (size < count) {
             throw new NoSuchElementException();
@@ -264,7 +272,7 @@ public class IntRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
      */
-    public int poll(int onEmpty) {
+    public int poll(final int onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -291,7 +299,7 @@ public class IntRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public int peek(int onEmpty) {
+    public int peek(final int onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -314,7 +322,7 @@ public class IntRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the specified offset
      */
-    public int front(int offset) {
+    public int front(final int offset) {
         if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
@@ -341,7 +349,7 @@ public class IntRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public int peekBack(int onEmpty) {
+    public int peekBack(final int onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }

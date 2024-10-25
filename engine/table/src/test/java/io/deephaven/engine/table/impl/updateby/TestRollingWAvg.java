@@ -96,9 +96,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
     };
 
     final int STATIC_TABLE_SIZE = 5_000;
-    final int DYNAMIC_TABLE_SIZE = 1_000;
-    final int DYNAMIC_UPDATE_SIZE = 100;
-    final int DYNAMIC_UPDATE_STEPS = 20;
+    final int DYNAMIC_TABLE_SIZE = 10_000;
+    final int DYNAMIC_UPDATE_SIZE = 10_000;
+    final int DYNAMIC_UPDATE_STEPS = 2000;
 
     private String[] getFormulas(String[] columns, String weightCol) {
         return Arrays.stream(columns)

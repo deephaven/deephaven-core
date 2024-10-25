@@ -40,6 +40,8 @@ import java.util.Map;
  */
 public abstract class UpdateByOperator {
     protected final MatchPair pair;
+
+    // Input columns for this operator. Must be dynamic to support discovery (e.g. formula columns).
     protected final String[] affectingColumns;
 
     protected final long reverseWindowScaleUnits;
@@ -130,7 +132,8 @@ public abstract class UpdateByOperator {
         protected abstract void reset();
     }
 
-    protected UpdateByOperator(@NotNull final MatchPair pair,
+    protected UpdateByOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
