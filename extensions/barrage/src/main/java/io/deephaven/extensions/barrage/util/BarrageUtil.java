@@ -766,12 +766,6 @@ public class BarrageUtil {
                 return Types.MinorType.FLOAT8.getType();
             case Object:
                 if (type.isArray()) {
-                    if (type == byte[].class) {
-                        return Types.MinorType.VARBINARY.getType();
-                    }
-                    // if (type == char[].class) {
-                    // return Types.MinorType.VARCHAR.getType();
-                    // }
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
