@@ -795,7 +795,19 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
          * {@link #initialize(Any)}.
          */
         void checkForResolve(T command) {
-
+            // This is provided for completeness, but the current implementations don't use it.
+            //
+            // The callers that override checkForGetInfo, for example, all involve table names; if that table exists and
+            // they are authorized, they will get back a ticket that upon resolve will be an (empty) table. Otherwise,
+            // they will get a NOT_FOUND exception at getFlightInfo time.
+            //
+            // In this context, it is incorrect to do the same check at resolve time because we need to ensure that
+            // getFlightInfo / doGet (/ doExchange) appears stateful - it would be incorrect to return getFlightInfo
+            // with the semantics "this table exists" and then potentially throw a NOT_FOUND at resolve time.
+            //
+            // If Deephaven FlightSQL implements CommandGetExportedKeys, CommandGetImportedKeys, or
+            // CommandGetPrimaryKeys, we'll likely need to "upgrade" the implementation to a properly stateful one like
+            // QueryBase with handle-based tickets.
         }
 
         long totalRecords() {
@@ -1294,15 +1306,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 throw tableNotFound();
             }
         }
-
-        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
-        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
-        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
-        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
-        // for client.
-        // @Override
-        // void checkForResolve(CommandGetPrimaryKeys command) {
-        // }
     };
 
     private final CommandHandler commandGetImportedKeysHandler = new CommandStaticTable<>(CommandGetImportedKeys.class,
@@ -1322,15 +1325,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 throw tableNotFound();
             }
         }
-
-        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
-        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
-        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
-        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
-        // for client.
-        // @Override
-        // void checkForResolve(CommandGetImportedKeys command) {
-        // }
     };
 
     private final CommandHandler commandGetExportedKeysHandler = new CommandStaticTable<>(CommandGetExportedKeys.class,
@@ -1350,16 +1344,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 throw tableNotFound();
             }
         }
-
-        // No need to check at resolve time since there is no actual state involved. If Deephaven exposes the notion
-        // of keys, this will need to behave more like QueryBase where there is a handle-based ticket and some sort
-        // state maintained. It is also incorrect to perform the same checkForFlightInfo at resolve time because the
-        // state of the server may have changed between getInfo and doGet/doExchange, and getInfo should still be valid
-        // for client.
-        // @Override
-        // void checkForResolve(CommandGetExportedKeys command) {
-        //
-        // }
     };
 
     @VisibleForTesting

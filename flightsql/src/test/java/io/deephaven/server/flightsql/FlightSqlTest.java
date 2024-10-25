@@ -581,7 +581,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void badSqlQuery() {
-        queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "FlightSQL query can't be parsed");
+        queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "FlightSQL: query can't be parsed");
     }
 
     @Test
@@ -976,7 +976,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private void actionUnimplemented(Runnable r, ActionType actionType) {
         expectException(r, FlightStatusCode.UNIMPLEMENTED,
-                String.format("FlightSQL Action type '%s' is unimplemented", actionType.getType()));
+                String.format("FlightSQL: Action type '%s' is unimplemented", actionType.getType()));
     }
 
     private void actionNoResolver(Runnable r, String actionType) {

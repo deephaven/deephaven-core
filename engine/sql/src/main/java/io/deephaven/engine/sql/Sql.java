@@ -19,6 +19,7 @@ import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableHeader.Builder;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.type.Type;
 import io.deephaven.sql.Scope;
 import io.deephaven.sql.ScopeStaticImpl;
 import io.deephaven.sql.SqlAdapter;
@@ -108,11 +109,7 @@ public final class Sql {
     }
 
     private static ColumnHeader<?> adapt(ColumnDefinition<?> columnDef) {
-        if (columnDef.getComponentType() == null) {
-            return ColumnHeader.of(columnDef.getName(), columnDef.getDataType());
-        }
-        // SQLTODO(array-type)
-        throw new UnsupportedOperationException("SQLTODO(array-type)");
+        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType()));
     }
 
     private enum ToGraphvizDot implements ObjFormatter<TableSpec> {

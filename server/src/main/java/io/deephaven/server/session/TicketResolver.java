@@ -167,4 +167,6 @@ public interface TicketResolver {
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
+
+    // TODO(deephaven-core#6295): Consider use of Flight POJOs instead of protobufs
 }
