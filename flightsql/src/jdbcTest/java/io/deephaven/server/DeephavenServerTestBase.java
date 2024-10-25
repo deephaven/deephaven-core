@@ -37,12 +37,12 @@ public abstract class DeephavenServerTestBase {
     protected abstract TestComponent component();
 
     @BeforeAll
-    public static void setupOnce() throws IOException {
+    static void setupOnce() throws IOException {
         MainHelper.bootstrapProjectDirectories();
     }
 
     @BeforeEach
-    public void setup() throws IOException {
+    void setup() throws IOException {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
         component = component();

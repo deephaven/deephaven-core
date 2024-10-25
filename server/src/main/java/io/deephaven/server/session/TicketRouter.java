@@ -267,6 +267,7 @@ public class TicketRouter {
             @Nullable final Runnable onPublish,
             final SessionState.ExportErrorHandler errorHandler,
             final SessionState.ExportObject<T> source) {
+        // Note: the only caller to this is wrapping in a QueryPerformanceRecorder, so we don't need to use a nugget.
         final ByteBuffer ticketBuffer = ticket.getTicket().asReadOnlyByteBuffer();
         final TicketResolver resolver = getResolver(ticketBuffer.get(ticketBuffer.position()), logId);
         authorization.authorizePublishRequest(resolver, ticketBuffer);

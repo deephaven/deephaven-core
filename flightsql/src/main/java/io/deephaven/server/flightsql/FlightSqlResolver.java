@@ -12,13 +12,14 @@ import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.sql.Sql;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
@@ -261,9 +262,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     private static final String DELETE_RULE = "delete_rule";
 
     private static final String TABLE_TYPE_TABLE = "TABLE";
-
-    // This should probably be less than the session refresh window
-    private static final Duration TICKET_DURATION = Duration.ofMinutes(1);
+    private static final Duration FIXED_TICKET_EXPIRE_DURATION = Duration.ofMinutes(1);
+    private static final long QUERY_WATCHDOG_TIMEOUT_NANOS = Duration.ofSeconds(5).toNanos();
 
     private static final Logger log = LoggerFactory.getLogger(FlightSqlResolver.class);
 
@@ -432,6 +432,14 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private FlightInfo getInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
+        final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
+        try (final QueryPerformanceNugget ignore =
+                qpr.getNugget(String.format("FlightSQL.getInfo/%s", command.getTypeUrl()))) {
+            return getInfoImpl(session, descriptor, command);
+        }
+    }
+
+    private FlightInfo getInfoImpl(SessionState session, FlightDescriptor descriptor, Any command) {
         final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), true);
         final TicketHandler ticketHandler = commandHandler.initialize(command);
         try {
@@ -754,11 +762,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
-        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(), true)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
             table.retainReference();
-            // scope.manage(table);
             return table;
         }
     }
@@ -801,14 +808,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         abstract Table table(T command);
 
-        Timestamp expirationTime() {
-            final Instant expire = Instant.now().plus(TICKET_DURATION);
-            return Timestamp.newBuilder()
-                    .setSeconds(expire.getEpochSecond())
-                    .setNanos(expire.getNano())
-                    .build();
-        }
-
         /**
          * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
          * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
@@ -835,12 +834,18 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             @Override
             public FlightInfo getInfo(FlightDescriptor descriptor) {
                 checkForGetInfo(command);
+                // Note: the presence of expirationTime is mainly a way to let clients know that they can retry a DoGet
+                // / DoExchange with an existing ticket without needing to do a new getFlightInfo first (for at least
+                // the amount of time as specified by expirationTime). Given that the tables resolved via this code-path
+                // are "easy" (in a lot of the cases, they are static empty tables or "easily" computable)...
+                // We are not setting an expiration timestamp for the SQL queries - they are only meant to be resolvable
+                // once; this is different from the watchdog concept.
                 return FlightInfo.newBuilder()
                         .setFlightDescriptor(descriptor)
                         .setSchema(schemaBytes(command))
                         .addEndpoint(FlightEndpoint.newBuilder()
                                 .setTicket(ticket(command))
-                                .setExpirationTime(expirationTime())
+                                .setExpirationTime(timestamp(Instant.now().plus(FIXED_TICKET_EXPIRE_DURATION)))
                                 .build())
                         .setTotalRecords(totalRecords())
                         .setTotalBytes(-1)
@@ -900,7 +905,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    // TODO: consider this owning Table instead (SingletonLivenessManager or has + patch from Ryan)
     abstract class QueryBase implements CommandHandler, TicketHandlerReleasable {
         private final ByteString handleId;
         protected final SessionState session;
@@ -909,14 +913,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         private boolean initialized;
         private boolean resolved;
-
-        // private final SingletonLivenessManager manager;
-        protected Table table;
+        private Table table;
 
         QueryBase(SessionState session) {
             this.handleId = ByteString.copyFromUtf8(UUID.randomUUID().toString());
             this.session = Objects.requireNonNull(session);
-            // this.manager = new SingletonLivenessManager();
             queries.put(handleId, this);
         }
 
@@ -944,7 +945,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 throw new IllegalStateException(
                         "QueryBase implementation has a bug, should have set table");
             }
-            watchdog = scheduler.schedule(this::onWatchdog, 5, TimeUnit.SECONDS);
+            watchdog = scheduler.schedule(this::onWatchdog, QUERY_WATCHDOG_TIMEOUT_NANOS, TimeUnit.NANOSECONDS);
             return this;
         }
 
@@ -955,7 +956,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             try {
                 table = executeSqlQuery(session, sql);
             } catch (SqlParseException e) {
-                throw error(Code.INVALID_ARGUMENT, "FlightSQL query can't be parsed", e);
+                throw error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
             } catch (UnsupportedSqlOperation e) {
                 if (e.clazz() == RexDynamicParam.class) {
                     throw queryParametersNotSupported(e);
@@ -1691,8 +1692,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public void execute(SessionState session, Request request, Consumer<Response> visitor) {
-            throw error(Code.UNIMPLEMENTED,
-                    String.format("FlightSQL Action type '%s' is unimplemented", type.getType()));
+            throw error(Code.UNIMPLEMENTED, String.format("Action type '%s' is unimplemented", type.getType()));
         }
     }
 
@@ -1903,9 +1903,16 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return x -> p.matcher(x).matches();
     }
 
-    public static ByteString serializeToByteString(Schema schema) throws IOException {
+    private static ByteString serializeToByteString(Schema schema) throws IOException {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ArrowIpcUtil.serialize(outputStream, schema);
         return ByteStringAccess.wrap(outputStream.toByteArray());
+    }
+
+    private static Timestamp timestamp(Instant instant) {
+        return Timestamp.newBuilder()
+                .setSeconds(instant.getEpochSecond())
+                .setNanos(instant.getNano())
+                .build();
     }
 }

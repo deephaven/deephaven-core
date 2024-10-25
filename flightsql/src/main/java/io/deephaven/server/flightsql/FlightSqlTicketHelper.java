@@ -9,11 +9,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.rpc.Code;
 import io.deephaven.proto.util.Exceptions;
-import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Ticket;
-import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
@@ -27,18 +28,18 @@ final class FlightSqlTicketHelper {
     private static final ByteString PREFIX = ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX});
 
     public static String toReadableString(final ByteBuffer ticket, final String logId) {
-        // TODO
         final Any any = unpackTicket(ticket, logId);
-        return any.toString();
-        // return "TODO";
-        // return toReadableString(ticketToExportId(ticket, logId));
+        // We don't necessarily want to print out the full protobuf; this will at least give some more logging info on
+        // the type of the ticket.
+        return any.getTypeUrl();
     }
 
     public static Any unpackTicket(ByteBuffer ticket, final String logId) {
         ticket = ticket.slice();
         if (ticket.get() != TICKET_PREFIX) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve FlightSQL ticket '" + logId + "': invalid prefix");
+            // If we get here, it means there is an error with FlightSqlResolver.ticketRoute /
+            // io.deephaven.server.session.TicketRouter.getResolver
+            throw new IllegalStateException("Could not resolve FlightSQL ticket '" + logId + "': invalid prefix");
         }
         try {
             return Any.parseFrom(ticket);
@@ -60,31 +61,27 @@ final class FlightSqlTicketHelper {
         return packedTicket(command);
     }
 
-    public static Ticket ticketFor(FlightSql.CommandGetImportedKeys command) {
+    public static Ticket ticketFor(CommandGetImportedKeys command) {
         return packedTicket(command);
     }
 
-    public static Ticket ticketFor(FlightSql.CommandGetExportedKeys command) {
+    public static Ticket ticketFor(CommandGetExportedKeys command) {
         return packedTicket(command);
     }
 
-    public static Ticket ticketFor(FlightSql.CommandGetPrimaryKeys command) {
+    public static Ticket ticketFor(CommandGetPrimaryKeys command) {
         return packedTicket(command);
     }
 
-    public static Flight.Ticket ticketFor(CommandGetTables command) {
+    public static Ticket ticketFor(CommandGetTables command) {
         return packedTicket(command);
     }
 
-    public static Flight.Ticket ticketFor(FlightSql.CommandGetSqlInfo command) {
-        return packedTicket(command);
-    }
-
-    public static Flight.Ticket ticketFor(TicketStatementQuery query) {
+    public static Ticket ticketFor(TicketStatementQuery query) {
         return packedTicket(query);
     }
 
-    private static Flight.Ticket packedTicket(Message message) {
+    private static Ticket packedTicket(Message message) {
         return Ticket.newBuilder().setTicket(PREFIX.concat(Any.pack(message).toByteString())).build();
     }
 }

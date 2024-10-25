@@ -74,9 +74,9 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
         }
     }
 
-    BufferAllocator bufferAllocator;
-    FlightClient flightClient;
-    FlightSqlClient flightSqlClient;
+    private BufferAllocator bufferAllocator;
+    private FlightClient flightClient;
+    private FlightSqlClient flightSqlClient;
 
     @Override
     protected Builder testComponentBuilder() {

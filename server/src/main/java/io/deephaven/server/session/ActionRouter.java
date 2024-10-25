@@ -4,7 +4,10 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.Result;
@@ -47,7 +50,10 @@ public final class ActionRouter {
      */
     public void doAction(@Nullable final SessionState session, final Action action,
             final ActionResolver.ActionObserver observer) {
-        getResolver(action.getType()).doAction(session, action, observer);
+        final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
+        try (final QueryPerformanceNugget ignored = qpr.getNugget(String.format("doAction:%s", action.getType()))) {
+            getResolver(action.getType()).doAction(session, action, observer);
+        }
     }
 
     private ActionResolver getResolver(final String type) {
@@ -57,7 +63,7 @@ public final class ActionRouter {
         // we find the number of action resolvers scaling up, we could devise a more efficient strategy in some cases
         // either based on a prefix model and/or a fixed set model (which could be communicated either through new
         // method(s) on ActionResolver, or through subclasses).
-        //
+        // `
         // Regardless, even with a moderate amount of action resolvers, the linear nature of this should not be a
         // bottleneck.
         for (ActionResolver resolver : resolvers) {
