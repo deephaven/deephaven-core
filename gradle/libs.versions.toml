@@ -181,7 +181,6 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
 
 hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
-hadoop-hdfs-client = { module = "org.apache.hadoop:hadoop-hdfs-client", version.ref = "hadoop" }
 # These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
 hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.2.0" }
