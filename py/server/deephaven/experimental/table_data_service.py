@@ -5,7 +5,7 @@
 tables."""
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional, Any, Callable
+from typing import Tuple, Optional, Callable
 
 import jpy
 
@@ -19,21 +19,14 @@ _JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.Py
 _JTableKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableKeyImpl")
 _JTableLocationKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableLocationKeyImpl")
 
+
 class TableKey(ABC):
     """A key that identifies a table. The key should be unique for each table. The key can be any Python object and
     should include sufficient information to uniquely identify the table for the backend service."""
 
-    def __init__(self, key: Any):
-        self._key = key
-
     @abstractmethod
     def __hash__(self):
         pass
-
-    @property
-    def key(self) -> Any:
-        """The user defined key that identifies the table."""
-        return self._key
 
 
 class TableLocationKey(ABC):
@@ -42,18 +35,9 @@ class TableLocationKey(ABC):
     for the backend service to fetch the data values and data size.
     """
 
-    def __init__(self, location_key: Any):
-        self._location_key = location_key
-
     @abstractmethod
     def __hash__(self):
         pass
-
-    @property
-    def key(self) -> Any:
-        """The user defined key that identifies the table location."""
-        return self._location_key
-
 
 
 class TableDataServiceBackend(ABC):
@@ -118,7 +102,7 @@ class TableDataServiceBackend(ABC):
 
     @abstractmethod
     def table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                       callback: Callable[[int], None]) -> None:
+                            callback: Callable[[int], None]) -> None:
         """ Provides a callback for the backend service to pass the size of the table location with the given table key
         and table location key. The callback should be called with the size of the table location in number of rows.
 
@@ -135,7 +119,7 @@ class TableDataServiceBackend(ABC):
 
     @abstractmethod
     def subscribe_to_table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                                        callback: Callable[[int], None]) -> Callable[[], None]:
+                                         callback: Callable[[int], None]) -> Callable[[], None]:
         """ Provides a callback for the backend service to pass existing, and any future, size of the table location
         with the given table key and table location key. The callback should be called with the size of the table
         location in number of rows.
@@ -184,13 +168,23 @@ class TableDataService(JObjectWrapper):
     _backend: TableDataServiceBackend
 
     def __init__(self, backend: TableDataServiceBackend, *, chunk_reader_factory: Optional[jpy.JType] = None,
-                 stream_reader_options: Optional[jpy.JType] = None, page_size: int = 0):
+                 stream_reader_options: Optional[jpy.JType] = None, page_size: Optional[int] = None):
         """ Creates a new PythonTableDataService with the given user-implemented backend service.
 
         Args:
             backend (TableDataServiceBackend): the user-implemented backend service implementation
+            chunk_reader_factory (Optional[jpy.JType]): the Barrage chunk reader factory, default is None
+            stream_reader_options (Optional[jpy.JType]): the Barrage stream reader options, default is None
+            page_size (int): the page size for the table service, default is None, meaning to use the configurable
+                jvm property: PythonTableDataService.defaultPageSize which defaults to 64K.
         """
         self._backend = backend
+
+        if page_size is None:
+            page_size = 0
+        elif page_size < 0:
+            raise ValueError("The page size must be non-negative")
+
         self._j_tbl_service = _JPythonTableDataService.create(
             self, chunk_reader_factory, stream_reader_options, page_size)
 
@@ -203,7 +197,7 @@ class TableDataService(JObjectWrapper):
 
         Args:
             table_key (TableKey): the table key
-            live (bool): whether the table is live or static
+            refreshing (bool): whether the table is live or static
 
         Returns:
             Table: a new table
@@ -213,11 +207,11 @@ class TableDataService(JObjectWrapper):
         """
         j_table_key = _JTableKeyImpl(table_key)
         try:
-            return Table(self._j_tbl_service.makeTable(j_table_key, live))
+            return Table(self._j_tbl_service.makeTable(j_table_key, refreshing))
         except Exception as e:
-            raise DHError(e, message=f"failed to make a table for the key {table_key.key}") from e
+            raise DHError(e, message=f"failed to make a table for the key {table_key}") from e
 
-    def _table_schema(self, table_key: TableKey, callback: jpy.JType) -> jpy.JType:
+    def _table_schema(self, table_key: TableKey, callback: jpy.JType) -> None:
         """ Returns the table data schema and the partitioning values schema for the table with the given table key as
         two serialized byte buffers.
 
@@ -286,7 +280,8 @@ class TableDataService(JObjectWrapper):
 
         return self._backend.subscribe_to_table_locations(table_key, callback_proxy)
 
-    def _table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey, callback: jpy.JType):
+    def _table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey, callback: jpy.JType) \
+            -> None:
         """ Provides the size of the table location with the given table key and table location key to the table service
         in the engine.
 
@@ -302,7 +297,7 @@ class TableDataService(JObjectWrapper):
         self._backend.table_location_size(table_key, table_location_key, callback_proxy)
 
     def _subscribe_to_table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                                             callback: jpy.JType) -> Callable[[], None]:
+                                          callback: jpy.JType) -> Callable[[], None]:
         """ Provides the current and future sizes of the table location with the given table key and table location key
         to the table service in the engine.
 
@@ -342,4 +337,3 @@ class TableDataService(JObjectWrapper):
         bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
         bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
         callback.accept(jpy.array("java.nio.ByteBuffer", bb_list))
-
