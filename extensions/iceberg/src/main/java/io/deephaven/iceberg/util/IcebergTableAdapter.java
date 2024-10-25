@@ -291,7 +291,9 @@ public class IcebergTableAdapter {
         } else {
             // Use the schema from the snapshot
             snapshot = snapshotFromInstructions;
-            schema = schema(snapshot.schemaId()).get();
+            schema = schema(snapshot.schemaId()).orElseThrow(() -> new IllegalArgumentException(
+                    "Schema with id " + snapshot.schemaId() + " not found for table " + tableIdentifier + ", snapshot "
+                            + snapshot.snapshotId()));
             partitionSpec = table.spec();
             updatedInstructions = readInstructions.withSnapshot(snapshot);
         }
