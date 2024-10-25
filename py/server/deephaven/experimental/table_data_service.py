@@ -176,7 +176,7 @@ class TableDataServiceBackend(ABC):
 
 
 class TableDataService(JObjectWrapper):
-    """ A TableDataService serves as a bridge between the Deephaven data service and the Python data service backend.
+    """ A TableDataService serves as a wrapper around a tightly-coupled Deephaven TableDataService implementation (Java class PythonTableDataService) that delegates to a Python TableDataServiceBackend for TableKey creation, TableLocationKey discovery, and data subscription/retrieval operations.
     It supports the creation of Deephaven tables from the Python backend service that provides table data and table
     data locations to the Deephaven tables.
     """
@@ -198,7 +198,7 @@ class TableDataService(JObjectWrapper):
     def j_object(self):
         return self._j_tbl_service
 
-    def make_table(self, table_key: TableKey, *, live: bool) -> Table:
+    def make_table(self, table_key: TableKey, *, refreshing: bool) -> Table:
         """ Creates a Table backed by the backend service with the given table key.
 
         Args:
