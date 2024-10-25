@@ -341,9 +341,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX);
     }
 
-    // We should probably plumb optional TicketResolver support that allows efficient
-    // io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema without needing to go through flightInfoFor
-
     /**
      * Executes the given {@code descriptor} command. Only supports authenticated access.
      *
@@ -1284,9 +1281,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         void checkForGetInfo(CommandGetPrimaryKeys command) {
             if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
-                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
                 // We need to pretend that CommandGetPrimaryKeys.getDefaultInstance() is a valid command until we can
                 // plumb getSchema through to the resolvers.
+                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                 return;
             }
             if (!hasTable(
@@ -1312,9 +1309,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         void checkForGetInfo(CommandGetImportedKeys command) {
             if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
-                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
                 // We need to pretend that CommandGetImportedKeys.getDefaultInstance() is a valid command until we can
                 // plumb getSchema through to the resolvers.
+                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                 return;
             }
             if (!hasTable(
@@ -1340,9 +1337,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         void checkForGetInfo(CommandGetExportedKeys command) {
             if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
-                // TODO: Plumb through io.deephaven.server.arrow.FlightServiceGrpcImpl.getSchema
                 // We need to pretend that CommandGetExportedKeys.getDefaultInstance() is a valid command until we can
                 // plumb getSchema through to the resolvers.
+                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                 return;
             }
             if (!hasTable(
