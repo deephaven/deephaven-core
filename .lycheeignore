@@ -1,3 +1,4 @@
-*localhost*
-*docs.deephaven.io*
+_localhost_
+_docs.deephaven.io_
 https://10.0.1.50:8123/iris/connection.json
+https://deephaven.io/core/release/vX.Y.Z/javadoc
