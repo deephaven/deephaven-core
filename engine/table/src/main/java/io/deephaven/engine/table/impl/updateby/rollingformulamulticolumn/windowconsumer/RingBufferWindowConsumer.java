@@ -16,7 +16,7 @@ public abstract class RingBufferWindowConsumer {
     /**
      * Create a new {@link RingBufferWindowConsumer} for the given buffer.
      *
-     * @param buffer the buffer to manage and
+     * @param buffer the buffer to manage
      * @return a new RingBufferWindowConsumer
      */
     public static RingBufferWindowConsumer create(final RingBuffer buffer) {
@@ -51,15 +51,15 @@ public abstract class RingBufferWindowConsumer {
     /**
      * Push {@code count} values from the input chunk into the ring buffer, beginning at {@code index}.
      *
-     * @param index the index to push the value
-     * @param count the count of the value to push
+     * @param index the index of the first value to push
+     * @param count the count of values to push
      */
     public abstract void push(int index, int count);
 
     /**
      * Pop {@code count} values from the ring buffer.
      *
-     * @param count the count of the value to pop
+     * @param count the count of values to pop
      */
     public abstract void pop(int count);
 

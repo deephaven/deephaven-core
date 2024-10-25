@@ -40,8 +40,6 @@ import java.util.Map;
  */
 public abstract class UpdateByOperator {
     protected final MatchPair pair;
-
-    // Input columns for this operator. Must be dynamic to support discovery (e.g. formula columns).
     protected final String[] affectingColumns;
 
     protected final long reverseWindowScaleUnits;

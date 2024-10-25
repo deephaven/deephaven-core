@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit AggregatingCharRingBufferTest and run "./gradlew replicateRingBuffers" to regenerate
+// ****** Edit TestAggregatingCharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
 //
 // @formatter:off
 package io.deephaven.base.ringbuffer;
@@ -12,7 +12,7 @@ import junit.framework.TestCase;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class AggregatingByteRingBufferTest extends TestCase {
+public class TestAggregatingByteRingBuffer extends TestCase {
 
     private void assertEmpty(AggregatingByteRingBuffer rb) {
         assertTrue(rb.isEmpty());

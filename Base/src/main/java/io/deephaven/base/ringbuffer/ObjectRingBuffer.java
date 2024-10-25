@@ -11,6 +11,7 @@ import java.util.Arrays;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;
@@ -128,10 +129,17 @@ public class ObjectRingBuffer<T> implements RingBuffer, Serializable {
 
     @Override
     public void clear() {
-        tail = head = 0;
         // region object-bulk-clear
-        Arrays.fill(storage, null);
+        final int storageHead = (int) (head & mask);
+        final int size = size();
+        // firstLen is either the size of the ring buffer oe the distance from head to the end of the storage array.
+        final int firstLen = Math.min(storage.length - storageHead, size);
+        // secondLen is the number of elements remaining from the first clear.
+        final int secondLen = size - firstLen;
+        Arrays.fill(storage, storageHead, storageHead + firstLen, null);
+        Arrays.fill(storage, 0, secondLen, null);
         // endregion object-bulk-clear
+        tail = head = 0;
     }
 
     /**
@@ -162,6 +170,7 @@ public class ObjectRingBuffer<T> implements RingBuffer, Serializable {
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
+    @Override
     public void ensureRemaining(final int count) {
         if (remaining() < count) {
             if (!growable) {
@@ -410,5 +419,15 @@ public class ObjectRingBuffer<T> implements RingBuffer, Serializable {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /**
+     * Get the storage array for this ring buffer. This is intended for testing and debugging purposes only.
+     *
+     * @return The storage array for this ring buffer.
+     */
+    @TestOnly
+    public T[] getStorage() {
+        return storage;
     }
 }

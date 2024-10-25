@@ -1451,7 +1451,9 @@ public class UpdateByOperatorFactory {
                 vectorColumnNameMap = new HashMap<>();
                 columnDefinitionMap.forEach((key, value) -> {
                     final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                            key, VectorFactory.forElementType(value.getDataType()).vectorType());
+                            key,
+                            VectorFactory.forElementType(value.getDataType()).vectorType(),
+                            value.getDataType());
                     vectorColumnNameMap.put(key, columnDef);
                 });
             }
@@ -1459,6 +1461,10 @@ public class UpdateByOperatorFactory {
             // Get the input column names and data types from the formula.
             final String[] inputColumnNames =
                     selectColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+            if (!selectColumn.getColumnArrays().isEmpty()) {
+                throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
+                        + selectColumn.getColumnArrays() + ")");
+            }
             final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
             final Class<?>[] inputComponentTypes = new Class[inputColumnNames.length];
             final Class<?>[] inputVectorTypes = new Class[inputColumnNames.length];

@@ -5,6 +5,7 @@ package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;
@@ -122,9 +123,9 @@ public class CharRingBuffer implements RingBuffer, Serializable {
 
     @Override
     public void clear() {
-        tail = head = 0;
         // region object-bulk-clear
         // endregion object-bulk-clear
+        tail = head = 0;
     }
 
     /**
@@ -155,6 +156,7 @@ public class CharRingBuffer implements RingBuffer, Serializable {
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
      */
+    @Override
     public void ensureRemaining(final int count) {
         if (remaining() < count) {
             if (!growable) {
@@ -388,5 +390,15 @@ public class CharRingBuffer implements RingBuffer, Serializable {
         public void remove() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    /**
+     * Get the storage array for this ring buffer. This is intended for testing and debugging purposes only.
+     *
+     * @return The storage array for this ring buffer.
+     */
+    @TestOnly
+    public char[] getStorage() {
+        return storage;
     }
 }

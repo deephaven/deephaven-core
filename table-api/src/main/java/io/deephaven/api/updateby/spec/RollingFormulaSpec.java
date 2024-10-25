@@ -4,6 +4,7 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.Selectable;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -16,6 +17,10 @@ import java.util.Optional;
 @Immutable
 @BuildableStyle
 public abstract class RollingFormulaSpec extends RollingOpSpec {
+    /**
+     * If {@link #paramToken()} is not supplied, this can contain a cached {@link Selectable} for {@link #formula()}.
+     */
+    private Selectable selectable;
 
     /**
      * The formula to use to calculate output values. The formula is similar to
@@ -137,6 +142,16 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
                 .build();
     }
 
+    public Selectable selectable() {
+        if (paramToken().isPresent()) {
+            throw new UnsupportedOperationException("selectable() is not supported when paramToken() is present");
+        }
+        if (selectable == null) {
+            selectable = Selectable.parse(formula());
+        }
+        return selectable;
+    }
+
     @Override
     public final boolean applicableTo(Class<?> inputType) {
         return true;
@@ -150,7 +165,11 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
     @Value.Check
     final void checkFormula() {
         if (formula().isEmpty()) {
-            throw new IllegalArgumentException("formula must not be empty");
+            throw new IllegalArgumentException("formula musst not be empty");
+        }
+        if (!paramToken().isPresent()) {
+            final Selectable selectable = selectable();
+            // TODO: what should we assert after a successful parse?
         }
     }
 }

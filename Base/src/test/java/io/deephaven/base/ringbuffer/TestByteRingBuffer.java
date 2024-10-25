@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRingBufferTest and run "./gradlew replicateRingBuffers" to regenerate
+// ****** Edit TestCharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
 //
 // @formatter:off
 package io.deephaven.base.ringbuffer;
@@ -15,11 +15,11 @@ import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertThrows;
 
-public class IntRingBufferTest extends TestCase {
+public class TestByteRingBuffer extends TestCase {
 
-    final int SENTINEL = Integer.MIN_VALUE;
+    final byte SENTINEL = Byte.MIN_VALUE;
 
-    private void assertEmpty(IntRingBuffer rb) {
+    private void assertEmpty(ByteRingBuffer rb) {
         assertTrue(rb.isEmpty());
         assertEquals(0, rb.size());
 
@@ -38,14 +38,16 @@ public class IntRingBufferTest extends TestCase {
         } catch (NoSuchElementException x) {
             // expected
         }
+        // region empty-test
+        // endregion empty-test
     }
 
-    private void assertFull(IntRingBuffer rb) {
+    private void assertFull(ByteRingBuffer rb) {
         assertFalse(rb.isEmpty());
         assertEquals(rb.capacity(), rb.size());
     }
 
-    private void assertNotEmpty(IntRingBuffer rb, int expectedSize, int expectedHead) {
+    private void assertNotEmpty(ByteRingBuffer rb, int expectedSize, byte expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
@@ -57,22 +59,22 @@ public class IntRingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(IntRingBuffer rb, int newHead, int expectedSize, int expectedHead) {
+    private void assertAdd(ByteRingBuffer rb, byte newHead, int expectedSize, byte expectedHead) {
         assertTrue(rb.add(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertOffer(IntRingBuffer rb, int newHead, int expectedSize, int expectedHead) {
+    private void assertOffer(ByteRingBuffer rb, byte newHead, int expectedSize, byte expectedHead) {
         assertTrue(rb.offer(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertPoll(IntRingBuffer rb, int expectedSize, int expectedHead) {
+    private void assertPoll(ByteRingBuffer rb, int expectedSize, byte expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         assertEquals(expectedHead, rb.poll(SENTINEL));
     }
 
-    private void assertRemove(IntRingBuffer rb, int expectedSize, int expectedHead) {
+    private void assertRemove(ByteRingBuffer rb, int expectedSize, byte expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertEquals(expectedHead, rb.remove());
@@ -81,31 +83,31 @@ public class IntRingBufferTest extends TestCase {
         }
     }
 
-    private void assertContents(IntRingBuffer rb, int... expectedData) {
-        final int[] data = rb.getAll();
+    private void assertContents(ByteRingBuffer rb, byte... expectedData) {
+        final byte[] data = rb.getAll();
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    private void assertArrayEquals(int[] data, int... expectedData) {
+    private void assertArrayEquals(byte[] data, byte... expectedData) {
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    int A = 'A';
-    int B = 'B';
-    int C = 'C';
-    int D = 'D';
-    int E = 'E';
-    int F = 'F';
+    byte A = 'A';
+    byte B = 'B';
+    byte C = 'C';
+    byte D = 'D';
+    byte E = 'E';
+    byte F = 'F';
 
     public void testAddRemove() {
 
-        IntRingBuffer rb = new IntRingBuffer(3);
+        ByteRingBuffer rb = new ByteRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -184,7 +186,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testOfferPoll() {
-        IntRingBuffer rb = new IntRingBuffer(3);
+        ByteRingBuffer rb = new ByteRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -243,7 +245,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        IntRingBuffer rb = new IntRingBuffer(4);
+        ByteRingBuffer rb = new ByteRingBuffer(4);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -267,7 +269,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testGrowComplex() {
-        IntRingBuffer rb = new IntRingBuffer(5);
+        ByteRingBuffer rb = new ByteRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -296,9 +298,9 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testIterator() {
-        IntRingBuffer rb = new IntRingBuffer(3);
+        ByteRingBuffer rb = new ByteRingBuffer(3);
 
-        IntRingBuffer.Iterator iter = rb.iterator();
+        ByteRingBuffer.Iterator iter = rb.iterator();
         assertFalse(iter.hasNext());
 
         assertAdd(rb, A, 1, A);
@@ -347,14 +349,14 @@ public class IntRingBufferTest extends TestCase {
         assertEquals(F, iter.next());
         assertFalse(iter.hasNext());
 
-        final IntRingBuffer.Iterator iterFinal = rb.iterator();
+        final ByteRingBuffer.Iterator iterFinal = rb.iterator();
 
         assertThrows(UnsupportedOperationException.class,
                 iterFinal::remove);
     }
 
     public void testBack() {
-        IntRingBuffer rb = new IntRingBuffer(5);
+        ByteRingBuffer rb = new ByteRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertEquals(rb.back(), A);
@@ -365,7 +367,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testBackWhenEmpty() {
-        IntRingBuffer rb = new IntRingBuffer(5);
+        ByteRingBuffer rb = new ByteRingBuffer(5);
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
@@ -375,7 +377,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        IntRingBuffer rb = new IntRingBuffer(5, false);
+        ByteRingBuffer rb = new ByteRingBuffer(5, false);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -389,26 +391,26 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        IntRingBuffer rb = new IntRingBuffer(3);
+        ByteRingBuffer rb = new ByteRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((int) i);
+            rb.add((byte) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((int) i);
-            assertEquals((int) (i - 100 + 1), rb.front(1));
-            assertEquals((int) (i - 100), rb.poll(SENTINEL));
+            rb.add((byte) i);
+            assertEquals((byte) (i - 100 + 1), rb.front(1));
+            assertEquals((byte) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((int) (i - 100 + 1), rb.front(1));
-            assertEquals((int) (i - 100), rb.poll(SENTINEL));
+                assertEquals((byte) (i - 100 + 1), rb.front(1));
+            assertEquals((byte) (i - 100), rb.poll(SENTINEL));
         }
     }
 
     public void testAddExceptionWhenFull() {
-        IntRingBuffer rb = new IntRingBuffer(4, false);
+        ByteRingBuffer rb = new ByteRingBuffer(4, false);
         assert (rb.add(A));
         assert (rb.add(B));
         assert (rb.add(C));
@@ -420,7 +422,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testAddOverwriteAndOffer() {
-        IntRingBuffer rb = new IntRingBuffer(4, false);
+        ByteRingBuffer rb = new ByteRingBuffer(4, false);
         assert (4 == rb.remaining());
 
         assert (F == rb.addOverwrite(A, F));
@@ -466,7 +468,7 @@ public class IntRingBufferTest extends TestCase {
 
 
     public void testMultipleRemove() {
-        IntRingBuffer rb = new IntRingBuffer(10, false);
+        ByteRingBuffer rb = new ByteRingBuffer(10, false);
 
         // this should throw
         assertThrows(NoSuchElementException.class,
@@ -479,7 +481,7 @@ public class IntRingBufferTest extends TestCase {
         rb.add(A);
         rb.add(B);
 
-        int[] values = rb.remove(2);
+        byte[] values = rb.remove(2);
         assertArrayEquals(values, A, B);
         assertEmpty(rb);
 
@@ -508,7 +510,7 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testAddRemoveUnsafe() {
-        IntRingBuffer rbNoGrow = new IntRingBuffer(3, false);
+        ByteRingBuffer rbNoGrow = new ByteRingBuffer(3, false);
 
         // this should throw
         assertThrows(UnsupportedOperationException.class,
@@ -531,7 +533,7 @@ public class IntRingBufferTest extends TestCase {
         assertEmpty(rbNoGrow);
 
 
-        IntRingBuffer rbGrow = new IntRingBuffer(3, true);
+        ByteRingBuffer rbGrow = new ByteRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
             rbGrow.ensureRemaining(size);
@@ -543,12 +545,12 @@ public class IntRingBufferTest extends TestCase {
     }
 
     public void testOverflow() {
-        IntRingBuffer rbA = new IntRingBuffer(0);
+        ByteRingBuffer rbA = new ByteRingBuffer(0);
         // this should throw
         assertThrows(AssertionFailure.class,
                 () -> rbA.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE + 1));
 
-        IntRingBuffer rbB = new IntRingBuffer(100);
+        ByteRingBuffer rbB = new ByteRingBuffer(100);
         for (int i = 0; i < 100; i++) {
             rbB.addUnsafe(A);
         }

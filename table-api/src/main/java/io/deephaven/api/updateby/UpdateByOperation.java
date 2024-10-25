@@ -1911,7 +1911,7 @@ public interface UpdateByOperation {
 
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using ticks as the
      * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
      * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
      * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
@@ -1935,7 +1935,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using ticks as the
      * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
      * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
      * values are allowed and can be used to generate completely forward or completely reverse windows.
@@ -1975,7 +1975,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing
      * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
      * in the windows of other rows.
@@ -2006,7 +2006,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@link Duration durations} as the reverse and forward window parameters.
      * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
      * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
@@ -2048,7 +2048,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a
      * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
      * the windows of other rows.
@@ -2073,7 +2073,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative
      * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
      * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
@@ -2103,12 +2103,12 @@ public interface UpdateByOperation {
     // New methods for the multi-column formula
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using ticks as the windowing unit. Ticks are row counts and
+     * Create a {@link RollingFormulaSpec rolling formula} using ticks as the windowing unit. Ticks are row counts and
      * you may specify the previous window in number of rows to include. The current row is considered to belong to the
      * reverse window, so calling this with {@code revTicks = 1} will simply return the current row. Specifying
      * {@code revTicks = 10} will include the previous 9 rows to this one and this row for a total of 10 rows.
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
@@ -2132,7 +2132,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using ticks as the windowing unit. Ticks are row counts and
+     * Create a {@link RollingFormulaSpec rolling formula} using ticks as the windowing unit. Ticks are row counts and
      * you may specify the reverse and forward window in number of rows to include. The current row is considered to
      * belong to the reverse window but not the forward window. Also, negative values are allowed and can be used to
      * generate completely forward or completely reverse windows.
@@ -2153,7 +2153,7 @@ public interface UpdateByOperation {
      * </ul>
      *
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
@@ -2177,7 +2177,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using time as the windowing unit. This function accepts
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
      * {@link Duration duration} as the reverse window parameter. A row containing a {@code null} in the timestamp
      * column belongs to no window and will not have a value computed or be considered in the windows of other rows.
      * <p>
@@ -2188,7 +2188,7 @@ public interface UpdateByOperation {
      * </ul>
      *
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
@@ -2212,7 +2212,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using time as the windowing unit. This function accepts
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
      * {@link Duration durations} as the reverse and forward window parameters. Negative values are allowed and can be
      * used to generate completely forward or completely reverse windows. A row containing a {@code null} in the
      * timestamp column belongs to no window and will not have a value computed or be considered in the windows of other
@@ -2234,7 +2234,7 @@ public interface UpdateByOperation {
      * </ul>
      *
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
@@ -2260,12 +2260,12 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using time as the windowing unit. This function accepts
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
      * {@code nanoseconds} as the reverse window parameters. A row containing a {@code null} in the timestamp column
      * belongs to no window and will not have a value computed or be considered in the windows of other rows.
      *
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
@@ -2289,13 +2289,13 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} using time as the windowing unit. This function accepts
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
      * {@code nanoseconds} as the reverse and forward window parameters. Negative values are allowed and can be used to
      * generate completely forward or completely reverse windows. A row containing a {@code null} in the timestamp
      * column belongs to no window and will not have a value computed or be considered in the windows of other rows.
      *
      * <p>
-     * The provided {@code formula} should specify the output column name Some examples of formula are:
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
      *
      * <pre>
      * sum_AB = sum(col_A) + sum(col_B)
