@@ -31,7 +31,7 @@ google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.4"
 groovy = "3.0.22"
 # Only bump this in concert with boringssl
-grpc = "1.58.0"
+grpc = "1.68.0"
 guava = "33.3.1-jre"
 gwt = "2.11.0"
 # used by GwtTools
