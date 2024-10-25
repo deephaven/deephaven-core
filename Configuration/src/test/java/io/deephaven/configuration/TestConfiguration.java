@@ -192,7 +192,7 @@ public class TestConfiguration extends TestCase {
      * an on-the-fly property
      */
     public void testContext() throws Exception {
-        final String oldProcessName = System.getProperty(ConfigurationContext.PROCESS_NAME_PROPERTY);
+        final String oldProcessName = System.getProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testProp = "testproperty";
         try {
             System.setProperty(FILENAME_PROPERTY, "resources/test-context.prop");
@@ -255,7 +255,7 @@ public class TestConfiguration extends TestCase {
     }
 
     public void testContextIgnoreScope() throws Exception {
-        final String oldProcessName = System.getProperty(ConfigurationContext.PROCESS_NAME_PROPERTY);
+        final String oldProcessName = System.getProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testProp = "testproperty";
         try {
             System.setProperty(FILENAME_PROPERTY, "resources/test-context.prop");
@@ -324,7 +324,7 @@ public class TestConfiguration extends TestCase {
      */
     private void runTestsOnFinalKeyword(final String filename, final String contextName, final String beforeValue,
             final String finalTestValue, final String includeValue) {
-        final String oldProcessName = System.getProperty(ConfigurationContext.PROCESS_NAME_PROPERTY);
+        final String oldProcessName = System.getProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testPropContextIdentifier = "testbatch";
         final String beforeTestProperty = "beforetest";
         final String finalTestProperty = "finaltest";
@@ -358,7 +358,7 @@ public class TestConfiguration extends TestCase {
 
         } finally {
             if (oldProcessName != null)
-                System.setProperty(ConfigurationContext.PROCESS_NAME_PROPERTY, oldProcessName);
+                System.setProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY, oldProcessName);
             System.clearProperty(testPropContextIdentifier);
         }
     }

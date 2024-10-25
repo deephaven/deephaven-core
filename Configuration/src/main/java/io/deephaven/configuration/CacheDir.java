@@ -4,6 +4,7 @@
 package io.deephaven.configuration;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 /**
@@ -30,9 +31,8 @@ public final class CacheDir {
      * @return the cache dir
      */
     public static Path get() {
-        return viaProperty()
-                .or(CacheDir::viaEnvVar)
-                .map(Path::of)
+        return getOptional()
+                .map(Paths::get)
                 .orElseGet(CacheDir::viaTmpDir);
     }
 
@@ -45,12 +45,20 @@ public final class CacheDir {
      * @return the cache directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = viaProperty().or(CacheDir::viaEnvVar).orElse(null);
+        final String existing = getOptional().orElse(null);
         if (existing != null) {
-            return Path.of(existing);
+            return Paths.get(existing);
         }
         System.setProperty(PROPERTY, defaultValue);
-        return Path.of(defaultValue);
+        return Paths.get(defaultValue);
+    }
+
+    private static Optional<String> getOptional() {
+        Optional<String> optional = viaProperty();
+        if (!optional.isPresent()) {
+            optional = viaEnvVar();
+        }
+        return optional;
     }
 
     private static Optional<String> viaProperty() {
@@ -62,6 +70,6 @@ public final class CacheDir {
     }
 
     private static Path viaTmpDir() {
-        return Path.of(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
+        return Paths.get(System.getProperty(JAVA_IO_TMPDIR), "deephaven", "cache");
     }
 }

@@ -4,13 +4,18 @@
 package io.deephaven.configuration;
 
 import io.deephaven.internal.log.Bootstrap;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Utility class to provide an enhanced view and common access point for java properties files, as well as common
@@ -18,15 +23,53 @@ import java.util.*;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class Configuration extends PropertyFile {
-
+    private static final String DEFAULT_CONF_NAME = "default";
     public static final String QUIET_PROPERTY = "configuration.quiet";
-
-    private static NullableConfiguration INSTANCE = null;
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
+    private static Configuration DEFAULT;
+    private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new ConcurrentHashMap<>();
+    private final Supplier<ConfigurationContext> contextSupplier;
+
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
+
+    /**
+     * The default configuration implementation loading the property file from the default property file.
+     */
+    private static class DefaultConfiguration extends Configuration {
+        DefaultConfiguration(final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
+        }
+
+        @SuppressWarnings("unused")
+        public String getPropertyNullable(String propertyName) {
+            return properties.getProperty(propertyName);
+        }
+    }
+
+    /**
+     * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`
+     */
+    private static class NamedConfiguration extends Configuration {
+        private final String name;
+
+        NamedConfiguration(final @NotNull String name, final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
+            this.name = name;
+        }
+
+        @Override
+        String determinePropertyFile() {
+            final String propFile = System.getProperty("Configuration." + name + ".rootFile");
+            if (propFile == null) {
+                throw new ConfigurationException("No property file defined for named configuration " + name);
+            }
+
+            return propFile;
+        }
+    }
 
     /**
      * Get the default Configuration instance.
@@ -34,29 +77,88 @@ public class Configuration extends PropertyFile {
      * @return the single instance of Configuration allowed in an application
      */
     public static Configuration getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new NullableConfiguration();
+        if (DEFAULT == null) {
+            DEFAULT = new DefaultConfiguration(DefaultConfigurationContext::new);
+            init(DEFAULT);
         }
-        return INSTANCE;
+        return DEFAULT;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public static Configuration newConfigurationForTesting() {
-        return new Configuration();
+    /**
+     * Get the {@link Configuration} for the specified name.
+     *
+     * @param name the name of the configuration to load
+     * @return the named configuration.
+     * @throws ConfigurationException if the named configuration could not be loaded.
+     */
+    public static Configuration getNamed(@NotNull final String name) throws ConfigurationException {
+        if (DEFAULT_CONF_NAME.equals(name)) {
+            return getInstance();
+        }
+
+        return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
+            try {
+                final Configuration instance = new NamedConfiguration(name, DefaultConfigurationContext::new);
+                init(instance);
+                return instance;
+            } catch (ConfigurationException ex) {
+                throw new ConfigurationException("Unable to load named configuration " + name, ex);
+            }
+        });
     }
 
-    protected Configuration() {
+    private static void init(@NotNull final Configuration configuration) {
         final String configurationFile;
         try {
-            configurationFile = reloadProperties();
+            configurationFile = configuration.reloadProperties();
         } catch (IOException x) {
             throw new ConfigurationException("Could not process configuration from file", x);
         }
+
         // The quiet property is available because things like shell scripts may be parsing our System.out and they
         // don't want to have to deal with these log messages
         if (!isQuiet()) {
             log.info().append("Configuration: configuration file is ").append(configurationFile).endl();
         }
+    }
+
+    /**
+     * Clear all currently loaded configurations so that they may be loaded anew.
+     */
+    public static void reset() {
+        DEFAULT = null;
+        NAMED_CONFIGURATIONS.clear();
+    }
+
+    /**
+     * Clear the specified named configuration so it may be loaded anew.
+     * 
+     * @param name the configuration to clear.
+     */
+    public static void reset(final @NotNull String name) {
+        NAMED_CONFIGURATIONS.remove(name);
+    }
+
+    public static Configuration newConfigurationForTesting() {
+        return newConfigurationForTesting(DEFAULT_CONF_NAME, DefaultConfigurationContext::new);
+    }
+
+    public static Configuration newConfigurationForTesting(final @NotNull String name) {
+        return newConfigurationForTesting(name, DefaultConfigurationContext::new);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public static Configuration newConfigurationForTesting(final @NotNull String name,
+            final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+        final Configuration newConfig = DEFAULT_CONF_NAME.equals(name)
+                ? new DefaultConfiguration(contextSupplier)
+                : new NamedConfiguration(name, contextSupplier);
+        init(newConfig);
+        return newConfig;
+    }
+
+    protected Configuration(final @NotNull Supplier<ConfigurationContext> contextSupplier) {
+        this.contextSupplier = contextSupplier;
     }
 
     /**
@@ -68,7 +170,7 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     private void load(String fileName, boolean ignoreScope) throws IOException, ConfigurationException {
-        final ParsedProperties temp = new ParsedProperties(ignoreScope);
+        final ParsedProperties temp = new ParsedProperties(ignoreScope, contextSupplier.get());
         // we explicitly want to set 'properties' here so that if we get an error while loading, anything before that
         // error shows up.
         // That is very helpful in debugging.
@@ -175,6 +277,10 @@ public class Configuration extends PropertyFile {
         return reloadProperties(false);
     }
 
+    String determinePropertyFile() {
+        return ConfigDir.defaultConfigurationFile();
+    }
+
     /**
      * Reload properties, optionally ignoring scope sections - used for testing
      *
@@ -184,29 +290,12 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     String reloadProperties(boolean ignoreScope) throws IOException, ConfigurationException {
-        final String propertyFile = ConfigDir.configurationFile();
+        final String propertyFile = determinePropertyFile();
         load(propertyFile, ignoreScope);
         // If any system properties exist with the same name as a property that's been declared final, that will
         // generate an exception the same way it would inside the properties file.
         properties.putAll(System.getProperties());
         return propertyFile;
-    }
-
-    /**
-     * ONLY the service factory is allowed to get null properties and ONLY for the purposes of using default profiles
-     * when one doesn't exist. This has been relocated here after many people are using defaults/nulls in the code when
-     * it's not allowed.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static class NullableConfiguration extends Configuration {
-        NullableConfiguration() {
-            super();
-        }
-
-        @SuppressWarnings("unused")
-        public String getPropertyNullable(String propertyName) {
-            return properties.getProperty(propertyName);
-        }
     }
 
     // only used by main() method below, normally configs are loaded from the classpath
@@ -215,7 +304,6 @@ public class Configuration extends PropertyFile {
         temp.load(new FileInputStream(path + "/" + propFileName));
         return temp;
     }
-
 
     /**
      * The following main method compares two directories of prop files and outputs a CSV report of the differences.
@@ -257,7 +345,7 @@ public class Configuration extends PropertyFile {
     private static String propFileDiffReport(Set<String> includedProperties, String dir1, String file1, String dir2,
             String file2, String dir3, String file3, boolean useDiffKeys) throws IOException {
         StringBuilder out = new StringBuilder();
-        Configuration configuration = new Configuration();
+        Configuration configuration = new Configuration(DefaultConfigurationContext::new);
         Properties leftProperties = configuration.load(dir1, file1);
         Properties rightProperties = configuration.load(dir2, file2);
         Properties right2Properties;

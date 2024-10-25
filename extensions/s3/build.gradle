@@ -15,6 +15,7 @@ dependencies {
     implementation project(':Util')
     implementation project(':Configuration')
     implementation project(':log-factory')
+    implementation project(':util-thread')
 
     implementation platform(libs.awssdk.bom)
     implementation libs.awssdk.s3

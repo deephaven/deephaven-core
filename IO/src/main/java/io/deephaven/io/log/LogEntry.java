@@ -125,7 +125,8 @@ public interface LogEntry extends LogOutput, LogSink.Element {
                 decimalPlaces - maxTrailingZeroesToDiscard);
     }
 
-    private static LogEntry appendDoubleDecimalPlacesImpl(
+
+    static LogEntry appendDoubleDecimalPlacesImpl(
             LogEntry entry, final double doubleValue, final int roundToDecimalPlaces, final int minDecimalPlaces) {
         if (roundToDecimalPlaces < 0 || roundToDecimalPlaces > 9) {
             throw new IllegalArgumentException("Invalid value for decimalPlaces = " + roundToDecimalPlaces);
