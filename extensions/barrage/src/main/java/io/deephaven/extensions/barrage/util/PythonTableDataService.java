@@ -6,7 +6,6 @@ package io.deephaven.extensions.barrage.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -43,7 +42,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
 
@@ -51,7 +50,7 @@ import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseAr
 public class PythonTableDataService extends AbstractTableDataService {
 
     private static final int DEFAULT_PAGE_SIZE = Configuration.getInstance()
-            .getIntegerForClassWithDefault(PythonTableDataService.class, "DEFAULT_PAGE_SIZE", 1 << 16);
+            .getIntegerForClassWithDefault(PythonTableDataService.class, "defaultPageSize", 1 << 16);
     private static final long REGION_MASK = RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
 
     private final BackendAccessor backend;
@@ -126,18 +125,19 @@ public class PythonTableDataService extends AbstractTableDataService {
         /**
          * Get two schemas, the first for partitioning columns whose values will be derived from TableLocationKey and
          * applied to all rows in the associated TableLocation, and the second specifying the table data to be read
-         * chunk-wise (in columnar fashion) from theTableLocations.
+         * chunk-wise (in columnar fashion) from the TableLocations.
          *
          * @param tableKey the table key
          * @return the schemas
          */
         public BarrageUtil.ConvertedArrowSchema[] getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
-            // The schemas are
             final BarrageUtil.ConvertedArrowSchema[] schemas = new BarrageUtil.ConvertedArrowSchema[2];
             final Consumer<ByteBuffer[]> onRawSchemas = byteBuffers -> {
                 if (byteBuffers.length != schemas.length) {
-                    throw new IllegalArgumentException("Expected two Arrow IPC messages: found " + byteBuffers.length);
+                    throw new IllegalArgumentException(String.format(
+                            "%s: table_schema returned too many IPC messages. Expected %d, received %d.",
+                            tableKey, schemas.length, byteBuffers.length));
                 }
 
                 for (int ii = 0; ii < schemas.length; ++ii) {
@@ -200,16 +200,27 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final ByteBuffer[] byteBuffers) {
             if (byteBuffers.length == 0) {
+                if (!definition.getPartitioningColumns().isEmpty()) {
+                    throw new IllegalArgumentException(String.format("%s:%s: table_location_key callback expected "
+                            + "partitioned column values but none were provided", tableKey, tableLocationKey));
+                }
                 listener.accept(tableLocationKey);
                 return;
             }
 
             if (byteBuffers.length != 2) {
-                throw new IllegalArgumentException("Expected Single Record Batch: found " + byteBuffers.length);
+                throw new IllegalArgumentException(String.format("%s:%s: table_location_key callback expected 2 IPC "
+                        + "messages describing the wire format of the partitioning columns followed by partitioning "
+                        + "values, but received %d messages", tableKey, tableLocationKey, byteBuffers.length));
             }
 
+            // partitioning values must be in the same order as the partitioning keys, so we'll prepare an ordered map
+            // with null values for each key so that we may fill them in out of order
+            final Map<String, Comparable<?>> partitioningValues = new LinkedHashMap<>(
+                    definition.getPartitioningColumns().size());
+            definition.getPartitioningColumns().forEach(column -> partitioningValues.put(column.getName(), null));
+
             // note that we recompute chunk readers for each location to support some schema evolution
-            final Map<String, Comparable<?>> partitioningValuesUnordered = new HashMap<>();
             final Schema partitioningValuesSchema = ArrowToTableConverter.parseArrowSchema(
                     ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[0]));
             final BarrageUtil.ConvertedArrowSchema schemaPlus =
@@ -218,17 +229,20 @@ public class PythonTableDataService extends AbstractTableDataService {
             try {
                 definition.checkCompatibility(schemaPlus.tableDef);
             } catch (TableDefinition.IncompatibleTableDefinitionException err) {
-                throw new IllegalArgumentException("Partitioning schema is incompatible with table schema", err);
+                throw new IllegalArgumentException(String.format("%s:%s: table_location_key callback received "
+                        + "partitioning schema that is incompatible with table definition", tableKey, tableLocationKey),
+                        err);
             }
 
             final ChunkReader[] readers = schemaPlus.computeChunkReaders(
-                    DefaultChunkReadingFactory.INSTANCE,
+                    chunkReaderFactory,
                     partitioningValuesSchema,
-                    BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS);
+                    streamReaderOptions);
 
             final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(byteBuffers[1]);
             if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
-                throw new IllegalArgumentException("byteBuffers[1] is not a valid Arrow RecordBatch IPC message");
+                throw new IllegalArgumentException(String.format("%s:%s: table_location_key callback received 2nd IPC "
+                        + "message that is not a valid Arrow RecordBatch", tableKey, tableLocationKey));
             }
             final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -240,28 +254,24 @@ public class PythonTableDataService extends AbstractTableDataService {
 
             // extract partitioning values and box them to be used as Comparable in the map
             for (int ci = 0; ci < partitioningValuesSchema.fieldsLength(); ++ci) {
+                final String columnName = partitioningValuesSchema.fields(ci).name();
                 try (final WritableChunk<Values> columnValues = readers[ci].readChunk(
                         fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0)) {
 
                     if (columnValues.size() != 1) {
-                        throw new IllegalArgumentException("Expected Single Row: found " + columnValues.size());
+                        throw new IllegalArgumentException(String.format("%s:%s: table_location_key callback received "
+                                + "%d rows for partitioning column %s; expected 1", tableKey, tableLocationKey,
+                                columnValues.size(), columnName));
                     }
 
-                    partitioningValuesUnordered.put(
-                            partitioningValuesSchema.fields(ci).name(), ChunkBoxer.boxedGet(columnValues, 0));
-                } catch (final IOException unexpected) {
-                    throw new UncheckedDeephavenException(unexpected);
+                    partitioningValues.put(columnName, ChunkBoxer.boxedGet(columnValues, 0));
+                } catch (final IOException ioe) {
+                    throw new UncheckedDeephavenException(String.format(
+                            "%s:%s: table_location_key callback failed to read partitioning column %s", tableKey,
+                            tableLocationKey, columnName), ioe);
                 }
             }
 
-            // partitioning values must be in the same order as the partitioning keys
-            final Map<String, Comparable<?>> partitioningValues = definition.getPartitioningColumns().stream()
-                    .map(ColumnDefinition::getName)
-                    .collect(Collectors.toMap(
-                            key -> key,
-                            partitioningValuesUnordered::get,
-                            Assert::neverInvoked,
-                            LinkedHashMap::new));
             listener.accept(new TableLocationKeyImpl(tableLocationKey.locationKey, partitioningValues));
         }
 
@@ -318,10 +328,13 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final int maximumSize) {
 
             final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>();
+            final String columnName = columnDefinition.getName();
             final Consumer<ByteBuffer[]> onMessages = messages -> {
                 if (messages.length < 2) {
-                    throw new IllegalArgumentException("Expected at least two Arrow IPC messages: found "
-                            + messages.length);
+                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) expected at "
+                            + "least 2 IPC messages describing the wire format of the column followed by column "
+                            + "values, but received %d messages", tableKey, tableLocationKey, columnName,
+                            firstRowPosition, minimumSize, maximumSize, messages.length));
                 }
                 resultChunks.ensureCapacity(messages.length - 1);
 
@@ -330,20 +343,32 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final BarrageUtil.ConvertedArrowSchema schemaPlus = BarrageUtil.convertArrowSchema(schema);
 
                 if (schema.fieldsLength() > 1) {
-                    throw new UnsupportedOperationException("More columns returned than requested.");
+                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) received "
+                            + "more than one field. Received %d fields for columns %s",
+                            tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
+                            schema.fieldsLength(),
+                            IntStream.range(0, schema.fieldsLength())
+                                    .mapToObj(ci -> schema.fields(ci).name())
+                                    .reduce((a, b) -> a + ", " + b).orElse("")));
                 }
                 if (!columnDefinition.isCompatible(schemaPlus.tableDef.getColumns().get(0))) {
-                    throw new IllegalArgumentException("Returned column is not compatible with requested column");
+                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) received "
+                            + "incompatible column definition. Expected %s, but received %s.",
+                            tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
+                            columnDefinition, schemaPlus.tableDef.getColumns().get(0)));
                 }
 
                 final ChunkReader reader = schemaPlus.computeChunkReaders(
                         chunkReaderFactory, schema, streamReaderOptions)[0];
+                int mi = 1;
                 try {
-                    for (int ii = 1; ii < messages.length; ++ii) {
-                        final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[ii]);
+                    for (; mi < messages.length; ++mi) {
+                        final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[mi]);
                         if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
-                            throw new IllegalArgumentException(
-                                    "byteBuffers[" + ii + "] is not a valid Arrow RecordBatch IPC message");
+                            throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) IPC "
+                                    + "message %d is not a valid Arrow RecordBatch IPC message",
+                                    tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
+                                    mi));
                         }
                         final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -356,14 +381,16 @@ public class PythonTableDataService extends AbstractTableDataService {
                         resultChunks.add(reader.readChunk(
                                 fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0));
                     }
-                } catch (final IOException unexpected) {
+                } catch (final IOException ioe) {
                     SafeCloseable.closeAll(resultChunks.iterator());
-                    throw new UncheckedDeephavenException(unexpected);
+                    throw new UncheckedDeephavenException(String.format("%s:%s: column_values(%s, %d, %d, %d) failed "
+                            + "to read IPC message %d", tableKey, tableLocationKey, columnName,
+                            firstRowPosition, minimumSize, maximumSize, mi), ioe);
                 }
             };
 
             pyTableDataService.call("_column_values",
-                    tableKey.key, tableLocationKey.locationKey, columnDefinition.getName(), firstRowPosition,
+                    tableKey.key, tableLocationKey.locationKey, columnName, firstRowPosition,
                     minimumSize, maximumSize, onMessages);
 
             return resultChunks;
@@ -373,7 +400,7 @@ public class PythonTableDataService extends AbstractTableDataService {
     @Override
     protected @NotNull TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
         if (!(tableKey instanceof TableKeyImpl)) {
-            throw new UnsupportedOperationException(String.format("%s: Unsupported TableKey %s", this, tableKey));
+            throw new IllegalArgumentException(String.format("%s: unsupported TableKey %s", this, tableKey));
         }
         return new TableLocationProviderImpl((TableKeyImpl) tableKey);
     }
@@ -444,12 +471,13 @@ public class PythonTableDataService extends AbstractTableDataService {
         private Subscription subscription = null;
 
         private TableLocationProviderImpl(@NotNull final TableKeyImpl tableKey) {
-            super(tableKey, true, TableUpdateMode.ADD_ONLY, TableUpdateMode.ADD_REMOVE);
+            super(tableKey, true, TableUpdateMode.APPEND_ONLY, TableUpdateMode.APPEND_ONLY);
             final BarrageUtil.ConvertedArrowSchema[] schemas = backend.getTableSchema(tableKey);
 
             final TableDefinition partitioningDef = schemas[0].tableDef;
             final TableDefinition tableDataDef = schemas[1].tableDef;
-            final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(tableDataDef.numColumns());
+            final Map<String, ColumnDefinition<?>> columns = new LinkedHashMap<>(
+                    partitioningDef.numColumns() + tableDataDef.numColumns());
 
             // all partitioning columns default to the front
             for (final ColumnDefinition<?> column : partitioningDef.getColumns()) {
@@ -463,9 +491,9 @@ public class PythonTableDataService extends AbstractTableDataService {
                     columns.put(column.getName(), column);
                 } else if (!existingDef.isCompatible(column)) {
                     // validate that both definitions are the same
-                    throw new IllegalArgumentException(String.format(
-                            "Column %s has conflicting definitions in table data and partitioning schemas: %s vs %s",
-                            column.getName(), existingDef, column));
+                    throw new IllegalArgumentException(String.format("%s: column %s has conflicting definitions in "
+                            + "partitioning and table data schemas: %s vs %s", tableKey, column.getName(),
+                            existingDef, column));
                 }
             }
 
@@ -475,8 +503,8 @@ public class PythonTableDataService extends AbstractTableDataService {
         @Override
         protected @NotNull TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
             if (!(locationKey instanceof TableLocationKeyImpl)) {
-                throw new UnsupportedOperationException(String.format(
-                        "%s: Unsupported TableLocationKey %s", this, locationKey));
+                throw new IllegalArgumentException(String.format("%s: Unsupported TableLocationKey %s", this,
+                        locationKey));
             }
             return new TableLocationImpl((TableKeyImpl) getKey(), (TableLocationKeyImpl) locationKey);
         }
@@ -613,7 +641,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         }
 
         private synchronized void onSizeChanged(final long newSize) {
-            if (size == newSize) {
+            if (size >= newSize) {
                 return;
             }
             size = newSize;
@@ -787,17 +815,16 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final int numRows = values.stream().mapToInt(WritableChunk::size).sum();
 
                 if (numRows < minimumSize) {
-                    throw new TableDataException(String.format("Not enough data returned. Read %d rows but minimum "
-                            + "expected was %d. Result from get_column_values(%s, %s, %s, %d, %d).",
-                            numRows, minimumSize, key.key, ((TableLocationKeyImpl) location.getKey()).locationKey,
-                            columnDefinition.getName(), firstRowPosition, minimumSize));
+                    throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) did not return "
+                            + "enough data. Read %d rows but expected row range was %d to %d.",
+                            key, location, columnDefinition.getName(), firstRowPosition, minimumSize,
+                            destination.capacity(), numRows, minimumSize, destination.capacity()));
                 }
                 if (numRows > destination.capacity()) {
-                    throw new TableDataException(String.format("Too much data returned. Read %d rows but maximum "
-                            + "expected was %d. Result from get_column_values(%s, %s, %s, %d, %d).",
-                            numRows, destination.capacity(), key.key,
-                            ((TableLocationKeyImpl) location.getKey()).locationKey, columnDefinition.getName(),
-                            firstRowPosition, minimumSize));
+                    throw new TableDataException(String.format("%s:%s: column_values(%s, %d, %d, %d) returned too much "
+                            + "data. Read %d rows but maximum allowed is %d.", key, location,
+                            columnDefinition.getName(), firstRowPosition, minimumSize, destination.capacity(), numRows,
+                            destination.capacity()));
                 }
 
                 int offset = 0;

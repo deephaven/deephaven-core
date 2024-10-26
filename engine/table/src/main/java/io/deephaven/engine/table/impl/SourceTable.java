@@ -336,11 +336,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         if (updateSourceRegistrar != null) {
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
-                // NB: we do not want to null out any subscriptionBuffers here, as they may still be in use by a
-                // notification
-                // delivery running currently with this destroy. We also do not want to clear the table location maps as
-                // these
-                // locations may still be useful for static tables.
+                // NB: we do not want to null out any locationChangePoller.locationBuffer here, as they may still be in
+                // use by a notification delivery running currently with this destroy.
                 locationChangePoller.locationBuffer.reset();
             }
         }

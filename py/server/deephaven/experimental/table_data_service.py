@@ -150,7 +150,7 @@ class TableDataServiceBackend(ABC):
             table_location_key (TableLocationKey): the table location key
             col (str): the column name
             offset (int): the starting row index
-            min_rows (int): the minimum number of rows to return
+            min_rows (int): the minimum number of rows to return, min_rows is always <= page size
             max_rows (int): the maximum number of rows to return
 
         Returns:
@@ -325,7 +325,7 @@ class TableDataService(JObjectWrapper):
             table_location_key (TableLocationKey): the table location key
             col (str): the column name
             offset (int): the starting row index
-            min_rows (int): the minimum number of rows to return
+            min_rows (int): the minimum number of rows to return, min_rows is always <= page size
             max_rows (int): the maximum number of rows to return
             callback (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the arrow schema and the serialized record batches for the given column

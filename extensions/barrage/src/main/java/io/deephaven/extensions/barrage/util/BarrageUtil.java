@@ -522,8 +522,9 @@ public class BarrageUtil {
                 @NotNull final StreamReaderOptions barrageOptions) {
             final ChunkReader[] readers = new ChunkReader[tableDef.numColumns()];
 
+            final List<ColumnDefinition<?>> columns = tableDef.getColumns();
             for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
-                final ColumnDefinition<?> columnDefinition = tableDef.getColumns().get(ii);
+                final ColumnDefinition<?> columnDefinition = columns.get(ii);
                 final int factor = (conversionFactors == null) ? 1 : conversionFactors[ii];
                 final ChunkReader.TypeInfo typeInfo = typeInfo(
                         ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(columnDefinition.getDataType()),

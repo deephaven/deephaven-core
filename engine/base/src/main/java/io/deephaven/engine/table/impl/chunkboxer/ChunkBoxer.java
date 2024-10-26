@@ -46,19 +46,19 @@ public class ChunkBoxer {
             case Boolean:
                 return (BOXED_TYPE) Boolean.valueOf(values.asBooleanChunk().get(offset));
             case Char:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asCharChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asCharChunk().get(offset));
             case Byte:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asByteChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asByteChunk().get(offset));
             case Short:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asShortChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asShortChunk().get(offset));
             case Int:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asIntChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asIntChunk().get(offset));
             case Long:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asLongChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asLongChunk().get(offset));
             case Float:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asFloatChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asFloatChunk().get(offset));
             case Double:
-                return (BOXED_TYPE) io.deephaven.util.type.TypeUtils.box(values.asDoubleChunk().get(offset));
+                return (BOXED_TYPE) TypeUtils.box(values.asDoubleChunk().get(offset));
             case Object:
                 return (BOXED_TYPE) values.asObjectChunk().get(offset);
         }
@@ -137,7 +137,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final CharChunk<? extends Values> charChunk = values.asCharChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(charChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(charChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
@@ -153,7 +153,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(byteChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(byteChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
@@ -169,7 +169,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(shortChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(shortChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
@@ -185,7 +185,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final IntChunk<? extends Values> intChunk = values.asIntChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(intChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(intChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
@@ -201,7 +201,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final LongChunk<? extends Values> longChunk = values.asLongChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(longChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(longChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
@@ -217,7 +217,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> values) {
             final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
             for (int ii = 0; ii < values.size(); ++ii) {
-                objectChunk.set(ii, io.deephaven.util.type.TypeUtils.box(floatChunk.get(ii)));
+                objectChunk.set(ii, TypeUtils.box(floatChunk.get(ii)));
             }
             objectChunk.setSize(values.size());
             return objectChunk;
