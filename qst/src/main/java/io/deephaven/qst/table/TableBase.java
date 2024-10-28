@@ -34,6 +34,11 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final TableSpec slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return SliceTable.of(this, firstPositionInclusive, lastPositionExclusive);
+    }
+
+    @Override
     public final TableSpec reverse() {
         return ReverseTable.of(this);
     }
