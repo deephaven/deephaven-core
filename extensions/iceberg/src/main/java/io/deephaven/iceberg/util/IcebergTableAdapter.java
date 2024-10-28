@@ -24,6 +24,7 @@ import io.deephaven.iceberg.layout.*;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
@@ -230,10 +231,12 @@ public class IcebergTableAdapter {
 
     /**
      * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergReadInstructions}, or {@code null}
-     * if no snapshot is provided.
+     * if no {@link IcebergReadInstructions#snapshot() snapshot} or {@link IcebergReadInstructions#snapshotId()
+     * snapshotId} is provided.
      */
+    @InternalUseOnly
     @Nullable
-    private Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
+    public Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
         if (readInstructions.snapshot().isPresent()) {
             return readInstructions.snapshot().get();
         } else if (readInstructions.snapshotId().isPresent()) {

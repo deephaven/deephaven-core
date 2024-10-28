@@ -111,7 +111,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
-        this.snapshot = instructions.snapshot().orElse(null);
+        this.snapshot = tableAdapter.getSnapshot(instructions);
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
         this.tableDef = tableAdapter.definition(instructions);
