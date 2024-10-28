@@ -53,7 +53,7 @@ public final class IcebergTools {
      * Additional properties for the specific catalog should also be included, such as as S3-specific properties for
      * authentication or endpoint overriding.
      * </p>
-     * 
+     *
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties a map containing the Iceberg catalog properties to use
      * @return the Iceberg catalog adapter

@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import com.google.common.base.Strings;
 import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.AwsProperties;
@@ -73,6 +74,7 @@ public final class IcebergToolsS3 {
         }
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
         return IcebergCatalogAdapter.of(catalog);
     }
@@ -103,6 +105,7 @@ public final class IcebergToolsS3 {
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
         return new IcebergCatalogAdapter(catalog, properties);
