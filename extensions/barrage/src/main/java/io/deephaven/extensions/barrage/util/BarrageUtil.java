@@ -192,7 +192,8 @@ public class BarrageUtil {
             Instant.class,
             Boolean.class,
             LocalDate.class,
-            LocalTime.class));
+            LocalTime.class,
+            Schema.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -771,7 +772,8 @@ public class BarrageUtil {
                     return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                        || type == BigInteger.class
+                        || type == Schema.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == Instant.class || type == ZonedDateTime.class) {
