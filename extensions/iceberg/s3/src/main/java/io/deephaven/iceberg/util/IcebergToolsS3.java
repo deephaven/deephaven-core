@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import com.google.common.base.Strings;
 import io.deephaven.extensions.s3.DeephavenAwsClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.aws.AwsClientProperties;
@@ -17,7 +18,6 @@ import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.Cleaner;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +26,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public final class IcebergToolsS3 {
-    // Note: this could move to a shared location
-    private static final Cleaner CLEANER = Cleaner.create();
 
     /**
      * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
@@ -155,7 +153,7 @@ public final class IcebergToolsS3 {
         // When the Catalog becomes phantom reachable, we can invoke the DeephavenAwsClientFactory cleanup.
         // Note: it would be incorrect to register the cleanup against the adapter since the Catalog can outlive the
         // adapter (and the DeephavenAwsClientFactory properties are needed by the Catalog).
-        CLEANER.register(adapter.catalog(), cleanup);
+        CleanupReferenceProcessor.getDefault().registerPhantom(adapter.catalog(), cleanup);
         return adapter;
     }
 }
