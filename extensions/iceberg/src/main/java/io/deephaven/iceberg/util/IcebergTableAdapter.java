@@ -249,6 +249,11 @@ public class IcebergTableAdapter {
         return Optional.ofNullable(found);
     }
 
+    /**
+     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergReadInstructions}, or {@code null}
+     * if no {@link IcebergReadInstructions#snapshot() snapshot} or {@link IcebergReadInstructions#snapshotId()
+     * snapshotId} is provided.
+     */
     @InternalUseOnly
     @Nullable
     public Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
@@ -281,6 +286,10 @@ public class IcebergTableAdapter {
         }
     }
 
+    /**
+     * Retrieve the schema and partition spec for the table based on the provided read instructions. Also, populate the
+     * read instructions with the requested snapshot, or the latest snapshot if none is requested.
+     */
     private SpecAndSchema getSpecAndSchema(@NotNull final IcebergReadInstructions readInstructions) {
         final Snapshot snapshot;
         final Schema schema;
@@ -311,6 +320,7 @@ public class IcebergTableAdapter {
             partitionSpec = table.spec();
             updatedInstructions = readInstructions.withSnapshot(snapshot);
         }
+
         return new SpecAndSchema(schema, partitionSpec, updatedInstructions);
     }
 
