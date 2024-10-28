@@ -3,9 +3,9 @@
 #
 """This module defines a table service backend interface that users can implement to provide external data to Deephaven
 tables."""
-
+import traceback
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional, Callable
+from typing import Optional, Callable
 
 import jpy
 
@@ -44,56 +44,63 @@ class TableDataServiceBackend(ABC):
     """An interface for a backend service that provides access to table data."""
 
     @abstractmethod
-    def table_schema(self, table_key: TableKey) -> Tuple[pa.Schema, Optional[pa.Schema]]:
-        """ Returns the table data schema and optionally the partitioning column schema for the table with the given
-        table key.
-        The table data schema is not required to include the partitioning columns defined in the partitioning schema.
+    def table_schema(self, table_key: TableKey, schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None]) -> None:
+        """ Provides a callback for the backend service to pass the table data schema and optionally the partitioning
+        column schema for the table with the given table key. The table data schema is not required to include the
+        partitioning columns defined in the partitioning schema.
 
         Args:
             table_key (TableKey): the table key
-
-        Returns:
-            Tuple[pa.Schema, Optional[pa.Schema]]: a tuple of the table schema and the optional schema for the
-                partitioning columns
+            schema_cb (Callable[[pa.Schema, Optional[pa.Schema]], None]): the callback function with two arguments: the
+                table data schema and the optional partitioning column schema
         """
         pass
 
     @abstractmethod
     def table_locations(self, table_key: TableKey,
-                        callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
+                        location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         """ Provides a callback for the backend service to pass the existing locations for the table with the given
-        table key. The 2nd argument of the callback is an optional pa.Table that contains the partition values for the
-        location. The schema of the table should be compatible with the optional partitioning column schema returned by
-        table_schema() for the table_key. The table should have a single row for the particular location key provided in
-        the 1st argument, with the partitioning values for each partitioning column in the row.
+        table key. The 2nd argument of the callback is an optional pyarrow.Table that contains the partition values for
+        the location. The schema of the table should be compatible with the optional partitioning column schema returned
+        by table_schema() for the table_key. The table should have a single row for the particular location key provided
+        in the 1st argument, with the partitioning values for each partitioning column in the row.
 
-        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=False
+        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=False
 
         Args:
             table_key (TableKey): the table key
-            callback (Callable[[TableLocationKey, Optional[pa.Table]], None]): the callback function
+            location_cb (Callable[[TableLocationKey, Optional[pa.Table]], None]): the callback function
         """
         pass
 
     @abstractmethod
     def subscribe_to_table_locations(self, table_key: TableKey,
-                                     callback: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> \
-            Callable[[], None]:
-        """ Provides a callback for the backend service to pass table locations for the table with the given table key.
-        The 2nd argument of the callback is a pa.Table that contains the partitioning values. The schema of the
-        table should match the optional partitioning column schema returned by table_schema() for the table_key. The
-        table should have a single row for the particular partition location key provided in the 1st argument, with the
-        values for partitioning values for each partitioning column in the row.
+                                     location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
+                                     success_cb: Callable[[], None],
+                                     failure_cb: Callable[[Exception], None]) -> Callable[[], None]:
+        """ Provides callbacks for the backend service to pass table locations for the table with the given table key
+        and convey the status of the subscription.
 
-        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True.
+        The location callback should be called with the table location key and an optional pyarrow.Table that represents
+        the partitioning values for the location. The schema of the table must match the optional partitioning column
+        schema returned by table_schema() for the table_key. The table must have a single row for the particular table
+        location key provided in the 1st argument, with values for each partitioning column in the row.
 
-        Any existing table locations should be provided to the callback prior to returning from this method.
+        The success callback should be called when the subscription is established successfully and after all existing
+        table locations have been delivered to the table location callback.
+
+        The failure callback should be called when the subscription fails to be established or maintained.
+
+        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=True.
 
         Note that any asynchronous calls to the callback will block until this method has returned.
 
         Args:
             table_key (TableKey): the table key
-            callback (Callable[[TableLocationKey, Optional[pa.Table]], None]): the callback function
+            location_cb (Callable[[TableLocationKey, Optional[pa.Table]], None]): the table location callback function
+            success_cb (Callable[[], None]): the success callback function
+            failure_cb (Callable[[Exception], None]): the failure callback function
+
 
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
@@ -102,36 +109,46 @@ class TableDataServiceBackend(ABC):
 
     @abstractmethod
     def table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                            callback: Callable[[int], None]) -> None:
+                            size_cb: Callable[[int], None]) -> None:
         """ Provides a callback for the backend service to pass the size of the table location with the given table key
         and table location key. The callback should be called with the size of the table location in number of rows.
 
-        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=False.
+        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=False.
 
         The existing table location size should be provided to the callback prior to returning from this method.
 
         Args:
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
-            callback (Callable[[int], None]): the callback function
+            size_cb (Callable[[int], None]): the callback function
         """
         pass
 
     @abstractmethod
     def subscribe_to_table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                                         callback: Callable[[int], None]) -> Callable[[], None]:
-        """ Provides a callback for the backend service to pass existing, and any future, size of the table location
-        with the given table key and table location key. The callback should be called with the size of the table
-        location in number of rows.
+                                         size_cb: Callable[[int], None],
+                                         success_cb: Callable[[], None],
+                                         failure_cb: Callable[[Exception], None]) -> Callable[[], None]:
+        """ Provides callbacks for the backend service to pass existing, and any future, size of the table location
+        with the given table key and table location key, and convey the status of the subscription.
 
-        This is called for tables created when ：meth:`PythonTableDataService.make_table` is called with live=True
+        The size callback should be called with the size of the table location in number of rows.
+
+        The success callback should be called when the subscription is established successfully and after the current
+        table location size has been delivered to the size callback.
+
+        The failure callback should be called when the subscription fails to be established or maintained.
+
+        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=True
 
         Note that any asynchronous calls to the callback will block until this method has returned.
 
         Args:
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the partition location key
-            callback (Callable[[int], None]): the callback function
+            size_cb (Callable[[int], None]): the table location size callback function
+            success_cb (Callable[[], None]): the success callback function
+            failure_cb (Callable[[Exception], None]): the failure callback function
 
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
@@ -140,10 +157,10 @@ class TableDataServiceBackend(ABC):
 
     @abstractmethod
     def column_values(self, table_key: TableKey, table_location_key: TableLocationKey, col: str, offset: int,
-                      min_rows: int, max_rows: int) -> pa.Table:
-        """ Returns the values for the column with the given name for the table location with the given table key and
-        table location key. The returned pa.Table should have a single column with values within the specified range
-        requirement.
+                      min_rows: int, max_rows: int, values_cb: Callable[[pa.Table], None]) -> None:
+        """ Provides a callback for the backend service to pass the values for the column with the given name for the
+        table location with the given table key and table location key. The callback should be called with a single
+        column pyarrow.Table that contains the data values for the given column within the specified range requirement.
 
         Args:
             table_key (TableKey): the table key
@@ -152,24 +169,24 @@ class TableDataServiceBackend(ABC):
             offset (int): the starting row index
             min_rows (int): the minimum number of rows to return, min_rows is always <= page size
             max_rows (int): the maximum number of rows to return
-
-        Returns:
-            pa.Table: a pa.Table that contains the data values for the column within the specified range
+            values_cb (Callable[[pa.Table], None]): the callback function with one argument: the pyarrow.Table that
+                contains the data values for the column within the specified range
         """
         pass
 
 
 class TableDataService(JObjectWrapper):
-    """ A TableDataService serves as a wrapper around a tightly-coupled Deephaven TableDataService implementation (Java class PythonTableDataService) that delegates to a Python TableDataServiceBackend for TableKey creation, TableLocationKey discovery, and data subscription/retrieval operations.
-    It supports the creation of Deephaven tables from the Python backend service that provides table data and table
-    data locations to the Deephaven tables.
+    """ A TableDataService serves as a wrapper around a tightly-coupled Deephaven TableDataService implementation
+    (Java class PythonTableDataService) that delegates to a Python TableDataServiceBackend for TableKey creation,
+    TableLocationKey discovery, and data subscription/retrieval operations. It supports the creation of Deephaven tables
+    from the Python backend service that provides table data and table data locations to the Deephaven tables.
     """
     j_object_type = _JPythonTableDataService
     _backend: TableDataServiceBackend
 
     def __init__(self, backend: TableDataServiceBackend, *, chunk_reader_factory: Optional[jpy.JType] = None,
                  stream_reader_options: Optional[jpy.JType] = None, page_size: Optional[int] = None):
-        """ Creates a new PythonTableDataService with the given user-implemented backend service.
+        """ Creates a new TableDataService with the given user-implemented backend service.
 
         Args:
             backend (TableDataServiceBackend): the user-implemented backend service implementation
@@ -211,76 +228,87 @@ class TableDataService(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message=f"failed to make a table for the key {table_key}") from e
 
-    def _table_schema(self, table_key: TableKey, callback: jpy.JType) -> None:
+    def _table_schema(self, table_key: TableKey, schema_cb: jpy.JType) -> None:
         """ Returns the table data schema and the partitioning values schema for the table with the given table key as
         two serialized byte buffers.
 
         Args:
             table_key (TableKey): the table key
-            callback (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
+            schema_cb (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the serialized table data arrow and partitioning values schemas
 
         Returns:
             jpy.JType: an array of two serialized byte buffers
         """
-        schemas = self._backend.table_schema(table_key)
-        dt_schema = schemas[0]
-        pc_schema = schemas[1] if len(schemas) > 1 else None
-        pc_schema = pc_schema if pc_schema is not None else pa.schema([])
-        j_dt_schema_bb = jpy.byte_buffer(dt_schema.serialize())
-        j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
-        # note that the java callback expects the partitioning schema first
-        callback.accept(jpy.array("java.nio.ByteBuffer", [j_pc_schema_bb, j_dt_schema_bb]))
+        def schema_cb_proxy(dt_schema: pa.Schema, pc_schema: Optional[pa.Schema] = None):
+            j_dt_schema_bb = jpy.byte_buffer(dt_schema.serialize())
+            pc_schema = pc_schema if pc_schema is not None else pa.schema([])
+            j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
+            schema_cb.accept(jpy.array("java.nio.ByteBuffer", [j_pc_schema_bb, j_dt_schema_bb]))
 
-    def _table_locations(self, table_key: TableKey, callback: jpy.JType) -> None:
+        self._backend.table_schema(table_key, schema_cb_proxy)
+
+    def _table_locations(self, table_key: TableKey, location_cb: jpy.JType) -> None:
         """ Provides the existing table locations for the table with the given table key to the table service in the
         engine.
 
         Args:
             table_key (TableKey): the table key
-            callback (jpy.JType): the Java callback function with two arguments: a table location key and an array of
+            location_cb (jpy.JType): the Java callback function with two arguments: a table location key and an array of
                 byte buffers that contain the serialized arrow schema and a record batch of the partitioning values
         """
-        def callback_proxy(pt_location_key, pt_table):
+        def location_cb_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
-                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
+                location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
                 if pt_table.num_rows != 1:
                     raise ValueError("The number of rows in the pyarrow table for partitioning values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
                 bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
-                callback.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
+                location_cb.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
 
-        self._backend.table_locations(table_key, callback_proxy)
+        self._backend.table_locations(table_key, location_cb_proxy)
 
-    def _subscribe_to_table_locations(self, table_key: TableKey, callback: jpy.JType) -> Callable[[], None]:
+    def _subscribe_to_table_locations(self, table_key: TableKey, location_cb: jpy.JType, success_cb: jpy.JType,
+                                      failure_cb: jpy.JType) -> Callable[[], None]:
         """ Provides the table locations, existing and new, for the table with the given table key to the table service
         in the engine.
 
         Args:
             table_key (TableKey): the table key
-            callback (jpy.JType): the Java callback function with two arguments: a table location key of the new
+            location_cb (jpy.JType): the Java callback function with two arguments: a table location key of the new
                 location and an array of byte buffers that contain the partitioning arrow schema and the serialized
                 record batches of the partitioning values
+            success_cb (jpy.JType): the success Java callback function with no arguments
+            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception
 
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
         """
-        def callback_proxy(pt_location_key, pt_table):
+        def location_cb_proxy(pt_location_key, pt_table):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
-                callback.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
+                location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
                 if pt_table.num_rows != 1:
                     raise ValueError("The number of rows in the pyarrow table for partition column values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
                 bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
-                callback.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
+                location_cb.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
 
-        return self._backend.subscribe_to_table_locations(table_key, callback_proxy)
+        def success_cb_proxy():
+            success_cb.run()
 
-    def _table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey, callback: jpy.JType) \
+        def failure_cb_proxy(error: Exception):
+            message = error.getMessage() if hasattr(error, "getMessage") else str(error)
+            tb_str = traceback.format_exc()
+            failure_cb.accept("\n".join([message, tb_str]))
+
+        return self._backend.subscribe_to_table_locations(table_key, location_cb_proxy, success_cb_proxy,
+                                                          failure_cb_proxy)
+
+    def _table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey, size_cb: jpy.JType) \
             -> None:
         """ Provides the size of the table location with the given table key and table location key to the table service
         in the engine.
@@ -288,35 +316,46 @@ class TableDataService(JObjectWrapper):
         Args:
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
-            callback (jpy.JType): the Java callback function with one argument: the size of the table location in number
+            size_cb (jpy.JType): the Java callback function with one argument: the size of the table location in number
                 of rows
         """
-        def callback_proxy(size):
-            callback.accept(size)
+        def size_cb_proxy(size):
+            size_cb.accept(size)
 
-        self._backend.table_location_size(table_key, table_location_key, callback_proxy)
+        self._backend.table_location_size(table_key, table_location_key, size_cb_proxy)
 
     def _subscribe_to_table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
-                                          callback: jpy.JType) -> Callable[[], None]:
+                                          size_cb: jpy.JType, success_cb: jpy.JType, failure_cb: jpy.JType) -> Callable[[], None]:
         """ Provides the current and future sizes of the table location with the given table key and table location key
         to the table service in the engine.
 
         Args:
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
-            callback (jpy.JType): the Java callback function with one argument: the size of the partition in number of
+            size_cb (jpy.JType): the Java callback function with one argument: the size of the partition in number of
                 rows
+            success_cb (jpy.JType): the success Java callback function with no arguments
+            failure_cb (jpy.JType): the failure Java callback function with one argument: an exception
 
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
         """
-        def callback_proxy(size):
-            callback.accept(size)
+        def size_cb_proxy(size):
+            size_cb.accept(size)
 
-        return self._backend.subscribe_to_table_location_size(table_key, table_location_key, callback_proxy)
+        def success_cb_proxy():
+            success_cb.run()
+
+        def failure_cb_proxy(error: Exception):
+            message = error.getMessage() if hasattr(error, "getMessage") else str(error)
+            tb_str = traceback.format_exc()
+            failure_cb.accept("\n".join([message, tb_str]))
+
+        return self._backend.subscribe_to_table_location_size(table_key, table_location_key, size_cb_proxy,
+                                                              success_cb_proxy, failure_cb_proxy)
 
     def _column_values(self, table_key: TableKey, table_location_key: TableLocationKey, col: str, offset: int,
-                       min_rows: int, max_rows: int, callback: jpy.JType) -> None:
+                       min_rows: int, max_rows: int, values_cb: jpy.JType) -> None:
         """ Provides the data values for the column with the given name for the table location with the given table key
         and table location key to the table service in the engine.
 
@@ -327,13 +366,15 @@ class TableDataService(JObjectWrapper):
             offset (int): the starting row index
             min_rows (int): the minimum number of rows to return, min_rows is always <= page size
             max_rows (int): the maximum number of rows to return
-            callback (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
+            values_cb (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the arrow schema and the serialized record batches for the given column
         """
-        pt_table = self._backend.column_values(table_key, table_location_key, col, offset, min_rows, max_rows)
-        if len(pt_table) < min_rows or len(pt_table) > max_rows:
-            raise ValueError("The number of rows in the pyarrow table for column values must be in the range of "
-                             f"{min_rows} to {max_rows}")
-        bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
-        bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
-        callback.accept(jpy.array("java.nio.ByteBuffer", bb_list))
+        def values_cb_proxy(pt_table):
+            if len(pt_table) < min_rows or len(pt_table) > max_rows:
+                raise ValueError("The number of rows in the pyarrow table for column values must be in the range of "
+                                 f"{min_rows} to {max_rows}")
+            bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
+            bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
+            values_cb.accept(jpy.array("java.nio.ByteBuffer", bb_list))
+
+        self._backend.column_values(table_key, table_location_key, col, offset, min_rows, max_rows, values_cb_proxy)

@@ -5,7 +5,7 @@
 import threading
 import time
 import unittest
-from typing import Callable, Tuple, Optional, Generator, Dict
+from typing import Callable, Optional, Generator, Dict
 
 import numpy as np
 import pyarrow as pa
@@ -42,23 +42,24 @@ class TableLocationKeyImpl(TableLocationKey):
 class TestBackend(TableDataServiceBackend):
     def __init__(self, gen_pa_table: Generator[pa.Table, None, None], pt_schema: pa.Schema,
                  pc_schema: Optional[pa.Schema] = None):
-        self.pt_schema = pt_schema
-        self.pc_schema = pc_schema
-        self.gen_pa_table = gen_pa_table
-        self.subscriptions_enabled_for_test = True
-        self.sub_new_partition_cancelled = False
+        self.pt_schema: pa.Schema = pt_schema
+        self.pc_schema: pa.Schema = pc_schema
+        self.gen_pa_table: Generator = gen_pa_table
+        self.subscriptions_enabled_for_test: bool = True
+        self.sub_new_partition_cancelled: bool = False
+        self.sub_new_partition_fail_test: bool = False
+        self.sub_partition_size_fail_test: bool = False
         self.partitions: Dict[TableLocationKey, pa.Table] = {}
         self.partitions_size_subscriptions: Dict[TableLocationKey, bool] = {}
-        self.existing_partitions_called = 0
-        self.partition_size_called = 0
+        self.existing_partitions_called: int = 0
+        self.partition_size_called: int = 0
 
-    def table_schema(self, table_key: TableKeyImpl) -> Tuple[pa.Schema, Optional[pa.Schema]]:
+    def table_schema(self, table_key: TableKeyImpl, schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None]) -> None:
         if table_key.key == "test":
-            return self.pt_schema, self.pc_schema
-        return pa.Schema(), None
+            return schema_cb(self.pt_schema, self.pc_schema)
 
     def table_locations(self, table_key: TableKeyImpl,
-                        callback: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]) -> None:
+                        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]) -> None:
         pa_table = next(self.gen_pa_table)
         if table_key.key == "test":
             ticker = str(pa_table.column("Ticker")[0])
@@ -67,23 +68,22 @@ class TestBackend(TableDataServiceBackend):
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+            location_cb(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             self.existing_partitions_called += 1
 
     def table_location_size(self, table_key: TableKeyImpl, table_location_key: TableLocationKeyImpl,
-                            callback: Callable[[int], None]) -> None:
-        callback(self.partitions[table_location_key].num_rows)
+                            size_cb: Callable[[int], None]) -> None:
+        size_cb(self.partitions[table_location_key].num_rows)
         self.partition_size_called += 1
 
     def column_values(self, table_key: TableKeyImpl, table_location_key: TableLocationKeyImpl,
-                      col: str, offset: int, min_rows: int, max_rows: int) -> pa.Table:
+                      col: str, offset: int, min_rows: int, max_rows: int, values_cb: Callable[[pa.Table], None]) -> None:
         if table_key.key == "test":
-            return self.partitions[table_location_key].select([col]).slice(offset, max_rows)
-        else:
-            return pa.table([])
+            values_cb(self.partitions[table_location_key].select([col]).slice(offset, max_rows))
 
     def _th_new_partitions(self, table_key: TableKeyImpl, exec_ctx: ExecutionContext,
-                           callback: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]) -> None:
+                           location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+                           failure_cb: Callable[[Exception], None]) -> None:
         if table_key.key != "test":
             return
 
@@ -99,10 +99,15 @@ class TestBackend(TableDataServiceBackend):
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+            location_cb(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+            if self.sub_new_partition_fail_test:
+                failure_cb(Exception("table location subscription failure"))
+                return
             time.sleep(0.1)
 
-    def subscribe_to_table_locations(self, table_key: TableKeyImpl, callback) -> Callable[[], None]:
+    def subscribe_to_table_locations(self, table_key: TableKeyImpl,
+                                    location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+                                    success_cb: Callable[[], None], failure_cb: Callable[[str], None]) -> Callable[[], None]:
         if table_key.key != "test":
             return lambda: None
 
@@ -115,19 +120,22 @@ class TestBackend(TableDataServiceBackend):
             self.partitions[partition_key] = pa_table
 
             expr = ((pc.field("Ticker") == f"{ticker}") & (pc.field("Exchange") == "NYSE"))
-            callback(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
+            location_cb(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
 
         exec_ctx = get_exec_ctx()
-        th = threading.Thread(target=self._th_new_partitions, args=(table_key, exec_ctx, callback))
+        th = threading.Thread(target=self._th_new_partitions, args=(table_key, exec_ctx, location_cb, failure_cb))
         th.start()
 
         def _cancellation_callback():
             self.sub_new_partition_cancelled = True
 
+        success_cb()
         return _cancellation_callback
 
     def _th_partition_size_changes(self, table_key: TableKeyImpl, table_location_key: TableLocationKeyImpl,
-                                   callback: Callable[[int], None]) -> None:
+                                   size_cb: Callable[[int], None],
+                                   failure_cb: Callable[[Exception], None]
+                                   ) -> None:
         if table_key.key != "test":
             return
 
@@ -140,12 +148,17 @@ class TestBackend(TableDataServiceBackend):
             rbs.append(pa_table.to_batches()[0])
             new_pa_table = pa.Table.from_batches(rbs)
             self.partitions[table_location_key] = new_pa_table
-            callback(new_pa_table.num_rows)
+            size_cb(new_pa_table.num_rows)
+            if self.sub_partition_size_fail_test:
+                failure_cb(Exception("table location size subscription failure"))
+                return
             time.sleep(0.1)
 
     def subscribe_to_table_location_size(self, table_key: TableKeyImpl,
                                          table_location_key: TableLocationKeyImpl,
-                                         callback: Callable[[int], None]) -> Callable[[], None]:
+                                         size_cb: Callable[[int], None],
+                                         success_cb: Callable[[], None], failure_cb: Callable[[str], None]
+                                         ) -> Callable[[], None]:
         if table_key.key != "test":
             return lambda: None
 
@@ -153,15 +166,17 @@ class TestBackend(TableDataServiceBackend):
             return lambda: None
 
         # need to initial size
-        callback(self.partitions[table_location_key].num_rows)
+        size_cb(self.partitions[table_location_key].num_rows)
 
         self.partitions_size_subscriptions[table_location_key] = True
-        th = threading.Thread(target=self._th_partition_size_changes, args=(table_key, table_location_key, callback))
+        th = threading.Thread(target=self._th_partition_size_changes, args=(table_key, table_location_key, size_cb,
+                                                                            failure_cb))
         th.start()
 
         def _cancellation_callback():
             self.partitions_size_subscriptions[table_location_key] = False
 
+        success_cb()
         return _cancellation_callback
 
 
@@ -269,6 +284,31 @@ class TableDataServiceTestCase(BaseTestCase):
         table.coalesce()
         # the initial partitions should be created
         self.assertEqual(table.size, 2)
+
+    def test_partition_sub_failure(self):
+        pc_schema = pa.schema(
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
+        data_service = TableDataService(backend)
+        backend.sub_new_partition_fail_test = True
+        table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
+        with self.assertRaises(Exception) as cm:
+            # failure_cb will be called in the background thread after 2 PUG cycles
+            self.wait_ticking_table_update(table, 600, 2)
+        self.assertTrue(table.j_table.isFailed())
+
+    def test_partition_size_sub_failure(self):
+        pc_schema = pa.schema(
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
+        data_service = TableDataService(backend)
+        backend.sub_partition_size_fail_test = True
+        table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
+        with self.assertRaises(Exception) as cm:
+            # failure_cb will be called in the background thread after 2 PUG cycles
+            self.wait_ticking_table_update(table, 600, 2)
+
+        self.assertTrue(table.j_table.isFailed())
 
 
 if __name__ == '__main__':
