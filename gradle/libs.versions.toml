@@ -3,7 +3,7 @@ airlift = "2.0.2"
 arrow = "13.0.0"
 autoservice = "1.1.1"
 avro = "1.12.0"
-awssdk = "2.24.5"
+awssdk = "2.29.1"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
 calcite = "1.38.0"
