@@ -408,16 +408,16 @@ def adapter(
             `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
 
-    If the user is responsible for providing AWS / S3 connectivity details, setting s3_instructions is the recommended
-    way of providing these details. This allows for the parity of construction logic between Iceberg-managed and
-    Deephaven-managed AWS clients. For advanced use-cases, users are encouraged to use S3Instruction profiles which
-    allows a rich degree of configurability. When set, these instructions will also be automatically included as part of
-    :meth:`.IcebergInstructions.__init__` data_instructions.
+    To ensure consistent behavior across Iceberg-managed and Deephaven-managed AWS clients, it's recommended to use the
+    `s3_instructions` parameter to specify AWS/S3 connectivity details. This approach offers a high degree of parity in
+    construction logic.
 
-    In cases where the caller prefers to use Iceberg's AWS properties, the parity of construction logic will be limited
-    to what Deephaven is able to infer; in advanced cases, it's possible that there will be a difference in construction
-    logic between the Iceberg-managed and Deephaven-managed AWS clients which manifests itself as being able to browse
-    Catalog metadata, but not retrieve Table data.
+    For complex use cases, consider using S3 Instruction profiles, which provide extensive configuration options. When
+    set, these instructions are automatically included in the :meth:`.IcebergInstructions.__init__` `data_instructions`.
+
+    If you prefer to use Iceberg's native AWS properties, Deephaven will attempt to infer the necessary construction
+    logic. However, in advanced scenarios, there might be discrepancies between the two clients, potentially leading to
+    limitations like being able to browse catalog metadata but not retrieve table data.
 
     Other common properties include:
     - `uri` - the URI of the catalog
@@ -477,7 +477,7 @@ def adapter(
     if s3_instructions:
         if not _JIcebergToolsS3:
             raise DHError(
-                message="`adapter` with s3_instructions requires the Iceberg specific deephaven S3 extensions to be included in the package"
+                message="`adapter` with s3_instructions requires the Iceberg-specific Deephaven S3 extensions to be included in the package"
             )
         try:
             return IcebergCatalogAdapter(
