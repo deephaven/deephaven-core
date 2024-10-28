@@ -181,8 +181,8 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @param tableLocationListener the tableLocationListener to call with each table location key
          * @param successCallback the success callback; called when the subscription is successfully established and the
          *        tableLocationListener has been called with all existing table locations
-         * @param failureCallback the failure callback; called when the subscription fails and can be invoked at any
-         *        time including after the successCallback
+         * @param failureCallback the failure callback; called to deliver an exception triggered while activating or
+         *        maintaining the underlying data source
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
         public SafeCloseable subscribeToTableLocations(
@@ -306,7 +306,8 @@ public class PythonTableDataService extends AbstractTableDataService {
          * @param sizeListener the sizeListener to call with the partition size
          * @param successCallback the success callback; called when the subscription is successfully established and the
          *        sizeListener has been called with the initial size
-         * @param failureCallback the failure callback; called when the subscription fails
+         * @param failureCallback the failure callback; called to deliver an exception triggered while activating or
+         *        maintaining the underlying data source
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
         public SafeCloseable subscribeToTableLocationSize(
