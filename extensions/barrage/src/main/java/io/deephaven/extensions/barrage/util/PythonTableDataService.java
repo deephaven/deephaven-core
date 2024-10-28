@@ -172,24 +172,33 @@ public class PythonTableDataService extends AbstractTableDataService {
         /**
          * Subscribe to table location updates for the provided {@code tableKey}.
          * <p>
-         * The listener must be called with all existing table locations before returning. If the listener is invoked
-         * asynchronously then those callers will block until this method has completed.
+         * The {@code tableLocationListener} should be invoked with all existing table locations. Any asynchronous calls
+         * to {@code tableLocationListener}, {@code successCallback}, or {@code failureCallback} will block until this
+         * method has completed.
          *
          * @param definition the table definition to validate partitioning columns against
          * @param tableKey the table key
-         * @param listener the listener to call with each table location key
+         * @param tableLocationListener the tableLocationListener to call with each table location key
+         * @param successCallback the success callback; called when the subscription is successfully established and the
+         *        tableLocationListener has been called with all existing table locations
+         * @param failureCallback the failure callback; called when the subscription fails and can be invoked at any
+         *        time including after the successCallback
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
         public SafeCloseable subscribeToTableLocations(
                 @NotNull final TableDefinition definition,
                 @NotNull final TableKeyImpl tableKey,
-                @NotNull final Consumer<TableLocationKeyImpl> listener) {
+                @NotNull final Consumer<TableLocationKeyImpl> tableLocationListener,
+                @NotNull final Runnable successCallback,
+                @NotNull final Consumer<String> failureCallback) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey, listener,
+                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey,
+                            tableLocationListener,
                             tableLocationKey, byteBuffers);
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "_subscribe_to_table_locations", tableKey.key, convertingListener);
+                    "_subscribe_to_table_locations", tableKey.key, convertingListener, successCallback,
+                    failureCallback);
             return () -> cancellationCallback.call("__call__");
         }
 
@@ -294,16 +303,22 @@ public class PythonTableDataService extends AbstractTableDataService {
          *
          * @param tableKey the table key
          * @param tableLocationKey the table location key
-         * @param listener the listener to call with the partition size
+         * @param sizeListener the sizeListener to call with the partition size
+         * @param successCallback the success callback; called when the subscription is successfully established and the
+         *        sizeListener has been called with the initial size
+         * @param failureCallback the failure callback; called when the subscription fails
          * @return a {@link SafeCloseable} that can be used to cancel the subscription
          */
         public SafeCloseable subscribeToTableLocationSize(
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
-                @NotNull final LongConsumer listener) {
+                @NotNull final LongConsumer sizeListener,
+                @NotNull final Runnable successCallback,
+                @NotNull final Consumer<String> failureCallback) {
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "_subscribe_to_table_location_size", tableKey.key, tableLocationKey.locationKey, listener);
+                    "_subscribe_to_table_location_size", tableKey.key, tableLocationKey.locationKey,
+                    sizeListener, successCallback, failureCallback);
 
             return () -> cancellationCallback.call("__call__");
         }
@@ -520,8 +535,9 @@ public class PythonTableDataService extends AbstractTableDataService {
             TableKeyImpl key = (TableKeyImpl) getKey();
             final Subscription localSubscription = subscription = new Subscription();
             localSubscription.cancellationCallback = backend.subscribeToTableLocations(
-                    tableDefinition, key, this::handleTableLocationKeyAdded);
-            activationSuccessful(localSubscription);
+                    tableDefinition, key, this::handleTableLocationKeyAdded,
+                    () -> activationSuccessful(localSubscription),
+                    errorString -> activationFailed(localSubscription, new TableDataException(errorString)));
         }
 
         @Override
@@ -693,8 +709,8 @@ public class PythonTableDataService extends AbstractTableDataService {
                 }
 
                 onSizeChanged(newSize);
-            });
-            activationSuccessful(localSubscription);
+            }, () -> activationSuccessful(localSubscription),
+                    errorString -> activationFailed(localSubscription, new TableDataException(errorString)));
         }
 
         @Override
