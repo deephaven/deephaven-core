@@ -236,9 +236,6 @@ class TableDataService(JObjectWrapper):
             table_key (TableKey): the table key
             schema_cb (jpy.JType): the Java callback function with one argument: an array of byte buffers that contain
                 the serialized table data arrow and partitioning values schemas
-
-        Returns:
-            jpy.JType: an array of two serialized byte buffers
         """
         def schema_cb_proxy(dt_schema: pa.Schema, pc_schema: Optional[pa.Schema] = None):
             j_dt_schema_bb = jpy.byte_buffer(dt_schema.serialize())
