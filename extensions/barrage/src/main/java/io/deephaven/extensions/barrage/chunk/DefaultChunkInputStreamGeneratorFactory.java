@@ -10,9 +10,11 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.Vector;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -167,8 +169,13 @@ public class DefaultChunkInputStreamGeneratorFactory implements ChunkInputStream
                                 return nanoOfDay;
                             });
                 }
+                // TODO (core#58): add custom barrage serialization/deserialization support
+                // Migrate Schema to custom format when available.
+                if (type == Schema.class) {
+                    return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
+                            ArrowIpcUtil::serialize);
+                }
                 // TODO (core#936): support column conversion modes
-
                 return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
                         (out, item) -> out.write(item.toString().getBytes(Charsets.UTF_8)));
             default:
