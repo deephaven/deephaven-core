@@ -1960,6 +1960,222 @@ public class GroovyStaticImports {
     /** @see io.deephaven.function.Numeric#cumcount(io.deephaven.vector.ShortVector) */
     public static  long[] cumcount( io.deephaven.vector.ShortVector values ) {return Numeric.cumcount( values );}
 
+    /** @see io.deephaven.function.Numeric#cumcountneg(byte[]) */
+    public static  long[] cumcountneg( byte... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(double[]) */
+    public static  long[] cumcountneg( double... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(float[]) */
+    public static  long[] cumcountneg( float... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(int[]) */
+    public static  long[] cumcountneg( int... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(long[]) */
+    public static  long[] cumcountneg( long... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Byte[]) */
+    public static  long[] cumcountneg( java.lang.Byte[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Double[]) */
+    public static  long[] cumcountneg( java.lang.Double[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Float[]) */
+    public static  long[] cumcountneg( java.lang.Float[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Integer[]) */
+    public static  long[] cumcountneg( java.lang.Integer[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Long[]) */
+    public static  long[] cumcountneg( java.lang.Long[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(java.lang.Short[]) */
+    public static  long[] cumcountneg( java.lang.Short[] values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(short[]) */
+    public static  long[] cumcountneg( short... values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.ByteVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.ByteVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.DoubleVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.DoubleVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.FloatVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.FloatVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.IntVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.IntVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.LongVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.LongVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountneg(io.deephaven.vector.ShortVector) */
+    public static  long[] cumcountneg( io.deephaven.vector.ShortVector values ) {return Numeric.cumcountneg( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(byte[]) */
+    public static  long[] cumcountnull( byte... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(double[]) */
+    public static  long[] cumcountnull( double... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(float[]) */
+    public static  long[] cumcountnull( float... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(int[]) */
+    public static  long[] cumcountnull( int... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(long[]) */
+    public static  long[] cumcountnull( long... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Byte[]) */
+    public static  long[] cumcountnull( java.lang.Byte[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Double[]) */
+    public static  long[] cumcountnull( java.lang.Double[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Float[]) */
+    public static  long[] cumcountnull( java.lang.Float[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Integer[]) */
+    public static  long[] cumcountnull( java.lang.Integer[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Long[]) */
+    public static  long[] cumcountnull( java.lang.Long[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(java.lang.Short[]) */
+    public static  long[] cumcountnull( java.lang.Short[] values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(short[]) */
+    public static  long[] cumcountnull( short... values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.ByteVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.ByteVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.DoubleVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.DoubleVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.FloatVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.FloatVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.IntVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.IntVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.LongVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.LongVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountnull(io.deephaven.vector.ShortVector) */
+    public static  long[] cumcountnull( io.deephaven.vector.ShortVector values ) {return Numeric.cumcountnull( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(byte[]) */
+    public static  long[] cumcountpos( byte... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(double[]) */
+    public static  long[] cumcountpos( double... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(float[]) */
+    public static  long[] cumcountpos( float... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(int[]) */
+    public static  long[] cumcountpos( int... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(long[]) */
+    public static  long[] cumcountpos( long... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Byte[]) */
+    public static  long[] cumcountpos( java.lang.Byte[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Double[]) */
+    public static  long[] cumcountpos( java.lang.Double[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Float[]) */
+    public static  long[] cumcountpos( java.lang.Float[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Integer[]) */
+    public static  long[] cumcountpos( java.lang.Integer[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Long[]) */
+    public static  long[] cumcountpos( java.lang.Long[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(java.lang.Short[]) */
+    public static  long[] cumcountpos( java.lang.Short[] values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(short[]) */
+    public static  long[] cumcountpos( short... values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.ByteVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.ByteVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.DoubleVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.DoubleVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.FloatVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.FloatVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.IntVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.IntVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.LongVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.LongVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountpos(io.deephaven.vector.ShortVector) */
+    public static  long[] cumcountpos( io.deephaven.vector.ShortVector values ) {return Numeric.cumcountpos( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(byte[]) */
+    public static  long[] cumcountzero( byte... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(double[]) */
+    public static  long[] cumcountzero( double... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(float[]) */
+    public static  long[] cumcountzero( float... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(int[]) */
+    public static  long[] cumcountzero( int... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(long[]) */
+    public static  long[] cumcountzero( long... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Byte[]) */
+    public static  long[] cumcountzero( java.lang.Byte[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Double[]) */
+    public static  long[] cumcountzero( java.lang.Double[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Float[]) */
+    public static  long[] cumcountzero( java.lang.Float[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Integer[]) */
+    public static  long[] cumcountzero( java.lang.Integer[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Long[]) */
+    public static  long[] cumcountzero( java.lang.Long[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(java.lang.Short[]) */
+    public static  long[] cumcountzero( java.lang.Short[] values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(short[]) */
+    public static  long[] cumcountzero( short... values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.ByteVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.ByteVector values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.DoubleVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.DoubleVector values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.FloatVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.FloatVector values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.IntVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.IntVector values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.LongVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.LongVector values ) {return Numeric.cumcountzero( values );}
+
+    /** @see io.deephaven.function.Numeric#cumcountzero(io.deephaven.vector.ShortVector) */
+    public static  long[] cumcountzero( io.deephaven.vector.ShortVector values ) {return Numeric.cumcountzero( values );}
+
     /** @see io.deephaven.function.Numeric#cummax(byte[]) */
     public static  byte[] cummax( byte... values ) {return Numeric.cummax( values );}
 
