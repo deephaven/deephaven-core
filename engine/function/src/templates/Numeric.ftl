@@ -2216,6 +2216,199 @@ public class Numeric {
     }
 
     /**
+     * Returns the cumulative count of NaN values.
+     *
+     * @param values values.
+     * @return cumulative count of NaN values.
+     */
+    public static long[] cumcountnan(${pt.boxed}[] values) {
+        return cumcountnan(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of NaN values.
+     *
+     * @param values values.
+     * @return cumulative count of NaN values.
+     */
+    public static long[] cumcountnan(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountnan(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of NaN values.
+     *
+     * @param values values.
+     * @return cumulative count of NaN values.
+     */
+    public static long[] cumcountnan(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountnan");
+
+<#if pt.valueType.isFloat >
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                if (${pt.boxed}.isNaN(v)) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+        return result;
+<#else>
+        // ${pt.primitive} is never NaN
+        return new long[n];
+</#if>
+    }
+
+    /**
+     * Returns the cumulative count of infinite values.
+     *
+     * @param values values.
+     * @return cumulative count of infinite values.
+     */
+    public static long[] cumcountinf(${pt.boxed}[] values) {
+        return cumcountinf(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of infinite values.
+     *
+     * @param values values.
+     * @return cumulative count of infinite values.
+     */
+    public static long[] cumcountinf(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountinf(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of infinite values.
+     *
+     * @param values values.
+     * @return cumulative count of infinite values.
+     */
+    public static long[] cumcountinf(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountinf");
+
+<#if pt.valueType.isFloat >
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                if (${pt.boxed}.isInfinite(v)) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+        return result;
+<#else>
+        // ${pt.primitive} is never infinite
+        return new long[n];
+</#if>
+    }
+
+    /**
+     * Returns the cumulative count of finite values.
+     *
+     * @param values values.
+     * @return cumulative count of finite values.
+     */
+    public static long[] cumcountfinite(${pt.boxed}[] values) {
+        return cumcountfinite(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of finite values.
+     *
+     * @param values values.
+     * @return cumulative count of finite values.
+     */
+    public static long[] cumcountfinite(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountfinite(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of finite values.
+     *
+     * @param values values.
+     * @return cumulative count of finite values.
+     */
+    public static long[] cumcountfinite(${pt.vector} values) {
+<#if pt.valueType.isInteger >
+        // ${pt.primitive} is always finite, so we can just count non-null values.
+        return cumcount(values);
+<#else>
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcountfinite");
+        final long[] result = new long[n];
+        long count = 0;
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                if (!isNull(v) && ${pt.boxed}.isFinite(v)) {
+                    count++;
+                }
+                result[i] = count;
+
+                i++;
+            }
+        }
+        return result;
+</#if>
+    }
+
+    /**
      * Returns the cumulative minimum.  Null values are excluded.
      *
      * @param values values.

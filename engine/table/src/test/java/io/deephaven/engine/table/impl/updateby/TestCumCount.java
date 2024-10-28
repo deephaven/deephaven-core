@@ -813,23 +813,22 @@ public class TestCumCount extends BaseUpdateByTest {
             @NotNull final Object actual,
             @NotNull final Class<?> type) {
         final long[] actualValues = (long[]) actual;
-        final long[] allZeros = new long[actualValues.length];
 
         if (expected instanceof byte[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((byte[]) expected), actualValues);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((short[]) expected), actualValues);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((int[]) expected), actualValues);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((long[]) expected), actualValues);
         } else if (expected instanceof float[]) {
-            final long[] expectedLong = float_cumcount((float[]) expected, Float::isNaN);
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((float[]) expected), actualValues);
         } else if (expected instanceof double[]) {
-            final long[] expectedLong = double_cumcount((double[]) expected, Double::isNaN);
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountnan((double[]) expected), actualValues);
         } else if (type == BigDecimal.class || type == BigInteger.class) {
+            // BI/BD can't be NaN
+            final long[] allZeros = new long[actualValues.length];
             assertArrayEquals(allZeros, actualValues);
         } else {
             Assert.statementNeverExecuted();
@@ -841,23 +840,22 @@ public class TestCumCount extends BaseUpdateByTest {
             @NotNull final Object actual,
             @NotNull final Class<?> type) {
         final long[] actualValues = (long[]) actual;
-        final long[] allZeros = new long[actualValues.length];
-
+        
         if (expected instanceof byte[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((byte[]) expected), actualValues);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((short[]) expected), actualValues);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((int[]) expected), actualValues);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(allZeros, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((long[]) expected), actualValues);
         } else if (expected instanceof float[]) {
-            final long[] expectedLong = float_cumcount((float[]) expected, Float::isInfinite);
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((float[]) expected), actualValues);
         } else if (expected instanceof double[]) {
-            final long[] expectedLong = double_cumcount((double[]) expected, Double::isInfinite);
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountinf((double[]) expected), actualValues);
         } else if (type == BigDecimal.class || type == BigInteger.class) {
+            // BI/BD can't be infinite
+            final long[] allZeros = new long[actualValues.length];
             assertArrayEquals(allZeros, actualValues);
         } else {
             Assert.statementNeverExecuted();
@@ -870,29 +868,21 @@ public class TestCumCount extends BaseUpdateByTest {
             @NotNull final Class<?> type) {
         final long[] actualValues = (long[]) actual;
 
-        // for integrals all non-null are also finite so using cumcount
         if (expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumcount((byte[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((byte[]) expected), actualValues);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumcount((short[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((short[]) expected), actualValues);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumcount((int[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((int[]) expected), actualValues);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumcount((long[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((long[]) expected), actualValues);
         } else if (expected instanceof float[]) {
-            final long[] expectedLong =
-                    float_cumcount((float[]) expected, value -> value != NULL_FLOAT && Float.isFinite(value));
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((float[]) expected), actualValues);
         } else if (expected instanceof double[]) {
-            final long[] expectedLong =
-                    double_cumcount((double[]) expected, value -> value != NULL_DOUBLE && Double.isFinite(value));
-            assertArrayEquals(expectedLong, actualValues);
-        } else if (type == BigInteger.class) {
-            final long[] expectedLong = bi_cumcount((BigInteger[]) expected, Objects::nonNull);
-            assertArrayEquals(expectedLong, actualValues);
-        } else if (type == BigDecimal.class) {
-            final long[] expectedLong = bd_cumcount((BigDecimal[]) expected, Objects::nonNull);
-            assertArrayEquals(expectedLong, actualValues);
+            assertArrayEquals(Numeric.cumcountfinite((double[]) expected), actualValues);
+        } else if (type == BigDecimal.class || type == BigInteger.class) {
+            // BI/BD are finite as long as not null
+            assertArrayEquals(object_cumcount((Object[]) expected, Objects::nonNull), actualValues);
         } else {
             Assert.statementNeverExecuted();
         }
