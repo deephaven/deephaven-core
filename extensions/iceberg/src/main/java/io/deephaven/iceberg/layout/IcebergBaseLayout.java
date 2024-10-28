@@ -10,8 +10,8 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.relative.RelativeFileIO;
-import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
@@ -113,20 +113,17 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergBaseLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @Nullable final Snapshot tableSnapshot,
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
-        this.snapshot = tableSnapshot;
+        this.snapshot = tableAdapter.getSnapshot(instructions);
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
-
-        this.tableDef = tableAdapter.definition(tableSnapshot, instructions);
+        this.tableDef = tableAdapter.definition(instructions);
 
         this.cache = new HashMap<>();
     }

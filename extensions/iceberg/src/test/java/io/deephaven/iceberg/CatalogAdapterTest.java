@@ -261,7 +261,7 @@ class CatalogAdapterTest extends CatalogAdapterBase {
                     .build());
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.emptyTable(0), fromIceberg);
-            verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "overwrite"));
+            verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "delete"));
         }
     }
 

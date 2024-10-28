@@ -10,7 +10,6 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
@@ -21,15 +20,13 @@ import java.net.URI;
 public final class IcebergFlatLayout extends IcebergBaseLayout {
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
-     * @param tableSnapshot The {@link Snapshot} from which to discover data files.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergFlatLayout(
             @NotNull final IcebergTableAdapter tableAdapter,
-            @Nullable final Snapshot tableSnapshot,
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
-        super(tableAdapter, tableSnapshot, instructions, dataInstructionsProvider);
+        super(tableAdapter, instructions, dataInstructionsProvider);
     }
 
     @Override
