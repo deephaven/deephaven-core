@@ -639,7 +639,7 @@ def cum_count_finite(cols: Union[str, List[str]]) -> UpdateByOperation:
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountFinte(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountFinite(cols))
     except Exception as e:
         raise DHError(e, "failed to create a cum_count_inf UpdateByOperation.") from e
 
