@@ -9,6 +9,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
