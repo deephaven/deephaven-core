@@ -840,7 +840,7 @@ public class TestCumCount extends BaseUpdateByTest {
             @NotNull final Object actual,
             @NotNull final Class<?> type) {
         final long[] actualValues = (long[]) actual;
-        
+
         if (expected instanceof byte[]) {
             assertArrayEquals(Numeric.cumcountinf((byte[]) expected), actualValues);
         } else if (expected instanceof short[]) {
