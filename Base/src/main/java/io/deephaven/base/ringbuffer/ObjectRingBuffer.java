@@ -132,7 +132,7 @@ public class ObjectRingBuffer<T> implements RingBuffer, Serializable {
         // region object-bulk-clear
         final int storageHead = (int) (head & mask);
         final int size = size();
-        // firstLen is either the size of the ring buffer oe the distance from head to the end of the storage array.
+        // firstLen is either the size of the ring buffer or the distance from head to the end of the storage array.
         final int firstLen = Math.min(storage.length - storageHead, size);
         // secondLen is the number of elements remaining from the first clear.
         final int secondLen = size - firstLen;

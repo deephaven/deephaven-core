@@ -18,11 +18,6 @@ import java.util.Optional;
 @BuildableStyle
 public abstract class RollingFormulaSpec extends RollingOpSpec {
     /**
-     * If {@link #paramToken()} is not supplied, this can contain a cached {@link Selectable} for {@link #formula()}.
-     */
-    private Selectable selectable;
-
-    /**
      * The formula to use to calculate output values. The formula is similar to
      * {@link io.deephaven.api.TableOperations#update} and {@link io.deephaven.api.TableOperations#updateView} in
      * specifying the output column name and the expression to compute in terms of the input columns. (e.g.
@@ -142,14 +137,16 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
                 .build();
     }
 
+    /**
+     * If {@link #paramToken()} is not supplied, this will contain a {@link Selectable} of the parsed
+     * {@link #formula()}.
+     */
+    @Value.Lazy
     public Selectable selectable() {
         if (paramToken().isPresent()) {
             throw new UnsupportedOperationException("selectable() is not supported when paramToken() is present");
         }
-        if (selectable == null) {
-            selectable = Selectable.parse(formula());
-        }
-        return selectable;
+        return Selectable.parse(formula());
     }
 
     @Override
@@ -165,11 +162,11 @@ public abstract class RollingFormulaSpec extends RollingOpSpec {
     @Value.Check
     final void checkFormula() {
         if (formula().isEmpty()) {
-            throw new IllegalArgumentException("formula musst not be empty");
+            throw new IllegalArgumentException("formula must not be empty");
         }
         if (!paramToken().isPresent()) {
-            final Selectable selectable = selectable();
-            // TODO: what should we assert after a successful parse?
+            // Call the selectable method to parse now and throw on invalid input.
+            selectable();
         }
     }
 }

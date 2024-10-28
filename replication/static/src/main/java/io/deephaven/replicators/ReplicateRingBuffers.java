@@ -70,7 +70,7 @@ public class ReplicateRingBuffers {
                 Collections.singletonList(
                         "        final int storageHead = (int) (head & mask);\n" +
                                 "        final int size = size();\n" +
-                                "        // firstLen is either the size of the ring buffer oe the distance from head to the end of the storage array.\n"
+                                "        // firstLen is either the size of the ring buffer or the distance from head to the end of the storage array.\n"
                                 +
                                 "        final int firstLen = Math.min(storage.length - storageHead, size);\n" +
                                 "        // secondLen is the number of elements remaining from the first clear.\n" +
