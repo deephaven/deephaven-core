@@ -54,12 +54,18 @@ class TestBackend(TableDataServiceBackend):
         self.existing_partitions_called: int = 0
         self.partition_size_called: int = 0
 
-    def table_schema(self, table_key: TableKeyImpl, schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None]) -> None:
+    def table_schema(self, table_key: TableKeyImpl,
+                     schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
+                     failure_cb: Callable[[str], None]) -> None:
         if table_key.key == "test":
-            return schema_cb(self.pt_schema, self.pc_schema)
+            schema_cb(self.pt_schema, self.pc_schema)
+        else:
+            failure_cb("table key not found")
 
     def table_locations(self, table_key: TableKeyImpl,
-                        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None]) -> None:
+                        location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],
+                        success_cb: Callable[[], None],
+                        failure_cb: Callable[[str], None]) -> None:
         pa_table = next(self.gen_pa_table)
         if table_key.key == "test":
             ticker = str(pa_table.column("Ticker")[0])
@@ -71,15 +77,25 @@ class TestBackend(TableDataServiceBackend):
             location_cb(partition_key, pa_table.filter(expr).select(["Ticker", "Exchange"]).slice(0, 1))
             self.existing_partitions_called += 1
 
+            # indicate that we've finished notifying existing table locations
+            success_cb()
+        else:
+            failure_cb("table key not found")
+
     def table_location_size(self, table_key: TableKeyImpl, table_location_key: TableLocationKeyImpl,
-                            size_cb: Callable[[int], None]) -> None:
+                            size_cb: Callable[[int], None],
+                            failure_cb: Callable[[str], None]) -> None:
         size_cb(self.partitions[table_location_key].num_rows)
         self.partition_size_called += 1
 
     def column_values(self, table_key: TableKeyImpl, table_location_key: TableLocationKeyImpl,
-                      col: str, offset: int, min_rows: int, max_rows: int, values_cb: Callable[[pa.Table], None]) -> None:
+                      col: str, offset: int, min_rows: int, max_rows: int,
+                      values_cb: Callable[[pa.Table], None],
+                      failure_cb: Callable[[str], None]) -> None:
         if table_key.key == "test":
             values_cb(self.partitions[table_location_key].select([col]).slice(offset, max_rows))
+        else:
+            failure_cb("table key not found")
 
     def _th_new_partitions(self, table_key: TableKeyImpl, exec_ctx: ExecutionContext,
                            location_cb: Callable[[TableLocationKeyImpl, Optional[pa.Table]], None],

@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
@@ -132,23 +133,42 @@ public class PythonTableDataService extends AbstractTableDataService {
          */
         public BarrageUtil.ConvertedArrowSchema[] getTableSchema(
                 @NotNull final TableKeyImpl tableKey) {
-            final BarrageUtil.ConvertedArrowSchema[] schemas = new BarrageUtil.ConvertedArrowSchema[2];
+            final AsyncState<BarrageUtil.ConvertedArrowSchema[]> asyncState = new AsyncState<>();
+
             final Consumer<ByteBuffer[]> onRawSchemas = byteBuffers -> {
+                final BarrageUtil.ConvertedArrowSchema[] schemas = new BarrageUtil.ConvertedArrowSchema[2];
+
                 if (byteBuffers.length != schemas.length) {
-                    throw new IllegalArgumentException(String.format(
-                            "%s: table_schema returned too many IPC messages. Expected %d, received %d.",
-                            tableKey, schemas.length, byteBuffers.length));
+                    asyncState.setError(new IllegalArgumentException(String.format(
+                            "Provided too many IPC messages. Expected %d, received %d.",
+                            schemas.length, byteBuffers.length)));
+                    return;
                 }
 
                 for (int ii = 0; ii < schemas.length; ++ii) {
-                    schemas[ii] = BarrageUtil.convertArrowSchema(ArrowToTableConverter.parseArrowSchema(
-                            ArrowToTableConverter.parseArrowIpcMessage(byteBuffers[ii])));
+                    try {
+                        schemas[ii] = BarrageUtil.convertArrowSchema(
+                                ArrowToTableConverter.parseArrowSchema(
+                                        ArrowToTableConverter.parseArrowIpcMessage(
+                                                byteBuffers[ii])));
+                    } catch (final Exception e) {
+                        final String schemaType = ii % 2 == 0 ? "data table" : "partitioning column";
+                        asyncState.setError(new IllegalArgumentException(String.format(
+                                "failed to parse %s schema message", schemaType), e));
+                        return;
+                    }
                 }
+
+                asyncState.setResult(schemas);
             };
 
-            pyTableDataService.call("_table_schema", tableKey.key, onRawSchemas);
+            final Consumer<String> onFailure = errorString -> asyncState.setError(
+                    new UncheckedDeephavenException(errorString));
 
-            return schemas;
+            pyTableDataService.call("_table_schema", tableKey.key, onRawSchemas, onFailure);
+
+            return asyncState.awaitResult(err -> new TableDataException(String.format(
+                    "%s: table_schema failed", tableKey), err));
         }
 
         /**
@@ -162,11 +182,24 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableDefinition definition,
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> listener) {
-            final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey, listener,
-                            tableLocationKey, byteBuffers);
+            final AsyncState<Boolean> asyncState = new AsyncState<>();
 
-            pyTableDataService.call("_table_locations", tableKey.key, convertingListener);
+            final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
+                    (tableLocationKey, byteBuffers) -> {
+                        try {
+                            processTableLocationKey(definition, tableKey, listener, tableLocationKey, byteBuffers);
+                        } catch (final RuntimeException e) {
+                            asyncState.setError(e);
+                        }
+                    };
+
+            final Runnable onSuccess = () -> asyncState.setResult(true);
+            final Consumer<String> onFailure = errorString -> asyncState.setError(
+                    new UncheckedDeephavenException(errorString));
+
+            pyTableDataService.call("_table_locations", tableKey.key, convertingListener, onSuccess, onFailure);
+            asyncState.awaitResult(err -> new TableDataException(String.format(
+                    "%s: table_locations failed", tableKey), err));
         }
 
         /**
@@ -190,15 +223,23 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final Consumer<TableLocationKeyImpl> tableLocationListener,
                 @NotNull final Runnable successCallback,
-                @NotNull final Consumer<String> failureCallback) {
+                @NotNull final Consumer<RuntimeException> failureCallback) {
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
-                    (tableLocationKey, byteBuffers) -> processTableLocationKey(definition, tableKey,
-                            tableLocationListener,
-                            tableLocationKey, byteBuffers);
+                    (tableLocationKey, byteBuffers) -> {
+                        try {
+                            processTableLocationKey(
+                                    definition, tableKey, tableLocationListener, tableLocationKey, byteBuffers);
+                        } catch (final RuntimeException e) {
+                            failureCallback.accept(e);
+                        }
+                    };
+
+            final Consumer<String> onFailure = errorString -> failureCallback.accept(
+                    new UncheckedDeephavenException(errorString));
 
             final PyObject cancellationCallback = pyTableDataService.call(
-                    "_subscribe_to_table_locations", tableKey.key, convertingListener, successCallback,
-                    failureCallback);
+                    "_subscribe_to_table_locations", tableKey.key,
+                    convertingListener, successCallback, onFailure);
             return () -> cancellationCallback.call("__call__");
         }
 
@@ -295,7 +336,17 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final TableKeyImpl tableKey,
                 @NotNull final TableLocationKeyImpl tableLocationKey,
                 @NotNull final LongConsumer listener) {
-            pyTableDataService.call("_table_location_size", tableKey.key, tableLocationKey.locationKey, listener);
+            final AsyncState<Long> asyncState = new AsyncState<>();
+
+            final LongConsumer onSize = asyncState::setResult;
+            final Consumer<String> onFailure = errorString -> asyncState.setError(
+                    new UncheckedDeephavenException(errorString));
+
+            pyTableDataService.call("_table_location_size", tableKey.key, tableLocationKey.locationKey,
+                    onSize, onFailure);
+
+            listener.accept(asyncState.awaitResult(err -> new TableDataException(String.format(
+                    "%s:%s: table_location_size failed", tableKey, tableLocationKey), err)));
         }
 
         /**
@@ -343,35 +394,37 @@ public class PythonTableDataService extends AbstractTableDataService {
                 final int minimumSize,
                 final int maximumSize) {
 
-            final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>();
+            final AsyncState<List<WritableChunk<Values>>> asyncState = new AsyncState<>();
+
             final String columnName = columnDefinition.getName();
             final Consumer<ByteBuffer[]> onMessages = messages -> {
                 if (messages.length < 2) {
-                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) expected at "
-                            + "least 2 IPC messages describing the wire format of the column followed by column "
-                            + "values, but received %d messages", tableKey, tableLocationKey, columnName,
-                            firstRowPosition, minimumSize, maximumSize, messages.length));
+                    asyncState.setError(new IllegalArgumentException(String.format(
+                            "expected at least 2 IPC messages describing the wire format of the column followed by "
+                                    + "column values, but received %d messages",
+                            messages.length)));
+                    return;
                 }
-                resultChunks.ensureCapacity(messages.length - 1);
+                final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
 
                 final Schema schema = ArrowToTableConverter.parseArrowSchema(
                         ArrowToTableConverter.parseArrowIpcMessage(messages[0]));
                 final BarrageUtil.ConvertedArrowSchema schemaPlus = BarrageUtil.convertArrowSchema(schema);
 
                 if (schema.fieldsLength() > 1) {
-                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) received "
-                            + "more than one field. Received %d fields for columns %s",
-                            tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
+                    asyncState.setError(new IllegalArgumentException(String.format(
+                            "Received more than one field. Received %d fields for columns %s.",
                             schema.fieldsLength(),
                             IntStream.range(0, schema.fieldsLength())
                                     .mapToObj(ci -> schema.fields(ci).name())
-                                    .reduce((a, b) -> a + ", " + b).orElse("")));
+                                    .reduce((a, b) -> a + ", " + b).orElse(""))));
+                    return;
                 }
                 if (!columnDefinition.isCompatible(schemaPlus.tableDef.getColumns().get(0))) {
-                    throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) received "
-                            + "incompatible column definition. Expected %s, but received %s.",
-                            tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
-                            columnDefinition, schemaPlus.tableDef.getColumns().get(0)));
+                    asyncState.setError(new IllegalArgumentException(String.format(
+                            "Received incompatible column definition. Expected %s, but received %s.",
+                            columnDefinition, schemaPlus.tableDef.getColumns().get(0))));
+                    return;
                 }
 
                 final ChunkReader reader = schemaPlus.computeChunkReaders(
@@ -381,10 +434,9 @@ public class PythonTableDataService extends AbstractTableDataService {
                     for (; mi < messages.length; ++mi) {
                         final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[mi]);
                         if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
-                            throw new IllegalArgumentException(String.format("%s:%s: column_values(%s, %d, %d, %d) IPC "
-                                    + "message %d is not a valid Arrow RecordBatch IPC message",
-                                    tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize,
-                                    mi));
+                            asyncState.setError(new IllegalArgumentException(String.format(
+                                    "IPC message %d is not a valid Arrow RecordBatch IPC message", mi)));
+                            return;
                         }
                         final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -399,17 +451,28 @@ public class PythonTableDataService extends AbstractTableDataService {
                     }
                 } catch (final IOException ioe) {
                     SafeCloseable.closeAll(resultChunks.iterator());
-                    throw new UncheckedDeephavenException(String.format("%s:%s: column_values(%s, %d, %d, %d) failed "
-                            + "to read IPC message %d", tableKey, tableLocationKey, columnName,
-                            firstRowPosition, minimumSize, maximumSize, mi), ioe);
+                    asyncState.setError(new UncheckedDeephavenException(String.format(
+                            "failed to read IPC message %d", mi), ioe));
+                    return;
+                } catch (final RuntimeException e) {
+                    SafeCloseable.closeAll(resultChunks.iterator());
+                    asyncState.setError(e);
+                    return;
                 }
+
+                asyncState.setResult(resultChunks);
             };
+
+            final Consumer<String> onFailure = errorString -> asyncState.setError(
+                    new UncheckedDeephavenException(errorString));
 
             pyTableDataService.call("_column_values",
                     tableKey.key, tableLocationKey.locationKey, columnName, firstRowPosition,
-                    minimumSize, maximumSize, onMessages);
+                    minimumSize, maximumSize, onMessages, onFailure);
 
-            return resultChunks;
+            return asyncState.awaitResult(err -> new TableDataException(String.format(
+                    "%s:%s: column_values(%s, %d, %d, %d) failed",
+                    tableKey, tableLocationKey, columnName, firstRowPosition, minimumSize, maximumSize), err));
         }
     }
 
@@ -538,7 +601,8 @@ public class PythonTableDataService extends AbstractTableDataService {
             localSubscription.cancellationCallback = backend.subscribeToTableLocations(
                     tableDefinition, key, this::handleTableLocationKeyAdded,
                     () -> activationSuccessful(localSubscription),
-                    errorString -> activationFailed(localSubscription, new TableDataException(errorString)));
+                    error -> activationFailed(localSubscription, new TableDataException(
+                            String.format("%s: subscribe_to_table_locations failed", key), error)));
         }
 
         @Override
@@ -703,14 +767,16 @@ public class PythonTableDataService extends AbstractTableDataService {
             final TableLocationKeyImpl location = (TableLocationKeyImpl) getKey();
 
             final Subscription localSubscription = subscription = new Subscription();
-            localSubscription.cancellationCallback = backend.subscribeToTableLocationSize(key, location, newSize -> {
+            final LongConsumer subscriptionFilter = newSize -> {
                 if (localSubscription != subscription) {
                     // we've been cancelled and/or replaced
                     return;
                 }
 
                 onSizeChanged(newSize);
-            }, () -> activationSuccessful(localSubscription),
+            };
+            localSubscription.cancellationCallback = backend.subscribeToTableLocationSize(
+                    key, location, subscriptionFilter, () -> activationSuccessful(localSubscription),
                     errorString -> activationFailed(localSubscription, new TableDataException(errorString)));
         }
 
@@ -862,5 +928,36 @@ public class PythonTableDataService extends AbstractTableDataService {
 
     private static class Subscription {
         SafeCloseable cancellationCallback;
+    }
+
+    // this tool is used to simplify backend asynchronous RPC patterns for otherwise synchronous operations
+    private static class AsyncState<T> {
+        private T result;
+        private RuntimeException error;
+
+        public synchronized void setResult(@NotNull final T result) {
+            this.result = result;
+            notifyAll();
+        }
+
+        public synchronized void setError(@NotNull final RuntimeException error) {
+            this.error = error;
+            notifyAll();
+        }
+
+        public synchronized T awaitResult(@NotNull final Function<Exception, RuntimeException> errorMapper) {
+            while (result == null && error == null) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw errorMapper.apply(e);
+                }
+            }
+            if (error != null) {
+                throw errorMapper.apply(error);
+            }
+            return result;
+        }
     }
 }
