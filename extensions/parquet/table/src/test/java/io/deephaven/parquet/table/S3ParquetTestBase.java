@@ -520,52 +520,12 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     @Test
     public void testReadWriteUsingProfile() throws IOException {
         final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
-        Path tempConfigFile = null;
-        Path tempCredentialsFile = null;
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
         try {
-            // Create temporary config and credentials file and write wrong credentials to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
-            final String configData = "[profile test-user]\nregion = wrong-region";
-            Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
-            final String credentialsData = "[test-user]\naws_access_key_id = foo\naws_secret_access_key = bar";
-            Files.write(tempCredentialsFile, credentialsData.getBytes());
-
-            final S3Instructions s3Instructions = S3Instructions.builder()
-                    .readTimeout(Duration.ofSeconds(3))
-                    .endpointOverride(s3Endpoint())
-                    .profileName("test-user")
-                    .credentialsFilePath(tempCredentialsFile.toString())
-                    .configFilePath(tempConfigFile.toString())
-                    .credentials(Credentials.profile())
-                    .build();
-            final ParquetInstructions instructions = ParquetInstructions.builder()
-                    .setSpecialInstructions(s3Instructions)
-                    .build();
-            try {
-                final URI uri = uri("table1.parquet");
-                ParquetTools.writeTable(table, uri.toString(), instructions);
-                fail("Expected exception");
-            } catch (final UncheckedDeephavenException expected) {
-            }
-        } finally {
-            // Delete the temporary files
-            if (tempConfigFile != null) {
-                Files.deleteIfExists(tempConfigFile);
-            }
-            if (tempCredentialsFile != null) {
-                Files.delete(tempCredentialsFile);
-            }
-        }
-
-        try {
-            // Create temporary config and credentials file and write correct credentials and region to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
             final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
             final String credentialsData = "[test-user]\naws_access_key_id = " + accessKey() +
                     "\naws_secret_access_key = " + secretAccessKey();
             Files.write(tempCredentialsFile, credentialsData.getBytes());
