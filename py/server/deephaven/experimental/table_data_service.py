@@ -65,10 +65,10 @@ class TableDataServiceBackend(ABC):
     def table_locations(self, table_key: TableKey,
                         location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None]) -> None:
         """ Provides a callback for the backend service to pass the existing locations for the table with the given
-        table key. The 2nd argument of the callback is an optional pyarrow.Table that contains the partition values for
-        the location. The schema of the table should be compatible with the optional partitioning column schema returned
-        by :meth:`table_schema` for the table_key. The table should have a single row for the particular location key
-        provided in the 1st argument, with the partitioning values for each partitioning column in the row.
+        table key. The 2nd argument of the callback is an optional pyarrow.Table that contains the partitioning values
+        for the location. The schema of the table should be compatible with the optional partitioning column schema
+        returned by :meth:`table_schema` for the table_key. The table should have a single row for the particular
+        location key provided in the 1st argument, with the partitioning values for each partitioning column in the row.
 
         This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
 
@@ -150,7 +150,7 @@ class TableDataServiceBackend(ABC):
 
         Args:
             table_key (TableKey): the table key
-            table_location_key (TableLocationKey): the partition location key
+            table_location_key (TableLocationKey): the table location key
             size_cb (Callable[[int], None]): the table location size callback function
             success_cb (Callable[[], None]): the success callback function
             failure_cb (Callable[[Exception], None]): the failure callback function
@@ -294,7 +294,7 @@ class TableDataService(JObjectWrapper):
                 location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
             else:
                 if pt_table.num_rows != 1:
-                    raise ValueError("The number of rows in the pyarrow table for partition column values must be 1")
+                    raise ValueError("The number of rows in the pyarrow table for partitioning column values must be 1")
                 bb_list = [jpy.byte_buffer(rb.serialize()) for rb in pt_table.to_batches()]
                 bb_list.insert(0, jpy.byte_buffer(pt_table.schema.serialize()))
                 location_cb.accept(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", bb_list))
@@ -334,7 +334,7 @@ class TableDataService(JObjectWrapper):
         Args:
             table_key (TableKey): the table key
             table_location_key (TableLocationKey): the table location key
-            size_cb (jpy.JType): the Java callback function with one argument: the size of the partition in number of
+            size_cb (jpy.JType): the Java callback function with one argument: the size of the location in number of
                 rows
             success_cb (jpy.JType): the success Java callback function with no arguments
             failure_cb (jpy.JType): the failure Java callback function with one argument: an exception
