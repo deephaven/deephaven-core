@@ -10,6 +10,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
@@ -82,10 +83,14 @@ public class PyIceberg1Test {
         final Table cities1;
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
-            final TableDefinition td = tableAdapter.definition(SNAPSHOT_1_ID, null);
+            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_1_ID)
+                    .build());
             assertThat(td).isEqualTo(CITIES_1_TD);
 
-            cities1 = tableAdapter.table(SNAPSHOT_1_ID);
+            cities1 = tableAdapter.table(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_1_ID)
+                    .build());
             assertThat(cities1.getDefinition()).isEqualTo(CITIES_1_TD);
         }
         final Table expectedCities1 = TableTools.newTable(CITIES_1_TD,
@@ -100,10 +105,14 @@ public class PyIceberg1Test {
         final Table cities2;
         {
             final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(CITIES_ID);
-            final TableDefinition td = tableAdapter.definition(SNAPSHOT_2_ID, null);
+            final TableDefinition td = tableAdapter.definition(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_2_ID)
+                    .build());
             assertThat(td).isEqualTo(CITIES_2_TD);
 
-            cities2 = tableAdapter.table(SNAPSHOT_2_ID);
+            cities2 = tableAdapter.table(IcebergReadInstructions.builder()
+                    .snapshotId(SNAPSHOT_2_ID)
+                    .build());
             assertThat(cities2.getDefinition()).isEqualTo(CITIES_2_TD);
         }
         // TODO(deephaven-core#6118): Iceberg column rename handling
