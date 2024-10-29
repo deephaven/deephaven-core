@@ -518,6 +518,42 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     }
 
     @Test
+    public void testInvalidKeysFromProfile() throws IOException {
+        final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
+        try {
+            final String configData = "[profile test-user]\nregion = " + region();
+            Files.write(tempConfigFile, configData.getBytes());
+            final String credentialsData = "[test-user]\naws_access_key_id = badaccesskey" +
+                    "\naws_secret_access_key = badsecretkey";
+            Files.write(tempCredentialsFile, credentialsData.getBytes());
+            final S3Instructions s3Instructions = S3Instructions.builder()
+                    .readTimeout(Duration.ofSeconds(3))
+                    .endpointOverride(s3Endpoint())
+                    .profileName("test-user")
+                    .credentialsFilePath(tempCredentialsFile.toString())
+                    .configFilePath(tempConfigFile.toString())
+                    .credentials(Credentials.profile())
+                    .build();
+            final ParquetInstructions instructions = ParquetInstructions.builder()
+                    .setSpecialInstructions(s3Instructions)
+                    .build();
+            try {
+                final URI uri = uri("table1.parquet");
+                ParquetTools.writeTable(table, uri.toString(), instructions);
+                fail("Expected exception");
+            } catch (final UncheckedDeephavenException expected) {
+            }
+        } finally {
+            // Delete the temporary files
+            Files.delete(tempConfigFile);
+            Files.delete(tempCredentialsFile);
+        }
+    }
+
+    @Test
     public void testReadWriteUsingProfile() throws IOException {
         final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
         // Create temporary config and credentials file and write correct credentials and region to them
