@@ -79,7 +79,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("FlightSQL descriptors cannot be published to");
+                        .hasMessageContaining("Flight SQL descriptors cannot be published to");
             }
         }
     }
@@ -104,7 +104,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 failBecauseExceptionWasNotThrown(SQLException.class);
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining("FlightSQL descriptors cannot be published to");
+                        .hasMessageContaining("Flight SQL descriptors cannot be published to");
             }
         }
     }
@@ -119,7 +119,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
                         .hasMessageContaining(
-                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
+                                "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
             }
             try {
                 statement.close();
@@ -127,7 +127,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
                         .hasMessageContaining(
-                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
+                                "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
             }
         }
     }
@@ -142,7 +142,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
             } catch (SQLException e) {
                 assertThat((Throwable) e).getRootCause()
                         .hasMessageContaining(
-                                "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
+                                "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
             }
             // If our authentication is bad, we won't be able to close the prepared statement either. If we want to
             // solve for this scenario, we would probably need to use randomized handles for the prepared statements
@@ -155,7 +155,7 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 // exposing shadowed internal error from Flight.
                 assertThat(e.getClass().getName()).isEqualTo("cfjd.org.apache.arrow.flight.FlightRuntimeException");
                 assertThat(e).hasMessageContaining(
-                        "FlightSQL: Must use the original session; is the client echoing the authentication token properly?");
+                        "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
             }
         }
     }

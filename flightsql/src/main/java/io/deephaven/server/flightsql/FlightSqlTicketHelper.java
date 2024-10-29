@@ -45,7 +45,7 @@ final class FlightSqlTicketHelper {
             return Any.parseFrom(ticket);
         } catch (InvalidProtocolBufferException e) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve FlightSQL ticket '" + logId + "': invalid payload");
+                    "Could not resolve Flight SQL ticket '" + logId + "': invalid payload");
         }
     }
 

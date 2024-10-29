@@ -109,13 +109,13 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
 
     @Test
     public void listActions() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         assertThat(flightClient.listActions()).isEmpty();
     }
 
     @Test
     public void listFlights() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         assertThat(flightClient.listFlights(Criteria.ALL)).isEmpty();
     }
 
@@ -166,7 +166,7 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
     public void executeUpdate() {
         // We are unable to hook in earlier atm than
         // io.deephaven.server.arrow.ArrowFlightUtil.DoPutObserver.DoPutObserver
-        // so we are unable to provide FlightSQL-specific error message. This could be remedied in the future with an
+        // so we are unable to provide Flight SQL-specific error message. This could be remedied in the future with an
         // update to TicketResolver.
         try {
             flightSqlClient.executeUpdate("INSERT INTO fake(name) VALUES('Smith')");
@@ -181,7 +181,7 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
     public void executeSubstraitUpdate() {
         // We are unable to hook in earlier atm than
         // io.deephaven.server.arrow.ArrowFlightUtil.DoPutObserver.DoPutObserver
-        // so we are unable to provide FlightSQL-specific error message. This could be remedied in the future with an
+        // so we are unable to provide Flight SQL-specific error message. This could be remedied in the future with an
         // update to TicketResolver.
         try {
             flightSqlClient.executeSubstraitUpdate(fakePlan());
@@ -230,8 +230,8 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
 
     @Test
     public void commandStatementIngest() {
-        // This is a real newer FlightSQL command.
-        // Once we upgrade to newer FlightSQL, we can change this to Unimplemented and use the proper APIs.
+        // This is a real newer Flight SQL command.
+        // Once we upgrade to newer Flight SQL, we can change this to Unimplemented and use the proper APIs.
         final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandStatementIngest";
         final FlightDescriptor descriptor = unpackableCommand(typeUrl);
         unauthenticated(() -> flightClient.getSchema(descriptor));
@@ -248,7 +248,7 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
 
     @Test
     public void unknownCommand() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         final String typeUrl = "type.googleapis.com/com.example.SomeRandomCommand";
         final FlightDescriptor descriptor = unpackableCommand(typeUrl);
         expectException(() -> flightClient.getSchema(descriptor), FlightStatusCode.INVALID_ARGUMENT,
@@ -294,7 +294,7 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
 
     @Test
     public void unknownAction() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         final String type = "SomeFakeAction";
         final Action action = new Action(type, new byte[0]);
         actionNoResolver(() -> doAction(action), type);
@@ -318,7 +318,7 @@ public class FlightSqlUnauthenticatedTest extends DeephavenApiServerTestBase {
     }
 
     private void unauthenticated(Runnable r) {
-        expectException(r, FlightStatusCode.UNAUTHENTICATED, "FlightSQL: Must be authenticated");
+        expectException(r, FlightStatusCode.UNAUTHENTICATED, "Flight SQL: Must be authenticated");
     }
 
     private void actionNoResolver(Runnable r, String actionType) {

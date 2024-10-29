@@ -463,7 +463,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             assertThat(info.getSchema()).isEqualTo(expectedSchema);
             consume(info, 1, 3, false);
         }
-        // The FlightSQL resolver will maintain state to ensure results are resolvable, even if the underlying table
+        // The Flight SQL resolver will maintain state to ensure results are resolvable, even if the underlying table
         // goes away between flightInfo and doGet.
         {
             final FlightInfo info = flightSqlClient.execute("SELECT * FROM foo_table");
@@ -492,7 +492,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);
                     consume(info, 1, 3, false);
                 }
-                // The FlightSQL resolver will maintain state to ensure results are resolvable, even if the underlying
+                // The Flight SQL resolver will maintain state to ensure results are resolvable, even if the underlying
                 // table
                 // goes away between flightInfo and doGet.
                 {
@@ -547,7 +547,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     public void selectFooParam() {
         setFooTable();
         queryError("SELECT Foo FROM foo_table WHERE Foo = ?", FlightStatusCode.INVALID_ARGUMENT,
-                "FlightSQL: query parameters are not supported");
+                "Flight SQL: query parameters are not supported");
     }
 
     @Test
@@ -571,7 +571,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void badSqlQuery() {
-        queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "FlightSQL: query can't be parsed");
+        queryError("this is not SQL", FlightStatusCode.INVALID_ARGUMENT, "Flight SQL: query can't be parsed");
     }
 
     @Test
@@ -614,19 +614,19 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         setFooTable();
         try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO foo_table(Foo) VALUES(42)")) {
             expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
+                    "Flight SQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
             expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
+                    "Flight SQL: Unsupported calcite type 'org.apache.calcite.rel.logical.LogicalTableModify'");
         }
         try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO foo_table(MyArg) VALUES(42)")) {
             expectException(prepared::fetchSchema, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL: Unknown target column 'MyArg'");
+                    "Flight SQL: Unknown target column 'MyArg'");
             expectException(prepared::execute, FlightStatusCode.INVALID_ARGUMENT,
-                    "FlightSQL: Unknown target column 'MyArg'");
+                    "Flight SQL: Unknown target column 'MyArg'");
         }
         try (final PreparedStatement prepared = flightSqlClient.prepare("INSERT INTO x(Foo) VALUES(42)")) {
-            expectException(prepared::fetchSchema, FlightStatusCode.NOT_FOUND, "FlightSQL: Object 'x' not found");
-            expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "FlightSQL: Object 'x' not found");
+            expectException(prepared::fetchSchema, FlightStatusCode.NOT_FOUND, "Flight SQL: Object 'x' not found");
+            expectException(prepared::execute, FlightStatusCode.NOT_FOUND, "Flight SQL: Object 'x' not found");
         }
     }
 
@@ -681,7 +681,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getPrimaryKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL: table not found");
+                "Flight SQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.
@@ -722,7 +722,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             consume(info, 0, 0, true);
         }
         expectException(() -> flightSqlClient.getExportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL: table not found");
+                "Flight SQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.
@@ -764,7 +764,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         }
 
         expectException(() -> flightSqlClient.getImportedKeys(BAR_TABLE_REF), FlightStatusCode.NOT_FOUND,
-                "FlightSQL: table not found");
+                "Flight SQL: table not found");
 
         // Note: misbehaving clients who fudge tickets directly will not get errors; but they will also not learn any
         // information on whether the tables actually exist or not since the returned table is always empty.
@@ -783,8 +783,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void commandStatementIngest() {
-        // This is a real newer FlightSQL command.
-        // Once we upgrade to newer FlightSQL, we can change this to Unimplemented and use the proper APIs.
+        // This is a real newer Flight SQL command.
+        // Once we upgrade to newer Flight SQL, we can change this to Unimplemented and use the proper APIs.
         final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandStatementIngest";
         final FlightDescriptor descriptor = unpackableCommand(typeUrl);
         getSchemaUnknown(() -> flightClient.getSchema(descriptor), typeUrl);
@@ -801,7 +801,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void unknownCommand() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         final String typeUrl = "type.googleapis.com/com.example.SomeRandomCommand";
         final FlightDescriptor descriptor = unpackableCommand(typeUrl);
         expectException(() -> flightClient.getSchema(descriptor), FlightStatusCode.INVALID_ARGUMENT,
@@ -864,7 +864,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void cancelFlightInfo() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         final FlightInfo info = flightSqlClient.execute("SELECT 1");
         actionNoResolver(() -> flightClient.cancelFlightInfo(new CancelFlightInfoRequest(info)),
                 FlightConstants.CANCEL_FLIGHT_INFO.getType());
@@ -872,7 +872,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void unknownAction() {
-        // Note: this should likely be tested in the context of Flight, not FlightSQL
+        // Note: this should likely be tested in the context of Flight, not Flight SQL
         final String type = "SomeFakeAction";
         final Action action = new Action(type, new byte[0]);
         actionNoResolver(() -> doAction(action), type);
@@ -896,7 +896,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                         ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX}).concat(Any.pack(message).toByteString()))
                 .build());
         expectException(() -> flightSqlClient.getStream(ticket).next(), FlightStatusCode.INVALID_ARGUMENT,
-                String.format("FlightSQL: client is misbehaving, should use getInfo for command '%s'",
+                String.format("Flight SQL: client is misbehaving, should use getInfo for command '%s'",
                         descriptor.getFullName()));
     }
 
@@ -916,7 +916,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private void commandUnimplemented(Runnable r, Descriptor command) {
         expectException(r, FlightStatusCode.UNIMPLEMENTED,
-                String.format("FlightSQL: command '%s' is unimplemented", command.getFullName()));
+                String.format("Flight SQL: command '%s' is unimplemented", command.getFullName()));
     }
 
     private void getSchemaUnknown(Runnable r, String command) {
@@ -926,7 +926,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private void commandUnknown(Runnable r, String command) {
         expectException(r, FlightStatusCode.UNIMPLEMENTED,
-                String.format("FlightSQL: command '%s' is unknown", command));
+                String.format("Flight SQL: command '%s' is unknown", command));
     }
 
     private void unpackable(Descriptor descriptor, Class<?> clazz) {
@@ -961,12 +961,12 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     private void expectUnpublishable(Runnable r) {
-        expectException(r, FlightStatusCode.INVALID_ARGUMENT, "FlightSQL descriptors cannot be published to");
+        expectException(r, FlightStatusCode.INVALID_ARGUMENT, "Flight SQL descriptors cannot be published to");
     }
 
     private void actionUnimplemented(Runnable r, ActionType actionType) {
         expectException(r, FlightStatusCode.UNIMPLEMENTED,
-                String.format("FlightSQL: Action type '%s' is unimplemented", actionType.getType()));
+                String.format("Flight SQL: Action type '%s' is unimplemented", actionType.getType()));
     }
 
     private void actionNoResolver(Runnable r, String actionType) {
@@ -1054,7 +1054,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     private static void consumeNotFound(FlightStream stream) {
         expectException(stream::next, FlightStatusCode.NOT_FOUND,
-                "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
+                "Unable to find Flight SQL query. Flight SQL tickets should be resolved promptly and resolved at most once.");
     }
 
     private static SubstraitPlan fakePlan() {

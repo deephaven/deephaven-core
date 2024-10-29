@@ -84,6 +84,6 @@ public abstract class FlightSqlJdbcUnauthenticatedTestBase extends DeephavenServ
 
     private static void unauthenticated(SQLException e) {
         assertThat((Throwable) e).getRootCause()
-                .hasMessageContaining("FlightSQL: Must be authenticated");
+                .hasMessageContaining("Flight SQL: Must be authenticated");
     }
 }

@@ -25,7 +25,7 @@ import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
  * probably be wise to use a command serialization format that has a "unique" magic value as its prefix.
  *
  * <p>
- * The FlightSQL approach is to use the protobuf message Any to wrap up the respective protobuf FlightSQL command
+ * The Flight SQL approach is to use the protobuf message Any to wrap up the respective protobuf Flight SQL command
  * message. While this approach is very likely to produce a sufficiently unique selection criteria, it requires
  * "non-trivial" parsing to determine whether the command is supported or not.
  */

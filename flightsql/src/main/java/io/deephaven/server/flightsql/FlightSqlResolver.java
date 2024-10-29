@@ -116,14 +116,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">FlightSQL</a> resolver. This supports the read-only
+ * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">Flight SQL</a> resolver. This supports the read-only
  * querying of the global query scope, which is presented simply with the query scope variables names as the table names
  * without a catalog and schema name.
  *
  * <p>
- * This implementation does not currently follow the FlightSQL protocol to exact specification. Namely, all the returned
- * {@link Schema Flight schemas} have nullable {@link Field fields}, and some of the fields on specific commands have
- * different types (see {@link #flightInfoFor(SessionState, FlightDescriptor, String)} for specifics).
+ * This implementation does not currently follow the Flight SQL protocol to exact specification. Namely, all the
+ * returned {@link Schema Flight schemas} have nullable {@link Field fields}, and some of the fields on specific
+ * commands have different types (see {@link #flightInfoFor(SessionState, FlightDescriptor, String)} for specifics).
  *
  * <p>
  * All commands, actions, and resolution must be called by authenticated users.
@@ -181,7 +181,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @VisibleForTesting
     static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementQuery";
 
-    // This is a server-implementation detail, but happens to be the same scheme that FlightSQL
+    // This is a server-implementation detail, but happens to be the same scheme that Flight SQL
     // org.apache.arrow.flight.sql.FlightSqlProducer uses
     static final String TICKET_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "TicketStatementQuery";
 
@@ -312,9 +312,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     /**
-     * The FlightSQL ticket route, equal to {@value FlightSqlTicketHelper#TICKET_PREFIX}.
+     * The Flight SQL ticket route, equal to {@value FlightSqlTicketHelper#TICKET_PREFIX}.
      *
-     * @return the FlightSQL ticket route
+     * @return the Flight SQL ticket route
      */
     @Override
     public byte ticketRoute() {
@@ -324,12 +324,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     // ---------------------------------------------------------------------------------------------------------------
 
     /**
-     * Returns {@code true} if the given command {@code descriptor} appears to be a valid FlightSQL command; that is, it
-     * is parsable as an {@code Any} protobuf message with the type URL prefixed with
+     * Returns {@code true} if the given command {@code descriptor} appears to be a valid Flight SQL command; that is,
+     * it is parsable as an {@code Any} protobuf message with the type URL prefixed with
      * {@value FLIGHT_SQL_COMMAND_TYPE_PREFIX}.
      *
      * @param descriptor the descriptor
-     * @return {@code true} if the given command appears to be a valid FlightSQL command
+     * @return {@code true} if the given command appears to be a valid Flight SQL command
      */
     @Override
     public boolean handlesCommand(Flight.FlightDescriptor descriptor) {
@@ -567,16 +567,16 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     /**
-     * Returns {@code true} if {@code type} is a known FlightSQL action type (even if this implementation does not
+     * Returns {@code true} if {@code type} is a known Flight SQL action type (even if this implementation does not
      * implement it).
      *
      * @param type the action type
-     * @return if {@code type} is a known FlightSQL action type
+     * @return if {@code type} is a known Flight SQL action type
      */
     @Override
     public boolean handlesActionType(String type) {
-        // There is no prefix for FlightSQL action types, so the best we can do is a set-based lookup. This also means
-        // that this resolver will not be able to respond with an appropriately scoped error message for new FlightSQL
+        // There is no prefix for Flight SQL action types, so the best we can do is a set-based lookup. This also means
+        // that this resolver will not be able to respond with an appropriately scoped error message for new Flight SQL
         // action types (io.deephaven.server.flightsql.FlightSqlResolver.UnsupportedAction).
         return FLIGHT_SQL_ACTION_TYPES.contains(type);
     }
@@ -624,7 +624,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     // ---------------------------------------------------------------------------------------------------------------
 
     /**
-     * Publishing to FlightSQL descriptors is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
+     * Publishing to Flight SQL descriptors is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
      */
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
@@ -636,11 +636,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             throw unauthenticatedError();
         }
         throw error(Code.FAILED_PRECONDITION,
-                "Could not publish '" + logId + "': FlightSQL descriptors cannot be published to");
+                "Could not publish '" + logId + "': Flight SQL descriptors cannot be published to");
     }
 
     /**
-     * Publishing to FlightSQL tickets is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
+     * Publishing to Flight SQL tickets is not currently supported. Throws a {@link Code#FAILED_PRECONDITION} error.
      */
     @Override
     public <T> SessionState.ExportBuilder<T> publish(
@@ -652,7 +652,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             throw unauthenticatedError();
         }
         throw error(Code.FAILED_PRECONDITION,
-                "Could not publish '" + logId + "': FlightSQL tickets cannot be published to");
+                "Could not publish '" + logId + "': Flight SQL tickets cannot be published to");
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -733,7 +733,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             final TicketHandler ticketHandler = queries.get(ticketStatementQuery.getStatementHandle());
             if (ticketHandler == null) {
                 throw error(Code.NOT_FOUND,
-                        "Unable to find FlightSQL query. FlightSQL tickets should be resolved promptly and resolved at most once.");
+                        "Unable to find Flight SQL query. Flight SQL tickets should be resolved promptly and resolved at most once.");
             }
             if (!ticketHandler.isOwner(session)) {
                 // We should not be concerned about returning "NOT_FOUND" here; the handleId is sufficiently random that
@@ -805,7 +805,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // getFlightInfo / doGet (/ doExchange) appears stateful - it would be incorrect to return getFlightInfo
             // with the semantics "this table exists" and then potentially throw a NOT_FOUND at resolve time.
             //
-            // If Deephaven FlightSQL implements CommandGetExportedKeys, CommandGetImportedKeys, or
+            // If Deephaven Flight SQL implements CommandGetExportedKeys, CommandGetImportedKeys, or
             // CommandGetPrimaryKeys, we'll likely need to "upgrade" the implementation to a properly stateful one like
             // QueryBase with handle-based tickets.
         }
@@ -1536,7 +1536,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                         ActionCreatePreparedSubstraitPlanRequest.class);
         }
         // Should not get here unless handlesActionType is implemented incorrectly.
-        throw new IllegalStateException(String.format("Unexpected FlightSQL Action type '%s'", type));
+        throw new IllegalStateException(String.format("Unexpected Flight SQL Action type '%s'", type));
     }
 
     private static <T extends com.google.protobuf.Message> T unpack(org.apache.arrow.flight.Action action,
@@ -1606,7 +1606,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // is invalid.
             final PreparedStatement prepared = new PreparedStatement(session, request.getQuery());
 
-            // Note: we are providing a fake dataset schema here since the FlightSQL JDBC driver uses the results as an
+            // Note: we are providing a fake dataset schema here since the Flight SQL JDBC driver uses the results as an
             // indication of whether the query is a SELECT or UPDATE, see
             // org.apache.arrow.driver.jdbc.client.ArrowFlightSqlClientHandler.PreparedStatement.getType. There should
             // likely be some better way the driver could be implemented...
@@ -1702,7 +1702,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private static StatusRuntimeException permissionDeniedWithHelpfulMessage() {
         return error(Code.PERMISSION_DENIED,
-                "Must use the original session; is the client echoing the authentication token properly? Some clients may need to explicitly enable cookie-based authentication with the header x-deephaven-auth-cookie-request=true (namely, Java FlightSQL JDBC drivers, and maybe others).");
+                "Must use the original session; is the client echoing the authentication token properly? Some clients may need to explicitly enable cookie-based authentication with the header x-deephaven-auth-cookie-request=true (namely, Java Flight SQL JDBC drivers, and maybe others).");
     }
 
     private static StatusRuntimeException tableNotFound() {
@@ -1720,14 +1720,14 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     private static StatusRuntimeException error(Code code, String message) {
         return code
                 .toStatus()
-                .withDescription("FlightSQL: " + message)
+                .withDescription("Flight SQL: " + message)
                 .asRuntimeException();
     }
 
     private static StatusRuntimeException error(Code code, String message, Throwable cause) {
         return code
                 .toStatus()
-                .withDescription("FlightSQL: " + message)
+                .withDescription("Flight SQL: " + message)
                 .withCause(cause)
                 .asRuntimeException();
     }
@@ -1838,7 +1838,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * empty string should only explicitly match against an empty string.
      */
     private static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {
-        // This is the technically correct, although likely represents a FlightSQL client mis-use, as the results will
+        // This is the technically correct, although likely represents a Flight SQL client mis-use, as the results will
         // be empty (unless an empty db_schema_name is allowed).
         //
         // Unlike the "catalog" field in CommandGetDbSchemas (/ CommandGetTables) where an empty string means
@@ -1859,7 +1859,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
         if (flightSqlPattern.indexOf('%') == -1 && flightSqlPattern.indexOf('_') == -1) {
             // If there are no special characters, search for an exact match; this case was explicitly seen via the
-            // FlightSQL JDBC driver.
+            // Flight SQL JDBC driver.
             return flightSqlPattern::equals;
         }
         final int L = flightSqlPattern.length();

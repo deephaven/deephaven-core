@@ -9,6 +9,9 @@ import dagger.multibindings.IntoSet;
 import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.TicketResolver;
 
+/**
+ * Binds {@link FlightSqlResolver} as a {@link TicketResolver} and an {@link ActionResolver}.
+ */
 @Module
 public interface FlightSqlModule {
 

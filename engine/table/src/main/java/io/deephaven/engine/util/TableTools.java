@@ -753,11 +753,9 @@ public class TableTools {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(rowSet.toTracking(), columns) {
-            {
-                setFlat();
-            }
-        };
+        QueryTable queryTable = new QueryTable(rowSet.toTracking(), columns);
+        queryTable.setFlat();
+        return queryTable;
     }
 
     public static Table newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {

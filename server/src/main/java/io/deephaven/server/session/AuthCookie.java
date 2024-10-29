@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * This exists to work around how the FlightSQL JDBC driver works out-of-the-box.
+ * This exists to work around how the Flight SQL JDBC driver works out-of-the-box.
  */
 final class AuthCookie {
 
