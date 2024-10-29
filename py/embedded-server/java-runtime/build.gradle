@@ -11,6 +11,8 @@ configurations {
 dependencies {
     implementation project(':server-jetty')
 
+    implementation project(':extensions-flight-sql')
+
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
