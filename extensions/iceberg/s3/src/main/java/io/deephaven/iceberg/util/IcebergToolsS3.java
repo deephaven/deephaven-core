@@ -118,7 +118,7 @@ public final class IcebergToolsS3 {
      * Iceberg-managed and Deephaven-managed AWS clients. For advanced use-cases, users are encouraged to use
      * {@link S3Instructions#profileName() profiles} which allows a rich degree of configurability. The
      * {@code instructions} will automatically be used as special instructions if
-     * {@link IcebergInstructions#dataInstructions()} is not explicitly set. The caller is still responsible for
+     * {@link IcebergReadInstructions#dataInstructions()} is not explicitly set. The caller is still responsible for
      * providing any other properties necessary to configure their {@link org.apache.iceberg.catalog.Catalog}
      * implementation.
      *
