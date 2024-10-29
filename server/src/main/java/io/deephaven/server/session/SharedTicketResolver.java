@@ -7,9 +7,7 @@ import com.google.common.collect.MapMaker;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
-import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
-import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.Exceptions;
@@ -17,6 +15,8 @@ import io.deephaven.proto.util.SharedTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
+import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,34 +53,13 @@ public class SharedTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, String.format(
-                    "Could not resolve '%s': no session to handoff to", logId));
-        }
+    protected Ticket getTicket(FlightDescriptor descriptor, String logId) {
+        return descriptorToTicket(descriptor, logId);
+    }
 
-        final ByteString sharedId = idForDescriptor(descriptor, logId);
-
-        SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
-        if (export == null) {
-            throw newNotFoundSRE(logId, toHexString(sharedId));
-        }
-
-        return session.<Flight.FlightInfo>nonExport()
-                .require(export)
-                .submit(() -> {
-                    Object result = export.get();
-                    if (result instanceof Table) {
-                        result = authorization.transform(result);
-                    }
-                    if (result instanceof Table) {
-                        return TicketRouter.getFlightInfo((Table) result, descriptor,
-                                FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
-                    }
-
-                    throw newNotFoundSRE(logId, toHexString(sharedId));
-                });
+    @Override
+    protected StatusRuntimeException notFound(FlightDescriptor descriptor, String logId) {
+        return newNotFoundSRE(logId, toHexString(idForDescriptor(descriptor, logId)));
     }
 
     @Override

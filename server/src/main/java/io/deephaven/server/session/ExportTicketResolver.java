@@ -4,12 +4,14 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
-import io.deephaven.engine.table.Table;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
+import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -38,25 +40,14 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
-            @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (session == null) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
-                    "Could not resolve '" + logId + "': no exports can exist without a session to search");
-        }
+    protected Ticket getTicket(FlightDescriptor descriptor, String logId) {
+        return FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId);
+    }
 
-        final SessionState.ExportObject<?> export = resolve(session, descriptor, logId);
-        return session.<Flight.FlightInfo>nonExport()
-                .require(export)
-                .submit(() -> {
-                    if (export.get() instanceof Table) {
-                        return TicketRouter.getFlightInfo((Table) export.get(), descriptor,
-                                FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
-                    }
-
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
-                });
+    @Override
+    protected StatusRuntimeException notFound(FlightDescriptor descriptor, String logId) {
+        throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
     }
 
     @Override
