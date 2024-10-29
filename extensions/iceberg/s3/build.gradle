@@ -10,7 +10,7 @@ evaluationDependsOn Docker.registryProject('minio')
 description 'Iceberg: Support to read iceberg catalogs.'
 
 dependencies {
-    implementation project(':extensions-iceberg')
+    api project(':extensions-iceberg')
 
     // Bring in the AWS / S3 extensions
     api platform(libs.iceberg.bom)
