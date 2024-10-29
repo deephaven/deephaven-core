@@ -3958,7 +3958,7 @@ public class Numeric {
         final int val = Math.toIntExact(x);
 
         if ( isNull(val) ) {
-            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in an int" + x);
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in an int " + x);
         }
 
         return val;
@@ -3985,7 +3985,7 @@ public class Numeric {
         final short val = (short) x;
 
         if (x > Short.MAX_VALUE || x < Short.MIN_VALUE || isNull(val) ) {
-            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a short" + x);
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a short " + x);
         }
 
         return val;
@@ -4012,7 +4012,7 @@ public class Numeric {
         final byte val = (byte) x;
 
         if (x > Byte.MAX_VALUE || x < Byte.MIN_VALUE || isNull(val) ) {
-            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a byte" + x);
+            throw new ArithmeticException("Overflow: ${pt.primitive} value will not fit in a byte " + x);
         }
 
         return val;
