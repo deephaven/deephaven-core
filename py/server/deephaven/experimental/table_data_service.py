@@ -70,7 +70,7 @@ class TableDataServiceBackend(ABC):
         by :meth:`table_schema` for the table_key. The table should have a single row for the particular location key
         provided in the 1st argument, with the partitioning values for each partitioning column in the row.
 
-        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=False
+        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
 
         Args:
             table_key (TableKey): the table key
@@ -96,7 +96,7 @@ class TableDataServiceBackend(ABC):
 
         The failure callback should be called when the subscription fails to be established or maintained.
 
-        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=True.
+        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=True.
 
         Note that any asynchronous calls to the callback will block until this method has returned.
 
@@ -118,7 +118,7 @@ class TableDataServiceBackend(ABC):
         """ Provides a callback for the backend service to pass the size of the table location with the given table key
         and table location key. The callback should be called with the size of the table location in number of rows.
 
-        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=False.
+        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False.
 
         The existing table location size should be provided to the callback prior to returning from this method.
 
@@ -144,7 +144,7 @@ class TableDataServiceBackend(ABC):
 
         The failure callback should be called when the subscription fails to be established or maintained.
 
-        This is called for tables created when ：meth:`TableDataService.make_table` is called with refreshing=True
+        This is called for tables created when :meth:``TableDataService.make_table` is called with refreshing=True
 
         Note that any asynchronous calls to the callback will block until this method has returned.
 
