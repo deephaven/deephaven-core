@@ -7,6 +7,7 @@ import dagger.Component;
 import dagger.Module;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
+import io.deephaven.server.flightsql.FlightSqlModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
 
@@ -64,12 +65,14 @@ public final class CommunityComponentFactory
      * The out-of-the-box community {@link Module}.
      *
      * @see JettyServerModule
+     * @see FlightSqlModule
+     * @see JettyClientChannelFactoryModule
      * @see CommunityAuthorizationModule
      * @see CommunityDefaultsModule
      */
     @Module(includes = {
             JettyServerModule.class,
-            JettyServerOptionalModule.class,
+            FlightSqlModule.class,
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,

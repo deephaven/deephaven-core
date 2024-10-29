@@ -7,7 +7,10 @@ description = 'The Deephaven Flight SQL library'
 
 sourceSets {
     jdbcTest {
+        compileClasspath += sourceSets.main.output
         compileClasspath += sourceSets.test.output
+
+        runtimeClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.test.output
     }
 }
