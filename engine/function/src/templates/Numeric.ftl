@@ -3465,7 +3465,7 @@ public class Numeric {
      }
 
     /**
-     * Returns the hypotenuse of a right-angled triangle, sqrt(x^2 +y^2), without intermediate overflow or underflow.
+     * Returns the hypotenuse of a right-angled triangle, sqrt(x^2 + y^2), without intermediate overflow or underflow.
      *
      * @param x the first value.
      * @param y the second value.
