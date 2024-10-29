@@ -770,11 +770,9 @@ public class TableTools {
         final WritableRowSet rowSet = getRowSet(columnHolders);
         final LinkedHashMap<String, ColumnSource<?>> columns =
                 Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, rowSet.toTracking(), columns, null, attributes) {
-            {
-                setFlat();
-            }
-        };
+        final QueryTable queryTable = new QueryTable(definition, rowSet.toTracking(), columns, null, attributes);
+        queryTable.setFlat();
+        return queryTable;
     }
 
     /**

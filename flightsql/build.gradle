@@ -3,7 +3,7 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description = 'The Deephaven flight SQL library'
+description = 'The Deephaven Flight SQL library'
 
 sourceSets {
     jdbcTest {
@@ -29,7 +29,6 @@ dependencies {
     implementation libs.dagger
     implementation libs.arrow.flight.sql
 
-//    testImplementation project(':extensions-csv')
     testImplementation project(':authorization')
     testImplementation project(':server-test-utils')
 
