@@ -4,27 +4,34 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
-import org.apache.arrow.flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public final class ActionRouter {
+
+    private static boolean enabled(ActionResolver resolver) {
+        final String property =
+                ActionResolver.class.getSimpleName() + "." + resolver.getClass().getSimpleName() + ".enabled";
+        return Configuration.getInstance().getBooleanWithDefault(property, true);
+    }
 
     private final Set<ActionResolver> resolvers;
 
     @Inject
     public ActionRouter(Set<ActionResolver> resolvers) {
-        this.resolvers = Objects.requireNonNull(resolvers);
+        this.resolvers = resolvers.stream()
+                .filter(ActionRouter::enabled)
+                .collect(Collectors.toSet());
     }
 
     /**

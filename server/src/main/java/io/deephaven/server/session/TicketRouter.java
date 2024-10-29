@@ -4,6 +4,7 @@
 package io.deephaven.server.session;
 
 import com.google.rpc.Code;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -33,6 +34,13 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class TicketRouter {
+
+    private static boolean enabled(TicketResolver resolver) {
+        final String property =
+                TicketResolver.class.getSimpleName() + "." + resolver.getClass().getSimpleName() + ".enabled";
+        return Configuration.getInstance().getBooleanWithDefault(property, true);
+    }
+
     private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap =
             new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
     private final KeyedObjectHashMap<String, PathResolverPrefixedBase> prefixedPathResolverMap =
@@ -45,7 +53,8 @@ public class TicketRouter {
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
-            final Set<TicketResolver> resolvers) {
+            Set<TicketResolver> resolvers) {
+        resolvers = resolvers.stream().filter(TicketRouter::enabled).collect(Collectors.toSet());
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
         this.commandResolvers = resolvers.stream()
                 .filter(CommandResolver.class::isInstance)
