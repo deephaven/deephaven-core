@@ -475,7 +475,7 @@ def adapter(
     if s3_instructions:
         if not _JIcebergToolsS3:
             raise DHError(
-                message="`adapter` with s3_instructions requires the Iceberg-specific Deephaven S3 extensions to be included in the package"
+                message="`adapter` with s3_instructions requires the Iceberg-specific Deephaven S3 extensions to be installed"
             )
         try:
             return IcebergCatalogAdapter(
