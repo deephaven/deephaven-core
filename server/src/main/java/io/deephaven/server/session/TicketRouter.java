@@ -5,6 +5,7 @@ package io.deephaven.server.session;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -340,7 +341,10 @@ public class TicketRouter {
      * @param visitor the callback to invoke per descriptor path
      */
     public void visitFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
+        final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
+        try (final QueryPerformanceNugget ignored = qpr.getNugget("visitFlightInfo")) {
+            byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
+        }
     }
 
     public static Flight.FlightInfo getFlightInfo(final Table table,

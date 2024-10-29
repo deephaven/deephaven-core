@@ -10,6 +10,7 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -38,6 +39,7 @@ import io.deephaven.server.session.CommandResolver;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.sql.SqlParseException;
 import io.deephaven.sql.UnsupportedSqlOperation;
 import io.deephaven.util.SafeCloseable;
@@ -106,9 +108,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -263,7 +262,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private static final String TABLE_TYPE_TABLE = "TABLE";
     private static final Duration FIXED_TICKET_EXPIRE_DURATION = Duration.ofMinutes(1);
-    private static final long QUERY_WATCHDOG_TIMEOUT_NANOS = Duration.ofSeconds(5).toNanos();
+    private static final long QUERY_WATCHDOG_TIMEOUT_MILLIS = Duration
+            .parse(Configuration.getInstance().getStringWithDefault("FlightSQL.queryTimeout", "PT5s")).toMillis();
 
     private static final Logger log = LoggerFactory.getLogger(FlightSqlResolver.class);
 
@@ -294,7 +294,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     // TicketResolvers).
     // private final TicketRouter router;
     private final ScopeTicketResolver scopeTicketResolver;
-    private final ScheduledExecutorService scheduler;
+    private final Scheduler scheduler;
     private final Authorization authorization;
     private final KeyedObjectHashMap<ByteString, QueryBase> queries;
     private final KeyedObjectHashMap<ByteString, PreparedStatement> preparedStatements;
@@ -303,7 +303,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     public FlightSqlResolver(
             final AuthorizationProvider authProvider,
             final ScopeTicketResolver scopeTicketResolver,
-            final ScheduledExecutorService scheduler) {
+            final Scheduler scheduler) {
         this.authorization = Objects.requireNonNull(authProvider.getTicketResolverAuthorization());
         this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
         this.scheduler = Objects.requireNonNull(scheduler);
@@ -754,7 +754,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private Table executeSqlQuery(SessionState session, String sql) {
         // See SQLTODO(catalog-reader-implementation)
-        // final QueryScope queryScope = sessionState.getExecutionContext().getQueryScope();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         // noinspection unchecked,rawtypes
         final Map<String, Table> queryScopeTables =
@@ -762,6 +761,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
+        // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
@@ -921,8 +921,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private final ByteString handleId;
         protected final SessionState session;
 
-        private ScheduledFuture<?> watchdog;
-
         private boolean initialized;
         private boolean resolved;
         private Table table;
@@ -957,7 +955,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 throw new IllegalStateException(
                         "QueryBase implementation has a bug, should have set table");
             }
-            watchdog = scheduler.schedule(this::onWatchdog, QUERY_WATCHDOG_TIMEOUT_NANOS, TimeUnit.NANOSECONDS);
+            // Note: we aren't currently providing a way to proactively cleanup query watchdogs - given their
+            // short-lived nature, they will execute "quick enough" for most use cases.
+            scheduler.runAfterDelay(QUERY_WATCHDOG_TIMEOUT_MILLIS, this::onWatchdog);
             return this;
         }
 
@@ -1013,27 +1013,28 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public void release() {
-            cleanup(true);
-        }
-
-        // ----------------------------------------------------------------------------------------------------------
-
-        private void onWatchdog() {
-            log.debug().append("Watchdog cleaning up query ").append(handleId.toString()).endl();
-            cleanup(false);
-        }
-
-        private synchronized void cleanup(boolean cancelWatchdog) {
-            if (cancelWatchdog && watchdog != null) {
-                watchdog.cancel(true);
-                watchdog = null;
+        public synchronized void release() {
+            if (!queries.remove(handleId, this)) {
+                return;
             }
+            doRelease();
+        }
+
+        private void doRelease() {
             if (table != null) {
                 table.dropReference();
                 table = null;
             }
-            queries.remove(handleId, this);
+        }
+
+        // ----------------------------------------------------------------------------------------------------------
+
+        private synchronized void onWatchdog() {
+            if (!queries.remove(handleId, this)) {
+                return;
+            }
+            log.debug().append("Watchdog cleaning up query ").append(handleId.toString()).endl();
+            doRelease();
         }
 
         private Ticket ticket() {

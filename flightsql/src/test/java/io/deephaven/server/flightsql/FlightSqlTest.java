@@ -108,16 +108,6 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
             "deephaven:isStyle", "false",
             "deephaven:isDateFormat", "false");
 
-    private static final Map<String, String> DEEPHAVEN_BYTES = Map.of(
-            "deephaven:isSortable", "false",
-            "deephaven:isRowStyle", "false",
-            "deephaven:isPartitioning", "false",
-            "deephaven:type", "byte[]",
-            "deephaven:componentType", "byte",
-            "deephaven:isNumberFormat", "false",
-            "deephaven:isStyle", "false",
-            "deephaven:isDateFormat", "false");
-
     private static final Map<String, String> DEEPHAVEN_INT = Map.of(
             "deephaven:isSortable", "true",
             "deephaven:isRowStyle", "false",

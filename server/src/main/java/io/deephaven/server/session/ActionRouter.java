@@ -34,8 +34,11 @@ public final class ActionRouter {
      * @param visitor the visitor
      */
     public void listActions(@Nullable final SessionState session, final Consumer<ActionType> visitor) {
-        for (ActionResolver resolver : resolvers) {
-            resolver.listActions(session, visitor);
+        final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
+        try (final QueryPerformanceNugget ignored = qpr.getNugget("listActions")) {
+            for (ActionResolver resolver : resolvers) {
+                resolver.listActions(session, visitor);
+            }
         }
     }
 
