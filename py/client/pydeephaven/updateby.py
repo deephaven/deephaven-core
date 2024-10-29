@@ -135,7 +135,7 @@ def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.NON_NULL
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_NON_NULL
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -151,7 +151,7 @@ def cum_count_null(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.NULL
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_NULL
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -167,7 +167,7 @@ def cum_count_neg(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.NEGATIVE
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_NEGATIVE
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -183,7 +183,7 @@ def cum_count_pos(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.NEGATIVE
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_NEGATIVE
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -199,7 +199,7 @@ def cum_count_zero(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.ZERO
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_ZERO
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -215,7 +215,7 @@ def cum_count_nan(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.NAN
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_NAN
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -231,7 +231,7 @@ def cum_count_inf(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.INFINITE
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_INFINITE
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)
@@ -247,7 +247,7 @@ def cum_count_finite(cols: Union[str, List[str]]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.FINITE
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_FINITE
     ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
     return UpdateByOperation(ub_column=ub_column)

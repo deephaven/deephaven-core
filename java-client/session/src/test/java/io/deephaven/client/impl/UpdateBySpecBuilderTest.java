@@ -106,29 +106,29 @@ public class UpdateBySpecBuilderTest {
             final UpdateByCumulativeCount.CountType countType;
             switch (spec.countType()) {
                 case NULL:
-                    countType = UpdateByCumulativeCount.CountType.NULL;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NULL;
                     break;
                 case NEGATIVE:
-                    countType = UpdateByCumulativeCount.CountType.NEGATIVE;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NEGATIVE;
                     break;
                 case POSITIVE:
-                    countType = UpdateByCumulativeCount.CountType.POSITIVE;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_POSITIVE;
                     break;
                 case ZERO:
-                    countType = UpdateByCumulativeCount.CountType.ZERO;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_ZERO;
                     break;
                 case NAN:
-                    countType = UpdateByCumulativeCount.CountType.NAN;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NAN;
                     break;
                 case INFINITE:
-                    countType = UpdateByCumulativeCount.CountType.INFINITE;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_INFINITE;
                     break;
                 case FINITE:
-                    countType = UpdateByCumulativeCount.CountType.FINITE;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_FINITE;
                     break;
                 case NON_NULL:
                 default:
-                    countType = UpdateByCumulativeCount.CountType.NON_NULL;
+                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NON_NULL;
                     break;
             }
 

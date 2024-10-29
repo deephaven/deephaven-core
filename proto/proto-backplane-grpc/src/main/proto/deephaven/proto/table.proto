@@ -581,14 +581,14 @@ message UpdateByRequest {
         message UpdateByCumulativeCount {
             enum CountType {
               COUNT_TYPE_NOT_SPECIFIED = 0;
-              NON_NULL = 1;
-              NULL = 2;
-              NEGATIVE = 3;
-              POSITIVE = 4;
-              ZERO = 5;
-              NAN = 6;
-              INFINITE = 7;
-              FINITE = 8;
+              COUNT_TYPE_NON_NULL = 1;
+              COUNT_TYPE_NULL = 2;
+              COUNT_TYPE_NEGATIVE = 3;
+              COUNT_TYPE_POSITIVE = 4;
+              COUNT_TYPE_ZERO = 5;
+              COUNT_TYPE_NAN = 6;
+              COUNT_TYPE_INFINITE = 7;
+              COUNT_TYPE_FINITE = 8;
             }
             CountType count_type = 1;
         }

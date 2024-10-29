@@ -186,21 +186,21 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static CumCountSpec adaptCount(@SuppressWarnings("unused") UpdateByCumulativeCount count) {
         switch (count.getCountType()) {
-            case NULL:
+            case COUNT_TYPE_NULL:
                 return CumCountSpec.of(CumCountSpec.CumCountType.NULL);
-            case NEGATIVE:
+            case COUNT_TYPE_NEGATIVE:
                 return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE);
-            case POSITIVE:
+            case COUNT_TYPE_POSITIVE:
                 return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE);
-            case ZERO:
+            case COUNT_TYPE_ZERO:
                 return CumCountSpec.of(CumCountSpec.CumCountType.ZERO);
-            case NAN:
+            case COUNT_TYPE_NAN:
                 return CumCountSpec.of(CumCountSpec.CumCountType.NAN);
-            case INFINITE:
+            case COUNT_TYPE_INFINITE:
                 return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE);
-            case FINITE:
+            case COUNT_TYPE_FINITE:
                 return CumCountSpec.of(CumCountSpec.CumCountType.FINITE);
-            case NON_NULL:
+            case COUNT_TYPE_NON_NULL:
             case COUNT_TYPE_NOT_SPECIFIED: // default to non-null when not specified
             default:
                 return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL);
