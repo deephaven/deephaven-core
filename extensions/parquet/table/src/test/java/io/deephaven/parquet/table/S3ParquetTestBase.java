@@ -518,20 +518,17 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     }
 
     @Test
-    public void testReadWriteUsingProfile() throws IOException {
+    public void testInvalidKeysFromProfile() throws IOException {
         final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
-        Path tempConfigFile = null;
-        Path tempCredentialsFile = null;
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
         try {
-            // Create temporary config and credentials file and write wrong credentials to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
-            final String configData = "[profile test-user]\nregion = wrong-region";
+            final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
-            final String credentialsData = "[test-user]\naws_access_key_id = foo\naws_secret_access_key = bar";
+            final String credentialsData = "[test-user]\naws_access_key_id = badaccesskey" +
+                    "\naws_secret_access_key = badsecretkey";
             Files.write(tempCredentialsFile, credentialsData.getBytes());
-
             final S3Instructions s3Instructions = S3Instructions.builder()
                     .readTimeout(Duration.ofSeconds(3))
                     .endpointOverride(s3Endpoint())
@@ -551,21 +548,20 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             }
         } finally {
             // Delete the temporary files
-            if (tempConfigFile != null) {
-                Files.deleteIfExists(tempConfigFile);
-            }
-            if (tempCredentialsFile != null) {
-                Files.delete(tempCredentialsFile);
-            }
+            Files.delete(tempConfigFile);
+            Files.delete(tempCredentialsFile);
         }
+    }
 
+    @Test
+    public void testReadWriteUsingProfile() throws IOException {
+        final Table table = TableTools.emptyTable(5).update("someIntColumn = (int) i");
+        // Create temporary config and credentials file and write correct credentials and region to them
+        final Path tempConfigFile = Files.createTempFile("config", ".tmp");
+        final Path tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
         try {
-            // Create temporary config and credentials file and write correct credentials and region to them
-            tempConfigFile = Files.createTempFile("config", ".tmp");
             final String configData = "[profile test-user]\nregion = " + region();
             Files.write(tempConfigFile, configData.getBytes());
-
-            tempCredentialsFile = Files.createTempFile("credentials", ".tmp");
             final String credentialsData = "[test-user]\naws_access_key_id = " + accessKey() +
                     "\naws_secret_access_key = " + secretAccessKey();
             Files.write(tempCredentialsFile, credentialsData.getBytes());
