@@ -555,7 +555,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static MemoizedOperationKey wouldMatch(String [] names, WhereFilter... filters) {
+    public static MemoizedOperationKey wouldMatch(String[] names, WhereFilter... filters) {
         if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
             return new WouldMatch(names, filters);
         }

@@ -102,9 +102,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     /**
      * Initialize the filters.
      *
-     * <p>We must initialize our filters before the wouldMatch operation's call to QueryTable's getResultNoMemo method,
-     * so that memoization processing can correctly compare them.  MatchFilters do not properly implement memoization
-     * before initialization, and they are the most common filter to memoize.</p>
+     * <p>
+     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResultNoMemo method, so
+     * that memoization processing can correctly compare them. MatchFilters do not properly implement memoization before
+     * initialization, and they are the most common filter to memoize.
+     * </p>
      *
      * @param parent the parent table to have wouldMatch applied
      */
@@ -191,7 +193,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
-        return MemoizedOperationKey.wouldMatch(matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
+        return MemoizedOperationKey.wouldMatch(
+                matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
     }
 
     /**
