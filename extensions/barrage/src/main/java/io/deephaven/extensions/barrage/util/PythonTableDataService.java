@@ -154,7 +154,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                     } catch (final Exception e) {
                         final String schemaType = ii % 2 == 0 ? "data table" : "partitioning column";
                         asyncState.setError(new IllegalArgumentException(String.format(
-                                "failed to parse %s schema message", schemaType), e));
+                                "Failed to parse %s schema message", schemaType), e));
                         return;
                     }
                 }
