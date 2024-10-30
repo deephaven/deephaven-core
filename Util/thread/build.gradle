@@ -3,7 +3,7 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description 'util-thread: Deep haven utilities for threading and thread dumps'
+description 'util-thread: Deephaven utilities for threading and thread dumps'
 
 dependencies {
     api project(':IO')
