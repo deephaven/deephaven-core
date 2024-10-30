@@ -113,8 +113,9 @@ public class ParsedProperties extends Properties {
      *
      * @param ignoreScopes True if this parser should ignore scope restrictions, false otherwise. Used by the
      *        PropertyInspector when checking whether required or disallowed properties are present.
+     * @param context the {@link ConfigurationContext} for determining environment settings
      */
-    public ParsedProperties(final boolean ignoreScopes, final @NotNull ConfigurationContext context) {
+    public ParsedProperties(final boolean ignoreScopes, @NotNull final ConfigurationContext context) {
         this.context = context;
         finalProperties = new HashSet<>();
         lineNumbers = new HashMap<>();

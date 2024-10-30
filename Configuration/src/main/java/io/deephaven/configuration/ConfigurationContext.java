@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * A class for determining the environment that a configuration is running within.
+ *  An interface for classes that determine the environment a {@link Configuration} is running within.
  */
 public interface ConfigurationContext {
     /**
@@ -21,7 +21,7 @@ public interface ConfigurationContext {
 
     /**
      * Return the configuration contexts. This is the list of properties that may have been used to parse the
-     * configuration file. This collection is immutable.
+     * configuration file. Implementations must be sure to return an immutable collection.
      *
      * @return the configuration contexts.
      */

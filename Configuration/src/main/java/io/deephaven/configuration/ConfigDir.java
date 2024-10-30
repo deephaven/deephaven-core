@@ -22,7 +22,7 @@ public final class ConfigDir {
      * @return the config directory
      */
     public static Optional<Path> get() {
-        return getConfigDirOptional().map(Paths::get);
+        return getOptional().map(Paths::get);
     }
 
     /**
@@ -34,7 +34,7 @@ public final class ConfigDir {
      * @return the config directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = getConfigDirOptional().orElse(null);
+        final String existing = getOptional().orElse(null);
         if (existing != null) {
             return Paths.get(existing);
         }
@@ -49,7 +49,7 @@ public final class ConfigDir {
      *
      * @return the configuration file
      */
-    public static String defaultConfigurationFile() {
+    public static String configurationFile() {
         Optional<String> optional = Optional.ofNullable(System.getProperty(ROOT_FILE_PROP));
         if (!optional.isPresent()) {
             optional = configDirectoryFileIfExists();
@@ -64,7 +64,7 @@ public final class ConfigDir {
                 .map(Path::toString);
     }
 
-    private static Optional<String> getConfigDirOptional() {
+    private static Optional<String> getOptional() {
         Optional<String> optional = viaProperty();
         if (!optional.isPresent()) {
             optional = viaEnvVar();

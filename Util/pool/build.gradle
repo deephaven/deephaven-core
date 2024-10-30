@@ -3,6 +3,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+description 'util-pool: Optional extensions of the io.deephaven.base.pool module'
+
 dependencies {
     api project(':Base')
     api project(":IO")

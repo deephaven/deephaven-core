@@ -105,7 +105,7 @@ public class TestConfiguration extends TestCase {
 
         try {
             System.setProperty(FILENAME_PROPERTY, "nonexistent");
-            Configuration.newConfigurationForTesting();
+            Configuration.newStandaloneConfiguration();
             fail("Expected exception");
         } catch (ConfigurationException expected) {
             // Expected

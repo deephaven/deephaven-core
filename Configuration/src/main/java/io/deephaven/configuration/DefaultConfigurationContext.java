@@ -8,7 +8,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- * A class for determining the environment that a configuration is running within.
+ *  Default {@link ConfigurationContext} implementation.
  */
 public class DefaultConfigurationContext implements ConfigurationContext {
     // Note that we explicitly use 'host' as a value in the configuration files.

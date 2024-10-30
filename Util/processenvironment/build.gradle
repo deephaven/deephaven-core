@@ -3,6 +3,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
+description 'util-processenvironment: Deephaven ProcessEnvironment and default implementations'
+
 dependencies {
     api project(':Configuration')
     api project(':IO')
