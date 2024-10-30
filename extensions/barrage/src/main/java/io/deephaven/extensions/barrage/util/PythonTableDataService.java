@@ -930,7 +930,9 @@ public class PythonTableDataService extends AbstractTableDataService {
         SafeCloseable cancellationCallback;
     }
 
-    // this tool is used to simplify backend asynchronous RPC patterns for otherwise synchronous operations
+    /**
+     * Helper used to simplify backend asynchronous RPC patterns for otherwise synchronous operations.
+     */
     private static class AsyncState<T> {
         private T result;
         private RuntimeException error;
