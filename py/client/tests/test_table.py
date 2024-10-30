@@ -55,8 +55,8 @@ class TableTestCase(BaseTestCase):
         new_table = self.session.import_table(pa_table).update(formulas=['Sum = a + b + c + d'])
         pa_table2 = new_table.to_arrow()
         df = pa_table2.to_pandas()
-        self.assertEquals(df.shape[1], 6)
-        self.assertEquals(1000, len(df.index))
+        self.assertEqual(df.shape[1], 6)
+        self.assertEqual(1000, len(df.index))
 
     def test_drop_columns(self):
         pa_table = csv.read_csv(self.csv_file)
@@ -65,7 +65,7 @@ class TableTestCase(BaseTestCase):
         for f in table1.schema:
             column_names.append(f.name)
         table2 = table1.drop_columns(cols=column_names[:-1])
-        self.assertEquals(1, len(table2.schema))
+        self.assertEqual(1, len(table2.schema))
 
     def test_usv(self):
         ops = [
@@ -350,6 +350,31 @@ class TableTestCase(BaseTestCase):
                 pa_table1 = rt_option.to_arrow()
                 pa_table2 = rt_default.to_arrow()
                 self.assertNotEqual(pa_table2, pa_table1)
+
+    def test_slice(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+
+        with self.subTest("0, positive"):
+            result_table = test_table.slice(0, 50)
+            self.assertEqual(result_table.size, 50)
+        
+        with self.subTest("negative, 0"):
+            result_table = test_table.slice(-50, 0)
+            self.assertEqual(result_table.size, 50)
+
+        with self.subTest("positive, negative"):
+            result_table = test_table.slice(50, -50)
+            self.assertEqual(result_table.size, test_table.size - 100)
+
+        with self.subTest("positive, negative"):
+            result_table = test_table.slice(-1 * (test_table.size - 50), test_table.size - 50)
+            self.assertEqual(result_table.size, test_table.size - 100)
+
+        with self.subTest("negative, positive - empty"):
+            result_table = test_table.slice(-1, 1)
+            self.assertEqual(result_table.size, 0)
+
 
 
 if __name__ == '__main__':

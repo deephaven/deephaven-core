@@ -16,6 +16,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -822,14 +823,15 @@ public class ParquetTools {
         if (readInstructions.isRefreshing()) {
             throw new IllegalArgumentException("Unable to have a refreshing single parquet file");
         }
-        final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
-                () -> new IllegalArgumentException("Table definition must be provided"));
+        final TableDefinition tableDefinition = ParquetInstructions.ensureDefinition(readInstructions);
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
         final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
-                null);
+                null,
+                TableUpdateMode.STATIC, // exactly one location here
+                TableUpdateMode.STATIC); // parquet files are static
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
@@ -857,11 +859,10 @@ public class ParquetTools {
         if (readInstructions.getTableDefinition().isEmpty()) {
             // Infer the definition
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(locationKeyFinder);
-            final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
+            useInstructions = infer(inferenceKeys, readInstructions);
+            definition = useInstructions.getTableDefinition().orElseThrow();
             // In the case of a static output table, we can re-use the already fetched inference keys
-            useLocationKeyFinder = readInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
-            definition = inference.getFirst();
-            useInstructions = inference.getSecond();
+            useLocationKeyFinder = useInstructions.isRefreshing() ? locationKeyFinder : inferenceKeys;
         } else {
             definition = readInstructions.getTableDefinition().get();
             useInstructions = readInstructions;
@@ -890,11 +891,23 @@ public class ParquetTools {
                         StandaloneTableKey.getInstance(),
                         keyFinder,
                         new ParquetTableLocationFactory(useInstructions),
-                        refreshService),
+                        refreshService,
+                        // If refreshing, new locations can be discovered but they will be appended
+                        // to the locations list
+                        useInstructions.isRefreshing()
+                                ? TableUpdateMode.APPEND_ONLY
+                                : TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC // parquet files are static
+                ),
                 updateSourceRegistrar);
     }
 
-    private static Pair<TableDefinition, ParquetInstructions> infer(
+    /**
+     * Infers additional information regarding the parquet file(s) based on the inferenceKeys and returns a potentially
+     * updated parquet instructions. If the incoming {@code readInstructions} does not have a {@link TableDefinition},
+     * the returned instructions will have an inferred {@link TableDefinition}.
+     */
+    private static ParquetInstructions infer(
             final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
             final ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
@@ -929,7 +942,7 @@ public class ParquetTools {
         columnDefinitionsFromParquetFile.stream()
                 .filter(columnDefinition -> !partitionKeys.contains(columnDefinition.getName()))
                 .forEach(allColumns::add);
-        return new Pair<>(TableDefinition.of(allColumns), schemaInfo.getSecond());
+        return ensureTableDefinition(schemaInfo.getSecond(), TableDefinition.of(allColumns), true);
     }
 
     private static KnownLocationKeyFinder<ParquetTableLocationKey> toKnownKeys(
@@ -970,10 +983,6 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.METADATA_PARTITIONED);
-        if (readInstructions.getTableDefinition().isPresent()) {
-            throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
-                    "metadata files with custom table definition is currently not supported");
-        }
         final ParquetMetadataFileLayout layout =
                 ParquetMetadataFileLayout.create(sourceURI, readInstructions, channelsProvider);
         return readTable(layout,
@@ -1044,11 +1053,7 @@ public class ParquetTools {
         }
         // Infer the table definition
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = new KnownLocationKeyFinder<>(locationKey);
-        final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
-        final TableDefinition inferredTableDefinition = inference.getFirst();
-        final ParquetInstructions inferredInstructions = inference.getSecond();
-        return readTable(inferenceKeys.getFirstKey().orElseThrow(),
-                ensureTableDefinition(inferredInstructions, inferredTableDefinition, true));
+        return readTable(inferenceKeys.getFirstKey().orElseThrow(), infer(inferenceKeys, readInstructions));
     }
 
     @VisibleForTesting

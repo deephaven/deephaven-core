@@ -13,7 +13,7 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.codec.*;
-import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -104,16 +104,28 @@ public class TestMapCodecColumns {
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
-        final File dest = new File(dir, "Table.parquet");
+        final String dest = new File(dir, "Table.parquet").getPath();
         try {
-            ParquetTools.writeTable(table, dest.getPath(), writeInstructions);
-            final Table result = ParquetTools.readTable(dest.getPath());
-            TableTools.show(result);
-            TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
-            TstUtils.assertTableEquals(table, result);
+            ParquetTools.writeTable(table, dest, writeInstructions);
+            doColumnsTestHelper(dest);
         } finally {
             FileUtils.deleteRecursively(dir);
         }
+    }
+
+    @Test
+    public void doLegacyColumnsTest() {
+        // Make sure that we can read legacy data encoded with the old codec implementations.
+        final String dest =
+                TestMapCodecColumns.class.getResource("/ReferenceParquetWithMapCodecData.parquet").getFile();
+        doColumnsTestHelper(dest);
+    }
+
+    private void doColumnsTestHelper(final String dest) {
+        final Table result = ParquetTools.readTable(dest);
+        TableTools.show(result);
+        Assert.assertEquals(TABLE_DEFINITION, result.getDefinition());
+        TstUtils.assertTableEquals(table, result);
     }
 
     @SuppressWarnings({"unchecked"})

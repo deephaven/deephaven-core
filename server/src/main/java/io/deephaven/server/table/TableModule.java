@@ -239,4 +239,9 @@ public interface TableModule {
     @BatchOpCode(BatchTableRequest.Operation.OpCase.META_TABLE)
     GrpcTableOperation<?> bindMeta(MetaTableGrpcImpl op);
 
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SLICE)
+    GrpcTableOperation<?> bindSlice(SliceGrpcImpl op);
+
 }

@@ -168,6 +168,11 @@ public enum ParentsVisitor implements Visitor<Stream<TableSpec>> {
     }
 
     @Override
+    public Stream<TableSpec> visit(SliceTable sliceTable) {
+        return single(sliceTable);
+    }
+
+    @Override
     public Stream<TableSpec> visit(ReverseTable reverseTable) {
         return single(reverseTable);
     }
