@@ -92,15 +92,26 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
-        compilationProcessor.compile();
-
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);
+    }
+
+    /**
+     * Initialize the filters.
+     *
+     * <p>We must initialize our filters before the wouldMatch operation's call to QueryTable's getResultNoMemo method,
+     * so that memoization processing can correctly compare them.  MatchFilters do not properly implement memoization
+     * before initialization, and they are the most common filter to memoize.</p>
+     *
+     * @param parent the parent table to have wouldMatch applied
+     */
+    void initializeFilters(@NotNull QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
     }
 
     @Override
@@ -180,7 +191,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
-        return MemoizedOperationKey.wouldMatch();
+        return MemoizedOperationKey.wouldMatch(matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
     }
 
     /**

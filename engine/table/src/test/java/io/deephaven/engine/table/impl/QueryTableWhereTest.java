@@ -1677,4 +1677,35 @@ public abstract class QueryTableWhereTest {
 
         assertTableEquals(source.where("FV in `A`, `B`"), result);
     }
+
+    @Test
+    public void testWhereFilterEquality() {
+        assertNotEquals(WhereFilterFactory.getExpression("A in 7"), WhereFilterFactory.getExpression("A in 7, 8"));
+        assertEquals(WhereFilterFactory.getExpression("A in 7, 8"), WhereFilterFactory.getExpression("A in 7, 8"));
+
+        final Table x = TableTools.newTable(intCol("A", 1, 2, 3), intCol("B", 4, 2, 1));
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter f2 = WhereFilterFactory.getExpression("A in 8");
+        final WhereFilter f3 = WhereFilterFactory.getExpression("A in 7");
+
+        final Table ignored = x.where(Filter.and(f1, f2, f3));
+
+        assertEquals(f1, f3);
+        assertNotEquals(f1, f2);
+        assertNotEquals(f2, f3);
+
+        final WhereFilter fa = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter fb = WhereFilterFactory.getExpression("B in 7");
+        final WhereFilter fap = WhereFilterFactory.getExpression("A not in 7");
+        assertNotEquals(fa, fb);
+        assertNotEquals(fa, fap);
+
+        final WhereFilter fs = WhereFilterFactory.getExpression("S icase in `A`");
+        final WhereFilter fs2 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        final WhereFilter fs3 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        assertNotEquals(fs, fs2);
+        assertNotEquals(fs, fs3);
+        assertEquals(fs2, fs3);
+    }
 }
