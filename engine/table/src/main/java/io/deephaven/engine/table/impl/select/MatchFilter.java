@@ -861,13 +861,13 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return false;
         }
 
+        final MatchFilter that = (MatchFilter) o;
+
         // The equality check is used for memoization, and we cannot actually determine equality of an uninitialized
         // filter, because there is too much state that has not been realized.
-        if (!initialized) {
+        if (!initialized && !that.initialized) {
             throw new UnsupportedOperationException("MatchFilter has not been initialized");
         }
-
-        final MatchFilter that = (MatchFilter) o;
 
         // start off with the simple things
         if (invertMatch != that.invertMatch ||
