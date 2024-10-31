@@ -858,37 +858,27 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
+
+        // The equality check is used for memoization, and we cannot actually determine equality of an uninitialized
+        // filter, because there is too much state that has not been realized.
+        if (!initialized) {
+            throw new UnsupportedOperationException("MatchFilter has not been initialized");
+        }
+
         final MatchFilter that = (MatchFilter) o;
 
         // start off with the simple things
-        // Note that we cannot compare an uninitialized filter with an initialized filter.
         if (invertMatch != that.invertMatch ||
                 caseInsensitive != that.caseInsensitive ||
-                !Objects.equals(columnName, that.columnName) ||
-                initialized != that.initialized) {
+                !Objects.equals(columnName, that.columnName)) {
             return false;
         }
 
-        // when uninitialized we should compare our strValues (if present); but if initialized, or no strValues are
-        // present we must compare the values
-        if (!initialized && strValues != null) {
-            if (!Arrays.equals(strValues, that.strValues)) {
-                return false;
-            }
-        } else if (!Arrays.equals(values, that.values)) {
+        if (!Arrays.equals(values, that.values)) {
             return false;
         }
 
-        // if there is a failover filter that has been initialized, we need to check that too
-        if (!Objects.equals(failoverFilter, that.failoverFilter)) {
-            if (initialized) {
-                return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
-            }
-            return false;
-        }
-
-        // we've run out of everything else to check
-        return true;
+        return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
     }
 
     @Override
