@@ -962,10 +962,10 @@ public class PythonTableDataService extends AbstractTableDataService {
 
         public synchronized void setResult(final T result) {
             if (this.result != null) {
-                throw new IllegalStateException("callback can only be called once");
+                throw new IllegalStateException("Callback can only be called once");
             }
             if (result == null) {
-                throw new IllegalArgumentException("callback invoked with null result");
+                throw new IllegalArgumentException("Callback invoked with null result");
             }
             this.result = result;
             notifyAll();
