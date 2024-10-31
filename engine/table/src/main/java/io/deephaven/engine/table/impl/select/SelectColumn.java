@@ -219,7 +219,7 @@ public interface SelectColumn extends Selectable {
     boolean isStateless();
 
     /**
-     * Returns true if this column uses rhw virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * Returns true if this column uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
      */
     default boolean hasVirtualRowVariables() {
         return false;
