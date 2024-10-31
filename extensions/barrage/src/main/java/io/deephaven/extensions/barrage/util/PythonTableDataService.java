@@ -226,27 +226,24 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final Consumer<TableLocationKeyImpl> tableLocationListener,
                 @NotNull final Runnable successCallback,
                 @NotNull final Consumer<RuntimeException> failureCallback) {
-            final AtomicBoolean mustCloseSubscription = new AtomicBoolean();
-            final AtomicReference<PyObject> cancellationCallbackRef = new AtomicReference<>();
+            final AtomicBoolean locationProcessingFailed = new AtomicBoolean();
+            final AtomicReference<SafeCloseable> cancellationCallbackRef = new AtomicReference<>();
 
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
+                        if (locationProcessingFailed.get()) {
+                            return;
+                        }
                         try {
                             processTableLocationKey(
                                     definition, tableKey, tableLocationListener, tableLocationKey, byteBuffers);
                         } catch (final RuntimeException e) {
                             failureCallback.accept(e);
-
                             // we must also cancel the python subscription
-                            final PyObject cancellationCB;
-                            synchronized (mustCloseSubscription) {
-                                cancellationCB = cancellationCallbackRef.get();
-                                if (cancellationCB == null) {
-                                    mustCloseSubscription.set(true);
-                                }
-                            }
-                            if (cancellationCB != null) {
-                                cancellationCB.call("__call__");
+                            locationProcessingFailed.set(true);
+                            final SafeCloseable localCancellationCallback = cancellationCallbackRef.get();
+                            if (localCancellationCallback != null) {
+                                localCancellationCallback.close();
                             }
                         }
                     };
@@ -257,17 +254,23 @@ public class PythonTableDataService extends AbstractTableDataService {
             final PyObject cancellationCallback = pyTableDataService.call(
                     "_subscribe_to_table_locations", tableKey.key,
                     convertingListener, successCallback, onFailure);
-            synchronized (mustCloseSubscription) {
-                if (mustCloseSubscription.get()) {
-                    cancellationCallback.call("__call__");
-                    return () -> {
-                    };
-                } else {
-                    cancellationCallbackRef.set(cancellationCallback);
-                }
-            }
+            final SafeCloseable cancellationCallbackOnce = new SafeCloseable() {
 
-            return () -> cancellationCallback.call("__call__");
+                private final AtomicBoolean invoked = new AtomicBoolean();
+
+                @Override
+                public void close() {
+                    if (invoked.compareAndSet(false, true)) {
+                        cancellationCallback.call("__call__");
+                        cancellationCallbackRef.set(null);
+                    }
+                }
+            };
+            cancellationCallbackRef.set(cancellationCallbackOnce);
+            if (locationProcessingFailed.get()) {
+                cancellationCallbackOnce.close();
+            }
+            return cancellationCallbackOnce;
         }
 
         private void processTableLocationKey(
