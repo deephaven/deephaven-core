@@ -889,8 +889,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             throw new UnsupportedOperationException("MatchFilter has not been initialized");
         }
         int result = Objects.hash(columnName, invertMatch, caseInsensitive);
-        // we can use values because we are asserting initialization; the hash code should be stable and it cannot be
-        // stable before we convert the values
+        // we can use values because we know the filter has been initialized; the hash code should be stable and it
+        // cannot be stable before we convert the values
         result = 31 * result + Arrays.hashCode(values);
         return result;
     }
