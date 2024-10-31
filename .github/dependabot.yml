@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    open-pull-requests-limit: 99
     schedule:
       interval: "weekly"
     commit-message:
@@ -15,6 +16,7 @@ updates:
       - "stanbrub"
   - package-ecosystem: "gradle"
     directory: "/"
+    open-pull-requests-limit: 99
     schedule:
       interval: "weekly"
     commit-message:

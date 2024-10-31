@@ -6,6 +6,8 @@ package io.deephaven.engine.liveness;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Interface for objects that retainReference {@link LivenessReferent}s until such time as they are no longer necessary.
@@ -36,4 +38,55 @@ public interface LivenessManager {
      * @return Whether the referent was in fact added
      */
     boolean tryManage(@NotNull LivenessReferent referent);
+
+    /**
+     * If this manager manages {@code referent} one or more times, drop one such reference. If this manager is also a
+     * {@link LivenessReferent}, then it must also be live.
+     *
+     * @param referent The referent to drop
+     */
+    @FinalDefault
+    default void unmanage(@NotNull LivenessReferent referent) {
+        if (!tryUnmanage(referent)) {
+            throw new LivenessStateException(this + " cannot unmanage " + referent.getReferentDescription());
+        }
+    }
+
+    /**
+     * If this manager manages referent one or more times, drop one such reference. If this manager is also a
+     * {@link LivenessReferent}, then this method is a no-op if {@code this} is not live.
+     *
+     * @param referent The referent to drop
+     * @return If this node is also a {@link LivenessReferent}, whether this node was live and thus in fact tried to
+     *         drop a reference. Else always returns {@code true} if dropping a reference via this method is supported
+     *         by the implementation.
+     */
+    boolean tryUnmanage(@NotNull LivenessReferent referent);
+
+    /**
+     * For each referent in {@code referent}, if this manager manages referent one or more times, drop one such
+     * reference. If this manager is also a {@link LivenessReferent}, then it must also be live.
+     *
+     * @param referents The referents to drop
+     */
+    @SuppressWarnings("unused")
+    @FinalDefault
+    default void unmanage(@NotNull Stream<? extends LivenessReferent> referents) {
+        if (!tryUnmanage(referents)) {
+            throw new LivenessStateException(this + " is no longer live and cannot unmanage " +
+                    referents.map(LivenessReferent::getReferentDescription).collect(Collectors.joining()));
+        }
+    }
+
+    /**
+     * For each referent in referents, if this manager manages referent one or more times, drop one such reference. If
+     * this manager is also a {@link LivenessReferent}, then this method is a no-op if {@code this} is not live.
+     *
+     * @param referents The referents to drop
+     * @return If this node is also a {@link LivenessReferent}, whether this node was live and thus in fact tried to
+     *         drop the references. Else always returns {@code true} if dropping a reference via this method is
+     *         supported by the implementation.
+     */
+    @SuppressWarnings("unused")
+    boolean tryUnmanage(@NotNull Stream<? extends LivenessReferent> referents);
 }

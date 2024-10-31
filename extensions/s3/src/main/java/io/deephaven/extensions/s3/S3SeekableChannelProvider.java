@@ -74,7 +74,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
+        this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
         this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));

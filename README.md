@@ -55,7 +55,7 @@ The Deephaven server can be installed and instantiated [from Docker](#from-docke
 This is the easiest way to get started with Deephaven. For complete instructions, see our [quickstart for Docker](https://deephaven.io/core/docs/getting-started/quickstart/). The table below shows installation dependencies.
 
 | Dependency     | Version  | OS      | Required/Recommended |
-| -------------- | -------- | --------| -------------------- |
+| -------------- | -------- | ------- | -------------------- |
 | Docker         | ^20.10.8 | All     | Required             |
 | Docker compose | ^2       | All     | Recommended          |
 | Windows        | 10+      | Windows | Required             |
@@ -109,7 +109,7 @@ docker compose up
 
 ### pip-installed Deephaven
 
-Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/tutorials/quickstart-pip/). For users with Windows operating systems, WSL is **not** required to use Deephaven this way.
+Users who wish to use Python but not Docker should use [pip-installed Deephaven](https://deephaven.io/core/docs/getting-started/pip-install/). For users with Windows operating systems, WSL is **not** required to use Deephaven this way.
 
 ```sh
 pip install --upgrade pip setuptools wheel
@@ -151,7 +151,7 @@ docker run hello-world
 ```
 
 > **_NOTE:_** Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
-to download and use the appropriate Java version for building and testing.
+> to download and use the appropriate Java version for building and testing.
 
 > **_NOTE:_** On Windows, all commands must be run inside a WSL 2 terminal.
 
@@ -182,13 +182,14 @@ cd deephaven-core
 #### Debugging
 
 You can debug the server by adding the `-Pdebug` flag, and then attaching a debugger to port 5005. This can be used in conjunction with other flags. For example, if you wanted to debug a server and startup with Groovy:
+
 ```sh
 ./gradlew server-jetty-app:run -Pgroovy -Pdebug
 ```
 
 ## Get the authentication key
 
-Deephaven, by default, uses [pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/) to authenticate against unauthorized access. 
+Deephaven, by default, uses [pre-shared key authentication](https://deephaven.io/core/docs/how-to-guides/authentication/auth-psk/) to authenticate against unauthorized access.
 
 ### Deephaven run from Docker
 
@@ -269,12 +270,12 @@ t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 
 ## Resources
 
-* [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
-* [Deephaven Community Slack](https://deephaven.io/slack)
-* [Discussions](https://github.com/deephaven/deephaven-core/discussions)
-* [Deephaven Community Core docs](https://deephaven.io/core/docs/)
-* [Java API docs](https://deephaven.io/core/javadoc/)
-* [Python API docs](https://deephaven.io/core/pydoc/)
+- [Help!](https://github.com/deephaven/deephaven-core/discussions/969)
+- [Deephaven Community Slack](https://deephaven.io/slack)
+- [Discussions](https://github.com/deephaven/deephaven-core/discussions)
+- [Deephaven Community Core docs](https://deephaven.io/core/docs/)
+- [Java API docs](https://deephaven.io/core/javadoc/)
+- [Python API docs](https://deephaven.io/core/pydoc/)
 
 ## Contributing
 

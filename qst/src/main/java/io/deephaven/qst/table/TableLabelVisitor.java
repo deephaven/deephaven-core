@@ -65,6 +65,11 @@ public class TableLabelVisitor extends TableVisitorGeneric<String> {
     }
 
     @Override
+    public String visit(SliceTable sliceTable) {
+        return String.format("slice(%d,%d)", sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive());
+    }
+
+    @Override
     public String visit(NaturalJoinTable naturalJoinTable) {
         return join("naturalJoin", naturalJoinTable);
     }
