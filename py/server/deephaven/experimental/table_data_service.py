@@ -52,8 +52,8 @@ class TableDataServiceBackend(ABC):
     def table_schema(self, table_key: TableKey,
                      schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
                      failure_cb: Callable[[Exception], None]) -> None:
-        """ Provides the table data schema and the partitioning values schema for the table with the given table key via
-        the schema_cb callback. The table data schema is not required to  include the partitioning columns defined in
+        """ Provides the table data schema and the partitioning column schema for the table with the given table key via
+        the schema_cb callback. The table data schema is not required to include the partitioning columns defined in
         the partitioning column schema.
 
         The failure callback should be invoked when a failure to provide the schemas occurs.
