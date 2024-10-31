@@ -861,32 +861,34 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         final MatchFilter that = (MatchFilter) o;
 
         // start off with the simple things
+        // Note that we cannot compare an uninitialized filter with an initialized filter.
         if (invertMatch != that.invertMatch ||
                 caseInsensitive != that.caseInsensitive ||
-                !Objects.equals(columnName, that.columnName)) {
+                !Objects.equals(columnName, that.columnName) ||
+                initialized != that.initialized) {
             return false;
         }
 
         // when uninitialized we should compare our strValues (if present); but if initialized, or no strValues are
         // present we must compare the values
-        if (!this.initialized && this.strValues != null) {
-            if (!Arrays.equals(this.strValues, that.strValues)) {
+        if (!initialized && strValues != null) {
+            if (!Arrays.equals(strValues, that.strValues)) {
                 return false;
             }
-        } else if (!Arrays.equals(this.values, that.values)) {
+        } else if (!Arrays.equals(values, that.values)) {
             return false;
         }
 
         // if there is a failover filter that has been initialized, we need to check that too
-        if (this.failoverFilter != that.failoverFilter) {
-            if (initialized && that.initialized) {
-                return this.getFailoverFilterIfCached() == that.getFailoverFilterIfCached();
+        if (!Objects.equals(failoverFilter, that.failoverFilter)) {
+            if (initialized) {
+                return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
             }
             return false;
         }
 
         // we've run out of everything else to check
-        return this.initialized == that.initialized;
+        return true;
     }
 
     @Override
