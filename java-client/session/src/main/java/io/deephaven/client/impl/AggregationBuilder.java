@@ -101,7 +101,6 @@ class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
     @Override
     public void visit(Formula formula) {
         out = singletonList(of(Builder::setFormula, AggregationFormula.newBuilder()
-                .setColumnName(formula.column().name())
-                .setFormula(formula.formula())));
+                .setFormula(formula.formulaString())));
     }
 }

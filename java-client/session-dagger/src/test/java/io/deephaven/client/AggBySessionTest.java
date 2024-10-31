@@ -186,7 +186,11 @@ public class AggBySessionTest extends TableSpecTestBase {
 
         @Override
         public void visit(Formula formula) {
+            out.add(Formula.of("Formula", "3.0 + 1"));
+            out.add(Formula.of("Formula", "sum(S)"));
             out.add(Formula.of("Formula", "sum(S + I)"));
+            out.add(Formula.of("Formula", "sum(S + I + D)"));
+            out.add(Formula.of("Formula", "sum(S + I + D + L)"));
         }
     }
 }

@@ -377,9 +377,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     private class DataFillerContext implements SafeCloseable {
 
         private final boolean[] columnsToFillMask;
-        final FillFromContext[] fillFromContexts;
+        protected final FillFromContext[] fillFromContexts;
 
-        private DataFillerContext(final boolean[] columnsToFillMask) {
+        private DataFillerContext(final boolean @NotNull [] columnsToFillMask) {
             this.columnsToFillMask = columnsToFillMask;
             fillFromContexts = new FillFromContext[resultColumnNames.length];
             for (int ci = 0; ci < resultColumnNames.length; ++ci) {

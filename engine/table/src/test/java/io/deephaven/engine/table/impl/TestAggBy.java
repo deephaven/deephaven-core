@@ -71,14 +71,22 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggFormula("min(each)", "each", "Min=B"),
                         AggFormula("max(each)", "each", "Max=B"),
                         AggFormula("sum(each)", "each", "Sum=B"),
+                        AggFormula("f_const=6.0 + 3"),
                         AggFormula("f_min=min(B)"),
                         AggFormula("f_max=max(B)"),
                         AggFormula("f_sum=sum(B)"),
-                        AggFormula("f_custom_sum=sum(B) + sum(C)"),
+                        AggFormula("f_sum_two_col=sum(B) + sum(C)"),
+                        AggFormula("f_custom_sum=max(A) * (sum(B) + sum(C))"),
                         AggFormula("f_weighted_avg=wavg(B, C)")),
                 "A");
         show(minMax);
+
         assertEquals(2, minMax.size());
+
+        DoubleVector consts = ColumnVectors.ofDouble(minMax, "f_const");
+        assertEquals(9.0, consts.get(0));
+        assertEquals(9.0, consts.get(1));
+
         IntVector mins = ColumnVectors.ofInt(minMax, "Min");
         assertEquals(1, mins.get(0));
         assertEquals(3, mins.get(1));
@@ -100,8 +108,12 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(33, sums.get(0));
         assertEquals(22, sums.get(1));
 
-        sums = ColumnVectors.ofLong(minMax, "f_custom_sum");
+        sums = ColumnVectors.ofLong(minMax, "f_sum_two_col");
         assertEquals(33 + 6, sums.get(0));
+        assertEquals(22 + 4, sums.get(1));
+
+        sums = ColumnVectors.ofLong(minMax, "f_custom_sum");
+        assertEquals(0, sums.get(0));
         assertEquals(22 + 4, sums.get(1));
 
         Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
@@ -241,10 +253,13 @@ public class TestAggBy extends RefreshingTableTestCase {
                         return queryTable.aggBy(List.of(
                                 AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
                                 AggFormula("max(each)", "each", "MaxI=intCol"),
+                                AggFormula("f_const=6.0 / 3"),
                                 AggFormula("f_min=min(intColNulls)"),
                                 AggFormula("f_max=max(doubleColNulls)"),
                                 AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
-                                AggFormula("f_custom_sum=sum(intColNulls) + sum(doubleColNulls)")), "Sym").sort("Sym");
+                                AggFormula(
+                                        "f_custom_sum=sum(intColNulls) + sum(doubleColNulls) + min(doubleColNulls)")),
+                                "Sym").sort("Sym");
                     }
                 },
                 new QueryTableTest.TableComparator(

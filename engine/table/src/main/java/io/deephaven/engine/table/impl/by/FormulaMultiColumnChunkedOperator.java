@@ -31,6 +31,8 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
 class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final GroupByChunkedOperator groupBy;
+    // TODO: `delegateToBy` is always true, for this class and FormulaChunkedOperator. Can we remove this and all
+    // the checks?
     private final boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
@@ -48,7 +50,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private ModifiedColumnSet updateUpstreamModifiedColumnSet;
 
     /**
-     * Construct an operator for applying a formula to a set of aggregation result columns.
+     * Construct an operator for applying a formula to a grouped table.
      *
      * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
@@ -287,7 +289,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
                 dataCopyContext.clearObjectColumnData(downstream.removed());
             }
             if (modifiesToProcess && addsToProcess) {
-                // Union the rowsets and do a single pass for efficiency.
+                // Union the rowsets and do a single pass.
                 try (final RowSequence combinedRowSequence = downstream.modified().union(downstream.added())) {
                     dataCopyContext.copyData(combinedRowSequence);
                 }
@@ -322,7 +324,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
      */
     private class DataFillerContext implements SafeCloseable {
 
-        final FillFromContext fillFromContext;
+        protected final FillFromContext fillFromContext;
 
         private DataFillerContext() {
             fillFromContext = resultColumn.makeFillFromContext(BLOCK_SIZE);

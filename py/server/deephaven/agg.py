@@ -175,7 +175,6 @@ def formula(formula: str, formula_param: str = None, cols: Union[str, List[str]]
     multiple input/output pairs are specified in the `cols` argument, the formula will be applied to each column in the
     list.
 
-
     Args:
         formula (str): the user defined formula to apply
         formula_param (str): If provided, supplies the parameter name for the input column's vector within the formula.

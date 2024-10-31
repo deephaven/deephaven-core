@@ -39,6 +39,13 @@ public abstract class Formula implements Aggregation {
     @Parameter
     public abstract String formula();
 
+    /**
+     * Return this {@link Formula} as a string of the form {@code <newColumn>=<expression>}
+     */
+    public String formulaString() {
+        return column().toString() + "=" + formula();
+    }
+
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);

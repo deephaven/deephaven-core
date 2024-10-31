@@ -82,7 +82,7 @@ public class AggregationAdapter {
     }
 
     public static Formula adapt(AggregationFormula formula) {
-        return Formula.of(formula.getColumnName(), formula.getFormula());
+        return Formula.parse(formula.getFormula());
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {

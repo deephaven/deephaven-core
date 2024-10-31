@@ -1043,8 +1043,7 @@ message Aggregation {
   }
 
   message AggregationFormula {
-    string column_name = 1;
-    string formula = 2;
+    string formula = 1;
   }
 
   oneof type {
