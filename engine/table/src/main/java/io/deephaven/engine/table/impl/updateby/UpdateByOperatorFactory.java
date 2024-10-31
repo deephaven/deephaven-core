@@ -1465,9 +1465,8 @@ public class UpdateByOperatorFactory {
                 throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
                         + selectColumn.getColumnArrays() + ")");
             }
-            if (selectColumn.usesVirtualOffsetColumns()) {
-                throw new IllegalArgumentException(
-                        "RollingFormulaMultiColumnOperator does not support virtual offset columns");
+            if (selectColumn.hasVirtualRowVariables()) {
+                throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
             }
             final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
             final Class<?>[] inputVectorTypes = new Class[inputColumnNames.length];

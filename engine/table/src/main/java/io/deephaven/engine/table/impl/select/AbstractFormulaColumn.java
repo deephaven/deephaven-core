@@ -341,7 +341,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public boolean usesVirtualOffsetColumns() {
+    public boolean hasVirtualRowVariables() {
         return usesI || usesII || usesK;
     }
 

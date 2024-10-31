@@ -221,7 +221,7 @@ public interface SelectColumn extends Selectable {
     /**
      * Returns true if this column uses rhw virtual offset columns of {@code i}, {@code ii} or {@code k}.
      */
-    default boolean usesVirtualOffsetColumns() {
+    default boolean hasVirtualRowVariables() {
         return false;
     }
 
