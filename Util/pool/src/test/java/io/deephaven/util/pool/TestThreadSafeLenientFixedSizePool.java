@@ -7,15 +7,17 @@ import io.deephaven.base.MockFactory;
 import io.deephaven.base.pool.MockClearingProcedure;
 import io.deephaven.base.pool.Pool;
 import io.deephaven.base.verify.RequirementFailure;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 // --------------------------------------------------------------------
 /**
  * Tests for {@link io.deephaven.base.pool.ThreadSafeLenientFixedSizePool}.
  */
-public class TestThreadSafeLenientFixedSizePool extends TestCase {
+public class TestThreadSafeLenientFixedSizePool {
 
     private MockFactory<Object> m_mockObjectFactory;
     private MockClearingProcedure<Object> m_mockClearingProcedure;
@@ -29,6 +31,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
     };
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeLenientFixedSizePool() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();
@@ -93,6 +96,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
     }
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeLenientFixedSizePoolNoClearingProcedure() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();
@@ -125,6 +129,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
     }
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeLenientFixedSizePoolNoFactory() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();

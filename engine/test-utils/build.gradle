@@ -9,6 +9,8 @@ dependencies {
     api project(":engine-table")
     api project(":engine-rowset")
 
+    implementation project(":util-processenvironment")
+    implementation project(":util-thread")
     implementation project(':Configuration')
     implementation project(':engine-tuple')
     api project(':base-test-utils')
