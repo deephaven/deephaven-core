@@ -1465,14 +1465,16 @@ public class UpdateByOperatorFactory {
                 throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
                         + selectColumn.getColumnArrays() + ")");
             }
+            if (selectColumn.usesVirtualOffsetColumns()) {
+                throw new IllegalArgumentException(
+                        "RollingFormulaMultiColumnOperator does not support virtual offset columns");
+            }
             final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
-            final Class<?>[] inputComponentTypes = new Class[inputColumnNames.length];
             final Class<?>[] inputVectorTypes = new Class[inputColumnNames.length];
 
             for (int i = 0; i < inputColumnNames.length; i++) {
                 final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputColumnNames[i]);
                 inputColumnTypes[i] = columnDef.getDataType();
-                inputComponentTypes[i] = columnDef.getComponentType();
                 inputVectorTypes[i] = vectorColumnNameMap.get(inputColumnNames[i]).getDataType();
             }
 
@@ -1492,11 +1494,9 @@ public class UpdateByOperatorFactory {
                     rs.revWindowScale().timestampCol(),
                     prevWindowScaleUnits,
                     fwdWindowScaleUnits,
-                    tableDef,
                     selectColumn,
                     inputColumnNames,
                     inputColumnTypes,
-                    inputComponentTypes,
                     inputVectorTypes);
         }
     }

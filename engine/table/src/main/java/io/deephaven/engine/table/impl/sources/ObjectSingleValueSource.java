@@ -10,7 +10,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.ObjectChunk;
@@ -18,8 +17,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
-
-import static io.deephaven.util.type.TypeUtils.unbox;
 
 /**
  * Single value source for Object.
@@ -36,8 +33,8 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T>
     private transient T prev;
 
     // region Constructor
-    public ObjectSingleValueSource(Class<T> type) {
-        super(type);
+    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {
+        super(type, componentType);
         current = null;
         prev = null;
     }

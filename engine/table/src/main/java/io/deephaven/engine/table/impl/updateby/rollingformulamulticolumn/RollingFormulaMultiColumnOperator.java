@@ -26,16 +26,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.IntConsumer;
 
-import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.*;
 
 public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 512;
 
-    private final TableDefinition tableDef;
     private final SelectColumn selectColumn;
     private final String[] inputColumnNames;
     private final Class<?>[] inputColumnTypes;
-    private final Class<?>[] inputComponentTypes;
     private final Class<?>[] inputVectorTypes;
 
     private WritableColumnSource<?> primitiveOutputSource;
@@ -48,6 +46,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         private final WritableChunk<? extends Values> outputValues;
 
         private final IntConsumer outputSetter;
+        private final IntConsumer outputNullSetter;
 
         private final RingBufferWindowConsumer[] inputConsumers;
 
@@ -77,7 +76,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 final String inputColumnName = inputColumnNames[i];
                 final Class<?> inputColumnType = inputColumnTypes[i];
                 final Class<?> inputVectorType = inputVectorTypes[i];
-                final Class<?> inputComponentType = inputComponentTypes[i];
 
                 // Create and store the ring buffer for the input column.
                 final RingBuffer ringBuffer = RingBuffer.makeRingBuffer(
@@ -89,11 +87,11 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 // noinspection unchecked
                 final SingleValueColumnSource<Vector<?>> formulaInputSource =
                         (SingleValueColumnSource<Vector<?>>) SingleValueColumnSource
-                                .getSingleValueColumnSource(inputVectorType);
+                                .getSingleValueColumnSource(inputVectorType, inputColumnType);
 
                 final RingBufferVectorWrapper<?> wrapper = RingBufferVectorWrapper.makeRingBufferVectorWrapper(
                         ringBuffer,
-                        inputComponentType);
+                        inputColumnType);
 
                 formulaInputSource.set(wrapper);
 
@@ -105,7 +103,9 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
             final ColumnSource<?> formulaOutputSource =
                     ReinterpretUtils.maybeConvertToPrimitive(contextSelectColumn.getDataView());
+
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
+            outputNullSetter = getChunkNullSetter(outputValues);
         }
 
         @Override
@@ -151,7 +151,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    outputValues.fillWithNullValue(ii, 1);
+                    outputNullSetter.accept(ii);
                     continue;
                 }
 
@@ -214,11 +214,9 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
      *        not time-based)
      * @param reverseWindowScaleUnits The size of the reverse window in ticks (or nanoseconds when time-based)
      * @param forwardWindowScaleUnits The size of the forward window in ticks (or nanoseconds when time-based)
-     * @param tableDef The table definition for the table containing the columns
      * @param selectColumn The {@link SelectColumn} specifying the calculation to be performed
      * @param inputColumnNames The names of the columns to be used as inputs
      * @param inputColumnTypes The types of the columns to be used as inputs
-     * @param inputComponentTypes The component types of the columns to be used as inputs
      * @param inputVectorTypes The vector types of the columns to be used as inputs
      */
     public RollingFormulaMultiColumnOperator(
@@ -227,18 +225,14 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @NotNull final TableDefinition tableDef,
             @NotNull final SelectColumn selectColumn,
             @NotNull final String[] inputColumnNames,
             @NotNull final Class<?>[] inputColumnTypes,
-            @NotNull final Class<?>[] inputComponentTypes,
             @NotNull final Class<?>[] inputVectorTypes) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
-        this.tableDef = tableDef;
         this.selectColumn = selectColumn;
         this.inputColumnNames = inputColumnNames;
         this.inputColumnTypes = inputColumnTypes;
-        this.inputComponentTypes = inputComponentTypes;
         this.inputVectorTypes = inputVectorTypes;
     }
 
@@ -250,11 +244,9 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
-                tableDef,
                 selectColumn,
                 inputColumnNames,
                 inputColumnTypes,
-                inputComponentTypes,
                 inputVectorTypes);
     }
 
@@ -264,13 +256,15 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         if (rowRedirection != null) {
             // region create-dense
-            maybeInnerSource = ArrayBackedColumnSource.getMemoryColumnSource(0, selectColumn.getReturnedType());
+            maybeInnerSource = ArrayBackedColumnSource.getMemoryColumnSource(0, selectColumn.getReturnedType(),
+                    selectColumn.getReturnedComponentType());
             // endregion create-dense
             outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             maybeInnerSource = null;
             // region create-sparse
-            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(0, selectColumn.getReturnedType());
+            outputSource = SparseArrayColumnSource.getSparseMemoryColumnSource(0, selectColumn.getReturnedType(),
+                    selectColumn.getReturnedComponentType());
             // endregion create-sparse
         }
 
@@ -322,12 +316,51 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                     if (result instanceof RingBufferVectorWrapper) {
                         // Handle the rare (and probably not useful) case where the formula is an identity. We need to
                         // copy the data in the RingBuffer and store that as a DirectVector. If not, we will point to
-                        // the
-                        // live data in the ring.
+                        // the live data in the ring.
                         result = ((Vector<?>) result).getDirect();
                     }
                     objectChunk.set(index, result);
                 };
+        }
+    }
+
+    protected static IntConsumer getChunkNullSetter(final WritableChunk<? extends Values> valueChunk) {
+        final ChunkType chunkType = valueChunk.getChunkType();
+        switch (chunkType) {
+            case Boolean:
+                throw new IllegalStateException(
+                        "Output chunk type should not be Boolean but should have been reinterpreted to byte");
+            case Byte:
+                final WritableByteChunk<? extends Values> byteChunk = valueChunk.asWritableByteChunk();
+                return index -> byteChunk.set(index, NULL_BYTE);
+
+            case Char:
+                final WritableCharChunk<? extends Values> charChunk = valueChunk.asWritableCharChunk();
+                return index -> charChunk.set(index, NULL_CHAR);
+
+            case Double:
+                final WritableDoubleChunk<? extends Values> doubleChunk = valueChunk.asWritableDoubleChunk();
+                return index -> doubleChunk.set(index, NULL_DOUBLE);
+
+            case Float:
+                final WritableFloatChunk<? extends Values> floatChunk = valueChunk.asWritableFloatChunk();
+                return index -> floatChunk.set(index, NULL_FLOAT);
+
+            case Int:
+                final WritableIntChunk<? extends Values> intChunk = valueChunk.asWritableIntChunk();
+                return index -> intChunk.set(index, NULL_INT);
+
+            case Long:
+                final WritableLongChunk<? extends Values> longChunk = valueChunk.asWritableLongChunk();
+                return index -> longChunk.set(index, NULL_LONG);
+
+            case Short:
+                final WritableShortChunk<? extends Values> shortChunk = valueChunk.asWritableShortChunk();
+                return index -> shortChunk.set(index, NULL_SHORT);
+
+            default:
+                final WritableObjectChunk<Object, ? extends Values> objectChunk = valueChunk.asWritableObjectChunk();
+                return index -> objectChunk.set(index, null);
         }
     }
 
