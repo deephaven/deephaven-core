@@ -35,8 +35,8 @@ public abstract class Configuration extends PropertyFile {
     private Collection<String> contextKeys = Collections.emptySet();
 
     /**
-     * The default Configuration implementation, which loads properties from the default property file in
-     * addition to System properties.
+     * The default Configuration implementation, which loads properties from the default property file in addition to
+     * System properties.
      */
     private static class Default extends Configuration {
         Default(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
@@ -139,7 +139,8 @@ public abstract class Configuration extends PropertyFile {
      * @param contextSupplier the supplier for {@link ConfigurationContext}
      * @return a new Configuration instance, guaranteed to not be cached.
      */
-    public static Configuration newStandaloneConfiguration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+    public static Configuration newStandaloneConfiguration(
+            @NotNull final Supplier<ConfigurationContext> contextSupplier) {
         return new Default(contextSupplier);
     }
 
@@ -172,8 +173,8 @@ public abstract class Configuration extends PropertyFile {
     }
 
     /**
-     * Initialize the configuration.  This will be sensitive to any system properties that configure the property
-     * file path.
+     * Initialize the configuration. This will be sensitive to any system properties that configure the property file
+     * path.
      */
     protected void init() {
         final String configurationFile;

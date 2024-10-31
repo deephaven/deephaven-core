@@ -133,6 +133,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
     @ApiStatus.Internal
     final class Helper {
         private Helper() {}
+
         private static LogEntry appendDoubleDecimalPlacesImpl(
                 LogEntry entry, final double doubleValue, final int roundToDecimalPlaces, final int minDecimalPlaces) {
             if (roundToDecimalPlaces < 0 || roundToDecimalPlaces > 9) {

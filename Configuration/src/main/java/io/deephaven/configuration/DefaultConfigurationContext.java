@@ -8,7 +8,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 /**
- *  Default {@link ConfigurationContext} implementation.
+ * Default {@link ConfigurationContext} implementation.
  */
 public class DefaultConfigurationContext implements ConfigurationContext {
     // Note that we explicitly use 'host' as a value in the configuration files.

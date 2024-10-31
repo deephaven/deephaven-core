@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- *  An interface for classes that determine the environment a {@link Configuration} is running within.
+ * An interface for classes that determine the environment a {@link Configuration} is running within.
  */
 public interface ConfigurationContext {
     /**
