@@ -56,7 +56,7 @@ public abstract class Configuration extends PropertyFile {
     }
 
     /**
-     * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`
+     * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`.
      */
     private static class Named extends Configuration {
         private final String name;
