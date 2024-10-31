@@ -898,8 +898,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public boolean canMemoize() {
         // we can be memoized once our values have been initialized; but not before
-        // if we have a failover filter, we cannot be memoized
-        return initialized && getFailoverFilterIfCached() == null;
+        return initialized && (getFailoverFilterIfCached() == null || getFailoverFilterIfCached().canMemoize());
     }
 
     @Override
