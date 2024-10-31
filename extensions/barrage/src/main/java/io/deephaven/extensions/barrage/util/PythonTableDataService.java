@@ -39,6 +39,8 @@ import org.jpy.PyObject;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -224,6 +226,9 @@ public class PythonTableDataService extends AbstractTableDataService {
                 @NotNull final Consumer<TableLocationKeyImpl> tableLocationListener,
                 @NotNull final Runnable successCallback,
                 @NotNull final Consumer<RuntimeException> failureCallback) {
+            final AtomicBoolean mustCloseSubscription = new AtomicBoolean();
+            final AtomicReference<PyObject> cancellationCallbackRef = new AtomicReference<>();
+
             final BiConsumer<TableLocationKeyImpl, ByteBuffer[]> convertingListener =
                     (tableLocationKey, byteBuffers) -> {
                         try {
@@ -231,6 +236,18 @@ public class PythonTableDataService extends AbstractTableDataService {
                                     definition, tableKey, tableLocationListener, tableLocationKey, byteBuffers);
                         } catch (final RuntimeException e) {
                             failureCallback.accept(e);
+
+                            // we must also cancel the python subscription
+                            final PyObject cancellationCB;
+                            synchronized (mustCloseSubscription) {
+                                cancellationCB = cancellationCallbackRef.get();
+                                if (cancellationCB == null) {
+                                    mustCloseSubscription.set(true);
+                                }
+                            }
+                            if (cancellationCB != null) {
+                                cancellationCB.call("__call__");
+                            }
                         }
                     };
 
@@ -240,6 +257,16 @@ public class PythonTableDataService extends AbstractTableDataService {
             final PyObject cancellationCallback = pyTableDataService.call(
                     "_subscribe_to_table_locations", tableKey.key,
                     convertingListener, successCallback, onFailure);
+            synchronized (mustCloseSubscription) {
+                if (mustCloseSubscription.get()) {
+                    cancellationCallback.call("__call__");
+                    return () -> {
+                    };
+                } else {
+                    cancellationCallbackRef.set(cancellationCallback);
+                }
+            }
+
             return () -> cancellationCallback.call("__call__");
         }
 
@@ -405,8 +432,6 @@ public class PythonTableDataService extends AbstractTableDataService {
                             messages.length)));
                     return;
                 }
-                final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
-
                 final Schema schema = ArrowToTableConverter.parseArrowSchema(
                         ArrowToTableConverter.parseArrowIpcMessage(messages[0]));
                 final BarrageUtil.ConvertedArrowSchema schemaPlus = BarrageUtil.convertArrowSchema(schema);
@@ -427,6 +452,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                     return;
                 }
 
+                final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
                 final ChunkReader reader = schemaPlus.computeChunkReaders(
                         chunkReaderFactory, schema, streamReaderOptions)[0];
                 int mi = 1;
@@ -434,9 +460,8 @@ public class PythonTableDataService extends AbstractTableDataService {
                     for (; mi < messages.length; ++mi) {
                         final BarrageProtoUtil.MessageInfo recordBatchMessageInfo = parseArrowIpcMessage(messages[mi]);
                         if (recordBatchMessageInfo.header.headerType() != MessageHeader.RecordBatch) {
-                            asyncState.setError(new IllegalArgumentException(String.format(
-                                    "IPC message %d is not a valid Arrow RecordBatch IPC message", mi)));
-                            return;
+                            throw new IllegalArgumentException(String.format(
+                                    "IPC message %d is not a valid Arrow RecordBatch IPC message", mi));
                         }
                         final RecordBatch batch = (RecordBatch) recordBatchMessageInfo.header.header(new RecordBatch());
 
@@ -449,18 +474,16 @@ public class PythonTableDataService extends AbstractTableDataService {
                         resultChunks.add(reader.readChunk(
                                 fieldNodeIter, bufferInfoIter, recordBatchMessageInfo.inputStream, null, 0, 0));
                     }
+
+                    asyncState.setResult(resultChunks);
                 } catch (final IOException ioe) {
                     SafeCloseable.closeAll(resultChunks.iterator());
                     asyncState.setError(new UncheckedDeephavenException(String.format(
                             "failed to read IPC message %d", mi), ioe));
-                    return;
                 } catch (final RuntimeException e) {
                     SafeCloseable.closeAll(resultChunks.iterator());
                     asyncState.setError(e);
-                    return;
                 }
-
-                asyncState.setResult(resultChunks);
             };
 
             final Consumer<String> onFailure = errorString -> asyncState.setError(
@@ -935,15 +958,23 @@ public class PythonTableDataService extends AbstractTableDataService {
      */
     private static class AsyncState<T> {
         private T result;
-        private RuntimeException error;
+        private Exception error;
 
-        public synchronized void setResult(@NotNull final T result) {
+        public synchronized void setResult(final T result) {
+            if (this.result != null) {
+                throw new IllegalStateException("callback can only be called once");
+            }
+            if (result == null) {
+                throw new IllegalArgumentException("callback invoked with null result");
+            }
             this.result = result;
             notifyAll();
         }
 
-        public synchronized void setError(@NotNull final RuntimeException error) {
-            this.error = error;
+        public synchronized void setError(@NotNull final Exception error) {
+            if (this.error == null) {
+                this.error = error;
+            }
             notifyAll();
         }
 

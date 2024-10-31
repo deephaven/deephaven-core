@@ -52,9 +52,9 @@ class TableDataServiceBackend(ABC):
     def table_schema(self, table_key: TableKey,
                      schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
                      failure_cb: Callable[[Exception], None]) -> None:
-        """ Provides a callback for the backend service to pass the table data schema and optionally the partitioning
-        column schema for the table with the given table key. The table data schema is not required to include the
-        partitioning columns defined in the partitioning column schema.
+        """ Provides the table data schema and the partitioning values schema for the table with the given table key via
+        the schema_cb callback. The table data schema is not required to  include the partitioning columns defined in
+        the partitioning column schema.
 
         The failure callback should be invoked when a failure to provide the schemas occurs.
 
@@ -75,13 +75,12 @@ class TableDataServiceBackend(ABC):
                         location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
                         success_cb: Callable[[], None],
                         failure_cb: Callable[[Exception], None]) -> None:
-        """ Provides a callback for the backend service to pass the existing locations for the table with the given
-        table key. The 2nd argument of the callback is an optional pyarrow.Table that contains the partitioning values
-        for the location. The schema of the table should be compatible with the optional partitioning column schema
-        returned by :meth:`table_schema` for the table_key. The table should have a single row for the particular
-        location key provided in the 1st argument, with the partitioning values for each partitioning column in the row.
+        """ Provides the existing table locations for the table with the given table via the location_cb callback.
 
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
+        The location callback should be called with the table location key and an optional pyarrow.Table that contains
+        the partitioning values for the location. The schema of the table must match the optional partitioning column
+        schema returned by :meth:`table_schema` for the table_key. The table must have a single row for the particular
+        table location key provided in the 1st argument, with values for each partitioning column in the row.
 
         The success callback should be called when all existing table locations have been delivered to the table
         location callback.
@@ -89,6 +88,8 @@ class TableDataServiceBackend(ABC):
         The failure callback should be invoked when failure to provide existing table locations occurs.
 
         The table_locations caller will block until one of the success or failure callbacks is called.
+
+        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -105,10 +106,10 @@ class TableDataServiceBackend(ABC):
                                      location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
                                      success_cb: Callable[[], None],
                                      failure_cb: Callable[[Exception], None]) -> Callable[[], None]:
-        """ Provides callbacks for the backend service to pass table locations for the table with the given table key
-        and convey the status of the subscription.
+        """ Provides the table locations, existing and new, for the table with the given table key via the location_cb
+        callback.
 
-        The location callback should be called with the table location key and an optional pyarrow.Table that represents
+        The location callback should be called with the table location key and an optional pyarrow.Table that contains
         the partitioning values for the location. The schema of the table must match the optional partitioning column
         schema returned by :meth:`table_schema` for the table_key. The table must have a single row for the particular
         table location key provided in the 1st argument, with values for each partitioning column in the row.
@@ -140,14 +141,14 @@ class TableDataServiceBackend(ABC):
     def table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
                             size_cb: Callable[[int], None],
                             failure_cb: Callable[[Exception], None]) -> None:
-        """ Provides a callback for the backend service to pass the size of the table location with the given table key
-        and table location key. The callback should be called with the size of the table location in number of rows.
-
-        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False.
+        """ Provides the size of the table location with the given table key and table location key via the size_cb
+        callback. The size is the number of rows in the table location.
 
         The failure callback should be invoked when a failure to provide the table location size occurs.
 
         The table_location_size caller will block until one of the size or failure callbacks is called.
+
+        This is called for tables created when :meth:`TableDataService.make_table` is called with refreshing=False.
 
         Note that asynchronous calls to any callback may block until this method has returned.
 
@@ -163,10 +164,8 @@ class TableDataServiceBackend(ABC):
                                          size_cb: Callable[[int], None],
                                          success_cb: Callable[[], None],
                                          failure_cb: Callable[[Exception], None]) -> Callable[[], None]:
-        """ Provides callbacks for the backend service to pass existing, and any future, size of the table location
-        with the given table key and table location key, and convey the status of the subscription.
-
-        The size callback should be called with the size of the table location in number of rows.
+        """ Provides the current and future sizes of the table location with the given table key and table location
+        key via the size_cb callback. The size is the number of rows in the table location.
 
         The success callback should be called when the subscription is established successfully and after the current
         table location size has been delivered to the size callback.
@@ -196,9 +195,11 @@ class TableDataServiceBackend(ABC):
                       min_rows: int, max_rows: int,
                       values_cb: Callable[[pa.Table], None],
                       failure_cb: Callable[[Exception], None]) -> None:
-        """ Provides a callback for the backend service to pass the values for the column with the given name for the
-        table location with the given table key and table location key. The callback should be called with a single
-        column pyarrow.Table that contains the data values for the given column within the specified range requirement.
+        """ Provides the data values for the column with the given name for the table location with the given table key
+        and table location key via the values_cb callback. The column values are provided as a pyarrow.Table that
+        contains the data values for the column within the specified range requirement. The values_cb callback should be
+        called with a single column pyarrow.Table that contains the data values for the given column within the
+        specified range requirement.
 
         The failure callback should be invoked when a failure to provide the column values occurs.
 
@@ -299,8 +300,8 @@ class TableDataService(JObjectWrapper):
 
     def _table_locations(self, table_key: TableKey, location_cb: jpy.JType, success_cb: jpy.JType,
                          failure_cb: jpy.JType) -> None:
-        """ Provides the existing table locations for the table with the given table key to the table service in the
-        engine via callbacks. Only called by the engine.
+        """ Provides the existing table locations for the table with the given table key to the PythonTableDataService
+        (Java) via callbacks. Only called by the PythonTableDataService.
 
         Args:
             table_key (TableKey): the table key
@@ -332,8 +333,8 @@ class TableDataService(JObjectWrapper):
 
     def _subscribe_to_table_locations(self, table_key: TableKey, location_cb: jpy.JType, success_cb: jpy.JType,
                                       failure_cb: jpy.JType) -> Callable[[], None]:
-        """ Provides the table locations, existing and new, for the table with the given table key to the table service
-        in the engine via callbacks. Only called by the engine.
+        """ Provides the table locations, existing and new, for the table with the given table key to the
+        PythonTableDataService (Java) via callbacks. Only called by the PythonTableDataService.
 
         Args:
             table_key (TableKey): the table key
@@ -370,8 +371,8 @@ class TableDataService(JObjectWrapper):
 
     def _table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey, size_cb: jpy.JType,
                              failure_cb: jpy.JType) -> None:
-        """ Provides the size of the table location with the given table key and table location key to the table service
-        in the engine via callbacks. Only called by the engine.
+        """ Provides the size of the table location with the given table key and table location key to the
+        PythonTableDataService (Java) via callbacks. Only called by the PythonTableDataService.
 
         Args:
             table_key (TableKey): the table key
@@ -393,7 +394,7 @@ class TableDataService(JObjectWrapper):
     def _subscribe_to_table_location_size(self, table_key: TableKey, table_location_key: TableLocationKey,
                                           size_cb: jpy.JType, success_cb: jpy.JType, failure_cb: jpy.JType) -> Callable[[], None]:
         """ Provides the current and future sizes of the table location with the given table key and table location key
-        to the table service in the engine via callbacks. Only called by the engine.
+        to the PythonTableDataService (Java) via callbacks. Only called by the PythonTableDataService.
 
         Args:
             table_key (TableKey): the table key
@@ -422,8 +423,9 @@ class TableDataService(JObjectWrapper):
 
     def _column_values(self, table_key: TableKey, table_location_key: TableLocationKey, col: str, offset: int,
                        min_rows: int, max_rows: int, values_cb: jpy.JType, failure_cb: jpy.JType) -> None:
-        """ Provides the data values for the column with the given name for the table location with the given table key
-        and table location key to the table service in the engine via callbacks. Only called by the engine.
+        """ Provides the data values for the column with the given name for the table column with the given table key
+        and table location key to the PythonTableDataService (Java) via callbacks. Only called by the
+        PythonTableDataService.
 
         Args:
             table_key (TableKey): the table key
