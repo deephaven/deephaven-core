@@ -103,7 +103,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
      * Initialize the filters.
      *
      * <p>
-     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResultNoMemo method, so
+     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResult method, so
      * that memoization processing can correctly compare them. MatchFilters do not properly implement memoization before
      * initialization, and they are the most common filter to memoize.
      * </p>
