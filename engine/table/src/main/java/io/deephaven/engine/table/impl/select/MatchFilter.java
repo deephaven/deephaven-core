@@ -854,10 +854,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
 
         // The equality check is used for memoization, and we cannot actually determine equality of an uninitialized
         // filter, because there is too much state that has not been realized.
