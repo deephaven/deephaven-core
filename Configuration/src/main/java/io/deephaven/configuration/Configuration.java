@@ -23,7 +23,6 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class Configuration extends PropertyFile {
-    private static final String DEFAULT_CONF_NAME = "default";
     public static final String QUIET_PROPERTY = "configuration.quiet";
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
@@ -39,8 +38,8 @@ public abstract class Configuration extends PropertyFile {
      * The default Configuration implementation, which loads properties from the default property file in
      * addition to System properties.
      */
-    private static class DefaultConfiguration extends Configuration {
-        DefaultConfiguration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+    private static class Default extends Configuration {
+        Default(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
             super(contextSupplier);
             init();
         }
@@ -59,10 +58,10 @@ public abstract class Configuration extends PropertyFile {
     /**
      * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`
      */
-    private static class NamedConfiguration extends Configuration {
+    private static class Named extends Configuration {
         private final String name;
 
-        NamedConfiguration(@NotNull final String name, @NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        Named(@NotNull final String name, @NotNull final Supplier<ConfigurationContext> contextSupplier) {
             super(contextSupplier);
             this.name = name;
             init();
@@ -86,7 +85,7 @@ public abstract class Configuration extends PropertyFile {
      */
     public static Configuration getInstance() {
         if (DEFAULT == null) {
-            DEFAULT = new DefaultConfiguration(DefaultConfigurationContext::new);
+            DEFAULT = new Default(DefaultConfigurationContext::new);
         }
         return DEFAULT;
     }
@@ -99,13 +98,9 @@ public abstract class Configuration extends PropertyFile {
      * @throws ConfigurationException if the named configuration could not be loaded.
      */
     public static Configuration getNamed(@NotNull final String name) throws ConfigurationException {
-        if (DEFAULT_CONF_NAME.equals(name)) {
-            return getInstance();
-        }
-
         return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
             try {
-                return new NamedConfiguration(name, DefaultConfigurationContext::new);
+                return new Named(name, DefaultConfigurationContext::new);
             } catch (ConfigurationException ex) {
                 throw new ConfigurationException("Unable to load named configuration " + name, ex);
             }
@@ -130,16 +125,26 @@ public abstract class Configuration extends PropertyFile {
     }
 
     /**
-     * Create a new, non cached, default Configuration instance.
+     * Create a new, non-cached, default Configuration instance.
      *
      * @return a new Configuration instance, guaranteed to not be cached.
      */
     public static Configuration newStandaloneConfiguration() {
-        return newStandaloneConfiguration(DEFAULT_CONF_NAME, DefaultConfigurationContext::new);
+        return newStandaloneConfiguration(DefaultConfigurationContext::new);
     }
 
     /**
-     * Create a new, non cached, named Configuration instance.
+     * Create a new, non-cached, default Configuration instance.
+     *
+     * @param contextSupplier the supplier for {@link ConfigurationContext}
+     * @return a new Configuration instance, guaranteed to not be cached.
+     */
+    public static Configuration newStandaloneConfiguration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        return new Default(contextSupplier);
+    }
+
+    /**
+     * Create a new, non-cached, named Configuration instance.
      *
      * @param name the configuration name
      * @return a new Configuration instance, guaranteed to not be cached.
@@ -149,24 +154,27 @@ public abstract class Configuration extends PropertyFile {
     }
 
     /**
-     * Create a new, non cached, named Configuration instance.
+     * Create a new, non-cached, named Configuration instance.
      *
      * @param name the configuration name
      * @param contextSupplier the supplier for {@link ConfigurationContext}
      * @return a new Configuration instance, guaranteed to not be cached.
      */
     @SuppressWarnings("UnusedReturnValue")
-    public static Configuration newStandaloneConfiguration(@NotNull final String name,
-                                                           @NotNull final Supplier<ConfigurationContext> contextSupplier) {
-        return DEFAULT_CONF_NAME.equals(name)
-                ? new DefaultConfiguration(contextSupplier)
-                : new NamedConfiguration(name, contextSupplier);
+    public static Configuration newStandaloneConfiguration(
+            @NotNull final String name,
+            @NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        return new Named(name, contextSupplier);
     }
 
     protected Configuration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
         this.contextSupplier = contextSupplier;
     }
 
+    /**
+     * Initialize the configuration.  This will be sensitive to any system properties that configure the property
+     * file path.
+     */
     protected void init() {
         final String configurationFile;
         try {
@@ -364,7 +372,7 @@ public abstract class Configuration extends PropertyFile {
     private static String propFileDiffReport(Set<String> includedProperties, String dir1, String file1, String dir2,
             String file2, String dir3, String file3, boolean useDiffKeys) throws IOException {
         StringBuilder out = new StringBuilder();
-        Configuration configuration = new DefaultConfiguration(DefaultConfigurationContext::new);
+        Configuration configuration = new Default(DefaultConfigurationContext::new);
         Properties leftProperties = configuration.load(dir1, file1);
         Properties rightProperties = configuration.load(dir2, file2);
         Properties right2Properties;

@@ -15,6 +15,7 @@ dependencies {
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
+    testImplementation project(path: ':Base', configuration: 'tests')
 }
 
 test {
