@@ -110,8 +110,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
-
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
  * refer to this, and allow us to try to keep track of how many open tables there are, so we can close the connection if
@@ -464,8 +462,6 @@ public class WorkerConnection {
                         if (!existing.getAt(0).equals(authorization.getAt(0))) {
                             // use this new token
                             metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED,
-                                    new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
                         }
                     }
 
