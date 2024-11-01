@@ -174,7 +174,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             {
                 final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
                 bucketName = s3DirectoryURI.bucket().orElseThrow();
-                directoryKey = s3DirectoryURI.key().orElseThrow();
+                directoryKey = s3DirectoryURI.key().orElse(""); // Empty string for the bucket root
             }
 
             @Override
@@ -209,8 +209,10 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
             private void fetchNextBatch() throws IOException {
                 final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(bucketName)
-                        .prefix(directoryKey)
                         .maxKeys(MAX_KEYS_PER_BATCH);
+                if (!directoryKey.isEmpty()) {
+                    requestBuilder.prefix(directoryKey);
+                }
                 if (!isRecursive) {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
