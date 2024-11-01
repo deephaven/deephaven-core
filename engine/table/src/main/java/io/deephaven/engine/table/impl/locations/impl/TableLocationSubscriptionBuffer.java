@@ -81,7 +81,7 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
             } else {
-                // NB: Providers that don't support subscriptions don't tick - this single call to run is
+                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is
                 // sufficient.
                 tableLocationProvider.refresh();
                 final Collection<LiveSupplier<ImmutableTableLocationKey>> tableLocationKeys = new ArrayList<>();
