@@ -48,6 +48,13 @@ public abstract class UpdateBySpecBase implements UpdateBySpec {
                 .build();
     }
 
+    @Override
+    public final ColumnUpdateOperation clause() {
+        return ColumnUpdateOperation.builder()
+                .spec(this)
+                .build();
+    }
+
     /**
      * Returns {@code true} if the input class is a primitive or boxed numeric type
      * 

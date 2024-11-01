@@ -1,10 +1,6 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRingBufferTest and run "./gradlew replicateRingBuffers" to regenerate
-//
-// @formatter:off
 package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.ArrayUtil;
@@ -15,11 +11,11 @@ import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertThrows;
 
-public class LongRingBufferTest extends TestCase {
+public class TestCharRingBuffer extends TestCase {
 
-    final long SENTINEL = Long.MIN_VALUE;
+    final char SENTINEL = Character.MIN_VALUE;
 
-    private void assertEmpty(LongRingBuffer rb) {
+    private void assertEmpty(CharRingBuffer rb) {
         assertTrue(rb.isEmpty());
         assertEquals(0, rb.size());
 
@@ -38,14 +34,16 @@ public class LongRingBufferTest extends TestCase {
         } catch (NoSuchElementException x) {
             // expected
         }
+        // region empty-test
+        // endregion empty-test
     }
 
-    private void assertFull(LongRingBuffer rb) {
+    private void assertFull(CharRingBuffer rb) {
         assertFalse(rb.isEmpty());
         assertEquals(rb.capacity(), rb.size());
     }
 
-    private void assertNotEmpty(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertNotEmpty(CharRingBuffer rb, int expectedSize, char expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
@@ -57,22 +55,22 @@ public class LongRingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(LongRingBuffer rb, long newHead, int expectedSize, long expectedHead) {
+    private void assertAdd(CharRingBuffer rb, char newHead, int expectedSize, char expectedHead) {
         assertTrue(rb.add(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertOffer(LongRingBuffer rb, long newHead, int expectedSize, long expectedHead) {
+    private void assertOffer(CharRingBuffer rb, char newHead, int expectedSize, char expectedHead) {
         assertTrue(rb.offer(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertPoll(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertPoll(CharRingBuffer rb, int expectedSize, char expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         assertEquals(expectedHead, rb.poll(SENTINEL));
     }
 
-    private void assertRemove(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertRemove(CharRingBuffer rb, int expectedSize, char expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertEquals(expectedHead, rb.remove());
@@ -81,31 +79,31 @@ public class LongRingBufferTest extends TestCase {
         }
     }
 
-    private void assertContents(LongRingBuffer rb, long... expectedData) {
-        final long[] data = rb.getAll();
+    private void assertContents(CharRingBuffer rb, char... expectedData) {
+        final char[] data = rb.getAll();
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    private void assertArrayEquals(long[] data, long... expectedData) {
+    private void assertArrayEquals(char[] data, char... expectedData) {
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    long A = 'A';
-    long B = 'B';
-    long C = 'C';
-    long D = 'D';
-    long E = 'E';
-    long F = 'F';
+    char A = 'A';
+    char B = 'B';
+    char C = 'C';
+    char D = 'D';
+    char E = 'E';
+    char F = 'F';
 
     public void testAddRemove() {
 
-        LongRingBuffer rb = new LongRingBuffer(3);
+        CharRingBuffer rb = new CharRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -184,7 +182,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testOfferPoll() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        CharRingBuffer rb = new CharRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -243,7 +241,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        LongRingBuffer rb = new LongRingBuffer(4);
+        CharRingBuffer rb = new CharRingBuffer(4);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -267,7 +265,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testGrowComplex() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        CharRingBuffer rb = new CharRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -296,9 +294,9 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testIterator() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        CharRingBuffer rb = new CharRingBuffer(3);
 
-        LongRingBuffer.Iterator iter = rb.iterator();
+        CharRingBuffer.Iterator iter = rb.iterator();
         assertFalse(iter.hasNext());
 
         assertAdd(rb, A, 1, A);
@@ -347,14 +345,14 @@ public class LongRingBufferTest extends TestCase {
         assertEquals(F, iter.next());
         assertFalse(iter.hasNext());
 
-        final LongRingBuffer.Iterator iterFinal = rb.iterator();
+        final CharRingBuffer.Iterator iterFinal = rb.iterator();
 
         assertThrows(UnsupportedOperationException.class,
                 iterFinal::remove);
     }
 
     public void testBack() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        CharRingBuffer rb = new CharRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertEquals(rb.back(), A);
@@ -365,7 +363,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testBackWhenEmpty() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        CharRingBuffer rb = new CharRingBuffer(5);
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
@@ -375,7 +373,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        LongRingBuffer rb = new LongRingBuffer(5, false);
+        CharRingBuffer rb = new CharRingBuffer(5, false);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -389,26 +387,26 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        CharRingBuffer rb = new CharRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((long) i);
+            rb.add((char) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((long) i);
-            assertEquals((long) (i - 100 + 1), rb.front(1));
-            assertEquals((long) (i - 100), rb.poll(SENTINEL));
+            rb.add((char) i);
+            assertEquals((char) (i - 100 + 1), rb.front(1));
+            assertEquals((char) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((long) (i - 100 + 1), rb.front(1));
-            assertEquals((long) (i - 100), rb.poll(SENTINEL));
+                assertEquals((char) (i - 100 + 1), rb.front(1));
+            assertEquals((char) (i - 100), rb.poll(SENTINEL));
         }
     }
 
     public void testAddExceptionWhenFull() {
-        LongRingBuffer rb = new LongRingBuffer(4, false);
+        CharRingBuffer rb = new CharRingBuffer(4, false);
         assert (rb.add(A));
         assert (rb.add(B));
         assert (rb.add(C));
@@ -420,7 +418,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testAddOverwriteAndOffer() {
-        LongRingBuffer rb = new LongRingBuffer(4, false);
+        CharRingBuffer rb = new CharRingBuffer(4, false);
         assert (4 == rb.remaining());
 
         assert (F == rb.addOverwrite(A, F));
@@ -466,7 +464,7 @@ public class LongRingBufferTest extends TestCase {
 
 
     public void testMultipleRemove() {
-        LongRingBuffer rb = new LongRingBuffer(10, false);
+        CharRingBuffer rb = new CharRingBuffer(10, false);
 
         // this should throw
         assertThrows(NoSuchElementException.class,
@@ -479,7 +477,7 @@ public class LongRingBufferTest extends TestCase {
         rb.add(A);
         rb.add(B);
 
-        long[] values = rb.remove(2);
+        char[] values = rb.remove(2);
         assertArrayEquals(values, A, B);
         assertEmpty(rb);
 
@@ -508,7 +506,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testAddRemoveUnsafe() {
-        LongRingBuffer rbNoGrow = new LongRingBuffer(3, false);
+        CharRingBuffer rbNoGrow = new CharRingBuffer(3, false);
 
         // this should throw
         assertThrows(UnsupportedOperationException.class,
@@ -531,7 +529,7 @@ public class LongRingBufferTest extends TestCase {
         assertEmpty(rbNoGrow);
 
 
-        LongRingBuffer rbGrow = new LongRingBuffer(3, true);
+        CharRingBuffer rbGrow = new CharRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
             rbGrow.ensureRemaining(size);
@@ -543,12 +541,12 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testOverflow() {
-        LongRingBuffer rbA = new LongRingBuffer(0);
+        CharRingBuffer rbA = new CharRingBuffer(0);
         // this should throw
         assertThrows(AssertionFailure.class,
                 () -> rbA.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE + 1));
 
-        LongRingBuffer rbB = new LongRingBuffer(100);
+        CharRingBuffer rbB = new CharRingBuffer(100);
         for (int i = 0; i < 100; i++) {
             rbB.addUnsafe(A);
         }

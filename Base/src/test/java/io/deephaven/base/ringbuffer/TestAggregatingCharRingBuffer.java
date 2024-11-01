@@ -8,7 +8,7 @@ import junit.framework.TestCase;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class AggregatingCharRingBufferTest extends TestCase {
+public class TestAggregatingCharRingBuffer extends TestCase {
 
     private void assertEmpty(AggregatingCharRingBuffer rb) {
         assertTrue(rb.isEmpty());
