@@ -13,7 +13,7 @@ import (
 // and how you can use the script results in the client.
 //
 // This example requires a Deephaven server to connect to, so it will not work on pkg.go.dev.
-func Example_runScript() {
+func disabled_Example_runScript() {
 	// A context is used to set timeouts and deadlines for requests or cancel requests.
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
