@@ -587,4 +587,66 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             Files.delete(tempCredentialsFile);
         }
     }
+
+    @Test
+    public void testReadBucketRootKeyValuePartitioned() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(500_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final URI bucketRoot = URI.create(String.format("s3://%s", bucket));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .setTableDefinition(definition)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(table, bucketRoot.toString(), instructions);
+        {
+            final Table fromS3 = ParquetTools.readTable(bucketRoot.toString(), instructions);
+            assertTableEquals(table.sort("PC1", "PC2"), fromS3.sort("PC1", "PC2"));
+        }
+        {
+            final URI bucketRootWithSlash = URI.create(String.format("s3://%s/", bucket));
+            final Table fromS3 = ParquetTools.readTable(bucketRootWithSlash.toString(), instructions);
+            assertTableEquals(table.sort("PC1", "PC2"), fromS3.sort("PC1", "PC2"));
+        }
+    }
+
+    @Test
+    public void testReadBucketRootFlatPartitioned() {
+        final Table table = getTable(100_000);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .build();
+        for (int i = 0; i < 3; ++i) {
+            final URI dest = uri("table" + i + ".parquet");
+            ParquetTools.writeTable(table, dest.toString(), instructions);
+        }
+
+        final URI bucketRoot = URI.create(String.format("s3://%s", bucket));
+        final Table expected = merge(table, table, table);
+        {
+            final Table fromS3AsFlat = ParquetTools.readTable(bucketRoot.toString(),
+                    instructions.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+            assertTableEquals(expected, fromS3AsFlat);
+        }
+        {
+            final Table fromS3AsKV = ParquetTools.readTable(bucketRoot.toString(),
+                    instructions.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
+            assertTableEquals(expected, fromS3AsKV);
+        }
+    }
 }
