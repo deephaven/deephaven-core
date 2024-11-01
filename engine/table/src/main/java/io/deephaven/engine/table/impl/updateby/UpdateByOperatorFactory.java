@@ -14,6 +14,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.updateby.cumcount.*;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -380,6 +381,14 @@ public class UpdateByOperatorFactory {
         public Void visit(@NotNull final FillBySpec fbs) {
             Arrays.stream(pairs)
                     .map(fc -> makeForwardFillOperator(fc, tableDef))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final CumCountSpec spec) {
+            Arrays.stream(pairs)
+                    .map(fc -> makeCumCountOperator(fc, tableDef, spec))
                     .forEach(ops::add);
             return null;
         }
@@ -837,6 +846,28 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
+        }
+
+        private UpdateByOperator makeCumCountOperator(MatchPair pair, TableDefinition tableDef, CumCountSpec spec) {
+            final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
+            final Class<?> csType = columnDef.getDataType();
+
+            if (csType == BigInteger.class) {
+                return new BigIntegerCumCountOperator(pair, spec, csType);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalCumCountOperator(pair, spec, csType);
+            } else if (csType == boolean.class || csType == Boolean.class) {
+                return new BooleanCumCountOperator(pair, spec, csType);
+            } else if (csType == byte.class || csType == Byte.class
+                    || csType == char.class || csType == Character.class
+                    || csType == short.class || csType == Short.class
+                    || csType == int.class || csType == Integer.class
+                    || csType == long.class || csType == Long.class
+                    || csType == float.class || csType == Float.class
+                    || csType == double.class || csType == Double.class) {
+                return new PrimitiveCumCountOperator(pair, spec, csType);
+            }
+            return new ObjectCumCountOperator(pair, spec, csType);
         }
 
         private UpdateByOperator makeCumSumOperator(MatchPair pair, TableDefinition tableDef) {

@@ -132,6 +132,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static UpdateBySpec adaptSpec(UpdateByColumn.UpdateBySpec spec) {
         switch (spec.getTypeCase()) {
+            case COUNT:
+                return adaptCount(spec.getCount());
             case SUM:
                 return adaptSum(spec.getSum());
             case MIN:
@@ -179,6 +181,29 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected spec type: " + spec.getTypeCase());
+        }
+    }
+
+    private static CumCountSpec adaptCount(@SuppressWarnings("unused") UpdateByCumulativeCount count) {
+        switch (count.getCountType()) {
+            case COUNT_TYPE_NULL:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NULL);
+            case COUNT_TYPE_NEGATIVE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE);
+            case COUNT_TYPE_POSITIVE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE);
+            case COUNT_TYPE_ZERO:
+                return CumCountSpec.of(CumCountSpec.CumCountType.ZERO);
+            case COUNT_TYPE_NAN:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NAN);
+            case COUNT_TYPE_INFINITE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE);
+            case COUNT_TYPE_FINITE:
+                return CumCountSpec.of(CumCountSpec.CumCountType.FINITE);
+            case COUNT_TYPE_NON_NULL:
+            case COUNT_TYPE_NOT_SPECIFIED: // default to non-null when not specified
+            default:
+                return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL);
         }
     }
 
