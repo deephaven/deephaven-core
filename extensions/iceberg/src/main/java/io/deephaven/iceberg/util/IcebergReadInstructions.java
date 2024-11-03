@@ -74,11 +74,13 @@ public abstract class IcebergReadInstructions implements IcebergBaseInstructions
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
-    public interface Builder extends IcebergBaseInstructions.Builder<IcebergReadInstructions, Builder> {
+    public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
         Builder putColumnRenames(String key, String value);
 
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         Builder updateMode(IcebergUpdateMode updateMode);
+
+        IcebergReadInstructions build();
     }
 }

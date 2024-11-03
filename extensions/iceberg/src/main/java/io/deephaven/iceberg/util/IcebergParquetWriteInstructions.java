@@ -104,7 +104,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         return builder.build();
     }
 
-    public interface Builder extends IcebergWriteInstructions.Builder<IcebergWriteInstructions, Builder> {
+    public interface Builder extends IcebergWriteInstructions.Builder<Builder> {
         Builder compressionCodecName(String compressionCodecName);
 
         Builder maximumDictionaryKeys(int maximumDictionaryKeys);

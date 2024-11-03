@@ -37,7 +37,7 @@ public interface IcebergBaseInstructions {
      */
     Optional<Snapshot> snapshot();
 
-    interface Builder<INSTRUCTIONS extends IcebergBaseInstructions, INSTRUCTIONS_BUILDER extends Builder<INSTRUCTIONS, INSTRUCTIONS_BUILDER>> {
+    interface Builder<INSTRUCTIONS_BUILDER extends Builder<INSTRUCTIONS_BUILDER>> {
         INSTRUCTIONS_BUILDER tableDefinition(TableDefinition tableDefinition);
 
         INSTRUCTIONS_BUILDER dataInstructions(Object s3Instructions);
@@ -45,8 +45,6 @@ public interface IcebergBaseInstructions {
         INSTRUCTIONS_BUILDER snapshotId(long snapshotId);
 
         INSTRUCTIONS_BUILDER snapshot(Snapshot snapshot);
-
-        INSTRUCTIONS build();
     }
 
     @Value.Check

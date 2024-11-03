@@ -13,7 +13,6 @@ from deephaven.jcompat import j_map_to_dict, j_list_to_list
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
-
 class IcebergTestCase(BaseTestCase):
     """ Test cases for the deephaven.iceberg module (performed locally) """
 

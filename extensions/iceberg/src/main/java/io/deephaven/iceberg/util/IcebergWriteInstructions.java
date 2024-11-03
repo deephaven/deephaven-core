@@ -71,9 +71,9 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     public abstract List<String> partitionPaths();
 
     // @formatter:off
-    interface Builder<INSTRUCTIONS extends IcebergWriteInstructions, INSTRUCTIONS_BUILDER
-            extends IcebergWriteInstructions.Builder<INSTRUCTIONS, INSTRUCTIONS_BUILDER>>
-                extends IcebergBaseInstructions.Builder<INSTRUCTIONS, INSTRUCTIONS_BUILDER> {
+    interface Builder<INSTRUCTIONS_BUILDER
+            extends IcebergWriteInstructions.Builder<INSTRUCTIONS_BUILDER>>
+                extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
     // @formatter:on
         INSTRUCTIONS_BUILDER verifySchema(boolean verifySchema);
 
