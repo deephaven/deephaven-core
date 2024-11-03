@@ -579,7 +579,8 @@ def adapter_aws_glue(
 def adapter(
         name: Optional[str] = None,
         properties: Optional[Dict[str, str]] = None,
-        hadoop_config: Optional[Dict[str, str]] = None
+        hadoop_config: Optional[Dict[str, str]] = None,
+        s3_instructions: Optional[s3.S3Instructions] = None
 ) -> IcebergCatalogAdapter:
     """
     Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
@@ -591,37 +592,58 @@ def adapter(
             `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
 
+    To ensure consistent behavior across Iceberg-managed and Deephaven-managed AWS clients, it's recommended to use the
+    `s3_instructions` parameter to specify AWS/S3 connectivity details. This approach offers a high degree of parity in
+    construction logic.
+
+    For complex use cases, consider using S3 Instruction profiles, which provide extensive configuration options. When
+    set, these instructions are automatically included in the :meth:`.IcebergInstructions.__init__` `data_instructions`.
+
+    If you prefer to use Iceberg's native AWS properties, Deephaven will attempt to infer the necessary construction
+    logic. However, in advanced scenarios, there might be discrepancies between the two clients, potentially leading to
+    limitations like being able to browse catalog metadata but not retrieve table data.
+
     Other common properties include:
     - `uri` - the URI of the catalog
     - `warehouse` - the root path of the data warehouse.
-    - `client.region` - the region of the AWS client.
-    - `s3.access-key-id` - the S3 access key for reading files.
-    - `s3.secret-access-key` - the S3 secret access key for reading files.
-    - `s3.endpoint` - the S3 endpoint to connect to.
 
-    Example usage #1 - REST catalog with an S3 backend (using MinIO):
+    Example usage #1 - REST catalog with an S3 backend:
     ```
     from deephaven.experimental import iceberg
+    from deephaven.experimental.s3 import S3Instructions, Credentials
 
-    adapter = iceberg.adapter(name="generic-adapter", properties={
-        "type" : "rest",
-        "uri" : "http://rest:8181",
-        "client.region" : "us-east-1",
-        "s3.access-key-id" : "admin",
-        "s3.secret-access-key" : "password",
-        "s3.endpoint" : "http://minio:9000"
-    })
+    adapter = iceberg.adapter(
+        name="MyCatalog",
+        properties={
+            "type": "rest",
+            "uri": "http://my-rest-catalog:8181/api",
+            # Note: Other properties may be needed depending on the REST Catalog implementation
+            # "warehouse": "catalog-id",
+            # "credential": "username:password"
+        },
+        s3_instructions=S3Instructions(
+            region_name="us-east-1",
+            credentials=Credentials.basic("my_access_key_id", "my_secret_access_key"),
+        ),
+    )
     ```
 
     Example usage #2 - AWS Glue catalog:
     ```
     from deephaven.experimental import iceberg
+    from deephaven.experimental.s3 import S3Instructions
 
-    ## Note: region and credential information are loaded by the catalog from the environment
-    adapter = iceberg.adapter(name="generic-adapter", properties={
-        "type" : "glue",
-        "uri" : "s3://lab-warehouse/sales",
-    });
+    # Note: region and credential information will be loaded from the specified profile
+    adapter = iceberg.adapter(
+        name="MyCatalog",
+        properties={
+            "type": "glue",
+            "uri": "s3://lab-warehouse/sales",
+        },
+        s3_instructions=S3Instructions(
+            profile_name="MyGlueProfile",
+        ),
+    )
     ```
 
     Args:
@@ -629,20 +651,37 @@ def adapter(
             catalog URI property.
         properties (Optional[Dict[str, str]]): the properties of the catalog to load
         hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
-
+        s3_instructions (Optional[s3.S3Instructions]): the S3 instructions if applicable
     Returns:
         IcebergCatalogAdapter: the catalog adapter created from the provided properties
 
     Raises:
         DHError: If unable to build the catalog adapter
     """
+    if s3_instructions:
+        if not _JIcebergToolsS3:
+            raise DHError(
+                message="`adapter` with s3_instructions requires the Iceberg-specific Deephaven S3 extensions to be installed"
+            )
+        try:
+            return IcebergCatalogAdapter(
+                _JIcebergToolsS3.createAdapter(
+                    name,
+                    j_hashmap(properties if properties is not None else {}),
+                    j_hashmap(hadoop_config if hadoop_config is not None else {}),
+                    s3_instructions.j_object,
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 
     try:
         return IcebergCatalogAdapter(
             _JIcebergTools.createAdapter(
                 name,
                 j_hashmap(properties if properties is not None else {}),
-                j_hashmap(hadoop_config if hadoop_config is not None else {})))
+                j_hashmap(hadoop_config if hadoop_config is not None else {}),
+            )
+        )
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
-

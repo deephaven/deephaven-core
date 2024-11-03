@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(":util-thread")
     implementation project(':Base')
     implementation project(':authentication')
     implementation project(':authorization')

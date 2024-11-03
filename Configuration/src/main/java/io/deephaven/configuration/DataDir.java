@@ -4,6 +4,7 @@
 package io.deephaven.configuration;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 public class DataDir {
@@ -22,10 +23,7 @@ public class DataDir {
      * @return the data directory
      */
     public static Path get() {
-        return Path.of(viaProperty()
-                .or(DataDir::viaWorkspace)
-                .or(DataDir::viaEnvironmentVariable)
-                .orElse(DEFAULT_DATA_DIR));
+        return Paths.get(getOptional().orElse(DEFAULT_DATA_DIR));
     }
 
     /**
@@ -37,15 +35,23 @@ public class DataDir {
      * @return the data directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = viaProperty()
-                .or(DataDir::viaWorkspace)
-                .or(DataDir::viaEnvironmentVariable)
-                .orElse(null);
+        final String existing = getOptional().orElse(null);
         if (existing != null) {
-            return Path.of(existing);
+            return Paths.get(existing);
         }
         System.setProperty(PROPERTY, defaultValue);
-        return Path.of(defaultValue);
+        return Paths.get(defaultValue);
+    }
+
+    private static Optional<String> getOptional() {
+        Optional<String> optional = viaProperty();
+        if (!optional.isPresent()) {
+            optional = viaWorkspace();
+        }
+        if (!optional.isPresent()) {
+            optional = viaEnvironmentVariable();
+        }
+        return optional;
     }
 
     private static Optional<String> viaProperty() {

@@ -17,10 +17,11 @@ import static org.apache.iceberg.aws.s3.S3FileIOProperties.ENDPOINT;
 import static org.apache.iceberg.aws.s3.S3FileIOProperties.SECRET_ACCESS_KEY;
 
 @Tag("testcontainers")
-class IcebergLocalStackTest extends IcebergToolsTest {
+@Deprecated
+public class IcebergLocalStackTest extends IcebergToolsTest {
 
     @BeforeAll
-    static void initContainer() {
+    public static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }
@@ -36,7 +37,7 @@ class IcebergLocalStackTest extends IcebergToolsTest {
     }
 
     @Override
-    public Map<String, String> s3Properties() {
+    public Map<String, String> properties() {
         return Map.of(
                 ENDPOINT, LocalStack.s3Endpoint(),
                 CLIENT_REGION, LocalStack.region(),

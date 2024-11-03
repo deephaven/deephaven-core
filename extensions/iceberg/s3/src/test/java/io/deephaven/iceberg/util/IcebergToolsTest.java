@@ -48,7 +48,13 @@ import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITI
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergTableAdapter.SNAPSHOT_DEFINITION;
 
-abstract class IcebergToolsTest {
+/**
+ * @deprecated tests against a fresh catalog should be added to {@link io.deephaven.iceberg.junit5.SqliteCatalogBase}
+ *             and tests against pre-created catalogs should likely be migrated
+ *             {@link io.deephaven.iceberg.sqlite.DbResource}
+ */
+@Deprecated
+public abstract class IcebergToolsTest {
 
     private static final TableDefinition SALES_SINGLE_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("Region"),
@@ -102,7 +108,7 @@ abstract class IcebergToolsTest {
 
     public abstract S3Instructions.Builder s3Instructions(S3Instructions.Builder builder);
 
-    public abstract Map<String, String> s3Properties();
+    public abstract Map<String, String> properties();
 
     private S3AsyncClient asyncClient;
     private String bucket;
@@ -124,7 +130,7 @@ abstract class IcebergToolsTest {
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
 
         // Create the test catalog for the tests
-        resourceCatalog = IcebergTestCatalog.create(warehousePath, s3Properties());
+        resourceCatalog = IcebergTestCatalog.create(warehousePath, properties());
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 

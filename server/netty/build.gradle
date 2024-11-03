@@ -11,6 +11,8 @@ dependencies {
         because 'downstream dagger compile'
     }
 
+    implementation project(":util-thread")
+
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 

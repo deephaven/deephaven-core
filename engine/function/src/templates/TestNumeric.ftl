@@ -19,6 +19,16 @@ import static io.deephaven.function.Numeric.*;
 @SuppressWarnings({"RedundantCast", "RedundantArrayCreation", "PointlessArithmeticExpression", "ConstantConditions", "SimplifiableAssertion", "Convert2Diamond"})
 public class TestNumeric extends BaseArrayTestCase {
 
+    //////////////////////////// Constants ////////////////////////////
+
+    public void testE() {
+        assertEquals(Math.E, E, 0.0);
+    }
+
+    public void testPI() {
+        assertEquals(Math.PI, PI, 0.0);
+    }
+
     //////////////////////////// Object ////////////////////////////
 
     public void testObjMin() {
@@ -1744,6 +1754,277 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(-1, compare(v3, v1));
     }
 
+    </#if>
+
+    public void test${pt.boxed}Atan2(){
+        assertEquals(Math.atan2((${pt.primitive})1, (${pt.primitive})2), atan2((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2(${pt.null}, (${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, atan2((${pt.primitive})2, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Cbrt(){
+        assertEquals(Math.cbrt((${pt.primitive})2), cbrt((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cbrt(${pt.null}));
+    }
+
+    public void test${pt.boxed}Cosh(){
+        assertEquals(Math.cosh((${pt.primitive})2), cosh((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, cosh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Expm1(){
+        assertEquals(Math.expm1((${pt.primitive})2), expm1((${pt.primitive})2));
+        assertEquals(NULL_DOUBLE, expm1(${pt.null}));
+    }
+
+    public void test${pt.boxed}Hypot(){
+        assertEquals(Math.hypot(7, 3), hypot((${pt.primitive})7, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot(${pt.null}, (${pt.primitive})3));
+        assertEquals(NULL_DOUBLE, hypot((${pt.primitive})7, ${pt.null}));
+    }
+
+    public void test${pt.boxed}Log10(){
+        assertEquals(Math.log10(7), log10((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log10(${pt.null}));
+    }
+
+    public void test${pt.boxed}Log1p(){
+        assertEquals(Math.log1p(7), log1p((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, log1p(${pt.null}));
+    }
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Scalb(){
+        assertEquals(Math.scalb((${pt.primitive})7, 3), scalb((${pt.primitive})7, 3));
+        assertEquals(${pt.null}, scalb(${pt.null}, 3));
+        assertEquals(${pt.null}, scalb((${pt.primitive})7, NULL_INT));
+    }
+    </#if>
+
+    public void test${pt.boxed}Sinh(){
+        assertEquals(Math.sinh((${pt.primitive})7), sinh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, sinh(${pt.null}));
+    }
+
+    public void test${pt.boxed}Tanh(){
+        assertEquals(Math.tanh((${pt.primitive})7), tanh((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, tanh(${pt.null}));
+    }
+
+    public void test${pt.boxed}CopySign() {
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})9, (${pt.primitive})0));
+        assertEquals((${pt.primitive})-9, copySign((${pt.primitive})-9, (${pt.primitive})-2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})2));
+        assertEquals((${pt.primitive})9, copySign((${pt.primitive})-9, (${pt.primitive})0));
+        assertEquals((${pt.null}), copySign(${pt.null}, (${pt.primitive})-2));
+        assertEquals((${pt.null}), copySign((${pt.primitive})1, ${pt.null}));
+    }
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}AddExact(){
+        assertEquals((${pt.primitive})3, addExact((${pt.primitive})1, (${pt.primitive})2));
+        assertEquals(${pt.null}, addExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, addExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+            addExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})1);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}SubtractExact(){
+        assertEquals((${pt.primitive})1, subtractExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, subtractExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+        subtractExact((${pt.primitive})${pt.minValue}, (${pt.primitive})1);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}MultiplyExact(){
+        assertEquals((${pt.primitive})6, multiplyExact((${pt.primitive})3, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, multiplyExact((${pt.primitive})2, ${pt.null}));
+
+        try {
+            multiplyExact((${pt.primitive})${pt.maxValue}, (${pt.primitive})2);
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}IncrementExact(){
+        assertEquals((${pt.primitive})3, incrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, incrementExact(${pt.null}));
+
+        try {
+            incrementExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}DecrementExact(){
+        assertEquals((${pt.primitive})1, decrementExact((${pt.primitive})2));
+        assertEquals(${pt.null}, decrementExact(${pt.null}));
+
+        try {
+            decrementExact((${pt.primitive})${pt.minValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}NegateExact(){
+        assertEquals(Math.negateExact(7), negateExact((${pt.primitive})7));
+        assertEquals(${pt.null}, negateExact(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorDiv(){
+        assertEquals(Math.floorDiv(7, 2), floorDiv((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorDiv((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}FloorMod(){
+        assertEquals(Math.floorMod(7, 2), floorMod((${pt.primitive})7, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod(${pt.null}, (${pt.primitive})2));
+        assertEquals(${pt.null}, floorMod((${pt.primitive})7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}GetExponent(){
+        assertEquals(Math.getExponent(7), getExponent((${pt.primitive})7));
+        assertEquals(NULL_INT, getExponent(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}IEEEremainder(){
+        assertEquals((${pt.primitive}) Math.IEEEremainder(71, 3), IEEEremainder((${pt.primitive})71, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder(${pt.null}, (${pt.primitive})3));
+        assertEquals(${pt.null}, IEEEremainder((${pt.primitive})71, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextAfter(){
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})8), nextAfter((${pt.primitive})7, (${pt.primitive})8));
+        assertEquals(Math.nextAfter((${pt.primitive})7, (${pt.primitive})-8), nextAfter((${pt.primitive})7, (${pt.primitive})-8));
+
+        assertEquals(Math.nextUp(${pt.null}), nextAfter(Math.nextDown(${pt.null}), (${pt.primitive})8));
+        assertEquals(Math.nextDown(${pt.null}), nextAfter(Math.nextUp(${pt.null}), ${pt.boxed}.NEGATIVE_INFINITY));
+
+        assertEquals(${pt.null}, nextAfter(${pt.null}, (${pt.primitive})8));
+        assertEquals(${pt.null}, nextAfter((${pt.primitive}) 7, ${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextUp(){
+        assertEquals(Math.nextUp((${pt.primitive})7), nextUp((${pt.primitive})7));
+        assertEquals(Math.nextUp(${pt.null}), nextUp(Math.nextDown(${pt.null})));
+        assertEquals(${pt.null}, nextUp(${pt.null}));
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}NextDown(){
+        assertEquals(Math.nextDown((${pt.primitive})7), nextDown((${pt.primitive})7));
+        assertEquals(Math.nextDown(${pt.null}), nextDown(Math.nextUp(${pt.null})));
+        assertEquals(${pt.null}, nextDown(${pt.null}));
+    }
+    </#if>
+
+    public void test${pt.boxed}ToDegrees(){
+        assertEquals(Math.toDegrees((${pt.primitive})7), toDegrees((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toDegrees(${pt.null}));
+    }
+
+    public void test${pt.boxed}ToRadians(){
+        assertEquals(Math.toRadians((${pt.primitive})7), toRadians((${pt.primitive})7));
+        assertEquals(NULL_DOUBLE, toRadians(${pt.null}));
+    }
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToIntExact(){
+        assertEquals(Math.toIntExact((${pt.primitive})7), toIntExact((${pt.primitive})7));
+        assertEquals(NULL_INT, toIntExact(${pt.null}));
+
+        <#if pt.primitive == "long" >
+        try{
+            toIntExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToShortExact(){
+        assertEquals((short)7, toShortExact((${pt.primitive})7));
+        assertEquals(NULL_SHORT, toShortExact(${pt.null}));
+
+        <#if pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toShortExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isInteger >
+    public void test${pt.boxed}ToByteExact(){
+        assertEquals((byte)3, toByteExact((${pt.primitive})3));
+        assertEquals(NULL_BYTE, toByteExact(${pt.null}));
+
+        <#if pt.primitive == "short" || pt.primitive == "int" || pt.primitive == "long" >
+        try{
+            toByteExact((${pt.primitive})${pt.maxValue});
+            fail("Overflow");
+        } catch(ArithmeticException e){
+            // pass
+        }
+        </#if>
+    }
+    </#if>
+
+    <#if pt.valueType.isFloat >
+    public void test${pt.boxed}Ulp(){
+        assertEquals(Math.ulp((${pt.primitive})7), ulp((${pt.primitive})7));
+        assertEquals(${pt.null}, ulp(${pt.null}));
+    }
     </#if>
 
     </#if>
