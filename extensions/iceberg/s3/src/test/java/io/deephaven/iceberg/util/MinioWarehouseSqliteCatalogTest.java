@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import java.time.Duration;
+
 @Tag("testcontainers")
 final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
     @BeforeAll
@@ -23,7 +25,8 @@ final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase
 
     @Override
     public S3Instructions s3Instructions() {
-        return MinIO.s3Instructions(S3Instructions.builder()).build();
+        return MinIO.s3Instructions(S3Instructions.builder()
+                .readTimeout(Duration.ofSeconds(10))).build();
     }
 
     @Override

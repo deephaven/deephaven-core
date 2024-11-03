@@ -56,7 +56,7 @@ public final class IcebergUtils {
         DH_TO_ICEBERG_TYPE_MAP.put(LocalDate.class, Types.DateType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(LocalTime.class, Types.TimeType.get());
         DH_TO_ICEBERG_TYPE_MAP.put(byte[].class, Types.BinaryType.get());
-        // TODO Add support for writing big decimals and lists
+        // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals, and Lists
     }
 
     /**
