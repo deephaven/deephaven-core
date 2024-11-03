@@ -4,6 +4,7 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value.Default;
@@ -74,6 +75,8 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
 
     abstract IcebergParquetWriteInstructions withTableDefinition(@NotNull final TableDefinition tableDefinition);
 
+    abstract IcebergParquetWriteInstructions withDhTables(@NotNull final Iterable<? extends Table> dhTables);
+
     /**
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
      *
@@ -101,7 +104,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
         return builder.build();
     }
 
-    public interface Builder extends IcebergWriteInstructions.Builder<Builder> {
+    public interface Builder extends IcebergWriteInstructions.Builder<IcebergWriteInstructions, Builder> {
         Builder compressionCodecName(String compressionCodecName);
 
         Builder maximumDictionaryKeys(int maximumDictionaryKeys);

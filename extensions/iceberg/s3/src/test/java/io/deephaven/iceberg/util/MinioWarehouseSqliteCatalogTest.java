@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Tag("testcontainers")
-public final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
+final class MinioWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
     @BeforeAll
-    public static void initContainer() {
+    static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
         Assumptions.assumeFalse(OSUtil.runningMacOS(), "OSUtil.runningMacOS()");
         // ensure container is started so container startup time isn't associated with a specific test

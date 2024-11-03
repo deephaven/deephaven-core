@@ -75,7 +75,7 @@ public final class ParquetFileWriter implements AutoCloseable {
     /**
      * Get the number of bytes written to the parquet file so far.
      */
-    public long getCount() {
+    public long bytesWritten() {
         return countingOutput.getCount();
     }
 

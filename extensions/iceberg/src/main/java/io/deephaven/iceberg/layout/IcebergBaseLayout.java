@@ -72,7 +72,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     private int fileCount;
 
-    protected IcebergTableLocationKey locationKey(
+    /**
+     * Create a new {@link IcebergTableLocationKey} for the given file URI.
+     * <p>
+     * This method assumes that keys are created in a specific order and that each key is created only once.
+     */
+    IcebergTableLocationKey locationKey(
             final org.apache.iceberg.FileFormat format,
             final URI fileUri,
             @Nullable final Map<String, Comparable<?>> partitions) {

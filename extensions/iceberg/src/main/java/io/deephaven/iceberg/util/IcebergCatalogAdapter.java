@@ -26,7 +26,8 @@ import org.apache.iceberg.rest.ResourcePaths;
 
 import java.util.*;
 
-import static io.deephaven.iceberg.util.IcebergTableAdapter.verifyAndFillDefinition;
+import static io.deephaven.iceberg.util.IcebergTableAdapter.ensureDefinition;
+import static io.deephaven.iceberg.util.IcebergTableAdapter.verifyInstructions;
 
 public class IcebergCatalogAdapter {
 
@@ -269,6 +270,7 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
      * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     * @throws AlreadyExistsException if the table already exists
      */
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
@@ -279,18 +281,10 @@ public class IcebergCatalogAdapter {
         return createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
     }
 
-    /**
-     * Create a new Iceberg table in the catalog with the given table identifier, schema, and partition spec.
-     *
-     * @param tableIdentifier The identifier of the new table.
-     * @param schema The schema of the new table.
-     * @param partitionSpec The partition spec of the new table.
-     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
-     */
     private IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull Schema schema,
-            @NotNull PartitionSpec partitionSpec) {
+            @NotNull final Schema schema,
+            @NotNull final PartitionSpec partitionSpec) {
         final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
         try {
             final org.apache.iceberg.Table table =
@@ -310,28 +304,34 @@ public class IcebergCatalogAdapter {
         }
     }
 
+    /**
+     * Create a new Iceberg table in the catalog with the given table identifier and definition, and append the data
+     * from the given append instructions.
+     *
+     * @param tableIdentifier The identifier of the new table.
+     * @param writeInstructions The instructions for customizations while writing.
+     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     * @throws AlreadyExistsException if the table already exists
+     */
     public IcebergTableAdapter createTableAndAppend(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final IcebergAppend append) {
-        if (catalog.tableExists(tableIdentifier)) {
-            throw new IllegalArgumentException("Table already exists: " + tableIdentifier);
-        }
-        if (append.dhTables().isEmpty()) {
+            @NotNull final IcebergWriteInstructions writeInstructions) {
+        if (writeInstructions.dhTables().isEmpty()) {
             return createTable(tableIdentifier, new Schema(), PartitionSpec.unpartitioned());
         }
 
         // Extract the definition from the append instructions to build the spec and schema
-        final IcebergParquetWriteInstructions writeInstructions =
-                verifyAndFillDefinition(append.instructions(), append.dhTables());
-        final TableDefinition useDefinition = writeInstructions.tableDefinition().get();
+        final IcebergParquetWriteInstructions parquetWriteInstructions =
+                ensureDefinition(verifyInstructions(writeInstructions));
+        final TableDefinition useDefinition = parquetWriteInstructions.tableDefinition().get();
         final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(
-                useDefinition, writeInstructions);
+                useDefinition, parquetWriteInstructions);
 
         final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
         final IcebergTableAdapter tableAdapter;
         try {
             tableAdapter = createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
-            tableAdapter.append(append);
+            tableAdapter.append(parquetWriteInstructions);
         } catch (final Throwable throwable) {
             // Delete it to avoid leaving a partial table in the catalog
             try {

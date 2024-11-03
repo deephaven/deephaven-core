@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
+import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.PartitionData;
@@ -68,6 +69,14 @@ public final class IcebergUtils {
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
         return allManifests(table, snapshot).stream()
+                .peek(manifestFile -> {
+                    if (manifestFile.content() != ManifestContent.DATA) {
+                        throw new TableDataException(
+                                String.format(
+                                        "%s:%d - only DATA manifest files are currently supported, encountered %s",
+                                        table, snapshot.snapshotId(), manifestFile.content()));
+                    }
+                })
                 .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
                 .flatMap(IcebergUtils::toStream);
     }
@@ -123,9 +132,10 @@ public final class IcebergUtils {
                 return io.deephaven.qst.type.Type.stringType();
             case TIMESTAMP:
                 final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
-                return timestampType.shouldAdjustToUTC()
-                        ? io.deephaven.qst.type.Type.find(Instant.class)
-                        : io.deephaven.qst.type.Type.find(LocalDateTime.class);
+                if (timestampType == Types.TimestampType.withZone()) {
+                    return io.deephaven.qst.type.Type.find(Instant.class);
+                }
+                return io.deephaven.qst.type.Type.find(LocalDateTime.class);
             case DATE:
                 return io.deephaven.qst.type.Type.find(LocalDate.class);
             case TIME:
@@ -306,7 +316,7 @@ public final class IcebergUtils {
      * @param partitionSpec The partition spec of the iceberg table.
      * @param tableDefinition The table definition of the deephaven table.
      *
-     * @throws IllegalArgumentException if the partition spec are not compatible.
+     * @throws IllegalArgumentException if the partition spec is not compatible.
      */
     public static void verifyAppendCompatibility(
             @NotNull final PartitionSpec partitionSpec,
@@ -347,7 +357,7 @@ public final class IcebergUtils {
             // Following will internally validate the structure and values of the partition path
             try {
                 partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
-            } catch (final Throwable e) {
+            } catch (final Exception e) {
                 throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
                         " partition spec " + partitionSpec, e);
             }

@@ -118,11 +118,11 @@ public abstract class IcebergToolsTest {
     private String warehousePath;
     private IcebergTestCatalog resourceCatalog;
 
-    private final EngineCleanup engineCleanup = new EngineCleanup();
+    private final EngineCleanup framework = new EngineCleanup();
 
     @BeforeEach
     void setUp() throws Exception {
-        engineCleanup.setUp();
+        framework.setUp();
         bucket = "warehouse";
         asyncClient = s3AsyncClient();
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
@@ -148,7 +148,7 @@ public abstract class IcebergToolsTest {
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
-        engineCleanup.tearDown();
+        framework.tearDown();
     }
 
     private void uploadFiles(final File root, final String prefixToRemove)

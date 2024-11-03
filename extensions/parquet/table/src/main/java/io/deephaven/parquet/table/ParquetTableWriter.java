@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table;
 
-import com.google.common.io.CountingOutputStream;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -219,7 +218,7 @@ public class ParquetTableWriter {
                 // Given the transformation, do not use the original table's "definition" for writing
                 write(t, writeInstructions, parquetFileWriter, computedCache);
                 parquetFileWriter.close();
-                numBytesWritten = parquetFileWriter.getCount();
+                numBytesWritten = parquetFileWriter.bytesWritten();
             }
             destOutputStream.done();
             return numBytesWritten;

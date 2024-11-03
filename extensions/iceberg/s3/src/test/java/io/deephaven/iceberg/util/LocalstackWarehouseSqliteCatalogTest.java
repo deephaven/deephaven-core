@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Tag("testcontainers")
-public final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
+final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
     @BeforeAll
-    public static void initContainer() {
+    static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }

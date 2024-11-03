@@ -21,9 +21,6 @@ _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
-_JIcebergAppend = jpy.get_type("io.deephaven.iceberg.util.IcebergAppend")
-_JIcebergOverwrite = jpy.get_type("io.deephaven.iceberg.util.IcebergOverwrite")
-_JIcebergWriteDataFile = jpy.get_type("io.deephaven.iceberg.util.IcebergWriteDataFiles")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -157,6 +154,7 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                  maximum_dictionary_keys: Optional[int] = None,
                  maximum_dictionary_size: Optional[int] = None,
                  target_page_size: Optional[int] = None,
+                 snapshot_id: Optional[int] = None,
                  verify_schema: Optional[bool] = None,
                  dh_to_iceberg_column_renames: Optional[Dict[str, str]] = None,
                  table_definition: Optional[TableDefinitionLike] = None,
@@ -175,6 +173,8 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 2^20 (1,048,576)
             target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to
                 2^20 bytes (1 MiB)
+            snapshot_id (Optional[int]): The identifier of the snapshot to load for updating.; if omitted, the most
+                recent snapshot will be used.
             verify_schema (Optional[bool]): Specifies whether to verify that the partition spec and schema of the table
                 being written are consistent with the Iceberg table. Verification behavior differs based on the
                 operation type:
@@ -210,6 +210,9 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
 
             if target_page_size is not None:
                 builder.targetPageSize(target_page_size)
+
+            if snapshot_id is not None:
+                builder.snapshotId(snapshot_id)
 
             if verify_schema is not None:
                 builder.verifySchema(verify_schema)
@@ -338,71 +341,35 @@ class IcebergTableAdapter(JObjectWrapper):
         return IcebergTable(self.j_object.table())
 
 
-    def append(self,
-               table_identifier: str,
-               tables: List[Table],
-               partition_paths: Optional[List[str]] = None,
-               instructions: Optional[IcebergParquetWriteInstructions] = None):
+    def append(self, instructions: Optional[IcebergParquetWriteInstructions] = None):
         # TODO Review javadoc in this file once again
         """
         Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
         will not change the schema of the existing table.
 
         Args:
-            table_identifier (str): the identifier string for iceberg table to append to.
-            tables (List[Table]): the tables to append.
-            partition_paths (Optional[List[str]]): the partitioning path at which data would be appended, for example,
-                "year=2021/month=01". If omitted, we will try to append data to the table without partitioning.
             instructions (Optional[IcebergParquetWriteInstructions]): the instructions for customizations while writing.
         """
-        builder = _JIcebergAppend.builder().tableIdentifier(table_identifier)
-
-        for table in tables:
-            builder.addDhTables(table.j_table)
-
-        for partition_path in partition_paths:
-            builder.addPartitionPaths(partition_path)
-
         if instructions is not None:
-            builder.instructions(instructions.j_object)
+            return self.j_object.append(instructions.j_object)
 
-        return self.j_object.append(builder.build())
+        return self.j_object.append()
 
-    def overwrite(self,
-                  table_identifier: str,
-                  tables: List[Table],
-                  partition_paths: Optional[List[str]] = None,
-                  instructions: Optional[IcebergParquetWriteInstructions] = None):
+    def overwrite(self, instructions: Optional[IcebergParquetWriteInstructions] = None):
         """
         Overwrite the existing Iceberg table with the provided Deephaven tables in a single snapshot. This will
         overwrite the schema of the existing table to match the provided Deephaven table if they do not match.
         Overwriting a table while racing with other writers can lead to failure/undefined results.
 
         Args:
-            table_identifier (str): the identifier string for iceberg table to overwrite.
-            tables (List[Table]): the tables to overwrite.
-            partition_paths (Optional[List[str]]): the partitioning path at which data would be overwritten, for example,
-                "year=2021/month=01". If omitted, we will try to overwrite data to the table without partitioning.
             instructions (Optional[IcebergParquetWriteInstructions]): the instructions for customizations while writing.
         """
-        builder = _JIcebergOverwrite.builder().tableIdentifier(table_identifier)
-
-        for table in tables:
-            builder.addDhTables(table.j_table)
-
-        for partition_path in partition_paths:
-            builder.addPartitionPaths(partition_path)
-
         if instructions is not None:
-            builder.instructions(instructions.j_object)
+            return self.j_object.overwrite(instructions.j_object)
 
-        return self.j_object.overwrite(builder.build())
+        return self.j_object.overwrite()
 
-    def write_data_file(self,
-                        table_identifier: str,
-                        tables: List[Table],
-                        partition_paths: Optional[List[str]] = None,
-                        instructions: Optional[IcebergParquetWriteInstructions] = None):
+    def write_data_file(self, instructions: Optional[IcebergParquetWriteInstructions] = None):
         """
         Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
         of data files that were written. Users can use this list to create a transaction/snapshot if needed.
@@ -414,18 +381,10 @@ class IcebergTableAdapter(JObjectWrapper):
                 "year=2021/month=01". If omitted, we will try to write data to the table without partitioning.
             instructions (Optional[IcebergParquetWriteInstructions]): the instructions for customizations while writing.
         """
-        builder = _JIcebergWriteDataFile.builder().tableIdentifier(table_identifier)
-
-        for table in tables:
-            builder.addDhTables(table.j_table)
-
-        for partition_path in partition_paths:
-            builder.addPartitionPaths(partition_path)
-
         if instructions is not None:
-            builder.instructions(instructions.j_object)
+            return self.j_object.writeDataFiles(instructions.j_object)
 
-        return self.j_object.writeDataFiles(builder.build())
+        return self.j_object.writeDataFiles()
 
     @property
     def j_object(self) -> jpy.JType:

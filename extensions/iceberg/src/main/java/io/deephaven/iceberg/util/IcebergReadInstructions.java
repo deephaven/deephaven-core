@@ -19,7 +19,7 @@ import java.util.OptionalLong;
  */
 @Immutable
 @CopyableStyle
-public abstract class IcebergReadInstructions {
+public abstract class IcebergReadInstructions implements IcebergBaseInstructions {
     /**
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
      * system defaults for cloud provider-specific parameters.
@@ -29,17 +29,6 @@ public abstract class IcebergReadInstructions {
     public static Builder builder() {
         return ImmutableIcebergReadInstructions.builder();
     }
-
-    /**
-     * The {@link TableDefinition} to use when reading Iceberg data files.
-     */
-    public abstract Optional<TableDefinition> tableDefinition();
-
-    /**
-     * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
-     * provider-specific instructions).
-     */
-    public abstract Optional<Object> dataInstructions();
 
     /**
      * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
@@ -85,30 +74,11 @@ public abstract class IcebergReadInstructions {
      */
     public abstract IcebergReadInstructions withSnapshot(Snapshot value);
 
-    public interface Builder {
-        Builder tableDefinition(TableDefinition tableDefinition);
-
-        Builder dataInstructions(Object s3Instructions);
-
+    public interface Builder extends IcebergBaseInstructions.Builder<IcebergReadInstructions, Builder> {
         Builder putColumnRenames(String key, String value);
 
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         Builder updateMode(IcebergUpdateMode updateMode);
-
-        Builder snapshotId(long snapshotId);
-
-        Builder snapshot(Snapshot snapshot);
-
-        IcebergReadInstructions build();
-    }
-
-    @Value.Check
-    final void checkSnapshotId() {
-        if (snapshotId().isPresent() && snapshot().isPresent() &&
-                snapshotId().getAsLong() != snapshot().get().snapshotId()) {
-            throw new IllegalArgumentException("If both snapshotID and snapshot are provided, the snapshot Ids " +
-                    "must match, found " + snapshotId().getAsLong() + " and " + snapshot().get().snapshotId());
-        }
     }
 }

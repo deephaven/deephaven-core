@@ -15,11 +15,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
-import io.deephaven.iceberg.util.IcebergAppend;
-import io.deephaven.iceberg.util.IcebergOverwrite;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
-import io.deephaven.iceberg.util.IcebergWriteDataFiles;
-import io.deephaven.iceberg.util.IcebergWriteInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
@@ -113,7 +109,7 @@ public abstract class SqliteCatalogBase {
         }
 
         final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
                         .build());
         Table fromIceberg = tableAdapter.table();
@@ -124,12 +120,9 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        final IcebergWriteInstructions writeInstructionsLZ4 = IcebergParquetWriteInstructions.builder()
-                .compressionCodecName("LZ4")
-                .build();
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(moreData)
-                .instructions(writeInstructionsLZ4)
+                .compressionCodecName("LZ4")
                 .build());
         fromIceberg = tableAdapter.table();
         final Table expected = TableTools.merge(moreData, source);
@@ -140,7 +133,7 @@ public abstract class SqliteCatalogBase {
         final Table emptyTable = TableTools.emptyTable(0)
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(emptyTable)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -151,12 +144,9 @@ public abstract class SqliteCatalogBase {
         final Table someMoreData = TableTools.emptyTable(3)
                 .update("intCol = (int) 5 * i + 40",
                         "doubleCol = (double) 5.5 * i + 40");
-        final IcebergWriteInstructions writeInstructionsGZIP = IcebergParquetWriteInstructions.builder()
-                .compressionCodecName("GZIP")
-                .build();
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(someMoreData, moreData, emptyTable)
-                .instructions(writeInstructionsGZIP)
+                .compressionCodecName("GZIP")
                 .build());
         fromIceberg = tableAdapter.table();
         final Table expected2 = TableTools.merge(someMoreData, moreData, expected);
@@ -187,7 +177,7 @@ public abstract class SqliteCatalogBase {
 
         // Add some data to the table
         final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
                         .build());
 
@@ -195,7 +185,7 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        tableAdapter.overwrite(IcebergOverwrite.builder()
+        tableAdapter.overwrite(IcebergParquetWriteInstructions.builder()
                 .addDhTables(moreData)
                 .build());
         Table fromIceberg = tableAdapter.table();
@@ -206,7 +196,7 @@ public abstract class SqliteCatalogBase {
         final Table emptyTable = TableTools.emptyTable(0)
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
-        tableAdapter.overwrite(IcebergOverwrite.builder()
+        tableAdapter.overwrite(IcebergParquetWriteInstructions.builder()
                 .addDhTables(emptyTable)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -217,7 +207,7 @@ public abstract class SqliteCatalogBase {
         final Table someMoreData = TableTools.emptyTable(3)
                 .update("intCol = (int) 5 * i + 40",
                         "doubleCol = (double) 5.5 * i + 40");
-        tableAdapter.overwrite(IcebergOverwrite.builder()
+        tableAdapter.overwrite(IcebergParquetWriteInstructions.builder()
                 .addDhTables(someMoreData, moreData, emptyTable)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -232,13 +222,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergWriteInstructions writeInstructionsWithSchemaMatching = IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
-                .build();
         final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergAppend.builder()
+                catalogAdapter.createTableAndAppend(tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
-                        .instructions(writeInstructionsWithSchemaMatching)
+                        .verifySchema(true)
                         .build());
         {
             final Table fromIceberg = tableAdapter.table();
@@ -249,21 +236,18 @@ public abstract class SqliteCatalogBase {
         final Table differentSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10");
         try {
-            tableAdapter.overwrite(IcebergOverwrite.builder()
+            tableAdapter.overwrite(IcebergParquetWriteInstructions.builder()
                     .addDhTables(differentSource)
-                    .instructions(writeInstructionsWithSchemaMatching)
+                    .verifySchema(true)
                     .build());
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Schema verification failed");
         }
 
         // By default, schema verification should be disabled for overwriting
-        final IcebergWriteInstructions writeInstructionsWithoutSchemaMatching =
-                IcebergParquetWriteInstructions.builder().build();
         {
-            tableAdapter.overwrite(IcebergOverwrite.builder()
+            tableAdapter.overwrite(IcebergParquetWriteInstructions.builder()
                     .addDhTables(differentSource)
-                    .instructions(writeInstructionsWithoutSchemaMatching)
                     .build());
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(differentSource, fromIceberg);
@@ -274,9 +258,9 @@ public abstract class SqliteCatalogBase {
         {
             final Table moreData = TableTools.emptyTable(5)
                     .update("intCol = (int) 3 * i + 20");
-            tableAdapter.append(IcebergAppend.builder()
+            tableAdapter.append(IcebergParquetWriteInstructions.builder()
                     .addDhTables(moreData)
-                    .instructions(writeInstructionsWithoutSchemaMatching)
+                    .verifySchema(true)
                     .build());
             final Table fromIceberg = tableAdapter.table();
             final Table expected = TableTools.merge(moreData, differentSource);
@@ -286,9 +270,7 @@ public abstract class SqliteCatalogBase {
 
         // Overwrite with an empty list
         {
-            tableAdapter.overwrite(IcebergOverwrite.builder()
-                    .instructions(writeInstructionsWithoutSchemaMatching)
-                    .build());
+            tableAdapter.overwrite(IcebergParquetWriteInstructions.DEFAULT);
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.emptyTable(0), fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "delete"));
@@ -304,7 +286,7 @@ public abstract class SqliteCatalogBase {
 
         // By default, schema verification should be enabled for appending
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, IcebergAppend.builder()
+                tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
                         .build());
         Table fromIceberg = tableAdapter.table();
@@ -314,7 +296,7 @@ public abstract class SqliteCatalogBase {
         final Table differentSource = TableTools.emptyTable(10)
                 .update("shortCol = (short) 2 * i + 10");
         try {
-            tableAdapter.append(IcebergAppend.builder()
+            tableAdapter.append(IcebergParquetWriteInstructions.builder()
                     .addDhTables(differentSource)
                     .build());
         } catch (RuntimeException e) {
@@ -324,7 +306,7 @@ public abstract class SqliteCatalogBase {
         // Append a table with just the int column, should be compatible with the existing schema
         final Table compatibleSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 5 * i + 10");
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(compatibleSource)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -336,7 +318,7 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(moreData)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -345,7 +327,7 @@ public abstract class SqliteCatalogBase {
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
 
         // Append an empty list
-        tableAdapter.append(IcebergAppend.builder().build());
+        tableAdapter.append(IcebergParquetWriteInstructions.DEFAULT);
         fromIceberg = tableAdapter.table();
         assertTableEquals(expected2, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append", "append", "append"));
@@ -357,13 +339,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
-                .build();
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, IcebergAppend.builder()
+                tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
-                        .instructions(writeInstructions)
+                        .verifySchema(true)
                         .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
@@ -378,9 +357,8 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 4.5 * i + 30");
 
         try {
-            tableAdapter.append(IcebergAppend.builder()
+            tableAdapter.append(IcebergParquetWriteInstructions.builder()
                     .addDhTables(appendTable1, appendTable2)
-                    .instructions(writeInstructions)
                     .build());
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("All Deephaven tables must have the same definition");
@@ -390,13 +368,9 @@ public abstract class SqliteCatalogBase {
         final TableDefinition writeDefinition = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"));
-        final IcebergWriteInstructions writeInstructionsWithDefinition = IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
-                .tableDefinition(writeDefinition)
-                .build();
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(appendTable1, appendTable2)
-                .instructions(writeInstructionsWithDefinition)
+                .tableDefinition(writeDefinition)
                 .build());
         fromIceberg = tableAdapter.table();
         final Table expected = TableTools.merge(
@@ -438,7 +412,7 @@ public abstract class SqliteCatalogBase {
                         "localTimeCol = java.time.LocalTime.now()",
                         "binaryCol = new byte[] {(byte) i}");
         final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(myTableId);
-        tableAdapter.append(IcebergAppend.builder().addDhTables(source).build());
+        tableAdapter.append(IcebergParquetWriteInstructions.builder().addDhTables(source).build());
         final Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
     }
@@ -450,17 +424,14 @@ public abstract class SqliteCatalogBase {
                 .updateView(
                         "stringCol = ii % 2 == 0 ? Long.toString(ii) : null",
                         "intCol = (int) stringCol.charAt(0)");
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
-                .build();
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier tableIdentifier = TableIdentifier.of(myNamespace, "MyTable");
 
         try {
             catalogAdapter.createTableAndAppend(
-                    tableIdentifier, IcebergAppend.builder()
+                    tableIdentifier, IcebergParquetWriteInstructions.builder()
                             .addDhTables(badSource)
-                            .instructions(writeInstructions)
+                            .verifySchema(true)
                             .build());
             fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
@@ -473,17 +444,15 @@ public abstract class SqliteCatalogBase {
                 .update("stringCol = Long.toString(ii)",
                         "intCol = (int) i");
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, IcebergAppend.builder()
+                tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(goodSource)
-                        .instructions(writeInstructions)
                         .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(goodSource, fromIceberg);
 
         try {
-            tableAdapter.append(IcebergAppend.builder()
+            tableAdapter.append(IcebergParquetWriteInstructions.builder()
                     .addDhTables(badSource)
-                    .instructions(writeInstructions)
                     .build());
             fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
@@ -503,14 +472,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
-                .build();
-
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, IcebergAppend.builder()
+                tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(source)
-                        .instructions(writeInstructions)
+                        .verifySchema(true)
                         .build());
         // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment when this
         // is fixed.
@@ -525,14 +490,11 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("newIntCol = (int) 3 * i + 20",
                         "newDoubleCol = (double) 3.5 * i + 20");
-        writeInstructions = IcebergParquetWriteInstructions.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
+                .addDhTables(moreData)
                 .verifySchema(true)
                 .putDhToIcebergColumnRenames("newIntCol", "intCol")
                 .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
-                .build();
-        tableAdapter.append(IcebergAppend.builder()
-                .addDhTables(moreData)
-                .instructions(writeInstructions)
                 .build());
 
         // Verify the data files in the table. Note that we are assuming an order here.
@@ -574,7 +536,7 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
 
-        final List<DataFile> dataFilesWritten = tableAdapter.writeDataFiles(IcebergWriteDataFiles.builder()
+        final List<DataFile> dataFilesWritten = tableAdapter.writeDataFiles(IcebergParquetWriteInstructions.builder()
                 .addDhTables(source, anotherSource)
                 .build());
         verifySnapshots(tableIdentifier, List.of());
@@ -584,7 +546,7 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(moreData)
                 .build());
         {
@@ -618,7 +580,7 @@ public abstract class SqliteCatalogBase {
 
         try {
             catalogAdapter.createTableAndAppend(
-                    tableIdentifier, IcebergAppend.builder()
+                    tableIdentifier, IcebergParquetWriteInstructions.builder()
                             .addDhTables(part1, part2)
                             .addAllPartitionPaths(partitionPaths)
                             .build());
@@ -631,14 +593,11 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
-                .tableDefinition(tableDefinition)
-                .build();
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, IcebergAppend.builder()
+                tableIdentifier, IcebergParquetWriteInstructions.builder()
                         .addDhTables(part1, part2)
                         .addAllPartitionPaths(partitionPaths)
-                        .instructions(writeInstructions)
+                        .tableDefinition(tableDefinition)
                         .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
@@ -653,10 +612,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
         final String partitionPath = "PC=cat";
-        tableAdapter.append(IcebergAppend.builder()
+        tableAdapter.append(IcebergParquetWriteInstructions.builder()
                 .addDhTables(part3)
                 .addPartitionPaths(partitionPath)
-                .instructions(writeInstructions)
+                .tableDefinition(tableDefinition)
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(part3.update("PC = `cat`"), expected);

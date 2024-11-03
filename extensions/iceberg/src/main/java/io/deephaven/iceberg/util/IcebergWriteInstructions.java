@@ -3,10 +3,11 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.immutables.value.Value;
-import org.immutables.value.Value.Default;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -54,18 +55,57 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
-    public interface Builder<INSTRUCTIONS_BUILDER> extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
+    /**
+     * The Deephaven tables to be written. All tables should have the same definition, else a {@link #tableDefinition()
+     * table definition} should be provided.
+     */
+    public abstract List<Table> dhTables();
+
+    /**
+     * The partition paths where each table will be written. For example, if the table is partitioned by "year" and
+     * "month", the partition path could be "year=2021/month=01".
+     * <p>
+     * Users must provide partition path for each table in {@link #dhTables()} in the same order if writing to a
+     * partitioned table. For writing to a non-partitioned tables, this should be an empty list.
+     */
+    public abstract List<String> partitionPaths();
+
+    // @formatter:off
+    interface Builder<INSTRUCTIONS extends IcebergWriteInstructions, INSTRUCTIONS_BUILDER
+            extends IcebergWriteInstructions.Builder<INSTRUCTIONS, INSTRUCTIONS_BUILDER>>
+                extends IcebergBaseInstructions.Builder<INSTRUCTIONS, INSTRUCTIONS_BUILDER> {
+    // @formatter:on
         INSTRUCTIONS_BUILDER verifySchema(boolean verifySchema);
 
         INSTRUCTIONS_BUILDER putDhToIcebergColumnRenames(String key, String value);
 
         INSTRUCTIONS_BUILDER putAllDhToIcebergColumnRenames(Map<String, ? extends String> entries);
+
+        INSTRUCTIONS_BUILDER addDhTables(Table element);
+
+        INSTRUCTIONS_BUILDER addDhTables(Table... elements);
+
+        INSTRUCTIONS_BUILDER addAllDhTables(Iterable<? extends Table> elements);
+
+        // TODO Discuss about the API for partition paths, and add tests
+        INSTRUCTIONS_BUILDER addPartitionPaths(String element);
+
+        INSTRUCTIONS_BUILDER addPartitionPaths(String... elements);
+
+        INSTRUCTIONS_BUILDER addAllPartitionPaths(Iterable<String> elements);
     }
 
     @Value.Check
     final void checkColumnRenamesUnique() {
         if (dhToIcebergColumnRenames().size() != dhToIcebergColumnRenames().values().stream().distinct().count()) {
             throw new IllegalArgumentException("Duplicate values in column renames, values must be unique");
+        }
+    }
+
+    @Value.Check
+    final void countCheckPartitionPaths() {
+        if (!partitionPaths().isEmpty() && partitionPaths().size() != dhTables().size()) {
+            throw new IllegalArgumentException("Partition path must be provided for each table");
         }
     }
 }

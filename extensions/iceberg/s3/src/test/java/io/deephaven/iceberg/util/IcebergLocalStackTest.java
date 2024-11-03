@@ -4,9 +4,9 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
+import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
-import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.util.Map;
