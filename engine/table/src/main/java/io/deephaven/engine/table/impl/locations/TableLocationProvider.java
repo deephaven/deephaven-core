@@ -102,8 +102,8 @@ public interface TableLocationProvider extends NamedImplementation {
      * <b>must not</b> hold any lock that prevents notification delivery while subscribing. Callers <b>must</b> guard
      * against duplicate notifications.
      * <p>
-     * This method only guarantees eventually consistent state. To force a state update, use run() after subscription
-     * completes.
+     * This method only guarantees eventually consistent state. To force a state update, use refresh() after
+     * subscription completes.
      *
      * @param listener A listener.
      */

@@ -180,7 +180,25 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                 : TableDefinition.inferFrom(columnSourceMap);
 
         if (isRefreshing) {
-            livenessNode = new LivenessArtifact() {};
+            livenessNode = new LivenessArtifact() {
+                @Override
+                protected void destroy() {
+                    super.destroy();
+                    // NB: we do not want to null out any subscriptionBuffers here, as they may still be in use by a
+                    // notification delivery running currently with this destroy. We also do not want to clear the table
+                    // location maps as these locations may still be useful for static tables.
+                    for (final EmptyTableLocationEntry entry : emptyTableLocations.values()) {
+                        if (entry.subscriptionBuffer != null) {
+                            entry.subscriptionBuffer.reset();
+                        }
+                    }
+                    for (final IncludedTableLocationEntry entry : includedTableLocations.values()) {
+                        if (entry.subscriptionBuffer != null) {
+                            entry.subscriptionBuffer.reset();
+                        }
+                    }
+                }
+            };
         } else {
             // This RCSM wil be managing table locations to prevent them from being de-scoped but will not otherwise
             // participate in the liveness management process.
@@ -519,7 +537,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         return sharedColumnSources;
     }
 
-    @Override
     public LivenessNode asLivenessNode() {
         return livenessNode;
     }

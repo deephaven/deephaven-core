@@ -10,6 +10,8 @@ configurations {
 
 dependencies {
     implementation project(':server-jetty')
+    implementation project(":util-processenvironment")
+    implementation project(":util-thread")
 
     implementation project(':extensions-flight-sql')
 

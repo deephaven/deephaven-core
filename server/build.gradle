@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    implementation project(":util-thread")
+    implementation project(":util-processenvironment")
     implementation project(':authentication')
     implementation project(':authorization')
     implementation project(':engine-table')

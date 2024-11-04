@@ -65,8 +65,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      * or 1 handleException callbacks during invocation and continuing after completion, on a thread determined by the
      * implementation. Don't hold a lock that prevents notification delivery while subscribing!
      * <p>
-     * This method only guarantees eventually consistent state. To force a state update, use run() after subscription
-     * completes.
+     * This method only guarantees eventually consistent state. To force a state update, use refresh() after
+     * subscription completes.
      *
      * @param listener A listener
      */

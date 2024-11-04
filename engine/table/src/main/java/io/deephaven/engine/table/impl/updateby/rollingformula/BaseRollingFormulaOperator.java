@@ -38,6 +38,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     final TableDefinition tableDef;
 
     final FormulaColumn formulaColumn;
+    final Class<?> inputColumnType;
+    final Class<?> inputComponentType;
     final Class<?> inputVectorType;
 
     protected WritableColumnSource<?> primitiveOutputSource;
@@ -104,7 +106,9 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
 
         final String outputColumnName = pair.leftColumn;
 
-        final Class<?> inputColumnType = tableDef.getColumn(pair.rightColumn).getDataType();
+        final ColumnDefinition<?> columnDefinition = tableDef.getColumn(pair.rightColumn);
+        inputColumnType = columnDefinition.getDataType();
+        inputComponentType = columnDefinition.getComponentType();
         inputVectorType = VectorFactory.forElementType(inputColumnType).vectorType();
 
         // Re-use the formula column if it's already been created for this type. No need to synchronize; these
@@ -126,15 +130,17 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            final Class<?> inputVectorType,
+            final Class<?> columnType,
+            final Class<?> componentType,
+            final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.formulaColumnMap = formulaColumnMap;
         this.tableDef = tableDef;
-
-        final Class<?> columnType = tableDef.getColumn(pair.rightColumn).getDataType();
-        this.inputVectorType = inputVectorType;
+        this.inputColumnType = columnType;
+        this.inputComponentType = componentType;
+        this.inputVectorType = vectorType;
 
         // Re-use the formula column already created for this type.
         formulaColumn = formulaColumnMap.computeIfAbsent(columnType, t -> {
@@ -172,49 +178,35 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
                     "Output chunk type should not be Boolean but should have been reinterpreted to byte");
         }
         if (chunkType == ChunkType.Byte) {
-            return i -> {
-                final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
-                writableChunk.set(i, formulaOutputSource.getByte(0));
-            };
+            final WritableByteChunk<? extends Values> writableChunk = valueChunk.asWritableByteChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getByte(0));
         }
         if (chunkType == ChunkType.Char) {
-            return i -> {
-                final WritableCharChunk<? extends Values> writableChunk = valueChunk.asWritableCharChunk();
-                writableChunk.set(i, formulaOutputSource.getChar(0));
-            };
+            final WritableCharChunk<? extends Values> writableChunk = valueChunk.asWritableCharChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getChar(0));
         }
         if (chunkType == ChunkType.Double) {
-            return i -> {
-                final WritableDoubleChunk<? extends Values> writableChunk = valueChunk.asWritableDoubleChunk();
-                writableChunk.set(i, formulaOutputSource.getDouble(0));
-            };
+            final WritableDoubleChunk<? extends Values> writableChunk = valueChunk.asWritableDoubleChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getDouble(0));
         }
         if (chunkType == ChunkType.Float) {
-            return i -> {
-                final WritableFloatChunk<? extends Values> writableChunk = valueChunk.asWritableFloatChunk();
-                writableChunk.set(i, formulaOutputSource.getFloat(0));
-            };
+            final WritableFloatChunk<? extends Values> writableChunk = valueChunk.asWritableFloatChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getFloat(0));
         }
         if (chunkType == ChunkType.Int) {
-            return i -> {
-                final WritableIntChunk<? extends Values> writableChunk = valueChunk.asWritableIntChunk();
-                writableChunk.set(i, formulaOutputSource.getInt(0));
-            };
+            final WritableIntChunk<? extends Values> writableChunk = valueChunk.asWritableIntChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getInt(0));
         }
         if (chunkType == ChunkType.Long) {
-            return i -> {
-                final WritableLongChunk<? extends Values> writableChunk = valueChunk.asWritableLongChunk();
-                writableChunk.set(i, formulaOutputSource.getLong(0));
-            };
+            final WritableLongChunk<? extends Values> writableChunk = valueChunk.asWritableLongChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getLong(0));
         }
         if (chunkType == ChunkType.Short) {
-            return i -> {
-                final WritableShortChunk<? extends Values> writableChunk = valueChunk.asWritableShortChunk();
-                writableChunk.set(i, formulaOutputSource.getShort(0));
-            };
+            final WritableShortChunk<? extends Values> writableChunk = valueChunk.asWritableShortChunk();
+            return index -> writableChunk.set(index, formulaOutputSource.getShort(0));
         }
-        return i -> {
-            final WritableObjectChunk<Object, ? extends Values> writableChunk = valueChunk.asWritableObjectChunk();
+        final WritableObjectChunk<Object, ? extends Values> writableChunk = valueChunk.asWritableObjectChunk();
+        return index -> {
             Object result = formulaOutputSource.get(0);
             if (result instanceof RingBufferVectorWrapper) {
                 // Handle the rare (and probably not useful) case where the formula is an identity. We need to
@@ -222,7 +214,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
                 // live data in the ring.
                 result = ((Vector<?>) result).getDirect();
             }
-            writableChunk.set(i, result);
+            writableChunk.set(index, result);
         };
     }
 

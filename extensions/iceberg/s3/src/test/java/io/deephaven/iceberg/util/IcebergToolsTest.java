@@ -14,16 +14,13 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
-import io.deephaven.test.types.OutOfBandTest;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.experimental.categories.Category;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -48,7 +45,12 @@ import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITI
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergTableAdapter.SNAPSHOT_DEFINITION;
 
-@Category(OutOfBandTest.class)
+/**
+ * @deprecated tests against a fresh catalog should be added to {@link io.deephaven.iceberg.junit5.SqliteCatalogBase}
+ *             and tests against pre-created catalogs should likely be migrated
+ *             {@link io.deephaven.iceberg.sqlite.DbResource}
+ */
+@Deprecated
 public abstract class IcebergToolsTest {
 
     private static final TableDefinition SALES_SINGLE_DEFINITION = TableDefinition.of(
@@ -103,7 +105,7 @@ public abstract class IcebergToolsTest {
 
     public abstract S3Instructions.Builder s3Instructions(S3Instructions.Builder builder);
 
-    public abstract Map<String, String> s3Properties();
+    public abstract Map<String, String> properties();
 
     private S3AsyncClient asyncClient;
     private String bucket;
@@ -113,11 +115,11 @@ public abstract class IcebergToolsTest {
     private String warehousePath;
     private IcebergTestCatalog resourceCatalog;
 
-    @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
-    @Before
-    public void setUp() throws ExecutionException, InterruptedException {
+    @BeforeEach
+    public void setUp() throws Exception {
+        framework.setUp();
         bucket = "warehouse";
         asyncClient = s3AsyncClient();
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
@@ -125,7 +127,7 @@ public abstract class IcebergToolsTest {
         warehousePath = IcebergToolsTest.class.getResource("/warehouse").getPath();
 
         // Create the test catalog for the tests
-        resourceCatalog = IcebergTestCatalog.create(warehousePath, s3Properties());
+        resourceCatalog = IcebergTestCatalog.create(warehousePath, properties());
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
@@ -134,8 +136,8 @@ public abstract class IcebergToolsTest {
                 .build();
     }
 
-    @After
-    public void tearDown() throws ExecutionException, InterruptedException {
+    @AfterEach
+    public void tearDown() throws Exception {
         resourceCatalog.close();
         for (String key : keys) {
             asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
@@ -143,6 +145,7 @@ public abstract class IcebergToolsTest {
         keys.clear();
         asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
         asyncClient.close();
+        framework.tearDown();
     }
 
     private void uploadFiles(final File root, final String prefixToRemove)

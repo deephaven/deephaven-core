@@ -341,6 +341,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        return usesI || usesII || usesK;
+    }
+
+    @Override
     public String toString() {
         return formulaString;
     }

@@ -1677,4 +1677,44 @@ public abstract class QueryTableWhereTest {
 
         assertTableEquals(source.where("FV in `A`, `B`"), result);
     }
+
+    @Test
+    public void testWhereFilterEquality() {
+        final Table x = TableTools.newTable(intCol("A", 1, 2, 3), intCol("B", 4, 2, 1), stringCol("S", "A", "B", "C"));
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter f2 = WhereFilterFactory.getExpression("A in 8");
+        final WhereFilter f3 = WhereFilterFactory.getExpression("A in 7");
+
+        final Table ignored = x.where(Filter.and(f1, f2, f3));
+
+        assertEquals(f1, f3);
+        assertNotEquals(f1, f2);
+        assertNotEquals(f2, f3);
+
+        final WhereFilter fa = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter fb = WhereFilterFactory.getExpression("B in 7");
+        final WhereFilter fap = WhereFilterFactory.getExpression("A not in 7");
+
+        final Table ignored2 = x.where(Filter.and(fa, fb, fap));
+
+        assertNotEquals(fa, fb);
+        assertNotEquals(fa, fap);
+        assertNotEquals(fb, fap);
+
+        final WhereFilter fs = WhereFilterFactory.getExpression("S icase in `A`");
+        final WhereFilter fs2 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        final WhereFilter fs3 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        final Table ignored3 = x.where(Filter.and(fs, fs2, fs3));
+        assertNotEquals(fs, fs2);
+        assertNotEquals(fs, fs3);
+        assertEquals(fs2, fs3);
+
+        final WhereFilter fof1 = WhereFilterFactory.getExpression("A = B");
+        final WhereFilter fof2 = WhereFilterFactory.getExpression("A = B");
+        final Table ignored4 = x.where(fof1);
+        final Table ignored5 = x.where(fof2);
+        // the ConditionFilters do not compare as equal, so this is unfortunate, but expected behavior
+        assertNotEquals(fof1, fof2);
+    }
 }

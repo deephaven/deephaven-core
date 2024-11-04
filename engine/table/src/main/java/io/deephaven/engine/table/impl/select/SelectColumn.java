@@ -171,7 +171,7 @@ public interface SelectColumn extends Selectable {
     /**
      * Get a MatchPair for this column, if applicable.
      *
-     * @return
+     * @return the MatchPair for this column, if applicable.
      */
     MatchPair getMatchPair();
 
@@ -217,6 +217,13 @@ public interface SelectColumn extends Selectable {
      * row).
      */
     boolean isStateless();
+
+    /**
+     * Returns true if this column uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     */
+    default boolean hasVirtualRowVariables() {
+        return false;
+    }
 
     /**
      * Create a copy of this SelectColumn.
