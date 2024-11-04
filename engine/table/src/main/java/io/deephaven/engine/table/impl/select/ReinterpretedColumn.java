@@ -49,7 +49,7 @@ import java.util.function.Function;
  * SelectColumnAdaptor 2. Adding the appropriate if-regex-matches to realColumn selection in V2 SwitchColumn 3. Creating
  * a V2-native SelectColumnFactory
  */
-public class ReinterpretedColumn<S, D> implements SelectColumn {
+public class ReinterpretedColumn<S, D> extends SelectColumnWithoutAlwaysEvaluate {
 
     @NotNull
     private final String sourceName;

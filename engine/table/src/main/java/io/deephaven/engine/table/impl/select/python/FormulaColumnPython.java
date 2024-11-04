@@ -67,13 +67,20 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final SelectColumn copy() {
+    public final FormulaColumnPython copy() {
         final FormulaColumnPython copy = new FormulaColumnPython(columnName, dcf);
         if (formulaFactoryFuture != null) {
             // copy all initDef state
             copy.returnedType = returnedType;
             onCopy(copy);
         }
+        return copy;
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        final FormulaColumnPython copy = copy();
+        copy.alwaysEvaluate = true;
         return copy;
     }
 

@@ -7,6 +7,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnWithoutAlwaysEvaluate;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ import java.util.Map;
  * Base {@link SelectColumn} implementation to wrap transformer functions for {@link PartitionedTable#transform} and
  * {@link PartitionedTable#partitionedTransform}.
  */
-abstract class BaseTableTransformationColumn implements SelectColumn {
+abstract class BaseTableTransformationColumn extends SelectColumnWithoutAlwaysEvaluate {
 
     BaseTableTransformationColumn() {}
 

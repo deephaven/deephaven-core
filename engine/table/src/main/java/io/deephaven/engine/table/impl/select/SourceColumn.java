@@ -24,7 +24,7 @@ public class SourceColumn implements SelectColumn {
 
     public static SourceColumn of(JoinAddition joinAddition) {
         // We know ColumnName already does validation
-        return new SourceColumn(joinAddition.existingColumn().name(), joinAddition.newColumn().name(), true);
+        return new SourceColumn(joinAddition.existingColumn().name(), joinAddition.newColumn().name(), false);
     }
 
     public static SourceColumn[] from(Collection<? extends JoinAddition> joinAdditions) {
@@ -37,18 +37,20 @@ public class SourceColumn implements SelectColumn {
     private final String destName;
     private ColumnDefinition<?> sourceDefinition;
     private ColumnSource<?> sourceColumn;
+    private final boolean alwaysEvaluate;
 
     public SourceColumn(String columnName) {
         this(columnName, columnName);
     }
 
     public SourceColumn(String sourceName, String destName) {
-        this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), true);
+        this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), false);
     }
 
-    private SourceColumn(@NotNull final String sourceName, @NotNull final String destName, boolean unused) {
+    private SourceColumn(@NotNull final String sourceName, @NotNull final String destName, boolean alwaysEvaluate) {
         this.sourceName = sourceName;
         this.destName = destName;
+        this.alwaysEvaluate = alwaysEvaluate;
     }
 
     @Override
@@ -176,5 +178,15 @@ public class SourceColumn implements SelectColumn {
     @Override
     public SourceColumn copy() {
         return new SourceColumn(sourceName, destName);
+    }
+
+    @Override
+    public boolean alwaysEvaluate() {
+        return alwaysEvaluate;
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        return new SourceColumn(sourceName, destName, true);
     }
 }

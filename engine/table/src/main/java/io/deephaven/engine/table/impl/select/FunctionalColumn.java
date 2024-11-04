@@ -42,6 +42,8 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     private ColumnSource<S> sourceColumnSource;
 
+    private final boolean alwaysEvaluate;
+
     @FunctionalInterface
     public interface RowKeyAndValueFunction<S, D> {
         D apply(long rowKey, S value);
@@ -82,12 +84,23 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             @NotNull Class<D> destDataType,
             @Nullable Class<?> componentType,
             @NotNull RowKeyAndValueFunction<S, D> function) {
+        this(sourceName, sourceDataType, destName, destDataType, componentType, function, false);
+    }
+
+    private FunctionalColumn(
+            @NotNull String sourceName,
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @Nullable Class<?> componentType,
+            @NotNull RowKeyAndValueFunction<S, D> function, boolean alwaysEvaluate) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
         this.componentType = componentType;
         this.function = function;
+        this.alwaysEvaluate = alwaysEvaluate;
         Require.gtZero(destName.length(), "destName.length()");
     }
 
@@ -240,6 +253,18 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public FunctionalColumn<S, D> copy() {
-        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, function);
+        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function,
+                alwaysEvaluate);
+    }
+
+    @Override
+    public boolean alwaysEvaluate() {
+        return alwaysEvaluate;
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function,
+                true);
     }
 }
