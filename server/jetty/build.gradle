@@ -11,7 +11,10 @@ dependencies {
         because 'downstream dagger compile'
     }
 
-    implementation project(":util-thread")
+    implementation project(':util-thread')
+    compileOnlyApi(project(':util-thread')) {
+        because 'downstream dagger compile'
+    }
 
     runtimeOnly(project(':web'))
 
