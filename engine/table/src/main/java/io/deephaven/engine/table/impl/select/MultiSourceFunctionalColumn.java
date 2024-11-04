@@ -227,7 +227,8 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public MultiSourceFunctionalColumn<D> copy() {
-        return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, componentType, function, alwaysEvaluate);
+        return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, componentType, function,
+                alwaysEvaluate);
     }
 
     @Override

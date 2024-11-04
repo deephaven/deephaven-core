@@ -1308,42 +1308,51 @@ public class QueryTableSelectUpdateTest {
         final MutableInt count2 = new MutableInt(0);
         QueryScope.addParam("__COUNT1", count);
         QueryScope.addParam("__COUNT2", count2);
-        final QueryTable base = testRefreshingTable(intCol("Sentinel", 1,2,3,4,5,6,7,8,9),
+        final QueryTable base = testRefreshingTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9),
                 stringCol("Thing", "A", "B", "C", "D", "E", "F", "G", "H", "I"));
 
         final SelectColumn sc1 = SelectColumnFactory.getExpression("NormalCount=__COUNT1.getAndIncrement()");
-        final SelectColumn sc2 = SelectColumnFactory.getExpression("AlwaysCount=__COUNT2.getAndIncrement()").alwaysEvaluateCopy();
+        final SelectColumn sc2 =
+                SelectColumnFactory.getExpression("AlwaysCount=__COUNT2.getAndIncrement()").alwaysEvaluateCopy();
 
         final Table withUpdates = base.update(Arrays.asList(sc1, sc2));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8}, ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8}, ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(9), intCol("Sentinel", 10), stringCol("Thing", "J"));
             base.notifyListeners(i(9), i(), i());
         });
 
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(base, i(0, 2, 4), intCol("Sentinel", 1, 3 ,5), stringCol("Thing", "a", "c", "e"));
-            base.notifyListeners(i(), i(), i(0,2,4));
+            addToTable(base, i(0, 2, 4), intCol("Sentinel", 1, 3, 5), stringCol("Thing", "a", "c", "e"));
+            base.notifyListeners(i(), i(), i(0, 2, 4));
         });
 
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
-        assertArrayEquals(new int[] { 10, 1, 11, 3, 12, 5, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {10, 1, 11, 3, 12, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(5));
             base.notifyListeners(i(), i(5), i());
         });
 
-        assertArrayEquals(new int[] { 0, 1, 2, 3, 4, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
-        assertArrayEquals(new int[] { 10, 1, 11, 3, 12, 6, 7, 8, 9}, ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {10, 1, 11, 3, 12, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
     }
 
     @Test
@@ -1352,46 +1361,55 @@ public class QueryTableSelectUpdateTest {
         QueryScope.addParam("a", a);
         final AtomicInteger b = new AtomicInteger(200);
         QueryScope.addParam("b", b);
-        final QueryTable base = testRefreshingTable(RowSetFactory.fromKeys(10, 11).toTracking(), intCol("Sentinel", 1, 2), intCol("B",10, 11));
+        final QueryTable base = testRefreshingTable(RowSetFactory.fromKeys(10, 11).toTracking(),
+                intCol("Sentinel", 1, 2), intCol("B", 10, 11));
 
         final SelectColumn x = SelectColumnFactory.getExpression("X = a.getAndIncrement()").alwaysEvaluateCopy();
 
-        final Table withUpdates = base.update(Arrays.asList(x, SelectColumnFactory.getExpression("Y=1"), SelectColumnFactory.getExpression("Z=B+b.getAndIncrement()")));
+        final Table withUpdates = base.update(Arrays.asList(x, SelectColumnFactory.getExpression("Y=1"),
+                SelectColumnFactory.getExpression("Z=B+b.getAndIncrement()")));
 
         final PrintListener pl = new PrintListener("withUpdates", withUpdates, 10);
 
         final SimpleListener simpleListener = new SimpleListener(withUpdates);
         withUpdates.addUpdateListener(simpleListener);
 
-        assertTableEquals(TableTools.newTable(intCol("Sentinel", 1, 2), intCol("B", 10, 11), intCol("X", 100, 101), intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 1, 2), intCol("B", 10, 11), intCol("X", 100, 101),
+                intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(10), intCol("Sentinel", 3), intCol("B", 10));
-            base.notifyListeners(new TableUpdateImpl(i(), i(), i(10), RowSetShiftData.EMPTY, base.newModifiedColumnSet("Sentinel")));
+            base.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(10), RowSetShiftData.EMPTY, base.newModifiedColumnSet("Sentinel")));
         });
 
-        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 2), intCol("B", 10, 11), intCol("X", 102, 101), intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 2), intCol("B", 10, 11), intCol("X", 102, 101),
+                intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
 
         assertEquals(1, simpleListener.count);
         assertEquals(i(), simpleListener.update.added());
         assertEquals(i(), simpleListener.update.removed());
         assertEquals(i(10), simpleListener.update.modified());
-        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "X"), simpleListener.update.modifiedColumnSet());
+        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "X"),
+                simpleListener.update.modifiedColumnSet());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(base, i(11), intCol("Sentinel", 4), intCol("B", 12));
-            base.notifyListeners(new TableUpdateImpl(i(), i(), i(11), RowSetShiftData.EMPTY, base.newModifiedColumnSet("Sentinel", "B")));
+            base.notifyListeners(new TableUpdateImpl(i(), i(), i(11), RowSetShiftData.EMPTY,
+                    base.newModifiedColumnSet("Sentinel", "B")));
         });
 
-        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 4), intCol("B", 10, 12), intCol("X", 102, 103), intCol("Y", 1, 1), intCol("Z", 210, 214)), withUpdates);
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 4), intCol("B", 10, 12), intCol("X", 102, 103),
+                intCol("Y", 1, 1), intCol("Z", 210, 214)), withUpdates);
 
         assertEquals(2, simpleListener.count);
         assertEquals(i(), simpleListener.update.added());
         assertEquals(i(), simpleListener.update.removed());
         assertEquals(i(11), simpleListener.update.modified());
-        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "B", "X", "Z"), simpleListener.update.modifiedColumnSet());
+        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "B", "X", "Z"),
+                simpleListener.update.modifiedColumnSet());
 
         QueryScope.addParam("a", null);
         QueryScope.addParam("b", null);

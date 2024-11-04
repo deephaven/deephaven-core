@@ -234,6 +234,7 @@ public interface SelectColumn extends Selectable {
 
     /**
      * Should we ignore modified column sets, and always re-evaluate this column?
+     * 
      * @return true if this column should be evaluated on every row modification
      */
     boolean alwaysEvaluate();

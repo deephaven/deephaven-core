@@ -32,9 +32,9 @@ public class SwitchColumn implements SelectColumn {
     }
 
     private SwitchColumn(final String columnName,
-                         final String expression,
-                         final FormulaParserConfiguration parserConfiguration,
-                         final boolean alwaysEvaluate) {
+            final String expression,
+            final FormulaParserConfiguration parserConfiguration,
+            final boolean alwaysEvaluate) {
         this.expression = Require.neqNull(expression, "expression");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.parser = parserConfiguration;

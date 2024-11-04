@@ -179,7 +179,7 @@ public class SourceColumn implements SelectColumn {
     public SourceColumn copy() {
         return new SourceColumn(sourceName, destName);
     }
-    
+
     @Override
     public boolean alwaysEvaluate() {
         return alwaysEvaluate;

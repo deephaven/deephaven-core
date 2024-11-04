@@ -253,7 +253,8 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public FunctionalColumn<S, D> copy() {
-        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function, alwaysEvaluate);
+        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function,
+                alwaysEvaluate);
     }
 
     @Override
@@ -263,6 +264,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
 
     @Override
     public SelectColumn alwaysEvaluateCopy() {
-        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function, true);
+        return new FunctionalColumn<>(sourceName, sourceDataType, destName, destDataType, componentType, function,
+                true);
     }
 }
