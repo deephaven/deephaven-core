@@ -4,14 +4,11 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
-import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.Snapshot;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
 
 /**
  * This class provides instructions intended for reading Iceberg catalogs and tables. The default values documented in
@@ -51,23 +48,9 @@ public abstract class IcebergReadInstructions implements IcebergBaseInstructions
     }
 
     /**
-     * The identifier of the snapshot to load for reading. If both this and {@link #snapshot()} are provided, the
-     * {@link Snapshot#snapshotId()} should match this. Otherwise, only one of them should be provided. If neither is
-     * provided, the latest snapshot will be loaded.
-     */
-    public abstract OptionalLong snapshotId();
-
-    /**
      * Return a copy of this instructions object with the snapshot ID replaced by {@code value}.
      */
     public abstract IcebergReadInstructions withSnapshotId(long value);
-
-    /**
-     * The snapshot to load for reading. If both this and {@link #snapshotId()} are provided, the
-     * {@link Snapshot#snapshotId()} should match the {@link #snapshotId()}. Otherwise, only one of them should be
-     * provided. If neither is provided, the latest snapshot will be loaded.
-     */
-    public abstract Optional<Snapshot> snapshot();
 
     /**
      * Return a copy of this instructions object with the snapshot replaced by {@code value}.

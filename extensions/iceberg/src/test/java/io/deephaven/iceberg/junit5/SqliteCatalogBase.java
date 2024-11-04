@@ -43,11 +43,10 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-
 public abstract class SqliteCatalogBase {
 
-    protected IcebergCatalogAdapter catalogAdapter;
-    private EngineCleanup engineCleanup = new EngineCleanup();
+    private IcebergCatalogAdapter catalogAdapter;
+    private final EngineCleanup engineCleanup = new EngineCleanup();
 
     protected abstract IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir,
             Map<String, String> properties) throws Exception;
