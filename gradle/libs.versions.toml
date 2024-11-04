@@ -33,7 +33,7 @@ groovy = "3.0.22"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
 guava = "33.3.1-jre"
-gwt = "2.11.0"
+gwt = "2.12.0"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
