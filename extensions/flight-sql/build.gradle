@@ -67,3 +67,5 @@ def jdbcTest = tasks.register('jdbcTest', Test) {
 }
 
 check.dependsOn jdbcTest
+
+apply plugin: 'io.deephaven.java-open-nio'
