@@ -232,6 +232,17 @@ public interface SelectColumn extends Selectable {
      */
     SelectColumn copy();
 
+    /**
+     * Should we ignore modified column sets, and always re-evaluate this column?
+     * @return true if this column should be evaluated on every row modification
+     */
+    boolean alwaysEvaluate();
+
+    /**
+     * Create a copy of this SelectColumn that always re-evaluates (if appropriate).
+     */
+    SelectColumn alwaysEvaluateCopy();
+
     class ExpressionAdapter implements Expression.Visitor<SelectColumn> {
         private final ColumnName lhs;
 

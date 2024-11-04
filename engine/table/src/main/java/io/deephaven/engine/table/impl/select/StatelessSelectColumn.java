@@ -121,6 +121,16 @@ class StatelessSelectColumn implements SelectColumn {
     }
 
     @Override
+    public boolean alwaysEvaluate() {
+        return inner.alwaysEvaluate();
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        return new StatelessSelectColumn(inner.alwaysEvaluateCopy());
+    }
+
+    @Override
     public ColumnName newColumn() {
         return inner.newColumn();
     }

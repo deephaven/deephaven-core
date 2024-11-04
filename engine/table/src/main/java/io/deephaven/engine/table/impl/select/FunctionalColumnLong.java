@@ -39,6 +39,8 @@ public class FunctionalColumnLong<S> implements SelectColumn {
 
     private ColumnSource<S> sourceColumnSource;
 
+    private final boolean alwaysEvaluate;
+
     @FunctionalInterface
     public interface RowKeyAndValueFunction<S> {
         long applyAsLong(long rowKey, S value);
@@ -57,10 +59,20 @@ public class FunctionalColumnLong<S> implements SelectColumn {
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull RowKeyAndValueFunction<S> function) {
+        this(sourceName, sourceDataType, destName, function, false);
+    }
+
+    public FunctionalColumnLong(
+            @NotNull String sourceName,
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull RowKeyAndValueFunction<S> function,
+            final boolean alwaysEvaluate) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
         this.function = function;
+        this.alwaysEvaluate = alwaysEvaluate;
         Require.gtZero(destName.length(), "destName.length()");
     }
 
@@ -223,6 +235,16 @@ public class FunctionalColumnLong<S> implements SelectColumn {
 
     @Override
     public FunctionalColumnLong<S> copy() {
-        return new FunctionalColumnLong<>(sourceName, sourceDataType, destName, function);
+        return new FunctionalColumnLong<>(sourceName, sourceDataType, destName, function, alwaysEvaluate);
+    }
+
+    @Override
+    public boolean alwaysEvaluate() {
+        return alwaysEvaluate;
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        return new FunctionalColumnLong<>(sourceName, sourceDataType, destName, function, true);
     }
 }

@@ -25,12 +25,20 @@ public class SwitchColumn implements SelectColumn {
     private final String columnName;
     private SelectColumn realColumn;
     private final FormulaParserConfiguration parser;
-
+    private final boolean alwaysEvaluate;
 
     public SwitchColumn(String columnName, String expression, FormulaParserConfiguration parserConfiguration) {
+        this(columnName, expression, parserConfiguration, false);
+    }
+
+    private SwitchColumn(final String columnName,
+                         final String expression,
+                         final FormulaParserConfiguration parserConfiguration,
+                         final boolean alwaysEvaluate) {
         this.expression = Require.neqNull(expression, "expression");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.parser = parserConfiguration;
+        this.alwaysEvaluate = alwaysEvaluate;
     }
 
     @Override
@@ -151,10 +159,20 @@ public class SwitchColumn implements SelectColumn {
 
     @Override
     public SwitchColumn copy() {
-        final SwitchColumn switchColumn = new SwitchColumn(columnName, expression, parser);
+        final SwitchColumn switchColumn = new SwitchColumn(columnName, expression, parser, alwaysEvaluate);
         if (realColumn != null) {
             switchColumn.realColumn = realColumn.copy();
         }
         return switchColumn;
+    }
+
+    @Override
+    public boolean alwaysEvaluate() {
+        return alwaysEvaluate;
+    }
+
+    @Override
+    public SelectColumn alwaysEvaluateCopy() {
+        return new SwitchColumn(columnName, expression, parser, true);
     }
 }

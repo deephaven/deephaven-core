@@ -59,6 +59,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
     protected boolean usesII; // uses the "ii" variable which is the long position for the row
     protected boolean usesK; // uses the "k" variable which is the long row key into a column source
+    protected boolean alwaysEvaluate;
 
     /**
      * Create a formula column for the given formula string.
@@ -180,6 +181,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         copy.usesI = usesI;
         copy.usesII = usesII;
         copy.usesK = usesK;
+        copy.alwaysEvaluate = alwaysEvaluate;
     }
 
     protected void validateColumnDefinition(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
@@ -348,6 +350,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     @Override
     public String toString() {
         return formulaString;
+    }
+
+    @Override
+    public boolean alwaysEvaluate() {
+        return alwaysEvaluate;
     }
 
     @Override

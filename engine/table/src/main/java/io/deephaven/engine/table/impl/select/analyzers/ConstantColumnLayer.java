@@ -22,6 +22,9 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
             final String[] deps,
             final ModifiedColumnSet mcsBuilder) {
         super(context, sc, ws, null, deps, mcsBuilder);
+        if (sc.alwaysEvaluate()) {
+            throw new IllegalArgumentException("SelectColumn may not have alwaysEvaluate set for a constant column: " + sc);
+        }
         initialize(ws);
     }
 

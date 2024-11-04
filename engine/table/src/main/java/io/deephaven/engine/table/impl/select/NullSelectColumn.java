@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * A SelectColumn implementation that can be used to replace columns with {@link NullValueColumnSource}s
  */
-public class NullSelectColumn<T> implements SelectColumn {
+public class NullSelectColumn<T> extends SelectColumnWithoutAlwaysEvaluate {
     private final String name;
     private final NullValueColumnSource<T> nvcs;
 
