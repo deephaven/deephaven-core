@@ -226,10 +226,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(export.get());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess(responseObserver::onCompleted)
+                        .submit(() -> responseObserver.onNext(export.get()));
                 return;
             }
 
@@ -273,12 +271,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                                    .setSchema(export.get().getSchema())
-                                    .build());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess(responseObserver::onCompleted)
+                        .submit(() -> responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                                .setSchema(export.get().getSchema())
+                                .build()));
                 return;
             }
 

@@ -66,6 +66,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     private enum EnqueuedState {
         WAITING, RUNNING, CLOSED
     }
+
     private final class SendMessageObserver implements StreamObserver<StreamRequest> {
         private final SessionState session;
         private final StreamObserver<StreamResponse> responseObserver;
@@ -268,10 +269,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
             final SessionState.ExportObject<Object> object =
                     ticketRouter.resolve(session, request.getSourceId().getTicket(), "sourceId");
 
-            session.nonExport()
+            session.<FetchObjectResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(object)
                     .onError(responseObserver)
+                    .onSuccess(
+                            (final FetchObjectResponse response) -> GrpcUtil.safelyComplete(responseObserver, response))
                     .submit(() -> {
                         final Object o = object.get();
                         ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
@@ -312,9 +315,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                     "Plugin didn't close response, use MessageStream instead for this object");
                         }
-                        GrpcUtil.safelyComplete(responseObserver, message);
-
-                        return null;
+                        return message;
                     });
         }
     }

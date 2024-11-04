@@ -183,16 +183,17 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             final SessionState.ExportObject<ScriptSession> exportedConsole =
                     ticketRouter.resolve(session, consoleId, "consoleId");
 
-            session.nonExport()
+            session.<ExecuteCommandResponse>nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
+                    .onSuccess((final ExecuteCommandResponse response) -> safelyComplete(responseObserver, response))
                     .submit(() -> {
-                        ScriptSession scriptSession = exportedConsole.get();
-                        ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
+                        final ScriptSession scriptSession = exportedConsole.get();
+                        final ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+                        final ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                        final FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()
                                 .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
                         changes.updated.entrySet()
@@ -203,7 +204,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
                             log.error().append("Error running script: ").append(changes.error).endl();
                         }
-                        safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
+                        return diff.setChanges(fieldChanges).build();
                     });
         }
     }
@@ -276,7 +277,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             ExportBuilder<?> exportBuilder = session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
-                    .onError(responseObserver);
+                    .onError(responseObserver)
+                    .onSuccess(responseObserver::onCompleted);
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
@@ -293,7 +295,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 Table table = exportedTable.get();
                 queryScope.putParam(request.getVariableName(), table);
                 responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                responseObserver.onCompleted();
             });
         }
     }

@@ -184,11 +184,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)
-                    .submit(() -> {
-                        final Object o = source.get();
-                        GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
-                        return o;
-                    });
+                    .onSuccess((final Object ignoredResult) -> GrpcUtil.safelyComplete(responseObserver,
+                            ExportResponse.getDefaultInstance()))
+                    .submit(source::get);
         }
     }
 
