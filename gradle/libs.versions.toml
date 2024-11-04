@@ -5,7 +5,7 @@ autoservice = "1.1.1"
 avro = "1.12.0"
 awssdk = "2.24.5"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-boringssl = "2.0.61.Final"
+boringssl = "2.0.69.Final"
 calcite = "1.38.0"
 classgraph = "4.8.177"
 commons-compress = "1.27.1"
