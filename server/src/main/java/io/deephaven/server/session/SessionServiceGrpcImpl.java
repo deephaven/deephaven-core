@@ -184,7 +184,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(source)
                     .onError(responseObserver)
-                    .onSuccess((final Object ignoredResult) -> GrpcUtil.safelyComplete(responseObserver,
+                    .onSuccess((final Object ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
                             ExportResponse.getDefaultInstance()))
                     .submit(source::get);
         }
@@ -219,7 +219,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             Ticket resultId = request.getResultId();
 
             ticketRouter.publish(session, resultId, "resultId",
-                    () -> GrpcUtil.safelyComplete(responseObserver, PublishResponse.getDefaultInstance()),
+                    () -> GrpcUtil.safelyOnNextAndComplete(responseObserver, PublishResponse.getDefaultInstance()),
                     SessionState.toErrorHandler(sre -> GrpcUtil.safelyError(responseObserver, sre)),
                     source);
         }

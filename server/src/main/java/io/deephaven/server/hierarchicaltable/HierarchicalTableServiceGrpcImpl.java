@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
@@ -46,7 +47,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGrpc.HierarchicalTableServiceImplBase {
 
@@ -89,7 +89,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
-                    .onSuccess((final RollupTable ignoredResult) -> safelyComplete(responseObserver,
+                    .onSuccess((final RollupTable ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
                             RollupResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
@@ -146,7 +146,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(sourceTableExport)
                     .onError(responseObserver)
-                    .onSuccess((final TreeTable ignoredResult) -> safelyComplete(responseObserver,
+                    .onSuccess((final TreeTable ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
                             TreeResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table sourceTable = sourceTableExport.get();
@@ -208,7 +208,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(inputHierarchicalTableExport)
                     .onError(responseObserver)
-                    .onSuccess((final HierarchicalTable<?> ignoredResult) -> safelyComplete(responseObserver,
+                    .onSuccess((final HierarchicalTable<?> ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(
+                            responseObserver,
                             HierarchicalTableApplyResponse.getDefaultInstance()))
                     .submit(() -> {
                         final HierarchicalTable<?> inputHierarchicalTable = inputHierarchicalTableExport.get();
@@ -398,7 +399,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             resultExportBuilder
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
-                    .onSuccess((final HierarchicalTableView ignoredResult) -> safelyComplete(responseObserver,
+                    .onSuccess((final HierarchicalTableView ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(
+                            responseObserver,
                             HierarchicalTableViewResponse.getDefaultInstance()))
                     .submit(() -> {
                         final Table keyTable = keyTableExport == null ? null : keyTableExport.get();
@@ -491,7 +493,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(hierarchicalTableExport)
                     .onError(responseObserver)
-                    .onSuccess((final Table transformedResult) -> safelyComplete(responseObserver,
+                    .onSuccess((final Table transformedResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
                             ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult)))
                     .submit(() -> {
                         final HierarchicalTable<?> hierarchicalTable = hierarchicalTableExport.get();

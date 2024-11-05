@@ -118,7 +118,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         public void onNext(final Flight.HandshakeRequest value) {
             final AuthenticationRequestHandler.HandshakeResponseListener handshakeResponseListener =
                     (protocol, response) -> {
-                        GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+                        GrpcUtil.safelyOnNextAndComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
                                 .setProtocolVersion(protocol)
                                 .setPayload(ByteStringAccess.wrap(response))
                                 .build());
@@ -229,7 +229,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         .require(export)
                         .onError(responseObserver)
                         .onSuccess((final Flight.FlightInfo resultFlightInfo) -> GrpcUtil
-                                .safelyComplete(responseObserver, resultFlightInfo))
+                                .safelyOnNextAndComplete(responseObserver, resultFlightInfo))
                         .submit(export::get);
                 return;
             }
@@ -274,7 +274,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .onSuccess((final Flight.SchemaResult resultSchema) -> GrpcUtil.safelyComplete(responseObserver,
+                        .onSuccess((final Flight.SchemaResult resultSchema) -> GrpcUtil.safelyOnNextAndComplete(
+                                responseObserver,
                                 resultSchema))
                         .submit(() -> Flight.SchemaResult.newBuilder()
                                 .setSchema(export.get().getSchema())

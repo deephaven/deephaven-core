@@ -140,7 +140,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .submit(() -> {
                     final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
 
-                    safelyComplete(responseObserver, StartConsoleResponse.newBuilder()
+                    GrpcUtil.safelyOnNextAndComplete(responseObserver, StartConsoleResponse.newBuilder()
                             .setResultId(request.getResultId())
                             .build());
 
@@ -188,7 +188,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
-                    .onSuccess((final ExecuteCommandResponse response) -> safelyComplete(responseObserver, response))
+                    .onSuccess((final ExecuteCommandResponse response) -> GrpcUtil
+                            .safelyOnNextAndComplete(responseObserver, response))
                     .submit(() -> {
                         final ScriptSession scriptSession = exportedConsole.get();
                         final ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
@@ -279,7 +280,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .requiresSerialQueue()
                     .onError(responseObserver)
                     .onSuccess(
-                            () -> safelyComplete(responseObserver, BindTableToVariableResponse.getDefaultInstance()));
+                            () -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                                    BindTableToVariableResponse.getDefaultInstance()));
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");

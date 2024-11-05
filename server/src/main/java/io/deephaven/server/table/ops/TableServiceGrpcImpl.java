@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
@@ -459,7 +460,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(exportedTable)
                     .onError(responseObserver)
-                    .onSuccess((final SeekRowResponse response) -> safelyComplete(responseObserver, response))
+                    .onSuccess((final SeekRowResponse response) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                            response))
                     .submit(() -> {
                         final Table table = exportedTable.get();
                         authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
@@ -614,7 +616,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(export)
                     .onError(responseObserver)
-                    .onSuccess((final ExportedTableCreationResponse response) -> safelyComplete(responseObserver,
+                    .onSuccess((final ExportedTableCreationResponse response) -> GrpcUtil.safelyOnNextAndComplete(
+                            responseObserver,
                             response))
                     .submit(() -> {
                         final Object obj = export.get();
@@ -665,7 +668,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .require(dependencies)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .onError(responseObserver)
-                    .onSuccess((final Table result) -> safelyComplete(responseObserver,
+                    .onSuccess((final Table result) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
                             ExportUtil.buildTableCreationResponse(resultId, result)))
                     .submit(() -> {
                         operation.checkPermission(request, dependencies);

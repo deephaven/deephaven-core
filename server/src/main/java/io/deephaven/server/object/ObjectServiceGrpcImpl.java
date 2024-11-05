@@ -274,7 +274,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     .require(object)
                     .onError(responseObserver)
                     .onSuccess(
-                            (final FetchObjectResponse response) -> GrpcUtil.safelyComplete(responseObserver, response))
+                            (final FetchObjectResponse response) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                                    response))
                     .submit(() -> {
                         final Object o = object.get();
                         ObjectType objectTypeInstance = getObjectTypeInstance(type, o);
