@@ -4,7 +4,9 @@ plugins {
 }
 
 dependencies {
+    implementation project(':Base')
     implementation project(':Integrations')
+    implementation project(':engine-updategraph')
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

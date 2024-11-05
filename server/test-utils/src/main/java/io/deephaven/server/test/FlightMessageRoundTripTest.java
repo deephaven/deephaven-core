@@ -1043,6 +1043,7 @@ public abstract class FlightMessageRoundTripTest {
         CompletableFuture<Table> tableFuture = new CompletableFuture<>();
         SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
         currentSession.nonExport()
+                .description("FlightMessageRoundTripTest#assertRoundTripDataEqual")
                 .onErrorHandler(exception -> tableFuture.cancel(true))
                 .require(tableExport)
                 .submit(() -> tableFuture.complete(tableExport.get()));

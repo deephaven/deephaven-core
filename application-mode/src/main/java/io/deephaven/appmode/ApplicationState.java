@@ -11,7 +11,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
 
-public class ApplicationState {
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.updategraph.DynamicNode;
+
+public class ApplicationState extends LivenessScope {
 
     public interface Factory {
 
@@ -75,12 +79,17 @@ public class ApplicationState {
     }
 
     public synchronized void setField(Field<?> field) {
-        Field<?> oldField = fields.remove(field.name());
-        if (oldField != null) {
-            listener.onRemoveField(this, field);
+        // manage the new value before release the old value
+        final Object newValue = field.value();
+        if ((newValue instanceof LivenessReferent) && DynamicNode.notDynamicOrIsRefreshing(newValue)) {
+            manage((LivenessReferent) newValue);
         }
-        listener.onNewField(this, field);
+
+        // remove and release the old value
+        removeField(field.name());
+
         fields.put(field.name(), field);
+        listener.onNewField(this, field);
     }
 
     public synchronized void setFields(Field<?>... fields) {
@@ -97,6 +106,10 @@ public class ApplicationState {
         Field<?> field = fields.remove(name);
         if (field != null) {
             listener.onRemoveField(this, field);
+            Object oldValue = field.value();
+            if ((oldValue instanceof LivenessReferent) && DynamicNode.notDynamicOrIsRefreshing(oldValue)) {
+                unmanage((LivenessReferent) oldValue);
+            }
         }
     }
 

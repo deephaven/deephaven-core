@@ -230,6 +230,7 @@ public class TicketRouter {
      * Publish a new result as a flight ticket as to-be defined by the supplied source.
      *
      * @param session the user session context
+     * @param description a description of the publish operation
      * @param ticket the ticket to publish to
      * @param logId an end-user friendly identification of the ticket should an error occur
      * @param onPublish an optional callback to invoke when the result is accessible to callers
@@ -239,6 +240,7 @@ public class TicketRouter {
      */
     public <T> void publish(
             final SessionState session,
+            final String description,
             final Ticket ticket,
             final String logId,
             @Nullable final Runnable onPublish,
@@ -247,7 +249,7 @@ public class TicketRouter {
         final ByteBuffer ticketBuffer = ticket.getTicket().asReadOnlyByteBuffer();
         final TicketResolver resolver = getResolver(ticketBuffer.get(ticketBuffer.position()), logId);
         authorization.authorizePublishRequest(resolver, ticketBuffer);
-        resolver.publish(session, ticketBuffer, logId, onPublish, errorHandler, source);
+        resolver.publish(session, description, ticketBuffer, logId, onPublish, errorHandler, source);
     }
 
     /**

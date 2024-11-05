@@ -456,6 +456,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     ticketRouter.resolve(session, sourceId, "sourceId");
 
             session.nonExport()
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(exportedTable)
                     .onError(responseObserver)
@@ -612,6 +613,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
 
             session.nonExport()
+                    .description(description)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(export)
                     .onError(responseObserver)
@@ -652,11 +654,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
         }
 
-        final String description = "TableService#" + op.name() + "(resultId="
-                + ticketRouter.getLogNameFor(resultId, "TableService") + ")";
+        final String opDescription = getOpDescription(op);
+        final String queryDescription = opDescription + "(resultId="
+                + ticketRouter.getLogNameFor(resultId, "resultId") + ")";
 
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
-                description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
+                queryDescription, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
             operation.validateRequest(request);
@@ -666,6 +669,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .collect(Collectors.toList());
 
             session.newExport(resultId, "resultId")
+                    .description(opDescription)
                     .require(dependencies)
                     .onError(responseObserver)
                     .queryPerformanceRecorder(queryPerformanceRecorder)
@@ -709,6 +713,10 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         }
     }
 
+    private static String getOpDescription(final BatchTableRequest.Operation.OpCase op) {
+        return "TableService#" + op.name();
+    }
+
     private <T> BatchExportBuilder<T> createBatchExportBuilder(
             final int offset,
             @NotNull final SessionState session,
@@ -720,17 +728,17 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
         final Ticket resultId = operation.getResultTicket(request);
         final boolean hasResultId = !resultId.getTicket().isEmpty();
-        final ExportBuilder<Table> exportBuilder =
-                hasResultId ? session.newExport(resultId, "resultId") : session.nonExport();
         final String resultDescription = hasResultId
                 ? "resultId=" + ticketRouter.getLogNameFor(resultId, "resultId") + ", "
                 : "";
 
         final String description = "TableService#" + op.getOpCase().name() + "(" + resultDescription + "batchOffset="
                 + offset + ")";
-        exportBuilder.queryPerformanceRecorder(QueryPerformanceRecorder.newSubQuery(
-                description, batchQueryPerformanceRecorder, QueryPerformanceNugget.DEFAULT_FACTORY));
-
+        final ExportBuilder<Table> exportBuilder =
+                (hasResultId ? session.newExport(resultId, "resultId") : session.nonExport())
+                        .description(getOpDescription(op.getOpCase()))
+                        .queryPerformanceRecorder(QueryPerformanceRecorder.newSubQuery(
+                                description, batchQueryPerformanceRecorder, QueryPerformanceNugget.DEFAULT_FACTORY));
         return new BatchExportBuilder<>(operation, request, exportBuilder);
     }
 
