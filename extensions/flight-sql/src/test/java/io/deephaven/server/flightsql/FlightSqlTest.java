@@ -493,8 +493,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     consume(info, 1, 3, false);
                 }
                 // The Flight SQL resolver will maintain state to ensure results are resolvable, even if the underlying
-                // table
-                // goes away between flightInfo and doGet.
+                // table goes away between flightInfo and doGet.
                 {
                     final FlightInfo info = prepared.execute();
                     assertThat(info.getSchema()).isEqualTo(expectedSchema);

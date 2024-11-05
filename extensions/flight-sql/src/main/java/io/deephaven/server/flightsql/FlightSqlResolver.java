@@ -765,7 +765,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
-            table.retainReference();
+            if (table.isRefreshing()) {
+                table.retainReference();
+            }
             return table;
         }
     }
@@ -1022,7 +1024,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         private void doRelease() {
             if (table != null) {
-                table.dropReference();
+                if (table.isRefreshing()) {
+                    table.dropReference();
+                }
                 table = null;
             }
         }
