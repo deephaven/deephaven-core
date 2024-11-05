@@ -689,7 +689,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 CommandGetPrimaryKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
                         .setTable("DoesNotExist").build()
         }) {
-            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            final Ticket ticket =
+                    ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
                 consume(stream, 0, 0);
             }
@@ -730,7 +731,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 CommandGetExportedKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
                         .setTable("DoesNotExist").build()
         }) {
-            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            final Ticket ticket =
+                    ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
                 consume(stream, 0, 0);
             }
@@ -772,7 +774,8 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                 CommandGetImportedKeys.newBuilder().setCatalog("Catalog").setDbSchema("DbSchema")
                         .setTable("DoesNotExist").build()
         }) {
-            final Ticket ticket = ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketFor(command));
+            final Ticket ticket =
+                    ProtocolExposer.fromProtocol(FlightSqlTicketHelper.ticketCreator().visit(command));
             try (final FlightStream stream = flightSqlClient.getStream(ticket)) {
                 consume(stream, 0, 0);
             }
@@ -895,8 +898,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                         ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX}).concat(Any.pack(message).toByteString()))
                 .build());
         expectException(() -> flightSqlClient.getStream(ticket).next(), FlightStatusCode.INVALID_ARGUMENT,
-                String.format("Flight SQL: client is misbehaving, should use getInfo for command '%s'",
-                        descriptor.getFullName()));
+                "Flight SQL: Invalid ticket");
     }
 
     private static FlightDescriptor unpackableCommand(Descriptor descriptor) {
@@ -934,15 +936,16 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         commandUnpackable(() -> flightClient.getInfo(flightDescriptor), clazz);
     }
 
+
     private void unpackable(ActionType type, Class<?> actionProto) {
         {
             final Action action = new Action(type.getType(), Any.getDefaultInstance().toByteArray());
-            expectUnpackable(() -> doAction(action), actionProto);
+            expectException(() -> doAction(action), FlightStatusCode.INVALID_ARGUMENT, String.format(
+                    "Flight SQL: Invalid action, provided message cannot be unpacked as %s", actionProto.getName()));
         }
         {
             final Action action = new Action(type.getType(), new byte[] {-1});
-            expectException(() -> doAction(action), FlightStatusCode.INVALID_ARGUMENT,
-                    "Received invalid message from remote");
+            expectException(() -> doAction(action), FlightStatusCode.INVALID_ARGUMENT, "Flight SQL: Invalid action");
         }
     }
 
@@ -951,12 +954,13 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     private void commandUnpackable(Runnable r, Class<?> clazz) {
-        expectUnpackable(r, clazz);
+        expectUnpackableCommand(r, clazz);
     }
 
-    private void expectUnpackable(Runnable r, Class<?> clazz) {
+    private void expectUnpackableCommand(Runnable r, Class<?> clazz) {
         expectException(r, FlightStatusCode.INVALID_ARGUMENT,
-                String.format("Provided message cannot be unpacked as %s", clazz.getName()));
+                String.format("Flight SQL: Invalid command, provided message cannot be unpacked as %s",
+                        clazz.getName()));
     }
 
     private void expectUnpublishable(Runnable r) {

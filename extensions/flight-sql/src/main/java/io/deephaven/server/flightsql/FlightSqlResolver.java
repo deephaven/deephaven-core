@@ -51,7 +51,6 @@ import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
-import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
 import org.apache.arrow.flight.impl.Flight.FlightEndpoint;
 import org.apache.arrow.flight.impl.Flight.FlightInfo;
 import org.apache.arrow.flight.impl.Flight.Ticket;
@@ -176,7 +175,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             .collect(Collectors.toSet());
 
     private static final String FLIGHT_SQL_TYPE_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
-    private static final String FLIGHT_SQL_COMMAND_TYPE_PREFIX = FLIGHT_SQL_TYPE_PREFIX + "Command";
+    static final String FLIGHT_SQL_COMMAND_TYPE_PREFIX = FLIGHT_SQL_TYPE_PREFIX + "Command";
 
     @VisibleForTesting
     static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementQuery";
@@ -277,18 +276,20 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
 
     // Need dense_union support to implement this.
-    private static final UnsupportedCommand GET_SQL_INFO_HANDLER =
-            new UnsupportedCommand(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
-    private static final UnsupportedCommand STATEMENT_UPDATE_HANDLER =
-            new UnsupportedCommand(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
-    private static final UnsupportedCommand GET_CROSS_REFERENCE_HANDLER =
-            new UnsupportedCommand(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
-    private static final UnsupportedCommand STATEMENT_SUBSTRAIT_PLAN_HANDLER =
-            new UnsupportedCommand(CommandStatementSubstraitPlan.getDescriptor(), CommandStatementSubstraitPlan.class);
-    private static final UnsupportedCommand PREPARED_STATEMENT_UPDATE_HANDLER = new UnsupportedCommand(
-            CommandPreparedStatementUpdate.getDescriptor(), CommandPreparedStatementUpdate.class);
-    private static final UnsupportedCommand GET_XDBC_TYPE_INFO_HANDLER =
-            new UnsupportedCommand(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
+    private static final CommandHandler<CommandGetSqlInfo> GET_SQL_INFO_HANDLER =
+            new UnsupportedCommand<>(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
+    private static final CommandHandler<CommandStatementUpdate> STATEMENT_UPDATE_HANDLER =
+            new UnsupportedCommand<>(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
+    private static final CommandHandler<CommandGetCrossReference> GET_CROSS_REFERENCE_HANDLER =
+            new UnsupportedCommand<>(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
+    private static final CommandHandler<CommandStatementSubstraitPlan> STATEMENT_SUBSTRAIT_PLAN_HANDLER =
+            new UnsupportedCommand<>(CommandStatementSubstraitPlan.getDescriptor(),
+                    CommandStatementSubstraitPlan.class);
+    private static final CommandHandler<CommandPreparedStatementUpdate> PREPARED_STATEMENT_UPDATE_HANDLER =
+            new UnsupportedCommand<>(CommandPreparedStatementUpdate.getDescriptor(),
+                    CommandPreparedStatementUpdate.class);
+    private static final CommandHandler<CommandGetXdbcTypeInfo> GET_XDBC_TYPE_INFO_HANDLER =
+            new UnsupportedCommand<>(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
 
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all the
     // TicketResolvers).
@@ -333,12 +334,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      */
     @Override
     public boolean handlesCommand(Flight.FlightDescriptor descriptor) {
-        if (descriptor.getType() != DescriptorType.CMD) {
-            throw new IllegalStateException("descriptor is not a command");
-        }
-        // No good way to check if this is a valid command without parsing to Any first.
-        final Any command = parse(descriptor.getCmd()).orElse(null);
-        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX);
+        return FlightSqlCommandHelper.handlesCommand(descriptor);
     }
 
     /**
@@ -409,46 +405,118 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @Override
     public ExportObject<FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
-        if (descriptor.getType() != DescriptorType.CMD) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
-            // handlesPath
-            throw new IllegalStateException("Flight SQL only supports Command-based descriptors");
-        }
-        final Any command = parse(descriptor.getCmd()).orElse(null);
-        if (command == null) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
-            // handlesCommand
-            throw new IllegalStateException("Received invalid message from remote.");
-        }
-        if (!command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
-            // handlesCommand
-            throw new IllegalStateException(String.format("Unexpected command typeUrl '%s'", command.getTypeUrl()));
-        }
         if (session == null) {
             throw unauthenticatedError();
         }
-        return session.<FlightInfo>nonExport().submit(() -> getInfo(session, descriptor, command));
+        return FlightSqlCommandHelper.visit(descriptor, new GetFlightInfoImpl(session, descriptor), logId);
     }
 
-    private FlightInfo getInfo(final SessionState session, final FlightDescriptor descriptor, final Any command) {
-        final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
-        try (final QueryPerformanceNugget ignore =
-                qpr.getNugget(String.format("FlightSQL.getInfo/%s", command.getTypeUrl()))) {
-            return getInfoImpl(session, descriptor, command);
+    private class GetFlightInfoImpl implements FlightSqlCommandHelper.CommandVisitor<ExportObject<FlightInfo>> {
+        private final SessionState session;
+        private final FlightDescriptor descriptor;
+
+        public GetFlightInfoImpl(SessionState session, FlightDescriptor descriptor) {
+            this.session = Objects.requireNonNull(session);
+            this.descriptor = Objects.requireNonNull(descriptor);
         }
-    }
 
-    private FlightInfo getInfoImpl(SessionState session, FlightDescriptor descriptor, Any command) {
-        final CommandHandler commandHandler = commandHandler(session, command.getTypeUrl(), true);
-        final TicketHandler ticketHandler = commandHandler.initialize(command);
-        try {
-            return ticketHandler.getInfo(descriptor);
-        } catch (Throwable t) {
-            if (ticketHandler instanceof TicketHandlerReleasable) {
-                ((TicketHandlerReleasable) ticketHandler).release();
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetCatalogs command) {
+            return submit(CommandGetCatalogsConstants.HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetDbSchemas command) {
+            return submit(CommandGetDbSchemasConstants.HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetTableTypes command) {
+            return submit(CommandGetTableTypesConstants.HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetImportedKeys command) {
+            return submit(commandGetImportedKeysHandler, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetExportedKeys command) {
+            return submit(commandGetExportedKeysHandler, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetPrimaryKeys command) {
+            return submit(commandGetPrimaryKeysHandler, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetTables command) {
+            return submit(new CommandGetTablesImpl(), command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandStatementQuery command) {
+            return submit(new CommandStatementQueryImpl(session), command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandPreparedStatementQuery command) {
+            return submit(new CommandPreparedStatementQueryImpl(session), command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetSqlInfo command) {
+            return submit(GET_SQL_INFO_HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandStatementUpdate command) {
+            return submit(STATEMENT_UPDATE_HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetCrossReference command) {
+            return submit(GET_CROSS_REFERENCE_HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandStatementSubstraitPlan command) {
+            return submit(STATEMENT_SUBSTRAIT_PLAN_HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandPreparedStatementUpdate command) {
+            return submit(PREPARED_STATEMENT_UPDATE_HANDLER, command);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetXdbcTypeInfo command) {
+            return submit(GET_XDBC_TYPE_INFO_HANDLER, command);
+        }
+
+        private <T> ExportObject<FlightInfo> submit(CommandHandler<T> handler, T command) {
+            return session.<FlightInfo>nonExport().submit(() -> getInfo(handler, command));
+        }
+
+        private <T> FlightInfo getInfo(CommandHandler<T> handler, T command) {
+            final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
+            try (final QueryPerformanceNugget ignore =
+                    qpr.getNugget(String.format("FlightSQL.getInfo/%s", command.getClass().getSimpleName()))) {
+                return flightInfo(handler, command);
             }
-            throw t;
+        }
+
+        private <T> FlightInfo flightInfo(CommandHandler<T> handler, T command) {
+            final TicketHandler ticketHandler = handler.initialize(command);
+            try {
+                return ticketHandler.getInfo(descriptor);
+            } catch (Throwable t) {
+                if (ticketHandler instanceof TicketHandlerReleasable) {
+                    ((TicketHandlerReleasable) ticketHandler).release();
+                }
+                throw t;
+            }
         }
     }
 
@@ -469,22 +537,81 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        final Any message = FlightSqlTicketHelper.unpackTicket(ticket, logId);
-
-        final ExportObject<TicketHandler> ticketHandler = session.<TicketHandler>nonExport()
-                .submit(() -> ticketHandlerForResolve(session, message));
-
+        final ExportObject<Table> tableExport = FlightSqlTicketHelper.visit(ticket, new ResolveImpl(session), logId);
         // noinspection unchecked
-        return (ExportObject<T>) new TableResolver(ticketHandler, session).submit();
+        return (ExportObject<T>) tableExport;
+    }
+
+    private class ResolveImpl implements FlightSqlTicketHelper.TicketVisitor<ExportObject<Table>> {
+        private final SessionState session;
+
+        public ResolveImpl(SessionState session) {
+            this.session = Objects.requireNonNull(session);
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetCatalogs ticket) {
+            return submit(CommandGetCatalogsConstants.HANDLER.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetDbSchemas ticket) {
+            return submit(CommandGetDbSchemasConstants.HANDLER.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetTableTypes ticket) {
+            return submit(CommandGetTableTypesConstants.HANDLER.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetImportedKeys ticket) {
+            return submit(commandGetImportedKeysHandler.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetExportedKeys ticket) {
+            return submit(commandGetExportedKeysHandler.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetPrimaryKeys ticket) {
+            return submit(commandGetPrimaryKeysHandler.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetTables ticket) {
+            return submit(commandGetTables.initialize(ticket));
+        }
+
+        @Override
+        public ExportObject<Table> visit(TicketStatementQuery ticket) {
+            final TicketHandler ticketHandler = queries.get(ticket.getStatementHandle());
+            if (ticketHandler == null) {
+                throw FlightSqlErrorHelper.error(Code.NOT_FOUND,
+                        "Unable to find Flight SQL query. Flight SQL tickets should be resolved promptly and resolved at most once.");
+            }
+            if (!ticketHandler.isOwner(session)) {
+                // We should not be concerned about returning "NOT_FOUND" here; the handleId is sufficiently random that
+                // it is much more likely an authentication setup issue.
+                throw permissionDeniedWithHelpfulMessage();
+            }
+            return submit(ticketHandler);
+        }
+
+        // Note: we could be more efficient and do the static table resolution on thread instead of submitting. For
+        // simplicity purposes for now, we will submit all of them for resolution.
+        private ExportObject<Table> submit(TicketHandler handler) {
+            return new TableResolver(session, handler).submit();
+        }
     }
 
     private static class TableResolver implements Callable<Table>, Runnable, SessionState.ExportErrorHandler {
-        private final ExportObject<TicketHandler> export;
         private final SessionState session;
-        private TicketHandler handler;
+        private final TicketHandler handler;
 
-        public TableResolver(ExportObject<TicketHandler> export, SessionState session) {
-            this.export = Objects.requireNonNull(export);
+        public TableResolver(SessionState session, TicketHandler handler) {
+            this.handler = Objects.requireNonNull(handler);
             this.session = Objects.requireNonNull(session);
         }
 
@@ -493,7 +620,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // export; as such, we _can't_ unmanage the Table during a call to TicketHandler.resolve, so we must rely
             // on onSuccess / onError callbacks (after export has started managing the Table).
             return session.<Table>nonExport()
-                    .require(export)
                     .onSuccess(this)
                     .onError(this)
                     .submit((Callable<Table>) this);
@@ -502,30 +628,18 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         // submit
         @Override
         public Table call() {
-            handler = export.get();
-            if (!handler.isOwner(session)) {
-                throw new IllegalStateException("Expected TicketHandler to already be authorized for session");
-            }
             return handler.resolve();
         }
 
         // onSuccess
         @Override
         public void run() {
-            if (handler == null) {
-                // Should only be run onSuccess, so export.get() must have succeeded
-                throw new IllegalStateException();
-            }
             release();
         }
 
         @Override
         public void onError(ExportNotification.State resultState, String errorContext, @Nullable Exception cause,
                 @Nullable String dependentExportId) {
-            if (handler == null) {
-                // Will be null if the upstream export has failed
-                return;
-            }
             release();
         }
 
@@ -536,7 +650,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             ((TicketHandlerReleasable) handler).release();
         }
     }
-
 
     @Override
     public <T> SessionState.ExportObject<T> resolve(
@@ -635,7 +748,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        throw error(Code.FAILED_PRECONDITION,
+        throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': Flight SQL descriptors cannot be published to");
     }
 
@@ -651,7 +764,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        throw error(Code.FAILED_PRECONDITION,
+        throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': Flight SQL tickets cannot be published to");
     }
 
@@ -666,9 +779,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    interface CommandHandler {
+    interface CommandHandler<C> {
 
-        TicketHandler initialize(Any any);
+        TicketHandler initialize(C command);
     }
 
     interface TicketHandler {
@@ -683,73 +796,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     interface TicketHandlerReleasable extends TicketHandler {
 
         void release();
-    }
-
-    private CommandHandler commandHandler(SessionState session, String typeUrl, boolean forFlightInfo) {
-        switch (typeUrl) {
-            case COMMAND_STATEMENT_QUERY_TYPE_URL:
-                if (!forFlightInfo) {
-                    // This should not happen with well-behaved clients; or it means there is a bug in our
-                    // command/ticket logic
-                    throw error(Code.INVALID_ARGUMENT, "Invalid ticket; please ensure client is using opaque ticket");
-                }
-                return new CommandStatementQueryImpl(session);
-            case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
-                return new CommandPreparedStatementQueryImpl(session);
-            case COMMAND_GET_TABLES_TYPE_URL:
-                return new CommandGetTablesImpl();
-            case COMMAND_GET_TABLE_TYPES_TYPE_URL:
-                return CommandGetTableTypesConstants.HANDLER;
-            case COMMAND_GET_CATALOGS_TYPE_URL:
-                return CommandGetCatalogsConstants.HANDLER;
-            case COMMAND_GET_DB_SCHEMAS_TYPE_URL:
-                return CommandGetDbSchemasConstants.HANDLER;
-            case COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
-                return commandGetPrimaryKeysHandler;
-            case COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
-                return commandGetImportedKeysHandler;
-            case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
-                return commandGetExportedKeysHandler;
-            case COMMAND_GET_SQL_INFO_TYPE_URL:
-                return GET_SQL_INFO_HANDLER;
-            case COMMAND_STATEMENT_UPDATE_TYPE_URL:
-                return STATEMENT_UPDATE_HANDLER;
-            case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
-                return GET_CROSS_REFERENCE_HANDLER;
-            case COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
-                return STATEMENT_SUBSTRAIT_PLAN_HANDLER;
-            case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
-                return PREPARED_STATEMENT_UPDATE_HANDLER;
-            case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
-                return GET_XDBC_TYPE_INFO_HANDLER;
-        }
-        throw error(Code.UNIMPLEMENTED, String.format("command '%s' is unknown", typeUrl));
-    }
-
-    private TicketHandler ticketHandlerForResolve(SessionState session, Any message) {
-        final String typeUrl = message.getTypeUrl();
-        if (TICKET_STATEMENT_QUERY_TYPE_URL.equals(typeUrl)) {
-            final TicketStatementQuery ticketStatementQuery = unpackOrThrow(message, TicketStatementQuery.class);
-            final TicketHandler ticketHandler = queries.get(ticketStatementQuery.getStatementHandle());
-            if (ticketHandler == null) {
-                throw error(Code.NOT_FOUND,
-                        "Unable to find Flight SQL query. Flight SQL tickets should be resolved promptly and resolved at most once.");
-            }
-            if (!ticketHandler.isOwner(session)) {
-                // We should not be concerned about returning "NOT_FOUND" here; the handleId is sufficiently random that
-                // it is much more likely an authentication setup issue.
-                throw permissionDeniedWithHelpfulMessage();
-            }
-            return ticketHandler;
-        }
-        final CommandHandler commandHandler = commandHandler(session, typeUrl, false);
-        try {
-            return commandHandler.initialize(message);
-        } catch (StatusRuntimeException e) {
-            // This should not happen with well-behaved clients; or it means there is a bug in our command/ticket logic
-            throw error(Code.INVALID_ARGUMENT,
-                    "Invalid ticket; please ensure client is using an opaque ticket", e);
-        }
     }
 
     private Table executeSqlQuery(SessionState session, String sql) {
@@ -776,7 +822,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * This is the base class for "easy" commands; that is, commands that have a fixed schema and are cheap to
      * initialize.
      */
-    private static abstract class CommandHandlerFixedBase<T extends Message> implements CommandHandler {
+    static abstract class CommandHandlerFixedBase<T extends Message> implements CommandHandler<T> {
         private final Class<T> clazz;
 
         public CommandHandlerFixedBase(Class<T> clazz) {
@@ -785,7 +831,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         /**
          * This is called as the first part of {@link TicketHandler#getInfo(FlightDescriptor)} for the handler returned
-         * from {@link #initialize(Any)}. It can be used as an early signal to let clients know that the command is not
+         * from {@link #initialize(T)}. It can be used as an early signal to let clients know that the command is not
          * supported, or one of the arguments is not valid.
          */
         void checkForGetInfo(T command) {
@@ -794,7 +840,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         /**
          * This is called as the first part of {@link TicketHandler#resolve()} for the handler returned from
-         * {@link #initialize(Any)}.
+         * {@link #initialize(T)}.
          */
         void checkForResolve(T command) {
             // This is provided for completeness, but the current implementations don't use it.
@@ -822,14 +868,23 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         abstract Table table(T command);
 
+        // /**
+        // * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
+        // * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
+        // * part of {@link TicketHandler#resolve()}.
+        // */
+        // @Override
+        // public final TicketHandler initialize(Any any) {
+        // return initialize(unpackOrThrow(any, clazz));
+        // }
+
         /**
          * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
          * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
          * part of {@link TicketHandler#resolve()}.
          */
         @Override
-        public final TicketHandler initialize(Any any) {
-            final T command = unpackOrThrow(any, clazz);
+        public final TicketHandler initialize(T command) {
             return new TicketHandlerFixed(command);
         }
 
@@ -886,18 +941,15 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    private static final class UnsupportedCommand implements CommandHandler, TicketHandler {
+    private static final class UnsupportedCommand<T> implements CommandHandler<T>, TicketHandler {
         private final Descriptor descriptor;
-        private final Class<? extends Message> clazz;
 
         UnsupportedCommand(Descriptor descriptor, Class<? extends Message> clazz) {
             this.descriptor = Objects.requireNonNull(descriptor);
-            this.clazz = Objects.requireNonNull(clazz);
         }
 
         @Override
-        public TicketHandler initialize(Any any) {
-            unpackOrThrow(any, clazz);
+        public TicketHandler initialize(T command) {
             return this;
         }
 
@@ -908,18 +960,18 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public FlightInfo getInfo(FlightDescriptor descriptor) {
-            throw error(Code.UNIMPLEMENTED,
+            throw FlightSqlErrorHelper.error(Code.UNIMPLEMENTED,
                     String.format("command '%s' is unimplemented", this.descriptor.getFullName()));
         }
 
         @Override
         public Table resolve() {
-            throw error(Code.INVALID_ARGUMENT, String.format(
+            throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, String.format(
                     "client is misbehaving, should use getInfo for command '%s'", this.descriptor.getFullName()));
         }
     }
 
-    abstract class QueryBase implements CommandHandler, TicketHandlerReleasable {
+    abstract class QueryBase<C> implements CommandHandler<C>, TicketHandlerReleasable {
         private final ByteString handleId;
         protected final SessionState session;
 
@@ -938,21 +990,21 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public final TicketHandlerReleasable initialize(Any any) {
+        public final TicketHandlerReleasable initialize(C command) {
             try {
-                return initializeImpl(any);
+                return initializeImpl(command);
             } catch (Throwable t) {
                 release();
                 throw t;
             }
         }
 
-        private synchronized QueryBase initializeImpl(Any any) {
+        private synchronized QueryBase<C> initializeImpl(C command) {
             if (initialized) {
                 throw new IllegalStateException("initialize on Query should only be called once");
             }
             initialized = true;
-            execute(any);
+            execute(command);
             if (table == null) {
                 throw new IllegalStateException(
                         "QueryBase implementation has a bug, should have set table");
@@ -964,27 +1016,28 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         // responsible for setting table and schemaBytes
-        protected abstract void execute(Any any);
+        protected abstract void execute(C command);
 
         protected void executeImpl(String sql) {
             try {
                 table = executeSqlQuery(session, sql);
             } catch (SqlParseException e) {
-                throw error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
+                throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
             } catch (UnsupportedSqlOperation e) {
                 if (e.clazz() == RexDynamicParam.class) {
                     throw queryParametersNotSupported(e);
                 }
-                throw error(Code.INVALID_ARGUMENT, String.format("Unsupported calcite type '%s'", e.clazz().getName()),
+                throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT,
+                        String.format("Unsupported calcite type '%s'", e.clazz().getName()),
                         e);
             } catch (CalciteContextException e) {
                 // See org.apache.calcite.runtime.CalciteResource for the various messages we might encounter
                 final Throwable cause = e.getCause();
                 if (cause instanceof SqlValidatorException) {
                     if (cause.getMessage().contains("not found")) {
-                        throw error(Code.NOT_FOUND, cause.getMessage(), cause);
+                        throw FlightSqlErrorHelper.error(Code.NOT_FOUND, cause.getMessage(), cause);
                     }
-                    throw error(Code.INVALID_ARGUMENT, cause.getMessage(), cause);
+                    throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, cause.getMessage(), cause);
                 }
                 throw e;
             }
@@ -1005,11 +1058,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         public synchronized final Table resolve() {
             if (resolved) {
-                throw error(Code.FAILED_PRECONDITION, "Should only resolve once");
+                throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION, "Should only resolve once");
             }
             resolved = true;
             if (table == null) {
-                throw error(Code.FAILED_PRECONDITION, "Should resolve table quicker");
+                throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION, "Should resolve table quicker");
             }
             return table;
         }
@@ -1042,21 +1095,20 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         private Ticket ticket() {
-            return FlightSqlTicketHelper.ticketFor(TicketStatementQuery.newBuilder()
+            return FlightSqlTicketHelper.ticketCreator().visit(TicketStatementQuery.newBuilder()
                     .setStatementHandle(handleId)
                     .build());
         }
     }
 
-    final class CommandStatementQueryImpl extends QueryBase {
+    final class CommandStatementQueryImpl extends QueryBase<CommandStatementQuery> {
 
         CommandStatementQueryImpl(SessionState session) {
             super(session);
         }
 
         @Override
-        public void execute(Any any) {
-            final CommandStatementQuery command = unpackOrThrow(any, CommandStatementQuery.class);
+        public void execute(CommandStatementQuery command) {
             if (command.hasTransactionId()) {
                 throw transactionIdsNotSupported();
             }
@@ -1064,7 +1116,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    final class CommandPreparedStatementQueryImpl extends QueryBase {
+    final class CommandPreparedStatementQueryImpl extends QueryBase<CommandPreparedStatementQuery> {
 
         PreparedStatement prepared;
 
@@ -1073,8 +1125,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public void execute(Any any) {
-            final CommandPreparedStatementQuery command = unpackOrThrow(any, CommandPreparedStatementQuery.class);
+        public void execute(CommandPreparedStatementQuery command) {
             prepared = getPreparedStatement(session, command.getPreparedStatementHandle());
             // Assumed this is not actually parameterized.
             final String sql = prepared.parameterizedQuery();
@@ -1150,8 +1201,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private static final Table TABLE =
                 TableTools.newTable(DEFINITION, ATTRIBUTES, TableTools.stringCol(TABLE_TYPE, TABLE_TYPE_TABLE));
 
-        public static final CommandHandler HANDLER =
-                new CommandStaticTable<>(CommandGetTableTypes.class, TABLE, FlightSqlTicketHelper::ticketFor);
+        public static final CommandHandlerFixedBase<CommandGetTableTypes> HANDLER = new CommandStaticTable<>(
+                CommandGetTableTypes.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1171,8 +1222,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
 
-        public static final CommandHandler HANDLER =
-                new CommandStaticTable<>(CommandGetCatalogs.class, TABLE, FlightSqlTicketHelper::ticketFor);
+        public static final CommandHandlerFixedBase<CommandGetCatalogs> HANDLER =
+                new CommandStaticTable<>(CommandGetCatalogs.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1193,8 +1244,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         );
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
-        public static final CommandHandler HANDLER =
-                new CommandStaticTable<>(CommandGetDbSchemas.class, TABLE, FlightSqlTicketHelper::ticketFor);
+        public static final CommandHandlerFixedBase<CommandGetDbSchemas> HANDLER = new CommandStaticTable<>(
+                CommandGetDbSchemas.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1294,62 +1345,70 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return authorization.transform((Table) obj) != null;
     }
 
-    private final CommandHandler commandGetPrimaryKeysHandler = new CommandStaticTable<>(CommandGetPrimaryKeys.class,
-            CommandGetPrimaryKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
-        @Override
-        void checkForGetInfo(CommandGetPrimaryKeys command) {
-            if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
-                // We need to pretend that CommandGetPrimaryKeys.getDefaultInstance() is a valid command until we can
-                // plumb getSchema through to the resolvers.
-                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
-                return;
-            }
-            if (!hasTable(
-                    command.hasCatalog() ? command.getCatalog() : null,
-                    command.hasDbSchema() ? command.getDbSchema() : null,
-                    command.getTable())) {
-                throw tableNotFound();
-            }
-        }
-    };
+    private final CommandHandlerFixedBase<CommandGetPrimaryKeys> commandGetPrimaryKeysHandler =
+            new CommandStaticTable<>(CommandGetPrimaryKeys.class,
+                    CommandGetPrimaryKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+                @Override
+                void checkForGetInfo(CommandGetPrimaryKeys command) {
+                    if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
+                        // We need to pretend that CommandGetPrimaryKeys.getDefaultInstance() is a valid command until
+                        // we can
+                        // plumb getSchema through to the resolvers.
+                        // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
+                        return;
+                    }
+                    if (!hasTable(
+                            command.hasCatalog() ? command.getCatalog() : null,
+                            command.hasDbSchema() ? command.getDbSchema() : null,
+                            command.getTable())) {
+                        throw tableNotFound();
+                    }
+                }
+            };
 
-    private final CommandHandler commandGetImportedKeysHandler = new CommandStaticTable<>(CommandGetImportedKeys.class,
-            CommandGetKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
-        @Override
-        void checkForGetInfo(CommandGetImportedKeys command) {
-            if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
-                // We need to pretend that CommandGetImportedKeys.getDefaultInstance() is a valid command until we can
-                // plumb getSchema through to the resolvers.
-                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
-                return;
-            }
-            if (!hasTable(
-                    command.hasCatalog() ? command.getCatalog() : null,
-                    command.hasDbSchema() ? command.getDbSchema() : null,
-                    command.getTable())) {
-                throw tableNotFound();
-            }
-        }
-    };
+    private final CommandHandlerFixedBase<CommandGetImportedKeys> commandGetImportedKeysHandler =
+            new CommandStaticTable<>(CommandGetImportedKeys.class,
+                    CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+                @Override
+                void checkForGetInfo(CommandGetImportedKeys command) {
+                    if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
+                        // We need to pretend that CommandGetImportedKeys.getDefaultInstance() is a valid command until
+                        // we can
+                        // plumb getSchema through to the resolvers.
+                        // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
+                        return;
+                    }
+                    if (!hasTable(
+                            command.hasCatalog() ? command.getCatalog() : null,
+                            command.hasDbSchema() ? command.getDbSchema() : null,
+                            command.getTable())) {
+                        throw tableNotFound();
+                    }
+                }
+            };
 
-    private final CommandHandler commandGetExportedKeysHandler = new CommandStaticTable<>(CommandGetExportedKeys.class,
-            CommandGetKeysConstants.TABLE, FlightSqlTicketHelper::ticketFor) {
-        @Override
-        void checkForGetInfo(CommandGetExportedKeys command) {
-            if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
-                // We need to pretend that CommandGetExportedKeys.getDefaultInstance() is a valid command until we can
-                // plumb getSchema through to the resolvers.
-                // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
-                return;
-            }
-            if (!hasTable(
-                    command.hasCatalog() ? command.getCatalog() : null,
-                    command.hasDbSchema() ? command.getDbSchema() : null,
-                    command.getTable())) {
-                throw tableNotFound();
-            }
-        }
-    };
+    private final CommandHandlerFixedBase<CommandGetExportedKeys> commandGetExportedKeysHandler =
+            new CommandStaticTable<>(CommandGetExportedKeys.class,
+                    CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+                @Override
+                void checkForGetInfo(CommandGetExportedKeys command) {
+                    if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
+                        // We need to pretend that CommandGetExportedKeys.getDefaultInstance() is a valid command until
+                        // we can
+                        // plumb getSchema through to the resolvers.
+                        // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
+                        return;
+                    }
+                    if (!hasTable(
+                            command.hasCatalog() ? command.getCatalog() : null,
+                            command.hasDbSchema() ? command.getDbSchema() : null,
+                            command.getTable())) {
+                        throw tableNotFound();
+                    }
+                }
+            };
+
+    private final CommandHandlerFixedBase<CommandGetTables> commandGetTables = new CommandGetTablesImpl();
 
     @VisibleForTesting
     static final class CommandGetTablesConstants {
@@ -1409,7 +1468,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         Ticket ticket(CommandGetTables command) {
-            return FlightSqlTicketHelper.ticketFor(command);
+            return FlightSqlTicketHelper.ticketCreator().visit(command);
         }
 
         @Override
@@ -1545,8 +1604,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private static <T extends com.google.protobuf.Message> T unpack(org.apache.arrow.flight.Action action,
             Class<T> clazz) {
-        final Any any = parseOrThrow(action.getBody());
-        return unpackOrThrow(any, clazz);
+        final Any any = parseActionOrThrow(action.getBody());
+        return unpackActionOrThrow(any, clazz);
     }
 
     private static org.apache.arrow.flight.Result pack(com.google.protobuf.Message message) {
@@ -1557,7 +1616,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         Objects.requireNonNull(session);
         final PreparedStatement preparedStatement = preparedStatements.get(handle);
         if (preparedStatement == null) {
-            throw error(Code.NOT_FOUND, "Unknown Prepared Statement");
+            throw FlightSqlErrorHelper.error(Code.NOT_FOUND, "Unknown Prepared Statement");
         }
         preparedStatement.verifyOwner(session);
         return preparedStatement;
@@ -1681,7 +1740,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public void execute(SessionState session, Request request, Consumer<Response> visitor) {
-            throw error(Code.UNIMPLEMENTED, String.format("Action type '%s' is unimplemented", type.getType()));
+            throw FlightSqlErrorHelper.error(Code.UNIMPLEMENTED,
+                    String.format("Action type '%s' is unimplemented", type.getType()));
         }
     }
 
@@ -1701,47 +1761,24 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     // ---------------------------------------------------------------------------------------------------------------
 
     private static StatusRuntimeException unauthenticatedError() {
-        return error(Code.UNAUTHENTICATED, "Must be authenticated");
+        return FlightSqlErrorHelper.error(Code.UNAUTHENTICATED, "Must be authenticated");
     }
 
     private static StatusRuntimeException permissionDeniedWithHelpfulMessage() {
-        return error(Code.PERMISSION_DENIED,
+        return FlightSqlErrorHelper.error(Code.PERMISSION_DENIED,
                 "Must use the original session; is the client echoing the authentication token properly? Some clients may need to explicitly enable cookie-based authentication with the header x-deephaven-auth-cookie-request=true (namely, Java Flight SQL JDBC drivers, and maybe others).");
     }
 
     private static StatusRuntimeException tableNotFound() {
-        return error(Code.NOT_FOUND, "table not found");
+        return FlightSqlErrorHelper.error(Code.NOT_FOUND, "table not found");
     }
 
     private static StatusRuntimeException transactionIdsNotSupported() {
-        return error(Code.INVALID_ARGUMENT, "transaction ids are not supported");
+        return FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "transaction ids are not supported");
     }
 
     private static StatusRuntimeException queryParametersNotSupported(RuntimeException cause) {
-        return error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
-    }
-
-    private static StatusRuntimeException error(Code code, String message) {
-        return code
-                .toStatus()
-                .withDescription("Flight SQL: " + message)
-                .asRuntimeException();
-    }
-
-    private static StatusRuntimeException error(Code code, String message, Throwable cause) {
-        return code
-                .toStatus()
-                .withDescription("Flight SQL: " + message)
-                .withCause(cause)
-                .asRuntimeException();
-    }
-
-    private static Optional<Any> parse(ByteString data) {
-        try {
-            return Optional.of(Any.parseFrom(data));
-        } catch (final InvalidProtocolBufferException e) {
-            return Optional.empty();
-        }
+        return FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
     }
 
     private static Optional<Any> parse(byte[] data) {
@@ -1752,18 +1789,16 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    private static Any parseOrThrow(byte[] data) {
-        return parse(data).orElseThrow(() -> error(Code.INVALID_ARGUMENT, "Received invalid message from remote."));
+    private static Any parseActionOrThrow(byte[] data) {
+        return parse(data).orElseThrow(() -> FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "Invalid action"));
     }
 
-    private static <T extends Message> T unpackOrThrow(Any source, Class<T> as) {
-        // DH version of org.apache.arrow.flight.sql.FlightSqlUtils.unpackOrThrow
+    private static <T extends Message> T unpackActionOrThrow(Any source, Class<T> clazz) {
         try {
-            return source.unpack(as);
+            return source.unpack(clazz);
         } catch (final InvalidProtocolBufferException e) {
-            // Same details as from org.apache.arrow.flight.sql.FlightSqlUtils.unpackOrThrow
-            throw error(Code.INVALID_ARGUMENT,
-                    "Provided message cannot be unpacked as " + as.getName() + ": " + e, e);
+            throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT,
+                    "Invalid action, provided message cannot be unpacked as " + clazz.getName(), e);
         }
     }
 
