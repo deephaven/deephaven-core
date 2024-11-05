@@ -1554,6 +1554,9 @@ public class SessionState {
          *
          * @param exportMain the callable that generates the export
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
             export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
@@ -1570,6 +1573,9 @@ public class SessionState {
          *
          * @param exportMain the runnable to execute once dependencies have resolved
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Runnable exportMain) {
             return submit(() -> {
