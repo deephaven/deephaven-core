@@ -39,7 +39,7 @@ final class FlightSqlTicketHelper {
         if (ticket.get() != TICKET_PREFIX) {
             // If we get here, it means there is an error with FlightSqlResolver.ticketRoute /
             // io.deephaven.server.session.TicketRouter.getResolver
-            throw new IllegalStateException("Could not resolve FlightSQL ticket '" + logId + "': invalid prefix");
+            throw new IllegalStateException("Could not resolve Flight SQL ticket '" + logId + "': invalid prefix");
         }
         try {
             return Any.parseFrom(ticket);
@@ -82,6 +82,9 @@ final class FlightSqlTicketHelper {
     }
 
     private static Ticket packedTicket(Message message) {
+        // Note: this is _similar_ to how the Flight SQL example server implementation constructs tickets using
+        // Any#pack; the big difference is that all DH tickets must (currently) be uniquely route-able based on the
+        // first byte of the ticket.
         return Ticket.newBuilder().setTicket(PREFIX.concat(Any.pack(message).toByteString())).build();
     }
 }

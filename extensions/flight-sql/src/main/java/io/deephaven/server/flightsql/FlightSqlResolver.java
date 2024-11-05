@@ -412,7 +412,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (descriptor.getType() != DescriptorType.CMD) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
             // handlesPath
-            throw new IllegalStateException("FlightSQL only supports Command-based descriptors");
+            throw new IllegalStateException("Flight SQL only supports Command-based descriptors");
         }
         final Any command = parse(descriptor.getCmd()).orElse(null);
         if (command == null) {
