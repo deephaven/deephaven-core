@@ -278,7 +278,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .onError(responseObserver)
-                    .onSuccess(responseObserver::onCompleted);
+                    .onSuccess(
+                            () -> safelyComplete(responseObserver, BindTableToVariableResponse.getDefaultInstance()));
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
@@ -294,7 +295,6 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
                 Table table = exportedTable.get();
                 queryScope.putParam(request.getVariableName(), table);
-                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
             });
         }
     }

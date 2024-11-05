@@ -175,7 +175,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             return handler.login(version, payload.asReadOnlyByteBuffer(), listener);
         }
 
-        /** send the bearer token as an AuthTokenBin, as headers might have already been sent */
+        /**
+         * send the bearer token as an AuthTokenBin, as headers might have already been sent
+         */
         private void respondWithAuthTokenBin(SessionService.TokenExpiration expiration) {
             isComplete = true;
             responseObserver.onNext(Flight.HandshakeResponse.newBuilder()
@@ -222,12 +224,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.FlightInfo>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .onSuccess(responseObserver::onCompleted)
-                        .submit(() -> responseObserver.onNext(export.get()));
+                        .onSuccess((final Flight.FlightInfo resultFlightInfo) -> GrpcUtil
+                                .safelyComplete(responseObserver, resultFlightInfo))
+                        .submit(export::get);
                 return;
             }
 
@@ -267,14 +270,15 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.SchemaResult>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .onSuccess(responseObserver::onCompleted)
-                        .submit(() -> responseObserver.onNext(Flight.SchemaResult.newBuilder()
+                        .onSuccess((final Flight.SchemaResult resultSchema) -> GrpcUtil.safelyComplete(responseObserver,
+                                resultSchema))
+                        .submit(() -> Flight.SchemaResult.newBuilder()
                                 .setSchema(export.get().getSchema())
-                                .build()));
+                                .build());
                 return;
             }
 

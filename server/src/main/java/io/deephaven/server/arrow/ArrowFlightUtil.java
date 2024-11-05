@@ -120,7 +120,7 @@ public class ArrowFlightUtil {
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(tableExport)
                     .onError(observer)
-                    .onSuccess(observer::onCompleted)
+                    .onSuccess(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
                         Object export = tableExport.get();
@@ -561,7 +561,7 @@ public class ArrowFlightUtil {
                                         }
                                     });
                                     if (newState == HalfClosedState.CLOSED) {
-                                        listener.onCompleted();
+                                        GrpcUtil.safelyComplete(listener);
                                     }
                                 })
                                 .submit(() -> {
@@ -631,7 +631,7 @@ public class ArrowFlightUtil {
                     }
                 });
                 if (newState == HalfClosedState.CLOSED) {
-                    listener.onCompleted();
+                    GrpcUtil.safelyComplete(listener);
                 }
             }
         }

@@ -436,7 +436,7 @@ public class SessionState {
 
     /**
      * Remove an on-close callback bound to the life of the session.
-     * <p />
+     * <p/>
      * A common pattern to use this will be for an object to try to remove itself, and if it succeeds, to call its own
      * {@link Closeable#close()}. If it fails, it can expect to have close() be called automatically.
      *
@@ -525,7 +525,6 @@ public class SessionState {
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      *
      * @param <T> Is context-sensitive depending on the export.
-     *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
      *          itself. Non-exports do not publish state changes.
      */
@@ -535,37 +534,59 @@ public class SessionState {
         private final SessionService.ErrorTransformer errorTransformer;
         private final SessionState session;
 
-        /** used to keep track of performance details either for aggregation or for the async ticket resolution */
+        /**
+         * used to keep track of performance details either for aggregation or for the async ticket resolution
+         */
         private QueryPerformanceRecorder queryPerformanceRecorder;
 
-        /** final result of export */
+        /**
+         * final result of export
+         */
         private volatile T result;
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
 
-        /** Indicates whether this export has already been well defined. This prevents export object reuse. */
+        /**
+         * Indicates whether this export has already been well defined. This prevents export object reuse.
+         */
         private boolean hasHadWorkSet = false;
 
-        /** This indicates whether or not this export should use the serial execution queue. */
+        /**
+         * This indicates whether or not this export should use the serial execution queue.
+         */
         private boolean requiresSerialQueue;
 
-        /** This is a reference of the work to-be-done. It is non-null only during the PENDING state. */
+        /**
+         * This is a reference of the work to-be-done. It is non-null only during the PENDING state.
+         */
         private Callable<T> exportMain;
-        /** This is a reference to the error handler to call if this item enters one of the failure states. */
+        /**
+         * This is a reference to the error handler to call if this item enters one of the failure states.
+         */
         @Nullable
         private ExportErrorHandler errorHandler;
-        /** This is a reference to the success handler to call if this item successfully exports. */
+        /**
+         * This is a reference to the success handler to call if this item successfully exports.
+         */
         @Nullable
         private Consumer<? super T> successHandler;
 
-        /** used to keep track of which children need notification on export completion */
+        /**
+         * used to keep track of which children need notification on export completion
+         */
         private List<ExportObject<?>> children = Collections.emptyList();
-        /** used to manage liveness of dependencies (to prevent a dependency from being released before it is used) */
+        /**
+         * used to manage liveness of dependencies (to prevent a dependency from being released before it is used)
+         */
         private List<ExportObject<?>> parents = Collections.emptyList();
 
-        /** used to detect when this object is ready for export (is visible for atomic int field updater) */
+        /**
+         * used to detect when this object is ready for export (is visible for atomic int field updater)
+         */
         private volatile int dependentCount = -1;
-        /** our first parent that was already released prior to having dependencies set if one exists */
+        /**
+         * our first parent that was already released prior to having dependencies set if one exists
+         */
         private ExportObject<?> alreadyDeadParent;
 
         @SuppressWarnings("unchecked")
@@ -573,7 +594,9 @@ public class SessionState {
                 AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>) (Class<?>) ExportObject.class,
                         "dependentCount");
 
-        /** used to identify and propagate error details */
+        /**
+         * used to identify and propagate error details
+         */
         private String errorId;
         private String failedDependencyLogIdentity;
         private Exception caughtException;
@@ -1313,6 +1336,7 @@ public class SessionState {
                 @Nullable final Exception cause,
                 @Nullable final String dependentExportId);
     }
+
     @FunctionalInterface
     public interface ExportErrorGrpcHandler {
         /**
@@ -1506,6 +1530,21 @@ public class SessionState {
         }
 
         /**
+         * Invoke this method to set the {@link StreamObserver} to be
+         * {@link io.deephaven.extensions.barrage.util.GrpcUtil#safelyComplete(StreamObserver) safely completed} if this
+         * export succeeds. Only one success handler may be set. Exactly one of the onError and onSuccess handlers will
+         * be invoked.
+         * <p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         *
+         * @param streamObserver the streamObserver to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onSuccess(final StreamObserver<?> streamObserver) {
+            return onSuccess(() -> safelyComplete(streamObserver));
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
@@ -1555,7 +1594,7 @@ public class SessionState {
     }
 
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =
-            new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
+            new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
                 public int getIntKey(final ExportObject<?> exportObject) {
                     return exportObject.exportId;
@@ -1563,7 +1602,7 @@ public class SessionState {
             };
 
     private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY =
-            new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
+            new KeyedIntObjectHash.ValueFactory.Strict<>() {
                 @Override
                 public ExportObject<?> newValue(final int key) {
                     if (isExpired()) {
