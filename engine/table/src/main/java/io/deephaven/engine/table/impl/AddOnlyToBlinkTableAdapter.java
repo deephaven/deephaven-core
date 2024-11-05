@@ -123,8 +123,8 @@ public final class AddOnlyToBlinkTableAdapter {
 
         @Override
         protected void destroy() {
-            getUpdateGraph().removeSource(this);
             super.destroy();
+            getUpdateGraph().removeSource(this);
         }
     }
 }

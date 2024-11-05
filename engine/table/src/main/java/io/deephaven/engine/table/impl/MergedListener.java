@@ -174,11 +174,12 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean systemicResult() {
-        return result == null ? false : SystemicObjectTracker.isSystemic(result);
+        return result != null && SystemicObjectTracker.isSystemic(result);
     }
 
     @Override
     protected void destroy() {
+        super.destroy();
         recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 
