@@ -42,6 +42,7 @@ import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
@@ -254,6 +255,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

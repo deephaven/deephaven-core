@@ -37,6 +37,7 @@ import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -570,6 +571,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         return log.getEntry(level).append(System.identityHashCode(this));
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

@@ -14,6 +14,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.List;
 
@@ -251,6 +252,7 @@ public abstract class BaseIncrementalReleaseFilter
         listener.requestRecompute();
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

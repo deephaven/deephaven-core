@@ -16,6 +16,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -133,6 +134,7 @@ public abstract class AbstractTableLocationProvider
             return active;
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();

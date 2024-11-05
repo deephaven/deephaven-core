@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.List;
 import java.util.Map;
 
@@ -121,6 +122,7 @@ public final class AddOnlyToBlinkTableAdapter {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
