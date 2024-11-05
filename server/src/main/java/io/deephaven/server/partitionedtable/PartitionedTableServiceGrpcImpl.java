@@ -9,7 +9,6 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -31,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.extensions.barrage.util.ExportUtil.buildTableCreationResponse;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNextAndComplete;
 
 public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc.PartitionedTableServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(PartitionedTableServiceGrpcImpl.class);
@@ -71,9 +71,8 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(targetTable)
                     .onError(responseObserver)
-                    .onSuccess(
-                            (final PartitionedTable ignoredResult) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
-                                    PartitionByResponse.getDefaultInstance()))
+                    .onSuccess((final PartitionedTable ignoredResult) -> safelyOnNextAndComplete(responseObserver,
+                            PartitionByResponse.getDefaultInstance()))
                     .submit(() -> {
                         authWiring.checkPermissionPartitionBy(session.getAuthContext(), request,
                                 Collections.singletonList(targetTable.get()));
@@ -103,7 +102,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable)
                     .onError(responseObserver)
-                    .onSuccess((final Table merged) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                    .onSuccess((final Table merged) -> safelyOnNextAndComplete(responseObserver,
                             buildTableCreationResponse(request.getResultId(), merged)))
                     .submit(() -> {
                         final Table table = partitionedTable.get().table();
@@ -147,7 +146,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable, keys)
                     .onError(responseObserver)
-                    .onSuccess((final Table table) -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                    .onSuccess((final Table table) -> safelyOnNextAndComplete(responseObserver,
                             buildTableCreationResponse(request.getResultId(), table)))
                     .submit(() -> {
                         Table table;

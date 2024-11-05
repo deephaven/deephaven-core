@@ -417,7 +417,6 @@ public class SessionState {
      * the close() method be idempotent, but when combined with {@link #removeOnCloseCallback(Closeable)}, close() will
      * only be called once from this class.
      * <p>
-     * </p>
      * If called after the session has expired, this will throw, and the close() method on the provided instance will
      * not be called.
      *
@@ -436,7 +435,7 @@ public class SessionState {
 
     /**
      * Remove an on-close callback bound to the life of the session.
-     * <p/>
+     * <p>
      * A common pattern to use this will be for an object to try to remove itself, and if it succeeds, to call its own
      * {@link Closeable#close()}. If it fails, it can expect to have close() be called automatically.
      *
@@ -534,59 +533,37 @@ public class SessionState {
         private final SessionService.ErrorTransformer errorTransformer;
         private final SessionState session;
 
-        /**
-         * used to keep track of performance details either for aggregation or for the async ticket resolution
-         */
+        /** used to keep track of performance details either for aggregation or for the async ticket resolution */
         private QueryPerformanceRecorder queryPerformanceRecorder;
 
-        /**
-         * final result of export
-         */
+        /** final result of export */
         private volatile T result;
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
 
-        /**
-         * Indicates whether this export has already been well defined. This prevents export object reuse.
-         */
+        /** Indicates whether this export has already been well defined. This prevents export object reuse. */
         private boolean hasHadWorkSet = false;
 
-        /**
-         * This indicates whether or not this export should use the serial execution queue.
-         */
+        /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
 
-        /**
-         * This is a reference of the work to-be-done. It is non-null only during the PENDING state.
-         */
+        /** This is a reference of the work to-be-done. It is non-null only during the PENDING state. */
         private Callable<T> exportMain;
-        /**
-         * This is a reference to the error handler to call if this item enters one of the failure states.
-         */
+        /** This is a reference to the error handler to call if this item enters one of the failure states. */
         @Nullable
         private ExportErrorHandler errorHandler;
-        /**
-         * This is a reference to the success handler to call if this item successfully exports.
-         */
+        /** This is a reference to the success handler to call if this item successfully exports. */
         @Nullable
         private Consumer<? super T> successHandler;
 
-        /**
-         * used to keep track of which children need notification on export completion
-         */
+        /** used to keep track of which children need notification on export completion */
         private List<ExportObject<?>> children = Collections.emptyList();
-        /**
-         * used to manage liveness of dependencies (to prevent a dependency from being released before it is used)
-         */
+        /** used to manage liveness of dependencies (to prevent a dependency from being released before it is used) */
         private List<ExportObject<?>> parents = Collections.emptyList();
 
-        /**
-         * used to detect when this object is ready for export (is visible for atomic int field updater)
-         */
+        /** used to detect when this object is ready for export (is visible for atomic int field updater) */
         private volatile int dependentCount = -1;
-        /**
-         * our first parent that was already released prior to having dependencies set if one exists
-         */
+        /** our first parent that was already released prior to having dependencies set if one exists */
         private ExportObject<?> alreadyDeadParent;
 
         @SuppressWarnings("unchecked")
@@ -594,9 +571,7 @@ public class SessionState {
                 AtomicIntegerFieldUpdater.newUpdater((Class<ExportObject<?>>) (Class<?>) ExportObject.class,
                         "dependentCount");
 
-        /**
-         * used to identify and propagate error details
-         */
+        /** used to identify and propagate error details */
         private String errorId;
         private String failedDependencyLogIdentity;
         private Exception caughtException;

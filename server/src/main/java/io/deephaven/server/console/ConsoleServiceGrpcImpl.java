@@ -52,8 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.*;
 
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
@@ -139,11 +138,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 .onError(responseObserver)
                 .submit(() -> {
                     final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
-
-                    GrpcUtil.safelyOnNextAndComplete(responseObserver, StartConsoleResponse.newBuilder()
+                    safelyOnNextAndComplete(responseObserver, StartConsoleResponse.newBuilder()
                             .setResultId(request.getResultId())
                             .build());
-
                     return scriptSession;
                 });
     }
@@ -154,7 +151,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             @NotNull final StreamObserver<LogSubscriptionData> responseObserver) {
         sessionService.getCurrentSession();
         if (REMOTE_CONSOLE_DISABLED) {
-            GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
+            safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
             return;
         }
         // Session close logic implicitly handled in
@@ -188,8 +185,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .requiresSerialQueue()
                     .require(exportedConsole)
                     .onError(responseObserver)
-                    .onSuccess((final ExecuteCommandResponse response) -> GrpcUtil
-                            .safelyOnNextAndComplete(responseObserver, response))
+                    .onSuccess((final ExecuteCommandResponse response) -> safelyOnNextAndComplete(responseObserver,
+                            response))
                     .submit(() -> {
                         final ScriptSession scriptSession = exportedConsole.get();
                         final ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
@@ -279,9 +276,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .requiresSerialQueue()
                     .onError(responseObserver)
-                    .onSuccess(
-                            () -> GrpcUtil.safelyOnNextAndComplete(responseObserver,
-                                    BindTableToVariableResponse.getDefaultInstance()));
+                    .onSuccess(() -> safelyOnNextAndComplete(responseObserver,
+                            BindTableToVariableResponse.getDefaultInstance()));
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
@@ -408,7 +404,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
 
         public void stop() {
-            GrpcUtil.safelyComplete(client);
+            safelyComplete(client);
         }
 
         // ------------------------------------------------------------------------------------------------------------
@@ -462,7 +458,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             return;
                         }
                         if (tooSlow) {
-                            GrpcUtil.safelyError(client, Code.RESOURCE_EXHAUSTED, String.format(
+                            safelyError(client, Code.RESOURCE_EXHAUSTED, String.format(
                                     "Too slow: the client or network may be too slow to keep up with the logging rates, or there may be logging bursts that exceed the available buffer size. The buffer size can be configured through the server property '%s'.",
                                     SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP));
                             return;
@@ -475,7 +471,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             bufferIsKnownEmpty = true;
                             break;
                         }
-                        GrpcUtil.safelyOnNext(client, payload);
+                        safelyOnNext(client, payload);
                     }
                 } finally {
                     guard.set(false);
