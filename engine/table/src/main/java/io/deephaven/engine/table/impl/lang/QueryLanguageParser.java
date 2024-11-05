@@ -1717,10 +1717,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         // since the original expression was visited by getTypeWithCaching at the beginning of this method.
         final Class<?> result = unaryOpOverloadMethod.accept(this, printer);
 
-        // Verify that the operator overload method returns the original expected type:
-        Assert.equals(ret, "ret", result, "result");
+        // Verify that the operator overload method returns the original expected type (or its unboxed form):
+        Assert.equals(TypeUtils.getUnboxedTypeIfBoxed(ret), "TypeUtils.getUnboxedTypeIfBoxed(ret)",
+                result, "result");
 
-        return ret;
+        return result;
     }
 
     @Override

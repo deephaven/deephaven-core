@@ -20290,6 +20290,10 @@ public final class QueryLanguageFunctionUtils {
         return compareTo(a, b) >= 0;
     }
 
+    public static BigDecimal negate(BigDecimal a) {
+        return a == null ? null : a.negate();
+    }
+
     //
     // BigInteger ops
     //
@@ -21134,5 +21138,9 @@ public final class QueryLanguageFunctionUtils {
 
     public static boolean greaterEquals(float a, BigInteger b) {
         return compareTo(a, b) >= 0;
+    }
+
+    public static BigInteger negate(BigInteger a) {
+        return a == null ? null : a.negate();
     }
 }
