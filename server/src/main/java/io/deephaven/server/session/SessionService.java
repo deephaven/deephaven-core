@@ -511,7 +511,7 @@ public class SessionService {
         }
 
         void sendMessage(final TerminationNotificationResponse response) {
-            GrpcUtil.safelyComplete(responseObserver, response);
+            GrpcUtil.safelyOnNextAndComplete(responseObserver, response);
         }
     }
 }
