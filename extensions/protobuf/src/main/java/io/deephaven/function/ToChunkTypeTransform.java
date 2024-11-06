@@ -1,13 +1,8 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.kafka;
+package io.deephaven.function;
 
-import io.deephaven.function.ToByteFunction;
-import io.deephaven.function.ToLongFunction;
-import io.deephaven.function.ToObjectFunction;
-import io.deephaven.function.ToPrimitiveFunction;
-import io.deephaven.function.TypedFunction;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedByteType;
@@ -28,15 +23,15 @@ import io.deephaven.util.BooleanUtils;
 import java.time.Instant;
 import java.util.Objects;
 
-import static io.deephaven.kafka.UnboxTransform.unboxByte;
-import static io.deephaven.kafka.UnboxTransform.unboxChar;
-import static io.deephaven.kafka.UnboxTransform.unboxDouble;
-import static io.deephaven.kafka.UnboxTransform.unboxFloat;
-import static io.deephaven.kafka.UnboxTransform.unboxInt;
-import static io.deephaven.kafka.UnboxTransform.unboxLong;
-import static io.deephaven.kafka.UnboxTransform.unboxShort;
+import static io.deephaven.function.UnboxTransform.unboxByte;
+import static io.deephaven.function.UnboxTransform.unboxChar;
+import static io.deephaven.function.UnboxTransform.unboxDouble;
+import static io.deephaven.function.UnboxTransform.unboxFloat;
+import static io.deephaven.function.UnboxTransform.unboxInt;
+import static io.deephaven.function.UnboxTransform.unboxLong;
+import static io.deephaven.function.UnboxTransform.unboxShort;
 
-class ToChunkTypeTransform {
+public class ToChunkTypeTransform {
 
     private static final ToByteFunction<Boolean> BOOLEAN_AS_BYTE = BooleanUtils::booleanAsByte;
     private static final ToLongFunction<Instant> EPOCH_NANOS = DateTimeUtils::epochNanos;
