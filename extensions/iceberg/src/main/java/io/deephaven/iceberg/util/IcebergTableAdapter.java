@@ -20,48 +20,32 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFac
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
+import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
-import org.apache.iceberg.DataFiles;
-import org.apache.iceberg.FileFormat;
-import org.apache.iceberg.OverwriteFiles;
-import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
-import org.apache.iceberg.Transaction;
-import org.apache.iceberg.UpdatePartitionSpec;
-import org.apache.iceberg.UpdateSchema;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.encryption.EncryptedOutputFile;
-import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static io.deephaven.iceberg.base.IcebergUtils.allDataFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
-import static io.deephaven.iceberg.base.IcebergUtils.createSpecAndSchema;
-import static io.deephaven.iceberg.base.IcebergUtils.partitionDataFromPaths;
-import static io.deephaven.iceberg.base.IcebergUtils.verifyAppendCompatibility;
-import static io.deephaven.iceberg.base.IcebergUtils.verifyOverwriteCompatibility;
+import static io.deephaven.iceberg.util.IcebergTableWriter.ensureDefinition;
+import static io.deephaven.iceberg.util.IcebergTableWriter.verifyInstructions;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -252,13 +236,13 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergReadInstructions}, or {@code null}
-     * if no {@link IcebergReadInstructions#snapshot() snapshot} or {@link IcebergReadInstructions#snapshotId()
+     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergBaseInstructions}, or {@code null}
+     * if no {@link IcebergBaseInstructions#snapshot() snapshot} or {@link IcebergBaseInstructions#snapshotId()
      * snapshotId} is provided.
      */
     @InternalUseOnly
     @Nullable
-    public Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
+    public Snapshot getSnapshot(@NotNull final IcebergBaseInstructions readInstructions) {
         if (readInstructions.snapshot().isPresent()) {
             return readInstructions.snapshot().get();
         } else if (readInstructions.snapshotId().isPresent()) {
@@ -268,24 +252,6 @@ public class IcebergTableAdapter {
                                     "table " + tableIdentifier));
         }
         return null;
-    }
-
-    /**
-     * Used to hold return value for {@link #getSpecAndSchema(IcebergReadInstructions)}.
-     */
-    private static final class SpecAndSchema {
-        private final Schema schema;
-        private final PartitionSpec partitionSpec;
-        private final IcebergReadInstructions readInstructions;
-
-        private SpecAndSchema(
-                @NotNull final Schema schema,
-                @NotNull final PartitionSpec partitionSpec,
-                @NotNull final IcebergReadInstructions readInstructions) {
-            this.schema = schema;
-            this.partitionSpec = partitionSpec;
-            this.readInstructions = readInstructions;
-        }
     }
 
     /**
@@ -593,6 +559,7 @@ public class IcebergTableAdapter {
         return tableDef;
     }
 
+
     /**
      * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
      * will not change the schema of the existing table.
@@ -600,7 +567,12 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public void append(@NotNull final IcebergWriteInstructions writeInstructions) {
-        writeImpl(writeInstructions, false, true);
+        final IcebergWriteInstructions instructionsWithDefinition =
+                ensureDefinition(verifyInstructions(writeInstructions));
+        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final IcebergTableWriter newWriter =
+                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
+        newWriter.append(instructionsWithDefinition);
     }
 
     /**
@@ -612,7 +584,12 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public void overwrite(@NotNull final IcebergWriteInstructions writeInstructions) {
-        writeImpl(writeInstructions, true, true);
+        final IcebergWriteInstructions instructionsWithDefinition =
+                ensureDefinition(verifyInstructions(writeInstructions));
+        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final IcebergTableWriter newWriter =
+                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
+        newWriter.overwrite(instructionsWithDefinition);
     }
 
     /**
@@ -622,275 +599,15 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        return writeImpl(writeInstructions, false, false);
+        final IcebergWriteInstructions instructionsWithDefinition =
+                ensureDefinition(verifyInstructions(writeInstructions));
+        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final IcebergTableWriter newWriter =
+                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
+        return newWriter.writeDataFiles(instructionsWithDefinition);
     }
 
-    /**
-     * Appends or overwrites data in an Iceberg table with the provided Deephaven tables.
-     *
-     * @param instructions The instructions for customizations while writing, or null to use default instructions
-     * @param overwrite If true, the existing data in the Iceberg table will be overwritten; if false, the data will be
-     *        appended
-     * @param addSnapshot If true, a new snapshot will be created in the Iceberg table with the written data
-     *
-     * @return A list of DataFile objects representing the written data files.
-     */
-    private List<DataFile> writeImpl(
-            @NotNull IcebergWriteInstructions instructions,
-            final boolean overwrite,
-            final boolean addSnapshot) {
-        if (overwrite && !addSnapshot) {
-            throw new IllegalArgumentException("Cannot overwrite an Iceberg table without adding a snapshot");
-        }
-        IcebergParquetWriteInstructions writeInstructions = verifyInstructions(instructions);
-        List<Table> dhTables = instructions.dhTables();
-        if (dhTables.isEmpty()) {
-            if (!overwrite) {
-                // Nothing to append
-                return Collections.emptyList();
-            }
-            // Overwrite with an empty table
-            dhTables = List.of(TableTools.emptyTable(0));
-            writeInstructions = writeInstructions.withDhTables(dhTables);
-
-        }
-
-        writeInstructions = ensureDefinition(writeInstructions);
-        final TableDefinition useDefinition = writeInstructions.tableDefinition().get();
-
-        // Don't verify schema by default if overwriting
-        final boolean verifySchema = writeInstructions.verifySchema().orElse(!overwrite);
-
-        final List<String> partitionPaths = writeInstructions.partitionPaths();
-        final IcebergUtils.SpecAndSchema newSpecAndSchema;
-        final List<PartitionData> partitionData;
-        if (overwrite) {
-            verifyPartitionPathsIfOverwritingOrCreating(partitionPaths, writeInstructions);
-            newSpecAndSchema = createSpecAndSchema(useDefinition, writeInstructions);
-        } else {
-            verifyPartitionPathsIfAppending(table, partitionPaths);
-            // Same spec and schema as the existing table
-            newSpecAndSchema = new IcebergUtils.SpecAndSchema(table.spec(), table.schema());
-        }
-        partitionData = partitionDataFromPaths(newSpecAndSchema.partitionSpec(), partitionPaths);
-        if (verifySchema) {
-            try {
-                if (overwrite) {
-                    verifyOverwriteCompatibility(table.schema(), newSpecAndSchema.schema());
-                    verifyOverwriteCompatibility(table.spec(), newSpecAndSchema.partitionSpec());
-                } else {
-                    verifyAppendCompatibility(table.schema(), useDefinition, writeInstructions);
-                    verifyAppendCompatibility(table.spec(), useDefinition, writeInstructions);
-                }
-            } catch (final IllegalArgumentException e) {
-                throw new IllegalArgumentException("Schema verification failed. Please provide a compatible " +
-                        "schema or disable verification in the Iceberg instructions. See the linked exception " +
-                        "for more details.", e);
-            }
-        }
-
-        final PartitionSpec newPartitionSpec = newSpecAndSchema.partitionSpec();
-        final List<CompletedParquetWrite> parquetFileInfo =
-                writeParquet(newPartitionSpec, dhTables, partitionData, writeInstructions);
-        final List<DataFile> appendFiles = dataFilesFromParquet(parquetFileInfo, partitionData, newPartitionSpec);
-        if (addSnapshot) {
-            commit(newSpecAndSchema, appendFiles, overwrite, verifySchema);
-        }
-        return appendFiles;
-    }
-
-    static IcebergParquetWriteInstructions verifyInstructions(
-            @NotNull final IcebergWriteInstructions instructions) {
-        // We ony support writing to Parquet files
-        if (!(instructions instanceof IcebergParquetWriteInstructions)) {
-            throw new IllegalArgumentException("Unsupported instructions of class " + instructions.getClass() + " for" +
-                    " writing Iceberg table, expected: " + IcebergParquetWriteInstructions.class);
-        }
-        return (IcebergParquetWriteInstructions) instructions;
-    }
-
-    static IcebergParquetWriteInstructions ensureDefinition(
-            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
-        if (writeInstructions.tableDefinition().isPresent()) {
-            return writeInstructions;
-        } else {
-            // Verify that all tables have the same definition
-            final List<Table> dhTables = writeInstructions.dhTables();
-            final int numTables = dhTables.size();
-            if (numTables == 0) {
-                throw new IllegalArgumentException("No Deephaven tables provided for writing");
-            }
-            final TableDefinition firstDefinition = dhTables.get(0).getDefinition();
-            for (int idx = 1; idx < numTables; idx++) {
-                if (!firstDefinition.equals(dhTables.get(idx).getDefinition())) {
-                    throw new IllegalArgumentException(
-                            "All Deephaven tables must have the same definition, else table definition should be " +
-                                    "provided when writing multiple tables with different definitions");
-                }
-            }
-            return writeInstructions.withTableDefinition(firstDefinition);
-        }
-    }
-
-    private static void verifyPartitionPathsIfOverwritingOrCreating(
-            @NotNull final Collection<String> partitionPaths,
-            @NotNull final IcebergBaseInstructions instructions) {
-        if (!partitionPaths.isEmpty()) {
-            final TableDefinition tableDefinition = instructions.tableDefinition()
-                    .orElseThrow(() -> new IllegalArgumentException("Table definition expected"));
-            if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
-                throw new IllegalArgumentException("Cannot write un-partitioned table to partition paths. Please " +
-                        "remove partition paths from the Iceberg instructions or provide a table definition with " +
-                        "partitioning columns.");
-            }
-        }
-    }
-
-    private static void verifyPartitionPathsIfAppending(
-            final org.apache.iceberg.Table icebergTable,
-            final Collection<String> partitionPaths) {
-        if (icebergTable.spec().isPartitioned() && partitionPaths.isEmpty()) {
-            throw new IllegalArgumentException("Cannot write data to a partitioned table without partition paths.");
-        } else if (!icebergTable.spec().isPartitioned() && !partitionPaths.isEmpty()) {
-            throw new IllegalArgumentException("Cannot write data to an un-partitioned table with partition paths.");
-        }
-    }
-
-    private static class CompletedParquetWrite {
-        private final URI destination;
-        private final long numRows;
-        private final long numBytes;
-
-        private CompletedParquetWrite(final URI destination, final long numRows, final long numBytes) {
-            this.destination = destination;
-            this.numRows = numRows;
-            this.numBytes = numBytes;
-        }
-    }
-
-    @NotNull
-    private List<CompletedParquetWrite> writeParquet(
-            @NotNull final PartitionSpec partitionSpec,
-            @NotNull final List<Table> dhTables,
-            @NotNull final List<PartitionData> partitionDataList,
-            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
-        // Build the parquet instructions
-        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
-        final ParquetInstructions.OnWriteCompleted onWriteCompleted =
-                (destination, numRows, numBytes) -> parquetFilesWritten
-                        .add(new CompletedParquetWrite(destination, numRows, numBytes));
-
-        // Remove all partitioning columns from the table definition before writing parquet files
-        TableDefinition parquetTableDefinition = writeInstructions.tableDefinition()
-                .orElseThrow(() -> new IllegalArgumentException("Table definition expected"));
-        if (partitionSpec.isPartitioned()) {
-            parquetTableDefinition = TableDefinition.of(
-                    parquetTableDefinition.getColumnStream()
-                            .filter(columnDefinition -> !columnDefinition.isPartitioning())
-                            .collect(Collectors.toList()));
-        }
-        final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                onWriteCompleted, parquetTableDefinition, table.schema().idToName());
-
-        final OutputFileFactory outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
-                .format(FileFormat.PARQUET)
-                .build();
-        // Write the data to parquet files
-        for (int idx = 0; idx < dhTables.size(); idx++) {
-            final Table dhTable = dhTables.get(idx);
-            if (dhTable.numColumns() == 0) {
-                // Skip writing empty tables with no columns
-                continue;
-            }
-            final EncryptedOutputFile outputFile;
-            if (partitionSpec.isPartitioned()) {
-                outputFile = outputFileFactory.newOutputFile(partitionSpec, partitionDataList.get(idx));
-            } else {
-                outputFile = outputFileFactory.newOutputFile();
-            }
-            final String newDataLocation = outputFile.encryptingOutputFile().location();
-            ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
-        }
-        return parquetFilesWritten;
-    }
-
-    /**
-     * Commit the changes to the Iceberg table by creating a snapshot.
-     */
-    private void commit(
-            @NotNull final IcebergUtils.SpecAndSchema newSpecAndSchema,
-            @NotNull final Iterable<DataFile> appendFiles,
-            final boolean overwrite,
-            final boolean schemaVerified) {
-        final Transaction icebergTransaction = table.newTransaction();
-        final Snapshot currentSnapshot = table.currentSnapshot();
-        // For a null current snapshot, we are creating a new table. So we can just append instead of overwriting.
-        if (overwrite && currentSnapshot != null) {
-            // Fail if the table gets changed concurrently
-            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite()
-                    .validateFromSnapshot(currentSnapshot.snapshotId())
-                    .validateNoConflictingDeletes()
-                    .validateNoConflictingData();
-
-            // Delete all the existing data files in the table
-            try (final Stream<DataFile> dataFiles = allDataFiles(table, currentSnapshot)) {
-                dataFiles.forEach(overwriteFiles::deleteFile);
-            }
-            appendFiles.forEach(overwriteFiles::addFile);
-            overwriteFiles.commit();
-
-            // Update the spec and schema of the existing table.
-            // If we have already verified the schema, we don't need to update it.
-            if (!schemaVerified) {
-                if (!table.schema().sameSchema(newSpecAndSchema.schema())) {
-                    final UpdateSchema updateSchema = icebergTransaction.updateSchema().allowIncompatibleChanges();
-                    table.schema().columns().stream()
-                            .map(Types.NestedField::name)
-                            .forEach(updateSchema::deleteColumn);
-                    newSpecAndSchema.schema().columns()
-                            .forEach(column -> updateSchema.addColumn(column.name(), column.type()));
-                    updateSchema.commit();
-                }
-                if (!table.spec().compatibleWith(newSpecAndSchema.partitionSpec())) {
-                    final UpdatePartitionSpec updateSpec = icebergTransaction.updateSpec();
-                    table.spec().fields().forEach(field -> updateSpec.removeField(field.name()));
-                    newSpecAndSchema.partitionSpec().fields().forEach(field -> updateSpec.addField(field.name()));
-                    updateSpec.commit();
-                }
-            }
-        } else {
-            // Append the new data files to the table
-            final AppendFiles append = icebergTransaction.newAppend();
-            appendFiles.forEach(append::appendFile);
-            append.commit();
-        }
-
-        // Commit the transaction, creating new snapshot for append/overwrite.
-        // Note that no new snapshot will be created for the schema change.
-        icebergTransaction.commitTransaction();
-    }
-
-    /**
-     * Generate a list of {@link DataFile} objects from a list of parquet files written.
-     */
-    private static List<DataFile> dataFilesFromParquet(
-            @NotNull final List<CompletedParquetWrite> parquetFilesWritten,
-            @NotNull final List<PartitionData> partitionDataList,
-            @NotNull final PartitionSpec partitionSpec) {
-        final int numFiles = parquetFilesWritten.size();
-        final List<DataFile> dataFiles = new ArrayList<>(numFiles);
-        for (int idx = 0; idx < numFiles; idx++) {
-            final CompletedParquetWrite completedWrite = parquetFilesWritten.get(idx);
-            final DataFiles.Builder dataFileBuilder = DataFiles.builder(partitionSpec)
-                    .withPath(completedWrite.destination.toString())
-                    .withFormat(FileFormat.PARQUET)
-                    .withRecordCount(completedWrite.numRows)
-                    .withFileSizeInBytes(completedWrite.numBytes);
-            if (partitionSpec.isPartitioned()) {
-                dataFileBuilder.withPartition(partitionDataList.get(idx));
-            }
-            dataFiles.add(dataFileBuilder.build());
-        }
-        return dataFiles;
+    public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
+        return new IcebergTableWriter(tableWriterOptions, this);
     }
 }

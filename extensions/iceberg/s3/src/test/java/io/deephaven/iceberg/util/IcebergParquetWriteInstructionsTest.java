@@ -22,8 +22,7 @@ class IcebergParquetWriteInstructionsTest {
         final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder().build();
         assertThat(instructions.tableDefinition().isEmpty()).isTrue();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
-        assertThat(instructions.dhToIcebergColumnRenames().isEmpty()).isTrue();
-        assertThat(instructions.verifySchema()).isEmpty();
+        assertThat(instructions.updateSchema()).isFalse();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);
@@ -37,10 +36,10 @@ class IcebergParquetWriteInstructionsTest {
     @Test
     void testSetVerifySchema() {
         assertThat(IcebergParquetWriteInstructions.builder()
-                .verifySchema(true)
+                .updateSchema(true)
                 .build()
-                .verifySchema())
-                .hasValue(true);
+                .updateSchema())
+                .isTrue();
     }
 
     @Test
@@ -113,41 +112,6 @@ class IcebergParquetWriteInstructionsTest {
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("targetPageSize");
-        }
-    }
-
-    @Test
-    void testSetToIcebergColumnRename() {
-        final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                .putDhToIcebergColumnRenames("dh1", "ice1")
-                .putDhToIcebergColumnRenames("dh2", "ice2")
-                .build();
-        assertThat(instructions.dhToIcebergColumnRenames().size()).isEqualTo(2);
-        assertThat(instructions.dhToIcebergColumnRenames().get("dh1")).isEqualTo("ice1");
-        assertThat(instructions.dhToIcebergColumnRenames().get("dh2")).isEqualTo("ice2");
-
-        final IcebergParquetWriteInstructions instructions2 = IcebergParquetWriteInstructions.builder()
-                .putAllDhToIcebergColumnRenames(Map.of(
-                        "dh1", "ice1",
-                        "dh2", "ice2",
-                        "dh3", "ice3"))
-                .build();
-        assertThat(instructions2.dhToIcebergColumnRenames().size()).isEqualTo(3);
-        assertThat(instructions2.dhToIcebergColumnRenames().get("dh1")).isEqualTo("ice1");
-        assertThat(instructions2.dhToIcebergColumnRenames().get("dh2")).isEqualTo("ice2");
-        assertThat(instructions2.dhToIcebergColumnRenames().get("dh3")).isEqualTo("ice3");
-    }
-
-    @Test
-    void testToIcebergColumnRenameUniqueness() {
-        try {
-            IcebergParquetWriteInstructions.builder()
-                    .putDhToIcebergColumnRenames("dh1", "ice1")
-                    .putDhToIcebergColumnRenames("dh2", "ice1")
-                    .build();
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (final IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("Duplicate values in column renames");
         }
     }
 

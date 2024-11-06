@@ -91,19 +91,6 @@ class IcebergTestCase(BaseTestCase):
                                             )
         iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(data_instructions=s3_instructions)
 
-    def test_write_instruction_create_with_col_renames(self):
-        renames = {
-            "dh_name_a": "ice_name_a",
-            "dh_name_b": "ice_name_b",
-            "dh_name_c": "ice_name_c"
-        }
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(dh_to_iceberg_column_renames=renames)
-
-        col_rename_dict = j_map_to_dict(iceberg_write_instructions.j_object.dhToIcebergColumnRenames())
-        self.assertTrue(col_rename_dict["dh_name_a"] == "ice_name_a")
-        self.assertTrue(col_rename_dict["dh_name_b"] == "ice_name_b")
-        self.assertTrue(col_rename_dict["dh_name_c"] == "ice_name_c")
-
     def test_write_instruction_create_with_table_definition_dict(self):
         table_def = {
             "x": dtypes.int32,
@@ -147,7 +134,3 @@ class IcebergTestCase(BaseTestCase):
     def test_write_instruction_create_with_target_page_size(self):
         iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(target_page_size=4096)
         self.assertEqual(iceberg_write_instructions.j_object.targetPageSize(), 4096)
-
-    def test_write_instruction_create_with_verify_schema(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(verify_schema=True)
-        self.assertTrue(iceberg_write_instructions.j_object.verifySchema())

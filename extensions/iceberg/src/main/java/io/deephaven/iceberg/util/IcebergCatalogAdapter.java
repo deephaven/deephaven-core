@@ -19,15 +19,16 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
-import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.jetbrains.annotations.NotNull;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.apache.iceberg.rest.ResourcePaths;
 
 import java.util.*;
 
-import static io.deephaven.iceberg.util.IcebergTableAdapter.ensureDefinition;
-import static io.deephaven.iceberg.util.IcebergTableAdapter.verifyInstructions;
+import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
+import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
+import static io.deephaven.iceberg.util.IcebergTableWriter.ensureDefinition;
+import static io.deephaven.iceberg.util.IcebergTableWriter.verifyInstructions;
 
 public class IcebergCatalogAdapter {
 
@@ -275,17 +276,15 @@ public class IcebergCatalogAdapter {
     public IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final TableDefinition definition) {
-        // TODO Add these APIs to python code once finalized
-        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(
-                definition, IcebergParquetWriteInstructions.DEFAULT);
-        return createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
+        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(definition);
+        return createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
     }
 
     private IcebergTableAdapter createTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec) {
-        final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
+        final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
         try {
             final org.apache.iceberg.Table table =
                     catalog.createTable(tableIdentifier, schema, partitionSpec,
@@ -295,7 +294,7 @@ public class IcebergCatalogAdapter {
             if (newNamespaceCreated) {
                 // Delete it to avoid leaving a partial namespace in the catalog
                 try {
-                    dropNamespaceIfExists(tableIdentifier.namespace());
+                    dropNamespaceIfExists(catalog, tableIdentifier.namespace());
                 } catch (final RuntimeException dropException) {
                     throwable.addSuppressed(dropException);
                 }
@@ -304,6 +303,7 @@ public class IcebergCatalogAdapter {
         }
     }
 
+    // TODO Will delete this API, keeping it here since the tests use it.
     /**
      * Create a new Iceberg table in the catalog with the given table identifier and definition, and append the data
      * from the given append instructions.
@@ -324,13 +324,12 @@ public class IcebergCatalogAdapter {
         final IcebergParquetWriteInstructions parquetWriteInstructions =
                 ensureDefinition(verifyInstructions(writeInstructions));
         final TableDefinition useDefinition = parquetWriteInstructions.tableDefinition().get();
-        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(
-                useDefinition, parquetWriteInstructions);
+        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(useDefinition);
 
-        final boolean newNamespaceCreated = createNamespaceIfNotExists(tableIdentifier.namespace());
+        final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
         final IcebergTableAdapter tableAdapter;
         try {
-            tableAdapter = createTable(tableIdentifier, specAndSchema.schema(), specAndSchema.partitionSpec());
+            tableAdapter = createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
             tableAdapter.append(parquetWriteInstructions);
         } catch (final Throwable throwable) {
             // Delete it to avoid leaving a partial table in the catalog
@@ -342,7 +341,7 @@ public class IcebergCatalogAdapter {
             if (newNamespaceCreated) {
                 // Delete it to avoid leaving a partial namespace in the catalog
                 try {
-                    dropNamespaceIfExists(tableIdentifier.namespace());
+                    dropNamespaceIfExists(catalog, tableIdentifier.namespace());
                 } catch (final RuntimeException dropException) {
                     throwable.addSuppressed(dropException);
                 }
@@ -350,30 +349,5 @@ public class IcebergCatalogAdapter {
             throw throwable;
         }
         return tableAdapter;
-    }
-
-    private boolean createNamespaceIfNotExists(@NotNull final Namespace namespace) {
-        if (catalog instanceof SupportsNamespaces) {
-            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
-            try {
-                nsCatalog.createNamespace(namespace);
-                return true;
-            } catch (final AlreadyExistsException | UnsupportedOperationException e) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private boolean dropNamespaceIfExists(@NotNull final Namespace namespace) {
-        if (catalog instanceof SupportsNamespaces) {
-            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
-            try {
-                return nsCatalog.dropNamespace(namespace);
-            } catch (final NamespaceNotEmptyException e) {
-                return false;
-            }
-        }
-        return false;
     }
 }

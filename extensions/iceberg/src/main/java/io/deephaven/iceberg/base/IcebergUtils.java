@@ -6,22 +6,27 @@ package io.deephaven.iceberg.base;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.iceberg.util.IcebergWriteInstructions;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.PartitionData;
-import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.catalog.Namespace;
+import org.apache.iceberg.catalog.SupportsNamespaces;
+import org.apache.iceberg.exceptions.AlreadyExistsException;
+import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,8 +40,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -169,53 +172,52 @@ public final class IcebergUtils {
         }
     }
 
-    public static class SpecAndSchema {
-        private final PartitionSpec partitionSpec;
-        private final Schema schema;
+    /**
+     * Used to hold a {@link Schema}, {@link PartitionSpec} and {@link IcebergReadInstructions} together.
+     */
+    public static final class SpecAndSchema {
+        public final Schema schema;
+        public final PartitionSpec partitionSpec;
+        public final IcebergReadInstructions readInstructions;
 
-        public SpecAndSchema(final PartitionSpec partitionSpec, final Schema schema) {
-            this.partitionSpec = partitionSpec;
+        public SpecAndSchema(
+                @NotNull final Schema schema,
+                @NotNull final PartitionSpec partitionSpec,
+                @Nullable final IcebergReadInstructions readInstructions) {
             this.schema = schema;
-        }
-
-        public PartitionSpec partitionSpec() {
-            return partitionSpec;
-        }
-
-        public Schema schema() {
-            return schema;
+            this.partitionSpec = partitionSpec;
+            this.readInstructions = readInstructions;
         }
     }
 
     /**
-     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition} using the provided instructions.
+     * Create {@link PartitionSpec} and {@link Schema} from a {@link TableDefinition}.
+     *
+     * @return A {@link SpecAndSchema} object containing the partition spec and schema, and {@code null} for read
+     *         instructions.
      */
-    public static SpecAndSchema createSpecAndSchema(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final IcebergWriteInstructions instructions) {
+    public static SpecAndSchema createSpecAndSchema(@NotNull final TableDefinition tableDefinition) {
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
         int fieldID = 1; // Iceberg field IDs start from 1
 
         // Create the schema first and use it to build the partition spec
-        final Map<String, String> dhToIcebergColumnRenames = instructions.dhToIcebergColumnRenames();
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String dhColumnName = columnDefinition.getName();
-            final String icebergColName = dhToIcebergColumnRenames.getOrDefault(dhColumnName, dhColumnName);
             final Type icebergType = convertToIcebergType(columnDefinition.getDataType());
-            fields.add(Types.NestedField.optional(fieldID, icebergColName, icebergType));
+            fields.add(Types.NestedField.optional(fieldID, dhColumnName, icebergType));
             if (columnDefinition.isPartitioning()) {
-                partitioningColumnNames.add(icebergColName);
+                partitioningColumnNames.add(dhColumnName);
             }
             fieldID++;
         }
         final Schema schema = new Schema(fields);
 
         final PartitionSpec partitionSpec = createPartitionSpec(schema, partitioningColumnNames);
-        return new SpecAndSchema(partitionSpec, schema);
+        return new SpecAndSchema(schema, partitionSpec, null);
     }
 
-    private static PartitionSpec createPartitionSpec(
+    public static PartitionSpec createPartitionSpec(
             @NotNull final Schema schema,
             @NotNull final Iterable<String> partitionColumnNames) {
         final PartitionSpec.Builder partitionSpecBuilder = PartitionSpec.builderFor(schema);
@@ -225,115 +227,61 @@ public final class IcebergUtils {
         return partitionSpecBuilder.build();
     }
 
-    /**
-     * Check if an existing iceberg table with provided schema is compatible for overwriting with a new table with given
-     * schema.
-     *
-     * @param icebergSchema The schema of the existing iceberg table.
-     * @param newSchema The schema of the new table.
-     *
-     * @throws IllegalArgumentException if the schemas are not compatible.
-     */
-    public static void verifyOverwriteCompatibility(
-            final Schema icebergSchema,
-            final Schema newSchema) {
-        if (!icebergSchema.sameSchema(newSchema)) {
-            throw new IllegalArgumentException("Schema mismatch, iceberg table schema: " + icebergSchema +
-                    ", schema derived from the table definition: " + newSchema);
+    public static boolean createNamespaceIfNotExists(
+            @NotNull final Catalog catalog,
+            @NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
+            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
+            try {
+                nsCatalog.createNamespace(namespace);
+                return true;
+            } catch (final AlreadyExistsException | UnsupportedOperationException e) {
+                return false;
+            }
         }
+        return false;
+    }
+
+    public static boolean dropNamespaceIfExists(
+            @NotNull final Catalog catalog,
+            @NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
+            final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
+            try {
+                return nsCatalog.dropNamespace(namespace);
+            } catch (final NamespaceNotEmptyException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     /**
-     * Check if an existing iceberg table with provided partition spec is compatible for overwriting with a new table
-     * with given partition spec.
-     *
-     * @param icebergPartitionSpec The partition spec of the existing iceberg table.
-     * @param newPartitionSpec The partition spec of the new table.
-     *
-     * @throws IllegalArgumentException if the partition spec are not compatible.
+     * Verifies that the new schema is compatible with the existing schema for writing.
      */
-    public static void verifyOverwriteCompatibility(
-            final PartitionSpec icebergPartitionSpec,
-            final PartitionSpec newPartitionSpec) {
-        if (!icebergPartitionSpec.compatibleWith(newPartitionSpec)) {
-            throw new IllegalArgumentException("Partition spec mismatch, iceberg table partition spec: " +
-                    icebergPartitionSpec + ", partition spec derived from table definition: " + newPartitionSpec);
-        }
-    }
+    public static void verifyWriteCompatibility(final Schema existingSchema, final Schema newSchema) {
+        // Check that all fields in the new schema are present in the existing schema
+        for (final Types.NestedField newField : newSchema.columns()) {
+            final Types.NestedField existingSchemaField = existingSchema.findField(newField.fieldId());
 
-    /**
-     * Check if an existing iceberg table with provided schema is compatible for appending deephaven table with provided
-     * definition.
-     *
-     * @param icebergSchema The schema of the iceberg table.
-     * @param tableDefinition The table definition of the deephaven table.
-     *
-     * @throws IllegalArgumentException if the schemas are not compatible.
-     */
-    public static void verifyAppendCompatibility(
-            @NotNull final Schema icebergSchema,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final IcebergWriteInstructions instructions) {
-        // Check that all columns in the table definition are part of the Iceberg schema and have the same type
-        final Map<String, String> dhToIcebergColumnRenames = instructions.dhToIcebergColumnRenames();
-        for (final ColumnDefinition<?> dhColumn : tableDefinition.getColumns()) {
-            final String dhColumnName = dhColumn.getName();
-            final String icebergColName = dhToIcebergColumnRenames.getOrDefault(dhColumnName, dhColumnName);
-            final Types.NestedField icebergColumn = icebergSchema.findField(icebergColName);
-            if (icebergColumn == null) {
-                throw new IllegalArgumentException("Schema mismatch, column " + dhColumn.getName() + " from Deephaven "
-                        + "table definition: " + tableDefinition + " is not found in Iceberg table schema: "
-                        + icebergSchema);
+            if (existingSchemaField == null) {
+                throw new IllegalArgumentException(
+                        "Field " + newField.name() + " is not present in the existing schema");
             }
-            if (!icebergColumn.type().equals(convertToIcebergType(dhColumn.getDataType()))) {
-                throw new IllegalArgumentException("Schema mismatch, column " + dhColumn.getName() + " from Deephaven "
-                        + "table definition: " + tableDefinition + " has type " + dhColumn.getDataType()
-                        + " which does not match the type " + icebergColumn.type() + " in Iceberg table schema: "
-                        + icebergSchema);
+
+            if (!existingSchemaField.equals(newField)) {
+                throw new IllegalArgumentException("Field " + newField + " is not identical with the field " +
+                        existingSchemaField + " from existing schema");
             }
         }
 
-        // Check that all required columns in the Iceberg schema are part of the table definition
-        final Map<String, String> icebergToDhColumnRenames = instructions.icebergToDhColumnRenames();
-        for (final Types.NestedField icebergColumn : icebergSchema.columns()) {
-            if (icebergColumn.isOptional()) {
-                continue;
+        // Check that all required fields are present in the new schema
+        for (final Types.NestedField existingField : existingSchema.columns()) {
+            if (existingField.isRequired() && newSchema.findField(existingField.fieldId()) == null) {
+                // TODO Add check for writeDefault() once https://github.com/apache/iceberg/pull/9502 is released
+                throw new IllegalArgumentException("Field " + existingField + " is required in the existing table " +
+                        "schema, but is not present in the new schema");
             }
-            final String icebergColumnName = icebergColumn.name();
-            final String dhColName = icebergToDhColumnRenames.getOrDefault(icebergColumnName, icebergColumnName);
-            if (tableDefinition.getColumn(dhColName) == null) {
-                throw new IllegalArgumentException("Schema mismatch, required column " + icebergColumnName
-                        + " from Iceberg table schema: " + icebergSchema + " is not found in Deephaven table "
-                        + "definition: " + tableDefinition);
-            }
-        }
-    }
-
-    /**
-     * Check if an existing iceberg table with provided partition spec is compatible for appending deephaven table with
-     * provided definition.
-     *
-     * @param partitionSpec The partition spec of the iceberg table.
-     * @param tableDefinition The table definition of the deephaven table.
-     *
-     * @throws IllegalArgumentException if the partition spec is not compatible.
-     */
-    public static void verifyAppendCompatibility(
-            @NotNull final PartitionSpec partitionSpec,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final IcebergWriteInstructions instructions) {
-        final Map<String, String> icebergToDhColumnRenames = instructions.icebergToDhColumnRenames();
-        final Set<String> icebergPartitionColumns = partitionSpec.fields().stream()
-                .map(PartitionField::name)
-                .map(icebergColumnName -> icebergToDhColumnRenames.getOrDefault(icebergColumnName, icebergColumnName))
-                .collect(Collectors.toSet());
-        final Set<String> dhPartitioningColumns = tableDefinition.getColumns().stream()
-                .filter(ColumnDefinition::isPartitioning)
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toSet());
-        if (!icebergPartitionColumns.equals(dhPartitioningColumns)) {
-            throw new IllegalArgumentException("Partitioning column mismatch, iceberg table partition spec: " +
-                    partitionSpec + ", deephaven table definition: " + tableDefinition);
         }
     }
 
@@ -349,9 +297,6 @@ public final class IcebergUtils {
     public static List<PartitionData> partitionDataFromPaths(
             final PartitionSpec partitionSpec,
             final Collection<String> partitionPaths) {
-        if (!partitionSpec.isPartitioned() && !partitionPaths.isEmpty()) {
-            throw new IllegalArgumentException("Partition paths should be empty for un-partitioned tables");
-        }
         final List<PartitionData> partitionDataList = new ArrayList<>(partitionPaths.size());
         for (final String partitionPath : partitionPaths) {
             // Following will internally validate the structure and values of the partition path

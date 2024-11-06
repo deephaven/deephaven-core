@@ -16,6 +16,8 @@ import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
+import io.deephaven.iceberg.util.IcebergTableWriter;
+import io.deephaven.iceberg.util.TableWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import org.apache.iceberg.AppendFiles;
@@ -116,14 +118,19 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         try {
             catalogAdapter.loadTable(tableIdentifier);
+            fail("Exception expected");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Table does not exist");
         }
 
-        final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, instructionsBuilder()
-                        .addDhTables(source)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableWriterOptions.builder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(instructionsBuilder()
+                .addDhTables(source)
+                .build());
+
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append"));
@@ -132,7 +139,7 @@ public abstract class SqliteCatalogBase {
         final Table moreData = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        tableAdapter.append(instructionsBuilder()
+        tableWriter.append(instructionsBuilder()
                 .addDhTables(moreData)
                 .compressionCodecName("LZ4")
                 .build());
@@ -145,7 +152,7 @@ public abstract class SqliteCatalogBase {
         final Table emptyTable = TableTools.emptyTable(0)
                 .update("intCol = (int) 4 * i + 30",
                         "doubleCol = (double) 4.5 * i + 30");
-        tableAdapter.append(instructionsBuilder()
+        tableWriter.append(instructionsBuilder()
                 .addDhTables(emptyTable)
                 .build());
         fromIceberg = tableAdapter.table();
@@ -156,7 +163,7 @@ public abstract class SqliteCatalogBase {
         final Table someMoreData = TableTools.emptyTable(3)
                 .update("intCol = (int) 5 * i + 40",
                         "doubleCol = (double) 5.5 * i + 40");
-        tableAdapter.append(instructionsBuilder()
+        tableWriter.append(instructionsBuilder()
                 .addDhTables(someMoreData, moreData, emptyTable)
                 .compressionCodecName("GZIP")
                 .build());
@@ -183,6 +190,7 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         try {
             catalogAdapter.loadTable(tableIdentifier);
+            fail("Exception expected");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("Table does not exist");
         }
@@ -237,7 +245,6 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapter =
                 catalogAdapter.createTableAndAppend(tableIdentifier, instructionsBuilder()
                         .addDhTables(source)
-                        .verifySchema(true)
                         .build());
         {
             final Table fromIceberg = tableAdapter.table();
@@ -247,22 +254,13 @@ public abstract class SqliteCatalogBase {
 
         final Table differentSource = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10");
-        try {
-            tableAdapter.overwrite(instructionsBuilder()
-                    .addDhTables(differentSource)
-                    .verifySchema(true)
-                    .build());
-        } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Schema verification failed");
-        }
-
-        // By default, schema verification should be disabled for overwriting
         {
             tableAdapter.overwrite(instructionsBuilder()
                     .addDhTables(differentSource)
                     .build());
             final Table fromIceberg = tableAdapter.table();
-            assertTableEquals(differentSource, fromIceberg);
+            final Table expected = TableTools.merge(differentSource.update("doubleCol = NULL_DOUBLE"));
+            assertTableEquals(expected, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite"));
         }
 
@@ -272,10 +270,9 @@ public abstract class SqliteCatalogBase {
                     .update("intCol = (int) 3 * i + 20");
             tableAdapter.append(instructionsBuilder()
                     .addDhTables(moreData)
-                    .verifySchema(true)
                     .build());
             final Table fromIceberg = tableAdapter.table();
-            final Table expected = TableTools.merge(moreData, differentSource);
+            final Table expected = TableTools.merge(moreData, differentSource).update("doubleCol = NULL_DOUBLE");
             assertTableEquals(expected, fromIceberg);
             verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append"));
         }
@@ -284,7 +281,8 @@ public abstract class SqliteCatalogBase {
         {
             tableAdapter.overwrite(IcebergParquetWriteInstructions.DEFAULT);
             final Table fromIceberg = tableAdapter.table();
-            assertTableEquals(TableTools.emptyTable(0), fromIceberg);
+            assertThat(fromIceberg.size()).isEqualTo(0);
+            assertThat(tableAdapter.definition()).isEqualTo(source.getDefinition());
             verifySnapshots(tableIdentifier, List.of("append", "overwrite", "append", "delete"));
         }
     }
@@ -311,8 +309,9 @@ public abstract class SqliteCatalogBase {
             tableAdapter.append(instructionsBuilder()
                     .addDhTables(differentSource)
                     .build());
+            fail("Exception expected");
         } catch (RuntimeException e) {
-            assertThat(e.getMessage()).contains("Schema verification failed");
+            assertThat(e.getMessage()).contains("Schema of the iceberg table is not compatible");
         }
 
         // Append a table with just the int column, should be compatible with the existing schema
@@ -354,7 +353,6 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
                 tableIdentifier, instructionsBuilder()
                         .addDhTables(source)
-                        .verifySchema(true)
                         .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
@@ -372,6 +370,7 @@ public abstract class SqliteCatalogBase {
             tableAdapter.append(instructionsBuilder()
                     .addDhTables(appendTable1, appendTable2)
                     .build());
+            fail("Exception expected");
         } catch (RuntimeException e) {
             assertThat(e.getMessage()).contains("All Deephaven tables must have the same definition");
         }
@@ -445,7 +444,6 @@ public abstract class SqliteCatalogBase {
             catalogAdapter.createTableAndAppend(
                     tableIdentifier, instructionsBuilder()
                             .addDhTables(badSource)
-                            .verifySchema(true)
                             .build());
             fail("Exception expected for invalid formula in table");
         } catch (UncheckedDeephavenException e) {
@@ -480,42 +478,41 @@ public abstract class SqliteCatalogBase {
         assertTableEquals(goodSource, fromIceberg);
     }
 
-    @Test
-    void testColumnRenameWhileWriting() {
-        final Table source = TableTools.emptyTable(10)
-                .update("intCol = (int) 2 * i + 10",
-                        "doubleCol = (double) 2.5 * i + 10");
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addDhTables(source)
-                        .verifySchema(true)
-                        .build());
-        // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment when this
-        // is fixed.
-        // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
-        // assertTableEquals(source, fromIceberg);
-
-        verifyDataFiles(tableIdentifier, List.of(source));
-
-        // TODO Verify that the column ID is set correctly after #6156 is merged
-
-        // Now append more data to it
-        final Table moreData = TableTools.emptyTable(5)
-                .update("newIntCol = (int) 3 * i + 20",
-                        "newDoubleCol = (double) 3.5 * i + 20");
-        tableAdapter.append(instructionsBuilder()
-                .addDhTables(moreData)
-                .verifySchema(true)
-                .putDhToIcebergColumnRenames("newIntCol", "intCol")
-                .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
-                .build());
-
-        // Verify the data files in the table. Note that we are assuming an order here.
-        verifyDataFiles(tableIdentifier, List.of(moreData, source));
-
-        // TODO Verify that the column ID is set correctly after #6156 is merged
-    }
+    // TODO Look at the renames again
+    // @Test
+    // void testColumnRenameWhileWriting() {
+    // final Table source = TableTools.emptyTable(10)
+    // .update("intCol = (int) 2 * i + 10",
+    // "doubleCol = (double) 2.5 * i + 10");
+    // final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+    // final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+    // tableIdentifier, instructionsBuilder()
+    // .addDhTables(source)
+    // .build());
+    // // TODO: This is failing because we don't map columns based on the column ID when reading. Uncomment when this
+    // // is fixed.
+    // // final Table fromIceberg = catalogAdapter.readTable("MyNamespace.MyTable", null);
+    // // assertTableEquals(source, fromIceberg);
+    //
+    // verifyDataFiles(tableIdentifier, List.of(source));
+    //
+    // // TODO Verify that the column ID is set correctly after #6156 is merged
+    //
+    // // Now append more data to it
+    // final Table moreData = TableTools.emptyTable(5)
+    // .update("newIntCol = (int) 3 * i + 20",
+    // "newDoubleCol = (double) 3.5 * i + 20");
+    // tableAdapter.append(instructionsBuilder()
+    // .addDhTables(moreData)
+    // .putDhToIcebergColumnRenames("newIntCol", "intCol")
+    // .putDhToIcebergColumnRenames("newDoubleCol", "doubleCol")
+    // .build());
+    //
+    // // Verify the data files in the table. Note that we are assuming an order here.
+    // verifyDataFiles(tableIdentifier, List.of(moreData, source));
+    //
+    // // TODO Verify that the column ID is set correctly after #6156 is merged
+    // }
 
     /**
      * Verify that the data files in the table match the Deephaven tables in the given sequence.

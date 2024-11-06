@@ -155,8 +155,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                  maximum_dictionary_size: Optional[int] = None,
                  target_page_size: Optional[int] = None,
                  snapshot_id: Optional[int] = None,
-                 verify_schema: Optional[bool] = None,
-                 dh_to_iceberg_column_renames: Optional[Dict[str, str]] = None,
                  table_definition: Optional[TableDefinitionLike] = None,
                  data_instructions: Optional[s3.S3Instructions] = None):
         """
@@ -175,17 +173,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 2^20 bytes (1 MiB)
             snapshot_id (Optional[int]): The identifier of the snapshot to load for updating.; if omitted, the most
                 recent snapshot will be used.
-            verify_schema (Optional[bool]): Specifies whether to verify that the partition spec and schema of the table
-                being written are consistent with the Iceberg table. Verification behavior differs based on the
-                operation type:
-                - Appending Data or Writing Data Files: Verification is enabled by default. It ensures that:
-                    - All columns from the Deephaven table are present in the Iceberg table and have compatible types.
-                    - All required columns in the Iceberg table are present in the Deephaven table.
-                    - The set of partitioning columns in both the Iceberg and Deephaven tables are identical.
-                - Overwriting Data: Verification is disabled by default. When enabled, it ensures that the
-                    schema and partition spec of the table being written are identical to those of the Iceberg table.
-            dh_to_iceberg_column_renames (Optional[Dict[str, str]]): A dictionary from Deephaven to Iceberg column names
-                to use when writing deephaven tables to Iceberg tables.
             table_definition (Optional[TableDefinitionLike]): the table definition; if omitted,
                 the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
                 will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
@@ -213,13 +200,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
 
             if snapshot_id is not None:
                 builder.snapshotId(snapshot_id)
-
-            if verify_schema is not None:
-                builder.verifySchema(verify_schema)
-
-            if dh_to_iceberg_column_renames is not None:
-                for dh_name, iceberg_name in dh_to_iceberg_column_renames.items():
-                    builder.putDhToIcebergColumnRenames(dh_name, iceberg_name)
 
             if table_definition is not None:
                 builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
