@@ -12,8 +12,10 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
-    // Explicitly set the source compatibility so gradle will invoke javac with `-source 11` instead of `--release`
-    sourceCompatibility = 11
+    // Explicitly unset release so gradle will invoke javac with `-source <languageLevel> -target <languageLevel>`
+    // instead of `--release <languageLevel>`, which would otherwise produce
+    // > error: exporting a package from system module java.base is not allowed with --release
+    options.release.unset()
 }
 
 tasks.withType(Javadoc).configureEach {

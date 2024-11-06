@@ -4,15 +4,15 @@ plugins {
   id 'java'
 }
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '21')
 def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
 
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '21')
 def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
@@ -82,10 +82,14 @@ tasks.withType(JavaCompile).configureEach {
   if (name == 'compileTestJava') {
     if (compilerVersion != testLanguageLevel) {
       options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
     }
   } else {
     if (compilerVersion != languageLevel) {
       options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
     }
   }
 }
