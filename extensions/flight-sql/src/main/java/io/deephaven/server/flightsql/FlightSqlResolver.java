@@ -7,7 +7,6 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
 import io.deephaven.configuration.Configuration;
@@ -103,7 +102,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -111,8 +109,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">Flight SQL</a> resolver. This supports the read-only
@@ -153,26 +149,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     @VisibleForTesting
     static final String CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE = "CreatePreparedSubstraitPlan";
-
-    /**
-     * Note: FlightSqlUtils.FLIGHT_SQL_ACTIONS is not all the actions, see
-     * <a href="https://github.com/apache/arrow/pull/43718">Add all ActionTypes to FlightSqlUtils.FLIGHT_SQL_ACTIONS</a>
-     *
-     * <p>
-     * It is unfortunate that there is no proper prefix or namespace for these action types, which would make it much
-     * easier to route correctly.
-     */
-    private static final Set<String> FLIGHT_SQL_ACTION_TYPES = Stream.of(
-            FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT,
-            FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION,
-            FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT,
-            FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT,
-            FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN,
-            FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY,
-            FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT,
-            FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION)
-            .map(ActionType::getType)
-            .collect(Collectors.toSet());
 
     private static final String FLIGHT_SQL_TYPE_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
     static final String FLIGHT_SQL_COMMAND_TYPE_PREFIX = FLIGHT_SQL_TYPE_PREFIX + "Command";
@@ -688,10 +664,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      */
     @Override
     public boolean handlesActionType(String type) {
-        // There is no prefix for Flight SQL action types, so the best we can do is a set-based lookup. This also means
-        // that this resolver will not be able to respond with an appropriately scoped error message for new Flight SQL
-        // action types (io.deephaven.server.flightsql.FlightSqlResolver.UnsupportedAction).
-        return FLIGHT_SQL_ACTION_TYPES.contains(type);
+        return FlightSqlActionHelper.handlesAction(type);
     }
 
     /**
@@ -714,7 +687,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        executeAction(session, action(action), action, observer);
+        executeAction(session, FlightSqlActionHelper.visit(action, new ActionHandlerVisitor()), observer);
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -1554,16 +1527,15 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     // ---------------------------------------------------------------------------------------------------------------
 
-    private <Request, Response extends Message> void executeAction(
+    private <Response extends Message> void executeAction(
             final SessionState session,
-            final ActionHandler<Request, Response> handler,
-            final org.apache.arrow.flight.Action request,
+            final ActionHandler<Response> handler,
             final ActionObserver observer) {
         // If there was complicated logic going on (actual building of tables), or needed to block, we would instead use
         // exports or some other mechanism of doing this work off-thread. For now, it's simple enough that we can do it
         // all on-thread.
         try {
-            handler.execute(session, handler.parse(request), new ResultVisitorAdapter<>(observer::onNext));
+            handler.execute(session, new ResultVisitorAdapter<>(observer::onNext));
         } catch (StatusRuntimeException e) {
             // We expect other Throwables to be wrapped and transformed if necessary via
             // io.deephaven.server.session.SessionServiceGrpcImpl.rpcWrapper
@@ -1573,39 +1545,48 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         observer.onCompleted();
     }
 
-    private ActionHandler<?, ? extends Message> action(org.apache.arrow.flight.Action action) {
-        final String type = action.getType();
-        switch (type) {
-            case CREATE_PREPARED_STATEMENT_ACTION_TYPE:
-                return new CreatePreparedStatementImpl();
-            case CLOSE_PREPARED_STATEMENT_ACTION_TYPE:
-                return new ClosePreparedStatementImpl();
-            case BEGIN_SAVEPOINT_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT,
-                        ActionBeginSavepointRequest.class);
-            case END_SAVEPOINT_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT,
-                        ActionEndSavepointRequest.class);
-            case BEGIN_TRANSACTION_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION,
-                        ActionBeginTransactionRequest.class);
-            case END_TRANSACTION_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION,
-                        ActionEndTransactionRequest.class);
-            case CANCEL_QUERY_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY, ActionCancelQueryRequest.class);
-            case CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE:
-                return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN,
-                        ActionCreatePreparedSubstraitPlanRequest.class);
+    private class ActionHandlerVisitor
+            implements FlightSqlActionHelper.ActionVisitor<ActionHandler<? extends Message>> {
+        @Override
+        public ActionHandler<? extends Message> visit(ActionCreatePreparedStatementRequest action) {
+            return new CreatePreparedStatementImpl(action);
         }
-        // Should not get here unless handlesActionType is implemented incorrectly.
-        throw new IllegalStateException(String.format("Unexpected Flight SQL Action type '%s'", type));
-    }
 
-    private static <T extends com.google.protobuf.Message> T unpack(org.apache.arrow.flight.Action action,
-            Class<T> clazz) {
-        final Any any = parseActionOrThrow(action.getBody());
-        return unpackActionOrThrow(any, clazz);
+        @Override
+        public ActionHandler<? extends Message> visit(ActionClosePreparedStatementRequest action) {
+            return new ClosePreparedStatementImpl(action);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(ActionBeginSavepointRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(ActionEndSavepointRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(ActionBeginTransactionRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(ActionEndTransactionRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(
+                @SuppressWarnings("deprecation") ActionCancelQueryRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY);
+        }
+
+        @Override
+        public ActionHandler<? extends Message> visit(ActionCreatePreparedSubstraitPlanRequest action) {
+            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN);
+        }
     }
 
     private static org.apache.arrow.flight.Result pack(com.google.protobuf.Message message) {
@@ -1622,43 +1603,32 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return preparedStatement;
     }
 
-    interface ActionHandler<Request, Response> {
-        Request parse(org.apache.arrow.flight.Action action);
+    interface ActionHandler<Response> {
 
-        void execute(SessionState session, Request request, Consumer<Response> visitor);
+        void execute(SessionState session, Consumer<Response> visitor);
     }
 
     static abstract class ActionBase<Request extends com.google.protobuf.Message, Response>
-            implements ActionHandler<Request, Response> {
+            implements ActionHandler<Response> {
 
         final ActionType type;
-        private final Class<Request> clazz;
+        final Request request;
 
-        public ActionBase(ActionType type, Class<Request> clazz) {
+        public ActionBase(Request request, ActionType type) {
             this.type = Objects.requireNonNull(type);
-            this.clazz = Objects.requireNonNull(clazz);
-        }
-
-        @Override
-        public final Request parse(org.apache.arrow.flight.Action action) {
-            if (!type.getType().equals(action.getType())) {
-                // should be routed correctly earlier
-                throw new IllegalStateException();
-            }
-            return unpack(action, clazz);
+            this.request = Objects.requireNonNull(request);
         }
     }
 
     final class CreatePreparedStatementImpl
             extends ActionBase<ActionCreatePreparedStatementRequest, ActionCreatePreparedStatementResult> {
-        public CreatePreparedStatementImpl() {
-            super(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT, ActionCreatePreparedStatementRequest.class);
+        public CreatePreparedStatementImpl(ActionCreatePreparedStatementRequest request) {
+            super(request, FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT);
         }
 
         @Override
         public void execute(
                 final SessionState session,
-                final ActionCreatePreparedStatementRequest request,
                 final Consumer<ActionCreatePreparedStatementResult> visitor) {
             if (request.hasTransactionId()) {
                 throw transactionIdsNotSupported();
@@ -1718,14 +1688,13 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     // Faking it as Empty message so it types check
     final class ClosePreparedStatementImpl extends ActionBase<ActionClosePreparedStatementRequest, Empty> {
-        public ClosePreparedStatementImpl() {
-            super(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT, ActionClosePreparedStatementRequest.class);
+        public ClosePreparedStatementImpl(ActionClosePreparedStatementRequest request) {
+            super(request, FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT);
         }
 
         @Override
         public void execute(
                 final SessionState session,
-                final ActionClosePreparedStatementRequest request,
                 final Consumer<Empty> visitor) {
             final PreparedStatement prepared = getPreparedStatement(session, request.getPreparedStatementHandle());
             prepared.close();
@@ -1733,13 +1702,15 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    static final class UnsupportedAction<Request extends Message, Response> extends ActionBase<Request, Response> {
-        public UnsupportedAction(ActionType type, Class<Request> clazz) {
-            super(type, clazz);
+    static final class UnsupportedAction<Response> implements ActionHandler<Response> {
+        private final ActionType type;
+
+        public UnsupportedAction(ActionType type) {
+            this.type = Objects.requireNonNull(type);
         }
 
         @Override
-        public void execute(SessionState session, Request request, Consumer<Response> visitor) {
+        public void execute(SessionState session, Consumer<Response> visitor) {
             throw FlightSqlErrorHelper.error(Code.UNIMPLEMENTED,
                     String.format("Action type '%s' is unimplemented", type.getType()));
         }
@@ -1779,27 +1750,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private static StatusRuntimeException queryParametersNotSupported(RuntimeException cause) {
         return FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
-    }
-
-    private static Optional<Any> parse(byte[] data) {
-        try {
-            return Optional.of(Any.parseFrom(data));
-        } catch (final InvalidProtocolBufferException e) {
-            return Optional.empty();
-        }
-    }
-
-    private static Any parseActionOrThrow(byte[] data) {
-        return parse(data).orElseThrow(() -> FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "Invalid action"));
-    }
-
-    private static <T extends Message> T unpackActionOrThrow(Any source, Class<T> clazz) {
-        try {
-            return source.unpack(clazz);
-        } catch (final InvalidProtocolBufferException e) {
-            throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT,
-                    "Invalid action, provided message cannot be unpacked as " + clazz.getName(), e);
-        }
     }
 
     private class PreparedStatement {
