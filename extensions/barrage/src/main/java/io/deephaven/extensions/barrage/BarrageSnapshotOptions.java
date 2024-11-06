@@ -7,6 +7,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.annotations.FinalDefault;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
@@ -21,12 +22,11 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         if (options == null) {
             return builder().build();
         }
-        final byte mode = options.columnConversionMode();
         return builder()
                 .useDeephavenNulls(options.useDeephavenNulls())
-                .columnConversionMode(ColumnConversionMode.conversionModeFbToEnum(mode))
                 .batchSize(options.batchSize())
                 .maxMessageSize(options.maxMessageSize())
+                .previewListLengthLimit(options.previewListLengthLimit())
                 .build();
     }
 
@@ -65,26 +65,36 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
 
     @Override
     @Default
-    public ColumnConversionMode columnConversionMode() {
-        return ColumnConversionMode.Stringify;
+    public int previewListLengthLimit() {
+        return 0;
     }
 
     public int appendTo(FlatBufferBuilder builder) {
         return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
-                builder, ColumnConversionMode.conversionModeEnumToFb(columnConversionMode()), useDeephavenNulls(),
+                builder, useDeephavenNulls(),
                 batchSize(),
-                maxMessageSize());
+                maxMessageSize(),
+                previewListLengthLimit());
     }
 
     public interface Builder {
 
         Builder useDeephavenNulls(boolean useDeephavenNulls);
 
-        Builder columnConversionMode(ColumnConversionMode columnConversionMode);
+        /**
+         * Deprecated since 0.37.0 and is marked for removal. (our GWT artifacts do not yet support the attributes)
+         */
+        @FinalDefault
+        @Deprecated
+        default Builder columnConversionMode(ColumnConversionMode columnConversionMode) {
+            return this;
+        }
 
         Builder batchSize(int batchSize);
 
         Builder maxMessageSize(int messageSize);
+
+        Builder previewListLengthLimit(int previewListLengthLimit);
 
         BarrageSnapshotOptions build();
     }
