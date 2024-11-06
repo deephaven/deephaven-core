@@ -1313,7 +1313,8 @@ public class QueryTableSelectUpdateTest {
 
         final SelectColumn sc1 = SelectColumnFactory.getExpression("NormalCount=__COUNT1.getAndIncrement()");
         final SelectColumn sc2 =
-                SelectColumnFactory.getExpression("AlwaysCount=__COUNT2.getAndIncrement()").withRecomputeOnModifiedRow();
+                SelectColumnFactory.getExpression("AlwaysCount=__COUNT2.getAndIncrement()")
+                        .withRecomputeOnModifiedRow();
 
         final Table withUpdates = base.update(Arrays.asList(sc1, sc2));
 
@@ -1364,7 +1365,8 @@ public class QueryTableSelectUpdateTest {
         final QueryTable base = testRefreshingTable(RowSetFactory.fromKeys(10, 11).toTracking(),
                 intCol("Sentinel", 1, 2), intCol("B", 10, 11));
 
-        final SelectColumn x = SelectColumnFactory.getExpression("X = a.getAndIncrement()").withRecomputeOnModifiedRow();
+        final SelectColumn x =
+                SelectColumnFactory.getExpression("X = a.getAndIncrement()").withRecomputeOnModifiedRow();
 
         final Table withUpdates = base.update(Arrays.asList(x, SelectColumnFactory.getExpression("Y=1"),
                 SelectColumnFactory.getExpression("Z=B+b.getAndIncrement()")));

@@ -24,7 +24,8 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
             final ModifiedColumnSet mcsBuilder) {
         super(context, sc, checkResultType(cs), null, deps, mcsBuilder);
         if (sc.recomputeOnModifiedRow()) {
-            throw new IllegalArgumentException("SelectColumn may not have recomputeOnModifiedRow set for a view column: " + sc);
+            throw new IllegalArgumentException(
+                    "SelectColumn may not have recomputeOnModifiedRow set for a view column: " + sc);
         }
     }
 
