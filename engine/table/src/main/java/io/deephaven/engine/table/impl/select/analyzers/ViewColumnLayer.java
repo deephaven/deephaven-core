@@ -23,8 +23,8 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
             final String[] deps,
             final ModifiedColumnSet mcsBuilder) {
         super(context, sc, checkResultType(cs), null, deps, mcsBuilder);
-        if (sc.alwaysEvaluate()) {
-            throw new IllegalArgumentException("SelectColumn may not have alwaysEvaluate set for a view column: " + sc);
+        if (sc.recomputeOnModifiedRow()) {
+            throw new IllegalArgumentException("SelectColumn may not have recomputeOnModifiedRow set for a view column: " + sc);
         }
     }
 

@@ -742,7 +742,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     @Override
-    public DhFormulaColumn copy() {
+    public SelectColumn copy() {
         final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
         if (formulaFactoryFuture != null) {
             copy.analyzedFormula = analyzedFormula;
@@ -752,13 +752,6 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             copy.formulaShiftColPair = formulaShiftColPair;
             onCopy(copy);
         }
-        return copy;
-    }
-
-    @Override
-    public SelectColumn alwaysEvaluateCopy() {
-        final DhFormulaColumn copy = copy();
-        copy.alwaysEvaluate = true;
         return copy;
     }
 

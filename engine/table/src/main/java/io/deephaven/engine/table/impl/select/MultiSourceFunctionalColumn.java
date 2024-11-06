@@ -40,8 +40,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @Nullable
     private final Class<?> componentType;
 
-    private final boolean alwaysEvaluate;
-
     @FunctionalInterface
     public interface RowKeyAndSourcesFunction<D> {
         D apply(long rowKey, ColumnSource<?>[] sources);
@@ -61,15 +59,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
             @NotNull Class<D> destDataType,
             @Nullable Class<?> componentType,
             @NotNull RowKeyAndSourcesFunction<D> function) {
-        this(sourceNames, destName, destDataType, componentType, function, false);
-    }
-
-    public MultiSourceFunctionalColumn(
-            @NotNull List<String> sourceNames,
-            @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @Nullable Class<?> componentType,
-            @NotNull RowKeyAndSourcesFunction<D> function, boolean alwaysEvaluate) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
                 .collect(Collectors.toList());
@@ -78,7 +67,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
         this.destDataType = Require.neqNull(destDataType, "destDataType");
         this.componentType = componentType;
         this.function = function;
-        this.alwaysEvaluate = alwaysEvaluate;
         Require.gtZero(destName.length(), "destName.length()");
     }
 
@@ -227,17 +215,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public MultiSourceFunctionalColumn<D> copy() {
-        return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, componentType, function,
-                alwaysEvaluate);
-    }
-
-    @Override
-    public boolean alwaysEvaluate() {
-        return alwaysEvaluate;
-    }
-
-    @Override
-    public SelectColumn alwaysEvaluateCopy() {
-        return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, componentType, function, true);
+        return new MultiSourceFunctionalColumn<>(sourceNames, destName, destDataType, function);
     }
 }

@@ -21,11 +21,11 @@ import java.util.Map;
  * {@link SelectColumn} implementation that wraps another {@link SelectColumn} and makes it report to be
  * {@link #isStateless() stateless}.
  */
-class StatelessSelectColumn implements SelectColumn {
+class RecomputeOnModifiedRowSelectColumn implements SelectColumn {
 
     private final SelectColumn inner;
 
-    StatelessSelectColumn(@NotNull final SelectColumn inner) {
+    RecomputeOnModifiedRowSelectColumn(@NotNull final SelectColumn inner) {
         this.inner = inner;
     }
 
@@ -112,17 +112,22 @@ class StatelessSelectColumn implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return true;
+        return inner.isStateless();
     }
 
     @Override
     public SelectColumn copy() {
-        return new StatelessSelectColumn(inner.copy());
+        return new RecomputeOnModifiedRowSelectColumn(inner.copy());
     }
 
     @Override
     public boolean recomputeOnModifiedRow() {
-        return inner.recomputeOnModifiedRow();
+        return true;
+    }
+
+    @Override
+    public SelectColumn withRecomputeOnModifiedRow() {
+        return copy();
     }
 
     @Override

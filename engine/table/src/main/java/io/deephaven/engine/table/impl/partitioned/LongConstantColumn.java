@@ -12,7 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.Formula;
 import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.SelectColumnWithoutAlwaysEvaluate;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.util.type.TypeUtils;
@@ -25,7 +24,7 @@ import java.util.Map;
 /**
  * {@link SelectColumn} implementation to assign a constant {@code long} value.
  */
-class LongConstantColumn extends SelectColumnWithoutAlwaysEvaluate {
+class LongConstantColumn implements SelectColumn {
 
     private final String outputColumnName;
     private final long outputValue;
