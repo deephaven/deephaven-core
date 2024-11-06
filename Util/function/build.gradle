@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     api project(':qst-type')
-    api project(':engine-query-constants')
+    implementation project(':engine-query-constants')
 
     compileOnly libs.jetbrains.annotations
 
