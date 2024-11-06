@@ -7,8 +7,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import com.google.rpc.Code;
-import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight.Ticket;
@@ -23,18 +22,23 @@ import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 
 import java.nio.ByteBuffer;
 
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_CATALOGS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_DB_SCHEMAS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_EXPORTED_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_IMPORTED_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_PRIMARY_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_TABLES_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_TABLE_TYPES_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.TICKET_STATEMENT_QUERY_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_CATALOGS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_DB_SCHEMAS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_EXPORTED_KEYS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_IMPORTED_KEYS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_PRIMARY_KEYS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLES_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLE_TYPES_TYPE_URL;
 
 final class FlightSqlTicketHelper {
 
     public static final char TICKET_PREFIX = 'q';
+
+    // This is a server-implementation detail, but happens to be the same scheme that Flight SQL
+    // org.apache.arrow.flight.sql.FlightSqlProducer uses
+    @VisibleForTesting
+    static final String TICKET_STATEMENT_QUERY_TYPE_URL =
+            FlightSqlSharedConstants.FLIGHT_SQL_TYPE_PREFIX + "TicketStatementQuery";
 
     private static final ByteString PREFIX = ByteString.copyFrom(new byte[] {(byte) TICKET_PREFIX});
 

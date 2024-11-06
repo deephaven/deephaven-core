@@ -27,23 +27,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 
 import java.util.Optional;
 
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_CATALOGS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_CROSS_REFERENCE_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_DB_SCHEMAS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_EXPORTED_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_IMPORTED_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_PRIMARY_KEYS_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_SQL_INFO_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_TABLES_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_TABLE_TYPES_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_STATEMENT_QUERY_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.COMMAND_STATEMENT_UPDATE_TYPE_URL;
-import static io.deephaven.server.flightsql.FlightSqlResolver.FLIGHT_SQL_COMMAND_TYPE_PREFIX;
-
 final class FlightSqlCommandHelper {
 
     interface CommandVisitor<T> {
@@ -85,7 +68,8 @@ final class FlightSqlCommandHelper {
         }
         // No good way to check if this is a valid command without parsing to Any first.
         final Any command = parse(descriptor.getCmd()).orElse(null);
-        return command != null && command.getTypeUrl().startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX);
+        return command != null
+                && command.getTypeUrl().startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX);
     }
 
     public static <T> T visit(FlightDescriptor descriptor, CommandVisitor<T> visitor, String logId) {
@@ -101,41 +85,41 @@ final class FlightSqlCommandHelper {
             throw new IllegalStateException("Received invalid message from remote.");
         }
         final String typeUrl = command.getTypeUrl();
-        if (!typeUrl.startsWith(FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
+        if (!typeUrl.startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
             // handlesCommand
             throw new IllegalStateException(String.format("Unexpected command typeUrl '%s'", typeUrl));
         }
         switch (typeUrl) {
-            case COMMAND_STATEMENT_QUERY_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_STATEMENT_QUERY_TYPE_URL:
                 return visitor.visit(unpack(command, CommandStatementQuery.class, logId));
-            case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
                 return visitor.visit(unpack(command, CommandPreparedStatementQuery.class, logId));
-            case COMMAND_GET_TABLES_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_TABLES_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetTables.class, logId));
-            case COMMAND_GET_TABLE_TYPES_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_TABLE_TYPES_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetTableTypes.class, logId));
-            case COMMAND_GET_CATALOGS_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_CATALOGS_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetCatalogs.class, logId));
-            case COMMAND_GET_DB_SCHEMAS_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_DB_SCHEMAS_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetDbSchemas.class, logId));
-            case COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_PRIMARY_KEYS_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetPrimaryKeys.class, logId));
-            case COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_IMPORTED_KEYS_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetImportedKeys.class, logId));
-            case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetExportedKeys.class, logId));
-            case COMMAND_GET_SQL_INFO_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_SQL_INFO_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetSqlInfo.class, logId));
-            case COMMAND_STATEMENT_UPDATE_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_STATEMENT_UPDATE_TYPE_URL:
                 return visitor.visit(unpack(command, CommandStatementUpdate.class, logId));
-            case COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_CROSS_REFERENCE_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetCrossReference.class, logId));
-            case COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL:
                 return visitor.visit(unpack(command, CommandStatementSubstraitPlan.class, logId));
-            case COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL:
                 return visitor.visit(unpack(command, CommandPreparedStatementUpdate.class, logId));
-            case COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
+            case FlightSqlSharedConstants.COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetXdbcTypeInfo.class, logId));
         }
         throw FlightSqlErrorHelper.error(Status.Code.UNIMPLEMENTED, String.format("command '%s' is unknown", typeUrl));

@@ -126,89 +126,6 @@ import java.util.regex.Pattern;
 @Singleton
 public final class FlightSqlResolver implements ActionResolver, CommandResolver {
 
-    @VisibleForTesting
-    static final String CREATE_PREPARED_STATEMENT_ACTION_TYPE = "CreatePreparedStatement";
-
-    @VisibleForTesting
-    static final String CLOSE_PREPARED_STATEMENT_ACTION_TYPE = "ClosePreparedStatement";
-
-    @VisibleForTesting
-    static final String BEGIN_SAVEPOINT_ACTION_TYPE = "BeginSavepoint";
-
-    @VisibleForTesting
-    static final String END_SAVEPOINT_ACTION_TYPE = "EndSavepoint";
-
-    @VisibleForTesting
-    static final String BEGIN_TRANSACTION_ACTION_TYPE = "BeginTransaction";
-
-    @VisibleForTesting
-    static final String END_TRANSACTION_ACTION_TYPE = "EndTransaction";
-
-    @VisibleForTesting
-    static final String CANCEL_QUERY_ACTION_TYPE = "CancelQuery";
-
-    @VisibleForTesting
-    static final String CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE = "CreatePreparedSubstraitPlan";
-
-    private static final String FLIGHT_SQL_TYPE_PREFIX = "type.googleapis.com/arrow.flight.protocol.sql.";
-    static final String FLIGHT_SQL_COMMAND_TYPE_PREFIX = FLIGHT_SQL_TYPE_PREFIX + "Command";
-
-    @VisibleForTesting
-    static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementQuery";
-
-    // This is a server-implementation detail, but happens to be the same scheme that Flight SQL
-    // org.apache.arrow.flight.sql.FlightSqlProducer uses
-    static final String TICKET_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_TYPE_PREFIX + "TicketStatementQuery";
-
-    @VisibleForTesting
-    static final String COMMAND_STATEMENT_UPDATE_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementUpdate";
-
-    // Need to update to newer FlightSql version for this
-    // @VisibleForTesting
-    // static final String COMMAND_STATEMENT_INGEST_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementIngest";
-
-    @VisibleForTesting
-    static final String COMMAND_STATEMENT_SUBSTRAIT_PLAN_TYPE_URL =
-            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementSubstraitPlan";
-
-    @VisibleForTesting
-    static final String COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL =
-            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "PreparedStatementQuery";
-
-    @VisibleForTesting
-    static final String COMMAND_PREPARED_STATEMENT_UPDATE_TYPE_URL =
-            FLIGHT_SQL_COMMAND_TYPE_PREFIX + "PreparedStatementUpdate";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_TABLE_TYPES_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetTableTypes";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_CATALOGS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetCatalogs";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_DB_SCHEMAS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetDbSchemas";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_TABLES_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetTables";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_SQL_INFO_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetSqlInfo";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_CROSS_REFERENCE_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetCrossReference";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_EXPORTED_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetExportedKeys";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_IMPORTED_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetImportedKeys";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_PRIMARY_KEYS_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetPrimaryKeys";
-
-    @VisibleForTesting
-    static final String COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "GetXdbcTypeInfo";
-
     private static final String CATALOG_NAME = "catalog_name";
     private static final String PK_CATALOG_NAME = "pk_catalog_name";
     private static final String FK_CATALOG_NAME = "fk_catalog_name";
@@ -303,7 +220,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     /**
      * Returns {@code true} if the given command {@code descriptor} appears to be a valid Flight SQL command; that is,
      * it is parsable as an {@code Any} protobuf message with the type URL prefixed with
-     * {@value FLIGHT_SQL_COMMAND_TYPE_PREFIX}.
+     * {@value FlightSqlSharedConstants#FLIGHT_SQL_COMMAND_TYPE_PREFIX}.
      *
      * @param descriptor the descriptor
      * @return {@code true} if the given command appears to be a valid Flight SQL command

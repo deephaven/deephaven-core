@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
@@ -24,16 +25,31 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.server.flightsql.FlightSqlResolver.BEGIN_SAVEPOINT_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.BEGIN_TRANSACTION_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.CANCEL_QUERY_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.CLOSE_PREPARED_STATEMENT_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.CREATE_PREPARED_STATEMENT_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.END_SAVEPOINT_ACTION_TYPE;
-import static io.deephaven.server.flightsql.FlightSqlResolver.END_TRANSACTION_ACTION_TYPE;
-
 final class FlightSqlActionHelper {
+
+    @VisibleForTesting
+    static final String CREATE_PREPARED_STATEMENT_ACTION_TYPE = "CreatePreparedStatement";
+
+    @VisibleForTesting
+    static final String CLOSE_PREPARED_STATEMENT_ACTION_TYPE = "ClosePreparedStatement";
+
+    @VisibleForTesting
+    static final String BEGIN_SAVEPOINT_ACTION_TYPE = "BeginSavepoint";
+
+    @VisibleForTesting
+    static final String END_SAVEPOINT_ACTION_TYPE = "EndSavepoint";
+
+    @VisibleForTesting
+    static final String BEGIN_TRANSACTION_ACTION_TYPE = "BeginTransaction";
+
+    @VisibleForTesting
+    static final String END_TRANSACTION_ACTION_TYPE = "EndTransaction";
+
+    @VisibleForTesting
+    static final String CANCEL_QUERY_ACTION_TYPE = "CancelQuery";
+
+    @VisibleForTesting
+    static final String CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE = "CreatePreparedSubstraitPlan";
 
     /**
      * Note: FlightSqlUtils.FLIGHT_SQL_ACTIONS is not all the actions, see
