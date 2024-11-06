@@ -36,7 +36,7 @@ import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.protobuf.ProtobufFunction;
 import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
-import io.deephaven.protobuf.ToChunkTypeTransform;
+import io.deephaven.function.ToChunkTypeTransform;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
@@ -56,7 +56,7 @@ import java.util.Optional;
 /**
  * This layer builds on top of {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions)} by
  * further transforming the functions according to {@link #withMostAppropriateType(TypedFunction)}, and then further
- * adapting the functions to ensure they work for the expected chunk types {@link io.deephaven.protobuf.ToChunkTypeTransform}. This layer is
+ * adapting the functions to ensure they work for the expected chunk types {@link ToChunkTypeTransform}. This layer is
  * also responsible for managing schema changes; in essence, ensuring that newly
  * {@link ProtobufDescriptorParser#parse(Descriptor, ProtobufDescriptorParserOptions) parsed} {@link Descriptor
  * descriptor} {@link TypedFunction functions} can be adapted into the original function type.

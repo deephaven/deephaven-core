@@ -1,9 +1,8 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.protobuf;
+package io.deephaven.function;
 
-import io.deephaven.function.*;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedByteType;
