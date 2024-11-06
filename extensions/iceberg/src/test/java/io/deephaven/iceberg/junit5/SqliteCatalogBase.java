@@ -4,19 +4,24 @@
 package io.deephaven.iceberg.junit5;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.util.IcebergParquetWriteInstructions;
+import io.deephaven.iceberg.util.IcebergTableImpl;
 import io.deephaven.iceberg.util.IcebergTableWriter;
+import io.deephaven.iceberg.util.IcebergUpdateMode;
 import io.deephaven.iceberg.util.TableWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
@@ -634,4 +639,240 @@ public abstract class SqliteCatalogBase {
         final Table expected2 = TableTools.merge(part3.update("PC = `cat`"), expected);
         assertTableEquals(expected2, fromIceberg2.select());
     }
+
+    @Test
+    void testManualRefreshingAppend() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableWriterOptions.builder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(instructionsBuilder()
+                .addDhTables(source)
+                .build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .build());
+        assertTableEquals(source, fromIcebergRefreshing);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+
+        // Append more data with different compression codec
+        final Table moreData = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        tableWriter.append(instructionsBuilder()
+                .addDhTables(moreData)
+                .compressionCodecName("LZ4")
+                .build());
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        {
+            final Table expected = TableTools.merge(source, moreData);
+            assertTableEquals(expected, fromIcebergRefreshing);
+            verifySnapshots(tableIdentifier, List.of("append", "append"));
+        }
+
+        {
+            final Table expected = TableTools.merge(moreData, source);
+            final Table fromIceberg = tableAdapter.table();
+            assertTableEquals(expected, fromIceberg);
+        }
+    }
+
+    @Test
+    void testAutomaticRefreshingAppend() {
+        final Table source = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(TableWriterOptions.builder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(instructionsBuilder()
+                .addDhTables(source)
+                .build());
+
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
+                        .build());
+        assertTableEquals(source, fromIcebergRefreshing);
+        verifySnapshots(tableIdentifier, List.of("append"));
+
+        // Append more data with different compression codec
+        final Table moreData = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        tableWriter.append(instructionsBuilder()
+                .addDhTables(moreData)
+                .compressionCodecName("LZ4")
+                .build());
+
+        // Sleep for 0.5 second
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        {
+            // The ordering with auto refreshing is based on how these files are discovered
+            final Table expected = TableTools.merge(source, moreData);
+            assertTableEquals(expected, fromIcebergRefreshing);
+            verifySnapshots(tableIdentifier, List.of("append", "append"));
+        }
+        {
+            // The ordering when loading a table using the table() method is based on how the data files are discovered.
+            final Table expected = TableTools.merge(moreData, source);
+            final Table fromIceberg = tableAdapter.table();
+            assertTableEquals(expected, fromIceberg);
+        }
+    }
+
+    @Test
+    void testManualRefreshingPartitionedAppend() {
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        try {
+            catalogAdapter.createTableAndAppend(
+                    tableIdentifier, instructionsBuilder()
+                            .addDhTables(part1, part2)
+                            .addAllPartitionPaths(partitionPaths)
+                            .build());
+            fail("Exception expected since no partitioning table definition is provided");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).contains("partition paths");
+        }
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("PC").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, instructionsBuilder()
+                        .addDhTables(part1, part2)
+                        .addAllPartitionPaths(partitionPaths)
+                        .tableDefinition(tableDefinition)
+                        .build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .build());
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
+        assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
+        assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
+        final Table expected = TableTools.merge(
+                part1.update("PC = `apple`"),
+                part2.update("PC = `boy`"));
+        assertTableEquals(expected, fromIcebergRefreshing.select());
+
+        final Table part3 = TableTools.emptyTable(5)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final String partitionPath = "PC=cat";
+        tableAdapter.append(instructionsBuilder()
+                .addDhTables(part3)
+                .addPartitionPaths(partitionPath)
+                .tableDefinition(tableDefinition)
+                .build());
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
+        assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    @Test
+    void testAutoRefreshingPartitionedAppend() {
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        try {
+            catalogAdapter.createTableAndAppend(
+                    tableIdentifier, instructionsBuilder()
+                            .addDhTables(part1, part2)
+                            .addAllPartitionPaths(partitionPaths)
+                            .build());
+            fail("Exception expected since no partitioning table definition is provided");
+        } catch (RuntimeException e) {
+            assertThat(e.getMessage()).contains("partition paths");
+        }
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("PC").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
+                tableIdentifier, instructionsBuilder()
+                        .addDhTables(part1, part2)
+                        .addAllPartitionPaths(partitionPaths)
+                        .tableDefinition(tableDefinition)
+                        .build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
+                        .build());
+        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
+        assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(tableDefinition);
+        assertThat(fromIcebergRefreshing).isInstanceOf(PartitionAwareSourceTable.class);
+        final Table expected = TableTools.merge(
+                part1.update("PC = `apple`"),
+                part2.update("PC = `boy`"));
+        assertTableEquals(expected, fromIcebergRefreshing.select());
+
+        final Table part3 = TableTools.emptyTable(5)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final String partitionPath = "PC=cat";
+        tableAdapter.append(instructionsBuilder()
+                .addDhTables(part3)
+                .addPartitionPaths(partitionPath)
+                .tableDefinition(tableDefinition)
+                .build());
+
+        // Sleep for 0.5 second
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
+        assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
 }

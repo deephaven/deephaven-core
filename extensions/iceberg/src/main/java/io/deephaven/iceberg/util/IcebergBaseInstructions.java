@@ -13,7 +13,13 @@ import java.util.OptionalLong;
 public interface IcebergBaseInstructions {
 
     /**
-     * The {@link TableDefinition} to use when reading/writing Iceberg data files.
+     * The {@link TableDefinition} to use when reading or writing Iceberg data files.
+     * <p>
+     * When using an {@link IcebergTableWriter}, this table definition should either:
+     * <ul>
+     * <li>Not be provided, in which case the definition will be derived from the writer instance, or</li>
+     * <li>Match the writer's table definition if it is provided.</li>
+     * </ul>
      */
     Optional<TableDefinition> tableDefinition();
 

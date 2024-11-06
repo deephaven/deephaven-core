@@ -17,7 +17,8 @@ import java.util.Optional;
 public abstract class TableWriterOptions {
 
     /**
-     * The {@link TableDefinition} to use when writing Iceberg data files.
+     * The {@link TableDefinition} to use when writing Iceberg data files. All tables written by this writer should have
+     * the same definition.
      */
     public abstract TableDefinition tableDefinition();
 

@@ -60,18 +60,17 @@ public class IcebergTableWriter {
     private final TableDefinition tableDefinition;
 
     /**
-     * The table definition to use for writing the parquet file
+     * The table definition used for writing the Parquet file. This differs from {@link #tableDefinition} as it:
+     * <ul>
+     * <li>Excludes the partitioning columns</li>
+     * <li>Includes type promotions needed to make {@link #tableDefinition} compatible with the existing table</li>
+     * </ul>
      */
     private TableDefinition parquetTableDefinition;
 
     /**
-     * The schema to use when in conjunction with the {@link #dhColumnsToIcebergFieldIds} to map Deephaven columns from
-     * {@link #tableDefinition} to Iceberg columns.
-     */
-    private final Schema userSchema;
-
-    /**
-     * Mapping from Deephaven column names to Iceberg field IDs.
+     * A one-to-one {@link Map map} from Deephaven column names from the {@link #tableDefinition} to Iceberg field IDs
+     * from the {@link #userSchema}.
      */
     private final Map<String, Integer> dhColumnsToIcebergFieldIds;
 
@@ -79,6 +78,12 @@ public class IcebergTableWriter {
      * Reverse mapping from Iceberg field IDs to Deephaven column names.
      */
     private final Map<Integer, String> icebergFieldIdToDhColumn;
+
+    /**
+     * The schema to use when in conjunction with the {@link #dhColumnsToIcebergFieldIds} to map Deephaven columns from
+     * {@link #tableDefinition} to Iceberg columns.
+     */
+    private final Schema userSchema;
 
     private final IcebergTableAdapter tableAdapter;
     private final org.apache.iceberg.Table table;
@@ -319,12 +324,16 @@ public class IcebergTableWriter {
         }
 
         // Verify that the table definition matches the Iceberg table writer
-        writeInstructions = ensureDefinition(writeInstructions);
-        final TableDefinition userDefinition = writeInstructions.tableDefinition().get();
-        if (!userDefinition.equals(tableDefinition)) {
-            throw new IllegalArgumentException("Failed to write data to Iceberg table. The provided table definition " +
-                    "does not match the table definition of the Iceberg table writer. Table definition provided : " +
-                    userDefinition + ", table definition of the Iceberg table writer : " + tableDefinition);
+        if (writeInstructions.tableDefinition().isPresent()) {
+            if (!writeInstructions.tableDefinition().get().equals(tableDefinition)) {
+                throw new IllegalArgumentException(
+                        "Failed to write data to Iceberg table. The provided table definition does not match the " +
+                                "table definition of the Iceberg table writer. Table definition provided : " +
+                                writeInstructions.tableDefinition().get() + ", table definition of the Iceberg " +
+                                "table writer : " + tableDefinition);
+            }
+        } else {
+            writeInstructions = writeInstructions.withTableDefinition(tableDefinition);
         }
 
         // Verify that the schema and partition spec are compatible with the Iceberg table
