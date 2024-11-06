@@ -110,6 +110,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static io.deephaven.server.flightsql.FlightSqlErrorHelper.error;
+
 /**
  * A <a href="https://arrow.apache.org/docs/format/FlightSql.html">Flight SQL</a> resolver. This supports the read-only
  * querying of the global query scope, which is presented simply with the query scope variables names as the table names
@@ -481,7 +483,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         public ExportObject<Table> visit(TicketStatementQuery ticket) {
             final TicketHandler ticketHandler = queries.get(ticket.getStatementHandle());
             if (ticketHandler == null) {
-                throw FlightSqlErrorHelper.error(Code.NOT_FOUND,
+                throw error(Code.NOT_FOUND,
                         "Unable to find Flight SQL query. Flight SQL tickets should be resolved promptly and resolved at most once.");
             }
             if (!ticketHandler.isOwner(session)) {
@@ -638,7 +640,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION,
+        throw error(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': Flight SQL descriptors cannot be published to");
     }
 
@@ -654,7 +656,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (session == null) {
             throw unauthenticatedError();
         }
-        throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION,
+        throw error(Code.FAILED_PRECONDITION,
                 "Could not publish '" + logId + "': Flight SQL tickets cannot be published to");
     }
 
@@ -758,16 +760,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         abstract Table table(T command);
 
-        // /**
-        // * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
-        // * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
-        // * part of {@link TicketHandler#resolve()}.
-        // */
-        // @Override
-        // public final TicketHandler initialize(Any any) {
-        // return initialize(unpackOrThrow(any, clazz));
-        // }
-
         /**
          * The handler. Will invoke {@link #checkForGetInfo(Message)} as the first part of
          * {@link TicketHandler#getInfo(FlightDescriptor)}. Will invoke {@link #checkForResolve(Message)} as the first
@@ -850,13 +842,13 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public FlightInfo getInfo(FlightDescriptor descriptor) {
-            throw FlightSqlErrorHelper.error(Code.UNIMPLEMENTED,
+            throw error(Code.UNIMPLEMENTED,
                     String.format("command '%s' is unimplemented", this.descriptor.getFullName()));
         }
 
         @Override
         public Table resolve() {
-            throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, String.format(
+            throw error(Code.INVALID_ARGUMENT, String.format(
                     "client is misbehaving, should use getInfo for command '%s'", this.descriptor.getFullName()));
         }
     }
@@ -912,12 +904,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             try {
                 table = executeSqlQuery(session, sql);
             } catch (SqlParseException e) {
-                throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
+                throw error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
             } catch (UnsupportedSqlOperation e) {
                 if (e.clazz() == RexDynamicParam.class) {
                     throw queryParametersNotSupported(e);
                 }
-                throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT,
+                throw error(Code.INVALID_ARGUMENT,
                         String.format("Unsupported calcite type '%s'", e.clazz().getName()),
                         e);
             } catch (CalciteContextException e) {
@@ -925,9 +917,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 final Throwable cause = e.getCause();
                 if (cause instanceof SqlValidatorException) {
                     if (cause.getMessage().contains("not found")) {
-                        throw FlightSqlErrorHelper.error(Code.NOT_FOUND, cause.getMessage(), cause);
+                        throw error(Code.NOT_FOUND, cause.getMessage(), cause);
                     }
-                    throw FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, cause.getMessage(), cause);
+                    throw error(Code.INVALID_ARGUMENT, cause.getMessage(), cause);
                 }
                 throw e;
             }
@@ -948,11 +940,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         public synchronized final Table resolve() {
             if (resolved) {
-                throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION, "Should only resolve once");
+                throw error(Code.FAILED_PRECONDITION, "Should only resolve once");
             }
             resolved = true;
             if (table == null) {
-                throw FlightSqlErrorHelper.error(Code.FAILED_PRECONDITION, "Should resolve table quicker");
+                throw error(Code.FAILED_PRECONDITION, "Should resolve table quicker");
             }
             return table;
         }
@@ -1242,8 +1234,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 void checkForGetInfo(CommandGetPrimaryKeys command) {
                     if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
                         // We need to pretend that CommandGetPrimaryKeys.getDefaultInstance() is a valid command until
-                        // we can
-                        // plumb getSchema through to the resolvers.
+                        // we can plumb getSchema through to the resolvers.
                         // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                         return;
                     }
@@ -1263,8 +1254,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 void checkForGetInfo(CommandGetImportedKeys command) {
                     if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
                         // We need to pretend that CommandGetImportedKeys.getDefaultInstance() is a valid command until
-                        // we can
-                        // plumb getSchema through to the resolvers.
+                        // we can plumb getSchema through to the resolvers.
                         // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                         return;
                     }
@@ -1284,8 +1274,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 void checkForGetInfo(CommandGetExportedKeys command) {
                     if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
                         // We need to pretend that CommandGetExportedKeys.getDefaultInstance() is a valid command until
-                        // we can
-                        // plumb getSchema through to the resolvers.
+                        // we can plumb getSchema through to the resolvers.
                         // TODO(deephaven-core#6218): feat: expose getSchema to TicketResolvers
                         return;
                     }
@@ -1514,7 +1503,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         Objects.requireNonNull(session);
         final PreparedStatement preparedStatement = preparedStatements.get(handle);
         if (preparedStatement == null) {
-            throw FlightSqlErrorHelper.error(Code.NOT_FOUND, "Unknown Prepared Statement");
+            throw error(Code.NOT_FOUND, "Unknown Prepared Statement");
         }
         preparedStatement.verifyOwner(session);
         return preparedStatement;
@@ -1628,7 +1617,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public void execute(SessionState session, Consumer<Response> visitor) {
-            throw FlightSqlErrorHelper.error(Code.UNIMPLEMENTED,
+            throw error(Code.UNIMPLEMENTED,
                     String.format("Action type '%s' is unimplemented", type.getType()));
         }
     }
@@ -1649,24 +1638,24 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     // ---------------------------------------------------------------------------------------------------------------
 
     private static StatusRuntimeException unauthenticatedError() {
-        return FlightSqlErrorHelper.error(Code.UNAUTHENTICATED, "Must be authenticated");
+        return error(Code.UNAUTHENTICATED, "Must be authenticated");
     }
 
     private static StatusRuntimeException permissionDeniedWithHelpfulMessage() {
-        return FlightSqlErrorHelper.error(Code.PERMISSION_DENIED,
+        return error(Code.PERMISSION_DENIED,
                 "Must use the original session; is the client echoing the authentication token properly? Some clients may need to explicitly enable cookie-based authentication with the header x-deephaven-auth-cookie-request=true (namely, Java Flight SQL JDBC drivers, and maybe others).");
     }
 
     private static StatusRuntimeException tableNotFound() {
-        return FlightSqlErrorHelper.error(Code.NOT_FOUND, "table not found");
+        return error(Code.NOT_FOUND, "table not found");
     }
 
     private static StatusRuntimeException transactionIdsNotSupported() {
-        return FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "transaction ids are not supported");
+        return error(Code.INVALID_ARGUMENT, "transaction ids are not supported");
     }
 
     private static StatusRuntimeException queryParametersNotSupported(RuntimeException cause) {
-        return FlightSqlErrorHelper.error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
+        return error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
     }
 
     private class PreparedStatement {
