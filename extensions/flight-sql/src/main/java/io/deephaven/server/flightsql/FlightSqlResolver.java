@@ -55,15 +55,9 @@ import org.apache.arrow.flight.impl.Flight.FlightInfo;
 import org.apache.arrow.flight.impl.Flight.Ticket;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginSavepointRequest;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionBeginTransactionRequest;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionCancelQueryRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionClosePreparedStatementRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedStatementRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedStatementResult;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedSubstraitPlanRequest;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndSavepointRequest;
-import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndTransactionRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCrossReference;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
@@ -1452,7 +1446,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private class ActionHandlerVisitor
-            implements FlightSqlActionHelper.ActionVisitor<ActionHandler<? extends Message>> {
+            extends FlightSqlActionHelper.ActionVisitorBase<ActionHandler<? extends Message>> {
         @Override
         public ActionHandler<? extends Message> visit(ActionCreatePreparedStatementRequest action) {
             return new CreatePreparedStatementImpl(action);
@@ -1464,34 +1458,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public ActionHandler<? extends Message> visit(ActionBeginSavepointRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT);
-        }
-
-        @Override
-        public ActionHandler<? extends Message> visit(ActionEndSavepointRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT);
-        }
-
-        @Override
-        public ActionHandler<? extends Message> visit(ActionBeginTransactionRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION);
-        }
-
-        @Override
-        public ActionHandler<? extends Message> visit(ActionEndTransactionRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION);
-        }
-
-        @Override
-        public ActionHandler<? extends Message> visit(
-                @SuppressWarnings("deprecation") ActionCancelQueryRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY);
-        }
-
-        @Override
-        public ActionHandler<? extends Message> visit(ActionCreatePreparedSubstraitPlanRequest action) {
-            return new UnsupportedAction<>(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN);
+        public ActionHandler<? extends Message> visitDefault(ActionType actionType, Object action) {
+            return new UnsupportedAction<>(actionType);
         }
     }
 

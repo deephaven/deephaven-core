@@ -149,4 +149,48 @@ final class FlightSqlActionHelper {
         }
     }
 
+    public static abstract class ActionVisitorBase<T> implements ActionVisitor<T> {
+
+        public abstract T visitDefault(ActionType actionType, Object action);
+
+        @Override
+        public T visit(ActionCreatePreparedStatementRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT, action);
+        }
+
+        @Override
+        public T visit(ActionClosePreparedStatementRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_CLOSE_PREPARED_STATEMENT, action);
+        }
+
+        @Override
+        public T visit(ActionBeginSavepointRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_BEGIN_SAVEPOINT, action);
+        }
+
+        @Override
+        public T visit(ActionEndSavepointRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_END_SAVEPOINT, action);
+        }
+
+        @Override
+        public T visit(ActionBeginTransactionRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_BEGIN_TRANSACTION, action);
+        }
+
+        @Override
+        public T visit(ActionEndTransactionRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_END_TRANSACTION, action);
+        }
+
+        @Override
+        public T visit(@SuppressWarnings("deprecation") ActionCancelQueryRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_CANCEL_QUERY, action);
+        }
+
+        @Override
+        public T visit(ActionCreatePreparedSubstraitPlanRequest action) {
+            return visitDefault(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_SUBSTRAIT_PLAN, action);
+        }
+    }
 }
