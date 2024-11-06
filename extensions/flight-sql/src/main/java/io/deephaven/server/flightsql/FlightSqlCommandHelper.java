@@ -5,6 +5,7 @@ package io.deephaven.server.flightsql;
 
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import io.grpc.Status;
@@ -139,6 +140,85 @@ final class FlightSqlCommandHelper {
         } catch (InvalidProtocolBufferException e) {
             throw FlightSqlErrorHelper.error(Status.Code.FAILED_PRECONDITION, String
                     .format("Invalid command, provided message cannot be unpacked as %s, %s", clazz.getName(), logId));
+        }
+    }
+
+    public static abstract class CommandVisitorBase<T> implements CommandVisitor<T> {
+        public abstract T visitDefault(Descriptor descriptor, Object command);
+
+        @Override
+        public T visit(CommandGetCatalogs command) {
+            return visitDefault(CommandGetCatalogs.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetDbSchemas command) {
+            return visitDefault(CommandGetDbSchemas.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetTableTypes command) {
+            return visitDefault(CommandGetTableTypes.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetImportedKeys command) {
+            return visitDefault(CommandGetImportedKeys.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetExportedKeys command) {
+            return visitDefault(CommandGetExportedKeys.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetPrimaryKeys command) {
+            return visitDefault(CommandGetPrimaryKeys.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetTables command) {
+            return visitDefault(CommandGetTables.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandStatementQuery command) {
+            return visitDefault(CommandStatementQuery.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandPreparedStatementQuery command) {
+            return visitDefault(CommandPreparedStatementQuery.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetSqlInfo command) {
+            return visitDefault(CommandGetSqlInfo.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandStatementUpdate command) {
+            return visitDefault(CommandStatementUpdate.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetCrossReference command) {
+            return visitDefault(CommandGetCrossReference.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandStatementSubstraitPlan command) {
+            return visitDefault(CommandStatementSubstraitPlan.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandPreparedStatementUpdate command) {
+            return visitDefault(CommandPreparedStatementUpdate.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandGetXdbcTypeInfo command) {
+            return visitDefault(CommandGetXdbcTypeInfo.getDescriptor(), command);
         }
     }
 }

@@ -59,20 +59,14 @@ import org.apache.arrow.flight.sql.impl.FlightSql.ActionClosePreparedStatementRe
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedStatementRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedStatementResult;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCrossReference;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -163,22 +157,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     @VisibleForTesting
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
-
-    // Need dense_union support to implement this.
-    private static final CommandHandler<CommandGetSqlInfo> GET_SQL_INFO_HANDLER =
-            new UnsupportedCommand<>(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
-    private static final CommandHandler<CommandStatementUpdate> STATEMENT_UPDATE_HANDLER =
-            new UnsupportedCommand<>(CommandStatementUpdate.getDescriptor(), CommandStatementUpdate.class);
-    private static final CommandHandler<CommandGetCrossReference> GET_CROSS_REFERENCE_HANDLER =
-            new UnsupportedCommand<>(CommandGetCrossReference.getDescriptor(), CommandGetCrossReference.class);
-    private static final CommandHandler<CommandStatementSubstraitPlan> STATEMENT_SUBSTRAIT_PLAN_HANDLER =
-            new UnsupportedCommand<>(CommandStatementSubstraitPlan.getDescriptor(),
-                    CommandStatementSubstraitPlan.class);
-    private static final CommandHandler<CommandPreparedStatementUpdate> PREPARED_STATEMENT_UPDATE_HANDLER =
-            new UnsupportedCommand<>(CommandPreparedStatementUpdate.getDescriptor(),
-                    CommandPreparedStatementUpdate.class);
-    private static final CommandHandler<CommandGetXdbcTypeInfo> GET_XDBC_TYPE_INFO_HANDLER =
-            new UnsupportedCommand<>(CommandGetXdbcTypeInfo.getDescriptor(), CommandGetXdbcTypeInfo.class);
 
     // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all the
     // TicketResolvers).
@@ -300,13 +278,18 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return FlightSqlCommandHelper.visit(descriptor, new GetFlightInfoImpl(session, descriptor), logId);
     }
 
-    private class GetFlightInfoImpl implements FlightSqlCommandHelper.CommandVisitor<ExportObject<FlightInfo>> {
+    private class GetFlightInfoImpl extends FlightSqlCommandHelper.CommandVisitorBase<ExportObject<FlightInfo>> {
         private final SessionState session;
         private final FlightDescriptor descriptor;
 
         public GetFlightInfoImpl(SessionState session, FlightDescriptor descriptor) {
             this.session = Objects.requireNonNull(session);
             this.descriptor = Objects.requireNonNull(descriptor);
+        }
+
+        @Override
+        public ExportObject<FlightInfo> visitDefault(Descriptor descriptor, Object command) {
+            return submit(new UnsupportedCommand<>(descriptor), command);
         }
 
         @Override
@@ -352,36 +335,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         public ExportObject<FlightInfo> visit(CommandPreparedStatementQuery command) {
             return submit(new CommandPreparedStatementQueryImpl(session), command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandGetSqlInfo command) {
-            return submit(GET_SQL_INFO_HANDLER, command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandStatementUpdate command) {
-            return submit(STATEMENT_UPDATE_HANDLER, command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandGetCrossReference command) {
-            return submit(GET_CROSS_REFERENCE_HANDLER, command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandStatementSubstraitPlan command) {
-            return submit(STATEMENT_SUBSTRAIT_PLAN_HANDLER, command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandPreparedStatementUpdate command) {
-            return submit(PREPARED_STATEMENT_UPDATE_HANDLER, command);
-        }
-
-        @Override
-        public ExportObject<FlightInfo> visit(CommandGetXdbcTypeInfo command) {
-            return submit(GET_XDBC_TYPE_INFO_HANDLER, command);
         }
 
         private <T> ExportObject<FlightInfo> submit(CommandHandler<T> handler, T command) {
@@ -820,7 +773,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     private static final class UnsupportedCommand<T> implements CommandHandler<T>, TicketHandler {
         private final Descriptor descriptor;
 
-        UnsupportedCommand(Descriptor descriptor, Class<? extends Message> clazz) {
+        UnsupportedCommand(Descriptor descriptor) {
             this.descriptor = Objects.requireNonNull(descriptor);
         }
 
