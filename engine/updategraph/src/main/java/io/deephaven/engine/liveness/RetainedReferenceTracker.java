@@ -4,7 +4,6 @@
 package io.deephaven.engine.liveness;
 
 import io.deephaven.base.cache.RetentionCache;
-import io.deephaven.base.reference.CleanupReference;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -145,8 +144,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             final LivenessReferent retained = retainedReference.get();
             if (retained != null) {
                 other.addReference(retained);
-            } else if (retainedReference instanceof CleanupReference) {
-                ((CleanupReference<?>) retainedReference).cleanup();
+            } else if (retainedReference instanceof RetainedReferenceTracker) {
+                ((RetainedReferenceTracker<?>) retainedReference).cleanup();
             }
         }
         impl.clear();
@@ -174,6 +173,12 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
     }
 
+    /**
+     * Ensure that references are dropped even if this RetainedReferenceTracker's manager is garbage-collected. As a
+     * last resort, this will be invoked by the {@link CleanupReferenceProcessorInstance#LIVENESS liveness cleanup
+     * reference processor}, but it may also be invoked by any other RetainedReferenceTracker that observes that this
+     * RetainedReferenceTracker no longer refers to its manager. This method is idempotent.
+     */
     @Override
     public void cleanup() {
         ensureReferencesDroppedInternal(true);
@@ -222,8 +227,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     final LivenessReferent pendingDrop = pendingDropReference.get();
                     if (pendingDrop != null) {
                         pendingDrop.dropReference();
-                    } else if (pendingDropReference instanceof CleanupReference) {
-                        ((CleanupReference<?>) pendingDropReference).cleanup();
+                    } else if (pendingDropReference instanceof RetainedReferenceTracker) {
+                        ((RetainedReferenceTracker<?>) pendingDropReference).cleanup();
                     }
                 }
             } finally {
@@ -286,8 +291,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     retainedReferences.set(rri, retainedReferences.get(rrLast));
                 }
                 retainedReferences.remove(rrLast--);
-                if (cleared && retainedReference instanceof CleanupReference) {
-                    ((CleanupReference<?>) retainedReference).cleanup();
+                if (cleared && retainedReference instanceof RetainedReferenceTracker) {
+                    ((RetainedReferenceTracker<?>) retainedReference).cleanup();
                 }
                 if (found) {
                     referent.dropReference();
@@ -321,8 +326,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     retainedReferences.set(rri, retainedReferences.get(rrLast));
                 }
                 retainedReferences.remove(rrLast--);
-                if (cleared && retainedReference instanceof CleanupReference) {
-                    ((CleanupReference<?>) retainedReference).cleanup();
+                if (cleared && retainedReference instanceof RetainedReferenceTracker) {
+                    ((RetainedReferenceTracker<?>) retainedReference).cleanup();
                 }
                 if (foundState != null && foundState.doDrop()) {
                     referentsToRemove.remove(foundState.referent);
