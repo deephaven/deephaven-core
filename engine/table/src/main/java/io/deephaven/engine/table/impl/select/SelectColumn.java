@@ -68,6 +68,17 @@ public interface SelectColumn extends Selectable {
     }
 
     /**
+     * Produce a SelectColumn that {@link #recomputeOnModifiedRow()} recomputes values on any modified row} from
+     * {@code selectable}.
+     *
+     * @param selectable The {@link Selectable} to adapt and mark as requiring row-level recomputation
+     * @return The resulting SelectColumn
+     */
+    static SelectColumn ofRecomputeOnModifiedRow(Selectable selectable) {
+        return new RecomputeOnModifiedRowSelectColumn(of(selectable));
+    }
+
+    /**
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */
     SelectColumn[] ZERO_LENGTH_SELECT_COLUMN_ARRAY = new SelectColumn[0];
