@@ -64,6 +64,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     ParquetInstructions parquetInstructions;
 
+    /**
+     * The number of files discovered, used for ordering the keys.
+     */
+    private int fileCount;
+
+    /**
+     * Create a new {@link IcebergTableLocationKey} for the given file URI.
+     * <p>
+     * This method assumes that keys are created in a specific order and that each key is created only once.
+     */
     protected IcebergTableLocationKey locationKey(
             final org.apache.iceberg.FileFormat format,
             final URI fileUri,
@@ -97,7 +107,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
                 parquetInstructions = builder.build();
             }
-            return new IcebergTableParquetLocationKey(fileUri, 0, partitions, parquetInstructions);
+            return new IcebergTableParquetLocationKey(fileUri, fileCount++, partitions, parquetInstructions);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
