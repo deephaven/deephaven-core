@@ -291,9 +291,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             resultColumnModifiedColumnSets[ci] = resultTable.newModifiedColumnSet(resultColumnNames[ci]);
         }
         if (delegateToBy) {
-            // We cannot use the groupBy's result MCS factory, because the result column names are not guaranteed to be
-            // the
-            // same.
+            // We cannot use the groupBy's result MCS factory, because the result column names are not guaranteed
+            // to be the same.
             groupBy.initializeRefreshing(resultTable, aggregationUpdateListener);
         }
         // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
@@ -377,7 +376,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     private class DataFillerContext implements SafeCloseable {
 
         private final boolean[] columnsToFillMask;
-        protected final FillFromContext[] fillFromContexts;
+        final FillFromContext[] fillFromContexts;
 
         private DataFillerContext(final boolean @NotNull [] columnsToFillMask) {
             this.columnsToFillMask = columnsToFillMask;

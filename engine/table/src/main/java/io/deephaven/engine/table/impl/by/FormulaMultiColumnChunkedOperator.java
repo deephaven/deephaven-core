@@ -30,9 +30,9 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  */
 class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOperator {
 
+    private final QueryTable inputTable;
+
     private final GroupByChunkedOperator groupBy;
-    // TODO: `delegateToBy` is always true, for this class and FormulaChunkedOperator. Can we remove this and all
-    // the checks?
     private final boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
@@ -50,18 +50,20 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private ModifiedColumnSet updateUpstreamModifiedColumnSet;
 
     /**
-     * Construct an operator for applying a formula to a grouped table.
+     * Construct an operator for applying a formula to slot-vectors over an aggregated table..
      *
      * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
-     *        be false if {@code groupBy} is updated by the helper (and {@code groupBy} must come before this operator
-     *        if so), or if this is not the first operator sharing {@code groupBy}.
+     *        be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
+     *        {@code groupBy}.
      * @param selectColumn The formula column that will produce the results
      */
     FormulaMultiColumnChunkedOperator(
+            @NotNull final QueryTable inputTable,
             @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
             @NotNull final SelectColumn selectColumn) {
+        this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.selectColumn = selectColumn;
@@ -238,11 +240,30 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             // guaranteed to be the same.
             groupBy.initializeRefreshing(resultTable, aggregationUpdateListener);
         }
-        // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
-        final ModifiedColumnSet resultModifiedColumnSet = resultTable
-                .newModifiedColumnSet(getResultColumns().keySet().toArray(String[]::new));
 
-        return inputToResultModifiedColumnSetFactory = upstreamModifiedColumnSet -> resultModifiedColumnSet;
+        // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
+        if (selectColumn.getColumns().isEmpty()) {
+            return inputToResultModifiedColumnSetFactory = input -> ModifiedColumnSet.EMPTY;
+        }
+
+        final ModifiedColumnSet updateMCS = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
+        final ModifiedColumnSet resultMCS = resultTable.newModifiedColumnSet(selectColumn.getName());
+        final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
+        final ModifiedColumnSet[] modifiedColumnSets = selectColumn.getColumns().stream()
+                .map(ignored -> resultMCS).toArray(ModifiedColumnSet[]::new);
+        final ModifiedColumnSet.Transformer transformer = inputTable.newModifiedColumnSetTransformer(
+                inputColumnNames,
+                modifiedColumnSets);
+
+        return inputToResultModifiedColumnSetFactory = input -> {
+            if (groupBy.getSomeKeyHasAddsOrRemoves()) {
+                return resultMCS;
+            } else if (groupBy.getSomeKeyHasModifies()) {
+                transformer.clearAndTransform(input, updateMCS);
+                return updateMCS;
+            }
+            return ModifiedColumnSet.EMPTY;
+        };
     }
 
     @Override
@@ -288,14 +309,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             if (removesToProcess && !resultColumn.getType().isPrimitive()) {
                 dataCopyContext.clearObjectColumnData(downstream.removed());
             }
-            if (modifiesToProcess && addsToProcess) {
-                // Union the rowsets and do a single pass.
-                try (final RowSequence combinedRowSequence = downstream.modified().union(downstream.added())) {
-                    dataCopyContext.copyData(combinedRowSequence);
-                }
-            } else if (modifiesToProcess) {
+            if (modifiesToProcess) {
                 dataCopyContext.copyData(downstream.modified());
-            } else {
+            }
+            if (addsToProcess) {
                 dataCopyContext.copyData(downstream.added());
             }
         }
@@ -324,7 +341,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
      */
     private class DataFillerContext implements SafeCloseable {
 
-        protected final FillFromContext fillFromContext;
+        final FillFromContext fillFromContext;
 
         private DataFillerContext() {
             fillFromContext = resultColumn.makeFillFromContext(BLOCK_SIZE);

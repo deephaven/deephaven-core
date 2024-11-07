@@ -614,4 +614,12 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     public boolean unchunkedRowSet() {
         return true;
     }
+
+    boolean getSomeKeyHasAddsOrRemoves() {
+        return someKeyHasAddsOrRemoves;
+    }
+
+    boolean getSomeKeyHasModifies() {
+        return someKeyHasModifies;
+    }
 }

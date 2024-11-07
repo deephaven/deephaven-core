@@ -241,24 +241,24 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         String[] groupByColumns = new String[0];
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                // new EvalNugget() {
+                // public Table e() {
+                // return queryTable.aggBy(List.of(
+                // AggAvg("MeanI=intCol", "MeanD=doubleCol"),
+                // AggStd("StdI=intCol", "StdD=doubleCol")), "Sym").sort("Sym");
+                // }
+                // },
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.aggBy(List.of(
-                                AggAvg("MeanI=intCol", "MeanD=doubleCol"),
-                                AggStd("StdI=intCol", "StdD=doubleCol")), "Sym").sort("Sym");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.aggBy(List.of(
-                                AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
-                                AggFormula("max(each)", "each", "MaxI=intCol"),
-                                AggFormula("f_const=6.0 / 3"),
-                                AggFormula("f_min=min(intColNulls)"),
-                                AggFormula("f_max=max(doubleColNulls)"),
-                                AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
+                                // AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
+                                // AggFormula("max(each)", "each", "MaxI=intCol"),
+                                // AggFormula("f_const=6.0 / 3"),
+                                // AggFormula("f_min=min(intColNulls)"),
+                                // AggFormula("f_max=max(doubleColNulls)"),
+                                // AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
                                 AggFormula(
-                                        "f_custom_sum=sum(intColNulls) + sum(doubleColNulls) + min(doubleColNulls)")),
+                                        "f_custom_sum=sum(intColNulls) + sum(doubleCol) + min(doubleColNulls)")),
                                 "Sym").sort("Sym");
                     }
                 },

@@ -293,9 +293,8 @@ public interface Aggregation {
 
     /**
      * <p>
-     * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula}.
-     * This variant requires the formula to provide the output column name and specific input column names in the
-     * following format:
+     * Create a {@link Formula formula} aggregation with the supplied {@code formula}. This variant requires the formula
+     * to provide the output column name and specific input column names in the following format:
      * </p>
      * {@code
      * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
@@ -306,6 +305,24 @@ public interface Aggregation {
      */
     static Formula AggFormula(String formulaString) {
         return Formula.parse(formulaString);
+    }
+
+    /**
+     * <p>
+     * Create a {@link Formula formula} aggregation with the supplied {@code columnName} and {@code expression}. This
+     * variant requires the formula to provide the output column name and specific input column names in the following
+     * format:
+     * </p>
+     * {@code
+     * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
+     * }
+     *
+     * @param columnName The output column name
+     * @param expression The expression to use to produce the output column
+     * @return The aggregation
+     */
+    static Formula AggFormula(String columnName, String expression) {
+        return Formula.of(columnName, expression);
     }
 
     /**

@@ -4,6 +4,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.Strings;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -82,6 +83,6 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(Formula formula) {
-        out.put(formula.column().name(), "from formula `" + formula.formula() + "`");
+        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`");
     }
 }

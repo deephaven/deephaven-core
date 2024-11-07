@@ -111,7 +111,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -159,7 +158,7 @@ public class AggregationProcessor implements AggregationContextFactory {
      * types converted to {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all
      * formula aggregations.
      */
-    private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     /**
      * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
@@ -717,28 +716,32 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Formula formula) {
-            final SelectColumn selectColumn =
-                    SelectColumn.of(Selectable.of(formula.column(), RawString.of(formula.formula())));
+            final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
             // Get or create a column definition map composed of vectors of the original column types.
-            if (vectorColumnNameMap == null) {
-                vectorColumnNameMap = new HashMap<>();
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = table.getDefinition().getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> ColumnDefinition.fromGenericType(
+                                cd.getName(),
+                                VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                cd.getDataType())));
                 table.getColumnSourceMap().forEach((key, value) -> {
                     final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
                             key, VectorFactory.forElementType(value.getType()).vectorType());
-                    vectorColumnNameMap.put(key, columnDef);
+                    vectorColumnDefinitions.put(key, columnDef);
                 });
             }
 
             // Get the input column names from the formula and provide them to the groupBy operator
             final String[] inputColumns =
-                    selectColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
 
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
                             .toArray(MatchPair[]::new));
 
-            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(
+            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
                     groupByChunkedOperator, true, selectColumn);
             addNoInputOperator(op);
         }
@@ -783,7 +786,6 @@ public class AggregationProcessor implements AggregationContextFactory {
             unsupportedForBlinkTables("Formula");
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
-
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
                     true, formula.formula(), formula.paramToken(), compilationProcessor,
                     MatchPair.fromPairs(resultPairs));

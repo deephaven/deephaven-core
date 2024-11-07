@@ -5,6 +5,10 @@ package io.deephaven.api.agg;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.Strings;
+import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -17,33 +21,33 @@ import org.immutables.value.Value.Parameter;
 public abstract class Formula implements Aggregation {
 
     public static Formula parse(String formulaString) {
-        final int ix = formulaString.indexOf('=');
-        if (ix < 0 || ix + 1 == formulaString.length() || formulaString.charAt(ix + 1) == '=') {
-            throw new IllegalArgumentException(String.format(
-                    "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", formulaString));
-        }
-        return of(formulaString.substring(0, ix), formulaString.substring(ix + 1));
-    }
-
-    public static Formula of(ColumnName name, String formula) {
-        return ImmutableFormula.of(name, formula);
+        return ImmutableFormula.of(Selectable.parse(formulaString));
     }
 
     public static Formula of(String name, String formula) {
         return of(ColumnName.of(name), formula);
     }
 
-    @Parameter
-    public abstract ColumnName column();
+    public static Formula of(ColumnName name, String formula) {
+        return ImmutableFormula.of(Selectable.of(name, RawString.of(formula)));
+    }
 
     @Parameter
-    public abstract String formula();
+    public abstract Selectable selectable();
+
+    public ColumnName column() {
+        return selectable().newColumn();
+    }
+
+    public Expression expression() {
+        return selectable().expression();
+    }
 
     /**
      * Return this {@link Formula} as a string of the form {@code <newColumn>=<expression>}
      */
     public String formulaString() {
-        return column().toString() + "=" + formula();
+        return Strings.of(selectable());
     }
 
     @Override
