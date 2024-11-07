@@ -94,6 +94,31 @@ tasks.withType(JavaCompile).configureEach {
   }
 }
 
+tasks.withType(GroovyCompile).configureEach {
+  javaLauncher.set groovyCompilerLauncher
+
+  options.fork = true
+  options.forkOptions.memoryMaximumSize = '2G'
+  options.encoding = 'UTF-8'
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+
+  if (name == 'compileTestGroovy') {
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
+    }
+  } else {
+    if (compilerVersion != languageLevel) {
+      options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
+    }
+  }
+}
+
+
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
   def compilerDirectivesText = new JsonBuilder([{
@@ -201,10 +226,6 @@ tasks.withType(Test).configureEach {
   // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
   // That said, the current approach used here more closely matches how the application start script is defined.
   jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + START_OPTS
-}
-
-tasks.withType(GroovyCompile).configureEach {
-  javaLauncher.set groovyCompilerLauncher
 }
 
 JavaApplication application = extensions.findByType(JavaApplication)
