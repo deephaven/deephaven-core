@@ -30,7 +30,6 @@ dependencies {
     implementation libs.iceberg.core
     implementation libs.iceberg.bundled.guava
 
-    implementation libs.hadoop.hdfs.client
     // Also inherits hadoop-common, see io.deephaven.hadoop-common-dependencies
 
     implementation libs.avro

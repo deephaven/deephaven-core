@@ -61,6 +61,7 @@ import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -100,6 +101,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
@@ -234,6 +236,15 @@ class BatchTableRequestBuilder {
         public Operation visit(TailTable tailTable) {
             return op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
                     .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
+        }
+
+        @Override
+        public Operation visit(SliceTable sliceTable) {
+            return op(Builder::setSlice, SliceRequest.newBuilder().setResultId(ticket)
+                    .setSourceId(ref(sliceTable.parent()))
+                    .setFirstPositionInclusive(sliceTable.firstPositionInclusive())
+                    .setLastPositionExclusive(sliceTable.lastPositionExclusive())
+                    .build());
         }
 
         @Override

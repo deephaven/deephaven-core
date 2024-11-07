@@ -120,6 +120,7 @@ public class ArrowFlightUtil {
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(tableExport)
                     .onError(observer)
+                    .onSuccess(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
                         Object export = tableExport.get();
@@ -146,8 +147,6 @@ public class ArrowFlightUtil {
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
                                 DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
-
-                        listener.onCompleted();
                     });
         }
     }
@@ -216,7 +215,7 @@ public class ArrowFlightUtil {
             }
 
             if (mi.header.headerType() == MessageHeader.Schema) {
-                parseSchema(mi.header);
+                configureWithSchema(parseArrowSchema(mi));
                 return;
             }
 
@@ -544,6 +543,27 @@ public class ArrowFlightUtil {
                                 .queryPerformanceRecorder(queryPerformanceRecorder)
                                 .require(tableExport)
                                 .onError(listener)
+                                .onSuccess(() -> {
+                                    final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                                        switch (current) {
+                                            case DONT_CLOSE:
+                                                // record that we have finished sending
+                                                return HalfClosedState.FINISHED_SENDING;
+                                            case CLIENT_HALF_CLOSED:
+                                                // since streaming has now finished, and client already half-closed,
+                                                // time to half close from server
+                                                return HalfClosedState.CLOSED;
+                                            case FINISHED_SENDING:
+                                            case CLOSED:
+                                                throw new IllegalStateException("Can't finish streaming twice");
+                                            default:
+                                                throw new IllegalStateException("Unknown state " + current);
+                                        }
+                                    });
+                                    if (newState == HalfClosedState.CLOSED) {
+                                        GrpcUtil.safelyComplete(listener);
+                                    }
+                                })
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
                                     Object export = tableExport.get();
@@ -586,25 +606,6 @@ public class ArrowFlightUtil {
                                     BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
                                             reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
                                             metrics);
-                                    HalfClosedState newState = halfClosedState.updateAndGet(current -> {
-                                        switch (current) {
-                                            case DONT_CLOSE:
-                                                // record that we have finished sending
-                                                return HalfClosedState.FINISHED_SENDING;
-                                            case CLIENT_HALF_CLOSED:
-                                                // since streaming has now finished, and client already half-closed,
-                                                // time to half close from server
-                                                return HalfClosedState.CLOSED;
-                                            case FINISHED_SENDING:
-                                            case CLOSED:
-                                                throw new IllegalStateException("Can't finish streaming twice");
-                                            default:
-                                                throw new IllegalStateException("Unknown state " + current);
-                                        }
-                                    });
-                                    if (newState == HalfClosedState.CLOSED) {
-                                        listener.onCompleted();
-                                    }
                                 });
                     }
                 }
@@ -614,7 +615,7 @@ public class ArrowFlightUtil {
             public void close() {
                 // no work to do for DoGetRequest close
                 // possibly safely complete if finished sending data
-                HalfClosedState newState = halfClosedState.updateAndGet(current -> {
+                final HalfClosedState newState = halfClosedState.updateAndGet(current -> {
                     switch (current) {
                         case DONT_CLOSE:
                             // record that we have half closed
@@ -630,7 +631,7 @@ public class ArrowFlightUtil {
                     }
                 });
                 if (newState == HalfClosedState.CLOSED) {
-                    listener.onCompleted();
+                    GrpcUtil.safelyComplete(listener);
                 }
             }
         }

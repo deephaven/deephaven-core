@@ -2304,6 +2304,16 @@ class Table(JObjectWrapper):
 
         Raises:
             DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
         try:
             return Table(j_table=self.j_table.slice(start, stop))

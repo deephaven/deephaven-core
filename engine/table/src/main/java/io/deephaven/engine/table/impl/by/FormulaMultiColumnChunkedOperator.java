@@ -309,10 +309,14 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             if (removesToProcess && !resultColumn.getType().isPrimitive()) {
                 dataCopyContext.clearObjectColumnData(downstream.removed());
             }
-            if (modifiesToProcess) {
+            if (modifiesToProcess && addsToProcess) {
+                // Union the rowsets and do a single pass for efficiency.
+                try (final RowSequence combinedRowSequence = downstream.modified().union(downstream.added())) {
+                    dataCopyContext.copyData(combinedRowSequence);
+                }
+            } else if (modifiesToProcess) {
                 dataCopyContext.copyData(downstream.modified());
-            }
-            if (addsToProcess) {
+            } else {
                 dataCopyContext.copyData(downstream.added());
             }
         }

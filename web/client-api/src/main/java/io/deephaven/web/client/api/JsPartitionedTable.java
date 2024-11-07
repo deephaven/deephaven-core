@@ -6,9 +6,6 @@ package io.deephaven.web.client.api;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
-import elemental2.dom.CustomEvent;
-import elemental2.dom.CustomEventInit;
-import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
@@ -18,6 +15,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Typ
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
@@ -112,10 +110,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     fireEvent(EVENT_RECONNECT);
                     return null;
                 }, failure -> {
-                    CustomEventInit<Object> init = CustomEventInit.create();
-                    init.setDetail(failure);
                     unsuppressEvents();
-                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    fireEvent(EVENT_RECONNECTFAILED, failure);
                     suppressEvents();
                     return null;
                 });
@@ -141,20 +137,16 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         return promise.asPromise();
     }
 
-    private void handleKeys(Event update) {
-        // noinspection unchecked
-        CustomEvent<SubscriptionTableData> event = (CustomEvent<SubscriptionTableData>) update;
+    private void handleKeys(Event<SubscriptionTableData> update) {
 
         // We're only interested in added rows, send an event indicating the new keys that are available
-        SubscriptionTableData eventData = event.detail;
+        SubscriptionTableData eventData = update.getDetail();
         RangeSet added = eventData.getAdded().getRange();
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
             JsArray<Object> key = eventData.getColumns().map((c, p1) -> eventData.getData(index, c));
             knownKeys.add(key.asList());
-            CustomEventInit<JsArray<Object>> init = CustomEventInit.create();
-            init.setDetail(key);
-            fireEvent(EVENT_KEYADDED, init);
+            fireEvent(EVENT_KEYADDED, key);
         });
     }
 

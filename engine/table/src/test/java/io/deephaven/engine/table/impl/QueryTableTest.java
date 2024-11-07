@@ -3280,6 +3280,11 @@ public class QueryTableTest extends QueryTableTestBase {
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));
 
+            testMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 6"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("B=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol < 7"), t -> t.wouldMatch("A=intCol < 7"));
+
             testMemoize(source, t -> t.countBy("Count", "Sym"));
             testMemoize(source, t -> t.countBy("Sym"));
             testMemoize(source, t -> t.sumBy("Sym"));

@@ -61,6 +61,13 @@ public interface UpdateBySpec {
      */
     ColumnUpdateOperation clause(Collection<? extends Pair> pairs);
 
+    /**
+     * Build a {@link ColumnUpdateOperation} clause for this UpdateBySpec with no input/output column name specified.
+     *
+     * @return The aggregation
+     */
+    ColumnUpdateOperation clause();
+
     // region Visitor
     <T> T walk(Visitor<T> visitor);
 
