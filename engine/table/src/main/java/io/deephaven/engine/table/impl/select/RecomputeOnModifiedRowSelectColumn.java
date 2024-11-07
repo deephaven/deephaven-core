@@ -18,22 +18,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * {@link SelectColumn} implementation that wraps another {@link SelectColumn} and makes it report to be
- * {@link #isStateless() stateless}.
+ * {@link SelectColumn} implementation that wraps another {@link SelectColumn} and makes it report that values should be
+ * recomputed when the row is modified via {@link #recomputeOnModifiedRow()}.
  */
-class StatelessSelectColumn extends WrappedSelectColumn {
+class RecomputeOnModifiedRowSelectColumn extends WrappedSelectColumn {
 
-    StatelessSelectColumn(@NotNull final SelectColumn inner) {
+    RecomputeOnModifiedRowSelectColumn(@NotNull final SelectColumn inner) {
         super(inner);
     }
 
     @Override
-    public boolean isStateless() {
+    public SelectColumn copy() {
+        return new RecomputeOnModifiedRowSelectColumn(inner.copy());
+    }
+
+    @Override
+    public boolean recomputeOnModifiedRow() {
         return true;
     }
 
     @Override
-    public SelectColumn copy() {
-        return new StatelessSelectColumn(inner.copy());
+    public SelectColumn withRecomputeOnModifiedRow() {
+        return copy();
     }
 }
