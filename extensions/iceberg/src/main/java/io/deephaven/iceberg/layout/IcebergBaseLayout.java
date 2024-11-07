@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -162,7 +163,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                                     table, snapshot.snapshotId(), manifestFile.content()));
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
-                    for (DataFile df : reader) {
+                    // Sort the data files by sequence number to read them in the correct order
+                    final List<DataFile> dataFiles = new ArrayList<>();
+                    for (final DataFile df : reader) {
+                        dataFiles.add(df);
+                    }
+                    dataFiles.sort(Comparator.comparingLong(DataFile::dataSequenceNumber));
+
+                    // Process the data files
+                    for (final DataFile df : dataFiles) {
                         final URI fileUri = dataFileUri(df);
                         final IcebergTableLocationKey locationKey =
                                 cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
