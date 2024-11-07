@@ -3,7 +3,7 @@
 #
 """This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
-from typing import List, Union, Any
+from typing import List, Union, Any, Optional
 
 import jpy
 
