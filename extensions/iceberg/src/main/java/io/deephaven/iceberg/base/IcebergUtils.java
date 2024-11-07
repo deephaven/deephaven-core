@@ -278,7 +278,7 @@ public final class IcebergUtils {
         // Check that all required fields are present in the new schema
         for (final Types.NestedField existingField : existingSchema.columns()) {
             if (existingField.isRequired() && newSchema.findField(existingField.fieldId()) == null) {
-                // TODO Add check for writeDefault() once https://github.com/apache/iceberg/pull/9502 is released
+                // TODO (deephaven-core#6343): Add check for writeDefault() not set for required fields
                 throw new IllegalArgumentException("Field " + existingField + " is required in the existing table " +
                         "schema, but is not present in the new schema");
             }

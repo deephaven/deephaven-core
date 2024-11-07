@@ -448,6 +448,7 @@ public class IcebergTableWriter {
             } else {
                 newDataLocation = getDataLocation();
             }
+            // TODO (deephaven-core#6343): Set writeDefault() values for columns that are not present in the table
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
         return parquetFilesWritten;
