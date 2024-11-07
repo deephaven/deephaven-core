@@ -149,11 +149,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return;
         }
         final Table table = tableAdapter.icebergTable();
+        final List<DataFile> dataFiles = new ArrayList<>();
         try {
             // Retrieve the manifest files from the snapshot
             final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
-            // Sort manifest files by sequence number to read data files in the correct commit order
-            manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
             // TODO(deephaven-core#5989: Add unit tests for the ordering of manifest files
             for (final ManifestFile manifestFile : manifestFiles) {
                 // Currently only can process manifest files with DATA content type.
@@ -163,27 +162,27 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                                     table, snapshot.snapshotId(), manifestFile.content()));
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
-                    // Sort the data files by sequence number to read them in the correct order
-                    final List<DataFile> dataFiles = new ArrayList<>();
-                    for (final DataFile df : reader) {
-                        dataFiles.add(df);
-                    }
-                    dataFiles.sort(Comparator.comparingLong(DataFile::dataSequenceNumber));
-
-                    // Process the data files
-                    for (final DataFile df : dataFiles) {
-                        final URI fileUri = dataFileUri(df);
-                        final IcebergTableLocationKey locationKey =
-                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
-                        if (locationKey != null) {
-                            locationKeyObserver.accept(locationKey);
-                        }
-                    }
+                    reader.forEach(dataFiles::add);
                 }
             }
         } catch (final Exception e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
+        }
+
+        // Sort manifest files to read data files in the correct commit order
+        dataFiles.sort(Comparator
+                .comparingLong(DataFile::dataSequenceNumber)
+                .thenComparingLong(DataFile::fileSequenceNumber)
+                .thenComparingLong(DataFile::pos));
+
+        for (final DataFile df : dataFiles) {
+            final URI fileUri = dataFileUri(df);
+            final IcebergTableLocationKey locationKey =
+                    cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
+            if (locationKey != null) {
+                locationKeyObserver.accept(locationKey);
+            }
         }
     }
 
