@@ -3,12 +3,18 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterIn;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -18,8 +24,10 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -1298,6 +1306,100 @@ public class QueryTableSelectUpdateTest {
         for (TableOpInvoker op : tableOps) {
             final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii", "J = I_[ii - 1]");
             Assert.assertTrue(result.isBlink());
+        }
+    }
+
+    @Test
+    public void testFilterExpression() {
+        final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(1), Literal.of(3));
+        final Table t = TableTools.newTable(intCol("A", 1, 1, 2, 3, 5, 8));
+        final Table wm = t.wouldMatch(new WouldMatchPair("AWM", filter));
+        TableTools.showWithRowSet(wm);
+
+        // use an update
+        final Table up = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+        TableTools.showWithRowSet(up);
+
+        assertTableEquals(wm, up);
+
+        // use an updateView
+        final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+        TableTools.showWithRowSet(upv);
+
+        assertTableEquals(wm, upv);
+
+        // and now a more generic WhereFilter
+
+        final Filter filter2 = WhereFilterFactory.getExpression("A == 1 || A==3");
+        final Table wm2 = t.wouldMatch(new WouldMatchPair("AWM", filter2));
+        TableTools.showWithRowSet(wm2);
+
+        // use an update
+        final Table up2 = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter2)));
+        TableTools.showWithRowSet(up);
+
+        assertTableEquals(wm2, up2);
+    }
+
+    @Test
+    public void testFilterExpressionArray() {
+        final Filter filter = WhereFilterFactory.getExpression("A=A_[i-1]");
+        final Filter filterArrayOnly = WhereFilterFactory.getExpression("A=A_.size() = 1");
+        final Filter filterKonly = WhereFilterFactory.getExpression("A=k+1");
+        final QueryTable table = TstUtils.testRefreshingTable(intCol("A", 1, 1, 2, 3, 5, 8, 9, 9));
+
+        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class, () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
+        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]", wme.getMessage());
+
+        final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class, () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
+        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]", wme2.getMessage());
+
+        final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class, () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals("Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]", upe.getMessage());
+
+        final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class, () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals("Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]", upe.getMessage());
+
+        final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class, () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals("Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1", se.getMessage());
+
+        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class, () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals("Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1", ve.getMessage());
+
+    }
+
+    @Test
+    public void testFilterExpressionTicking() {
+        for (int seed = 0; seed < 5; ++seed) {
+            testFilterExpressionTicking(seed, new MutableInt(100));
+        }
+    }
+
+    private void testFilterExpressionTicking(final int seed, final MutableInt numSteps) {
+        final Random random = new Random(seed);
+        final ColumnInfo<?, ?>[] columnInfo;
+        final int size = 25;
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"), queryTable.update(List.of(Selectable.of(ColumnName.of("SM"), WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("SM"), WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"), queryTable.update(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"), queryTable.update(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+        };
+
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + numSteps.get());
+            }
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
     }
 }
