@@ -1348,23 +1348,39 @@ public class QueryTableSelectUpdateTest {
         final Filter filterKonly = WhereFilterFactory.getExpression("A=k+1");
         final QueryTable table = TstUtils.testRefreshingTable(intCol("A", 1, 1, 2, 3, 5, 8, 9, 9));
 
-        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class, () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
-        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]", wme.getMessage());
+        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
+        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]",
+                wme.getMessage());
 
-        final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class, () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
-        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]", wme2.getMessage());
+        final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
+        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]",
+                wme2.getMessage());
 
-        final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class, () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
-        Assert.assertEquals("Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]", upe.getMessage());
+        final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals(
+                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                upe.getMessage());
 
-        final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class, () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
-        Assert.assertEquals("Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]", upe.getMessage());
+        final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals(
+                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                upe.getMessage());
 
-        final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class, () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
-        Assert.assertEquals("Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1", se.getMessage());
+        final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                se.getMessage());
 
-        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class, () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
-        Assert.assertEquals("Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1", ve.getMessage());
+        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                ve.getMessage());
 
     }
 
@@ -1386,12 +1402,24 @@ public class QueryTableSelectUpdateTest {
                         new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"), queryTable.update(List.of(Selectable.of(ColumnName.of("SM"), WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
-                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("SM"), WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
-                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"), queryTable.update(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
-                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
-                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"), queryTable.update(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
-                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"), queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"),
+                        queryTable.update(List.of(Selectable.of(ColumnName.of("SM"),
+                                WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"),
+                        queryTable.updateView(List.of(Selectable.of(ColumnName.of("SM"),
+                                WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"),
+                        queryTable.update(List.of(
+                                Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"),
+                        queryTable.updateView(List.of(
+                                Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"),
+                        queryTable.update(List.of(Selectable.of(ColumnName.of("IM"),
+                                WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"),
+                        queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"),
+                                WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
         };
 
         final int maxSteps = numSteps.get();

@@ -30,11 +30,12 @@ import java.util.Map;
 public class FilterSelectColumn<S> implements SelectColumn {
 
     // We don't actually care to do anything, but cannot return null
-    private static final Formula.FillContext FILL_CONTEXT_INSTANCE = new Formula.FillContext() {
-    };
+    private static final Formula.FillContext FILL_CONTEXT_INSTANCE = new Formula.FillContext() {};
 
-    @NotNull private final String destName;
-    @NotNull private final WhereFilter filter;
+    @NotNull
+    private final String destName;
+    @NotNull
+    private final WhereFilter filter;
 
     private RowSet rowSet;
     private Table tableToFilter;
@@ -67,10 +68,14 @@ public class FilterSelectColumn<S> implements SelectColumn {
         filter.init(fromColumns);
 
         if (!filter.getColumnArrays().isEmpty()) {
-            throw new UncheckedTableException("Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: " + filter);
+            throw new UncheckedTableException(
+                    "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: "
+                            + filter);
         }
         if (filter.hasVirtualRowVariables()) {
-            throw new UncheckedTableException("Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: " + filter);
+            throw new UncheckedTableException(
+                    "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: "
+                            + filter);
         }
 
         return filter.getColumns();
@@ -108,12 +113,14 @@ public class FilterSelectColumn<S> implements SelectColumn {
 
             @Override
             public Boolean getBoolean(long rowKey) {
-                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, false).containsRange(rowKey, rowKey);
+                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, false).containsRange(rowKey,
+                        rowKey);
             }
 
             @Override
             public Boolean getPrevBoolean(long rowKey) {
-                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, true).containsRange(rowKey, rowKey);
+                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, true).containsRange(rowKey,
+                        rowKey);
             }
 
             @Override
@@ -144,12 +151,13 @@ public class FilterSelectColumn<S> implements SelectColumn {
                 doFill(rowSequence, destination, false);
             }
 
-            private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination, boolean usePrev) {
+            private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination,
+                    boolean usePrev) {
                 final WritableObjectChunk<Boolean, ?> booleanDestination = destination.asWritableObjectChunk();
                 try (final RowSet inputRowSet = rowSequence.asRowSet();
-                    final RowSet filtered = filter.filter(inputRowSet, rowSet, tableToFilter, usePrev);
-                     final RowSet.Iterator inputIt = inputRowSet.iterator();
-                     final RowSet.Iterator trueIt = filtered.iterator()) {
+                        final RowSet filtered = filter.filter(inputRowSet, rowSet, tableToFilter, usePrev);
+                        final RowSet.Iterator inputIt = inputRowSet.iterator();
+                        final RowSet.Iterator trueIt = filtered.iterator()) {
                     long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
                     int offset = 0;
                     while (nextTrue >= 0 && inputIt.hasNext()) {

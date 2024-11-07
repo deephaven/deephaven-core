@@ -114,14 +114,18 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
 
-        final List<WhereFilter> disallowedRowVariables = Arrays.stream(whereFilters).filter(WhereFilter::hasVirtualRowVariables).collect(Collectors.toList());
+        final List<WhereFilter> disallowedRowVariables =
+                Arrays.stream(whereFilters).filter(WhereFilter::hasVirtualRowVariables).collect(Collectors.toList());
         if (!disallowedRowVariables.isEmpty()) {
-            throw new UncheckedTableException("wouldMatch filters cannot use virtual row variables (i, ii, and k): " + disallowedRowVariables);
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use virtual row variables (i, ii, and k): " + disallowedRowVariables);
         }
 
-        final List<WhereFilter> disallowedColumnVectors = Arrays.stream(whereFilters).filter(wf -> !wf.getColumnArrays().isEmpty()).collect(Collectors.toList());
+        final List<WhereFilter> disallowedColumnVectors =
+                Arrays.stream(whereFilters).filter(wf -> !wf.getColumnArrays().isEmpty()).collect(Collectors.toList());
         if (!disallowedColumnVectors.isEmpty()) {
-            throw new UncheckedTableException("wouldMatch filters cannot use column Vectors (_ syntax): " + disallowedColumnVectors);
+            throw new UncheckedTableException(
+                    "wouldMatch filters cannot use column Vectors (_ syntax): " + disallowedColumnVectors);
         }
 
         compilationProcessor.compile();
@@ -534,7 +538,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 // If we were affected, recompute mods and re-add the ones that pass.
                 if (affected) {
                     downstreamModified.setAll(name);
-                    final RowSet filteredModified = toClose.add(filter.filter(modified, table.getRowSet(), table, false));
+                    final RowSet filteredModified =
+                            toClose.add(filter.filter(modified, table.getRowSet(), table, false));
 
                     // Now apply the additions and remove any non-matching modifieds
                     filteredAdded.insert(filteredModified);
