@@ -102,6 +102,8 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
 
         T visit(TailTable tailTable);
 
+        T visit(SliceTable sliceTable);
+
         T visit(ReverseTable reverseTable);
 
         T visit(SortTable sortTable);
@@ -149,5 +151,7 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         T visit(UngroupTable ungroupTable);
 
         T visit(DropColumnsTable dropColumnsTable);
+
+        T visit(MultiJoinTable multiJoinTable);
     }
 }

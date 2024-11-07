@@ -10,7 +10,6 @@ import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.util.datastructures.SoftCachingFunction;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -28,13 +27,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import static io.deephaven.base.FileUtils.convertToURI;
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetUtils.resolve;
+import static io.deephaven.parquet.base.ColumnPageReaderImpl.getDecompressorHolder;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -48,7 +46,6 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final OffsetIndexReader offsetIndexReader;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
-    private final PageMaterializerFactory nullMaterializerFactory;
     private final URI columnChunkURI;
     /**
      * Number of rows in the row group of this column chunk.
@@ -81,15 +78,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
-        this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
         this.numRows = numRows;
         this.version = version;
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            final String relativePath = FilenameUtils.separatorsToSystem(columnChunk.getFile_path());
-            this.columnChunkURI = convertToURI(Path.of(rootURI).resolve(relativePath), false);
+        if (columnChunk.isSetFile_path()) {
+            columnChunkURI = resolve(rootURI, columnChunk.getFile_path());
         } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
-            this.columnChunkURI = rootURI;
+            columnChunkURI = rootURI;
         }
         // Construct the reader object but don't read the offset index yet
         this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
@@ -130,16 +124,18 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public ColumnPageReaderIterator getPageIterator() {
-        return new ColumnPageReaderIteratorImpl();
+    public ColumnPageReaderIterator getPageIterator(final PageMaterializerFactory pageMaterializerFactory) {
+        return new ColumnPageReaderIteratorImpl(pageMaterializerFactory);
     }
 
     @Override
-    public ColumnPageDirectAccessor getPageAccessor(final OffsetIndex offsetIndex) {
+    public ColumnPageDirectAccessor getPageAccessor(
+            final OffsetIndex offsetIndex,
+            final PageMaterializerFactory pageMaterializerFactory) {
         if (offsetIndex == null) {
             throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
         }
-        return new ColumnPageDirectAccessorImpl(offsetIndex);
+        return new ColumnPageDirectAccessorImpl(offsetIndex, pageMaterializerFactory);
     }
 
     @Override
@@ -176,30 +172,15 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @NotNull
     private Dictionary getDictionary(final SeekableChannelContext channelContext) {
-        final long dictionaryPageOffset;
         final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
-        if (chunkMeta.isSetDictionary_page_offset()) {
-            dictionaryPageOffset = chunkMeta.getDictionary_page_offset();
-        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream()
-                .anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY
-                        || pes.getEncoding() == RLE_DICTIONARY)))
-                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream()
-                        .anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
-            // Fallback, inspired by
-            // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
-            dictionaryPageOffset = chunkMeta.getData_page_offset();
-        } else {
-            return NULL_DICTIONARY;
-        }
-        // Use the context object provided by the caller, or create (and close) a new one
-        try (
-                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI());
-                final InputStream in = channelsProvider.getInputStream(ch.position(dictionaryPageOffset))) {
-            return readDictionary(in, holder.get());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        // If the dictionary page offset is set, use it, otherwise inspect the first data page -- it might be the
+        // dictionary page. Fallback, inspired by
+        // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+        final long dictionaryPageOffset = chunkMeta.isSetDictionary_page_offset()
+                ? chunkMeta.getDictionary_page_offset()
+                : chunkMeta.getData_page_offset();
+
+        return readDictionary(dictionaryPageOffset, channelContext);
     }
 
     @Override
@@ -218,37 +199,51 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @NotNull
-    private Dictionary readDictionary(InputStream in, SeekableChannelContext channelContext) throws IOException {
-        // explicitly not closing this, caller is responsible
-        final PageHeader pageHeader = Util.readPageHeader(in);
-        if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
-            // In case our fallback in getDictionary was too optimistic...
-            return NULL_DICTIONARY;
+    private Dictionary readDictionary(long dictionaryPageOffset, SeekableChannelContext channelContext) {
+        // Use the context object provided by the caller, or create (and close) a new one
+        try (
+                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                final SeekableByteChannel ch =
+                        channelsProvider.getReadChannel(holder.get(), getURI()).position(dictionaryPageOffset)) {
+            final PageHeader pageHeader = readPageHeader(ch);
+            if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
+                // In case our fallback in getDictionary was too optimistic...
+                return NULL_DICTIONARY;
+            }
+            final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
+            final int compressedPageSize = pageHeader.getCompressed_page_size();
+            final BytesInput payload;
+            try (final InputStream in = (compressedPageSize == 0) ? null
+                    : channelsProvider.getInputStream(ch, compressedPageSize)) {
+                if (compressedPageSize == 0) {
+                    // Sometimes the size is explicitly empty, just use an empty payload
+                    payload = BytesInput.empty();
+                } else {
+                    payload = BytesInput.from(
+                            decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
+                                    getDecompressorHolder(holder.get())),
+                            pageHeader.getUncompressed_page_size());
+                }
+                final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
+                final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
+                // We are safe to not copy the payload because the Dictionary doesn't hold a reference to dictionaryPage
+                // or payload and thus doesn't hold a reference to the input stream.
+                return encoding.initDictionary(path, dictionaryPage);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
-        final int compressedPageSize = pageHeader.getCompressed_page_size();
-        final BytesInput payload;
-        if (compressedPageSize == 0) {
-            // Sometimes the size is explicitly empty, just use an empty payload
-            payload = BytesInput.empty();
-        } else {
-            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
-                    channelContext);
-        }
-        final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
-        final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
-        // We are safe to not copy the payload because the Dictionary doesn't hold a reference to dictionaryPage or
-        // payload and thus doesn't hold a reference to the input stream.
-        return encoding.initDictionary(path, dictionaryPage);
     }
 
     private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
         private long nextHeaderOffset;
         private long remainingValues;
+        PageMaterializerFactory pageMaterializerFactory;
 
-        ColumnPageReaderIteratorImpl() {
+        ColumnPageReaderIteratorImpl(final PageMaterializerFactory pageMaterializerFactory) {
             this.remainingValues = columnChunk.meta_data.getNum_values();
             this.nextHeaderOffset = columnChunk.meta_data.getData_page_offset();
+            this.pageMaterializerFactory = pageMaterializerFactory;
         }
 
         @Override
@@ -272,9 +267,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final long dataOffset = ch.position();
                 nextHeaderOffset = dataOffset + pageHeader.getCompressed_page_size();
                 final PageType pageType = pageHeader.type;
-                if (pageType == PageType.DICTIONARY_PAGE && headerOffset == columnChunk.meta_data.getData_page_offset()
-                        && columnChunk.meta_data.getDictionary_page_offset() == 0) {
-                    // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+                if (pageType == PageType.DICTIONARY_PAGE) {
                     // Skip the dictionary page and jump to the data page
                     return next(holder.get());
                 }
@@ -287,7 +280,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         getPageDictionarySupplier(pageHeader);
                 return new ColumnPageReaderImpl(columnName, channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader, numValuesInPage);
+                        pageMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader, numValuesInPage);
             } catch (IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header at offset " + headerOffset + " for " +
                         "column: " + columnName + ", uri: " + getURI(), e);
@@ -314,8 +307,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
     }
 
+    /**
+     * Read the page header from the given channel and increment the channel position by the number of bytes read.
+     */
     private PageHeader readPageHeader(final SeekableByteChannel ch) throws IOException {
-        try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch)) {
+        // We expect page headers to be smaller than 128 bytes
+        try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch, 128)) {
             return Util.readPageHeader(in);
         }
     }
@@ -329,9 +326,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
 
         private final OffsetIndex offsetIndex;
+        private final PageMaterializerFactory pageMaterializerFactory;
 
-        ColumnPageDirectAccessorImpl(final OffsetIndex offsetIndex) {
+        ColumnPageDirectAccessorImpl(@NotNull final OffsetIndex offsetIndex,
+                @NotNull final PageMaterializerFactory pageMaterializerFactory) {
             this.offsetIndex = offsetIndex;
+            this.pageMaterializerFactory = pageMaterializerFactory;
         }
 
         @Override
@@ -358,7 +358,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         getPageDictionarySupplier(pageHeader);
                 return new ColumnPageReaderImpl(columnName, channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader,
+                        pageMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader,
                         getNumValues(pageHeader));
             } catch (final IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header for page number " + pageNum +

@@ -86,12 +86,12 @@ public class IntRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (intWindowValues.size() == 0) {
+            if (intWindowValues.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = intWindowValues.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
                     outputValues.set(outIdx, curVal / (double) count);
                 }

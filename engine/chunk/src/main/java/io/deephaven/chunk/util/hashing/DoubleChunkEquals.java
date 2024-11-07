@@ -10,6 +10,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.DoubleComparisons;
 
 // region name
 public class DoubleChunkEquals implements ChunkEquals {
@@ -250,7 +251,7 @@ public class DoubleChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(double lhs, double rhs) {
-        return ((Double.isNaN(lhs) && Double.isNaN(rhs)) || lhs == rhs);
+        return DoubleComparisons.eq(lhs, rhs);
     }
     // endregion eq
 

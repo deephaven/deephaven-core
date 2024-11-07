@@ -1,16 +1,16 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+""" This module supports embedding a Deephaven server in Python."""
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 import sys
+import atexit
 
 from .start_jvm import start_jvm
 
 # These classes are explicitly not JObjectWrapper, as that would require importing deephaven and jpy
 # before the JVM was running.
-
-
 class ServerConfig:
     """
     Represents the configuration of a Deephaven server.
@@ -32,7 +32,6 @@ class ServerConfig:
             The target URL to bring up the Web UI.
         """
         return self.j_server_config.targetUrlOrDefault()
-
 
 class AuthenticationHandler:
     """
@@ -68,6 +67,7 @@ class AuthenticationHandler:
 
         """
         return list(self.j_authentication_handler.urls(target_url).toArray())
+
 
 
 class Server:
@@ -120,22 +120,37 @@ class Server:
         port: Optional[int] = None,
         jvm_args: Optional[List[str]] = None,
         extra_classpath: Optional[List[str]] = None,
+        default_jvm_args: Optional[List[str]] = None,
     ):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
+
+        Args:
+            host (Optional[str]): The host to bind the server to, defaults to None. When None, if a user defined
+                configuration file is present and 'http.host' is specified in it, use its value, otherwise, use the
+                default 'localhost'. Refer to the Deephaven documentation for more information on the configuration file.
+            port (Optional[int]): The port to bind the server to, defaults to None. When None, if a user defined
+                configuration file is present and 'http.port' is specified in it, use that port, otherwise, use the
+                default 10000. Refer to the Deephaven documentation for more information on the configuration file.
+            jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, and other
+                related JVM options. Defaults to None.
+            extra_classpath (Optional[List[str]]): The extra classpath to use.
+            default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
+                Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
+                let Python or Java handle signals. Defaults to None, the Deephaven defaults.
         """
         # TODO deephaven-core#2453 consider providing @dataclass for arguments
 
         # If the server was already created, emit an error to warn away from trying again
         if Server.instance is not None:
             from deephaven import DHError
-
             raise DHError("Cannot create more than one instance of the server")
+
         if extra_classpath is None:
             extra_classpath = []
 
         # given the jvm args, ensure that the jvm has started
-        start_jvm(jvm_args=jvm_args, extra_classpath=extra_classpath)
+        start_jvm(jvm_args=jvm_args, default_jvm_args=default_jvm_args, extra_classpath=extra_classpath)
 
         # it is now safe to import jpy
         import jpy
@@ -152,6 +167,9 @@ class Server:
 
         # Keep a reference to the server so we know it is running
         Server.instance = self
+
+        # On halt, prevent the JVM from writing to sys.out and sys.err
+        atexit.register(self.j_server.prepareForShutdown)
 
     def start(self):
         """

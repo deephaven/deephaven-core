@@ -19,6 +19,8 @@ using deephaven::dhcore::chunk::Int32Chunk;
 using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::DateTime;
+using deephaven::dhcore::LocalDate;
+using deephaven::dhcore::LocalTime;
 using deephaven::dhcore::DeephavenConstants;
 using deephaven::dhcore::utility::MakeReservedVector;
 
@@ -38,7 +40,9 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
         "Doubles = ii == 5 ? null : (double)(ii)",
         "Bools = ii == 5 ? null : ((ii % 2) == 0)",
         "Strings = ii == 5 ? null : `hello ` + i",
-        "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii"
+        "DateTimes = ii == 5 ? null : '2001-03-01T12:34:56Z' + ii",
+        "LocalDates = ii == 5 ? null : parseLocalDate(`2001-3-` + (ii + 1))",
+        "LocalTimes = ii == 5 ? null : parseLocalTime(`12:34:` + (46 + ii))"
       });
   std::cout << th.Stream(true) << '\n';
 
@@ -55,6 +59,8 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
   auto bools = MakeReservedVector<std::optional<bool>>(target);
   auto strings = MakeReservedVector<std::optional<std::string>>(target);
   auto date_times = MakeReservedVector<std::optional<DateTime>>(target);
+  auto local_dates = MakeReservedVector<std::optional<LocalDate>>(target);
+  auto local_times = MakeReservedVector<std::optional<LocalTime>>(target);
 
   auto date_time_start = DateTime::Parse("2001-03-01T12:34:56Z");
 
@@ -69,6 +75,8 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
     bools.emplace_back((i % 2) == 0);
     strings.emplace_back(fmt::format("hello {}", i));
     date_times.emplace_back(DateTime::FromNanos(date_time_start.Nanos() + i));
+    local_dates.emplace_back(LocalDate::Of(2001, 3, i + 1));
+    local_times.emplace_back(LocalTime::Of(12, 34, 46 + i));
   }
 
   auto t2 = target / 2;
@@ -84,6 +92,8 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
   bools[t2] = {};
   strings[t2] = {};
   date_times[t2] = {};
+  local_dates[t2] = {};
+  local_times[t2] = {};
 
   CompareColumn(*ct, "Chars", chars);
   CompareColumn(*ct, "Bytes", int8s);
@@ -95,7 +105,7 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
   CompareColumn(*ct, "Bools", bools);
   CompareColumn(*ct, "Strings", strings);
   CompareColumn(*ct, "DateTimes", date_times);
-
-  tm.Client().Close();
+  CompareColumn(*ct, "LocalDates", local_dates);
+  CompareColumn(*ct, "LocalTimes", local_times);
 }
 }  // namespace deephaven::client::tests

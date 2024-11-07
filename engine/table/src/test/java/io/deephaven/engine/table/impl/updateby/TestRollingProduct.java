@@ -7,7 +7,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -91,8 +90,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     private String[] getFormulas(String[] columns) {
         return Arrays.stream(columns)
-                // Force null instead of NaN when vector size == 0
-                .map(c -> String.format("%s=%s.size() == 0 ? null : product(%s)", c, c, c))
+                .map(c -> String.format("%s=product(%s)", c, c, c))
                 .toArray(String[]::new);
     }
 
@@ -143,7 +141,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
                 new BigDecimalGenerator(new BigInteger("1"), new BigInteger("2"), 5, .1)));
 
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(String[]::new),
                 generators.toArray(new TestDataGenerator[0]));
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
@@ -369,6 +367,14 @@ public class TestRollingProduct extends BaseUpdateByTest {
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {

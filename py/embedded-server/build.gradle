@@ -3,6 +3,8 @@ plugins {
     id 'java-library'
 }
 
+evaluationDependsOn ':docker-server-jetty'
+
 configurations {
     classpath
 }
@@ -23,4 +25,43 @@ dependencies {
     api(project(':Integrations')) {
         because 'downstream dagger compile'
     }
+
+    implementation project(":util-processenvironment")
 }
+
+def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer') {
+    copyIn {
+        from('tests') {
+            into 'project/tests'
+        }
+        from(tasks.getByName('buildWheel')) {
+            into 'wheels'
+        }
+        from(configurations.pythonWheel) {
+            into 'wheels'
+        }
+        from ('requirements-dev.txt') {
+            into 'project/'
+        }
+    }
+    dockerfile {
+        // Start from the image that built our wheel, so it is already ready to go
+        from(Docker.localImageName('server-jetty'))
+        copyFile('project', '/project')
+        copyFile('wheels', '/wheels')
+
+        workingDir('/project')
+        runCommand '''set -eux; \\
+                      mkdir -p /out/report; \\
+                      pip install --upgrade pip; \\
+                      pip3 install -r requirements-dev.txt; \\
+                      pip3 install /wheels/*'''
+    }
+    parentContainers = [ project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty') ]
+    entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+}
+
+tasks.getByName('check').dependsOn(testEmbeddedServer)

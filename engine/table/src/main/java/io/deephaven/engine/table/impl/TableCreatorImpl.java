@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.MultiJoinFactory;
+import io.deephaven.engine.table.MultiJoinInput;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
@@ -13,6 +15,8 @@ import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.BlinkInputTable;
+import io.deephaven.qst.table.Clock;
+import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
@@ -22,12 +26,11 @@ import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSchema;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.Clock;
-import io.deephaven.qst.table.ClockSystem;
 import io.deephaven.qst.table.TimeTable;
 import io.deephaven.stream.TablePublisher;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -85,6 +88,15 @@ public enum TableCreatorImpl implements TableCreator<Table> {
         return InputTableAdapter.of(inputTable);
     }
 
+    @Override
+    public final Table multiJoin(List<io.deephaven.qst.table.MultiJoinInput<Table>> multiJoinInputs) {
+        return MultiJoinFactory.of(multiJoinInputs.stream().map(TableCreatorImpl::adapt).toArray(MultiJoinInput[]::new))
+                .table();
+    }
+
+    private static MultiJoinInput adapt(io.deephaven.qst.table.MultiJoinInput<Table> input) {
+        return MultiJoinInput.of(input.table(), input.matches(), input.additions());
+    }
 
     @Override
     public final Table merge(Iterable<Table> tables) {

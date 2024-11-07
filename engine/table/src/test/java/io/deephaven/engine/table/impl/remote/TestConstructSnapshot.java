@@ -5,30 +5,13 @@ package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.mutable.MutableLong;
 
-import java.util.BitSet;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static io.deephaven.engine.testutil.TstUtils.addToTable;
-import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.testutil.TstUtils.i;
-import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.stringCol;
 
 public class TestConstructSnapshot extends RefreshingTableTestCase {
 

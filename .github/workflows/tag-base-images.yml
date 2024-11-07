@@ -29,9 +29,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Setup Crane
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: imjasonh/setup-crane@v0.3
+        uses: imjasonh/setup-crane@v0.4
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -50,11 +53,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Crane scripts
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: crane-scripts
-          arguments: createCraneTagScript
-          gradle-version: wrapper
+        run: ./gradlew createCraneTagScript
 
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}

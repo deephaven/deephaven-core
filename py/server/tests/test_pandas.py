@@ -207,11 +207,11 @@ class PandasTestCase(BaseTestCase):
         self.assertIs(table.columns[6].data_type, dtypes.float32)
         self.assertIs(table.columns[7].data_type, dtypes.double)
         self.assertIs(table.columns[8].data_type, dtypes.string)
-        self.assertIs(table.columns[9].data_type, dtypes.PyObject)
+        self.assertIs(table.columns[9].data_type, dtypes.string)
 
         self.assertEqual(table.size, 3)
         table_string = table.to_string()
-        self.assertEqual(8, table_string.count("null"))
+        self.assertEqual(9, table_string.count("null"))
         self.assertEqual(2, table_string.count("NaN"))
 
     def test_arrow_backend(self):
@@ -235,7 +235,7 @@ class PandasTestCase(BaseTestCase):
                 ),
                 'pa_byte': pandas.Series([1, None], dtype='int8[pyarrow]'),
                 'py_string': pandas.Series(['text1', None], dtype=pd.StringDtype()),
-                'pa_byte1': pandas.Series(np.array([1, 255], dtype=np.int8)),
+                'pa_byte1': pandas.Series(np.array([1, 127], dtype=np.int8)),
             })
             dh_table = to_table(df)
             self.assertEqual(dh_table.to_string().count('null'), 5)
@@ -342,6 +342,27 @@ class PandasTestCase(BaseTestCase):
         df = to_pandas(source)
         t = to_table(df)
         self.assert_table_equals(source, t)
+
+    def test_infer_objects(self):
+        df = pd.DataFrame({
+            "A": pd.Series([1, 2, 3], dtype=np.dtype("O")),
+            "B": pd.Series(["a", "b", "c"], dtype=np.dtype("O")),
+            "C": pd.Series([1.1, 2.2, 3.3], dtype=np.dtype("O")),
+            "D": pd.Series([True, False, True], dtype=np.dtype("O")),
+            "E": pd.Series( [pd.Timestamp("2021-01-01"), pd.Timestamp("2021-01-02"), pd.Timestamp("2021-01-03")], dtype=np.dtype("O")),
+            "F": pd.Series( [np.datetime64("2021-01-01"), np.datetime64("2021-01-02"), np.datetime64("2021-01-03")], dtype=np.dtype("O")),
+        })
+        self.assertTrue(all(df[col].dtype == object for col in list(df)))
+        t = to_table(df)
+        self.assertEqual(t.columns[0].data_type, dtypes.int64)
+        self.assertEqual(t.columns[1].data_type, dtypes.string)
+        self.assertEqual(t.columns[2].data_type, dtypes.double)
+        self.assertEqual(t.columns[3].data_type, dtypes.bool_)
+        self.assertEqual(t.columns[4].data_type, dtypes.Instant)
+        self.assertEqual(t.columns[5].data_type, dtypes.Instant)
+
+        t = to_table(df, infer_objects=False)
+        self.assertTrue(all([t.columns[i].data_type == dtypes.PyObject for i in range(6)]))
 
 
 if __name__ == '__main__':

@@ -93,12 +93,16 @@ public class LongAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final long index = indices.get(start + ii);
             final long value = values.get(start + ii);
-            final int comparison = LongComparisons.compare(value, bestValue);
-            // @formatter:off
-            final boolean better =
-                    ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||
-                    (!isFirst && (comparison > 0 || (comparison == 0 && index > bestIndex)))  ;
-            // @formatter:on
+            final boolean better;
+            if (isFirst) {
+                better = index < bestIndex
+                        ? LongComparisons.leq(value, bestValue)
+                        : LongComparisons.lt(value, bestValue);
+            } else {
+                better = index > bestIndex
+                        ? LongComparisons.geq(value, bestValue)
+                        : LongComparisons.gt(value, bestValue);
+            }
             if (better) {
                 bestIndex = index;
                 bestValue = value;

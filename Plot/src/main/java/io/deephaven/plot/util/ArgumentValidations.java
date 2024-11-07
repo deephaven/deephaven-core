@@ -4,7 +4,6 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
@@ -13,6 +12,7 @@ import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.type.NumericTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ClassUtils;
 
@@ -362,24 +362,24 @@ public class ArgumentValidations {
     }
 
     /**
-     * Whether the class is {@link TypeUtils#isNumeric(Class)} or {@link #isTime(Class, PlotInfo)}
+     * Whether the class is {@link NumericTypeUtils#isNumeric(Class)} or {@link #isTime(Class, PlotInfo)}
      *
      * @param c class
      * @return true if {@code c} is a numeric or time class, false otherwise
      */
     public static boolean isNumericOrTime(final Class c) {
-        return TypeUtils.isNumeric(c) || isTime(c, null);
+        return NumericTypeUtils.isNumeric(c) || isTime(c, null);
     }
 
     /**
-     * Whether the class is {@link TypeUtils#isNumeric(Class)} or {@link #isTime(Class, PlotInfo)}
+     * Whether the class is {@link NumericTypeUtils#isNumeric(Class)} or {@link #isTime(Class, PlotInfo)}
      *
      * @param c class
      * @param plotInfo source of the exception
      * @return true if {@code c} is a numeric or time class, false otherwise
      */
     public static boolean isNumericOrTime(final Class c, final PlotInfo plotInfo) {
-        return TypeUtils.isNumeric(c) || isTime(c, plotInfo);
+        return NumericTypeUtils.isNumeric(c) || isTime(c, plotInfo);
     }
 
     /**
@@ -419,7 +419,7 @@ public class ArgumentValidations {
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isPrimitiveNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isPrimitiveNumeric(Class)}.
      *
      * @param t table
      * @param column column
@@ -428,11 +428,11 @@ public class ArgumentValidations {
      */
     public static boolean isPrimitiveNumeric(final Table t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        return TypeUtils.isPrimitiveNumeric(getColumnType(t, column, plotInfo));
+        return NumericTypeUtils.isPrimitiveNumeric(getColumnType(t, column, plotInfo));
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isBoxedNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isBoxedNumeric(Class)}.
      *
      * @param t table
      * @param column column
@@ -441,11 +441,11 @@ public class ArgumentValidations {
      */
     public static boolean isBoxedNumeric(final Table t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        return TypeUtils.isBoxedNumeric(getColumnType(t, column, plotInfo));
+        return NumericTypeUtils.isBoxedNumeric(getColumnType(t, column, plotInfo));
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isNumeric(Class)}.
      *
      * @param t table
      * @param column column
@@ -454,11 +454,11 @@ public class ArgumentValidations {
      */
     public static boolean isNumeric(final Table t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        return TypeUtils.isNumeric(getColumnType(t, column, plotInfo));
+        return NumericTypeUtils.isNumeric(getColumnType(t, column, plotInfo));
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isNumeric(Class)}.
      *
      * @param t table
      * @param column column
@@ -467,11 +467,11 @@ public class ArgumentValidations {
      */
     public static boolean isNumeric(final TableDefinition t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        return TypeUtils.isNumeric(getColumnType(t, column, plotInfo));
+        return NumericTypeUtils.isNumeric(getColumnType(t, column, plotInfo));
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isNumeric(Class)}.
      *
      * @param sds selectable dataset
      * @param column column
@@ -480,7 +480,7 @@ public class ArgumentValidations {
      */
     public static boolean isNumeric(final SelectableDataSet sds, final String column, final PlotInfo plotInfo) {
         assertNotNull(sds, "t", plotInfo);
-        return TypeUtils.isNumeric(getColumnType(sds, column, plotInfo));
+        return NumericTypeUtils.isNumeric(getColumnType(sds, column, plotInfo));
     }
 
     /**
@@ -583,7 +583,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be a numeric primitive as defined in
-     * {@link TypeUtils#isPrimitiveNumeric(Class)}
+     * {@link NumericTypeUtils#isPrimitiveNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't a numeric primitive
      * @param t table
@@ -598,7 +598,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be a numeric primitive as defined in
-     * {@link TypeUtils#isPrimitiveNumeric(Class)}
+     * {@link NumericTypeUtils#isPrimitiveNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't a numeric primitive
      * @param t table
@@ -616,7 +616,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be an instance of {@link Number} as defined in
-     * {@link TypeUtils#isBoxedNumeric(Class)}
+     * {@link NumericTypeUtils#isBoxedNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't an instance of {@link Number}
      * @param t table
@@ -631,7 +631,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be an instance of {@link Number} as defined in
-     * {@link TypeUtils#isBoxedNumeric(Class)}
+     * {@link NumericTypeUtils#isBoxedNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't an instance of {@link Number}
      * @param t table
@@ -649,7 +649,7 @@ public class ArgumentValidations {
 
 
     /**
-     * Requires the column's data type to be a numeric instance as defined in {@link TypeUtils#isNumeric(Class)}
+     * Requires the column's data type to be a numeric instance as defined in {@link NumericTypeUtils#isNumeric(Class)}
      *
      * @throws PlotRuntimeException if the column's data type isn't a numeric instance
      * @param t table
@@ -663,7 +663,7 @@ public class ArgumentValidations {
 
 
     /**
-     * Requires the column's data type to be a numeric instance as defined in {@link TypeUtils#isNumeric(Class)}
+     * Requires the column's data type to be a numeric instance as defined in {@link NumericTypeUtils#isNumeric(Class)}
      *
      * @throws PlotRuntimeException if the column's data type isn't a numeric instance
      * @param t table
@@ -677,7 +677,7 @@ public class ArgumentValidations {
 
 
     /**
-     * Requires the column's data type to be a numeric instance as defined in {@link TypeUtils#isNumeric(Class)}
+     * Requires the column's data type to be a numeric instance as defined in {@link NumericTypeUtils#isNumeric(Class)}
      *
      * @throws PlotRuntimeException if the column's data type isn't a numeric instance
      * @param t table
@@ -695,7 +695,7 @@ public class ArgumentValidations {
 
 
     /**
-     * Requires the column's data type to be a numeric instance as defined in {@link TypeUtils#isNumeric(Class)}
+     * Requires the column's data type to be a numeric instance as defined in {@link NumericTypeUtils#isNumeric(Class)}
      *
      * @throws PlotRuntimeException if the column's data type isn't a numeric instance
      * @param t table
@@ -713,7 +713,7 @@ public class ArgumentValidations {
 
 
     /**
-     * Requires the column's data type to be a numeric instance as defined in {@link TypeUtils#isNumeric(Class)}
+     * Requires the column's data type to be a numeric instance as defined in {@link NumericTypeUtils#isNumeric(Class)}
      *
      * @throws PlotRuntimeException if the column's data type isn't a numeric instance
      * @param sds selectable dataset

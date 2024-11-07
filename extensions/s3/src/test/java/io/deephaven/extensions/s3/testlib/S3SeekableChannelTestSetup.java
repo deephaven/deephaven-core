@@ -83,4 +83,15 @@ public abstract class S3SeekableChannelTestSetup {
         dst.flip();
         return dst;
     }
+
+    protected static void fillBuffer(ReadableByteChannel channel, final ByteBuffer dst) throws IOException {
+        final int numBytes = dst.remaining();
+        while (dst.remaining() > 0 && channel.read(dst) != -1) {
+            // continue
+        }
+        if (dst.remaining() > 0) {
+            throw new RuntimeException(String.format("channel has less than %d bytes", numBytes));
+        }
+        dst.flip();
+    }
 }

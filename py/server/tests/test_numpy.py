@@ -58,7 +58,7 @@ class NumpyTestCase(BaseTestCase):
             "NPLong": np.array([1, -1], dtype=np.int8),
             "Float": np.array([1.01, -1.01], dtype=np.float32),
             "Double": np.array([1.01, -1.01]),
-            "String": np.array(["foo", "bar"], dtype=np.string_),
+            "String": np.array(["foo", "bar"], dtype=np.str_),
             "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]")),
             "PyObj": np.array([CustomClass(1, "1"), CustomClass(-1, "-1")]),
             "PyObj1": np.array([[1, 2, 3], CustomClass(-1, "-1")], dtype=np.object_),
@@ -71,14 +71,14 @@ class NumpyTestCase(BaseTestCase):
         super().tearDown()
 
     def test_to_numpy(self):
-        for col in self.test_table.columns:
-            with self.subTest(f"test single column to numpy- {col.name}"):
-                np_array = to_numpy(self.test_table, [col.name])
+        for col_name in self.test_table.definition:
+            with self.subTest(f"test single column to numpy- {col_name}"):
+                np_array = to_numpy(self.test_table, [col_name])
                 self.assertEqual((2, 1), np_array.shape)
-                np.array_equal(np_array, self.np_array_dict[col.name])
+                np.array_equal(np_array, self.np_array_dict[col_name])
 
         try:
-            to_numpy(self.test_table, [col.name for col in self.test_table.columns])
+            to_numpy(self.test_table, self.test_table.column_names)
         except DHError as e:
             self.assertIn("same data type", e.root_cause)
 
@@ -90,17 +90,17 @@ class NumpyTestCase(BaseTestCase):
                 float_col(name="Float3", data=[1111.01111, -1111.01111]),
                 float_col(name="Float4", data=[11111.011111, -11111.011111])]
             tmp_table = new_table(cols=input_cols)
-            np_array = to_numpy(tmp_table, [col.name for col in tmp_table.columns])
+            np_array = to_numpy(tmp_table, tmp_table.column_names)
             self.assertEqual((2, 5), np_array.shape)
 
     def test_to_numpy_remap(self):
-        for col in self.test_table.columns:
-            with self.subTest(f"test single column to numpy - {col.name}"):
-                np_array = to_numpy(self.test_table, [col.name])
+        for col_name in self.test_table.definition:
+            with self.subTest(f"test single column to numpy - {col_name}"):
+                np_array = to_numpy(self.test_table, [col_name])
                 self.assertEqual((2, 1), np_array.shape)
 
         try:
-            to_numpy(self.test_table, [col.name for col in self.test_table.columns])
+            to_numpy(self.test_table, self.test_table.column_names)
         except DHError as e:
             self.assertIn("same data type", e.root_cause)
 
@@ -140,12 +140,12 @@ class NumpyTestCase(BaseTestCase):
                 float_col(name="Float3", data=[1111.01111, -1111.01111]),
                 float_col(name="Float4", data=[11111.011111, -11111.011111])]
             tmp_table = new_table(cols=input_cols)
-            np_array = to_numpy(tmp_table, [col.name for col in tmp_table.columns])
-            tmp_table2 = to_table(np_array, [col.name for col in tmp_table.columns])
+            np_array = to_numpy(tmp_table, tmp_table.column_names)
+            tmp_table2 = to_table(np_array, tmp_table.column_names)
             self.assert_table_equals(tmp_table2, tmp_table)
 
             with self.assertRaises(DHError) as cm:
-                tmp_table3 = to_table(np_array[:, [0, 1, 3]], [col.name for col in tmp_table.columns])
+                tmp_table3 = to_table(np_array[:, [0, 1, 3]], tmp_table.column_names)
             self.assertIn("doesn't match", cm.exception.root_cause)
 
     def get_resource_path(self, resource_path) -> str:

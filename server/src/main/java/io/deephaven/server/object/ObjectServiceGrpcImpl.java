@@ -78,36 +78,35 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
         class EnqueuedStreamOperation {
             private final StreamOperation wrapped;
-            private final List<ExportObject<?>> requirements;
+            private final SessionState.ExportBuilder<Object> nonExport;
 
             EnqueuedStreamOperation(Collection<? extends ExportObject<?>> dependencies,
                     StreamOperation wrapped) {
                 this.wrapped = wrapped;
-                this.requirements = List.copyOf(dependencies);
+                this.nonExport = session.nonExport()
+                        .onErrorHandler(SendMessageObserver.this::onError)
+                        .require(List.copyOf(dependencies));
             }
 
             public void run() {
-                session.nonExport()
-                        .onErrorHandler(SendMessageObserver.this::onError)
-                        .require(requirements)
-                        .submit(() -> {
-                            if (runState.get() == EnqueuedState.CLOSED) {
-                                return;
-                            }
-                            // Run the specified work. Note that we're not concerned about exceptions, the stream will
-                            // be dead (via onError) and won't be used again.
-                            try {
-                                wrapped.run();
-                            } catch (ObjectCommunicationException e) {
-                                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        "Error performing MessageStream operation");
-                            }
+                nonExport.submit(() -> {
+                    if (runState.get() == EnqueuedState.CLOSED) {
+                        return;
+                    }
+                    // Run the specified work. Note that we're not concerned about exceptions, the stream will
+                    // be dead (via onError) and won't be used again.
+                    try {
+                        wrapped.run();
+                    } catch (ObjectCommunicationException e) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Error performing MessageStream operation");
+                    }
 
-                            // Set state to WAITING if it is RUNNING so that any new work can race being added
-                            if (runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
-                                doWork();
-                            } // else the stream should be ended and no more work done
-                        });
+                    // Set state to WAITING if it is RUNNING so that any new work can race being added
+                    if (runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
+                        doWork();
+                    } // else the stream should be ended and no more work done
+                });
             }
         }
 

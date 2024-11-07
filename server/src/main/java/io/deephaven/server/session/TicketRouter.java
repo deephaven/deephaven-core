@@ -71,6 +71,8 @@ public class TicketRouter {
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
                 "resolveTicket:" + ticketName)) {
             return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
+        } catch (RuntimeException e) {
+            return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -122,6 +124,8 @@ public class TicketRouter {
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
                 "resolveDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).resolve(session, descriptor, logId);
+        } catch (RuntimeException e) {
+            return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -263,6 +267,8 @@ public class TicketRouter {
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
                 "flightInfoForDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
+        } catch (RuntimeException e) {
+            return SessionState.wrapAsFailedExport(e);
         }
     }
 

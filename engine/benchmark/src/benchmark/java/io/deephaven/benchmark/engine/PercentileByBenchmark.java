@@ -4,7 +4,6 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
@@ -17,6 +16,7 @@ import io.deephaven.benchmarking.generator.EnumStringGenerator;
 import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -133,7 +133,7 @@ public class PercentileByBenchmark {
             default:
                 throw new IllegalStateException("Unknown KeyType: " + keyType);
         }
-        keyColumnNames = keyCount > 0 ? keyName.split(",") : CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
+        keyColumnNames = keyCount > 0 ? keyName.split(",") : ArrayTypeUtils.EMPTY_STRING_ARRAY;
 
         switch (valueCount) {
             case 8:

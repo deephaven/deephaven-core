@@ -68,11 +68,15 @@ class BarrageTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             barrage_session(host="localhost", port=10000, auth_type="Basic", auth_token="user:password")
 
+    def test_barrage_session_with_extra_headers(self):
+        session = barrage_session(host="localhost", port=10000, auth_type="Anonymous", extra_headers={"envoy-prefix": "test"})
+        self.assertIsNotNone(session)
+
     def test_subscribe(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
         t = session.subscribe(ticket=self.shared_ticket.bytes)
         self.assertEqual(t.size, 1000)
-        self.assertEqual(len(t.columns), 2)
+        self.assertEqual(len(t.definition), 2)
         sp = t.snapshot()
         self.assertEqual(sp.size, 1000)
         t1 = t.update("Z = X + Y")
@@ -115,7 +119,7 @@ class BarrageTestCase(BaseTestCase):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
         t = session.snapshot(self.shared_ticket.bytes)
         self.assertEqual(t.size, 1000)
-        self.assertEqual(len(t.columns), 2)
+        self.assertEqual(len(t.definition), 2)
         t1 = t.update("Z = X + Y")
         self.assertEqual(t1.size, 1000)
         t2 = session.snapshot(self.shared_ticket.bytes)

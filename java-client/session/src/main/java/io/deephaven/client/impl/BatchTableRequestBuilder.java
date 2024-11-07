@@ -53,6 +53,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
@@ -60,6 +61,7 @@ import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -90,6 +92,8 @@ import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MultiJoinInput;
+import io.deephaven.qst.table.MultiJoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
@@ -97,6 +101,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
@@ -231,6 +236,15 @@ class BatchTableRequestBuilder {
         public Operation visit(TailTable tailTable) {
             return op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
                     .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
+        }
+
+        @Override
+        public Operation visit(SliceTable sliceTable) {
+            return op(Builder::setSlice, SliceRequest.newBuilder().setResultId(ticket)
+                    .setSourceId(ref(sliceTable.parent()))
+                    .setFirstPositionInclusive(sliceTable.firstPositionInclusive())
+                    .setLastPositionExclusive(sliceTable.lastPositionExclusive())
+                    .build());
         }
 
         @Override
@@ -581,6 +595,29 @@ class BatchTableRequestBuilder {
                 request.addColumnNames(dropColumn.name());
             }
             return op(Builder::setDropColumns, request);
+        }
+
+        @Override
+        public Operation visit(MultiJoinTable multiJoinTable) {
+            final MultiJoinTablesRequest.Builder request = MultiJoinTablesRequest.newBuilder()
+                    .setResultId(ticket);
+            for (MultiJoinInput<TableSpec> input : multiJoinTable.inputs()) {
+                request.addMultiJoinInputs(adapt(input));
+            }
+            return op(Builder::setMultiJoin, request);
+        }
+
+        private io.deephaven.proto.backplane.grpc.MultiJoinInput adapt(MultiJoinInput<TableSpec> input) {
+            io.deephaven.proto.backplane.grpc.MultiJoinInput.Builder builder =
+                    io.deephaven.proto.backplane.grpc.MultiJoinInput.newBuilder()
+                            .setSourceId(ref(input.table()));
+            for (JoinMatch match : input.matches()) {
+                builder.addColumnsToMatch(Strings.of(match));
+            }
+            for (JoinAddition addition : input.additions()) {
+                builder.addColumnsToAdd(Strings.of(addition));
+            }
+            return builder.build();
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

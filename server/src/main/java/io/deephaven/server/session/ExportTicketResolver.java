@@ -55,7 +55,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                     }
 
                     throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor + "' is not a table");
+                            "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
                 });
     }
 

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-find_package(Immer REQUIRED)
+find_package(Immer CONFIG REQUIRED)
 
 set(ALL_FILES
     src/types.cc
@@ -21,6 +21,9 @@ set(ALL_FILES
     src/container/row_sequence.cc
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
+    src/interop/testapi/basic_interop_interactions.cc
+    src/interop/interop_util.cc
+    src/interop/utility_interop.cc
     src/ticking/barrage_processor.cc
     src/ticking/immer_table_state.cc
     src/ticking/index_decoder.cc
@@ -29,6 +32,7 @@ set(ALL_FILES
     src/ticking/ticking.cc
     src/utility/cython_support.cc
     src/utility/utility.cc
+    src/utility/utility_platform_specific.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
     include/private/deephaven/dhcore/ticking/index_decoder.h
@@ -47,6 +51,9 @@ set(ALL_FILES
     include/public/deephaven/dhcore/column/column_source_helpers.h
     include/public/deephaven/dhcore/column/column_source_utils.h
     include/public/deephaven/dhcore/container/row_sequence.h
+    include/public/deephaven/dhcore/interop/testapi/basic_interop_interactions.h
+    include/public/deephaven/dhcore/interop/interop_util.h
+    include/public/deephaven/dhcore/interop/utility_interop.h
     include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
     include/public/deephaven/dhcore/utility/cython_support.h
@@ -129,6 +136,7 @@ foreach (whichlib dhcore dhcore_static)
     target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
 
     target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_link_libraries(${whichlib} PRIVATE ws2_32)
   endif()
 
   target_include_directories(${whichlib} PRIVATE include/private)
@@ -138,5 +146,5 @@ foreach (whichlib dhcore dhcore_static)
   target_include_directories(${whichlib} PRIVATE flatbuf)
   target_include_directories(${whichlib} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
-  target_link_libraries(${whichlib} PUBLIC immer)
+  target_link_libraries(${whichlib} PRIVATE immer)
 endforeach()

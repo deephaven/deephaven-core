@@ -3,31 +3,24 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -88,7 +81,9 @@ public class TestPartitioningColumns {
                             tl.handleUpdate(RowSetFactory.flat(1), 1L);
                             return tl;
                         },
-                        null),
+                        null,
+                        TableUpdateMode.STATIC,
+                        TableUpdateMode.STATIC),
                 null);
 
         for (String colName : partitionKeys) {
@@ -121,7 +116,6 @@ public class TestPartitioningColumns {
                     Assert.eqTrue(fullRowSet.containsRange(rowKey, rowKey), "fullRowSet.containsRange(rowKey, rowKey)");
                 }
             }
-
         }
 
         final Table expected = input.sort(input.getDefinition().getColumnNamesArray());
@@ -134,110 +128,5 @@ public class TestPartitioningColumns {
         TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
-    }
-
-    private static final class DummyTableLocation extends AbstractTableLocation {
-
-        private DummyTableLocation(@NotNull final TableKey tableKey,
-                @NotNull final TableLocationKey tableLocationKey) {
-            super(tableKey, tableLocationKey, false);
-        }
-
-        @Override
-        public void refresh() {}
-
-        @Override
-        public @NotNull List<SortColumn> getSortedColumns() {
-            return List.of();
-        }
-
-        @Override
-        @NotNull
-        public List<String[]> getDataIndexColumns() {
-            return List.of();
-        }
-
-        @Override
-        public boolean hasDataIndex(@NotNull final String... columns) {
-            return false;
-        }
-
-        @NotNull
-        @Override
-        protected ColumnLocation makeColumnLocation(@NotNull final String name) {
-            return new ColumnLocation() {
-                @NotNull
-                @Override
-                public TableLocation getTableLocation() {
-                    return DummyTableLocation.this;
-                }
-
-                @NotNull
-                @Override
-                public String getName() {
-                    return name;
-                }
-
-                @Override
-                public boolean exists() {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionChar<Values> makeColumnRegionChar(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionByte<Values> makeColumnRegionByte(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionShort<Values> makeColumnRegionShort(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionInt<Values> makeColumnRegionInt(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionLong<Values> makeColumnRegionLong(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionFloat<Values> makeColumnRegionFloat(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public ColumnRegionDouble<Values> makeColumnRegionDouble(
-                        @NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
-                        @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
-            };
-        }
-
-        @Override
-        @Nullable
-        public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
-            throw new UnsupportedOperationException();
-        }
     }
 }

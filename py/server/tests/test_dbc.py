@@ -4,18 +4,28 @@
 import platform
 import unittest
 
-import turbodbc
-
 from deephaven import DHError, read_sql
-from deephaven.dbc import odbc as dhodbc, adbc as dhadbc
+from deephaven.dbc import adbc as dhadbc
 from tests.testbase import BaseTestCase
+
+
+def turbodbc_installed() -> bool:
+    try:
+        import turbodbc
+
+        return True
+    except ImportError:
+        return False
 
 
 # noinspection SqlDialectInspection
 class DbcTestCase(BaseTestCase):
-
+    @unittest.skipIf(not turbodbc_installed(), reason="turbodbc is not installed")
     def test_read_odbc(self):
-        connection_string = 'Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;'
+        import turbodbc
+        from deephaven.dbc import odbc as dhodbc
+
+        connection_string = "Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;"
         with turbodbc.connect(connection_string=connection_string) as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES")
@@ -40,7 +50,7 @@ class DbcTestCase(BaseTestCase):
         query = "SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES LIMIT 10"
         postgres_url = "postgresql://test:test@postgres:5432/test"
         dh_table = read_sql(conn=postgres_url, query=query)
-        self.assertEqual(len(dh_table.columns), 6)
+        self.assertEqual(len(dh_table.definition), 6)
         self.assertEqual(dh_table.size, 10)
 
         with self.assertRaises(DHError) as cm:
@@ -49,31 +59,35 @@ class DbcTestCase(BaseTestCase):
     def test_read_sql(self):
         query = "SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES LIMIT 10"
 
-        with self.subTest("odbc"):
-            connection_string = 'Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;'
-            dh_table = read_sql(conn=connection_string, query=query, driver="odbc")
-            self.assertEqual(len(dh_table.columns), 6)
-            self.assertEqual(dh_table.size, 10)
+        if turbodbc_installed():
+            with self.subTest("odbc"):
+                connection_string = 'Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;'
+                dh_table = read_sql(conn=connection_string, query=query, driver="odbc")
+                self.assertEqual(len(dh_table.definition), 6)
+                self.assertEqual(dh_table.size, 10)
 
         with self.subTest("adbc"):
             uri = "postgresql://postgres:5432/test?user=test&password=test"
             dh_table = read_sql(conn=uri, query=query, driver="adbc")
-            self.assertEqual(len(dh_table.columns), 6)
+            self.assertEqual(len(dh_table.definition), 6)
             self.assertEqual(dh_table.size, 10)
 
-        with self.subTest("odbc-connection"):
-            connection_string = 'Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;'
-            with turbodbc.connect(connection_string=connection_string) as conn:
-                dh_table = read_sql(conn=conn, query=query, driver="odbc")
-                self.assertEqual(len(dh_table.columns), 6)
-                self.assertEqual(dh_table.size, 10)
+        if turbodbc_installed():
+            with self.subTest("odbc-connection"):
+                import turbodbc
+
+                connection_string = "Driver={PostgreSQL};Server=postgres;Port=5432;Database=test;Uid=test;Pwd=test;"
+                with turbodbc.connect(connection_string=connection_string) as conn:
+                    dh_table = read_sql(conn=conn, query=query, driver="odbc")
+                    self.assertEqual(len(dh_table.definition), 6)
+                    self.assertEqual(dh_table.size, 10)
 
         with self.subTest("adbc-connection"):
             import adbc_driver_postgresql.dbapi
             uri = "postgresql://postgres:5432/test?user=test&password=test"
             with adbc_driver_postgresql.dbapi.connect(uri) as conn:
                 dh_table = read_sql(conn=conn, query=query, driver="adbc")
-                self.assertEqual(len(dh_table.columns), 6)
+                self.assertEqual(len(dh_table.definition), 6)
                 self.assertEqual(dh_table.size, 10)
 
         with self.assertRaises(DHError) as cm:

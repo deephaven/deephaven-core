@@ -20,6 +20,9 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -29,14 +32,10 @@ jobs:
           cat gradle.properties
 
       - name: Run gradle
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: image-compare
-          arguments: --continue pullImage compareImage
-          gradle-version: wrapper
+        run: ./gradlew --continue pullImage compareImage
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         id: notify-slack
         if: ${{ failure() }}
         env:

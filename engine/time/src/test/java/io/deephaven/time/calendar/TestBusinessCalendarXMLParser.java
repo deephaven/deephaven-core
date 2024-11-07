@@ -36,6 +36,9 @@ public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
                 cal.calendarDay("2015-04-06").businessStart());
         assertEquals(DateTimeUtils.parseInstant("2015-04-06T16:46 Asia/Tokyo"),
                 cal.calendarDay("2015-04-06").businessEnd());
+
+        assertTrue(cal.calendarDay("2015-04-06").isInclusiveEnd());
+        assertFalse(cal.calendarDay("2015-04-07").isInclusiveEnd());
     }
 
     public void testLoad() throws URISyntaxException {

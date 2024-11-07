@@ -124,7 +124,7 @@ public class TypeInfos {
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final RowSet rowSet,
-            @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+            @NotNull final Supplier<ColumnSource<?>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
                 .computeIfAbsent(ParquetCacheTags.DECIMAL_ARGS,
@@ -152,7 +152,7 @@ public class TypeInfos {
         final String columnName = column.getName();
         // noinspection unchecked
         final PrecisionAndScale precisionAndScale = getPrecisionAndScale(
-                computedCache, columnName, rowSet, () -> (ColumnSource<BigDecimal>) columnSourceMap.get(columnName));
+                computedCache, columnName, rowSet, () -> columnSourceMap.get(columnName));
         final Set<Class<?>> clazzes = Set.of(BigDecimal.class);
         return new TypeInfo() {
             @Override
@@ -175,8 +175,7 @@ public class TypeInfos {
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
-        final Class<?> dataType = column.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
+        if (column.getDataType() == BigDecimal.class || column.getComponentType() == BigDecimal.class) {
             return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
         }
         return lookupTypeInfo(column, instructions);
@@ -411,6 +410,8 @@ public class TypeInfos {
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     *
+     * @see ParquetSchemaReader
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

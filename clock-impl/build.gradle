@@ -6,7 +6,8 @@ description 'Implementation for the Clock service to obtain allocation-free prec
 
 dependencies {
     implementation project(':clock')
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 }
 
 tasks.withType(JavaCompile).configureEach {

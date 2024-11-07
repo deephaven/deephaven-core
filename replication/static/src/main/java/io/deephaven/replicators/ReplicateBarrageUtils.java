@@ -26,6 +26,9 @@ public class ReplicateBarrageUtils {
         fixupChunkInputStreamGen(CHUNK_PACKAGE + "/DoubleChunkInputStreamGenerator.java", "Double");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharChunkReader.java");
+
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
@@ -33,6 +36,9 @@ public class ReplicateBarrageUtils {
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/IntVectorExpansionKernel.java", "Int");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/LongVectorExpansionKernel.java", "Long");
         fixupVectorExpansionKernel(CHUNK_PACKAGE + "/vector/DoubleVectorExpansionKernel.java", "Double");
+
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                "web/client-api/src/main/java/io/deephaven/web/client/api/barrage/data/WebCharColumnData.java");
     }
 
     private static void fixupVectorExpansionKernel(final @NotNull String path, final @NotNull String type)

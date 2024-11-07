@@ -9,6 +9,11 @@ package io.deephaven.base;
 public class MathUtil {
 
     /**
+     * The maximum power of 2.
+     */
+    public static final int MAX_POWER_OF_2 = 1 << 30;
+
+    /**
      * Compute ceil(log2(x)). See {@link Integer#numberOfLeadingZeros(int)}.
      *
      * @param x Input
@@ -107,5 +112,51 @@ public class MathUtil {
             return 1 + base10guess;
         }
         return base10guess;
+    }
+
+    /**
+     * Rounds up to the next power of 2 for {@code x}; if {@code x} is already a power of 2, {@code x} will be returned.
+     * Values outside the range {@code 1 <= x <= MAX_POWER_OF_2} will return {@code 1}.
+     *
+     * <p>
+     * Equivalent to {@code Math.max(Integer.highestOneBit(x - 1) << 1, 1)}.
+     *
+     * @param x the value
+     * @return the next power of 2 for {@code x}
+     * @see #MAX_POWER_OF_2
+     */
+    public static int roundUpPowerOf2(int x) {
+        return Math.max(Integer.highestOneBit(x - 1) << 1, 1);
+    }
+
+    /**
+     * Rounds up to the next power of 2 for {@code x}; if {@code x} is already a power of 2, {@code x} will be returned.
+     * Values outside the range {@code 1 <= x <= Long.MAX_VALUE} will return {@code 1}.
+     *
+     * <p>
+     * Equivalent to {@code Math.max(Long.highestOneBit(x - 1) << 1, 1)}.
+     *
+     * @param x the value
+     * @return the next power of 2 for {@code x}
+     */
+    public static long roundUpPowerOf2(long x) {
+        return Math.max(Long.highestOneBit(x - 1) << 1, 1);
+    }
+
+    /**
+     * Rounds up to the next power of 2 for {@code size <= MAX_POWER_OF_2}, otherwise returns
+     * {@link ArrayUtil#MAX_ARRAY_SIZE}.
+     *
+     * <p>
+     * Equivalent to {@code size <= MAX_POWER_OF_2 ? roundUpPowerOf2(size) : ArrayUtil.MAX_ARRAY_SIZE}.
+     *
+     * @param size the size
+     * @return the
+     * @see #MAX_POWER_OF_2
+     * @see #roundUpPowerOf2(int)
+     * @see ArrayUtil#MAX_ARRAY_SIZE
+     */
+    public static int roundUpArraySize(int size) {
+        return size <= MAX_POWER_OF_2 ? roundUpPowerOf2(size) : ArrayUtil.MAX_ARRAY_SIZE;
     }
 }

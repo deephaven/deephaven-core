@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
+import com.google.common.io.CountingOutputStream;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
@@ -17,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 
 final class RowGroupWriterImpl implements RowGroupWriter {
-    private final PositionedBufferedOutputStream bufferedOutput;
+    private final CountingOutputStream countingOutput;
     private final MessageType type;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
@@ -26,22 +27,22 @@ final class RowGroupWriterImpl implements RowGroupWriter {
     private final List<OffsetIndex> currentOffsetIndexes = new ArrayList<>();
     private final CompressorAdapter compressorAdapter;
 
-    RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
+    RowGroupWriterImpl(CountingOutputStream countingOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
             CompressorAdapter compressorAdapter) {
-        this(bufferedOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
+        this(countingOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
     }
 
 
-    private RowGroupWriterImpl(PositionedBufferedOutputStream bufferedOutput,
+    private RowGroupWriterImpl(CountingOutputStream countingOutput,
             MessageType type,
             int targetPageSize,
             ByteBufferAllocator allocator,
             BlockMetaData blockMetaData,
             CompressorAdapter compressorAdapter) {
-        this.bufferedOutput = bufferedOutput;
+        this.countingOutput = countingOutput;
         this.type = type;
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
@@ -72,7 +73,7 @@ final class RowGroupWriterImpl implements RowGroupWriter {
                             + " need to close that before opening a writer for " + columnName);
         }
         activeWriter = new ColumnWriterImpl(this,
-                bufferedOutput,
+                countingOutput,
                 type.getColumnDescription(getPrimitivePath(columnName)),
                 compressorAdapter,
                 targetPageSize,

@@ -58,16 +58,22 @@ public interface WhereFilter extends Filter {
         void requestRecompute();
 
         /**
-         * Notify the something about the filters has changed such that all unmatched rows of the source table should be
-         * re-evaluated.
+         * Notify that something about the filters has changed such that all unmatched rows of the source table should
+         * be re-evaluated.
          */
         void requestRecomputeUnmatched();
 
         /**
-         * Notify the something about the filters has changed such that all matched rows of the source table should be
+         * Notify that something about the filters has changed such that all matched rows of the source table should be
          * re-evaluated.
          */
         void requestRecomputeMatched();
+
+        /**
+         * Notify that something about the filters has changed such that the following rows of the source table should
+         * be re-evaluated. The rowSet ownership is not taken by requestRecompute.
+         */
+        void requestRecompute(RowSet rowSet);
 
         /**
          * Get the table underlying this listener.
@@ -87,6 +93,8 @@ public interface WhereFilter extends Filter {
 
     /**
      * Get the columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as input by this select filter.
      */
@@ -94,6 +102,8 @@ public interface WhereFilter extends Filter {
 
     /**
      * Get the array columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as array input by this select filter.
      */

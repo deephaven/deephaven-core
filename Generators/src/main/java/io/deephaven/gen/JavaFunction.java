@@ -3,20 +3,24 @@
 //
 package io.deephaven.gen;
 
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
  * A Java function description for use in code generation.
- *
+ * <p>
  * JavaFunctions are equal if they have the same method names and parameter types.
  */
 public class JavaFunction implements Comparable<JavaFunction> {
@@ -147,10 +151,99 @@ public class JavaFunction implements Comparable<JavaFunction> {
         }
 
         try {
-            return TypeUtils.getErasedType(returnType);
+            return getErasedType(returnType);
         } catch (UnsupportedOperationException e) {
             log.warning("Unable to determine Class from returnType=" + returnType.getTypeName());
             return null;
+        }
+    }
+
+    /**
+     * Determine the Class from the Type.
+     */
+    private static Class<?> getErasedType(Type paramType) {
+        if (paramType instanceof Class) {
+            return (Class<?>) paramType;
+        } else if (paramType instanceof ParameterizedType) {
+            return (Class<?>) // We are asking the parameterized type for its raw type, which is always Class
+            ((ParameterizedType) paramType).getRawType();
+        } else if (paramType instanceof WildcardType) {
+            final Type[] upper = ((WildcardType) paramType).getUpperBounds();
+            return getErasedType(upper[0]);
+        } else if (paramType instanceof java.lang.reflect.TypeVariable) {
+            final Type[] bounds = ((TypeVariable<?>) paramType).getBounds();
+            if (bounds.length > 1) {
+                Class<?>[] erasedBounds = new Class[bounds.length];
+                Class<?> weakest = null;
+                for (int i = 0; i < erasedBounds.length; i++) {
+                    erasedBounds[i] = getErasedType(bounds[i]);
+                    if (i == 0) {
+                        weakest = erasedBounds[i];
+                    } else {
+                        weakest = getWeakest(weakest, erasedBounds[i]);
+                    }
+                    // If we are erased to object, stop erasing...
+                    if (weakest == Object.class) {
+                        break;
+                    }
+                }
+                return weakest;
+            }
+            return getErasedType(bounds[0]);
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Determine the weakest parent of the two provided Classes.
+     *
+     * @param one one class to compare
+     * @param two the other class to compare
+     * @return the weakest parent Class
+     */
+    private static Class<?> getWeakest(Class<?> one, Class<?> two) {
+        if (one.isAssignableFrom(two)) {
+            return one;
+        } else if (two.isAssignableFrom(one)) {
+            return two;
+        }
+        // No luck on quick check... Look in interfaces.
+        Set<Class<?>> oneInterfaces = getFlattenedInterfaces(one);
+        Set<Class<?>> twoInterfaces = getFlattenedInterfaces(two);
+        // Keep only shared interfaces
+        oneInterfaces.retainAll(twoInterfaces);
+        Class<?> strongest = Object.class;
+        for (Class<?> cls : oneInterfaces) {
+            // There is a winning type...
+            if (strongest.isAssignableFrom(cls)) {
+                strongest = cls;
+            } else if (!cls.isAssignableFrom(strongest)) {
+                return Object.class;
+            }
+        }
+        // Will be Object.class if there were no shared interfaces (or shared interfaces were not compatible).
+        return strongest;
+    }
+
+    private static Set<Class<?>> getFlattenedInterfaces(Class<?> cls) {
+        final Set<Class<?>> set = new HashSet<>();
+        while (cls != null && cls != Object.class) {
+            for (Class<?> iface : cls.getInterfaces()) {
+                collectInterfaces(set, iface);
+            }
+            cls = cls.getSuperclass();
+        }
+        return set;
+    }
+
+    private static void collectInterfaces(final Collection<Class<?>> into, final Class<?> cls) {
+        if (into.add(cls)) {
+            for (final Class<?> iface : cls.getInterfaces()) {
+                if (into.add(iface)) {
+                    collectInterfaces(into, iface);
+                }
+            }
         }
     }
 

@@ -683,6 +683,14 @@ public class TestRollingWAvg extends BaseUpdateByTest {
     }
 
     @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStatic(false, prevTicks, postTicks);
+    }
+
+    @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int fwdTicks = 0;
