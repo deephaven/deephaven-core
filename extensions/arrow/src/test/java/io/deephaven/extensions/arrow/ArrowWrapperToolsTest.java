@@ -17,9 +17,13 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -47,6 +51,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 
+import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static java.util.Arrays.asList;
 
@@ -273,6 +278,53 @@ public class ArrowWrapperToolsTest {
             file.delete();
         }
     }
+
+    @Test
+    public void testConcurrentSnapshots() {
+        File file = new File("file.arrow");
+        try {
+            final int totalAmount = 10000;
+            final Table expected = generateMultiVectorFile(file.getPath(), totalAmount / 2, totalAmount);
+            final QueryTable readback = ArrowWrapperTools.readFeather(file.getPath());
+
+            final Thread[] threads = new Thread[10];
+            final BarrageMessage[] results = new BarrageMessage[10];
+            try (final SafeCloseable ignored1 = () -> SafeCloseable.closeAll(results)) {
+                // Lets simulate 10 threads trying to snapshot the table at the same time.
+                // Each thread will start up and wait for the barrier, then they will all attempt
+                // a snapshot at the same time and poke the countdown latch to release the test thread
+                // Then we'll validate all the results and life will be great
+                final CyclicBarrier barrier = new CyclicBarrier(10);
+                final CountDownLatch latch = new CountDownLatch(10);
+                final ExecutionContext executionContext = ExecutionContext.getContext();
+                for (int ii = 0; ii < 10; ii++) {
+                    final int threadNo = ii;
+                    threads[ii] = new Thread(() -> {
+                        try (final SafeCloseable ignored2 = executionContext.open()) {
+                            barrier.await();
+                            results[threadNo] = ConstructSnapshot.constructBackplaneSnapshot(new Object(), readback);
+                        } catch (InterruptedException | BrokenBarrierException e) {
+                            throw new RuntimeException(e);
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
+                    threads[ii].start();
+                }
+
+                latch.await();
+                for (int ii = 0; ii < 10; ii++) {
+                    verifySnapshotBarrageMessage(results[ii], expected);
+                }
+                readback.close();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            file.delete();
+        }
+    }
+
 
     @SuppressWarnings("SameParameterValue")
     private Table generateMultiVectorFile(final String path, final int batchSize, final int totalAmount) {

@@ -69,6 +69,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -3178,6 +3179,11 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertNull(ungrouped.getColumnSource("CCol").getPrev(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrev(secondKey));
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            verifySnapshotBarrageMessage(snap, expected);
+        }
     }
 
     private void testMemoize(QueryTable source, UnaryOperator<Table> op) {
