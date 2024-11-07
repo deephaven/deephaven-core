@@ -303,16 +303,17 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
-            final KeyedObjectHashMap<LivenessReferent, DropState> referentsToRemove =
-                    new KeyedObjectHashMap<>(DropState.KEYED_OBJECT_KEY);
-            referents.forEach(referent -> referentsToRemove.putIfAbsent(referent, DropState::new).incrementDrops());
+            final KeyedObjectHashMap<LivenessReferent, DropRequestState> referentsToRemove =
+                    new KeyedObjectHashMap<>(DropRequestState.KEYED_OBJECT_KEY);
+            referents.forEach(
+                    referent -> referentsToRemove.putIfAbsent(referent, DropRequestState::new).incrementDrops());
             if (referentsToRemove.isEmpty()) {
                 return;
             }
             for (int rrLast = retainedReferences.size() - 1, rri = 0; rri <= rrLast;) {
                 final WeakReference<? extends LivenessReferent> retainedReference = retainedReferences.get(rri);
                 final boolean cleared;
-                final DropState foundState;
+                final DropRequestState foundState;
                 {
                     final LivenessReferent retained = retainedReference.get();
                     cleared = retained == null;
@@ -384,15 +385,16 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void drop(@NotNull final Stream<? extends LivenessReferent> referents) {
-            final KeyedObjectHashMap<LivenessReferent, DropState> referentsToRemove =
-                    new KeyedObjectHashMap<>(DropState.KEYED_OBJECT_KEY);
-            referents.forEach(referent -> referentsToRemove.putIfAbsent(referent, DropState::new).incrementDrops());
+            final KeyedObjectHashMap<LivenessReferent, DropRequestState> referentsToRemove =
+                    new KeyedObjectHashMap<>(DropRequestState.KEYED_OBJECT_KEY);
+            referents.forEach(
+                    referent -> referentsToRemove.putIfAbsent(referent, DropRequestState::new).incrementDrops());
             if (referentsToRemove.isEmpty()) {
                 return;
             }
             for (int rLast = retained.size() - 1, ri = 0; ri <= rLast;) {
                 final LivenessReferent current = retained.get(ri);
-                final DropState foundState = referentsToRemove.get(current);
+                final DropRequestState foundState = referentsToRemove.get(current);
                 if (foundState != null) {
                     if (ri != rLast) {
                         retained.set(ri, retained.get(rLast));
@@ -442,13 +444,16 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
     }
 
-    private static final class DropState {
+    /**
+     * A state that tracks the number of times a referent should be dropped.
+     */
+    private static final class DropRequestState {
 
-        private static final KeyedObjectKey<LivenessReferent, DropState> KEYED_OBJECT_KEY =
+        private static final KeyedObjectKey<LivenessReferent, DropRequestState> KEYED_OBJECT_KEY =
                 new KeyIdentityKeyedObjectKey<>() {
                     @Override
-                    public LivenessReferent getKey(@NotNull final DropState dropState) {
-                        return dropState.referent;
+                    public LivenessReferent getKey(@NotNull final DropRequestState dropRequestState) {
+                        return dropRequestState.referent;
                     }
                 };
 
@@ -456,7 +461,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         private int timesToDrop;
 
-        private DropState(@NotNull final LivenessReferent referent) {
+        private DropRequestState(@NotNull final LivenessReferent referent) {
             this.referent = referent;
         }
 
