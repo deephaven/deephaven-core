@@ -25,8 +25,6 @@ There, they must register with their active Auth Token to gain access to the tab
 interact with a table, the client should first request the details about the table. With those details, the client may request the 
 the contents of the table and subscribe to any updates that occur. 
 
-// TODO Does this need to be changed?
-
 When it comes to requesting data and updates, tables come in two basic forms: preemptive, and non-preemptive. A 
 preemptive table will always send all of its contents to the client, and does not support specific viewport 
 subscriptions, while a non-preemptive table will allow the client to specify that they only want to be informed about
