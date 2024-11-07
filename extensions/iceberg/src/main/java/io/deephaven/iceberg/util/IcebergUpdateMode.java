@@ -29,14 +29,16 @@ public abstract class IcebergUpdateMode {
     }
 
     /**
-     * Set a manually-refreshing update mode for this table.
+     * Set a manually-refreshing update mode for this table. The ordering of the data in the table will depend on the
+     * order in which the data files are discovered on refresh.
      */
     public static IcebergUpdateMode manualRefreshingMode() {
         return MANUAL_REFRESHING;
     }
 
     /**
-     * Set a automatically-refreshing update mode for this table using the default refresh interval of 60 seconds.
+     * Set a automatically-refreshing update mode for this table using the default refresh interval of 60 seconds. The
+     * ordering of the data in the table will depend on the order in which the data files are discovered on refresh.
      */
     public static IcebergUpdateMode autoRefreshingMode() {
         return AUTO_REFRESHING;
