@@ -355,13 +355,15 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         barrageMessage.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
 
         // 5. Send the BarrageMessage
-        final BarrageStreamGenerator streamGenerator =
-                streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer);
-        // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
-        // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
-        // (2) we're relying on added rows to signal the full expanded size to the client.
-        GrpcUtil.safelyOnNext(listener,
-                streamGenerator.getSubView(subscriptionOptions, true, rows, false, rows, columns));
+        try (final BarrageStreamGenerator streamGenerator =
+                streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer)) {
+            // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
+            // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
+            // (2) we're relying on added rows to signal the full expanded size to the client.
+            GrpcUtil.safelyOnNext(listener,
+                    streamGenerator.getSubView(subscriptionOptions, true, true, rows, false, rows.copy(), rows.copy(),
+                            columns));
+        }
 
         // 6. Let the caller know what the expanded size was
         return expandedSize;

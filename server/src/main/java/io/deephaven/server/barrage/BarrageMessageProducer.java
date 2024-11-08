@@ -410,37 +410,56 @@ public class BarrageMessageProducer extends LivenessArtifact
      * job is run we clean up deleted subscriptions and rebuild any state that is used to filter recorded updates.</li>
      * </ol>
      */
-    private class Subscription {
-        final BarrageSubscriptionOptions options;
-        final StreamObserver<BarrageStreamGenerator.MessageView> listener;
-        final String logPrefix;
+    private static class Subscription {
+        private final BarrageSubscriptionOptions options;
+        private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
+        private final String logPrefix;
 
-        RowSet viewport; // active viewport
-        BitSet subscribedColumns; // active subscription columns
-        boolean reverseViewport; // is the active viewport reversed (indexed from end of table)
+        /** active viewport **/
+        private RowSet viewport;
+        /** active subscription columns */
+        private BitSet subscribedColumns;
+        /** is the active viewport reversed (indexed from end of table) */
+        private boolean reverseViewport;
 
-        boolean isActive = false; // is this subscription in our active list?
-        boolean pendingDelete = false; // is this subscription deleted as far as the client is concerned?
-        boolean hasPendingUpdate = false; // is this subscription in our pending list?
-        boolean pendingInitialSnapshot = true; // do we need to send the initial snapshot?
+        /** is this subscription in our active list? */
+        private boolean isActive = false;
+        /** is this subscription deleted as far as the client is concerned? */
+        private boolean pendingDelete = false;
+        /** is this subscription in our pending list? */
+        private boolean hasPendingUpdate = false;
+        /** do we need to send the initial snapshot? */
+        private boolean pendingInitialSnapshot = true;
 
-        RowSet pendingViewport; // if an update is pending this is our new viewport
-        boolean pendingReverseViewport; // is the pending viewport reversed (indexed from end of table)
-        BitSet pendingColumns; // if an update is pending this is our new column subscription set
+        /** if an update is pending this is our new viewport */
+        private RowSet pendingViewport;
+        /** is the pending viewport reversed (indexed from end of table) */
+        private boolean pendingReverseViewport;
+        /** if an update is pending this is our new column subscription set */
+        private BitSet pendingColumns;
 
-        WritableRowSet snapshotViewport = null; // promoted to `active` viewport by the snapshot process
-        BitSet snapshotColumns = null; // promoted to `active` columns by the snapshot process
-        boolean snapshotReverseViewport = false; // promoted to `active` viewport direction by the snapshot process
+        /** promoted to `active` viewport by the snapshot process */
+        private WritableRowSet snapshotViewport = null;
+        /** promoted to `active` columns by the snapshot process */
+        private BitSet snapshotColumns = null;
+        /** promoted to `active` viewport direction by the snapshot process */
+        private boolean snapshotReverseViewport = false;
 
-        RowSet targetViewport = null; // the final viewport for a changed (new or updated) subscription
-        BitSet targetColumns; // the final set of columns for a changed subscription
-        boolean targetReverseViewport; // the final viewport direction for a changed subscription
+        /** the final viewport for a changed (new or updated) subscription */
+        private RowSet targetViewport = null;
+        /** the final set of columns for a changed subscription */
+        private BitSet targetColumns;
+        /** the final viewport direction for a changed subscription */
+        private boolean targetReverseViewport;
 
-        boolean isGrowingViewport; // is this subscription actively growing
-        WritableRowSet growingRemainingViewport = null; // rows still needed to satisfy this subscription target
-                                                        // viewport
-        WritableRowSet growingIncrementalViewport = null; // rows to be sent to the client from the current snapshot
-        boolean isFirstSnapshot; // is this the first snapshot after a change to a subscriptions
+        /** is this subscription actively growing */
+        private boolean isGrowingViewport;
+        /** rows still needed to satisfy this subscription target viewport */
+        private WritableRowSet growingRemainingViewport = null;
+        /** rows to be sent to the client from the current snapshot */
+        private WritableRowSet growingIncrementalViewport = null;
+        /** is this the first snapshot after a change to a subscriptions */
+        private boolean isFirstSnapshot;
 
         private Subscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -459,6 +478,12 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         public boolean isViewport() {
             return viewport != null;
+        }
+
+        public boolean isFullSubscription() {
+            return !isViewport()
+                    || (hasPendingUpdate && pendingViewport == null)
+                    || (isGrowingViewport && targetViewport == null);
         }
     }
 
@@ -557,6 +582,12 @@ public class BarrageMessageProducer extends LivenessArtifact
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
+            }
+            if (sub.isFullSubscription() != (newViewport == null)) {
+                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
+                        "cannot change from full subscription to viewport or vice versa");
+                removeSubscription(listener);
+                return;
             }
             sub.pendingViewport = newViewport != null ? newViewport.copy() : null;
             sub.pendingReverseViewport = newReverseViewport;
@@ -1187,7 +1218,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         BarrageMessage preSnapshot = null;
         BarrageMessage blinkTableFlushPreSnapshot = null;
+        RowSet preSnapRowSetPrev = null;
         RowSet preSnapRowSet = null;
+        RowSet postSnapRowSetPrev = null;
         BarrageMessage snapshot = null;
         BarrageMessage postSnapshot = null;
 
@@ -1394,6 +1427,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             if (!firstSubscription && deltaSplitIdx > 0) {
                 final long startTm = System.nanoTime();
+                preSnapRowSetPrev = propagationRowSet.copy();
                 preSnapshot = aggregateUpdatesInRange(0, deltaSplitIdx);
                 recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
                 preSnapRowSet = propagationRowSet.copy();
@@ -1419,6 +1453,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             if (deltaSplitIdx < pendingDeltas.size()) {
                 final long startTm = System.nanoTime();
+                postSnapRowSetPrev = propagationRowSet.copy();
                 postSnapshot = aggregateUpdatesInRange(deltaSplitIdx, pendingDeltas.size());
                 recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
             }
@@ -1442,8 +1477,9 @@ public class BarrageMessageProducer extends LivenessArtifact
         // now, propagate updates
         if (preSnapshot != null) {
             final long startTm = System.nanoTime();
-            propagateToSubscribers(preSnapshot, preSnapRowSet);
+            propagateToSubscribers(preSnapshot, preSnapRowSetPrev, preSnapRowSet);
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
+            preSnapRowSetPrev.close();
             preSnapRowSet.close();
         }
 
@@ -1451,7 +1487,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             final long startTm = System.nanoTime();
             try (final RowSet fakeTableRowSet = RowSetFactory.empty()) {
                 // the method expects the post-update RowSet; which is empty after the flush
-                propagateToSubscribers(blinkTableFlushPreSnapshot, fakeTableRowSet);
+                propagateToSubscribers(blinkTableFlushPreSnapshot, fakeTableRowSet, fakeTableRowSet);
             }
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
         }
@@ -1477,8 +1513,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         if (postSnapshot != null) {
             final long startTm = System.nanoTime();
-            propagateToSubscribers(postSnapshot, propagationRowSet);
+            propagateToSubscribers(postSnapshot, postSnapRowSetPrev, propagationRowSet);
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
+            postSnapRowSetPrev.close();
         }
 
         if (deletedSubscriptions != null) {
@@ -1513,8 +1550,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
-        // message is released via transfer to stream generator (as it must live until all view's are closed)
+    private void propagateToSubscribers(
+            final BarrageMessage message,
+            final RowSet propRowSetForMessagePrev,
+            final RowSet propRowSetForMessage) {
+        // message is released via transfer to stream generator (as it must live until all views are closed)
         try (final BarrageStreamGenerator generator = streamGeneratorFactory.newGenerator(
                 message, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
@@ -1537,10 +1577,13 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final boolean isReversed =
                         isPreSnapshot ? subscription.snapshotReverseViewport : subscription.reverseViewport;
 
-                try (final RowSet clientView =
-                        vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
+                try (final RowSet clientViewPrev =
+                        vp != null ? propRowSetForMessagePrev.subSetForPositions(vp, isReversed) : null;
+                        final RowSet clientView =
+                                vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     subscription.listener.onNext(generator.getSubView(
-                            subscription.options, false, vp, subscription.reverseViewport, clientView, cols));
+                            subscription.options, false, subscription.isFullSubscription(), vp,
+                            subscription.reverseViewport, clientViewPrev, clientView, cols));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(errorTransformer.transform(e));
@@ -1607,8 +1650,8 @@ public class BarrageMessageProducer extends LivenessArtifact
                 // some messages may be empty of rows, but we need to update the client viewport and column set
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
-                                subscription.viewport, subscription.reverseViewport, keySpaceViewport,
-                                subscription.subscribedColumns));
+                                subscription.isFullSubscription(), subscription.viewport, subscription.reverseViewport,
+                                keySpaceViewport.copy(), keySpaceViewport, subscription.subscribedColumns));
 
             } catch (final Exception e) {
                 GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));

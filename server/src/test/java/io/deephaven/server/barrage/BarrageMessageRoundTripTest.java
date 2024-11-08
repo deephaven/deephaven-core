@@ -183,7 +183,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             }
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
                     ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), attributes, null);
+                    null, barrageMessageProducer.getTableDefinition(), attributes, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()

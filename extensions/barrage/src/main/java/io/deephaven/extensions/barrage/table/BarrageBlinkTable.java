@@ -47,7 +47,7 @@ public class BarrageBlinkTable extends BarrageTable {
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, true, vpCallback);
         setFlat();
     }
 
