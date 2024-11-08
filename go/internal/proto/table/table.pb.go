@@ -762,12 +762,14 @@ type isTableReference_Ref interface {
 }
 
 type TableReference_Ticket struct {
-	// an exported ticket
+	// A ticket to resolve to get the table. To handle races correctly, we encourage this to be an export ticket, but
+	// technically any ticket type will suffice.
 	Ticket *ticket.Ticket `protobuf:"bytes,1,opt,name=ticket,proto3,oneof"`
 }
 
 type TableReference_BatchOffset struct {
-	// an offset into a BatchRequest -- used to reference a result that will not be exported
+	// An offset into a BatchRequest's ops field, used to reference an intermediate operation which may not have been
+	// exported. Only valid to set when used in the context of a BatchRequest.
 	BatchOffset int32 `protobuf:"zigzag32,2,opt,name=batch_offset,json=batchOffset,proto3,oneof"`
 }
 

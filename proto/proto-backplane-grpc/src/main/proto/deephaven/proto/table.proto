@@ -276,7 +276,8 @@ service TableService {
 
 message TableReference {
   oneof ref {
-    // A ticket. In the case of a single-shot operation, this will often be an export id ticket.
+    // A ticket to resolve to get the table. To handle races correctly, we encourage this to be an export ticket, but
+    // technically any ticket type will suffice.
     Ticket ticket = 1;
 
     // An offset into a BatchRequest's ops field, used to reference an intermediate operation which may not have been
