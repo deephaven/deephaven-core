@@ -762,8 +762,9 @@ type isTableReference_Ref interface {
 }
 
 type TableReference_Ticket struct {
-	// A ticket to resolve to get the table. To handle races correctly, we encourage this to be an export ticket, but
-	// technically any ticket type will suffice.
+	// A ticket to resolve to get the table. It's preferable to use export tickets in order to avoid races that are
+	// possible with tickets controlled by the server, but any ticket type will suffice as long as it resolves to a
+	// table.
 	Ticket *ticket.Ticket `protobuf:"bytes,1,opt,name=ticket,proto3,oneof"`
 }
 
