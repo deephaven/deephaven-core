@@ -36,6 +36,7 @@ dependencies {
 
   testImplementation libs.junit4
   testImplementation libs.grpc.testing
+  testImplementation libs.grpc.inprocess
 
   testImplementation libs.assertj
 
