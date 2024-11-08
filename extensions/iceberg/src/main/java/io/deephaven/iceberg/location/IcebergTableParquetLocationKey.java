@@ -19,12 +19,9 @@ import java.util.Map;
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
 
-    @Nullable
-    private final Long dataSequenceNumber;
-    @Nullable
-    private final Long fileSequenceNumber;
-    @Nullable
-    private final Long pos;
+    private final long dataSequenceNumber;
+    private final long fileSequenceNumber;
+    private final long pos;
 
     private final ParquetInstructions readInstructions;
 
@@ -46,9 +43,12 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         super(fileUri, order, partitions, readInstructions);
-        this.dataSequenceNumber = dataFile.dataSequenceNumber();
-        this.fileSequenceNumber = dataFile.fileSequenceNumber();
-        this.pos = dataFile.pos();
+
+        // Following are used for ordering of data files. Files with unknown sequence numbers should be ordered last.
+        dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
+        fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MAX_VALUE;
+        pos = dataFile.pos() != null ? dataFile.pos() : Long.MAX_VALUE;
+
         this.readInstructions = readInstructions;
     }
 
@@ -77,13 +77,13 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = compareNullable(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
+            if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = compareNullable(fileSequenceNumber, otherTyped.fileSequenceNumber)) != 0) {
+            if ((comparisonResult = Long.compare(fileSequenceNumber, otherTyped.fileSequenceNumber)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = compareNullable(pos, otherTyped.pos)) != 0) {
+            if ((comparisonResult = Long.compare(pos, otherTyped.pos)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
@@ -92,14 +92,5 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             return uri.compareTo(otherTyped.uri);
         }
         throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
-    }
-
-    private static int compareNullable(final Long first, final Long second) {
-        if (first == null || second == null) {
-            // Cannot compare, treat them as equal, so we can continue to the next comparison
-            return 0;
-        } else {
-            return first.compareTo(second);
-        }
     }
 }
