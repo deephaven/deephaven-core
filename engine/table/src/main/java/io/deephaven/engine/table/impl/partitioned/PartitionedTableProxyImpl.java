@@ -431,6 +431,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return basicTransform(ct -> ct.slice(firstPositionInclusive, lastPositionExclusive));
+    }
+
+    @Override
     public PartitionedTable.Proxy reverse() {
         return basicTransform(Table::reverse);
     }

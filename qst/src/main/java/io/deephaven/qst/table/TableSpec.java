@@ -102,6 +102,8 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
 
         T visit(TailTable tailTable);
 
+        T visit(SliceTable sliceTable);
+
         T visit(ReverseTable reverseTable);
 
         T visit(SortTable sortTable);

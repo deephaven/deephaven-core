@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(":util-thread")
     implementation project(':Base')
     implementation project(':authentication')
     implementation project(':authorization')
@@ -18,6 +19,7 @@ dependencies {
 
     api platform(libs.grpc.bom)
     api libs.grpc.testing
+    api libs.grpc.inprocess
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

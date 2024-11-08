@@ -30,6 +30,8 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -41,6 +43,7 @@ import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.qst.column.Column;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
@@ -72,6 +75,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class BarrageUtil {
     public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
@@ -187,7 +192,8 @@ public class BarrageUtil {
             Instant.class,
             Boolean.class,
             LocalDate.class,
-            LocalTime.class));
+            LocalTime.class,
+            Schema.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -510,6 +516,27 @@ public class BarrageUtil {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
+
+        public ChunkReader[] computeChunkReaders(
+                @NotNull final ChunkReader.Factory chunkReaderFactory,
+                @NotNull final org.apache.arrow.flatbuf.Schema schema,
+                @NotNull final StreamReaderOptions barrageOptions) {
+            final ChunkReader[] readers = new ChunkReader[tableDef.numColumns()];
+
+            final List<ColumnDefinition<?>> columns = tableDef.getColumns();
+            for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
+                final ColumnDefinition<?> columnDefinition = columns.get(ii);
+                final int factor = (conversionFactors == null) ? 1 : conversionFactors[ii];
+                final ChunkReader.TypeInfo typeInfo = typeInfo(
+                        ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(columnDefinition.getDataType()),
+                        columnDefinition.getDataType(),
+                        columnDefinition.getComponentType(),
+                        schema.fields(ii));
+                readers[ii] = DefaultChunkReadingFactory.INSTANCE.getReader(barrageOptions, factor, typeInfo);
+            }
+
+            return readers;
+        }
     }
 
     private static void setConversionFactor(
@@ -745,7 +772,8 @@ public class BarrageUtil {
                     return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                        || type == BigInteger.class
+                        || type == Schema.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == Instant.class || type == ZonedDateTime.class) {

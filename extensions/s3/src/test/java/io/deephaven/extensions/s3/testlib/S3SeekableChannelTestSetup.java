@@ -25,6 +25,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
+
 public abstract class S3SeekableChannelTestSetup {
 
     protected ExecutorService executor;
@@ -39,19 +41,21 @@ public abstract class S3SeekableChannelTestSetup {
         executor = Executors.newCachedThreadPool();
         bucket = UUID.randomUUID().toString();
         asyncClient = s3AsyncClient();
-        asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+        asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     protected final void doTearDown() throws ExecutionException, InterruptedException, TimeoutException {
         S3Helper.deleteAllKeys(asyncClient, bucket);
-        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         asyncClient.close();
         executor.shutdownNow();
     }
 
     protected void uploadDirectory(final Path directory, final String prefix)
             throws ExecutionException, InterruptedException, TimeoutException {
-        S3Helper.uploadDirectory(asyncClient, directory, bucket, prefix, Duration.ofSeconds(5));
+        S3Helper.uploadDirectory(asyncClient, directory, bucket, prefix, Duration.ofSeconds(TIMEOUT_SECONDS));
     }
 
     protected final URI uri(String key) {

@@ -13,7 +13,7 @@ import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.ByteVectorSlice;
 
-public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper {
+public class ByteRingBufferVectorWrapper implements ByteVector, RingBufferVectorWrapper<ByteVector> {
     private final ByteRingBuffer ringBuffer;
 
     public ByteRingBufferVectorWrapper(final ByteRingBuffer ringBuffer) {

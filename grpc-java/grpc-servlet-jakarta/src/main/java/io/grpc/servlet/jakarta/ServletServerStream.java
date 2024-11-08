@@ -152,8 +152,8 @@ final class ServletServerStream extends AbstractServerStream {
 
         @Override
         public void deframeFailed(Throwable cause) {
-            if (logger.isLoggable(FINE)) {
-                logger.log(FINE, String.format("[{%s}] Exception processing message", logId), cause);
+            if (logger.isLoggable(WARNING)) {
+                logger.log(WARNING, String.format("[{%s}] Exception processing message", logId), cause);
             }
             cancel(Status.fromThrowable(cause));
         }
@@ -223,7 +223,7 @@ final class ServletServerStream extends AbstractServerStream {
         final TrailerSupplier trailerSupplier = new TrailerSupplier();
 
         @Override
-        public void writeHeaders(Metadata headers) {
+        public void writeHeaders(Metadata headers, boolean flush) {
             writeHeadersToServletResponse(headers);
             try {
                 resp.setTrailerFields(trailerSupplier);

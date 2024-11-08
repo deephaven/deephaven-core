@@ -7,7 +7,7 @@ on:
     # 2AM EST == 6AM UTC
     - cron:  '0 6 * * *'
   push:
-    branches: [ 'nightly/**', 'release/v*' ]
+    branches: [ 'nightly/**', 'release/v*', 'dependabot/**' ]
 
 jobs:
   nightly:
@@ -90,7 +90,7 @@ jobs:
 
       - name: Publish Test Results
         uses: scacap/action-surefire-report@v1
-        if: ${{ github.repository_owner == 'deephaven' }}
+        if: ${{ github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
@@ -102,7 +102,7 @@ jobs:
       - name: Slack Nightly Failure
         uses: slackapi/slack-github-action@v1.27.0
         id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         with:
           payload: |
             {

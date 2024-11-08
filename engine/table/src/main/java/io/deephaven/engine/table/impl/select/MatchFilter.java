@@ -854,30 +854,51 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
+
         final MatchFilter that = (MatchFilter) o;
-        return invertMatch == that.invertMatch &&
-                caseInsensitive == that.caseInsensitive &&
-                Objects.equals(columnName, that.columnName) &&
-                Arrays.equals(values, that.values) &&
-                Arrays.equals(strValues, that.strValues);
+
+        // The equality check is used for memoization, and we cannot actually determine equality of an uninitialized
+        // filter, because there is too much state that has not been realized.
+        if (!initialized && !that.initialized) {
+            throw new UnsupportedOperationException("MatchFilter has not been initialized");
+        }
+
+        // start off with the simple things
+        if (invertMatch != that.invertMatch ||
+                caseInsensitive != that.caseInsensitive ||
+                !Objects.equals(columnName, that.columnName)) {
+            return false;
+        }
+
+        if (!Arrays.equals(values, that.values)) {
+            return false;
+        }
+
+        return Objects.equals(getFailoverFilterIfCached(), that.getFailoverFilterIfCached());
     }
 
     @Override
     public int hashCode() {
+        if (!initialized) {
+            throw new UnsupportedOperationException("MatchFilter has not been initialized");
+        }
         int result = Objects.hash(columnName, invertMatch, caseInsensitive);
+        // we can use values because we know the filter has been initialized; the hash code should be stable and it
+        // cannot be stable before we convert the values
         result = 31 * result + Arrays.hashCode(values);
-        result = 31 * result + Arrays.hashCode(strValues);
         return result;
     }
 
     @Override
     public boolean canMemoize() {
         // we can be memoized once our values have been initialized; but not before
-        return initialized;
+        return initialized && (getFailoverFilterIfCached() == null || getFailoverFilterIfCached().canMemoize());
     }
 
     @Override
