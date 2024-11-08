@@ -276,9 +276,11 @@ service TableService {
 
 message TableReference {
   oneof ref {
-    // an exported ticket
+    // A ticket. In the case of a single-shot operation, this will often be an export id ticket.
     Ticket ticket = 1;
-    // an offset into a BatchRequest -- used to reference a result that will not be exported
+
+    // An offset into a BatchRequest's ops field, used to reference an intermediate operation which may not have been
+    // exported. Only valid to set when used in the context of a BatchRequest.
     sint32 batch_offset = 2;
   }
 }
