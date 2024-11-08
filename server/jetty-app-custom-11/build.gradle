@@ -9,6 +9,7 @@ configurations {
 
 dependencies {
     implementation project(':server-jetty-11')
+    implementation project(":util-thread")
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 

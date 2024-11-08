@@ -10,6 +10,9 @@ dependencies {
     api(project(':Integrations')) {
         because 'downstream dagger compile'
     }
+
+    implementation project(":util-thread")
+
     runtimeOnly(project(':web'))
 
     implementation libs.dagger
