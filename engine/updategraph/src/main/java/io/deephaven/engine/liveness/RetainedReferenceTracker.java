@@ -45,10 +45,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
     private static final AtomicInteger outstandingCount = new AtomicInteger(0);
 
-    private static final ThreadLocal<Queue<WeakReference<? extends LivenessReferent>>> tlPendingDropReferences =
-            new ThreadLocal<>();
-    private static final ThreadLocal<SoftReference<Queue<WeakReference<? extends LivenessReferent>>>> tlSavedQueueReference =
-            new ThreadLocal<>();
+    private static final ThreadLocal<PendingDropsTracker> tlPendingDropsTracker = new ThreadLocal<>();
+    private static final ThreadLocal<SoftReference<PendingDropsTracker>> tlSavedTrackerReference = new ThreadLocal<>();
 
     private static final Logger log = LoggerFactory.getLogger(RetainedReferenceTracker.class);
 
@@ -140,15 +138,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      */
     synchronized void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
         checkOutstanding();
-        for (final WeakReference<? extends LivenessReferent> retainedReference : impl) {
-            final LivenessReferent retained = retainedReference.get();
-            if (retained != null) {
-                other.addReference(retained);
-            } else if (retainedReference instanceof RetainedReferenceTracker) {
-                ((RetainedReferenceTracker<?>) retainedReference).cleanup();
-            }
-        }
-        impl.clear();
+        impl.transferReferencesTo(other);
     }
 
     /**
@@ -204,35 +194,25 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
         outstandingCount.decrementAndGet();
 
-        Queue<WeakReference<? extends LivenessReferent>> pendingDropReferences = tlPendingDropReferences.get();
-        final boolean processDrops = pendingDropReferences == null;
+        PendingDropsTracker pendingDropsTracker = tlPendingDropsTracker.get();
+        final boolean processDrops = pendingDropsTracker == null;
         if (processDrops) {
-            final SoftReference<Queue<WeakReference<? extends LivenessReferent>>> savedQueueReference =
-                    tlSavedQueueReference.get();
-            if (savedQueueReference == null || (pendingDropReferences = savedQueueReference.get()) == null) {
-                tlSavedQueueReference.set(new SoftReference<>(pendingDropReferences = new ArrayDeque<>()));
+            final SoftReference<PendingDropsTracker> savedTrackerReference = tlSavedTrackerReference.get();
+            if (savedTrackerReference == null || (pendingDropsTracker = savedTrackerReference.get()) == null) {
+                tlSavedTrackerReference.set(new SoftReference<>(pendingDropsTracker = new PendingDropsTracker()));
             }
-            tlPendingDropReferences.set(pendingDropReferences);
+            tlPendingDropsTracker.set(pendingDropsTracker);
         }
 
         synchronized (this) {
-            impl.forEach(pendingDropReferences::add);
-            impl.clear();
+            impl.enqueueReferencesForDrop(pendingDropsTracker, onCleanup);
         }
 
         if (processDrops) {
             try {
-                WeakReference<? extends LivenessReferent> pendingDropReference;
-                while ((pendingDropReference = pendingDropReferences.poll()) != null) {
-                    final LivenessReferent pendingDrop = pendingDropReference.get();
-                    if (pendingDrop != null) {
-                        pendingDrop.dropReference();
-                    } else if (pendingDropReference instanceof RetainedReferenceTracker) {
-                        ((RetainedReferenceTracker<?>) pendingDropReference).cleanup();
-                    }
-                }
+                pendingDropsTracker.dropAll();
             } finally {
-                tlPendingDropReferences.set(null);
+                tlPendingDropsTracker.remove();
             }
         }
     }
@@ -251,14 +231,17 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         return outstandingCount.get();
     }
 
-    private interface Impl extends Iterable<WeakReference<? extends LivenessReferent>> {
+    private interface Impl {
+
         void add(@NotNull final LivenessReferent referent);
 
         void drop(@NotNull final LivenessReferent referent);
 
         void drop(@NotNull final Stream<? extends LivenessReferent> referents);
 
-        void clear();
+        void enqueueReferencesForDrop(@NotNull PendingDropsTracker tracker, boolean onCleanup);
+
+        void transferReferencesTo(@NotNull RetainedReferenceTracker<?> other);
 
         void makePermanent();
     }
@@ -340,19 +323,27 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void clear() {
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {
+            retainedReferences.forEach(tracker::addWeakReference);
+            retainedReferences.clear();
+        }
+
+        @Override
+        public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
+            retainedReferences.forEach((final WeakReference<? extends LivenessReferent> retainedReference) -> {
+                final LivenessReferent retained = retainedReference.get();
+                if (retained != null) {
+                    other.addReference(retained);
+                } else if (retainedReference instanceof RetainedReferenceTracker) {
+                    ((RetainedReferenceTracker<?>) retainedReference).cleanup();
+                }
+            });
             retainedReferences.clear();
         }
 
         @Override
         public void makePermanent() {
             retainedReferences.clear();
-        }
-
-        @NotNull
-        @Override
-        public Iterator<WeakReference<? extends LivenessReferent>> iterator() {
-            return retainedReferences.iterator();
         }
     }
 
@@ -413,7 +404,18 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         @Override
-        public void clear() {
+        public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {
+            if (onCleanup) {
+                retained.forEach(tracker::addOnCleanup);
+            } else {
+                retained.forEach(tracker::addOnEnsureDropped);
+            }
+            retained.clear();
+        }
+
+        @Override
+        public void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
+            retained.forEach(other::addReference);
             retained.clear();
         }
 
@@ -422,25 +424,6 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
             // See LivenessScope.transferTo: This is currently unreachable code, but implemented for completeness
             retained.forEach(permanentReferences::retain);
             retained.clear();
-        }
-
-        @NotNull
-        @Override
-        public Iterator<WeakReference<? extends LivenessReferent>> iterator() {
-            return new Iterator<>() {
-
-                private final Iterator<LivenessReferent> internal = retained.iterator();
-
-                @Override
-                public boolean hasNext() {
-                    return internal.hasNext();
-                }
-
-                @Override
-                public WeakReference<? extends LivenessReferent> next() {
-                    return internal.next().getWeakReference();
-                }
-            };
         }
     }
 
@@ -472,6 +455,56 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         boolean doDrop() {
             referent.dropReference();
             return --timesToDrop == 0;
+        }
+    }
+
+    /**
+     * A tracker for drops that are pending on the current thread, used to avoid deep recursion when ensuring that
+     * references are dropped.
+     */
+    private static final class PendingDropsTracker {
+
+        private final Queue<Object> pendingDrops = new ArrayDeque<>();
+
+        void addOnCleanup(@NotNull final LivenessReferent referent) {
+            /*
+             * We enqueue the WeakReference, rather than the LivenessReferent itself. Since our manager has been
+             * collected, it's inappropriate to enforce strong reachability to its references.
+             */
+            addWeakReference(referent.getWeakReference());
+        }
+
+        void addOnEnsureDropped(@NotNull final LivenessReferent referent) {
+            /*
+             * We enqueue the LivenessReferent itself, rather than a WeakReference. Since the manager is explicitly
+             * ensuring that we drop its references, we should preserve reachability from the time of invocation.
+             */
+            pendingDrops.add(referent);
+        }
+
+        void addWeakReference(@NotNull final WeakReference<? extends LivenessReferent> reference) {
+            /*
+             * Enqueue the WeakReference, taking no position w.r.t. reachability.
+             */
+            pendingDrops.add(reference);
+        }
+
+        void dropAll() {
+            Object next;
+            while ((next = pendingDrops.poll()) != null) {
+                // noinspection unchecked
+                final WeakReference<? extends LivenessReferent> pendingDropReference = next instanceof WeakReference
+                        ? (WeakReference<? extends LivenessReferent>) next
+                        : null;
+                final LivenessReferent pendingDrop = pendingDropReference == null
+                        ? (LivenessReferent) next
+                        : pendingDropReference.get();
+                if (pendingDrop != null) {
+                    pendingDrop.dropReference();
+                } else if (pendingDropReference instanceof RetainedReferenceTracker) {
+                    ((RetainedReferenceTracker<?>) pendingDropReference).cleanup();
+                }
+            }
         }
     }
 }
