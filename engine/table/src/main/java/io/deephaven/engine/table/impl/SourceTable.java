@@ -311,7 +311,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
 
             if (snapshotControl != null) {
-                //noinspection MethodDoesntCallSuperMethod
+                // noinspection MethodDoesntCallSuperMethod
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
