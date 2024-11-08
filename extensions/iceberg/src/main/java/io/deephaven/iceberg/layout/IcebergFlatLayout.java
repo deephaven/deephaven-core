@@ -35,7 +35,7 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri) {
-        return locationKey(df.format(), fileUri, null);
+    IcebergTableLocationKey keyFromDataFile(final DataFile dataFile, final URI fileUri) {
+        return locationKey(dataFile, fileUri, null);
     }
 }

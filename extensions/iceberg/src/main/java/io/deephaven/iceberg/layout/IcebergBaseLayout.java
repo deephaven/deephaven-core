@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -63,23 +62,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
      * accessed while synchronized on {@code this}.
      */
-    ParquetInstructions parquetInstructions;
+    private ParquetInstructions parquetInstructions;
 
     /**
-     * The number of files discovered, used for ordering the keys.
-     */
-    private int fileCount;
-
-    /**
-     * Create a new {@link IcebergTableLocationKey} for the given file URI.
-     * <p>
-     * This method assumes that keys are created in a specific order and that each key is created only once.
+     * Create a new {@link IcebergTableLocationKey} for the given {@link DataFile} and {@link URI}.
      */
     protected IcebergTableLocationKey locationKey(
-            final org.apache.iceberg.FileFormat format,
-            final URI fileUri,
+            @NotNull final DataFile dataFile,
+            @NotNull final URI fileUri,
             @Nullable final Map<String, Comparable<?>> partitions) {
-
+        final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
             if (parquetInstructions == null) {
                 // Start with user-supplied instructions (if provided).
@@ -90,7 +82,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
                 // Add any column rename mappings.
                 if (!instructions.columnRenames().isEmpty()) {
-                    for (Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
+                    for (final Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
                         builder.addColumnNameMapping(entry.getKey(), entry.getValue());
                     }
                 }
@@ -108,7 +100,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
                 parquetInstructions = builder.build();
             }
-            return new IcebergTableParquetLocationKey(fileUri, fileCount++, partitions, parquetInstructions);
+            return new IcebergTableParquetLocationKey(dataFile, fileUri, 0, partitions, parquetInstructions);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -149,10 +141,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return;
         }
         final Table table = tableAdapter.icebergTable();
-        final List<DataFile> dataFiles = new ArrayList<>();
         try {
             // Retrieve the manifest files from the snapshot
             final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
+            // Sort manifest files by sequence number to read data files in the correct commit order
+            manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
             // TODO(deephaven-core#5989: Add unit tests for the ordering of manifest files
             for (final ManifestFile manifestFile : manifestFiles) {
                 // Currently only can process manifest files with DATA content type.
@@ -162,27 +155,19 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                                     table, snapshot.snapshotId(), manifestFile.content()));
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
-                    reader.forEach(dataFiles::add);
+                    for (final DataFile dataFile : reader) {
+                        final URI fileUri = dataFileUri(dataFile);
+                        final IcebergTableLocationKey locationKey =
+                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(dataFile, fileUri));
+                        if (locationKey != null) {
+                            locationKeyObserver.accept(locationKey);
+                        }
+                    }
                 }
             }
         } catch (final Exception e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
-        }
-
-        // Sort manifest files to read data files in the correct commit order
-        dataFiles.sort(Comparator
-                .comparingLong(DataFile::dataSequenceNumber)
-                .thenComparingLong(DataFile::fileSequenceNumber)
-                .thenComparingLong(DataFile::pos));
-
-        for (final DataFile df : dataFiles) {
-            final URI fileUri = dataFileUri(df);
-            final IcebergTableLocationKey locationKey =
-                    cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
-            if (locationKey != null) {
-                locationKeyObserver.accept(locationKey);
-            }
         }
     }
 

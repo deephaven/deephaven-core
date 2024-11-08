@@ -28,7 +28,7 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
     private static final String IMPLEMENTATION_NAME = URITableLocationKey.class.getSimpleName();
 
     protected final URI uri;
-    private final int order;
+    protected final int order;
 
     private int cachedHashCode;
 
