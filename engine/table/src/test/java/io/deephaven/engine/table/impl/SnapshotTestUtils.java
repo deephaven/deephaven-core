@@ -3,39 +3,22 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.chunk.ByteChunk;
-import io.deephaven.chunk.CharChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.FloatChunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableCharChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableFloatChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
-
+import java.util.Iterator;
 import java.util.List;
 
 public class SnapshotTestUtils {
-
-    private static final double DELTA = 1e-5;
 
     /**
      * Used to compare snapshot data inside a {@link BarrageMessage} generated using
@@ -45,58 +28,40 @@ public class SnapshotTestUtils {
     public static void verifySnapshotBarrageMessage(@NotNull final BarrageMessage snap, @NotNull final Table expected) {
         Assert.assertEquals(snap.rowsAdded.size(), expected.size());
         Assert.assertEquals(snap.addColumnData.length, expected.getColumnSources().size());
+
         final int numColumns = expected.getColumnSources().size();
         final int numRows = expected.intSize();
         final List<String> columnNames = expected.getDefinition().getColumnNames();
+        final int maxSliceSize = Math.min(ArrayBackedColumnSource.BLOCK_SIZE, numRows);
+
         for (int colId = 0; colId < numColumns; colId++) {
-            final ColumnSource<?> columnSource = expected.getColumnSource(columnNames.get(colId));
-            try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(expected.intSize());
-                    final WritableChunk<Values> writableChunk =
-                            columnSource.getChunkType().makeWritableChunk(numRows)) {
-                columnSource.fillChunk(fillContext, writableChunk, expected.getRowSet());
-                final List<Chunk<Values>> snapshotColumn = snap.addColumnData[colId].data;
-                for (int rowId = 0; rowId < numRows; rowId++) {
-                    if (writableChunk instanceof WritableByteChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableByteChunk().get(rowId),
-                                ((ByteChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else if (writableChunk instanceof WritableShortChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableShortChunk().get(rowId),
-                                ((ShortChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else if (writableChunk instanceof WritableIntChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableIntChunk().get(rowId),
-                                ((IntChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else if (writableChunk instanceof WritableLongChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableLongChunk().get(rowId),
-                                ((LongChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else if (writableChunk instanceof WritableFloatChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableFloatChunk().get(rowId),
-                                ((FloatChunk<?>) snapshotColumn.get(0)).get(rowId),
-                                DELTA);
-                    } else if (writableChunk instanceof WritableDoubleChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableDoubleChunk().get(rowId),
-                                ((DoubleChunk<?>) snapshotColumn.get(0)).get(rowId),
-                                DELTA);
-                    } else if (writableChunk instanceof WritableCharChunk) {
-                        Assert.assertEquals(
-                                writableChunk.asWritableCharChunk().get(rowId),
-                                ((CharChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else if (writableChunk instanceof WritableObjectChunk &&
-                            snapshotColumn.get(0) instanceof WritableByteChunk) {
-                        Assert.assertEquals(
-                                BooleanUtils.booleanAsByte((Boolean) writableChunk.asWritableObjectChunk().get(rowId)),
-                                ((ByteChunk<?>) snapshotColumn.get(0)).get(rowId));
-                    } else {
-                        Assert.assertEquals(
-                                writableChunk.asWritableObjectChunk().get(rowId),
-                                ((ObjectChunk<?, ?>) snapshotColumn.get(0)).get(rowId));
+            final ChunkSource<Values> expectedSource = ReinterpretUtils.maybeConvertToPrimitive(
+                    expected.getColumnSource(columnNames.get(colId)));
+            final ChunkType chunkType = expectedSource.getChunkType();
+
+            // @formatter:off
+            try (final ChunkSource.GetContext expectedGetContext = expectedSource.makeGetContext(maxSliceSize);
+                 final RowSequence.Iterator expectedRows = expected.getRowSet().getRowSequenceIterator();
+                 final ResettableReadOnlyChunk<Values> snapshotSlice = chunkType.makeResettableReadOnlyChunk()) {
+                // @formatter:on
+
+                final Iterator<Chunk<Values>> snapshotChunks = snap.addColumnData[colId].data.iterator();
+                final ChunkEquals chunkEquals = ChunkEquals.makeEqual(chunkType);
+
+                while (snapshotChunks.hasNext()) {
+                    Assert.assertTrue(expectedRows.hasMore());
+                    final Chunk<Values> snapshotChunk = snapshotChunks.next();
+                    final int snapshotChunkSize = snapshotChunk.size();
+                    for (int snapshotChunkUsed = 0; snapshotChunkUsed < snapshotChunkSize;) {
+                        final int sliceSize = Math.min(snapshotChunkSize - snapshotChunkUsed, maxSliceSize);
+                        final Chunk<? extends Values> expectedSlice = expectedSource.getChunk(expectedGetContext,
+                                expectedRows.getNextRowSequenceWithLength(sliceSize));
+                        snapshotSlice.resetFromChunk(snapshotChunk, snapshotChunkUsed, sliceSize);
+                        Assert.assertTrue(chunkEquals.equalReduce(expectedSlice, snapshotSlice));
+                        snapshotChunkUsed += sliceSize;
                     }
                 }
+                Assert.assertFalse(expectedRows.hasMore());
             }
         }
     }

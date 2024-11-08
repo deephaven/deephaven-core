@@ -302,6 +302,7 @@ public class ArrowWrapperToolsTest {
                     threads[ii] = new Thread(() -> {
                         try (final SafeCloseable ignored2 = executionContext.open()) {
                             barrier.await();
+                            // noinspection resource
                             results[threadNo] = ConstructSnapshot.constructBackplaneSnapshot(new Object(), readback);
                         } catch (InterruptedException | BrokenBarrierException e) {
                             throw new RuntimeException(e);
@@ -324,7 +325,6 @@ public class ArrowWrapperToolsTest {
             file.delete();
         }
     }
-
 
     @SuppressWarnings("SameParameterValue")
     private Table generateMultiVectorFile(final String path, final int batchSize, final int totalAmount) {

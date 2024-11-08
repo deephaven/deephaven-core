@@ -1373,7 +1373,6 @@ public class ConstructSnapshot {
         return true;
     }
 
-
     /**
      * Check if all the required column sources are in memory and should allow efficient access.
      */
