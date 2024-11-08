@@ -36,7 +36,7 @@ public class JsColumnStatistics {
         /**
          * The number of unique values in the column.
          */
-        UNIQUE_VALUES("UNIQUE VALUES", "long"),
+        UNIQUE_VALUES("UNIQUE VALUES", "int"),
         /**
          * The sum of all data in the column.
          */
