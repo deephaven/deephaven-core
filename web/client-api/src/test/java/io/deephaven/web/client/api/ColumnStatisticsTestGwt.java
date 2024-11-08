@@ -41,28 +41,40 @@ public class ColumnStatisticsTestGwt extends AbstractAsyncGwtTestCase {
                         table.getColumnStatistics(table.findColumn("A"))
                                 .then(stats -> {
                                     JsMap<String, Object> values = stats.getStatisticsMap();
-                                    assertEquals(LongWrapper.of(3), values.get(JsColumnStatistics.StatType.COUNT.getDisplayName()));
-                                    assertEquals(LongWrapper.of(3), values.get(JsColumnStatistics.StatType.SIZE.getDisplayName()));
-                                    assertEquals(null, values.get(JsColumnStatistics.StatType.UNIQUE_VALUES.getDisplayName()));
-                                    assertEquals(LongWrapper.of(1), values.get(JsColumnStatistics.StatType.SUM.getDisplayName()));
-                                    assertEquals(LongWrapper.of(1), values.get(JsColumnStatistics.StatType.SUM_ABS.getDisplayName()));
-                                    assertEquals(1./3., values.get(JsColumnStatistics.StatType.AVG.getDisplayName()));
-                                    assertEquals(1./3., values.get(JsColumnStatistics.StatType.AVG_ABS.getDisplayName()));
+                                    assertEquals(LongWrapper.of(3),
+                                            values.get(JsColumnStatistics.StatType.COUNT.getDisplayName()));
+                                    assertEquals(LongWrapper.of(3),
+                                            values.get(JsColumnStatistics.StatType.SIZE.getDisplayName()));
+                                    assertEquals(null,
+                                            values.get(JsColumnStatistics.StatType.UNIQUE_VALUES.getDisplayName()));
+                                    assertEquals(LongWrapper.of(1),
+                                            values.get(JsColumnStatistics.StatType.SUM.getDisplayName()));
+                                    assertEquals(LongWrapper.of(1),
+                                            values.get(JsColumnStatistics.StatType.SUM_ABS.getDisplayName()));
+                                    assertEquals(1. / 3., values.get(JsColumnStatistics.StatType.AVG.getDisplayName()));
+                                    assertEquals(1. / 3.,
+                                            values.get(JsColumnStatistics.StatType.AVG_ABS.getDisplayName()));
                                     assertEquals(0.0, values.get(JsColumnStatistics.StatType.MIN.getDisplayName()));
                                     assertEquals(0.0, values.get(JsColumnStatistics.StatType.MIN_ABS.getDisplayName()));
                                     assertEquals(1.0, values.get(JsColumnStatistics.StatType.MAX.getDisplayName()));
                                     assertEquals(1.0, values.get(JsColumnStatistics.StatType.MAX_ABS.getDisplayName()));
-                                    assertEquals(0.5774, (Double) values.get(JsColumnStatistics.StatType.STD_DEV.getDisplayName()), 0.0001);
-                                    assertEquals(LongWrapper.of(1), values.get(JsColumnStatistics.StatType.SUM_SQRD.getDisplayName()));
+                                    assertEquals(0.5774,
+                                            (Double) values.get(JsColumnStatistics.StatType.STD_DEV.getDisplayName()),
+                                            0.0001);
+                                    assertEquals(LongWrapper.of(1),
+                                            values.get(JsColumnStatistics.StatType.SUM_SQRD.getDisplayName()));
 
                                     return null;
                                 }),
                         table.getColumnStatistics(table.findColumn("B"))
                                 .then(stats -> {
                                     JsMap<String, Object> values = stats.getStatisticsMap();
-                                    assertEquals(LongWrapper.of(3), values.get(JsColumnStatistics.StatType.COUNT.getDisplayName()));
-                                    assertEquals(LongWrapper.of(3), values.get(JsColumnStatistics.StatType.SIZE.getDisplayName()));
-                                    assertEquals(2.0, values.get(JsColumnStatistics.StatType.UNIQUE_VALUES.getDisplayName()));
+                                    assertEquals(LongWrapper.of(3),
+                                            values.get(JsColumnStatistics.StatType.COUNT.getDisplayName()));
+                                    assertEquals(LongWrapper.of(3),
+                                            values.get(JsColumnStatistics.StatType.SIZE.getDisplayName()));
+                                    assertEquals(2.0,
+                                            values.get(JsColumnStatistics.StatType.UNIQUE_VALUES.getDisplayName()));
 
                                     assertEquals(null, values.get(JsColumnStatistics.StatType.SUM.name()));
                                     assertEquals(null, values.get(JsColumnStatistics.StatType.SUM_ABS.name()));
