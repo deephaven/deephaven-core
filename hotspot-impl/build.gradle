@@ -8,9 +8,23 @@ dependencies {
     implementation project(':hotspot')
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
+test {
+    useJUnitPlatform()
+}
+
+// TODO(deephaven-core#6345): Improve build process for jars that depend on JVM internals
+// In the meantime, we can be relatively confident this JAR works for the multiple versions of java since we do nightly
+// tests with a range of testRuntimeVersions.
+
 tasks.withType(JavaCompile).configureEach {
+    // TODO(deephaven-core#6345): Improve build process for jars that depend on JVM internals
     options.compilerArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
     // Explicitly unset release so gradle will invoke javac with `-source <languageLevel> -target <languageLevel>`
     // instead of `--release <languageLevel>`, which would otherwise produce
@@ -20,4 +34,8 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(Javadoc).configureEach {
     options.addStringOption('-add-exports', 'java.management/sun.management=ALL-UNNAMED')
+}
+
+tasks.withType(Test).configureEach {
+    jvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
 }
