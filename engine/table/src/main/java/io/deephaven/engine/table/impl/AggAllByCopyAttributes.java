@@ -28,6 +28,9 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
     public void visit(AggSpecAvg avg) {}
 
     @Override
+    public void visit(AggSpecCountValues countValues) {}
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {}
 
     @Override

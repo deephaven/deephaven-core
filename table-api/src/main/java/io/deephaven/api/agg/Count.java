@@ -17,17 +17,40 @@ import org.immutables.value.Value.Parameter;
 @Immutable
 @SimpleStyle
 public abstract class Count implements Aggregation {
-
-    public static Count of(ColumnName name) {
-        return ImmutableCount.of(name);
+    /**
+     * The types of counts that can be performed.
+     */
+    public enum AggCountType {
+        ALL, NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE
     }
 
-    public static Count of(String x) {
-        return of(ColumnName.of(x));
+    public static Count of(String column) {
+        return of(ColumnName.of(column), AggCountType.ALL);
     }
 
+    public static Count of(ColumnName column) {
+        return of(column, AggCountType.ALL);
+    }
+
+    public static Count of(String column, AggCountType countType) {
+        return of(ColumnName.of(column), countType);
+    }
+
+    public static Count of(ColumnName column, AggCountType countType) {
+        return ImmutableCount.of(column, countType);
+    }
+
+    /**
+     * The name of the input column from which to count values.
+     */
     @Parameter
     public abstract ColumnName column();
+
+    /**
+     * The name of the input column from which to count values.
+     */
+    @Parameter
+    public abstract AggCountType countType();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

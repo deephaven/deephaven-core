@@ -47,6 +47,10 @@ public interface AggSpec {
         return AggSpecAvg.of();
     }
 
+    static AggSpecCountValues countValues(AggSpecCountValues.AggCountType aggCountType) {
+        return AggSpecCountValues.of(aggCountType);
+    }
+
     static AggSpecCountDistinct countDistinct() {
         return AggSpecCountDistinct.of();
     }
@@ -344,6 +348,8 @@ public interface AggSpec {
         void visit(AggSpecApproximatePercentile approxPct);
 
         void visit(AggSpecAvg avg);
+
+        void visit(AggSpecCountValues countValues);
 
         void visit(AggSpecCountDistinct countDistinct);
 

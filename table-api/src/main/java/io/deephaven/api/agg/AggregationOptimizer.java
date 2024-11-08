@@ -3,14 +3,10 @@
 //
 package io.deephaven.api.agg;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -19,6 +15,7 @@ import java.util.Map.Entry;
 public final class AggregationOptimizer implements Aggregation.Visitor {
 
     private static final Object COUNT_OBJ = new Object();
+    private static final Object COUNT_VALUES_OBJ = new Object();
     private static final Object FIRST_ROW_KEY_OBJ = new Object();
     private static final Object LAST_ROW_KEY_OBJ = new Object();
     private static final Object PARTITION_KEEPING_OBJ = new Object();
@@ -39,37 +36,45 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
         return optimizer.build();
     }
 
-    private final LinkedHashMap<Object, List<Pair>> visitOrder = new LinkedHashMap<>();
+    private final LinkedHashMap<Object, List<Aggregation>> visitOrder = new LinkedHashMap<>();
 
     public List<Aggregation> build() {
         List<Aggregation> out = new ArrayList<>();
-        for (Entry<Object, List<Pair>> e : visitOrder.entrySet()) {
+        for (Entry<Object, List<Aggregation>> e : visitOrder.entrySet()) {
             if (e.getKey() == COUNT_OBJ) {
-                for (Pair pair : e.getValue()) {
-                    out.add(Count.of((ColumnName) pair));
-                }
-            } else if (e.getKey() == FIRST_ROW_KEY_OBJ) {
-                for (Pair pair : e.getValue()) {
-                    out.add(FirstRowKey.of((ColumnName) pair));
-                }
-            } else if (e.getKey() == LAST_ROW_KEY_OBJ) {
-                for (Pair pair : e.getValue()) {
-                    out.add(LastRowKey.of((ColumnName) pair));
-                }
-            } else if (e.getKey() == PARTITION_KEEPING_OBJ) {
-                for (Pair pair : e.getValue()) {
-                    out.add(Partition.of((ColumnName) pair));
-                }
-            } else if (e.getKey() == PARTITION_DROPPING_OBJ) {
-                for (Pair pair : e.getValue()) {
-                    out.add(Partition.of((ColumnName) pair, false));
-                }
+                // These aggregations are now grouped together, output them together
+                out.addAll(e.getValue());
+            } else if (e.getKey() == COUNT_VALUES_OBJ) {
+                // These aggregations are now grouped together, output them together
+                out.addAll(e.getValue());
+            } else if (e.getKey() == FIRST_ROW_KEY_OBJ
+                    || e.getKey() == LAST_ROW_KEY_OBJ
+                    || e.getKey() == PARTITION_KEEPING_OBJ
+                    || e.getKey() == PARTITION_DROPPING_OBJ) {
+                // These aggregations are now grouped together, output them together
+                out.addAll(e.getValue());
             } else if (e.getValue() == null) {
+                // The key is the aggregation itself
                 out.add((Aggregation) e.getKey());
-            } else if (e.getValue().size() == 1) {
-                out.add(ColumnAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
-                out.add(ColumnAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
+                // Group all the aggregations with the same spec together
+                final AggSpec aggSpec = (AggSpec) e.getKey();
+                final List<Pair> pairs = new ArrayList<>();
+
+                for (Aggregation inputAgg : e.getValue()) {
+                    if (inputAgg instanceof ColumnAggregations) {
+                        final ColumnAggregations agg = (ColumnAggregations) inputAgg;
+                        pairs.addAll(agg.pairs());
+                    } else {
+                        final ColumnAggregation agg = (ColumnAggregation) inputAgg;
+                        pairs.add(agg.pair());
+                    }
+                }
+                if (pairs.size() == 1) {
+                    out.add(ColumnAggregation.of(aggSpec, pairs.get(0)));
+                } else {
+                    out.add(ColumnAggregations.builder().spec(aggSpec).addAllPairs(pairs).build());
+                }
             }
         }
         return out;
@@ -82,33 +87,36 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
 
     @Override
     public void visit(ColumnAggregation columnAgg) {
-        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
+        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg);
     }
 
     @Override
     public void visit(ColumnAggregations columnAggs) {
-        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>())
-                .addAll(columnAggs.pairs());
+        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>()).add(columnAggs);
     }
 
     @Override
     public void visit(Count count) {
-        visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count.column());
+        if (count.countType() == Count.AggCountType.ALL) {
+            visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count);
+        } else {
+            visitOrder.computeIfAbsent(COUNT_VALUES_OBJ, k -> new ArrayList<>()).add(count);
+        }
     }
 
     @Override
     public void visit(FirstRowKey firstRowKey) {
-        visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey.column());
+        visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey);
     }
 
     @Override
     public void visit(LastRowKey lastRowKey) {
-        visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
+        visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey);
     }
 
     @Override
     public void visit(Partition partition) {
         visitOrder.computeIfAbsent(partition.includeGroupByColumns() ? PARTITION_KEEPING_OBJ : PARTITION_DROPPING_OBJ,
-                k -> new ArrayList<>()).add(partition.column());
+                k -> new ArrayList<>()).add(partition);
     }
 }

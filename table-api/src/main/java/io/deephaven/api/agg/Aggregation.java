@@ -5,17 +5,7 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
-import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
-import io.deephaven.api.agg.spec.AggSpecCountDistinct;
-import io.deephaven.api.agg.spec.AggSpecDistinct;
-import io.deephaven.api.agg.spec.AggSpecFormula;
-import io.deephaven.api.agg.spec.AggSpecMedian;
-import io.deephaven.api.agg.spec.AggSpecPercentile;
-import io.deephaven.api.agg.spec.AggSpecTDigest;
-import io.deephaven.api.agg.spec.AggSpecUnique;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.object.UnionObject;
 
@@ -217,11 +207,99 @@ public interface Aggregation {
     /**
      * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
      *
-     * @param resultColumn The {@link Count#column() output column} name
+     * @param resultColumn The column name from which to count values
      * @return The aggregation
      */
     static Count AggCount(String resultColumn) {
         return Count.of(resultColumn);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * non-null values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNonNull(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NON_NULL), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * null values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNull(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NULL), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * negative values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNegative(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NEGATIVE), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * positive values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountPositive(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.POSITIVE), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * zero values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountZero(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.ZERO), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * NaN values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNaN(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NAN), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * infinite values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountInfinite(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.INFINITE), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
+     * finite values.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountFinite(String... pairs) {
+        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.FINITE), pairs);
     }
 
     /**
