@@ -256,7 +256,7 @@ final class AsyncServletOutputStreamWriter {
 
         default boolean isFinestEnabled() {
             return false;
-        };
+        }
     }
 
     private static final class WriteState {

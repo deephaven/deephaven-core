@@ -1,18 +1,8 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.kafka;
+package io.deephaven.function;
 
-import io.deephaven.function.ToByteFunction;
-import io.deephaven.function.ToCharFunction;
-import io.deephaven.function.ToDoubleFunction;
-import io.deephaven.function.ToFloatFunction;
-import io.deephaven.function.ToIntFunction;
-import io.deephaven.function.ToLongFunction;
-import io.deephaven.function.ToObjectFunction;
-import io.deephaven.function.ToPrimitiveFunction;
-import io.deephaven.function.ToShortFunction;
-import io.deephaven.function.TypedFunction;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BoxedBooleanType;
 import io.deephaven.qst.type.BoxedByteType;
@@ -27,12 +17,13 @@ import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.StringType;
-import io.deephaven.util.type.TypeUtils;
 
 import java.util.Objects;
 import java.util.Optional;
 
-class UnboxTransform {
+import static io.deephaven.util.QueryConstants.*;
+
+public class UnboxTransform {
 
     private static final ToByteFunction<Byte> UNBOX_BYTE = TypeUtils::unbox;
     private static final ToCharFunction<Character> UNBOX_CHAR = TypeUtils::unbox;
@@ -40,7 +31,7 @@ class UnboxTransform {
     private static final ToIntFunction<Integer> UNBOX_INT = TypeUtils::unbox;
     private static final ToLongFunction<Long> UNBOX_LONG = TypeUtils::unbox;
     private static final ToFloatFunction<Float> UNBOX_FLOAT = TypeUtils::unbox;
-    private static final ToDoubleFunction<Double> UNBOX_DOULE = TypeUtils::unbox;
+    private static final ToDoubleFunction<Double> UNBOX_DOUBLE = TypeUtils::unbox;
 
     /**
      * Returns the Deephaven unboxed equivalent of {@code f}. Relevant for all {@link BoxedType boxed types} except the
@@ -161,7 +152,7 @@ class UnboxTransform {
      * @see TypeUtils#unbox(Double)
      */
     public static <T> ToDoubleFunction<T> unboxDouble(ToObjectFunction<T, Double> f) {
-        return f.mapToDouble(UNBOX_DOULE);
+        return f.mapToDouble(UNBOX_DOUBLE);
     }
 
     private enum UnboxFunctionVisitor implements TypedFunction.Visitor<Object, ToPrimitiveFunction<Object>> {
@@ -263,5 +254,37 @@ class UnboxTransform {
         public ToPrimitiveFunction<T> visit(BoxedDoubleType doubleType) {
             return unboxDouble(f.cast(doubleType));
         }
+    }
+
+    // TODO: Clean up dependencies to be able to use io.deephaven.util.type.TypeUtils.
+    private static class TypeUtils {
+        public static byte unbox(Byte value) {
+            return (value == null ? NULL_BYTE : value);
+        }
+
+        public static char unbox(Character value) {
+            return (value == null ? NULL_CHAR : value);
+        }
+
+        public static double unbox(Double value) {
+            return (value == null ? NULL_DOUBLE : value);
+        }
+
+        public static float unbox(Float value) {
+            return (value == null ? NULL_FLOAT : value);
+        }
+
+        public static int unbox(Integer value) {
+            return (value == null ? NULL_INT : value);
+        }
+
+        public static long unbox(Long value) {
+            return (value == null ? NULL_LONG : value);
+        }
+
+        public static short unbox(Short value) {
+            return (value == null ? NULL_SHORT : value);
+        }
+
     }
 }
