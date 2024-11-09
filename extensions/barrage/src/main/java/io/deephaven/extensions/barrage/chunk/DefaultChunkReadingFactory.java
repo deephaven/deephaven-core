@@ -174,7 +174,7 @@ public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
                     // Migrate Schema to custom format when available.
                     return SchemaChunkReader.SCHEMA_CHUNK_READER;
                 }
-                // Otherwise fall through to default of writing via toString.
+                // All other object types are sent from the server as strings
                 return StringChunkReader.STRING_CHUNK_READER;
             default:
                 throw new UnsupportedOperationException();

@@ -72,7 +72,7 @@ public interface BarrageStreamGenerator extends SafeCloseable {
      * @param isFullSubscription whether this is a full subscription (possibly a growing viewport)
      * @param viewport is the position-space viewport
      * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewportPrev is the key-space viewport in prior to applying the update
+     * @param keyspaceViewportPrev is the key-space viewport prior to applying the update
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber

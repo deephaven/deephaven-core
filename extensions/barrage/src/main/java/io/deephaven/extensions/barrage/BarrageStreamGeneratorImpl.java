@@ -215,19 +215,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
-     * @param isFullSubscription whether this is a full subscription (possibly a growing viewport)
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewportPrev is the key-space viewport in prev key-space
-     * @param keyspaceViewport is the key-space viewport
-     * @param subscribedColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSubView(
             final BarrageSubscriptionOptions options,
@@ -242,13 +229,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 keyspaceViewportPrev, keyspaceViewport, subscribedColumns);
     }
 
-    /**
-     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, true, null, false, null, null, null);
@@ -263,12 +243,12 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final RowSet keyspaceViewportPrev;
         private final RowSet keyspaceViewport;
         private final BitSet subscribedColumns;
-        private final long numAddRows;
-        private final long numModRows;
-        private final RowSet addRowKeys;
-        private final RowSet addRowOffsets;
-        private final RowSet[] modRowKeys;
-        private final RowSet[] modRowOffsets;
+        private final long numClientAddRows;
+        private final long numClientModRows;
+        private final RowSet clientAddedRows;
+        private final RowSet clientAddedRowOffsets;
+        private final RowSet[] clientModdedRows;
+        private final RowSet[] clientModdedRowOffsets;
 
         public SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
@@ -288,11 +268,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.subscribedColumns = subscribedColumns;
 
             if (keyspaceViewport != null) {
-                this.modRowKeys = new WritableRowSet[modColumnData.length];
-                this.modRowOffsets = new WritableRowSet[modColumnData.length];
+                this.clientModdedRows = new WritableRowSet[modColumnData.length];
+                this.clientModdedRowOffsets = new WritableRowSet[modColumnData.length];
             } else {
-                this.modRowKeys = null;
-                this.modRowOffsets = null;
+                this.clientModdedRows = null;
+                this.clientModdedRowOffsets = null;
             }
 
             // precompute the modified column indexes, and calculate total rows needed
@@ -303,38 +283,38 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 if (keyspaceViewport != null) {
                     try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
                         if (isFullSubscription) {
-                            modRowKeys[ii] = intersect.copy();
+                            clientModdedRows[ii] = intersect.copy();
                         } else {
-                            modRowKeys[ii] = keyspaceViewport.invert(intersect);
+                            clientModdedRows[ii] = keyspaceViewport.invert(intersect);
                         }
-                        modRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
+                        clientModdedRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
                         numModRows = Math.max(numModRows, intersect.size());
                     }
                 } else {
                     numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
                 }
             }
-            this.numModRows = numModRows;
+            this.numClientModRows = numModRows;
 
             if (keyspaceViewport != null) {
                 try (WritableRowSet intersect = keyspaceViewport.intersect(rowsIncluded.original)) {
                     if (isFullSubscription) {
-                        addRowKeys = intersect.copy();
+                        clientAddedRows = intersect.copy();
                     } else {
-                        addRowKeys = keyspaceViewport.invert(intersect);
+                        clientAddedRows = keyspaceViewport.invert(intersect);
                     }
-                    addRowOffsets = rowsIncluded.original.invert(intersect);
+                    clientAddedRowOffsets = rowsIncluded.original.invert(intersect);
                 }
             } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
+                clientAddedRows = rowsAdded.original.copy();
+                clientAddedRowOffsets = rowsIncluded.original.invert(clientAddedRows);
             } else {
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
+                clientAddedRows = rowsAdded.original.copy();
+                clientAddedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
             }
 
-            this.numAddRows = addRowOffsets.size();
+            this.numClientAddRows = clientAddedRowOffsets.size();
         }
 
         @Override
@@ -348,7 +328,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final MutableInt actualBatchSize = new MutableInt();
 
-            if (numAddRows == 0 && numModRows == 0) {
+            if (numClientAddRows == 0 && numClientModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 final DefensiveDrainable is = getInputStream(this, 0, 0, actualBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns);
@@ -360,22 +340,21 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             // send the add batches (if any)
             try {
-                processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
+                processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
 
                 // send the mod batches (if any) but don't send metadata twice
-                processBatches(visitor, this, numModRows, maxBatchSize, numAddRows > 0 ? null : metadata,
+                processBatches(visitor, this, numClientModRows, maxBatchSize, numClientAddRows > 0 ? null : metadata,
                         BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
             } finally {
-                // clean up the helper indexes
-                addRowOffsets.close();
-                addRowKeys.close();
-                if (modRowOffsets != null) {
-                    SafeCloseable.closeAll(modRowKeys);
-                    SafeCloseable.closeAll(modRowOffsets);
+                clientAddedRowOffsets.close();
+                clientAddedRows.close();
+                if (clientModdedRowOffsets != null) {
+                    SafeCloseable.closeAll(clientModdedRows);
+                    SafeCloseable.closeAll(clientModdedRowOffsets);
                 }
-                writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
             }
+            writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -398,15 +377,15 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         @Override
         public RowSet addRowOffsets() {
-            return addRowOffsets;
+            return clientAddedRowOffsets;
         }
 
         @Override
         public RowSet modRowOffsets(int col) {
-            if (modRowOffsets == null) {
+            if (clientModdedRowOffsets == null) {
                 return null;
             }
-            return modRowOffsets[col];
+            return clientModdedRowOffsets[col];
         }
 
         private ByteBuffer getSubscriptionMetadata() throws IOException {
@@ -426,11 +405,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int rowsAddedOffset;
             if (!isFullSubscription) {
-                try (final RowSetGenerator addRowsGen = new RowSetGenerator(addRowKeys)) {
-                    rowsAddedOffset = addRowsGen.addToFlatBuffer(metadata);
+                try (final RowSetGenerator clientAddedRowsGen = new RowSetGenerator(clientAddedRows)) {
+                    rowsAddedOffset = clientAddedRowsGen.addToFlatBuffer(metadata);
                 }
             } else if (isSnapshot && !isInitialSnapshot) {
-                // full subscription clients don't need/want to receive the full RowSet on every snapshot
+                // Growing viewport clients don't need/want to receive the full RowSet on every snapshot
                 rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
             } else {
                 rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
@@ -438,10 +417,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int rowsRemovedOffset;
             if (isViewport() && !isFullSubscription) {
-                try (final WritableRowSet removedInViewport = keyspaceViewportPrev.intersect(rowsRemoved.original);
-                        final WritableRowSet removedInPositionSpace = keyspaceViewportPrev.invert(removedInViewport);
-                        final RowSetGenerator rmRowsGen = new RowSetGenerator(removedInPositionSpace)) {
-                    rowsRemovedOffset = rmRowsGen.addToFlatBuffer(metadata);
+                try (final WritableRowSet clientRemovedKeySpace = keyspaceViewportPrev.intersect(rowsRemoved.original);
+                        final WritableRowSet clientRemovedPositionSpace =
+                                keyspaceViewportPrev.invert(clientRemovedKeySpace);
+                        final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(clientRemovedPositionSpace)) {
+                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
                 }
             } else {
                 rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
@@ -458,7 +438,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             int addedRowsIncludedOffset = 0;
 
             // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
+            if (isSnapshot || !clientAddedRows.equals(rowsAdded.original)) {
                 if (isViewport() && !isFullSubscription) {
                     try (final WritableRowSet inclInViewport = keyspaceViewport.intersect(rowsIncluded.original);
                             final WritableRowSet inclInPositionSpace = keyspaceViewport.invert(inclInViewport);
@@ -466,7 +446,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         addedRowsIncludedOffset = inclRowsGen.addToFlatBuffer(metadata);
                     }
                 } else {
-                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
                 }
             }
 
@@ -475,7 +455,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
                 if (keyspaceViewport != null) {
-                    try (final RowSetGenerator modRowsGen = new RowSetGenerator(modRowKeys[ii])) {
+                    try (final RowSetGenerator modRowsGen = new RowSetGenerator(clientModdedRows[ii])) {
                         myModRowOffset = modRowsGen.addToFlatBuffer(metadata);
                     }
                 } else {
@@ -517,16 +497,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewport is the key-space viewport
-     * @param snapshotColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
@@ -536,12 +506,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
     }
 
-    /**
-     * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(BarrageSnapshotOptions options) {
         return getSnapshotView(options, null, false, null, null);
@@ -552,9 +516,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final RowSet viewport;
         private final boolean reverseViewport;
         private final BitSet subscribedColumns;
-        private final long numAddRows;
-        private final RowSet addRowKeys;
-        private final RowSet addRowOffsets;
+        private final long numClientAddRows;
+        private final RowSet clientAddedRows;
+        private final RowSet clientAddedRowOffsets;
 
         public SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
@@ -569,14 +533,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             // precompute add row offsets
             if (keyspaceViewport != null) {
-                addRowKeys = keyspaceViewport.intersect(rowsIncluded.original);
-                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
+                clientAddedRows = keyspaceViewport.intersect(rowsIncluded.original);
+                clientAddedRowOffsets = rowsIncluded.original.invert(clientAddedRows);
             } else {
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(addRowKeys.size());
+                clientAddedRows = rowsAdded.original.copy();
+                clientAddedRowOffsets = RowSetFactory.flat(clientAddedRows.size());
             }
 
-            numAddRows = addRowOffsets.size();
+            numClientAddRows = clientAddedRowOffsets.size();
         }
 
         @Override
@@ -588,17 +552,17 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // batch size is maximum, will write fewer rows when needed
             int maxBatchSize = batchSize();
             final MutableInt actualBatchSize = new MutableInt();
-            if (numAddRows == 0) {
+            if (numClientAddRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns));
             } else {
                 // send the add batches
-                processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
+                processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
             }
-            addRowOffsets.close();
-            addRowKeys.close();
+            clientAddedRowOffsets.close();
+            clientAddedRows.close();
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
@@ -622,7 +586,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         @Override
         public RowSet addRowOffsets() {
-            return addRowOffsets;
+            return clientAddedRowOffsets;
         }
 
         @Override
@@ -653,8 +617,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
             // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
-                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+            if (isSnapshot || !clientAddedRows.equals(rowsAdded.original)) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
             }
 
             BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);

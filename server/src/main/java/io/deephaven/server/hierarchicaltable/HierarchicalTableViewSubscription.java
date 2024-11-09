@@ -361,8 +361,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
             // (2) we're relying on added rows to signal the full expanded size to the client.
             GrpcUtil.safelyOnNext(listener,
-                    streamGenerator.getSubView(subscriptionOptions, true, true, rows, false, rows.copy(), rows.copy(),
-                            columns));
+                    streamGenerator.getSubView(subscriptionOptions, true, true, rows, false, rows, rows, columns));
         }
 
         // 6. Let the caller know what the expanded size was

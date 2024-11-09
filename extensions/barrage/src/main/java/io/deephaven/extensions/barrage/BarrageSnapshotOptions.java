@@ -34,29 +34,18 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
         return of(snapshotRequest.snapshotOptions());
     }
 
-    /**
-     * By default, prefer to communicate null values using the arrow-compatible validity structure.
-     *
-     * @return whether to use deephaven nulls
-     */
     @Override
     @Default
     public boolean useDeephavenNulls() {
         return false;
     }
 
-    /**
-     * @return the preferred batch size if specified
-     */
     @Override
     @Default
     public int batchSize() {
         return 0;
     }
 
-    /**
-     * @return the maximum GRPC message size if specified
-     */
     @Override
     @Default
     public int maxMessageSize() {
@@ -70,8 +59,8 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
     }
 
     public int appendTo(FlatBufferBuilder builder) {
-        return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(
-                builder, useDeephavenNulls(),
+        return io.deephaven.barrage.flatbuf.BarrageSnapshotOptions.createBarrageSnapshotOptions(builder,
+                useDeephavenNulls(),
                 batchSize(),
                 maxMessageSize(),
                 previewListLengthLimit());
@@ -79,10 +68,20 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
 
     public interface Builder {
 
+        /**
+         * See {@link StreamReaderOptions#useDeephavenNulls()} for details.
+         *
+         * @param useDeephavenNulls whether to use deephaven nulls
+         * @return this builder
+         */
         Builder useDeephavenNulls(boolean useDeephavenNulls);
 
         /**
-         * Deprecated since 0.37.0 and is marked for removal. (our GWT artifacts do not yet support the attributes)
+         * The default conversion mode is to Stringify all objects that do not have a registered encoding. Column
+         * conversion modes are no longer supported.
+         *
+         * @deprecated Since 0.37.0 and is marked for removal. (Note, GWT does not support encoding this context via
+         *             annotation values.)
          */
         @FinalDefault
         @Deprecated
@@ -90,12 +89,33 @@ public abstract class BarrageSnapshotOptions implements StreamReaderOptions {
             return this;
         }
 
+        /**
+         * See {@link StreamReaderOptions#batchSize()} for details.
+         *
+         * @param batchSize the ideal number of records to send per record batch
+         * @return this builder
+         */
         Builder batchSize(int batchSize);
 
+        /**
+         * See {@link StreamReaderOptions#maxMessageSize()} for details.
+         *
+         * @param messageSize the maximum size of a GRPC message in bytes
+         * @return this builder
+         */
         Builder maxMessageSize(int messageSize);
 
+        /**
+         * See {@link StreamReaderOptions#previewListLengthLimit()} for details.
+         *
+         * @param previewListLengthLimit the magnitude of the number of elements to include in a preview list
+         * @return this builder
+         */
         Builder previewListLengthLimit(int previewListLengthLimit);
 
+        /**
+         * @return a new BarrageSnapshotOptions instance
+         */
         BarrageSnapshotOptions build();
     }
 }

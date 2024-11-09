@@ -145,7 +145,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     return;
                 }
 
-                if (resultTable == null) {
+                final BarrageTable localResultTable = resultTable;
+                if (localResultTable == null) {
                     log.error().append(BarrageSubscriptionImpl.this)
                             .append(": Received data before subscription was requested").endl();
                     final StatusRuntimeException sre = Exceptions.statusRuntimeException(
@@ -154,7 +155,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     checkForCompletion.onError(sre);
                     return;
                 }
-                resultTable.handleBarrageMessage(barrageMessage);
+                localResultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -171,9 +172,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final String label = TableSpecLabeler.of(tableHandle.export().table());
             final TableDataException tde = new TableDataException(
                     String.format("Barrage subscription error for %s (%s)", logName, label), t);
-            if (resultTable != null) {
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable != null) {
                 // this error will always be propagated to our CheckForCompletion#onError callback
-                resultTable.handleBarrageError(tde);
+                localResultTable.handleBarrageError(tde);
             } else {
                 checkForCompletion.onError(tde);
             }
@@ -189,8 +191,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             log.error().append(BarrageSubscriptionImpl.this).append(": unexpectedly closed by other host").endl();
             final RequestCancelledException cancelErr =
                     new RequestCancelledException("Barrage subscription closed by server");
-            if (resultTable != null) {
-                resultTable.handleBarrageError(cancelErr);
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable != null) {
+                localResultTable.handleBarrageError(cancelErr);
             } else {
                 checkForCompletion.onError(cancelErr);
             }
@@ -233,11 +236,16 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             subscribed = true;
         }
 
+        boolean isFullSubscription = viewport == null;
+        final BarrageTable localResultTable = BarrageTable.make(
+                executorService, schema.tableDef, schema.attributes, isFullSubscription, checkForCompletion);
+        resultTable = localResultTable;
+
         // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`
         if (isSnapshot) {
             future = new CompletableFutureAdapter();
         } else {
-            future = new UpdateGraphAwareFutureAdapter(resultTable.getUpdateGraph());
+            future = new UpdateGraphAwareFutureAdapter(localResultTable.getUpdateGraph());
         }
 
         if (!isConnected()) {
@@ -250,14 +258,11 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 columns == null ? null : (BitSet) (columns.clone()),
                 reverseViewport);
 
-        boolean isFullSubscription = viewport == null;
-        resultTable = BarrageTable.make(executorService, schema.tableDef, schema.attributes, isFullSubscription,
-                checkForCompletion);
-        barrageStreamReader.setDeserializeTmConsumer(resultTable.getDeserializationTmConsumer());
+        barrageStreamReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 
         if (!isSnapshot) {
-            resultTable.addSourceToRegistrar();
-            resultTable.addParentReference(this);
+            localResultTable.addSourceToRegistrar();
+            localResultTable.addParentReference(this);
         }
 
         // Send the initial subscription:
@@ -299,9 +304,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             return;
         }
 
-        if (!isSnapshot) {
+        final BarrageTable localResultTable = resultTable;
+        if (!isSnapshot && localResultTable != null) {
             // Stop our result table from processing any more data.
-            resultTable.forceReferenceCountToZero();
+            localResultTable.forceReferenceCountToZero();
         }
         GrpcUtil.safelyCancel(observer, "Barrage subscription is " + reason,
                 new RequestCancelledException("Barrage subscription is " + reason));
@@ -444,11 +450,12 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 return false;
             }
 
+            final BarrageTable localResultTable = resultTable;
             // @formatter:off
             final boolean correctColumns =
                     // all columns are expected
                     (expectedColumns == null
-                        && (serverColumns == null || serverColumns.cardinality() == resultTable.numColumns()))
+                        && (serverColumns == null || serverColumns.cardinality() == localResultTable.numColumns()))
                     // only specific set of columns are expected
                     || (expectedColumns != null && expectedColumns.equals(serverColumns));
 
@@ -457,7 +464,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     (correctColumns && expectedViewport == null && serverViewport == null)
                     // Viewport subscription is completed
                     || (correctColumns && expectedViewport != null
-                        && expectedReverseViewport == resultTable.getServerReverseViewport()
+                        && expectedReverseViewport == localResultTable.getServerReverseViewport()
                         && expectedViewport.equals(serverViewport));
             // @formatter:on
 
@@ -465,14 +472,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 // remove all unpopulated rows from viewport snapshots
                 if (isSnapshot && serverViewport != null) {
                     // noinspection resource
-                    WritableRowSet currentRowSet = resultTable.getRowSet().writableCast();
+                    final WritableRowSet currentRowSet = localResultTable.getRowSet().writableCast();
                     try (final RowSet populated =
                             currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {
                         currentRowSet.retain(populated);
                     }
                 }
 
-                if (future.complete(resultTable)) {
+                if (future.complete(localResultTable)) {
                     onFutureComplete();
                 }
             }

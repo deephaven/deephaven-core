@@ -14,8 +14,8 @@ public interface StreamReaderOptions {
     boolean useDeephavenNulls();
 
     /**
-     * Deprecated since 0.37.0 and is marked for removal. (our GWT artifacts do not yet support the attributes)
-     *
+     * @deprecated Since 0.37.0 and is marked for removal. (Note, GWT does not support encoding this context via
+     *             annotation values.)
      * @return the conversion mode to use for object columns
      */
     @FinalDefault
@@ -48,14 +48,14 @@ public interface StreamReaderOptions {
      * The maximum length of any list / array to encode.
      * <ul>
      * <li>If zero, list lengths will not be limited.</li>
-     * <li>If non-zero, the server will limit the length of any encoded list / array to n elements, where n is the
-     * absolute value of the specified value.</li>
-     * <li>If the column value has length less than zero, the server will encode the last n elements of the list /
-     * array.</li>
+     * <li>If non-zero, the server will limit the length of any encoded list / array to the absolute value of the
+     * returned length.</li>
+     * <li>If less than zero, the server will encode elements from the end of the list / array, rather than rom the
+     * beginning.</li>
      * </ul>
      * <p>
-     * Note that the server will append an arbitrary value to indicate truncation; this value may not be the actual last
-     * value in the list / array.
+     * Note: The server is unable to indicate when truncation occurs. To detect truncation request one more element than
+     * the maximum number you wish to display.
      *
      * @return the maximum length of any list / array to encode; zero means no limit; negative values indicate to treat
      *         the limit as a tail instead of a head

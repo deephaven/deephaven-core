@@ -48,6 +48,14 @@ public class BarrageRedirectedTable extends BarrageTable {
     /** represents which rows in writable source exist but are not mapped to any parent rows */
     private WritableRowSet freeset = RowSetFactory.empty();
 
+    /**
+     * A full subscription is where the server sends all data to the client. The server is allowed to initially send
+     * growing viewports to the client to avoid contention on the update graph lock. Once the server has grown the
+     * viewport to match the entire table as of any particular consistent state, it will not send any more snapshots and
+     * {@code serverViewport} will be set to {@code null}.
+     */
+    protected final boolean isFullSubscription;
+
     protected BarrageRedirectedTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
@@ -58,9 +66,9 @@ public class BarrageRedirectedTable extends BarrageTable {
             final boolean isFlat,
             final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
-        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, isFullSubscription,
-                vpCallback);
+        super(registrar, notificationQueue, executorService, columns, writableSources, attributes, vpCallback);
         this.rowRedirection = rowRedirection;
+        this.isFullSubscription = isFullSubscription;
         if (!isFullSubscription || isFlat) {
             setFlat();
         }
@@ -131,7 +139,12 @@ public class BarrageRedirectedTable extends BarrageTable {
 
             // shifts
             if (updateShiftData.nonempty()) {
-                rowRedirection.applyShift(currentRowSet, updateShiftData);
+                try (final WritableRowSet postRemoveRowSet = isFullSubscription
+                        ? null
+                        : currentRowSet.minus(update.rowsRemoved)) {
+                    rowRedirection.applyShift(
+                            postRemoveRowSet != null ? postRemoveRowSet : currentRowSet, updateShiftData);
+                }
                 if (isFullSubscription) {
                     updateShiftData.apply(currentRowSet);
                 }
@@ -142,7 +155,14 @@ public class BarrageRedirectedTable extends BarrageTable {
             if (isFullSubscription) {
                 currentRowSet.insert(update.rowsAdded);
             } else {
-                final long newSize = prevSize - update.rowsRemoved.size() + update.rowsAdded.size();
+                final long newSize;
+                if (update.isSnapshot) {
+                    newSize = update.rowsAdded.size();
+                } else {
+                    // note that we are not told about rows that fall off the end of our respected viewport
+                    newSize = Math.min(serverViewport.size(),
+                            prevSize - update.rowsRemoved.size() + update.rowsIncluded.size());
+                }
                 if (newSize < prevSize) {
                     currentRowSet.removeRange(newSize, prevSize - 1);
                 } else if (newSize > prevSize) {

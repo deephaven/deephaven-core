@@ -149,7 +149,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
                 rowsReceived += resultSize;
 
-                if (resultTable == null) {
+                final BarrageTable localResultTable = resultTable;
+                if (localResultTable == null) {
                     log.error().append(BarrageSnapshotImpl.this)
                             .append(": Received data before snapshot was requested").endl();
                     final StatusRuntimeException sre = Exceptions.statusRuntimeException(
@@ -158,7 +159,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     future.completeExceptionally(sre);
                     return;
                 }
-                resultTable.handleBarrageMessage(barrageMessage);
+                localResultTable.handleBarrageMessage(barrageMessage);
             }
         }
 
@@ -175,11 +176,12 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             final String label = TableSpecLabeler.of(tableHandle.export().table());
             final TableDataException tde = new TableDataException(
                     String.format("Barrage snapshot error for %s (%s)", logName, label), t);
-            if (resultTable != null) {
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable != null) {
                 // this error will always be propagated to our CheckForCompletion#onError callback
-                resultTable.handleBarrageError(tde);
+                localResultTable.handleBarrageError(tde);
             } else {
-                future.completeExceptionally(t);
+                future.completeExceptionally(tde);
             }
             cleanup();
         }
@@ -190,7 +192,17 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 return;
             }
 
-            future.complete(resultTable);
+            final BarrageTable localResultTable = resultTable;
+            if (localResultTable == null) {
+                log.error().append(BarrageSnapshotImpl.this)
+                        .append(": Received onComplete before snapshot was requested").endl();
+                final StatusRuntimeException sre = Exceptions.statusRuntimeException(
+                        Code.FAILED_PRECONDITION, "Received onComplete before snapshot was requested");
+                GrpcUtil.safelyError(observer, sre);
+                future.completeExceptionally(sre);
+                return;
+            }
+            future.complete(localResultTable);
             cleanup();
         }
     }
@@ -219,9 +231,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         final boolean isFullSubscription = viewport == null;
-        resultTable = BarrageTable.make(executorService, schema.tableDef, schema.attributes, isFullSubscription,
-                new CheckForCompletion());
-        barrageStreamReader.setDeserializeTmConsumer(resultTable.getDeserializationTmConsumer());
+        final BarrageTable localResultTable = BarrageTable.make(
+                executorService, schema.tableDef, schema.attributes, isFullSubscription, new CheckForCompletion());
+        resultTable = localResultTable;
+        barrageStreamReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()

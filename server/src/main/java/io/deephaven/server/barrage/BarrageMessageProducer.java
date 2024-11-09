@@ -580,14 +580,16 @@ public class BarrageMessageProducer extends LivenessArtifact
             @Nullable final BitSet columnsToSubscribe,
             final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
-            if (sub.pendingViewport != null) {
-                sub.pendingViewport.close();
-            }
-            if (sub.isFullSubscription() != (newViewport == null)) {
+            if (sub.isFullSubscription()) {
+                // never allow changes to a full subscription
                 GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
                         "cannot change from full subscription to viewport or vice versa");
                 removeSubscription(listener);
                 return;
+            }
+
+            if (sub.pendingViewport != null) {
+                sub.pendingViewport.close();
             }
             sub.pendingViewport = newViewport != null ? newViewport.copy() : null;
             sub.pendingReverseViewport = newReverseViewport;
@@ -1651,7 +1653,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
                                 subscription.isFullSubscription(), subscription.viewport, subscription.reverseViewport,
-                                keySpaceViewport.copy(), keySpaceViewport, subscription.subscribedColumns));
+                                keySpaceViewport, keySpaceViewport, subscription.subscribedColumns));
 
             } catch (final Exception e) {
                 GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));

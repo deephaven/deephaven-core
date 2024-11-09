@@ -111,13 +111,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     private boolean serverReverseViewport;
 
     /**
-     * A full subscription is where the server sends all data to the client. The server is allowed to initially send
-     * growing viewports to the client to avoid contention on the update graph lock. Once the server has sent a full
-     * subscription, it will not send any more snapshots and serverViewport will be set to null.
-     */
-    protected final boolean isFullSubscription;
-
-    /**
      * A batch of updates may change the viewport more than once, but we cannot deliver until the updates have been
      * propagated to this BarrageTable and its last notification step has been updated.
      */
@@ -158,7 +151,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final LinkedHashMap<String, ColumnSource<?>> columns,
             final WritableColumnSource<?>[] writableSources,
             final Map<String, Object> attributes,
-            final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback viewportChangedCallback) {
         super(RowSetFactory.empty().toTracking(), columns);
         attributes.entrySet().stream()
@@ -168,7 +160,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         this.registrar = registrar;
         this.notificationQueue = notificationQueue;
         this.executorService = executorService;
-        this.isFullSubscription = isFullSubscription;
 
         final String tableKey = BarragePerformanceLog.getKeyFor(this);
         if (executorService == null || tableKey == null) {
