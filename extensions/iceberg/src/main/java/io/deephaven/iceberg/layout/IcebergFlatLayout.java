@@ -35,7 +35,10 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(final DataFile dataFile, final URI fileUri) {
-        return locationKey(dataFile, fileUri, null);
+    IcebergTableLocationKey keyFromDataFile(
+            @NotNull final DataFile dataFile,
+            @NotNull final ManifestFile manifestFile,
+            @NotNull final URI fileUri) {
+        return locationKey(dataFile, manifestFile, fileUri, null);
     }
 }

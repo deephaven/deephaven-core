@@ -69,6 +69,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     protected IcebergTableLocationKey locationKey(
             @NotNull final DataFile dataFile,
+            @NotNull final ManifestFile manifestFile,
             @NotNull final URI fileUri,
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
@@ -100,7 +101,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
                 parquetInstructions = builder.build();
             }
-            return new IcebergTableParquetLocationKey(dataFile, fileUri, 0, partitions, parquetInstructions);
+            return new IcebergTableParquetLocationKey(dataFile, manifestFile, fileUri, 0, partitions,
+                    parquetInstructions);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -123,7 +125,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.cache = new HashMap<>();
     }
 
-    abstract IcebergTableLocationKey keyFromDataFile(DataFile df, URI fileUri);
+    abstract IcebergTableLocationKey keyFromDataFile(DataFile dataFile, ManifestFile manifestFile, URI fileUri);
 
     @NotNull
     private URI dataFileUri(@NotNull DataFile df) {
@@ -158,7 +160,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     for (final DataFile dataFile : reader) {
                         final URI fileUri = dataFileUri(dataFile);
                         final IcebergTableLocationKey locationKey =
-                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(dataFile, fileUri));
+                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(dataFile, manifestFile, fileUri));
                         if (locationKey != null) {
                             locationKeyObserver.accept(locationKey);
                         }

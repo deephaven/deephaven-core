@@ -7,6 +7,7 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.ManifestFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,16 +20,28 @@ import java.util.Map;
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
 
+    /**
+     * Following are derived from the {@link DataFile} that backs the keyed location and are used for ordering of data
+     */
     private final long dataSequenceNumber;
     private final long fileSequenceNumber;
-    private final long pos;
+    private final long dataFilePos;
+
+    /**
+     * Following is derived from the {@link ManifestFile} from which the data file was discovered and is used for
+     * ordering of data.
+     */
+    private final long manifestSequenceNumber;
 
     private final ParquetInstructions readInstructions;
+
+    private int cachedHashCode;
 
     /**
      * Construct a new IcebergTableParquetLocationKey for the supplied {@code fileUri} and {@code partitions}.
      *
      * @param dataFile The data file that backs the keyed location
+     * @param manifestFile The manifest file from which the data file was discovered
      * @param fileUri The {@link URI} for the file that backs the keyed location
      * @param order Explicit ordering index, taking precedence over other fields
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
@@ -38,16 +51,18 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     public IcebergTableParquetLocationKey(
             @NotNull final DataFile dataFile,
+            @NotNull final ManifestFile manifestFile,
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         super(fileUri, order, partitions, readInstructions);
 
-        // Following are used for ordering of data files. Files with unknown sequence numbers should be ordered last.
+        // Files with unknown sequence numbers should be ordered last.
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
         fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MAX_VALUE;
-        pos = dataFile.pos() != null ? dataFile.pos() : Long.MAX_VALUE;
+        dataFilePos = dataFile.pos() != null ? dataFile.pos() : Long.MAX_VALUE;
+        manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
     }
@@ -83,7 +98,10 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Long.compare(fileSequenceNumber, otherTyped.fileSequenceNumber)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = Long.compare(pos, otherTyped.pos)) != 0) {
+            if ((comparisonResult = Long.compare(dataFilePos, otherTyped.dataFilePos)) != 0) {
+                return comparisonResult;
+            }
+            if ((comparisonResult = Long.compare(manifestSequenceNumber, otherTyped.manifestSequenceNumber)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
@@ -92,5 +110,42 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             return uri.compareTo(otherTyped.uri);
         }
         throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof IcebergTableParquetLocationKey)) {
+            return false;
+        }
+        final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
+        return dataSequenceNumber == otherTyped.dataSequenceNumber
+                && fileSequenceNumber == otherTyped.fileSequenceNumber
+                && dataFilePos == otherTyped.dataFilePos
+                && manifestSequenceNumber == otherTyped.manifestSequenceNumber
+                && super.equals(otherTyped);
+    }
+
+    @Override
+    public int hashCode() {
+        if (cachedHashCode == 0) {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Long.hashCode(dataSequenceNumber);
+            result = prime * result + Long.hashCode(fileSequenceNumber);
+            result = prime * result + Long.hashCode(dataFilePos);
+            result = prime * result + Long.hashCode(manifestSequenceNumber);
+            result = prime * result + super.hashCode();
+            // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
+            if (result == 0) {
+                final int fallbackHashCode = IcebergTableParquetLocationKey.class.hashCode();
+                cachedHashCode = fallbackHashCode == 0 ? 1 : fallbackHashCode;
+            } else {
+                cachedHashCode = result;
+            }
+        }
+        return cachedHashCode;
     }
 }

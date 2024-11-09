@@ -80,7 +80,10 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
     }
 
     @Override
-    IcebergTableLocationKey keyFromDataFile(@NotNull final DataFile dataFile, @NotNull final URI fileUri) {
+    IcebergTableLocationKey keyFromDataFile(
+            @NotNull final DataFile dataFile,
+            @NotNull final ManifestFile manifestFile,
+            @NotNull final URI fileUri) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
 
         final PartitionData partitionData = (PartitionData) dataFile.partition();
@@ -94,6 +97,6 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }
-        return locationKey(dataFile, fileUri, partitions);
+        return locationKey(dataFile, manifestFile, fileUri, partitions);
     }
 }
