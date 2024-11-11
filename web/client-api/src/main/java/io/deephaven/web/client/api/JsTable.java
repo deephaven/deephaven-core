@@ -1344,32 +1344,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }, "get column statistics")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> {
-                    // TODO (deephaven-core#188) don't drop these columns once we can decode them
-                    JsArray<String> dropCols = new JsArray<>();
-                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_KEYS"))) {
-                        dropCols.push("UNIQUE_KEYS");
-                    }
-                    if (Arrays.stream(state.getColumns()).anyMatch(c -> c.getName().equals("UNIQUE_COUNTS"))) {
-                        dropCols.push("UNIQUE_COUNTS");
-                    }
-
-                    if (dropCols.length > 0) {
-                        toRelease.add(() -> workerConnection.releaseHandle(state.getHandle()));
-                        return workerConnection.newState((c2, state2, metadata2) -> {
-                            DropColumnsRequest drop = new DropColumnsRequest();
-                            drop.setColumnNamesList(dropCols);
-                            drop.setSourceId(state.getHandle().makeTableReference());
-                            drop.setResultId(state2.getHandle().makeTicket());
-                            workerConnection.tableServiceClient().dropColumns(drop, metadata2, c2::apply);
-                        }, "drop unreadable stats columns")
-                                .refetch(this, workerConnection.metadata())
-                                .then(state2 -> {
-                                    JsTable table = new JsTable(workerConnection, state2);
-                                    toRelease.add(table::close);
-                                    table.setViewport(0, 0);
-                                    return table.getViewportData();
-                                });
-                    }
                     JsTable table = new JsTable(workerConnection, state);
                     toRelease.add(table::close);
                     table.setViewport(0, 0);

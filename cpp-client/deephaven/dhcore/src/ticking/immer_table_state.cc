@@ -97,19 +97,19 @@ std::shared_ptr<RowSequence> ImmerTableState::AddKeys(const RowSequence &rows_to
   return spaceMapper_.AddKeys(rows_to_add_key_space);
 }
 
-void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &src,
+void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &sources,
     const std::vector<size_t> &begins, const std::vector<size_t> &ends,
     const RowSequence &rows_to_add_index_space) {
-  auto ncols = src.size();
+  auto ncols = sources.size();
   auto nrows = rows_to_add_index_space.Size();
-    AssertAllSame(src.size(), begins.size(), ends.size());
-    AssertLeq(ncols, flexVectors_.size(), "More columns provided than was expected ({} vs {})");
+  AssertAllSame(sources.size(), begins.size(), ends.size());
+  AssertLeq(ncols, flexVectors_.size(), "More columns provided than was expected ({} vs {})");
   for (size_t i = 0; i != ncols; ++i) {
       AssertLeq(nrows, ends[i] - begins[i], "Sources contain insufficient data ({} vs {})");
   }
   auto added_data = MakeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
   for (size_t i = 0; i != ncols; ++i) {
-    added_data.push_back(MakeFlexVectorFromColumnSource(*src[i], begins[i], begins[i] + nrows));
+    added_data.push_back(MakeFlexVectorFromColumnSource(*sources[i], begins[i], begins[i] + nrows));
   }
 
   auto add_chunk = [this, &added_data](uint64_t begin_index, uint64_t end_index) {
@@ -135,8 +135,8 @@ void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &
   rows_to_add_index_space.ForEachInterval(add_chunk);
 }
 
-std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_remove_key_space) {
-  auto result = spaceMapper_.ConvertKeysToIndices(rows_to_remove_key_space);
+std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_erase_key_space) {
+  auto result = spaceMapper_.ConvertKeysToIndices(rows_to_erase_key_space);
 
   auto erase_chunk = [this](uint64_t begin_key, uint64_t end_key) {
     auto size = end_key - begin_key;
@@ -150,7 +150,7 @@ std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_r
       fv->InPlaceAppend(std::move(fv_temp));
     }
   };
-  rows_to_remove_key_space.ForEachInterval(erase_chunk);
+  rows_to_erase_key_space.ForEachInterval(erase_chunk);
   return result;
 }
 
@@ -160,8 +160,8 @@ std::shared_ptr<RowSequence> ImmerTableState::ConvertKeysToIndices(
 }
 
 void ImmerTableState::ModifyData(size_t col_num, const ColumnSource &src, size_t begin, size_t end,
-    const RowSequence &rows_to_modify) {
-  auto nrows = rows_to_modify.Size();
+    const RowSequence &rows_to_modify_index_space) {
+  auto nrows = rows_to_modify_index_space.Size();
   auto source_size = end - begin;
     AssertLeq(nrows, source_size, "Insufficient data in source ({} vs {})");
   auto modified_data = MakeFlexVectorFromColumnSource(src, begin, begin + nrows);
@@ -182,10 +182,10 @@ void ImmerTableState::ModifyData(size_t col_num, const ColumnSource &src, size_t
     // Append the residual items back from 'fvTemp'.
     fv->InPlaceAppend(std::move(fv_temp));
   };
-  rows_to_modify.ForEachInterval(modify_chunk);
+  rows_to_modify_index_space.ForEachInterval(modify_chunk);
 }
 
-void ImmerTableState::ApplyShifts(const RowSequence &start_index, const RowSequence &end_index,
+void ImmerTableState::ApplyShifts(const RowSequence &first_index, const RowSequence &last_index,
     const RowSequence &dest_index) {
   auto process_shift = [this](int64_t first, int64_t last, int64_t dest) {
     uint64_t begin = first;
@@ -193,7 +193,7 @@ void ImmerTableState::ApplyShifts(const RowSequence &start_index, const RowSeque
     uint64_t dest_begin = dest;
     spaceMapper_.ApplyShift(begin, end, dest_begin);
   };
-  ShiftProcessor::ApplyShiftData(start_index, end_index, dest_index, process_shift);
+  ShiftProcessor::ApplyShiftData(first_index, last_index, dest_index, process_shift);
 }
 
 std::shared_ptr<ClientTable> ImmerTableState::Snapshot() const {

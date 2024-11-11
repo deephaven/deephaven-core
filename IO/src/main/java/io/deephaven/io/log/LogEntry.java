@@ -8,6 +8,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.text.TimestampBufferMicros;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.nio.ByteBuffer;
 
@@ -105,7 +106,7 @@ public interface LogEntry extends LogOutput, LogSink.Element {
      * @return the resulting {@code LogEntry}
      */
     default LogEntry appendDouble(final double doubleValue, final int decimalPlaces) {
-        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, decimalPlaces);
+        return Helper.appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces, decimalPlaces);
     }
 
     /**
@@ -121,82 +122,86 @@ public interface LogEntry extends LogOutput, LogSink.Element {
      */
     default LogEntry appendDouble(final double doubleValue, final int decimalPlaces,
             final int maxTrailingZeroesToDiscard) {
-        return appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces,
+        return Helper.appendDoubleDecimalPlacesImpl(this, doubleValue, decimalPlaces,
                 decimalPlaces - maxTrailingZeroesToDiscard);
-    }
-
-    private static LogEntry appendDoubleDecimalPlacesImpl(
-            LogEntry entry, final double doubleValue, final int roundToDecimalPlaces, final int minDecimalPlaces) {
-        if (roundToDecimalPlaces < 0 || roundToDecimalPlaces > 9) {
-            throw new IllegalArgumentException("Invalid value for decimalPlaces = " + roundToDecimalPlaces);
-        }
-        final int roundToAsPowerOf10 = MathUtil.pow10(roundToDecimalPlaces);
-        final boolean negative = doubleValue < 0.0;
-        final long longWeightedValue;
-        if (negative) {
-            longWeightedValue = -(long) (-0.5 + doubleValue * roundToAsPowerOf10);
-        } else {
-            longWeightedValue = (long) (0.5 + doubleValue * roundToAsPowerOf10);
-        }
-        final long integral = longWeightedValue / roundToAsPowerOf10;
-        if (negative) {
-            entry = entry.append(-integral);
-        } else {
-            entry = entry.append(integral);
-        }
-        if (roundToDecimalPlaces == 0) {
-            return entry;
-        }
-        int fractional = (int) (longWeightedValue % roundToAsPowerOf10);
-        int actualDecimalPlaces = roundToDecimalPlaces;
-        while (minDecimalPlaces < actualDecimalPlaces && fractional > 0 && (fractional % 10 == 0)) {
-            fractional /= 10;
-            --actualDecimalPlaces;
-        }
-        if (minDecimalPlaces == 0 && fractional == 0) {
-            return entry;
-        }
-        entry = entry.append(".");
-        final int base10FractionalDigits = MathUtil.base10digits(fractional);
-        final int leadingZeroes = actualDecimalPlaces - base10FractionalDigits;
-        switch (leadingZeroes) {
-            case 9:
-                entry = entry.append("000000000");
-            case 8:
-                entry = entry.append("00000000");
-                break;
-            case 7:
-                entry = entry.append("0000000");
-                break;
-            case 6:
-                entry = entry.append("000000");
-                break;
-            case 5:
-                entry = entry.append("00000");
-                break;
-            case 4:
-                entry = entry.append("0000");
-                break;
-            case 3:
-                entry = entry.append("000");
-                break;
-            case 2:
-                entry = entry.append("00");
-                break;
-            case 1:
-                entry = entry.append("0");
-                break;
-        }
-        if (fractional == 0) {
-            return entry;
-        }
-        return entry.append(fractional);
     }
 
     LogEntry nf();
 
     LogEntry nl();
 
+    @ApiStatus.Internal
+    final class Helper {
+        private Helper() {}
+
+        private static LogEntry appendDoubleDecimalPlacesImpl(
+                LogEntry entry, final double doubleValue, final int roundToDecimalPlaces, final int minDecimalPlaces) {
+            if (roundToDecimalPlaces < 0 || roundToDecimalPlaces > 9) {
+                throw new IllegalArgumentException("Invalid value for decimalPlaces = " + roundToDecimalPlaces);
+            }
+            final int roundToAsPowerOf10 = MathUtil.pow10(roundToDecimalPlaces);
+            final boolean negative = doubleValue < 0.0;
+            final long longWeightedValue;
+            if (negative) {
+                longWeightedValue = -(long) (-0.5 + doubleValue * roundToAsPowerOf10);
+            } else {
+                longWeightedValue = (long) (0.5 + doubleValue * roundToAsPowerOf10);
+            }
+            final long integral = longWeightedValue / roundToAsPowerOf10;
+            if (negative) {
+                entry = entry.append(-integral);
+            } else {
+                entry = entry.append(integral);
+            }
+            if (roundToDecimalPlaces == 0) {
+                return entry;
+            }
+            int fractional = (int) (longWeightedValue % roundToAsPowerOf10);
+            int actualDecimalPlaces = roundToDecimalPlaces;
+            while (minDecimalPlaces < actualDecimalPlaces && fractional > 0 && (fractional % 10 == 0)) {
+                fractional /= 10;
+                --actualDecimalPlaces;
+            }
+            if (minDecimalPlaces == 0 && fractional == 0) {
+                return entry;
+            }
+            entry = entry.append(".");
+            final int base10FractionalDigits = MathUtil.base10digits(fractional);
+            final int leadingZeroes = actualDecimalPlaces - base10FractionalDigits;
+            switch (leadingZeroes) {
+                case 9:
+                    entry = entry.append("000000000");
+                case 8:
+                    entry = entry.append("00000000");
+                    break;
+                case 7:
+                    entry = entry.append("0000000");
+                    break;
+                case 6:
+                    entry = entry.append("000000");
+                    break;
+                case 5:
+                    entry = entry.append("00000");
+                    break;
+                case 4:
+                    entry = entry.append("0000");
+                    break;
+                case 3:
+                    entry = entry.append("000");
+                    break;
+                case 2:
+                    entry = entry.append("00");
+                    break;
+                case 1:
+                    entry = entry.append("0");
+                    break;
+            }
+            if (fractional == 0) {
+                return entry;
+            }
+            return entry.append(fractional);
+        }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // null implementation

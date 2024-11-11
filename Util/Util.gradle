@@ -10,7 +10,6 @@ dependencies {
     implementation libs.jdom2
     implementation libs.commons.compress
 
-    implementation project(':DataStructures')
     implementation project(':Configuration')
 
     testRuntimeOnly project(path: ':configs')

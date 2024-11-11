@@ -3841,7 +3841,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table wouldMatch(WouldMatchPair... matchers) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return getResult(new WouldMatchOperation(this, matchers));
+            final WouldMatchOperation operation = new WouldMatchOperation(this, matchers);
+            operation.initializeFilters(this);
+            return getResult(operation);
         }
     }
 

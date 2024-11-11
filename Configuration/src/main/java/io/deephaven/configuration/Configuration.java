@@ -4,29 +4,79 @@
 package io.deephaven.configuration;
 
 import io.deephaven.internal.log.Bootstrap;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Utility class to provide an enhanced view and common access point for java properties files, as well as common
  * configuration pieces.
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
-public class Configuration extends PropertyFile {
-
+public abstract class Configuration extends PropertyFile {
     public static final String QUIET_PROPERTY = "configuration.quiet";
-
-    private static NullableConfiguration INSTANCE = null;
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
+    private static Configuration DEFAULT;
+    private static final Map<String, Configuration> NAMED_CONFIGURATIONS = new ConcurrentHashMap<>();
+    private final Supplier<ConfigurationContext> contextSupplier;
+
     // This should never be null to meet the contract for getContextKeyValues()
     private Collection<String> contextKeys = Collections.emptySet();
+
+    /**
+     * The default Configuration implementation, which loads properties from the default property file in addition to
+     * System properties.
+     */
+    private static class Default extends Configuration {
+        Default(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
+            init();
+        }
+
+        @Override
+        protected String determinePropertyFile() {
+            return ConfigDir.configurationFile();
+        }
+
+        @SuppressWarnings("unused")
+        public String getPropertyNullable(String propertyName) {
+            return properties.getProperty(propertyName);
+        }
+    }
+
+    /**
+     * A Named configuration that loads values from the file defined by the property `Configuration.name.rootFile`.
+     */
+    private static class Named extends Configuration {
+        private final String name;
+
+        Named(@NotNull final String name, @NotNull final Supplier<ConfigurationContext> contextSupplier) {
+            super(contextSupplier);
+            this.name = name;
+            init();
+        }
+
+        @Override
+        protected String determinePropertyFile() {
+            final String propFile = System.getProperty("Configuration." + name + ".rootFile");
+            if (propFile == null) {
+                throw new ConfigurationException("No property file defined for named configuration " + name);
+            }
+
+            return propFile;
+        }
+    }
 
     /**
      * Get the default Configuration instance.
@@ -34,24 +84,106 @@ public class Configuration extends PropertyFile {
      * @return the single instance of Configuration allowed in an application
      */
     public static Configuration getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new NullableConfiguration();
+        if (DEFAULT == null) {
+            DEFAULT = new Default(DefaultConfigurationContext::new);
         }
-        return INSTANCE;
+        return DEFAULT;
     }
 
+    /**
+     * Get the {@link Configuration} for the specified name.
+     *
+     * @param name the name of the configuration to load
+     * @return the named configuration.
+     * @throws ConfigurationException if the named configuration could not be loaded.
+     */
+    public static Configuration getNamed(@NotNull final String name) throws ConfigurationException {
+        return NAMED_CONFIGURATIONS.computeIfAbsent(name, (k) -> {
+            try {
+                return new Named(name, DefaultConfigurationContext::new);
+            } catch (ConfigurationException ex) {
+                throw new ConfigurationException("Unable to load named configuration " + name, ex);
+            }
+        });
+    }
+
+    /**
+     * Clear all currently loaded Configurations so that they may be loaded anew.
+     */
+    public static void reset() {
+        DEFAULT = null;
+        NAMED_CONFIGURATIONS.clear();
+    }
+
+    /**
+     * Clear the specified named Configuration so it may be loaded anew.
+     *
+     * @param name the Configuration to clear.
+     */
+    public static void reset(@NotNull final String name) {
+        NAMED_CONFIGURATIONS.remove(name);
+    }
+
+    /**
+     * Create a new, non-cached, default Configuration instance.
+     *
+     * @return a new Configuration instance, guaranteed to not be cached.
+     */
+    public static Configuration newStandaloneConfiguration() {
+        return newStandaloneConfiguration(DefaultConfigurationContext::new);
+    }
+
+    /**
+     * Create a new, non-cached, default Configuration instance.
+     *
+     * @param contextSupplier the supplier for {@link ConfigurationContext}
+     * @return a new Configuration instance, guaranteed to not be cached.
+     */
+    public static Configuration newStandaloneConfiguration(
+            @NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        return new Default(contextSupplier);
+    }
+
+    /**
+     * Create a new, non-cached, named Configuration instance.
+     *
+     * @param name the configuration name
+     * @return a new Configuration instance, guaranteed to not be cached.
+     */
+    public static Configuration newStandaloneConfiguration(@NotNull final String name) {
+        return newStandaloneConfiguration(name, DefaultConfigurationContext::new);
+    }
+
+    /**
+     * Create a new, non-cached, named Configuration instance.
+     *
+     * @param name the configuration name
+     * @param contextSupplier the supplier for {@link ConfigurationContext}
+     * @return a new Configuration instance, guaranteed to not be cached.
+     */
     @SuppressWarnings("UnusedReturnValue")
-    public static Configuration newConfigurationForTesting() {
-        return new Configuration();
+    public static Configuration newStandaloneConfiguration(
+            @NotNull final String name,
+            @NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        return new Named(name, contextSupplier);
     }
 
-    protected Configuration() {
+    protected Configuration(@NotNull final Supplier<ConfigurationContext> contextSupplier) {
+        this.contextSupplier = contextSupplier;
+    }
+
+    /**
+     * Initialize the configuration. This will be sensitive to any system properties that configure the property file
+     * path.
+     */
+    protected void init() {
         final String configurationFile;
         try {
             configurationFile = reloadProperties();
         } catch (IOException x) {
             throw new ConfigurationException("Could not process configuration from file", x);
         }
+
         // The quiet property is available because things like shell scripts may be parsing our System.out and they
         // don't want to have to deal with these log messages
         if (!isQuiet()) {
@@ -68,7 +200,7 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     private void load(String fileName, boolean ignoreScope) throws IOException, ConfigurationException {
-        final ParsedProperties temp = new ParsedProperties(ignoreScope);
+        final ParsedProperties temp = new ParsedProperties(ignoreScope, contextSupplier.get());
         // we explicitly want to set 'properties' here so that if we get an error while loading, anything before that
         // error shows up.
         // That is very helpful in debugging.
@@ -175,6 +307,8 @@ public class Configuration extends PropertyFile {
         return reloadProperties(false);
     }
 
+    protected abstract String determinePropertyFile();
+
     /**
      * Reload properties, optionally ignoring scope sections - used for testing
      *
@@ -184,29 +318,12 @@ public class Configuration extends PropertyFile {
      * @throws ConfigurationException if the property stream cannot be opened
      */
     String reloadProperties(boolean ignoreScope) throws IOException, ConfigurationException {
-        final String propertyFile = ConfigDir.configurationFile();
+        final String propertyFile = determinePropertyFile();
         load(propertyFile, ignoreScope);
         // If any system properties exist with the same name as a property that's been declared final, that will
         // generate an exception the same way it would inside the properties file.
         properties.putAll(System.getProperties());
         return propertyFile;
-    }
-
-    /**
-     * ONLY the service factory is allowed to get null properties and ONLY for the purposes of using default profiles
-     * when one doesn't exist. This has been relocated here after many people are using defaults/nulls in the code when
-     * it's not allowed.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static class NullableConfiguration extends Configuration {
-        NullableConfiguration() {
-            super();
-        }
-
-        @SuppressWarnings("unused")
-        public String getPropertyNullable(String propertyName) {
-            return properties.getProperty(propertyName);
-        }
     }
 
     // only used by main() method below, normally configs are loaded from the classpath
@@ -215,7 +332,6 @@ public class Configuration extends PropertyFile {
         temp.load(new FileInputStream(path + "/" + propFileName));
         return temp;
     }
-
 
     /**
      * The following main method compares two directories of prop files and outputs a CSV report of the differences.
@@ -257,7 +373,7 @@ public class Configuration extends PropertyFile {
     private static String propFileDiffReport(Set<String> includedProperties, String dir1, String file1, String dir2,
             String file2, String dir3, String file3, boolean useDiffKeys) throws IOException {
         StringBuilder out = new StringBuilder();
-        Configuration configuration = new Configuration();
+        Configuration configuration = new Default(DefaultConfigurationContext::new);
         Properties leftProperties = configuration.load(dir1, file1);
         Properties rightProperties = configuration.load(dir2, file2);
         Properties right2Properties;

@@ -52,11 +52,12 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
     ],
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.18.0',
+        'jpy>=0.19.0',
         'deephaven-plugin>=0.6.0',
         'numpy',
         'pandas>=1.5.0',

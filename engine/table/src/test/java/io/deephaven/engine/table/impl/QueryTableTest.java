@@ -23,7 +23,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
@@ -70,6 +69,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -3180,10 +3180,10 @@ public class QueryTableTest extends QueryTableTestBase {
         assertNull(ungrouped.getColumnSource("CCol").getPrev(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrev(secondKey));
 
-        // This tests the NPE condition in the ungrouped column sources
-        final Table snappy = InitialSnapshotTable.setupInitialSnapshotTable(ungrouped,
-                ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
-        assertTableEquals(expected, snappy);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            verifySnapshotBarrageMessage(snap, expected);
+        }
     }
 
     private void testMemoize(QueryTable source, UnaryOperator<Table> op) {
@@ -3279,6 +3279,11 @@ public class QueryTableTest extends QueryTableTestBase {
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym not in `aa`, `bb`"));
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));
+
+            testMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 6"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("B=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol < 7"), t -> t.wouldMatch("A=intCol < 7"));
 
             testMemoize(source, t -> t.countBy("Count", "Sym"));
             testMemoize(source, t -> t.countBy("Sym"));

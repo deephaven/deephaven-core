@@ -73,7 +73,7 @@ public:
    * Configure whether to set server connections as TLS
    *
    * @param use_tls true if server connections should be TLS/SSL, false for insecure.
-   * @return *this, to be used for chaining
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &SetUseTls(bool use_tls);
   /**
@@ -81,24 +81,24 @@ public:
    * Sets a PEM-encoded certificate root for server connections.  The empty string
    * means use system defaults.
    *
-   * @param pem a PEM encoded certificate chain.
-   * @return *this, to be used for chaining
+   * @param tls_root_certs a PEM encoded certificate chain.
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &SetTlsRootCerts(std::string tls_root_certs);
   /**
    * Sets a PEM-encoded certificate for the client and use mutual TLS.
    * The empty string means don't use mutual TLS.
    *
-   * @param pem a PEM encoded certificate chain, or empty for no mutual TLS.
-   * @return *this, to be used for chaining
+   * @param client_cert_chain a PEM encoded certificate chain, or empty for no mutual TLS.
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &SetClientCertChain(std::string client_cert_chain);
   /**
    * Sets a PEM-encoded private key for the client certificate chain when using
    * mutual TLS.
    *
-   * @param pem a PEM encoded private key.
-   * @return *this, to be used for chaining
+   * @param client_private_key a PEM encoded private key.
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &SetClientPrivateKey(std::string client_private_key);
   /**
@@ -107,8 +107,8 @@ public:
    *
    * @example copt.setIntOption("grpc.min_reconnect_backoff_ms", 2000)
    * @param opt The option key.
-   * @param val The option valiue.
-   * @return *this, to be used for chaining
+   * @param val The option value.
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &AddIntOption(std::string opt, int val);
   /**
@@ -117,8 +117,8 @@ public:
    *
    * @example copt.setStringOption("grpc.target_name_override", "idonthaveadnsforthishost")
    * @param opt The option key.
-   * @param val The option valiue.
-   * @return *this, to be used for chaining
+   * @param val The option value.
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &AddStringOption(std::string opt, std::string val);
   /**
@@ -126,7 +126,7 @@ public:
    *
    * @param header_name The header name
    * @param header_value The header value
-   * @return *this, to be used for chaining
+   * @return *this, so that methods can be chained.
    */
   ClientOptions &AddExtraHeader(std::string header_name, std::string header_value);
   /**

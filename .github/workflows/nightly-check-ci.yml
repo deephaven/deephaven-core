@@ -102,7 +102,7 @@ jobs:
       - name: Slack Nightly Failure
         uses: slackapi/slack-github-action@v1.27.0
         id: slack-nightly-failure
-        if: ${{ failure() && github.repository_owner == 'deephaven' }}
+        if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         with:
           payload: |
             {
