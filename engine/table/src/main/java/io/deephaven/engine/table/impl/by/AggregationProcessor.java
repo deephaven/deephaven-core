@@ -726,17 +726,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                                 cd.getName(),
                                 VectorFactory.forElementType(cd.getDataType()).vectorType(),
                                 cd.getDataType())));
-                table.getColumnSourceMap().forEach((key, value) -> {
-                    final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                            key, VectorFactory.forElementType(value.getType()).vectorType());
-                    vectorColumnDefinitions.put(key, columnDef);
-                });
             }
 
             // Get the input column names from the formula and provide them to the groupBy operator
             final String[] inputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-
+            if (selectColumn.hasVirtualRowVariables()) {
+                throw new IllegalArgumentException("AggFormula does not support virtual row variables");
+            }
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
                             .toArray(MatchPair[]::new));

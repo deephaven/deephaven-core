@@ -310,11 +310,11 @@ public interface Aggregation {
     /**
      * <p>
      * Create a {@link Formula formula} aggregation with the supplied {@code columnName} and {@code expression}. This
-     * variant requires the formula to provide the output column name and specific input column names in the following
+     * variant requires the formula to provide the output column name and the expression to evaluate in the following
      * format:
      * </p>
      * {@code
-     * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
+     * AggFormula("output_col", "(input_col1 + input_col2) * input_col3")
      * }
      *
      * @param columnName The output column name

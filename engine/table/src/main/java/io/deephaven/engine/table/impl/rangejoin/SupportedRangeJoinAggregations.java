@@ -40,11 +40,11 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
         }
     }
 
-    private boolean hasUnsupportedArgs;
+    private boolean hasUnsupportedAggs;
 
     private boolean isSupported(@NotNull final Aggregation aggregation) {
         aggregation.walk(this);
-        return !hasUnsupportedArgs;
+        return !hasUnsupportedAggs;
     }
 
     @Override
@@ -54,36 +54,36 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
 
     @Override
     public void visit(@NotNull final ColumnAggregation columnAgg) {
-        hasUnsupportedArgs |= !(columnAgg.spec() instanceof AggSpecGroup);
+        hasUnsupportedAggs |= !(columnAgg.spec() instanceof AggSpecGroup);
     }
 
     @Override
     public void visit(@NotNull final ColumnAggregations columnAggs) {
-        hasUnsupportedArgs |= !(columnAggs.spec() instanceof AggSpecGroup);
+        hasUnsupportedAggs |= !(columnAggs.spec() instanceof AggSpecGroup);
     }
 
     @Override
     public void visit(@NotNull final Count count) {
-        hasUnsupportedArgs = true;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final FirstRowKey firstRowKey) {
-        hasUnsupportedArgs = true;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final LastRowKey lastRowKey) {
-        hasUnsupportedArgs = true;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final Partition partition) {
-        hasUnsupportedArgs = true;
+        hasUnsupportedAggs = true;
     }
 
     @Override
     public void visit(@NotNull final Formula formula) {
-        hasUnsupportedArgs = true;
+        hasUnsupportedAggs = true;
     }
 }

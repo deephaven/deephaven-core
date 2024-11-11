@@ -245,22 +245,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         if (selectColumn.getColumns().isEmpty()) {
             return inputToResultModifiedColumnSetFactory = input -> ModifiedColumnSet.EMPTY;
         }
-
-        final ModifiedColumnSet updateMCS = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
         final ModifiedColumnSet resultMCS = resultTable.newModifiedColumnSet(selectColumn.getName());
         final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
-        final ModifiedColumnSet[] modifiedColumnSets = selectColumn.getColumns().stream()
-                .map(ignored -> resultMCS).toArray(ModifiedColumnSet[]::new);
-        final ModifiedColumnSet.Transformer transformer = inputTable.newModifiedColumnSetTransformer(
-                inputColumnNames,
-                modifiedColumnSets);
-
+        final ModifiedColumnSet inputMCS = inputTable.newModifiedColumnSet(inputColumnNames);
         return inputToResultModifiedColumnSetFactory = input -> {
-            if (groupBy.getSomeKeyHasAddsOrRemoves()) {
+            if (groupBy.getSomeKeyHasAddsOrRemoves() ||
+                    (groupBy.getSomeKeyHasModifies() && input.containsAny(inputMCS))) {
                 return resultMCS;
-            } else if (groupBy.getSomeKeyHasModifies()) {
-                transformer.clearAndTransform(input, updateMCS);
-                return updateMCS;
             }
             return ModifiedColumnSet.EMPTY;
         };
@@ -383,6 +374,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         private void copyData(@NotNull final RowSequence rowSequence) {
             try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
                 while (rowSequenceIterator.hasMore()) {
+                    sharedContext.reset();
                     final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
                             calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     resultColumn.fillFromChunk(fillFromContext,

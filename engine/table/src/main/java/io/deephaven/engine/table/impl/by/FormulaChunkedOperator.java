@@ -438,6 +438,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         private void copyData(@NotNull final RowSequence rowSequence, @NotNull final boolean[] columnsMask) {
             try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
                 while (rowSequenceIterator.hasMore()) {
+                    sharedContext.reset();
                     final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
                             calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     for (int ci = 0; ci < columnsToGetMask.length; ++ci) {
