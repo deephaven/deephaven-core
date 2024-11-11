@@ -146,9 +146,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         try {
             // Retrieve the manifest files from the snapshot
             final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
-            // Sort manifest files by sequence number to read data files in the correct commit order
+
+            // Sort manifest files by sequence number to process them in the commit order. This is done as a courtesy
+            // since the actual ordering/sorting of data files is done by the IcebergTableLocationKey implementation.
             manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
-            // TODO(deephaven-core#5989: Add unit tests for the ordering of manifest files
+            // TODO(deephaven-core#5989): Add unit tests for the ordering of manifest files
+
             for (final ManifestFile manifestFile : manifestFiles) {
                 // Currently only can process manifest files with DATA content type.
                 if (manifestFile.content() != ManifestContent.DATA) {
