@@ -731,9 +731,14 @@ public class AggregationProcessor implements AggregationContextFactory {
             // Get the input column names from the formula and provide them to the groupBy operator
             final String[] inputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+            if (!selectColumn.getColumnArrays().isEmpty()) {
+                throw new IllegalArgumentException("AggFormula does not support column arrays ("
+                        + selectColumn.getColumnArrays() + ")");
+            }
             if (selectColumn.hasVirtualRowVariables()) {
                 throw new IllegalArgumentException("AggFormula does not support virtual row variables");
             }
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
                             .toArray(MatchPair[]::new));
@@ -781,6 +786,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,

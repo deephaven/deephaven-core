@@ -374,11 +374,11 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         private void copyData(@NotNull final RowSequence rowSequence) {
             try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
                 while (rowSequenceIterator.hasMore()) {
-                    sharedContext.reset();
                     final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
                             calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     resultColumn.fillFromChunk(fillFromContext,
                             formulaDataSource.getChunk(getContext, rowSequenceSlice), rowSequenceSlice);
+                    sharedContext.reset();
                 }
             }
         }
