@@ -130,7 +130,8 @@ public abstract class UpdateByOperator {
         protected abstract void reset();
     }
 
-    protected UpdateByOperator(@NotNull final MatchPair pair,
+    protected UpdateByOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,

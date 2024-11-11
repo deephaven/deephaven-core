@@ -141,6 +141,7 @@ public:
    *   int64_t nanoseconds, or a string containing an ISO 8601 duration representation.
    * @param start_time When the table should start ticking, specified as a std::chrono::time_point,
    *   int64_t nanoseconds since the epoch, or a string containing an ISO 8601 time point specifier.
+   * @param blink_table Whether the table is a blink table
    * @return The TableHandle of the new table.
    */
   [[nodiscard]]
@@ -150,6 +151,7 @@ public:
   /**
    * Creates an input table from an initial table. When key columns are provided, the InputTable
    * will be keyed, otherwise it will be append-only.
+   * @param initial_table The initial table
    * @param columns The set of key columns
    * @return A TableHandle referencing the new table
    */
@@ -189,6 +191,7 @@ public:
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
+   * @param code The script to be run on the server
    */
   void RunScript(std::string code) const;
 
@@ -299,7 +302,7 @@ public:
    * Factory method to Connect to a Deephaven server using the specified options.
    * @param target A connection string in the format host:port. For example "localhost:10000".
    * @param options An options object for setting options like authentication and script language.
-   * @return A Client object conneted to the Deephaven server.
+   * @return A Client object connected to the Deephaven server.
    */
   [[nodiscard]]
   static Client Connect(const std::string &target, const ClientOptions &options = {});

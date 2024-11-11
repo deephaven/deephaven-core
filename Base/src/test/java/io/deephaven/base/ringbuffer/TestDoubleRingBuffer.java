@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRingBufferTest and run "./gradlew replicateRingBuffers" to regenerate
+// ****** Edit TestCharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
 //
 // @formatter:off
 package io.deephaven.base.ringbuffer;
@@ -15,11 +15,11 @@ import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertThrows;
 
-public class ShortRingBufferTest extends TestCase {
+public class TestDoubleRingBuffer extends TestCase {
 
-    final short SENTINEL = Short.MIN_VALUE;
+    final double SENTINEL = Double.MIN_VALUE;
 
-    private void assertEmpty(ShortRingBuffer rb) {
+    private void assertEmpty(DoubleRingBuffer rb) {
         assertTrue(rb.isEmpty());
         assertEquals(0, rb.size());
 
@@ -38,14 +38,16 @@ public class ShortRingBufferTest extends TestCase {
         } catch (NoSuchElementException x) {
             // expected
         }
+        // region empty-test
+        // endregion empty-test
     }
 
-    private void assertFull(ShortRingBuffer rb) {
+    private void assertFull(DoubleRingBuffer rb) {
         assertFalse(rb.isEmpty());
         assertEquals(rb.capacity(), rb.size());
     }
 
-    private void assertNotEmpty(ShortRingBuffer rb, int expectedSize, short expectedHead) {
+    private void assertNotEmpty(DoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
@@ -57,22 +59,22 @@ public class ShortRingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(ShortRingBuffer rb, short newHead, int expectedSize, short expectedHead) {
+    private void assertAdd(DoubleRingBuffer rb, double newHead, int expectedSize, double expectedHead) {
         assertTrue(rb.add(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertOffer(ShortRingBuffer rb, short newHead, int expectedSize, short expectedHead) {
+    private void assertOffer(DoubleRingBuffer rb, double newHead, int expectedSize, double expectedHead) {
         assertTrue(rb.offer(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertPoll(ShortRingBuffer rb, int expectedSize, short expectedHead) {
+    private void assertPoll(DoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         assertEquals(expectedHead, rb.poll(SENTINEL));
     }
 
-    private void assertRemove(ShortRingBuffer rb, int expectedSize, short expectedHead) {
+    private void assertRemove(DoubleRingBuffer rb, int expectedSize, double expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertEquals(expectedHead, rb.remove());
@@ -81,31 +83,31 @@ public class ShortRingBufferTest extends TestCase {
         }
     }
 
-    private void assertContents(ShortRingBuffer rb, short... expectedData) {
-        final short[] data = rb.getAll();
+    private void assertContents(DoubleRingBuffer rb, double... expectedData) {
+        final double[] data = rb.getAll();
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    private void assertArrayEquals(short[] data, short... expectedData) {
+    private void assertArrayEquals(double[] data, double... expectedData) {
         assertEquals(data.length, expectedData.length);
         for (int ii = 0; ii < data.length; ii++) {
             assertEquals(data[ii], expectedData[ii]);
         }
     }
 
-    short A = 'A';
-    short B = 'B';
-    short C = 'C';
-    short D = 'D';
-    short E = 'E';
-    short F = 'F';
+    double A = 'A';
+    double B = 'B';
+    double C = 'C';
+    double D = 'D';
+    double E = 'E';
+    double F = 'F';
 
     public void testAddRemove() {
 
-        ShortRingBuffer rb = new ShortRingBuffer(3);
+        DoubleRingBuffer rb = new DoubleRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -184,7 +186,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testOfferPoll() {
-        ShortRingBuffer rb = new ShortRingBuffer(3);
+        DoubleRingBuffer rb = new DoubleRingBuffer(3);
 
         assertEmpty(rb);
 
@@ -243,7 +245,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        ShortRingBuffer rb = new ShortRingBuffer(4);
+        DoubleRingBuffer rb = new DoubleRingBuffer(4);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -267,7 +269,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testGrowComplex() {
-        ShortRingBuffer rb = new ShortRingBuffer(5);
+        DoubleRingBuffer rb = new DoubleRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -296,9 +298,9 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testIterator() {
-        ShortRingBuffer rb = new ShortRingBuffer(3);
+        DoubleRingBuffer rb = new DoubleRingBuffer(3);
 
-        ShortRingBuffer.Iterator iter = rb.iterator();
+        DoubleRingBuffer.Iterator iter = rb.iterator();
         assertFalse(iter.hasNext());
 
         assertAdd(rb, A, 1, A);
@@ -347,14 +349,14 @@ public class ShortRingBufferTest extends TestCase {
         assertEquals(F, iter.next());
         assertFalse(iter.hasNext());
 
-        final ShortRingBuffer.Iterator iterFinal = rb.iterator();
+        final DoubleRingBuffer.Iterator iterFinal = rb.iterator();
 
         assertThrows(UnsupportedOperationException.class,
                 iterFinal::remove);
     }
 
     public void testBack() {
-        ShortRingBuffer rb = new ShortRingBuffer(5);
+        DoubleRingBuffer rb = new DoubleRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertEquals(rb.back(), A);
@@ -365,7 +367,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testBackWhenEmpty() {
-        ShortRingBuffer rb = new ShortRingBuffer(5);
+        DoubleRingBuffer rb = new DoubleRingBuffer(5);
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
@@ -375,7 +377,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        ShortRingBuffer rb = new ShortRingBuffer(5, false);
+        DoubleRingBuffer rb = new DoubleRingBuffer(5, false);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -389,26 +391,26 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        ShortRingBuffer rb = new ShortRingBuffer(3);
+        DoubleRingBuffer rb = new DoubleRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add((short) i);
+            rb.add((double) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add((short) i);
-            assertEquals((short) (i - 100 + 1), rb.front(1));
-            assertEquals((short) (i - 100), rb.poll(SENTINEL));
+            rb.add((double) i);
+            assertEquals((double) (i - 100 + 1), rb.front(1));
+            assertEquals((double) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals((short) (i - 100 + 1), rb.front(1));
-            assertEquals((short) (i - 100), rb.poll(SENTINEL));
+                assertEquals((double) (i - 100 + 1), rb.front(1));
+            assertEquals((double) (i - 100), rb.poll(SENTINEL));
         }
     }
 
     public void testAddExceptionWhenFull() {
-        ShortRingBuffer rb = new ShortRingBuffer(4, false);
+        DoubleRingBuffer rb = new DoubleRingBuffer(4, false);
         assert (rb.add(A));
         assert (rb.add(B));
         assert (rb.add(C));
@@ -420,7 +422,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testAddOverwriteAndOffer() {
-        ShortRingBuffer rb = new ShortRingBuffer(4, false);
+        DoubleRingBuffer rb = new DoubleRingBuffer(4, false);
         assert (4 == rb.remaining());
 
         assert (F == rb.addOverwrite(A, F));
@@ -466,7 +468,7 @@ public class ShortRingBufferTest extends TestCase {
 
 
     public void testMultipleRemove() {
-        ShortRingBuffer rb = new ShortRingBuffer(10, false);
+        DoubleRingBuffer rb = new DoubleRingBuffer(10, false);
 
         // this should throw
         assertThrows(NoSuchElementException.class,
@@ -479,7 +481,7 @@ public class ShortRingBufferTest extends TestCase {
         rb.add(A);
         rb.add(B);
 
-        short[] values = rb.remove(2);
+        double[] values = rb.remove(2);
         assertArrayEquals(values, A, B);
         assertEmpty(rb);
 
@@ -508,7 +510,7 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testAddRemoveUnsafe() {
-        ShortRingBuffer rbNoGrow = new ShortRingBuffer(3, false);
+        DoubleRingBuffer rbNoGrow = new DoubleRingBuffer(3, false);
 
         // this should throw
         assertThrows(UnsupportedOperationException.class,
@@ -531,7 +533,7 @@ public class ShortRingBufferTest extends TestCase {
         assertEmpty(rbNoGrow);
 
 
-        ShortRingBuffer rbGrow = new ShortRingBuffer(3, true);
+        DoubleRingBuffer rbGrow = new DoubleRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
             rbGrow.ensureRemaining(size);
@@ -543,12 +545,12 @@ public class ShortRingBufferTest extends TestCase {
     }
 
     public void testOverflow() {
-        ShortRingBuffer rbA = new ShortRingBuffer(0);
+        DoubleRingBuffer rbA = new DoubleRingBuffer(0);
         // this should throw
         assertThrows(AssertionFailure.class,
                 () -> rbA.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE + 1));
 
-        ShortRingBuffer rbB = new ShortRingBuffer(100);
+        DoubleRingBuffer rbB = new DoubleRingBuffer(100);
         for (int i = 0; i < 100; i++) {
             rbB.addUnsafe(A);
         }

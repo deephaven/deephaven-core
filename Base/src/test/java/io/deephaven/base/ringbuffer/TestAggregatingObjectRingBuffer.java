@@ -9,7 +9,7 @@ import java.math.BigInteger;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class AggregatingObjectRingBufferTest extends TestCase {
+public class TestAggregatingObjectRingBuffer extends TestCase {
 
     private void assertEmpty(AggregatingObjectRingBuffer rb) {
         assertTrue(rb.isEmpty());

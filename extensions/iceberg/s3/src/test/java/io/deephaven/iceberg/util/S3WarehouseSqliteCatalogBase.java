@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
+
 abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
 
     public abstract S3Instructions s3Instructions();
@@ -36,7 +38,8 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         final String catalogName = methodName + "-catalog";
         final String bucket = methodName.toLowerCase(Locale.US) + "-bucket";
         try (final S3AsyncClient client = s3AsyncClient()) {
-            client.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+            client.createBucket(CreateBucketRequest.builder().bucket(bucket).build())
+                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, "s3://" + bucket + "/warehouse");
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());

@@ -1661,9 +1661,9 @@ public interface UpdateByOperation {
      * following the current row (inclusive)</li>
      * </ul>
      *
-     * Sample standard deviation is computed using Bessel's correction
-     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
-     * estimator of population variance.
+     * Sample standard deviation is computed using
+     * <a href="https://en.wikipedia.org/wiki/Bessel%27s_correction">Bessel's correction</a>, which ensures that the
+     * sample variance will be an unbiased estimator of population variance.
      *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param fwdTicks the look-ahead window size (in rows/ticks)
@@ -1686,9 +1686,9 @@ public interface UpdateByOperation {
      * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
      * </ul>
      *
-     * Sample standard deviation is computed using Bessel's correction
-     * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
-     * estimator of population variance.
+     * Sample standard deviation is computed using
+     * <a href="https://en.wikipedia.org/wiki/Bessel%27s_correction">Bessel's correction</a>, which ensures that the
+     * sample variance will be an unbiased estimator of population variance.
      *
      * @param timestampCol the name of the timestamp column
      * @param revDuration the look-behind window size (in Duration)
@@ -1910,9 +1910,8 @@ public interface UpdateByOperation {
     }
 
 
-
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using ticks as the
      * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
      * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
      * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
@@ -1936,7 +1935,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using ticks as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using ticks as the
      * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
      * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
      * values are allowed and can be used to generate completely forward or completely reverse windows.
@@ -1976,7 +1975,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing
      * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
      * in the windows of other rows.
@@ -2007,7 +2006,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@link Duration durations} as the reverse and forward window parameters.
      * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
      * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
@@ -2049,7 +2048,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a
      * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
      * the windows of other rows.
@@ -2074,7 +2073,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingFormulaSpec rolling forumla} for the supplied column name pairs, using time as the
+     * Create a {@link RollingFormulaSpec rolling formula} for the supplied column name pairs, using time as the
      * windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative
      * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
      * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
@@ -2101,6 +2100,224 @@ public interface UpdateByOperation {
         return RollingFormulaSpec.ofTime(timestampCol, revTime, fwdTime, formula, paramToken).clause(pairs);
     }
 
+    // New methods for the multi-column formula
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using ticks as the windowing unit. Ticks are row counts and
+     * you may specify the previous window in number of rows to include. The current row is considered to belong to the
+     * reverse window, so calling this with {@code revTicks = 1} will simply return the current row. Specifying
+     * {@code revTicks = 10} will include the previous 9 rows to this one and this row for a total of 10 rows.
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param formula the user-defined formula to apply to each group. This formula includes the output column name and
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     *
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(long revTicks, String formula) {
+        return RollingFormulaSpec.ofTicks(revTicks, formula).clause();
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using ticks as the windowing unit. Ticks are row counts and
+     * you may specify the reverse and forward window in number of rows to include. The current row is considered to
+     * belong to the reverse window but not the forward window. Also, negative values are allowed and can be used to
+     * generate completely forward or completely reverse windows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
+     * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
+     * <li>{@code revTicks = 0, fwdTicks = 10} - contains the following 10 rows, excludes the current row</li>
+     * <li>{@code revTicks = 10, fwdTicks = 10} - contains the previous 9 rows, the current row and the 10 rows
+     * following</li>
+     * <li>{@code revTicks = 10, fwdTicks = -5} - contains 5 rows, beginning at 9 rows before, ending at 5 rows before
+     * the current row (inclusive)</li>
+     * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
+     * the current row (inclusive)</li>
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * following the current row (inclusive)</li>
+     * </ul>
+     *
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param fwdTicks the look-ahead window size (in rows/ticks)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(long revTicks, long fwdTicks, String formula) {
+        return RollingFormulaSpec.ofTicks(revTicks, fwdTicks, formula).clause();
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
+     * {@link Duration duration} as the reverse window parameter. A row containing a {@code null} in the timestamp
+     * column belongs to no window and will not have a value computed or be considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
+     * </ul>
+     *
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, Duration revDuration, String formula) {
+        return RollingFormulaSpec.ofTime(timestampCol, revDuration, formula).clause();
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
+     * {@link Duration durations} as the reverse and forward window parameters. Negative values are allowed and can be
+     * used to generate completely forward or completely reverse windows. A row containing a {@code null} in the
+     * timestamp column belongs to no window and will not have a value computed or be considered in the windows of other
+     * rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 0m} - contains rows from 10m earlier through the current row
+     * timestamp (inclusive)</li>
+     * <li>{@code revDuration = 0m, fwdDuration = 10m} - contains rows from the current row through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 10m} - contains rows from 10m earlier through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = -5m} - contains rows from 10m earlier through 5m before the current
+     * row timestamp (inclusive), this is a purely backwards looking window</li>
+     * <li>{@code revDuration = -5m, fwdDuration = 10m} - contains rows from 5m following through 10m following the
+     * current row timestamp (inclusive), this is a purely forwards looking window</li>
+     * </ul>
+     *
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param fwdDuration the look-ahead window size (in Duration)
+     * @param formula the user-defined {@link RollingFormulaSpec#formula() formula} to apply to each group. This formula
+     *        can contain any combination of the following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, Duration revDuration, Duration fwdDuration,
+            String formula) {
+        return RollingFormulaSpec.ofTime(timestampCol, revDuration, fwdDuration, formula).clause();
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
+     * {@code nanoseconds} as the reverse window parameters. A row containing a {@code null} in the timestamp column
+     * belongs to no window and will not have a value computed or be considered in the windows of other rows.
+     *
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, long revTime, String formula) {
+        return RollingFormulaSpec.ofTime(timestampCol, revTime, formula).clause();
+    }
+
+    /**
+     * Create a {@link RollingFormulaSpec rolling formula} using time as the windowing unit. This function accepts
+     * {@code nanoseconds} as the reverse and forward window parameters. Negative values are allowed and can be used to
+     * generate completely forward or completely reverse windows. A row containing a {@code null} in the timestamp
+     * column belongs to no window and will not have a value computed or be considered in the windows of other rows.
+     *
+     * <p>
+     * The provided {@code formula} should specify the output column name. Some examples of formula are:
+     *
+     * <pre>
+     * sum_AB = sum(col_A) + sum(col_B)
+     * max_AB = max(col_A) + max(col_B)
+     * values = col_A + col_B
+     * </pre>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param fwdTime the look-ahead window size (in nanoseconds)
+     * @param formula the user-defined formula to apply to each group. This formula can contain any combination of the
+     *        following:
+     *        <ul>
+     *        <li>Built-in functions such as min, max, etc.</li>
+     *        <li>Mathematical arithmetic such as *, +, /, etc.</li>
+     *        <li>User-defined functions</li>
+     *        </ul>
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingFormula(String timestampCol, long revTime, long fwdTime, String formula) {
+        return RollingFormulaSpec.ofTime(timestampCol, revTime, fwdTime, formula).clause();
+    }
 
 
     <T> T walk(Visitor<T> visitor);

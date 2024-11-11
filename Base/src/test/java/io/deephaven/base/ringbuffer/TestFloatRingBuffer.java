@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharRingBufferTest and run "./gradlew replicateRingBuffers" to regenerate
+// ****** Edit TestCharRingBuffer and run "./gradlew replicateRingBuffers" to regenerate
 //
 // @formatter:off
 package io.deephaven.base.ringbuffer;
@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 
 import static org.junit.Assert.assertThrows;
 
-public class FloatRingBufferTest extends TestCase {
+public class TestFloatRingBuffer extends TestCase {
 
     final float SENTINEL = Float.MIN_VALUE;
 
@@ -38,6 +38,8 @@ public class FloatRingBufferTest extends TestCase {
         } catch (NoSuchElementException x) {
             // expected
         }
+        // region empty-test
+        // endregion empty-test
     }
 
     private void assertFull(FloatRingBuffer rb) {
