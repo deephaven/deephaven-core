@@ -12,6 +12,7 @@ import numpy as np
 from pydeephaven._utils import to_list
 from pydeephaven.proto import table_pb2
 
+_GrpcSelectable = table_pb2.Selectable
 _GrpcAggregation = table_pb2.Aggregation
 _GrpcAggregationColumns = _GrpcAggregation.AggregationColumns
 _GrpcAggregationCount = _GrpcAggregation.AggregationCount
@@ -52,10 +53,10 @@ class _AggregationCount(Aggregation):
 
 @dataclass
 class _AggregationFormula(Aggregation):
-    formula: str
+    selectable: _GrpcSelectable
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_formula = _GrpcAggregationFormula(formula=self.formula)
+        agg_formula = _GrpcAggregationFormula(selectable=self.selectable)
         return _GrpcAggregation(formula=agg_formula)
 
 @dataclass
@@ -212,7 +213,8 @@ def formula(formula: str, formula_param: Optional[str] = None, cols: Union[str, 
     if formula_param:
         agg_spec = _GrpcAggSpec(formula=_GrpcAggSpec.AggSpecFormula(formula=formula, param_token=formula_param))
         return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
-    return _AggregationFormula(formula=formula)
+    selectable = _GrpcSelectable(raw=formula)
+    return _AggregationFormula(selectable=selectable)
 
 
 def last(cols: Union[str, List[str]] = None) -> Aggregation:

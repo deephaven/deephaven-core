@@ -348,6 +348,17 @@ message SelectOrUpdateRequest {
   repeated string column_specs = 3;
 }
 
+message Selectable {
+  // message ColumnExpression {
+  //  string column_name = 1;
+  //  Expression expression = 2;
+  // }
+  oneof type {
+    string raw = 1;
+    // ColumnExpression column_expression = 2;
+  }
+}
+
 message MathContext {
   enum RoundingMode {
     ROUNDING_MODE_NOT_SPECIFIED = 0;
@@ -1050,7 +1061,7 @@ message Aggregation {
   }
 
   message AggregationFormula {
-    string formula = 1;
+    Selectable selectable = 1;
   }
 
   oneof type {

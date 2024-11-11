@@ -20,6 +20,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
+import io.deephaven.proto.backplane.grpc.Selectable;
 
 import java.util.Collection;
 import java.util.List;
@@ -100,7 +101,8 @@ class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
 
     @Override
     public void visit(Formula formula) {
+        final Selectable selectable = Selectable.newBuilder().setRaw(formula.formulaString()).build();
         out = singletonList(of(Builder::setFormula, AggregationFormula.newBuilder()
-                .setFormula(formula.formulaString())));
+                .setSelectable(selectable)));
     }
 }

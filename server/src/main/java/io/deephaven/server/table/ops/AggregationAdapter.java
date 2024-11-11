@@ -82,7 +82,7 @@ public class AggregationAdapter {
     }
 
     public static Formula adapt(AggregationFormula formula) {
-        return Formula.parse(formula.getFormula());
+        return Formula.parse(formula.getSelectable().getRaw());
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {
