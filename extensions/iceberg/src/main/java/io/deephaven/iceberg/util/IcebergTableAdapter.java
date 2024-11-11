@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
@@ -561,6 +560,16 @@ public class IcebergTableAdapter {
 
 
     /**
+     * Create a new {@link IcebergTableWriter} for this Iceberg table using the provided {@link TableWriterOptions}.
+     *
+     * @param tableWriterOptions The options to configure the table writer.
+     * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
+     */
+    public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
+        return new IcebergTableWriter(tableWriterOptions, this);
+    }
+
+    /**
      * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
      * will not change the schema of the existing table.
      *
@@ -605,9 +614,5 @@ public class IcebergTableAdapter {
         final IcebergTableWriter newWriter =
                 new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
         return newWriter.writeDataFiles(instructionsWithDefinition);
-    }
-
-    public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
-        return new IcebergTableWriter(tableWriterOptions, this);
     }
 }

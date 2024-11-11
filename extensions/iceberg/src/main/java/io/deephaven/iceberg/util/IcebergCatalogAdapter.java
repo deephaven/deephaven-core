@@ -316,10 +316,6 @@ public class IcebergCatalogAdapter {
     public IcebergTableAdapter createTableAndAppend(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final IcebergWriteInstructions writeInstructions) {
-        if (writeInstructions.dhTables().isEmpty()) {
-            return createTable(tableIdentifier, new Schema(), PartitionSpec.unpartitioned());
-        }
-
         // Extract the definition from the append instructions to build the spec and schema
         final IcebergParquetWriteInstructions parquetWriteInstructions =
                 ensureDefinition(verifyInstructions(writeInstructions));

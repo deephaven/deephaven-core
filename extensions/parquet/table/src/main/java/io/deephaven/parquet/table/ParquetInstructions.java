@@ -15,7 +15,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +59,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static final boolean DEFAULT_IS_REFRESHING = false;
 
     public interface OnWriteCompleted {
-        void onWriteCompleted(URI destination, long numRows, long numBytes);
+        void onWriteCompleted(CompletedParquetWrite completedParquetWrite);
     }
 
     public enum ParquetFileLayout {

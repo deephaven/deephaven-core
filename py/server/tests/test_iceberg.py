@@ -3,7 +3,7 @@
 #
 import jpy
 
-from deephaven import dtypes
+from deephaven import dtypes, empty_table
 from deephaven.column import col_def, ColumnType
 
 from tests.testbase import BaseTestCase
@@ -78,7 +78,7 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345)
 
     def test_write_instruction_create_default(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions()
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)])
         self.assertEqual(iceberg_write_instructions.j_object.compressionCodecName(), "SNAPPY")
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionaryKeys(), 1048576)
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionarySize(), 1048576)
@@ -89,7 +89,8 @@ class IcebergTestCase(BaseTestCase):
                                             access_key_id="some_access_key_id",
                                             secret_access_key="some_secret_access_key"
                                             )
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(data_instructions=s3_instructions)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             data_instructions=s3_instructions)
 
     def test_write_instruction_create_with_table_definition_dict(self):
         table_def = {
@@ -98,7 +99,8 @@ class IcebergTestCase(BaseTestCase):
             "z": dtypes.double,
         }
 
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(table_definition=table_def)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             table_definition=table_def)
         col_names = j_list_to_list(iceberg_write_instructions.j_object.tableDefinition().get().getColumnNames())
         self.assertTrue(col_names[0] == "x")
         self.assertTrue(col_names[1] == "y")
@@ -112,7 +114,8 @@ class IcebergTestCase(BaseTestCase):
             col_def("z", dtypes.double),
         ]
 
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(table_definition=table_def)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             table_definition=table_def)
         col_names = j_list_to_list(iceberg_write_instructions.j_object.tableDefinition().get().getColumnNames())
         self.assertTrue(col_names[0] == "Partition")
         self.assertTrue(col_names[1] == "x")
@@ -120,17 +123,21 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(col_names[3] == "z")
 
     def test_write_instruction_create_with_compression_codec(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(compression_codec_name="GZIP")
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             compression_codec_name="GZIP")
         self.assertEqual(iceberg_write_instructions.j_object.compressionCodecName(), "GZIP")
 
     def test_write_instruction_create_with_max_dictionary_keys(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(maximum_dictionary_keys=1024)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             maximum_dictionary_keys=1024)
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionaryKeys(), 1024)
 
     def test_write_instruction_create_with_max_dictionary_size(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(maximum_dictionary_size=8192)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             maximum_dictionary_size=8192)
         self.assertEqual(iceberg_write_instructions.j_object.maximumDictionarySize(), 8192)
 
     def test_write_instruction_create_with_target_page_size(self):
-        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions(target_page_size=4096)
+        iceberg_write_instructions = iceberg.IcebergParquetWriteInstructions([empty_table(0)],
+                                                                             target_page_size=4096)
         self.assertEqual(iceberg_write_instructions.j_object.targetPageSize(), 4096)

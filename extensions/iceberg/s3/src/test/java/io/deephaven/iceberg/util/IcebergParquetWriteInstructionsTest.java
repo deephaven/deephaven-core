@@ -17,34 +17,31 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 class IcebergParquetWriteInstructionsTest {
 
+    /**
+     * Create a new IcebergParquetWriteInstructions builder with an empty table.
+     */
+    private static IcebergParquetWriteInstructions.Builder instructions() {
+        return IcebergParquetWriteInstructions.builder().addTables(TableTools.emptyTable(0));
+    }
+
     @Test
     void defaults() {
-        final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder().build();
+        final IcebergParquetWriteInstructions instructions = instructions().build();
         assertThat(instructions.tableDefinition().isEmpty()).isTrue();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
-        assertThat(instructions.updateSchema()).isFalse();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);
         assertThat(instructions.targetPageSize()).isEqualTo(65536);
-        assertThat(instructions.dhTables().isEmpty()).isTrue();
+        assertThat(instructions.tables().isEmpty()).isFalse();
         assertThat(instructions.partitionPaths().isEmpty()).isTrue();
         assertThat(instructions.snapshot()).isEmpty();
         assertThat(instructions.snapshotId()).isEmpty();
     }
 
     @Test
-    void testSetVerifySchema() {
-        assertThat(IcebergParquetWriteInstructions.builder()
-                .updateSchema(true)
-                .build()
-                .updateSchema())
-                .isTrue();
-    }
-
-    @Test
     void testSetCompressionCodecName() {
-        assertThat(IcebergParquetWriteInstructions.builder()
+        assertThat(instructions()
                 .compressionCodecName("GZIP")
                 .build()
                 .compressionCodecName())
@@ -53,7 +50,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void testSetMaximumDictionaryKeys() {
-        assertThat(IcebergParquetWriteInstructions.builder()
+        assertThat(instructions()
                 .maximumDictionaryKeys(100)
                 .build()
                 .maximumDictionaryKeys())
@@ -62,7 +59,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void testSetMaximumDictionarySize() {
-        assertThat(IcebergParquetWriteInstructions.builder()
+        assertThat(instructions()
                 .maximumDictionarySize(100)
                 .build()
                 .maximumDictionarySize())
@@ -71,7 +68,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void testSetTargetPageSize() {
-        assertThat(IcebergParquetWriteInstructions.builder()
+        assertThat(instructions()
                 .targetPageSize(1 << 20)
                 .build()
                 .targetPageSize())
@@ -82,7 +79,7 @@ class IcebergParquetWriteInstructionsTest {
     void testMinMaximumDictionaryKeys() {
 
         try {
-            IcebergParquetWriteInstructions.builder()
+            instructions()
                     .maximumDictionaryKeys(-1)
                     .build();
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
@@ -94,7 +91,7 @@ class IcebergParquetWriteInstructionsTest {
     @Test
     void testMinMaximumDictionarySize() {
         try {
-            IcebergParquetWriteInstructions.builder()
+            instructions()
                     .maximumDictionarySize(-1)
                     .build();
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
@@ -106,7 +103,7 @@ class IcebergParquetWriteInstructionsTest {
     @Test
     void testMinTargetPageSize() {
         try {
-            IcebergParquetWriteInstructions.builder()
+            instructions()
                     .targetPageSize(1024)
                     .build();
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
@@ -117,7 +114,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void toParquetInstructionTest() {
-        final IcebergParquetWriteInstructions writeInstructions = IcebergParquetWriteInstructions.builder()
+        final IcebergParquetWriteInstructions writeInstructions = instructions()
                 .compressionCodecName("GZIP")
                 .maximumDictionaryKeys(100)
                 .maximumDictionarySize(200)
@@ -144,7 +141,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void testSetSnapshotID() {
-        final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
+        final IcebergParquetWriteInstructions instructions = instructions()
                 .snapshotId(12345)
                 .build();
         assertThat(instructions.snapshotId().getAsLong()).isEqualTo(12345);
@@ -155,12 +152,12 @@ class IcebergParquetWriteInstructionsTest {
         final Table table1 = TableTools.emptyTable(3);
         final Table table2 = TableTools.emptyTable(4);
         final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                .addDhTables(table1)
-                .addDhTables(table2)
+                .addTables(table1)
+                .addTables(table2)
                 .build();
-        assertThat(instructions.dhTables().size()).isEqualTo(2);
-        assertThat(instructions.dhTables().contains(table1)).isTrue();
-        assertThat(instructions.dhTables().contains(table2)).isTrue();
+        assertThat(instructions.tables().size()).isEqualTo(2);
+        assertThat(instructions.tables().contains(table1)).isTrue();
+        assertThat(instructions.tables().contains(table2)).isTrue();
     }
 
     @Test
@@ -179,7 +176,7 @@ class IcebergParquetWriteInstructionsTest {
         }
 
         final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                .addDhTables(table1, table2)
+                .addTables(table1, table2)
                 .addPartitionPaths(pp1, pp2)
                 .build();
         assertThat(instructions.partitionPaths().size()).isEqualTo(2);

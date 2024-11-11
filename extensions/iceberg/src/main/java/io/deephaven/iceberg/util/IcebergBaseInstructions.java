@@ -13,7 +13,10 @@ import java.util.OptionalLong;
 public interface IcebergBaseInstructions {
 
     /**
-     * The {@link TableDefinition} to use when reading or writing Iceberg data files.
+     * The {@link TableDefinition} to use when reading or writing Iceberg data files, instead of the one implied by the
+     * table being read/written itself. This definition can be used to skip some columns or add additional columns with
+     * {@code null} values.
+     *
      * <p>
      * When using an {@link IcebergTableWriter}, this table definition should either:
      * <ul>

@@ -150,6 +150,7 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
     j_object_type = _JIcebergParquetWriteInstructions
 
     def __init__(self,
+                 tables: List[Table],
                  compression_codec_name: Optional[str] = None,
                  maximum_dictionary_keys: Optional[int] = None,
                  maximum_dictionary_size: Optional[int] = None,
@@ -161,7 +162,8 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
         Initializes the instructions using the provided parameters.
 
         Args:
-            compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
+            tables (List[Table]): The deephaven tables to write.
+            compression_codec_name (Optional[str]): The compression codec to use. Allowed values include "UNCOMPRESSED",
                 "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
             maximum_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a
                 dictionary page before switching to non-dictionary encoding, never evaluated for non-String columns,
@@ -185,6 +187,9 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
 
         try:
             builder = self.j_object_type.builder()
+
+            for table in tables:
+                builder.addTables(table.j_table)
 
             if compression_codec_name is not None:
                 builder.compressionCodecName(compression_codec_name)
@@ -227,7 +232,7 @@ class IcebergTable(Table):
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
 
-    def update(self, snapshot_id:Optional[int] = None):
+    def update(self, snapshot_id: Optional[int] = None):
         """
         Updates the table to match the contents of the specified snapshot. This may result in row removes and additions
         that will be propagated asynchronously via this IcebergTable's UpdateGraph. If no snapshot is provided, the
@@ -320,7 +325,6 @@ class IcebergTableAdapter(JObjectWrapper):
             return IcebergTable(self.j_object.table(instructions.j_object))
         return IcebergTable(self.j_object.table())
 
-
     def append(self, instructions: Optional[IcebergParquetWriteInstructions] = None):
         # TODO Review javadoc in this file once again
         """
@@ -355,10 +359,6 @@ class IcebergTableAdapter(JObjectWrapper):
         of data files that were written. Users can use this list to create a transaction/snapshot if needed.
 
         Args:
-            table_identifier (str): the identifier string for iceberg table to write to.
-            tables (List[Table]): the tables to write.
-            partition_paths (Optional[List[str]]): the partitioning path at which data would be written, for example,
-                "year=2021/month=01". If omitted, we will try to write data to the table without partitioning.
             instructions (Optional[IcebergParquetWriteInstructions]): the instructions for customizations while writing.
         """
         if instructions is not None:

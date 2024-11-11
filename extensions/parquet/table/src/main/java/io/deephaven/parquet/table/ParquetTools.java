@@ -603,8 +603,12 @@ public class ParquetTools {
                         final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
                                 tableDestination, outputStream, Collections.emptyMap(),
                                 (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter, computedCache);
-                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
-                                tableDestination, source.size(), numBytes));
+                        writeInstructions.onWriteCompleted()
+                                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
+                                        .destination(tableDestination)
+                                        .numRows(source.size())
+                                        .numBytes(numBytes)
+                                        .build()));
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -629,8 +633,12 @@ public class ParquetTools {
                         final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
                                 tableDestination, outputStream, Collections.emptyMap(), indexInfoList,
                                 metadataFileWriter, computedCache);
-                        writeInstructions.onWriteCompleted().ifPresent(callback -> callback.onWriteCompleted(
-                                tableDestination, source.size(), numBytes));
+                        writeInstructions.onWriteCompleted()
+                                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
+                                        .destination(tableDestination)
+                                        .numRows(source.size())
+                                        .numBytes(numBytes)
+                                        .build()));
                     }
                 }
 

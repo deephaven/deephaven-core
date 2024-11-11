@@ -23,12 +23,6 @@ import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZ
 @Immutable
 @CopyableStyle
 public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstructions {
-    /**
-     * The default {@link IcebergParquetWriteInstructions} to use when reading/writing Iceberg tables as Parquet data
-     * files.
-     */
-    @SuppressWarnings("unused")
-    public static final IcebergParquetWriteInstructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableIcebergParquetWriteInstructions.builder();
@@ -74,8 +68,6 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     }
 
     abstract IcebergParquetWriteInstructions withTableDefinition(@NotNull final TableDefinition tableDefinition);
-
-    abstract IcebergParquetWriteInstructions withDhTables(@NotNull final Iterable<? extends Table> dhTables);
 
     /**
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.

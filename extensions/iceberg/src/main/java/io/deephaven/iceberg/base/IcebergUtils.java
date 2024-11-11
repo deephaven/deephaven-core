@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +72,10 @@ public final class IcebergUtils {
      * @return A stream of {@link DataFile} objects.
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        return allManifests(table, snapshot).stream()
+        final List<ManifestFile> manifestFiles = allManifests(table, snapshot);
+        // Sort manifest files by sequence number to read data files in the correct commit order
+        manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
+        return manifestFiles.stream()
                 .peek(manifestFile -> {
                     if (manifestFile.content() != ManifestContent.DATA) {
                         throw new TableDataException(
