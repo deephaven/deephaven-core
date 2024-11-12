@@ -448,7 +448,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    private static class TableResolver implements Callable<Table>, Runnable, SessionState.ExportErrorHandler {
+    private static class TableResolver implements SessionState.ExportErrorHandler {
         private final SessionState session;
         private final TicketHandler handler;
 
@@ -462,20 +462,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // export; as such, we _can't_ unmanage the Table during a call to TicketHandler.resolve, so we must rely
             // on onSuccess / onError callbacks (after export has started managing the Table).
             return session.<Table>nonExport()
-                    .onSuccess(this)
+                    .onSuccess(this::onSuccess)
                     .onError(this)
-                    .submit((Callable<Table>) this);
+                    .submit(handler::resolve);
         }
 
-        // submit
-        @Override
-        public Table call() {
-            return handler.resolve();
-        }
-
-        // onSuccess
-        @Override
-        public void run() {
+        private void onSuccess() {
             release();
         }
 
@@ -880,12 +872,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public synchronized final FlightInfo getInfo(FlightDescriptor descriptor) {
+        public final synchronized FlightInfo getInfo(FlightDescriptor descriptor) {
             return TicketRouter.getFlightInfo(table, descriptor, ticket());
         }
 
         @Override
-        public synchronized final Table resolve() {
+        public final synchronized Table resolve() {
             if (resolved) {
                 throw error(Code.FAILED_PRECONDITION, "Should only resolve once");
             }
@@ -947,7 +939,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     final class CommandPreparedStatementQueryImpl extends QueryBase<CommandPreparedStatementQuery> {
 
-        PreparedStatement prepared;
+        private PreparedStatement prepared;
 
         CommandPreparedStatementQueryImpl(SessionState session) {
             super(session);
@@ -1160,13 +1152,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             return false;
         }
         final Object obj;
-        {
-            final QueryScope scope = ExecutionContext.getContext().getQueryScope();
-            try {
-                obj = scope.readParamValue(table);
-            } catch (QueryScope.MissingVariableException e) {
-                return false;
-            }
+        final QueryScope scope = ExecutionContext.getContext().getQueryScope();
+        try {
+            obj = scope.readParamValue(table);
+        } catch (QueryScope.MissingVariableException e) {
+            return false;
         }
         if (!(obj instanceof Table)) {
             return false;
@@ -1653,7 +1643,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * against, which is a common pattern used in Deephaven table names. As mentioned below, it also follows that an
      * empty string should only explicitly match against an empty string.
      */
-    private static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {
+    @VisibleForTesting
+    static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {
         // This is the technically correct, although likely represents a Flight SQL client mis-use, as the results will
         // be empty (unless an empty db_schema_name is allowed).
         //

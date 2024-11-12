@@ -21,9 +21,9 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
 
     private String jdbcUrl(boolean requestCookie) {
         return String.format(
-                "jdbc:arrow-flight-sql://localhost:%d/?Authorization=Anonymous&useEncryption=false"
-                        + (requestCookie ? "&x-deephaven-auth-cookie-request=true" : ""),
-                localPort);
+                "jdbc:arrow-flight-sql://localhost:%d/?Authorization=Anonymous&useEncryption=false%s",
+                localPort,
+                (requestCookie ? "&x-deephaven-auth-cookie-request=true" : ""));
     }
 
     private Connection connect(boolean requestCookie) throws SQLException {

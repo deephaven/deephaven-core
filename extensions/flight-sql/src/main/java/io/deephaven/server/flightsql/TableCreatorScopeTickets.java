@@ -27,7 +27,6 @@ final class TableCreatorScopeTickets extends TableCreatorDelegate<Table> {
 
     @Override
     public Table of(TicketTable ticketTable) {
-        // This does not wrap in a nugget like TicketRouter.resolve; is that important?
         return scopeTicketResolver.<Table>resolve(session, ByteBuffer.wrap(ticketTable.ticket()),
                 TableCreatorScopeTickets.class.getSimpleName()).get();
     }

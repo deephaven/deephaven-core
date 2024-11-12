@@ -20,7 +20,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.ActionCreatePreparedSubstraitP
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndSavepointRequest;
 import org.apache.arrow.flight.sql.impl.FlightSql.ActionEndTransactionRequest;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,17 +126,12 @@ final class FlightSqlActionHelper {
         return unpackActionOrThrow(any, clazz);
     }
 
-    private static Optional<Any> parse(byte[] data) {
-        try {
-            return Optional.of(Any.parseFrom(data));
-        } catch (final InvalidProtocolBufferException e) {
-            return Optional.empty();
-        }
-    }
-
     private static Any parseActionOrThrow(byte[] data) {
-        return parse(data)
-                .orElseThrow(() -> FlightSqlErrorHelper.error(Status.Code.INVALID_ARGUMENT, "Invalid action"));
+        try {
+            return Any.parseFrom(data);
+        } catch (final InvalidProtocolBufferException e) {
+            throw FlightSqlErrorHelper.error(Status.Code.INVALID_ARGUMENT, "Invalid action");
+        }
     }
 
     private static <T extends Message> T unpackActionOrThrow(Any source, Class<T> clazz) {

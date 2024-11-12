@@ -337,6 +337,7 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     @Test
     public void getTables() throws Exception {
         setFooTable();
+        setFoodTable();
         setBarTable();
         for (final boolean includeSchema : new boolean[] {false, true}) {
             final Schema expectedSchema = includeSchema
@@ -356,15 +357,24 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
                     flightSqlClient.getTables(null, null, "%able", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
-                consume(info, 1, 2, true);
+                consume(info, 1, 3, true);
             }
 
-            // Any of these queries will fetch foo_table
+            // Any of these queries will fetch foo_table and foodtable; there is no way to uniquely filter based on the
+            // `_` literal
             for (final FlightInfo info : new FlightInfo[] {
                     flightSqlClient.getTables(null, null, "foo_table", null, includeSchema),
                     flightSqlClient.getTables(null, null, "foo_%", null, includeSchema),
                     flightSqlClient.getTables(null, null, "f%", null, includeSchema),
                     flightSqlClient.getTables(null, null, "%table", null, includeSchema),
+            }) {
+                assertThat(info.getSchema()).isEqualTo(expectedSchema);
+                consume(info, 1, 2, true);
+            }
+
+            // Any of these queries will fetch foodtable
+            for (final FlightInfo info : new FlightInfo[] {
+                    flightSqlClient.getTables(null, null, "foodtable", null, includeSchema),
             }) {
                 assertThat(info.getSchema()).isEqualTo(expectedSchema);
                 consume(info, 1, 1, true);
@@ -1000,12 +1010,20 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         setSimpleTable("foo_table", "Foo");
     }
 
+    private static void setFoodTable() {
+        setSimpleTable("foodtable", "Food");
+    }
+
     private static void setBarTable() {
         setSimpleTable("barTable", "Bar");
     }
 
     private static void removeFooTable() {
         removeTable("foo_table");
+    }
+
+    private static void removeFoodTable() {
+        removeTable("foodtable");
     }
 
     private static void removeBarTable() {
