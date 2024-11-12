@@ -10,6 +10,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.Utils;
 import io.deephaven.util.datastructures.hash.KeyIdentityKeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
  * <p>
  * This cleanup process is initiated one of two ways:
  * <ol>
- * <li>The manager invokes it directly via {@link #ensureReferencesDropped()} because it is releasing all of its
+ * <li>The manager invokes it directly via {@link #enqueueReferencesForDrop()} because it is releasing all of its
  * retained references.</li>
  * <li>A {@link io.deephaven.util.reference.CleanupReferenceProcessor} or similar code invokes {@link #cleanup()} after
  * the manager is garbage-collected.</li>
@@ -80,11 +81,11 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
     /**
      * Add a {@link LivenessReferent} to drop a reference to on {@link #cleanup()} or
-     * {@link #ensureReferencesDropped()}. This is not permitted if {@link #cleanup()} or
-     * {@link #ensureReferencesDropped()} has already been invoked.
+     * {@link #enqueueReferencesForDrop()}. This is not permitted if {@link #cleanup()} or
+     * {@link #enqueueReferencesForDrop()} has already been invoked.
      *
      * @param referent The referent to drop on cleanup
-     * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
+     * @throws LivenessStateException If {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been
      *         invoked
      */
     synchronized void addReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
@@ -95,12 +96,12 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     /**
      * <p>
      * Remove at most one existing reference to referent from this tracker, so that it will no longer be dropped on
-     * {@link #cleanup()} or {@link #ensureReferencesDropped()}, and drop it immediately.
+     * {@link #cleanup()} or {@link #enqueueReferencesForDrop()}, and drop it immediately.
      * <p>
-     * This is not permitted if {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been invoked.
+     * This is not permitted if {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been invoked.
      *
      * @param referent The referent to remove
-     * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
+     * @throws LivenessStateException If {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been
      *         invoked
      */
     synchronized void dropReference(@NotNull final LivenessReferent referent) throws LivenessStateException {
@@ -111,12 +112,12 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     /**
      * <p>
      * Remove at most one existing reference to each input referent from this tracker, so that it will no longer be
-     * dropped on {@link #cleanup()} or {@link #ensureReferencesDropped()}, and drop it immediately.
+     * dropped on {@link #cleanup()} or {@link #enqueueReferencesForDrop()}, and drop it immediately.
      * <p>
-     * This is not permitted if {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been invoked.
+     * This is not permitted if {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been invoked.
      *
      * @param referents The referents to remove
-     * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
+     * @throws LivenessStateException If {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been
      *         invoked
      */
     synchronized void dropReferences(@NotNull final Stream<? extends LivenessReferent> referents)
@@ -130,10 +131,10 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * Move all {@link LivenessReferent}s previously added to this tracker to other, which becomes responsible for
      * dropping them.
      * <p>
-     * This is not permitted if {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been invoked.
+     * This is not permitted if {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been invoked.
      *
      * @param other The other tracker
-     * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
+     * @throws LivenessStateException If {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been
      *         invoked
      */
     synchronized void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
@@ -146,9 +147,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * Remove all {@link LivenessReferent}s previously added to this tracker, unless they have been transferred, without
      * dropping them. Uses to make references "permanent".
      * <p>
-     * This is not permitted if {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been invoked.
+     * This is not permitted if {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been invoked.
      *
-     * @throws LivenessStateException If {@link #cleanup()} or {@link #ensureReferencesDropped()} has already been
+     * @throws LivenessStateException If {@link #cleanup()} or {@link #enqueueReferencesForDrop()} has already been
      *         invoked
      */
     synchronized void makeReferencesPermanent() {
@@ -171,21 +172,27 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      */
     @Override
     public void cleanup() {
-        ensureReferencesDroppedInternal(true);
+        // noinspection EmptyTryBlock
+        try (final SafeCloseable ignored = ensureReferencesDroppedInternal(true)) {
+        }
     }
 
     /**
      * <p>
-     * Initiate the idempotent cleanup process. This will drop all retained references if their referents still exist.
-     * No new references may be added to or dropped from this tracker.
+     * Initiate the idempotent cleanup process. This will enqueue all retained references to be dropped if their
+     * referents still exist. No new references may be added to or dropped from this tracker.
+     *
+     * @return A {@link SafeCloseable} that will process the queued drops if necessary. Must be called exactly once,
+     *         after any other desired cleanup has been performed.
      */
-    void ensureReferencesDropped() {
-        ensureReferencesDroppedInternal(false);
+    SafeCloseable enqueueReferencesForDrop() {
+        return ensureReferencesDroppedInternal(false);
     }
 
-    private void ensureReferencesDroppedInternal(final boolean onCleanup) {
+    private SafeCloseable ensureReferencesDroppedInternal(final boolean onCleanup) {
         if (!OUTSTANDING_STATE_UPDATER.compareAndSet(this, OUTSTANDING, NOT_OUTSTANDING)) {
-            return;
+            return () -> {
+            };
         }
         if (Liveness.DEBUG_MODE_ENABLED || (onCleanup && Liveness.CLEANUP_LOG_ENABLED)) {
             Liveness.log.info().append("LivenessDebug: Ensuring references dropped ")
@@ -209,18 +216,23 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         if (processDrops) {
-            try {
-                pendingDropsTracker.dropAll();
-            } finally {
-                tlPendingDropsTracker.remove();
-            }
+            final PendingDropsTracker finalPendingDropsTracker = pendingDropsTracker;
+            return () -> {
+                try {
+                    finalPendingDropsTracker.dropAll();
+                } finally {
+                    tlPendingDropsTracker.remove();
+                }
+            };
         }
+        return () -> {
+        };
     }
 
     /**
      * <p>
      * Get the number of outstanding trackers (instances of RetainedReferenceTracker that have not had their
-     * {@link #cleanup()} or {@link #ensureReferencesDropped()} method called).
+     * {@link #cleanup()} or {@link #enqueueReferencesForDrop()} method called).
      * <p>
      * Note that this number represents the liveness system's current knowledge of the number of live references in the
      * system.
@@ -324,7 +336,11 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @Override
         public void enqueueReferencesForDrop(@NotNull final PendingDropsTracker tracker, final boolean onCleanup) {
-            retainedReferences.forEach(tracker::addWeakReference);
+            if (onCleanup) {
+                retainedReferences.forEach(tracker::addOnCleanup);
+            } else {
+                retainedReferences.forEach(tracker::addOnEnsureDropped);
+            }
             retainedReferences.clear();
         }
 
@@ -466,12 +482,27 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         private final Queue<Object> pendingDrops = new ArrayDeque<>();
 
+        void addOnCleanup(@NotNull final WeakReference<? extends LivenessReferent> reference) {
+            /*
+             * Enqueue the WeakReference, taking no position w.r.t. reachability of the referent.
+             */
+            pendingDrops.add(reference);
+        }
+
+        void addOnEnsureDropped(@NotNull final WeakReference<? extends LivenessReferent> reference) {
+            /*
+             * Preserve reachability from the time of invocation.
+             */
+            final LivenessReferent referent = reference.get();
+            pendingDrops.add(referent == null ? reference : referent);
+        }
+
         void addOnCleanup(@NotNull final LivenessReferent referent) {
             /*
              * We enqueue the WeakReference, rather than the LivenessReferent itself. Since our manager has been
              * collected, it's inappropriate to enforce strong reachability to its references.
              */
-            addWeakReference(referent.getWeakReference());
+            pendingDrops.add(referent.getWeakReference());
         }
 
         void addOnEnsureDropped(@NotNull final LivenessReferent referent) {
@@ -480,13 +511,6 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
              * ensuring that we drop its references, we should preserve reachability from the time of invocation.
              */
             pendingDrops.add(referent);
-        }
-
-        void addWeakReference(@NotNull final WeakReference<? extends LivenessReferent> reference) {
-            /*
-             * Enqueue the WeakReference, taking no position w.r.t. reachability.
-             */
-            pendingDrops.add(reference);
         }
 
         void dropAll() {
