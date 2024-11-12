@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +64,20 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     private ParquetInstructions parquetInstructions;
 
     /**
-     * Create a new {@link IcebergTableLocationKey} for the given {@link DataFile} and {@link URI}.
+     * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
+     * {@link URI}.
+     *
+     * @param manifestFile The manifest file from which the data file was discovered
+     * @param dataFile The data file that backs the keyed location
+     * @param fileUri The {@link URI} for the file that backs the keyed location
+     * @param partitions The table partitions enclosing the table location keyed by the returned key. If {@code null},
+     *        the location will be a member of no partitions.
+     *
+     * @return A new {@link IcebergTableLocationKey}
      */
     protected IcebergTableLocationKey locationKey(
-            @NotNull final DataFile dataFile,
             @NotNull final ManifestFile manifestFile,
+            @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
@@ -125,7 +133,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.cache = new HashMap<>();
     }
 
-    abstract IcebergTableLocationKey keyFromDataFile(DataFile dataFile, ManifestFile manifestFile, URI fileUri);
+    abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
 
     @NotNull
     private URI dataFileUri(@NotNull DataFile df) {
@@ -146,12 +154,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         try {
             // Retrieve the manifest files from the snapshot
             final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
-
-            // Sort manifest files by sequence number to process them in the commit order. This is done as a courtesy
-            // since the actual ordering/sorting of data files is done by the IcebergTableLocationKey implementation.
-            manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
-            // TODO(deephaven-core#5989): Add unit tests for the ordering of manifest files
-
             for (final ManifestFile manifestFile : manifestFiles) {
                 // Currently only can process manifest files with DATA content type.
                 if (manifestFile.content() != ManifestContent.DATA) {
@@ -162,8 +164,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
                     for (final DataFile dataFile : reader) {
                         final URI fileUri = dataFileUri(dataFile);
-                        final IcebergTableLocationKey locationKey =
-                                cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(dataFile, manifestFile, fileUri));
+                        final IcebergTableLocationKey locationKey = keyFromDataFile(manifestFile, dataFile, fileUri);
                         if (locationKey != null) {
                             locationKeyObserver.accept(locationKey);
                         }

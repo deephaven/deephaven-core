@@ -21,15 +21,22 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
 
     /**
-     * Following are derived from the {@link DataFile} that backs the keyed location and are used for ordering of data
+     * The {@link DataFile#dataSequenceNumber()} of the data file backing this keyed location.
      */
     private final long dataSequenceNumber;
+
+    /**
+     * The {@link DataFile#fileSequenceNumber()} of the data file backing this keyed location.
+     */
     private final long fileSequenceNumber;
+
+    /**
+     * The {@link DataFile#pos()} of data file backing this keyed location.
+     */
     private final long dataFilePos;
 
     /**
-     * Following is derived from the {@link ManifestFile} from which the data file was discovered and is used for
-     * ordering of data.
+     * The {@link ManifestFile#sequenceNumber()} of the manifest file from which the data file was discovered.
      */
     private final long manifestSequenceNumber;
 
@@ -78,18 +85,22 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then {@code dataSequenceNumber}, then
-     * {@code fileSequenceNumber}, then {@code pos}, then applies a {@link PartitionsComparator} to {@code partitions}
-     * and finally {@code uri}.
+     * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
+     * {@code partitions}, then {@code dataSequenceNumber}, then {@code fileSequenceNumber}, then {@code dataFilePos},
+     * then {@code manifestSequenceNumber}, and finally compares {@code uri}.
      *
      * @inheritDoc
      */
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
         if (other instanceof IcebergTableParquetLocationKey) {
+            // TODO(deephaven-core#5989): Add unit tests for the ordering of data files
             final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
             int comparisonResult;
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
+                return comparisonResult;
+            }
+            if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
@@ -102,9 +113,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(manifestSequenceNumber, otherTyped.manifestSequenceNumber)) != 0) {
-                return comparisonResult;
-            }
-            if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
                 return comparisonResult;
             }
             return uri.compareTo(otherTyped.uri);
