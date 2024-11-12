@@ -1638,7 +1638,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             // limit the rows included by this message to the subset of rows in this snapshot that this subscription
             // requested (exclude rows needed by other subscribers but not this one)
             try (final RowSet keySpaceViewport = snapshotGenerator.getMessage().rowsAdded
-                    .subSetForPositions(subscription.growingIncrementalViewport, subscription.reverseViewport)) {
+                    .subSetForPositions(subscription.viewport, subscription.reverseViewport);
+                    final RowSet keySpaceViewportPrev = snapshotGenerator.getMessage().rowsAdded
+                            .subSetForPositions(subscription.snapshotViewport, subscription.snapshotReverseViewport)) {
 
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
@@ -1651,7 +1653,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
                                 subscription.isFullSubscription(), subscription.viewport, subscription.reverseViewport,
-                                subscription.snapshotViewport, keySpaceViewport, subscription.subscribedColumns));
+                                keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns));
 
             } catch (final Exception e) {
                 GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));

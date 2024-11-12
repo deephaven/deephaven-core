@@ -429,10 +429,18 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 // while rowsIncluded knows about rows that were scoped into view, rowsRemoved does not, and we need to
                 // infer them by comparing the previous keyspace viewport with the current keyspace viewport
                 try (final SafeCloseableList toClose = new SafeCloseableList()) {
-
-                    final WritableRowSet existingRows = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                    final WritableRowSet existingRows;
+                    if (isSnapshot) {
+                        existingRows = toClose.add(keyspaceViewport.copy());
+                    } else {
+                        existingRows = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                    }
                     shifted.original.unapply(existingRows);
                     final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(existingRows));
+                    if (isSnapshot) {
+                        // then we must filter noLongerExistingRows to only include rows in the table
+                        noLongerExistingRows.retain(rowsAdded.original);
+                    }
                     final WritableRowSet removedInPosSpace =
                             toClose.add(keyspaceViewportPrev.invert(noLongerExistingRows));
                     try (final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(removedInPosSpace)) {

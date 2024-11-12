@@ -123,10 +123,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             // removes
             final long prevSize = currentRowSet.size();
             currentRowSet.remove(update.rowsRemoved);
-            try (final RowSet removed = populatedRows != null
-                    ? populatedRows.extract(update.rowsRemoved)
-                    : currentRowSet.extract(update.rowsRemoved)) {
-                freeRows(removed);
+            try (final RowSet removed = populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
+                freeRows(removed != null ? removed : update.rowsRemoved);
             }
 
             final RowSetShiftData updateShiftData;
