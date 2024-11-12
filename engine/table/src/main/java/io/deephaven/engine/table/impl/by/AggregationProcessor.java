@@ -113,6 +113,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -718,19 +719,30 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final Formula formula) {
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
-            // Get or create a column definition map composed of vectors of the original column types.
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the group_by columns).
+            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
             if (vectorColumnDefinitions == null) {
                 vectorColumnDefinitions = table.getDefinition().getColumnStream().collect(Collectors.toMap(
                         ColumnDefinition::getName,
-                        (final ColumnDefinition<?> cd) -> ColumnDefinition.fromGenericType(
-                                cd.getName(),
-                                VectorFactory.forElementType(cd.getDataType()).vectorType(),
-                                cd.getDataType())));
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
             }
 
             // Get the input column names from the formula and provide them to the groupBy operator
-            final String[] inputColumns =
+            final String[] allInputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+            final String[] inputKeyColumns = Arrays.stream(allInputColumns)
+                    .filter(groupByColumnSet::contains)
+                    .toArray(String[]::new);
+            final String[] inputNonKeyColumns = Arrays.stream(allInputColumns)
+                    .filter(col -> !groupByColumnSet.contains(col))
+                    .toArray(String[]::new);
+
             if (!selectColumn.getColumnArrays().isEmpty()) {
                 throw new IllegalArgumentException("AggFormula does not support column arrays ("
                         + selectColumn.getColumnArrays() + ")");
@@ -740,11 +752,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
-                    Arrays.stream(inputColumns).map(col -> MatchPair.of(Pair.parse(col)))
+                    Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
                             .toArray(MatchPair[]::new));
 
             final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
-                    groupByChunkedOperator, true, selectColumn);
+                    groupByChunkedOperator, true, selectColumn, inputKeyColumns);
             addNoInputOperator(op);
         }
 

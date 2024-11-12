@@ -20,6 +20,8 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
@@ -36,6 +38,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private final boolean delegateToBy;
     private final SelectColumn selectColumn;
     private final WritableColumnSource<?> resultColumn;
+    private final String[] inputKeyColumns;
 
     private ChunkSource<Values> formulaDataSource;
 
@@ -62,11 +65,13 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             @NotNull final QueryTable inputTable,
             @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
-            @NotNull final SelectColumn selectColumn) {
+            @NotNull final SelectColumn selectColumn,
+            @NotNull final String[] inputKeyColumns) {
         this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
         this.selectColumn = selectColumn;
+        this.inputKeyColumns = inputKeyColumns;
 
         resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
                 0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
@@ -216,7 +221,16 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
             groupBy.propagateInitialState(resultTable, startingDestinationsCount);
         }
 
-        selectColumn.initInputs(resultTable.getRowSet(), groupBy.getResultColumns());
+        final Map<String, ColumnSource<?>> sourceColumns;
+        if (inputKeyColumns.length == 0) {
+            // noinspection unchecked
+            sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getResultColumns();
+        } else {
+            final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
+            sourceColumns = new HashMap<>(groupBy.getResultColumns());
+            Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
+        }
+        selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);
         formulaDataSource = selectColumn.getDataView();
 
         try (final DataCopyContext dataCopyContext = new DataCopyContext()) {

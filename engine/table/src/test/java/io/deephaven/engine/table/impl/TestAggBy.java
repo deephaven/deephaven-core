@@ -79,7 +79,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggFormula("f_max=max(B)"),
                         AggFormula("f_sum=sum(B)"),
                         AggFormula("f_sum_two_col=sum(B) + sum(C)"),
-                        AggFormula("f_custom_sum=max(A) * (sum(B) + sum(C))"),
+                        AggFormula("f_custom_sum=A * (sum(B) + sum(C))"),
                         AggFormula("f_weighted_avg=wavg(B, C)")),
                 "A");
         show(minMax);
@@ -260,6 +260,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggFormula("f_min=min(intColNulls)"),
                                 AggFormula("f_max=max(doubleColNulls)"),
                                 AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
+                                AggFormula("f_key=Sym.equals(\"a\") ? \"a\" : \"not a\""),
+                                AggFormula("f_key_sum=Sym + ':' + sum(intColNulls + doubleColNulls)"),
                                 AggFormula(
                                         "f_custom_sum=sum(intColNulls) + sum(doubleCol) + min(doubleColNulls)")),
                                 "Sym").sort("Sym");
