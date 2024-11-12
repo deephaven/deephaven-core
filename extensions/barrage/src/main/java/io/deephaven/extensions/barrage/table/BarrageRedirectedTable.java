@@ -122,11 +122,11 @@ public class BarrageRedirectedTable extends BarrageTable {
 
             // removes
             final long prevSize = currentRowSet.size();
-            if (isFullSubscription) {
-                currentRowSet.remove(update.rowsRemoved);
-            }
-            try (final RowSet removed = populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
-                freeRows(removed != null ? removed : update.rowsRemoved);
+            currentRowSet.remove(update.rowsRemoved);
+            try (final RowSet removed = populatedRows != null
+                    ? populatedRows.extract(update.rowsRemoved)
+                    : currentRowSet.extract(update.rowsRemoved)) {
+                freeRows(removed);
             }
 
             final RowSetShiftData updateShiftData;
@@ -139,36 +139,13 @@ public class BarrageRedirectedTable extends BarrageTable {
 
             // shifts
             if (updateShiftData.nonempty()) {
-                try (final WritableRowSet postRemoveRowSet = isFullSubscription
-                        ? null
-                        : currentRowSet.minus(update.rowsRemoved)) {
-                    rowRedirection.applyShift(
-                            postRemoveRowSet != null ? postRemoveRowSet : currentRowSet, updateShiftData);
-                }
-                if (isFullSubscription) {
-                    updateShiftData.apply(currentRowSet);
-                }
+                rowRedirection.applyShift(currentRowSet, updateShiftData);
+                updateShiftData.apply(currentRowSet);
                 if (populatedRows != null) {
                     updateShiftData.apply(populatedRows);
                 }
             }
-            if (isFullSubscription) {
-                currentRowSet.insert(update.rowsAdded);
-            } else {
-                final long newSize;
-                if (update.isSnapshot) {
-                    newSize = update.rowsAdded.size();
-                } else {
-                    // note that we are not told about rows that fall off the end of our respected viewport
-                    newSize = Math.min(serverViewport.size(),
-                            prevSize - update.rowsRemoved.size() + update.rowsIncluded.size());
-                }
-                if (newSize < prevSize) {
-                    currentRowSet.removeRange(newSize, prevSize - 1);
-                } else if (newSize > prevSize) {
-                    currentRowSet.insertRange(prevSize, newSize - 1);
-                }
-            }
+            currentRowSet.insert(update.rowsAdded);
 
             final WritableRowSet totalMods = RowSetFactory.empty();
             for (int i = 0; i < update.modColumnData.length; ++i) {
@@ -281,10 +258,6 @@ public class BarrageRedirectedTable extends BarrageTable {
                     populatedRows.remove(newPopulated);
                     freeRows(populatedRows);
                 }
-            } else if (!isFullSubscription && prevSize > currentRowSet.size()) {
-                try (final RowSet toFree = RowSetFactory.fromRange(currentRowSet.size(), prevSize - 1)) {
-                    freeRows(toFree);
-                }
             }
 
             if (update.isSnapshot && !mightBeInitialSnapshot) {
@@ -295,7 +268,8 @@ public class BarrageRedirectedTable extends BarrageTable {
             }
 
             final TableUpdate downstream = new TableUpdateImpl(
-                    update.rowsAdded.copy(), update.rowsRemoved.copy(), totalMods, updateShiftData, modifiedColumnSet);
+                    isFullSubscription ? update.rowsAdded.copy() : update.rowsIncluded.copy(),
+                    update.rowsRemoved.copy(), totalMods, updateShiftData, modifiedColumnSet);
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }

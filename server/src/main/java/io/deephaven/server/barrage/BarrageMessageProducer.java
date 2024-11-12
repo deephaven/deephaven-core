@@ -1621,8 +1621,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         // the parent table listener needs to be recording data as if we've already sent the successful snapshot.
 
         if (subscription.snapshotViewport != null) {
-            subscription.snapshotViewport.close();
-            subscription.snapshotViewport = null;
             needsSnapshot = true;
         }
 
@@ -1653,12 +1651,17 @@ public class BarrageMessageProducer extends LivenessArtifact
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
                                 subscription.isFullSubscription(), subscription.viewport, subscription.reverseViewport,
-                                keySpaceViewport, keySpaceViewport, subscription.subscribedColumns));
+                                subscription.snapshotViewport, keySpaceViewport, subscription.subscribedColumns));
 
             } catch (final Exception e) {
                 GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
                 removeSubscription(subscription.listener);
             }
+        }
+
+        if (subscription.snapshotViewport != null) {
+            subscription.snapshotViewport.close();
+            subscription.snapshotViewport = null;
         }
 
         if (subscription.growingIncrementalViewport != null) {

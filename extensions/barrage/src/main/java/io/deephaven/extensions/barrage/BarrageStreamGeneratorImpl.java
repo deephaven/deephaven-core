@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -35,6 +36,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
@@ -297,13 +299,20 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.numClientModRows = numModRows;
 
             if (keyspaceViewport != null) {
-                try (WritableRowSet intersect = keyspaceViewport.intersect(rowsIncluded.original)) {
-                    if (isFullSubscription) {
-                        clientAddedRows = intersect.copy();
-                    } else {
-                        clientAddedRows = keyspaceViewport.invert(intersect);
+                Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
+                try (final WritableRowSet existingRows = keyspaceViewportPrev.minus(rowsRemoved.original)) {
+                    shifted.original.apply(existingRows);
+                    try (final WritableRowSet toInclude = keyspaceViewport.minus(existingRows)) {
+                        if (!toInclude.subsetOf(rowsIncluded.original)) {
+                            throw new IllegalStateException("did not record row data needed for client");
+                        }
+                        if (isFullSubscription) {
+                            clientAddedRows = toInclude.copy();
+                        } else {
+                            clientAddedRows = keyspaceViewport.invert(toInclude);
+                        }
+                        clientAddedRowOffsets = rowsIncluded.original.invert(toInclude);
                     }
-                    clientAddedRowOffsets = rowsIncluded.original.invert(intersect);
                 }
             } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
@@ -416,19 +425,26 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             }
 
             final int rowsRemovedOffset;
-            if (isViewport() && !isFullSubscription) {
-                try (final WritableRowSet clientRemovedKeySpace = keyspaceViewportPrev.intersect(rowsRemoved.original);
-                        final WritableRowSet clientRemovedPositionSpace =
-                                keyspaceViewportPrev.invert(clientRemovedKeySpace);
-                        final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(clientRemovedPositionSpace)) {
-                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
+            if (!isFullSubscription) {
+                // while rowsIncluded knows about rows that were scoped into view, rowsRemoved does not, and we need to
+                // infer them by comparing the previous keyspace viewport with the current keyspace viewport
+                try (final SafeCloseableList toClose = new SafeCloseableList()) {
+
+                    final WritableRowSet existingRows = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                    shifted.original.unapply(existingRows);
+                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(existingRows));
+                    final WritableRowSet removedInPosSpace =
+                            toClose.add(keyspaceViewportPrev.invert(noLongerExistingRows));
+                    try (final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(removedInPosSpace)) {
+                        rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
+                    }
                 }
             } else {
                 rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
             }
             final int shiftDataOffset;
-            if (isViewport() && !isFullSubscription) {
-                // never send shifts to a viewport subscriber
+            if (!isFullSubscription) {
+                // we only send shifts to full table subscriptions
                 shiftDataOffset = 0;
             } else {
                 shiftDataOffset = shifted.addToFlatBuffer(metadata);
@@ -438,16 +454,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             int addedRowsIncludedOffset = 0;
 
             // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isSnapshot || !clientAddedRows.equals(rowsAdded.original)) {
-                if (isViewport() && !isFullSubscription) {
-                    try (final WritableRowSet inclInViewport = keyspaceViewport.intersect(rowsIncluded.original);
-                            final WritableRowSet inclInPositionSpace = keyspaceViewport.invert(inclInViewport);
-                            final RowSetGenerator inclRowsGen = new RowSetGenerator(inclInPositionSpace)) {
-                        addedRowsIncludedOffset = inclRowsGen.addToFlatBuffer(metadata);
-                    }
-                } else {
-                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
-                }
+            if (isFullSubscription && (isSnapshot || !clientAddedRows.equals(rowsAdded.original))) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
             }
 
             // now add mod-column streams, and write the mod column indexes
@@ -1148,7 +1156,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     public static class RowSetShiftDataGenerator extends ByteArrayGenerator {
+        private final RowSetShiftData original;
+
         public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
+            original = shifted;
+
             final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
