@@ -613,6 +613,12 @@ def test_udf(x: {np_type}) -> bool:
         self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
         self.assertEqual(10, t.to_string().count("true"))
 
+    def test_no_signature(self):
+        builtin_max = max
+        t = empty_table(10).update("X = (int) builtin_max(1, 2, 3)")
+        self.assertEqual(t.columns[0].data_type, dtypes.int32)
+        self.assertEqual(10, t.to_string().count("3"))
+
 
 if __name__ == "__main__":
     unittest.main()
