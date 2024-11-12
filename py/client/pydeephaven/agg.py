@@ -180,7 +180,7 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def formula(formula: str, formula_param: Optional[str] = None, cols: Union[str, List[str]] = None) -> Aggregation:
+def formula(formula: str, formula_param: Optional[str] = None, cols: Optional[Union[str, List[str]]] = None) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
         |  Mathematical arithmetic such as `*`, `+`, `/`, etc.
@@ -203,9 +203,9 @@ def formula(formula: str, formula_param: Optional[str] = None, cols: Union[str, 
         formula_param (Optional[str]): If provided, supplies the parameter name for the input column's vector within the
             formula. If formula is `max(each)`, then `each` should be the formula_param. This must be set to None (the
             default when omitted) when the `formula`argument specifies the input and output columns.
-        cols (Union[str, List[str]]): If provided, supplies the column(s) to aggregate on, can be renaming expressions,
-            i.e. "new_col = col". This must be set to None (the default when omitted) when the `formula`argument
-            specifies the input and output columns.
+        cols (Optional[Union[str, List[str]]]): If provided, supplies the column(s) to aggregate on, can be renaming
+            expressions, i.e. "new_col = col". This must be set to None (the default when omitted) when the `formula`
+            argument specifies the input and output columns.
 
     Returns:
         an aggregation
