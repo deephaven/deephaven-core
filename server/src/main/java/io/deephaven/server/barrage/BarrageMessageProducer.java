@@ -1637,10 +1637,17 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             // limit the rows included by this message to the subset of rows in this snapshot that this subscription
             // requested (exclude rows needed by other subscribers but not this one)
+            boolean fullSubscription = subscription.isFullSubscription();
             try (final RowSet keySpaceViewport = snapshotGenerator.getMessage().rowsAdded
-                    .subSetForPositions(subscription.viewport, subscription.reverseViewport);
-                    final RowSet keySpaceViewportPrev = snapshotGenerator.getMessage().rowsAdded
-                            .subSetForPositions(subscription.snapshotViewport, subscription.snapshotReverseViewport)) {
+                    .subSetForPositions(fullSubscription
+                            ? subscription.growingIncrementalViewport
+                            : subscription.viewport,
+                            subscription.reverseViewport);
+                    final RowSet keySpaceViewportPrev = fullSubscription
+                            ? null
+                            : snapshotGenerator.getMessage().rowsAdded
+                                    .subSetForPositions(subscription.snapshotViewport,
+                                            subscription.snapshotReverseViewport)) {
 
                 if (subscription.pendingInitialSnapshot) {
                     // Send schema metadata to this new client.
@@ -1652,7 +1659,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 // some messages may be empty of rows, but we need to update the client viewport and column set
                 subscription.listener
                         .onNext(snapshotGenerator.getSubView(subscription.options, subscription.pendingInitialSnapshot,
-                                subscription.isFullSubscription(), subscription.viewport, subscription.reverseViewport,
+                                fullSubscription, subscription.viewport, subscription.reverseViewport,
                                 keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns));
 
             } catch (final Exception e) {

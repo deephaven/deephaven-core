@@ -299,19 +299,20 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.numClientModRows = numModRows;
 
             if (keyspaceViewport != null) {
-                Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
-                try (final WritableRowSet existingRows = keyspaceViewportPrev.minus(rowsRemoved.original)) {
-                    shifted.original.apply(existingRows);
-                    try (final WritableRowSet toInclude = keyspaceViewport.minus(existingRows)) {
-                        if (!toInclude.subsetOf(rowsIncluded.original)) {
-                            throw new IllegalStateException("did not record row data needed for client");
-                        }
-                        if (isFullSubscription) {
-                            clientAddedRows = toInclude.copy();
-                        } else {
+                if (isFullSubscription) {
+                    clientAddedRows = keyspaceViewport.intersect(rowsAdded.original);
+                    clientAddedRowOffsets = rowsIncluded.original.invert(rowsAdded.original);
+                } else {
+                    Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
+                    try (final WritableRowSet existingRows = keyspaceViewportPrev.minus(rowsRemoved.original)) {
+                        shifted.original.apply(existingRows);
+                        try (final WritableRowSet toInclude = keyspaceViewport.minus(existingRows)) {
+                            if (!toInclude.subsetOf(rowsIncluded.original)) {
+                                throw new IllegalStateException("did not record row data needed for client");
+                            }
                             clientAddedRows = keyspaceViewport.invert(toInclude);
+                            clientAddedRowOffsets = rowsIncluded.original.invert(toInclude);
                         }
-                        clientAddedRowOffsets = rowsIncluded.original.invert(toInclude);
                     }
                 }
             } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
