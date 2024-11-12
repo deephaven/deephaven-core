@@ -65,8 +65,9 @@ public class ParquetKeyValuePartitionedLayout
             @NotNull final ParquetInstructions readInstructions,
             @Nullable SeekableChannelsProvider channelsProvider) {
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                    readInstructions.getSpecialInstructions());
+            channelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory.getScheme(),
+                            readInstructions.getSpecialInstructions());
         }
         return new ParquetKeyValuePartitionedLayout(tableRootDirectory, tableDefinition, readInstructions,
                 channelsProvider);
@@ -102,8 +103,9 @@ public class ParquetKeyValuePartitionedLayout
             @NotNull final ParquetInstructions readInstructions,
             @Nullable SeekableChannelsProvider channelsProvider) {
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                    readInstructions.getSpecialInstructions());
+            channelsProvider =
+                    SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory.getScheme(),
+                            readInstructions.getSpecialInstructions());
         }
         return new ParquetKeyValuePartitionedLayout(tableRootDirectory, maxPartitioningLevels, readInstructions,
                 channelsProvider);

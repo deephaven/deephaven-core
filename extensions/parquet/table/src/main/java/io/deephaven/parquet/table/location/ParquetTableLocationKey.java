@@ -55,7 +55,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         this(parquetFileUri, order, partitions, readInstructions,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri.getScheme(),
                         readInstructions.getSpecialInstructions()));
     }
 

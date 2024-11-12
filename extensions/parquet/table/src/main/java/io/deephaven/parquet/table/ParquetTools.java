@@ -575,7 +575,7 @@ public class ParquetTools {
         }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
         final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .fromServiceLoader(destinations[0], writeInstructions.getSpecialInstructions());
+                .fromServiceLoader(destinations[0].getScheme(), writeInstructions.getSpecialInstructions());
 
         final ParquetMetadataFileWriter metadataFileWriter;
         if (writeInstructions.generateMetadataFiles()) {
@@ -958,7 +958,7 @@ public class ParquetTools {
         // Check if the directory has a metadata file
         final URI metadataFileURI = tableRootDirectory.resolve(METADATA_FILE_NAME);
         final SeekableChannelsProvider channelsProvider =
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory.getScheme(),
                         readInstructions.getSpecialInstructions());
         if (channelsProvider.exists(metadataFileURI)) {
             return readPartitionedTableWithMetadata(metadataFileURI, readInstructions, channelsProvider);

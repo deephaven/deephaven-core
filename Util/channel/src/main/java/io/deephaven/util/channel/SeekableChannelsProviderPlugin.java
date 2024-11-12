@@ -16,10 +16,18 @@ public interface SeekableChannelsProviderPlugin {
     /**
      * Check if this plugin is compatible with the given URI and config object.
      */
-    boolean isCompatible(@NotNull URI uri, @Nullable Object config);
+    default boolean isCompatible(@NotNull URI uri, @Nullable Object config) {
+        return isCompatible(uri.getScheme(), config);
+    }
+
+    boolean isCompatible(@NotNull String uriScheme, @Nullable Object config);
 
     /**
      * Create a {@link SeekableChannelsProvider} for the given URI and config object.
      */
-    SeekableChannelsProvider createProvider(@NotNull URI uri, @Nullable Object object);
+    default SeekableChannelsProvider createProvider(@NotNull URI uri, @Nullable Object object) {
+        return createProvider(uri.getScheme(), object);
+    }
+
+    SeekableChannelsProvider createProvider(@NotNull String uriScheme, @Nullable Object object);
 }

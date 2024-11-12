@@ -43,8 +43,9 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         this.tableRootDirectory = tableRootDirectoryURI;
         this.cache = Collections.synchronizedMap(new HashMap<>());
         this.readInstructions = readInstructions;
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                readInstructions.getSpecialInstructions());
+        this.channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory.getScheme(),
+                        readInstructions.getSpecialInstructions());
     }
 
     public String toString() {

@@ -96,7 +96,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final URI metadataFileURI = isMetadataFile ? source : directory.resolve(METADATA_FILE_NAME);
         final URI commonMetadataFileURI = isCommonMetadataFile ? source : directory.resolve(COMMON_METADATA_FILE_NAME);
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(source,
+            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(source.getScheme(),
                     inputInstructions.getSpecialInstructions());
         }
         return new ParquetMetadataFileLayout(directory, metadataFileURI, commonMetadataFileURI, inputInstructions,

@@ -85,4 +85,15 @@ public final class DataInstructionsProviderLoader {
         // No plugin found for this URI and property collection.
         return null;
     }
+
+    public Object load(@NotNull final String uriScheme) {
+        for (final DataInstructionsProviderPlugin plugin : providers) {
+            final Object pluginInstructions = plugin.createInstructions(uriScheme, properties);
+            if (pluginInstructions != null) {
+                return pluginInstructions;
+            }
+        }
+        // No plugin found for this URI scheme and property collection.
+        return null;
+    }
 }

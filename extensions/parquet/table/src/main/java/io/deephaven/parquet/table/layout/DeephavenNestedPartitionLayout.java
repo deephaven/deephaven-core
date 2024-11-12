@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.layout;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
@@ -53,9 +54,8 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocatio
             @NotNull final String columnPartitionKey,
             @Nullable final Predicate<String> internalPartitionValueFilter,
             @NotNull final ParquetInstructions readInstructions) {
-        final SeekableChannelsProvider channelsProvider =
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(tableRootDirectory, true),
-                        readInstructions.getSpecialInstructions());
+        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .fromServiceLoader(FileUtils.FILE_URI_SCHEME, readInstructions.getSpecialInstructions());
         return new DeephavenNestedPartitionLayout<>(tableRootDirectory, tableName,
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override

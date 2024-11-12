@@ -54,4 +54,23 @@ public final class SeekableChannelsProviderLoader {
         }
         throw new UnsupportedOperationException("No plugin found for uri: " + uri);
     }
+
+    /**
+     * Create a new {@link SeekableChannelsProvider} compatible for reading from and writing to the given URI, using the
+     * plugins loaded by the {@link ServiceLoader}. For example, for a "S3" URI, we will create a
+     * {@link SeekableChannelsProvider} which can read files from S3.
+     *
+     * @param uriScheme The URI scheme
+     * @param specialInstructions An optional object to pass special instructions to the provider.
+     * @return A {@link SeekableChannelsProvider} for the given URI.
+     */
+    public SeekableChannelsProvider fromServiceLoader(@NotNull final String uriScheme,
+            @Nullable final Object specialInstructions) {
+        for (final SeekableChannelsProviderPlugin plugin : providers) {
+            if (plugin.isCompatible(uriScheme, specialInstructions)) {
+                return plugin.createProvider(uriScheme, specialInstructions);
+            }
+        }
+        throw new UnsupportedOperationException("No plugin found for uri scheme: " + uriScheme);
+    }
 }
