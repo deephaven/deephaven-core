@@ -8,17 +8,13 @@ description = 'The Deephaven Flight SQL library'
 sourceSets {
     jdbcTest {
         compileClasspath += sourceSets.main.output
-        compileClasspath += sourceSets.test.output
-
         runtimeClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.test.output
     }
 }
 
 configurations {
-    jdbcTestImplementation.extendsFrom testImplementation
-    jdbcTestRuntimeOnly.extendsFrom testRuntimeOnly
-    jdbcTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+    jdbcTestImplementation.extendsFrom implementation
+    jdbcTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
@@ -32,9 +28,11 @@ dependencies {
     implementation libs.dagger
     implementation libs.arrow.flight.sql
 
+    // FlightSqlClient testing does not depend on a public port being bound (ie, does not require server-jetty) because
+    // it can use io.grpc.inprocess.InProcessChannelBuilder (via io.deephaven.server.runner.ServerBuilderInProcessModule).
+
     testImplementation project(':authorization')
     testImplementation project(':server-test-utils')
-
     testAnnotationProcessor libs.dagger.compiler
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
@@ -44,11 +42,27 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
+    // JDBC testing needs an actually server instance bound to a port because it can only connect over JDBC URIs like
+    // jdbc:arrow-flight-sql://localhost:1000.
     jdbcTestImplementation project(':server-jetty')
-    // Isolating to its own sourceSet / classpath because it breaks logging until we can upgrade to a newer version
+
+    // Another reason why we have a separate source set is because flight-sql-jdbc-driver breaks logging until we can
+    // upgrade to a newer version.
     // See https://github.com/apache/arrow/pull/40908
     // See https://github.com/deephaven/deephaven-core/issues/5947
+    // Although, even when we upgrade, it may make sense to keep JDBC separate so that the
+    // FlightSqlClient testing does not need to depend on server-jetty.
     jdbcTestRuntimeOnly libs.arrow.flight.sql.jdbc
+
+    jdbcTestImplementation project(':server-test-utils')
+    jdbcTestAnnotationProcessor libs.dagger.compiler
+    jdbcTestImplementation libs.assertj
+    jdbcTestImplementation platform(libs.junit.bom)
+    jdbcTestImplementation libs.junit.jupiter
+    jdbcTestRuntimeOnly libs.junit.platform.launcher
+    jdbcTestRuntimeOnly libs.junit.vintage.engine
+    jdbcTestRuntimeOnly project(':log-to-slf4j')
+    jdbcTestRuntimeOnly libs.slf4j.simple
 }
 
 test {
