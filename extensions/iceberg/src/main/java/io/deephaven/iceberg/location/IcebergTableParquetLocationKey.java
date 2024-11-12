@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.location;
 
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
@@ -23,12 +24,12 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     /**
      * The {@link DataFile#dataSequenceNumber()} of the data file backing this keyed location.
      */
-    private final long dataSequenceNumber;
+    private final Long dataSequenceNumber;
 
     /**
      * The {@link DataFile#fileSequenceNumber()} of the data file backing this keyed location.
      */
-    private final long fileSequenceNumber;
+    private final Long fileSequenceNumber;
 
     /**
      * The {@link DataFile#pos()} of data file backing this keyed location.
@@ -66,9 +67,12 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         super(fileUri, order, partitions, readInstructions);
 
         // Files with unknown sequence numbers should be ordered last.
-        dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
-        fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MAX_VALUE;
-        dataFilePos = dataFile.pos() != null ? dataFile.pos() : Long.MAX_VALUE;
+        dataSequenceNumber = dataFile.dataSequenceNumber();
+        fileSequenceNumber = dataFile.fileSequenceNumber();
+
+        // This should never be null because we are discovering this data file through a non-null manifest file
+        dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
+
         manifestSequenceNumber = manifestFile.sequenceNumber();
 
         this.readInstructions = readInstructions;
@@ -86,8 +90,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
     /**
      * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
-     * {@code partitions}, then {@code dataSequenceNumber}, then {@code fileSequenceNumber}, then {@code dataFilePos},
-     * then {@code manifestSequenceNumber}, and finally compares {@code uri}.
+     * {@code partitions}, then {@code dataSequenceNumber}, then {@code fileSequenceNumber}, then
+     * {@code manifestSequenceNumber}, then {@code dataFilePos}, and finally compares {@code uri}.
      *
      * @inheritDoc
      */
@@ -103,16 +107,18 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
+            if (dataSequenceNumber != null && otherTyped.dataSequenceNumber != null &&
+                    (comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = Long.compare(fileSequenceNumber, otherTyped.fileSequenceNumber)) != 0) {
-                return comparisonResult;
-            }
-            if ((comparisonResult = Long.compare(dataFilePos, otherTyped.dataFilePos)) != 0) {
+            if (fileSequenceNumber != null && otherTyped.fileSequenceNumber != null &&
+                    (comparisonResult = Long.compare(fileSequenceNumber, otherTyped.fileSequenceNumber)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(manifestSequenceNumber, otherTyped.manifestSequenceNumber)) != 0) {
+                return comparisonResult;
+            }
+            if ((comparisonResult = Long.compare(dataFilePos, otherTyped.dataFilePos)) != 0) {
                 return comparisonResult;
             }
             return uri.compareTo(otherTyped.uri);
@@ -128,12 +134,10 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (!(other instanceof IcebergTableParquetLocationKey)) {
             return false;
         }
+        // Iceberg devs have confirmed that uri's are supposed to be unique across data files
+        // https://apache-iceberg.slack.com/archives/C03LG1D563F/p1731352244907559
         final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
-        return dataSequenceNumber == otherTyped.dataSequenceNumber
-                && fileSequenceNumber == otherTyped.fileSequenceNumber
-                && dataFilePos == otherTyped.dataFilePos
-                && manifestSequenceNumber == otherTyped.manifestSequenceNumber
-                && super.equals(otherTyped);
+        return uri.equals(otherTyped.uri);
     }
 
     @Override
