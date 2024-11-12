@@ -29,7 +29,11 @@ public abstract class Formula implements Aggregation {
     }
 
     public static Formula of(ColumnName name, String formula) {
-        return ImmutableFormula.of(Selectable.of(name, RawString.of(formula)));
+        return of(Selectable.of(name, RawString.of(formula)));
+    }
+
+    public static Formula of(Selectable selectable) {
+        return ImmutableFormula.of(selectable);
     }
 
     @Parameter

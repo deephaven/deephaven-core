@@ -22,6 +22,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
+import io.deephaven.proto.backplane.grpc.Selectable;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 
@@ -61,6 +62,16 @@ public class AggregationAdapter {
         Singleton.INSTANCE.adapters().validate(aggregation);
     }
 
+    private static io.deephaven.api.Selectable adapt(Selectable selectable) {
+        switch (selectable.getTypeCase()) {
+            case RAW:
+                return io.deephaven.api.Selectable.parse(selectable.getRaw());
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported Selectable type (%s) in Aggregation.",
+                        selectable.getTypeCase()));
+        }
+    }
+
     public static Aggregation adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
         return Singleton.INSTANCE.adapters().adapt(aggregation);
     }
@@ -82,7 +93,7 @@ public class AggregationAdapter {
     }
 
     public static Formula adapt(AggregationFormula formula) {
-        return Formula.parse(formula.getSelectable().getRaw());
+        return Formula.of(adapt(formula.getSelectable()));
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {
