@@ -8,8 +8,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.proto.util.Exceptions;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
+import org.apache.arrow.flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -55,11 +57,11 @@ public final class ActionRouter {
      *
      * @param session the session
      * @param action the action
-     * @param observer the results observer
+     * @param observer the observer
      * @throws io.grpc.StatusRuntimeException if zero or more than one resolver is found
      */
     public void doAction(@Nullable final SessionState session, final Action action,
-            final ActionResolver.ActionObserver observer) {
+            final StreamObserver<Result> observer) {
         final QueryPerformanceRecorder qpr = QueryPerformanceRecorder.getInstance();
         try (final QueryPerformanceNugget ignored = qpr.getNugget(String.format("doAction:%s", action.getType()))) {
             getResolver(action.getType()).doAction(session, action, observer);

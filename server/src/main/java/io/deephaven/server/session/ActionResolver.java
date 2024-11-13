@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.session;
 
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.Result;
@@ -33,7 +34,7 @@ public interface ActionResolver {
      * this allows them to provide a more specific error message for unimplemented action types.
      *
      * <p>
-     * This is used in support of routing in {@link ActionRouter#doAction(SessionState, Action, ActionObserver)} calls.
+     * This is used in support of routing in {@link ActionRouter#doAction(SessionState, Action, StreamObserver)} calls.
      *
      * @param type the action type
      * @return {@code true} if this resolver handles the action type
@@ -45,21 +46,12 @@ public interface ActionResolver {
      * for the given {@code action}.
      *
      * <p>
-     * This is called in the context of {@link ActionRouter#doAction(SessionState, Action, ActionObserver)} to allow
+     * This is called in the context of {@link ActionRouter#doAction(SessionState, Action, StreamObserver)} to allow
      * flight consumers to execute an action against this flight service.
      *
      * @param session the session
      * @param action the action
-     * @param observer the action observer
+     * @param observer the observer
      */
-    void doAction(@Nullable final SessionState session, Action action, ActionObserver observer);
-
-    interface ActionObserver {
-
-        void onNext(Result result);
-
-        void onError(Throwable t);
-
-        void onCompleted();
-    }
+    void doAction(@Nullable final SessionState session, final Action action, final StreamObserver<Result> observer);
 }

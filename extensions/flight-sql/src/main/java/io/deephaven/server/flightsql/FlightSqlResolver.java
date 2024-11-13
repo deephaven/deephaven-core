@@ -9,6 +9,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -24,6 +25,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -45,8 +47,10 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.Action;
 import org.apache.arrow.flight.ActionType;
+import org.apache.arrow.flight.Result;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Empty;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
@@ -92,7 +96,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -350,7 +353,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         private <T> FlightInfo flightInfo(CommandHandler<T> handler, T command) {
-            final TicketHandler ticketHandler = handler.initialize(command);
+            final TicketHandler ticketHandler = handler.execute(command);
             try {
                 return ticketHandler.getInfo(descriptor);
             } catch (Throwable t) {
@@ -393,37 +396,42 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         @Override
         public ExportObject<Table> visit(CommandGetCatalogs ticket) {
-            return submit(CommandGetCatalogsConstants.HANDLER.initialize(ticket));
+            return submit(CommandGetCatalogsConstants.HANDLER, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetDbSchemas ticket) {
-            return submit(CommandGetDbSchemasConstants.HANDLER.initialize(ticket));
+            return submit(CommandGetDbSchemasConstants.HANDLER, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetTableTypes ticket) {
-            return submit(CommandGetTableTypesConstants.HANDLER.initialize(ticket));
+            return submit(CommandGetTableTypesConstants.HANDLER, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetImportedKeys ticket) {
-            return submit(commandGetImportedKeysHandler.initialize(ticket));
+            return submit(commandGetImportedKeysHandler, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetExportedKeys ticket) {
-            return submit(commandGetExportedKeysHandler.initialize(ticket));
+            return submit(commandGetExportedKeysHandler, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetPrimaryKeys ticket) {
-            return submit(commandGetPrimaryKeysHandler.initialize(ticket));
+            return submit(commandGetPrimaryKeysHandler, ticket);
         }
 
         @Override
         public ExportObject<Table> visit(CommandGetTables ticket) {
-            return submit(commandGetTables.initialize(ticket));
+            return submit(commandGetTables, ticket);
+        }
+
+        private <C extends Message> ExportObject<Table> submit(CommandHandlerFixedBase<C> fixed, C command) {
+            // We know this is a trivial execute, okay to do on RPC thread
+            return submit(fixed.execute(command));
         }
 
         @Override
@@ -536,7 +544,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * @param observer the observer
      */
     @Override
-    public void doAction(@Nullable SessionState session, Action action, ActionObserver observer) {
+    public void doAction(
+            @Nullable final SessionState session,
+            final Action action,
+            final StreamObserver<Result> observer) {
         if (!handlesActionType(action.getType())) {
             // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction /
             // handlesActionType
@@ -612,7 +623,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     interface CommandHandler<C> {
 
-        TicketHandler initialize(C command);
+        TicketHandler execute(C command);
     }
 
     interface TicketHandler {
@@ -654,15 +665,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * initialize.
      */
     static abstract class CommandHandlerFixedBase<T extends Message> implements CommandHandler<T> {
-        private final Class<T> clazz;
-
-        public CommandHandlerFixedBase(Class<T> clazz) {
-            this.clazz = Objects.requireNonNull(clazz);
-        }
 
         /**
          * This is called as the first part of {@link TicketHandler#getInfo(FlightDescriptor)} for the handler returned
-         * from {@link #initialize(T)}. It can be used as an early signal to let clients know that the command is not
+         * from {@link #execute(T)}. It can be used as an early signal to let clients know that the command is not
          * supported, or one of the arguments is not valid.
          */
         void checkForGetInfo(T command) {
@@ -671,7 +677,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         /**
          * This is called as the first part of {@link TicketHandler#resolve()} for the handler returned from
-         * {@link #initialize(T)}.
+         * {@link #execute(T)}.
          */
         void checkForResolve(T command) {
             // This is provided for completeness, but the current implementations don't use it.
@@ -705,7 +711,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
          * part of {@link TicketHandler#resolve()}.
          */
         @Override
-        public final TicketHandler initialize(T command) {
+        public final TicketHandler execute(T command) {
             return new TicketHandlerFixed(command);
         }
 
@@ -770,7 +776,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public TicketHandler initialize(T command) {
+        public TicketHandler execute(T command) {
             return this;
         }
 
@@ -811,25 +817,20 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public final TicketHandlerReleasable initialize(C command) {
+        public final TicketHandlerReleasable execute(C command) {
             try {
-                return initializeImpl(command);
+                return executeImpl(command);
             } catch (Throwable t) {
                 release();
                 throw t;
             }
         }
 
-        private synchronized QueryBase<C> initializeImpl(C command) {
-            if (initialized) {
-                throw new IllegalStateException("initialize on Query should only be called once");
-            }
+        private synchronized QueryBase<C> executeImpl(C command) {
+            Assert.eqFalse(initialized, "initialized");
             initialized = true;
-            execute(command);
-            if (table == null) {
-                throw new IllegalStateException(
-                        "QueryBase implementation has a bug, should have set table");
-            }
+            executeSql(command);
+            Assert.neqNull(table, "table");
             // Note: we aren't currently providing a way to proactively cleanup query watchdogs - given their
             // short-lived nature, they will execute "quick enough" for most use cases.
             scheduler.runAfterDelay(QUERY_WATCHDOG_TIMEOUT_MILLIS, this::onWatchdog);
@@ -837,9 +838,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         // responsible for setting table and schemaBytes
-        protected abstract void execute(C command);
+        protected abstract void executeSql(C command);
 
-        protected void executeImpl(String sql) {
+        protected void executeSql(String sql) {
             try {
                 table = executeSqlQuery(session, sql);
             } catch (SqlParseException e) {
@@ -929,11 +930,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public void execute(CommandStatementQuery command) {
+        public void executeSql(CommandStatementQuery command) {
             if (command.hasTransactionId()) {
                 throw transactionIdsNotSupported();
             }
-            executeImpl(command.getQuery());
+            executeSql(command.getQuery());
         }
     }
 
@@ -946,11 +947,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         @Override
-        public void execute(CommandPreparedStatementQuery command) {
+        public void executeSql(CommandPreparedStatementQuery command) {
             prepared = getPreparedStatement(session, command.getPreparedStatementHandle());
             // Assumed this is not actually parameterized.
             final String sql = prepared.parameterizedQuery();
-            executeImpl(sql);
+            executeSql(sql);
             prepared.attach(this);
         }
 
@@ -972,8 +973,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private final Function<T, Ticket> f;
         private final ByteString schemaBytes;
 
-        CommandStaticTable(Class<T> clazz, Table table, Function<T, Ticket> f) {
-            super(clazz);
+        CommandStaticTable(Table table, Function<T, Ticket> f) {
+            super();
             if (table.isRefreshing()) {
                 throw new IllegalArgumentException("Expected static table");
             }
@@ -1023,7 +1024,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 TableTools.newTable(DEFINITION, ATTRIBUTES, TableTools.stringCol(TABLE_TYPE, TABLE_TYPE_TABLE));
 
         public static final CommandHandlerFixedBase<CommandGetTableTypes> HANDLER = new CommandStaticTable<>(
-                CommandGetTableTypes.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
+                TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1044,7 +1045,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
 
         public static final CommandHandlerFixedBase<CommandGetCatalogs> HANDLER =
-                new CommandStaticTable<>(CommandGetCatalogs.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
+                new CommandStaticTable<>(TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1066,7 +1067,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private static final Map<String, Object> ATTRIBUTES = Map.of();
         private static final Table TABLE = TableTools.newTable(DEFINITION, ATTRIBUTES);
         public static final CommandHandlerFixedBase<CommandGetDbSchemas> HANDLER = new CommandStaticTable<>(
-                CommandGetDbSchemas.class, TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
+                TABLE, FlightSqlTicketHelper.ticketCreator()::visit);
     }
 
     @VisibleForTesting
@@ -1165,8 +1166,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private final CommandHandlerFixedBase<CommandGetPrimaryKeys> commandGetPrimaryKeysHandler =
-            new CommandStaticTable<>(CommandGetPrimaryKeys.class,
-                    CommandGetPrimaryKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+            new CommandStaticTable<>(CommandGetPrimaryKeysConstants.TABLE,
+                    FlightSqlTicketHelper.ticketCreator()::visit) {
                 @Override
                 void checkForGetInfo(CommandGetPrimaryKeys command) {
                     if (CommandGetPrimaryKeys.getDefaultInstance().equals(command)) {
@@ -1185,8 +1186,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             };
 
     private final CommandHandlerFixedBase<CommandGetImportedKeys> commandGetImportedKeysHandler =
-            new CommandStaticTable<>(CommandGetImportedKeys.class,
-                    CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+            new CommandStaticTable<>(CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
                 @Override
                 void checkForGetInfo(CommandGetImportedKeys command) {
                     if (CommandGetImportedKeys.getDefaultInstance().equals(command)) {
@@ -1205,8 +1205,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             };
 
     private final CommandHandlerFixedBase<CommandGetExportedKeys> commandGetExportedKeysHandler =
-            new CommandStaticTable<>(CommandGetExportedKeys.class,
-                    CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
+            new CommandStaticTable<>(CommandGetKeysConstants.TABLE, FlightSqlTicketHelper.ticketCreator()::visit) {
                 @Override
                 void checkForGetInfo(CommandGetExportedKeys command) {
                     if (CommandGetExportedKeys.getDefaultInstance().equals(command)) {
@@ -1277,10 +1276,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private class CommandGetTablesImpl extends CommandHandlerFixedBase<CommandGetTables> {
-
-        CommandGetTablesImpl() {
-            super(CommandGetTables.class);
-        }
 
         @Override
         Ticket ticket(CommandGetTables command) {
@@ -1373,19 +1368,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     private <Response extends Message> void executeAction(
             final SessionState session,
             final ActionHandler<Response> handler,
-            final ActionObserver observer) {
+            final StreamObserver<Result> observer) {
         // If there was complicated logic going on (actual building of tables), or needed to block, we would instead use
         // exports or some other mechanism of doing this work off-thread. For now, it's simple enough that we can do it
-        // all on-thread.
-        try {
-            handler.execute(session, new ResultVisitorAdapter<>(observer::onNext));
-        } catch (StatusRuntimeException e) {
-            // We expect other Throwables to be wrapped and transformed if necessary via
-            // io.deephaven.server.session.SessionServiceGrpcImpl.rpcWrapper
-            observer.onError(e);
-            return;
-        }
-        observer.onCompleted();
+        // all on this RPC thread.
+        handler.execute(session, new SafelyOnNextConsumer<>(observer));
+        GrpcUtil.safelyComplete(observer);
     }
 
     private class ActionHandlerVisitor
@@ -1533,16 +1521,16 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
     }
 
-    private static class ResultVisitorAdapter<Response extends Message> implements Consumer<Response> {
-        private final Consumer<org.apache.arrow.flight.Result> delegate;
+    private static class SafelyOnNextConsumer<Response extends Message> implements Consumer<Response> {
+        private final StreamObserver<Result> delegate;
 
-        public ResultVisitorAdapter(Consumer<org.apache.arrow.flight.Result> delegate) {
+        public SafelyOnNextConsumer(StreamObserver<Result> delegate) {
             this.delegate = Objects.requireNonNull(delegate);
         }
 
         @Override
         public void accept(Response response) {
-            delegate.accept(pack(response));
+            GrpcUtil.safelyOnNext(delegate, pack(response));
         }
     }
 
@@ -1642,6 +1630,12 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      * There does not seem to be any potential for escaping, which means that underscores can't explicitly be matched
      * against, which is a common pattern used in Deephaven table names. As mentioned below, it also follows that an
      * empty string should only explicitly match against an empty string.
+     *
+     * <p>
+     * The <a href=
+     * "https://github.com/apache/arrow/blob/apache-arrow-18.0.0/java/flight/flight-sql-jdbc-core/src/main/java/org/apache/arrow/driver/jdbc/ArrowDatabaseMetadata.java#L1253-L1277">flight-sql-jdbc-core
+     * implement of sqlToRegexLike</a> uses a similar approach, but appears more fragile as it is doing manual escaping
+     * of regex as opposed to {@link Pattern#quote(String)}.
      */
     @VisibleForTesting
     static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {

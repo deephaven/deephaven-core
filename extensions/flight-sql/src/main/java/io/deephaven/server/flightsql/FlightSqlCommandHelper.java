@@ -26,8 +26,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
 
-import java.util.Optional;
-
 final class FlightSqlCommandHelper {
 
     interface CommandVisitor<T> {
@@ -68,7 +66,7 @@ final class FlightSqlCommandHelper {
             throw new IllegalStateException("descriptor is not a command");
         }
         // No good way to check if this is a valid command without parsing to Any first.
-        final Any command = parse(descriptor.getCmd()).orElse(null);
+        final Any command = parseOrNull(descriptor.getCmd());
         return command != null
                 && command.getTypeUrl().startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX);
     }
@@ -79,7 +77,7 @@ final class FlightSqlCommandHelper {
             // handlesPath
             throw new IllegalStateException("Flight SQL only supports Command-based descriptors");
         }
-        final Any command = parse(descriptor.getCmd()).orElse(null);
+        final Any command = parseOrNull(descriptor.getCmd());
         if (command == null) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
             // handlesCommand
@@ -126,11 +124,11 @@ final class FlightSqlCommandHelper {
         throw FlightSqlErrorHelper.error(Status.Code.UNIMPLEMENTED, String.format("command '%s' is unknown", typeUrl));
     }
 
-    private static Optional<Any> parse(ByteString data) {
+    private static Any parseOrNull(ByteString data) {
         try {
-            return Optional.of(Any.parseFrom(data));
+            return Any.parseFrom(data);
         } catch (final InvalidProtocolBufferException e) {
-            return Optional.empty();
+            return null;
         }
     }
 

@@ -103,8 +103,7 @@ public class TicketRouter {
                 "resolveTicket:" + ticketName)) {
             return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
         } catch (RuntimeException e) {
-            throw e;
-            // return SessionState.wrapAsFailedExport(e);
+            return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -157,8 +156,7 @@ public class TicketRouter {
                 "resolveDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).resolve(session, descriptor, logId);
         } catch (RuntimeException e) {
-            throw e;
-            // return SessionState.wrapAsFailedExport(e);
+            return SessionState.wrapAsFailedExport(e);
         }
     }
 
@@ -301,12 +299,17 @@ public class TicketRouter {
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final String logId) {
+        // noinspection CaughtExceptionImmediatelyRethrown
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget(
                 "flightInfoForDescriptor:" + descriptor)) {
             return getResolver(descriptor, logId).flightInfoFor(session, descriptor, logId);
         } catch (RuntimeException e) {
-            throw e;
+            // io.deephaven.server.flightsql.FlightSqlUnauthenticatedTest RPC never finishes when this path is used
             // return SessionState.wrapAsFailedExport(e);
+            // This is a partial workaround for
+            // TODO(deephaven-core#6374): FlightServiceGrpcImpl getFlightInfo / getSchema unauthenticated path
+            // misimplemented
+            throw e;
         }
     }
 

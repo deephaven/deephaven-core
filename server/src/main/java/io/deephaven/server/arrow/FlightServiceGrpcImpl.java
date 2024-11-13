@@ -23,16 +23,15 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.ActionRouter;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.ProtocolExposer;
-import org.apache.arrow.flight.Result;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.ActionType;
@@ -46,7 +45,6 @@ import javax.inject.Singleton;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
@@ -216,30 +214,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         actionRouter.doAction(
                 sessionService.getOptionalSession(),
                 ProtocolExposer.fromProtocol(request),
-                new ActionObs(responseObserver));
-    }
-
-    private static class ActionObs implements ActionResolver.ActionObserver {
-        private final StreamObserver<Flight.Result> observer;
-
-        public ActionObs(StreamObserver<Flight.Result> observer) {
-            this.observer = Objects.requireNonNull(observer);
-        }
-
-        @Override
-        public void onNext(Result result) {
-            observer.onNext(ProtocolExposer.toProtocol(result));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            observer.onError(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            observer.onCompleted();
-        }
+                new ServerCallStreamObserverAdapter<>(
+                        (ServerCallStreamObserver<Flight.Result>) responseObserver, ProtocolExposer::toProtocol));
     }
 
     @Override
