@@ -184,7 +184,9 @@ class FilterSelectColumn implements SelectColumn {
                         final RowSet.Iterator trueIt = filtered.iterator()) {
                     long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
                     int offset = 0;
-                    while (nextTrue >= 0 && inputIt.hasNext()) {
+                    while (nextTrue >= 0) {
+                        // the input iterator is a superset of the true iterator, so we can always find out what
+                        // the next value is without needing to check hasNext
                         final long nextInput = inputIt.nextLong();
                         final boolean found = nextInput == nextTrue;
                         booleanDestination.set(offset++, found);

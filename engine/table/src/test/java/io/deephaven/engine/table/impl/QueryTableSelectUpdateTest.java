@@ -1340,6 +1340,20 @@ public class QueryTableSelectUpdateTest {
         TableTools.showWithRowSet(up);
 
         assertTableEquals(wm2, up2);
+
+        // a Filter where nothing is true, to check that state
+        final Table upvf = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofFalse())));
+        assertTableEquals(t.updateView("AWM=false"), upvf);
+
+        // a Filter where everything is true
+        final Table upvt = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofTrue())));
+        assertTableEquals(t.updateView("AWM=true"), upvt);
+
+        // a Filter where the last value in the chunk is true
+        final Filter filter3 = WhereFilterFactory.getExpression("A in 8");
+        final Table wm3 = t.wouldMatch(new WouldMatchPair("AWM", filter3));
+        final Table upv3 = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter3)));
+        assertTableEquals(wm3, upv3);
     }
 
     @Test
