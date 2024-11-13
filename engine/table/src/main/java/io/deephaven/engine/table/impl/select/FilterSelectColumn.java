@@ -29,14 +29,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The FilterSelectColumn wraps a {@link io.deephaven.api.filter.Filter} and producing a column of
- * true or false Boolean values described by the filter.
+ * The FilterSelectColumn wraps a {@link io.deephaven.api.filter.Filter} and producing a column of true or false Boolean
+ * values described by the filter.
  *
- * <p>This column is appropriate as an argument to a {@link Table#view(Collection)} or
- * {@link Table#updateView(String...)}, lazily evaluating the equivalent of a {@link Table#wouldMatch(String...)}
- * operation.  Although select and update can also use Filters, the wouldMatch provides a more efficient path
- * for realized results as it stores and updates only a {@link RowSet}.  The FilterSelectColumn can only evaluate
- * the filter one chunk at a time, and must write to an in-memory Boolean column source.</p>
+ * <p>
+ * This column is appropriate as an argument to a {@link Table#view(Collection)} or {@link Table#updateView(String...)},
+ * lazily evaluating the equivalent of a {@link Table#wouldMatch(String...)} operation. Although select and update can
+ * also use Filters, the wouldMatch provides a more efficient path for realized results as it stores and updates only a
+ * {@link RowSet}. The FilterSelectColumn can only evaluate the filter one chunk at a time, and must write to an
+ * in-memory Boolean column source.
+ * </p>
  */
 class FilterSelectColumn implements SelectColumn {
 
