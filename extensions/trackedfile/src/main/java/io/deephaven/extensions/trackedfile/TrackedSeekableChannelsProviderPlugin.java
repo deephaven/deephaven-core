@@ -10,8 +10,6 @@ import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-
 import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
 
 /**

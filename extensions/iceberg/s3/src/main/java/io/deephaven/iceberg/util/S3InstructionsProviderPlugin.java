@@ -12,7 +12,6 @@ import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
 import java.util.Map;
 
 /**

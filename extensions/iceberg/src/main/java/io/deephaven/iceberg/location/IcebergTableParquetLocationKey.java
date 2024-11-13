@@ -38,7 +38,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
-        super(fileUri, order, partitions, readInstructions, channelsProvider);
+        super(fileUri, order, partitions, channelsProvider);
         this.readInstructions = readInstructions;
     }
 

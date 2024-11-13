@@ -49,6 +49,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     private final ParquetInstructions parquetInstructions;
 
+    /**
+     * The {@link SeekableChannelsProvider} object that will be used for {@link IcebergTableParquetLocationKey}
+     * creation.
+     */
     private final SeekableChannelsProvider channelsProvider;
 
     /**
@@ -79,16 +83,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
         final String locationUriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
-        final Object specialInstructions;
-        {
-            // Add the data instructions if provided as part of the IcebergReadInstructions.
-            Object si = instructions.dataInstructions().orElse(null);
-            if (si == null) {
-                // Attempt to create data instructions from the properties collection and URI scheme.
-                si = dataInstructionsProvider.load(locationUriScheme);
-            }
-            specialInstructions = si;
-        }
+        // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
+        // data instructions from the properties collection and URI scheme.
+        final Object specialInstructions = instructions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(locationUriScheme));
         {
             // Start with user-supplied instructions (if provided).
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
@@ -107,9 +105,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                locationUriScheme,
-                specialInstructions);
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .load(locationUriScheme, specialInstructions);
         this.cache = new HashMap<>();
     }
 

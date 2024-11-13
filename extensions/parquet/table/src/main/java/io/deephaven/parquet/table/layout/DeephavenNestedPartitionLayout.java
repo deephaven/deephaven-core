@@ -54,15 +54,16 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocatio
             @NotNull final String columnPartitionKey,
             @Nullable final Predicate<String> internalPartitionValueFilter,
             @NotNull final ParquetInstructions readInstructions) {
+        // noinspection resource
         final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .fromServiceLoader(FileUtils.FILE_URI_SCHEME, readInstructions.getSpecialInstructions());
+                .load(FileUtils.FILE_URI_SCHEME, readInstructions.getSpecialInstructions());
         return new DeephavenNestedPartitionLayout<>(tableRootDirectory, tableName,
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override
             protected ParquetTableLocationKey makeKey(@NotNull Path tableLeafDirectory,
                     @NotNull Map<String, Comparable<?>> partitions) {
                 final URI fileURI = convertToURI(tableLeafDirectory.resolve(PARQUET_FILE_NAME), false);
-                return new ParquetTableLocationKey(fileURI, 0, partitions, readInstructions, channelsProvider);
+                return new ParquetTableLocationKey(fileURI, 0, partitions, channelsProvider);
             }
         };
     }

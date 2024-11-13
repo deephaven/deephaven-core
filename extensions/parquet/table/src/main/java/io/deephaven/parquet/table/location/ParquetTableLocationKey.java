@@ -54,9 +54,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
-        this(parquetFileUri, order, partitions, readInstructions,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri.getScheme(),
-                        readInstructions.getSpecialInstructions()));
+        this(parquetFileUri, order, partitions, SeekableChannelsProviderLoader.getInstance()
+                .load(parquetFileUri.getScheme(), readInstructions.getSpecialInstructions()));
     }
 
     /**
@@ -67,12 +66,33 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
      *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
      *        be made, so the calling code is free to mutate the map after this call
-     * @param readInstructions the instructions for customizations while reading
+     * @param readInstructions the instructions for customizations while reading, unused
      * @param channelsProvider the provider for reading the file
+     * @deprecated the {@code readInstructions} parameter is unused, please
+     *             use{@link #ParquetTableLocationKey(URI, int, Map, SeekableChannelsProvider)}
      */
+    @Deprecated(forRemoval = true)
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        this(parquetFileUri, order, partitions, channelsProvider);
+    }
+
+    /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     *
+     * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param channelsProvider the provider for reading the file
+     */
+    public ParquetTableLocationKey(
+            @NotNull final URI parquetFileUri,
+            final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(validateParquetFile(parquetFileUri), order, partitions);
         this.channelsProvider = channelsProvider;
