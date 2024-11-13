@@ -9,6 +9,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.Timestamp;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -31,6 +32,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
+import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
@@ -87,6 +89,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
@@ -95,7 +98,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -807,7 +809,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private Table table;
 
         QueryBase(SessionState session) {
-            this.handleId = ByteString.copyFromUtf8(UUID.randomUUID().toString());
+            this.handleId = randomHandleId();
             this.session = Objects.requireNonNull(session);
             queries.put(handleId, this);
         }
@@ -912,7 +914,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             if (!queries.remove(handleId, this)) {
                 return;
             }
-            log.debug().append("Watchdog cleaning up query ").append(handleId.toString()).endl();
+            log.debug().append("Watchdog cleaning up query handleId=")
+                    .append(ByteStringAsHex.INSTANCE, handleId)
+                    .endl();
             doRelease();
         }
 
@@ -1162,7 +1166,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (!(obj instanceof Table)) {
             return false;
         }
-        return authorization.transform((Table) obj) != null;
+        return !authorization.isDeniedAccess(obj);
     }
 
     private final CommandHandlerFixedBase<CommandGetPrimaryKeys> commandGetPrimaryKeysHandler =
@@ -1557,6 +1561,31 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         return error(Code.INVALID_ARGUMENT, "query parameters are not supported", cause);
     }
 
+    /*
+     * The random number generator used by this class to create random based UUIDs. In a holder class to defer
+     * initialization until needed.
+     */
+    private static class Holder {
+        static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    }
+
+    private static ByteString randomHandleId() {
+        // While we don't _rely_ on security through obscurity, we don't want to have a simple incrementing counter
+        // since it would be trivial to deduce other users' handleIds.
+        final byte[] handleIdBytes = new byte[16];
+        Holder.SECURE_RANDOM.nextBytes(handleIdBytes);
+        return ByteStringAccess.wrap(handleIdBytes);
+    }
+
+    private enum ByteStringAsHex implements LogOutput.ObjFormatter<ByteString> {
+        INSTANCE;
+
+        @Override
+        public void format(LogOutput logOutput, ByteString bytes) {
+            logOutput.append("0x").append(ByteHelper.byteBufToHex(bytes.asReadOnlyByteBuffer()));
+        }
+    }
+
     private class PreparedStatement {
         private final ByteString handleId;
         private final SessionState session;
@@ -1567,7 +1596,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         PreparedStatement(SessionState session, String parameterizedQuery) {
             this.session = Objects.requireNonNull(session);
             this.parameterizedQuery = Objects.requireNonNull(parameterizedQuery);
-            this.handleId = ByteString.copyFromUtf8(UUID.randomUUID().toString());
+            this.handleId = randomHandleId();
             this.queries = new HashSet<>();
             preparedStatements.put(handleId, this);
             this.session.addOnCloseCallback(onSessionClosedCallback = this::onSessionClosed);
@@ -1603,7 +1632,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         }
 
         private void onSessionClosed() {
-            log.debug().append("onSessionClosed: removing prepared statement ").append(handleId.toString()).endl();
+            log.debug()
+                    .append("onSessionClosed: removing prepared statement handleId=")
+                    .append(ByteStringAsHex.INSTANCE, handleId)
+                    .endl();
             closeImpl();
         }
 

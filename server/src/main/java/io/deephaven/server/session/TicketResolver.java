@@ -14,6 +14,23 @@ import java.util.function.Consumer;
 
 public interface TicketResolver {
     interface Authorization {
+
+        /**
+         * Check if the caller is denied access to {@code source}; semantically equivalent to
+         * {@code transform(source) == null}. A {@code false} result does <b>not</b> mean that the caller may use
+         * {@code source} untransformed; they must still call {@link #transform(Object)} as needed.
+         *
+         * <p>
+         * The default implementation is equivalent to {@code transform(source) == null}. Implementations that perform
+         * expensive transformations may want to override this method to provide a more efficient check.
+         *
+         * @param source the source object
+         * @return if the transform of {@code source} will result in {@code null}.
+         */
+        default boolean isDeniedAccess(Object source) {
+            return transform(source) == null;
+        }
+
         /**
          * Implementations must type check the provided source as any type of object can be stored in an export.
          * <p>
