@@ -181,6 +181,10 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      * <p>
      * Initiate the idempotent cleanup process. This will enqueue all retained references to be dropped if their
      * referents still exist. No new references may be added to or dropped from this tracker.
+     * 
+     * @apiNote This should be invoked in proactive cleanup scenarios before any destructive cleanup operations are
+     *          undertaken, in order to allow the system to record the state of the retention graph and propagate
+     *          proactive cleanup as far as possible.
      *
      * @return A {@link SafeCloseable} that will process the queued drops if necessary. Must be called exactly once,
      *         after any other desired cleanup has been performed.
@@ -491,7 +495,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         void addOnEnsureDropped(@NotNull final WeakReference<? extends LivenessReferent> reference) {
             /*
-             * Preserve reachability from the time of invocation.
+             * Preserve reachability from the time of invocation. This is intended to make sure that proactive cleanup
+             * respects the state of the world at the time it was initiated.
              */
             final LivenessReferent referent = reference.get();
             pendingDrops.add(referent == null ? reference : referent);
