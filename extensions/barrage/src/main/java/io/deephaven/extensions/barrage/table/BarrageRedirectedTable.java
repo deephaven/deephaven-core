@@ -115,24 +115,39 @@ public class BarrageRedirectedTable extends BarrageTable {
         final RowSet serverViewport = getServerViewport();
         final boolean serverReverseViewport = getServerReverseViewport();
 
+        final RowSet scopedRows;
+        if (isFullSubscription) {
+            scopedRows = RowSetFactory.empty();
+        } else {
+            scopedRows = update.rowsIncluded.minus(update.rowsAdded);
+        }
+
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
                 final WritableRowSet populatedRows = serverViewport != null && isFullSubscription
                         ? currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)
                         : null) {
-
-            // removes
-            final long prevSize = currentRowSet.size();
-            currentRowSet.remove(update.rowsRemoved);
-            try (final RowSet removed = populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
-                freeRows(removed != null ? removed : update.rowsRemoved);
-            }
 
             final RowSetShiftData updateShiftData;
             if (isFullSubscription) {
                 updateShiftData = update.shifted;
             } else {
                 updateShiftData = FlattenOperation.computeFlattenedRowSetShiftData(
-                        update.rowsRemoved, update.rowsAdded, prevSize);
+                        update.rowsRemoved, update.rowsAdded, currentRowSet.size());
+            }
+
+            // removes
+            currentRowSet.remove(update.rowsRemoved);
+            try (final RowSet removed = populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
+                freeRows(removed != null ? removed : update.rowsRemoved);
+            }
+            if (scopedRows.isNonempty()) {
+                try (final RowSet prevScopedRows = updateShiftData.unapply(scopedRows.copy());
+                        final RowSet removed = currentRowSet.extract(prevScopedRows)) {
+                    freeRows(removed);
+                    if (populatedRows != null) {
+                        populatedRows.remove(removed);
+                    }
+                }
             }
 
             // shifts
@@ -144,6 +159,9 @@ public class BarrageRedirectedTable extends BarrageTable {
                 }
             }
             currentRowSet.insert(update.rowsAdded);
+            if (scopedRows.isNonempty()) {
+                currentRowSet.insert(scopedRows);
+            }
 
             final WritableRowSet totalMods = RowSetFactory.empty();
             for (int i = 0; i < update.modColumnData.length; ++i) {
@@ -265,9 +283,15 @@ public class BarrageRedirectedTable extends BarrageTable {
                 return coalescer;
             }
 
+            final WritableRowSet totalRowsAdded = update.rowsAdded.union(scopedRows);
+            if (!isFullSubscription) {
+                totalMods.remove(totalRowsAdded);
+            }
             final TableUpdate downstream = new TableUpdateImpl(
-                    isFullSubscription ? update.rowsAdded.copy() : update.rowsIncluded.copy(),
-                    update.rowsRemoved.copy(), totalMods, updateShiftData, modifiedColumnSet);
+                    totalRowsAdded, update.rowsRemoved.union(scopedRows), totalMods, updateShiftData,
+                    modifiedColumnSet);
+            scopedRows.close();
+
             return (coalescer == null) ? new UpdateCoalescer(currRowsFromPrev, downstream)
                     : coalescer.update(downstream);
         }
