@@ -14,8 +14,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -24,10 +24,21 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public class FilterSelectColumn<S> implements SelectColumn {
+/**
+ * The FilterSelectColumn wraps a {@link io.deephaven.api.filter.Filter} and producing a column of
+ * true or false Boolean values described by the filter.
+ *
+ * <p>This column is appropriate as an argument to a {@link Table#view(Collection)} or
+ * {@link Table#updateView(String...)}, lazily evaluating the equivalent of a {@link Table#wouldMatch(String...)}
+ * operation.  Although select and update can also use Filters, the wouldMatch provides a more efficient path
+ * for realized results as it stores and updates only a {@link RowSet}.  The FilterSelectColumn can only evaluate
+ * the filter one chunk at a time, and must write to an in-memory Boolean column source.</p>
+ */
+class FilterSelectColumn implements SelectColumn {
 
     // We don't actually care to do anything, but cannot return null
     private static final Formula.FillContext FILL_CONTEXT_INSTANCE = new Formula.FillContext() {};
@@ -58,14 +69,19 @@ public class FilterSelectColumn<S> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        return initDef(columnDefinitionMap, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         final List<ColumnHeader<?>> columnHeaders = new ArrayList<>();
         for (Map.Entry<String, ColumnDefinition<?>> entry : columnDefinitionMap.entrySet()) {
             columnHeaders.add(ColumnHeader.of(entry.getKey(), entry.getValue().getDataType()));
         }
         final TableDefinition fromColumns = TableDefinition.from(columnHeaders);
-        // TODO: Compilation processor!
-        filter.init(fromColumns);
+        filter.init(fromColumns, compilationRequestProcessor);
 
         if (!filter.getColumnArrays().isEmpty()) {
             throw new UncheckedTableException(
@@ -220,7 +236,7 @@ public class FilterSelectColumn<S> implements SelectColumn {
     }
 
     @Override
-    public FilterSelectColumn<S> copy() {
-        return new FilterSelectColumn<>(destName, filter.copy());
+    public FilterSelectColumn copy() {
+        return new FilterSelectColumn(destName, filter.copy());
     }
 }

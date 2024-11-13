@@ -278,7 +278,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public SelectColumn visit(Filter rhs) {
-            return new FilterSelectColumn<>(lhs.name(), WhereFilter.of(rhs));
+            return new FilterSelectColumn(lhs.name(), WhereFilter.of(rhs));
         }
 
         @Override
