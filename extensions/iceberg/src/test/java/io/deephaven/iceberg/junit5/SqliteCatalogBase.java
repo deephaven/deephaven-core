@@ -298,9 +298,10 @@ public abstract class SqliteCatalogBase {
             tableAdapter.append(instructionsBuilder()
                     .addTables(differentSource)
                     .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
-            assertThat(e).hasMessageContaining("Schema of the iceberg table is not compatible");
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("New schema contains field shortCol that is not present in" +
+                    " the existing schema");
         }
 
         // Append a table with just the int column, should be compatible with the existing schema
@@ -362,8 +363,8 @@ public abstract class SqliteCatalogBase {
             tableAdapter.append(instructionsBuilder()
                     .addTables(appendTable1, appendTable2)
                     .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("All Deephaven tables must have the same definition");
         }
 
@@ -440,7 +441,7 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e.getCause() instanceof FormulaEvaluationException).isTrue();
+            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
         }
         assertThat(catalogAdapter.listNamespaces()).isEmpty();
 
@@ -462,7 +463,7 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e.getCause() instanceof FormulaEvaluationException).isTrue();
+            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
         // Make sure existing good data is not deleted
@@ -591,8 +592,8 @@ public abstract class SqliteCatalogBase {
                             .addTables(part1, part2)
                             .addAllPartitionPaths(partitionPaths)
                             .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
             // Exception expected since no partitioning table definition is provided
             assertThat(e).hasMessageContaining("partition paths");
         }
@@ -640,18 +641,6 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
         final List<String> partitionPaths = List.of("PC=3", "PC=1");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
-        try {
-            catalogAdapter.createTableAndAppend(
-                    tableIdentifier, instructionsBuilder()
-                            .addTables(part1, part2)
-                            .addAllPartitionPaths(partitionPaths)
-                            .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
-            // Exception expected since no partitioning table definition is provided
-            assertThat(e).hasMessageContaining("partition paths");
-        }
 
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
@@ -730,7 +719,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testAutomaticRefreshingAppend() {
+    void testAutomaticRefreshingAppend() throws InterruptedException {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
@@ -760,11 +749,8 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Sleep for 0.5 second
-        try {
-            Thread.sleep(500);
-        } catch (final InterruptedException e) {
-            throw new UncheckedDeephavenException("Thread interrupted during test", e);
-        }
+        Thread.sleep(500);
+
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
 
@@ -785,18 +771,6 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
         final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
-        try {
-            catalogAdapter.createTableAndAppend(
-                    tableIdentifier, instructionsBuilder()
-                            .addTables(part1, part2)
-                            .addAllPartitionPaths(partitionPaths)
-                            .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
-            // Exception expected since no partitioning table definition is provided
-            assertThat(e).hasMessageContaining("partition paths");
-        }
 
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
@@ -850,18 +824,6 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
         final List<String> partitionPaths = List.of("PC=apple", "PC=boy");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
-        try {
-            catalogAdapter.createTableAndAppend(
-                    tableIdentifier, instructionsBuilder()
-                            .addTables(part1, part2)
-                            .addAllPartitionPaths(partitionPaths)
-                            .build());
-            failBecauseExceptionWasNotThrown(RuntimeException.class);
-        } catch (RuntimeException e) {
-            // Exception expected since no partitioning table definition is provided
-            assertThat(e).hasMessageContaining("partition paths");
-        }
 
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),

@@ -108,11 +108,10 @@ public class ParquetTableWriter {
      *        impacting both schema and written data, we store results in computedCache to avoid having to calculate
      *        twice. An example is the necessary precision and scale for a BigDecimal column written as a decimal
      *        logical type.
-     * @return The number of bytes written for the table (excluding indexes)
      *
      * @throws IOException For file writing related errors
      */
-    static long write(
+    static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
@@ -174,8 +173,14 @@ public class ParquetTableWriter {
         if (!sortedColumns.isEmpty()) {
             tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
         }
-        return write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta, tableInfoBuilder,
-                metadataFileWriter, computedCache);
+        final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
+                tableInfoBuilder, metadataFileWriter, computedCache);
+        writeInstructions.onWriteCompleted()
+                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
+                        .destination(dest)
+                        .numRows(t.size())
+                        .numBytes(numBytes)
+                        .build()));
     }
 
     /**

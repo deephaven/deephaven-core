@@ -5,12 +5,13 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import org.apache.iceberg.Schema;
 import org.immutables.value.Value;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 @Value.Immutable
 @BuildableStyle
@@ -24,18 +25,36 @@ public abstract class TableWriterOptions {
     public abstract TableDefinition tableDefinition();
 
     /**
-     * A one-to-one {@link Map map} from Deephaven column names from the {@link #tableDefinition()} to Iceberg field IDs
-     * from the {@link #schema()}.
+     * The schema specification to use in conjunction with the {@link #fieldIdToColumnName()} to map Deephaven columns
+     * from {@link #tableDefinition()} to Iceberg columns. If {@link #fieldIdToColumnName()} is not provided, the
+     * mapping is done by column name.
+     * <p>
+     * Users can specify the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
+     * <p>
+     * If not provided, we use the initial schema from the table.
      */
-    public abstract Map<String, Integer> dhColumnsToIcebergFieldIds();
+    @Value.Default
+    public SchemaSpec schemaSpec() {
+        return SchemaSpec.initial();
+    }
 
     /**
-     * The schema to use when in conjunction with the {@link #dhColumnsToIcebergFieldIds()} to map Deephaven columns
-     * from {@link #tableDefinition()} to Iceberg columns.
-     * <p>
-     * If not provided, we use the latest schema from the table.
+     * A one-to-one {@link Map map} from Iceberg field IDs from the {@link #schemaSpec()} to Deephaven column names from
+     * the {@link #tableDefinition()}.
      */
-    public abstract Optional<Schema> schema();
+    public abstract Map<Integer, String> fieldIdToColumnName();
+
+    /**
+     * A reverse mapping of {@link #fieldIdToColumnName()}.
+     */
+    @Value.Lazy
+    Map<String, Integer> dhColumnNameToFieldId() {
+        final Map<String, Integer> reversedMap = new HashMap<>(fieldIdToColumnName().size());
+        for (final Map.Entry<Integer, String> entry : fieldIdToColumnName().entrySet()) {
+            reversedMap.put(entry.getValue(), entry.getKey());
+        }
+        return reversedMap;
+    }
 
     public static Builder builder() {
         return ImmutableTableWriterOptions.builder();
@@ -44,30 +63,42 @@ public abstract class TableWriterOptions {
     public interface Builder {
         Builder tableDefinition(TableDefinition tableDefinition);
 
-        Builder schema(Schema schema);
+        Builder schemaSpec(SchemaSpec schemaSpec);
 
-        Builder putDhColumnsToIcebergFieldIds(String key, int value);
+        Builder putFieldIdToColumnName(int value, String key);
 
-        Builder putAllDhColumnsToIcebergFieldIds(Map<String, ? extends Integer> entries);
+        Builder putAllFieldIdToColumnName(Map<Integer, ? extends String> entries);
 
         TableWriterOptions build();
     }
 
     /**
-     * Check all column names present in the {@link #dhColumnsToIcebergFieldIds()} map are present in the
+     * Check all column names present in the {@link #fieldIdToColumnName()} map are present in the
      * {@link #tableDefinition()}.
      */
     @Value.Check
     final void checkDhColumnsToIcebergFieldIds() {
-        if (!dhColumnsToIcebergFieldIds().isEmpty()) {
-            final List<String> columnNamesFromDefinition = tableDefinition().getColumnNames();
-            final Map<String, Integer> dhToIcebergColumns = dhColumnsToIcebergFieldIds();
-            for (final String columnNameFromMap : dhToIcebergColumns.keySet()) {
+        if (!fieldIdToColumnName().isEmpty()) {
+            final Set<String> columnNamesFromDefinition = tableDefinition().getColumnNameSet();
+            final Map<Integer, String> fieldIdToColumnName = fieldIdToColumnName();
+            for (final String columnNameFromMap : fieldIdToColumnName.values()) {
                 if (!columnNamesFromDefinition.contains(columnNameFromMap)) {
                     throw new IllegalArgumentException("Column " + columnNameFromMap + " not found in table " +
                             "definition, available columns are: " + columnNamesFromDefinition);
                 }
             }
+        }
+    }
+
+    @Value.Check
+    final void checkOneToOneMapping() {
+        final Collection<String> columnNames = new HashSet<>(fieldIdToColumnName().size());
+        for (final String columnName : fieldIdToColumnName().values()) {
+            if (columnNames.contains(columnName)) {
+                throw new IllegalArgumentException("Duplicate mapping found: " + columnName + " in field Id to column" +
+                        " name map, expected one-to-one mapping");
+            }
+            columnNames.add(columnName);
         }
     }
 }

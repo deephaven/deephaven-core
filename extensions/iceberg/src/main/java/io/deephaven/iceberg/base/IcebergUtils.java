@@ -44,6 +44,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.apache.iceberg.types.TypeUtil.validateWriteSchema;
+
 public final class IcebergUtils {
 
     private static final Map<Class<?>, Type> DH_TO_ICEBERG_TYPE_MAP = new HashMap<>();
@@ -261,31 +263,51 @@ public final class IcebergUtils {
     }
 
     /**
-     * Verifies that the new schema is compatible with the existing schema for writing.
+     * Verifies that the new schema is compatible with the existing table for writing.
      */
-    public static void verifyWriteCompatibility(final Schema existingSchema, final Schema newSchema) {
+    public static void verifyWriteCompatibility(final Schema tableSchema, final Schema writeSchema) {
         // Check that all fields in the new schema are present in the existing schema
-        for (final Types.NestedField newField : newSchema.columns()) {
-            final Types.NestedField existingSchemaField = existingSchema.findField(newField.fieldId());
+        for (final Types.NestedField newField : writeSchema.columns()) {
+            final Types.NestedField existingSchemaField = tableSchema.findField(newField.fieldId());
 
             if (existingSchemaField == null) {
                 throw new IllegalArgumentException(
-                        "Field " + newField.name() + " is not present in the existing schema");
+                        "New schema contains field " + newField.name() + " that is not present in the existing schema, "
+                                + "existing table schema " + tableSchema + ", new schema to write " + writeSchema);
             }
 
             if (!existingSchemaField.equals(newField)) {
-                throw new IllegalArgumentException("Field " + newField + " is not identical with the field " +
-                        existingSchemaField + " from existing schema");
+                throw new IllegalArgumentException(
+                        "New schema contains field " + newField + " that is not identical with the field " +
+                                existingSchemaField + " from existing schema, existing table schema " + tableSchema +
+                                ", new schema to write " + writeSchema);
             }
         }
 
         // Check that all required fields are present in the new schema
-        for (final Types.NestedField existingField : existingSchema.columns()) {
-            if (existingField.isRequired() && newSchema.findField(existingField.fieldId()) == null) {
+        for (final Types.NestedField existingField : tableSchema.columns()) {
+            if (existingField.isRequired() && writeSchema.findField(existingField.fieldId()) == null) {
                 // TODO (deephaven-core#6343): Add check for writeDefault() not set for required fields
                 throw new IllegalArgumentException("Field " + existingField + " is required in the existing table " +
-                        "schema, but is not present in the new schema");
+                        "schema, but is not present in the new schema, existing table schema " + tableSchema +
+                        ", new schema to write " + writeSchema);
             }
+        }
+
+        // Following are some additional checks provided by Iceberg which are not as exhaustive as the above checks.
+        // Keeping them here for completeness.
+        validateWriteSchema(tableSchema, writeSchema, false, true);
+    }
+
+    /**
+     * Verifies that the new spec is compatible with the existing table for writing.
+     */
+    public static void verifyWriteCompatibility(
+            final PartitionSpec tablePartitionSpec,
+            final PartitionSpec writePartitionSpec) {
+        if (!writePartitionSpec.compatibleWith(tablePartitionSpec)) {
+            throw new IllegalArgumentException("New partition spec to be written is not compatible with the existing" +
+                    " partition spec, existing spec: " + tablePartitionSpec + ", new spec: " + writePartitionSpec);
         }
     }
 

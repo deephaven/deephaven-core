@@ -58,11 +58,4 @@ public abstract class CompletedParquetWrite {
             throw new IllegalArgumentException("numBytes must be positive");
         }
     }
-
-    @Value.Check
-    final void numRowsAndBytesCheck() {
-        if (numBytes() <= numRows()) {
-            throw new IllegalArgumentException("numBytes must be greater than numRows");
-        }
-    }
 }

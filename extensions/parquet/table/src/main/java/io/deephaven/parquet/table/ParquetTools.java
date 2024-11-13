@@ -600,15 +600,9 @@ public class ParquetTools {
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
                                 tableDestination, PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
-                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
-                                tableDestination, outputStream, Collections.emptyMap(),
-                                (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter, computedCache);
-                        writeInstructions.onWriteCompleted()
-                                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
-                                        .destination(tableDestination)
-                                        .numRows(source.size())
-                                        .numBytes(numBytes)
-                                        .build()));
+                        ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
+                                Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
+                                metadataFileWriter, computedCache);
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -630,15 +624,8 @@ public class ParquetTools {
                             outputStreams.add(info.destOutputStream);
                         }
                         final Table source = sources[tableIdx];
-                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
-                                tableDestination, outputStream, Collections.emptyMap(), indexInfoList,
-                                metadataFileWriter, computedCache);
-                        writeInstructions.onWriteCompleted()
-                                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
-                                        .destination(tableDestination)
-                                        .numRows(source.size())
-                                        .numBytes(numBytes)
-                                        .build()));
+                        ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
+                                Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
                     }
                 }
 

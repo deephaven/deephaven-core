@@ -43,8 +43,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
-import static io.deephaven.iceberg.util.IcebergTableWriter.ensureDefinition;
-import static io.deephaven.iceberg.util.IcebergTableWriter.verifyInstructions;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -576,12 +574,10 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public void append(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final IcebergWriteInstructions instructionsWithDefinition =
-                ensureDefinition(verifyInstructions(writeInstructions));
-        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
         final IcebergTableWriter newWriter =
                 new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        newWriter.append(instructionsWithDefinition);
+        newWriter.append(writeInstructions);
     }
 
     /**
@@ -593,12 +589,10 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public void overwrite(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final IcebergWriteInstructions instructionsWithDefinition =
-                ensureDefinition(verifyInstructions(writeInstructions));
-        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
         final IcebergTableWriter newWriter =
                 new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        newWriter.overwrite(instructionsWithDefinition);
+        newWriter.overwrite(writeInstructions);
     }
 
     /**
@@ -608,11 +602,9 @@ public class IcebergTableAdapter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final IcebergWriteInstructions instructionsWithDefinition =
-                ensureDefinition(verifyInstructions(writeInstructions));
-        final TableDefinition userDefinition = instructionsWithDefinition.tableDefinition().get();
+        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
         final IcebergTableWriter newWriter =
                 new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        return newWriter.writeDataFiles(instructionsWithDefinition);
+        return newWriter.writeDataFiles(writeInstructions);
     }
 }

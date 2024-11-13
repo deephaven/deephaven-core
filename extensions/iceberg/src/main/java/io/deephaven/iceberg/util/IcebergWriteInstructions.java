@@ -29,6 +29,14 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
      */
     public abstract List<String> partitionPaths();
 
+    /**
+     * Returns {@link #tableDefinition()} if present, else the definition of the first table in {@link #tables()}.
+     */
+    @Value.Lazy
+    TableDefinition tableDefinitionOrFirst() {
+        return tableDefinition().orElse(tables().get(0).getDefinition());
+    }
+
     // @formatter:off
     interface Builder<INSTRUCTIONS_BUILDER extends IcebergWriteInstructions.Builder<INSTRUCTIONS_BUILDER>>
                 extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
@@ -49,9 +57,30 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
 
 
     @Value.Check
+    final void validateTables() {
+        countCheckTables();
+        verifySameDefinition();
+    }
+
     final void countCheckTables() {
         if (tables().isEmpty()) {
             throw new IllegalArgumentException("At least one table must be provided");
+        }
+    }
+
+    final void verifySameDefinition() {
+        if (tableDefinition().isEmpty()) {
+            // Verify that all tables have the same definition
+            final List<Table> tables = tables();
+            final int numTables = tables.size();
+            final TableDefinition firstDefinition = tables.get(0).getDefinition();
+            for (int idx = 1; idx < numTables; idx++) {
+                if (!firstDefinition.equals(tables.get(idx).getDefinition())) {
+                    throw new IllegalArgumentException(
+                            "All Deephaven tables must have the same definition, else table definition should be " +
+                                    "provided when writing multiple tables with different definitions");
+                }
+            }
         }
     }
 
@@ -59,25 +88,6 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     final void countCheckPartitionPaths() {
         if (!partitionPaths().isEmpty() && partitionPaths().size() != tables().size()) {
             throw new IllegalArgumentException("Partition path must be provided for each table");
-        }
-    }
-
-    @Value.Check
-    final void verifySameDefinition() {
-        if (tableDefinition().isEmpty()) {
-            // Verify that all tables have the same definition
-            final List<Table> tables = tables();
-            final int numTables = tables.size();
-            if (numTables > 0) {
-                final TableDefinition firstDefinition = tables.get(0).getDefinition();
-                for (int idx = 1; idx < numTables; idx++) {
-                    if (!firstDefinition.equals(tables.get(idx).getDefinition())) {
-                        throw new IllegalArgumentException(
-                                "All Deephaven tables must have the same definition, else table definition should be " +
-                                        "provided when writing multiple tables with different definitions");
-                    }
-                }
-            }
         }
     }
 }

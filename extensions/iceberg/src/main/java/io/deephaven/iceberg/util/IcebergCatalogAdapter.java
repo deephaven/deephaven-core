@@ -27,8 +27,6 @@ import java.util.*;
 
 import static io.deephaven.iceberg.base.IcebergUtils.createNamespaceIfNotExists;
 import static io.deephaven.iceberg.base.IcebergUtils.dropNamespaceIfExists;
-import static io.deephaven.iceberg.util.IcebergTableWriter.ensureDefinition;
-import static io.deephaven.iceberg.util.IcebergTableWriter.verifyInstructions;
 
 public class IcebergCatalogAdapter {
 
@@ -316,17 +314,14 @@ public class IcebergCatalogAdapter {
     public IcebergTableAdapter createTableAndAppend(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final IcebergWriteInstructions writeInstructions) {
-        // Extract the definition from the append instructions to build the spec and schema
-        final IcebergParquetWriteInstructions parquetWriteInstructions =
-                ensureDefinition(verifyInstructions(writeInstructions));
-        final TableDefinition useDefinition = parquetWriteInstructions.tableDefinition().get();
+        final TableDefinition useDefinition = writeInstructions.tableDefinitionOrFirst();
         final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(useDefinition);
 
         final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
         final IcebergTableAdapter tableAdapter;
         try {
             tableAdapter = createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
-            tableAdapter.append(parquetWriteInstructions);
+            tableAdapter.append(writeInstructions);
         } catch (final Throwable throwable) {
             // Delete it to avoid leaving a partial table in the catalog
             try {

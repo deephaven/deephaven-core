@@ -3,8 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.annotations.CopyableStyle;
-import io.deephaven.engine.table.Table;
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value.Default;
@@ -21,7 +20,7 @@ import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZ
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-@CopyableStyle
+@BuildableStyle
 public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstructions {
 
     public static Builder builder() {
@@ -66,8 +65,6 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
     public int targetPageSize() {
         return ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE;
     }
-
-    abstract IcebergParquetWriteInstructions withTableDefinition(@NotNull final TableDefinition tableDefinition);
 
     /**
      * Convert this {@link IcebergParquetWriteInstructions} to a {@link ParquetInstructions}.
