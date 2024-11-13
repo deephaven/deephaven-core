@@ -797,6 +797,13 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
+        // using the key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                "out_val=sum(intCol) - max(longCol) + (Sym == null ? 0 : Sym.length())"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"), "Sym")
+                .update("out_val=sum(a) - max(b) + (Sym == null ? 0 : Sym.length())").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -963,6 +970,14 @@ public class TestRollingFormula extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
                 "a=intCol", "b=longCol"), "Sym")
                 .update("out_val=a + b").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        // using the key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=(Sym == null ? 0 : Sym.length()) + sum(intCol) - max(longCol)"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "a=intCol", "b=longCol"), "Sym")
+                .update("out_val=(Sym == null ? 0 : Sym.length()) + sum(a) - max(b)").dropColumns("a", "b");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
