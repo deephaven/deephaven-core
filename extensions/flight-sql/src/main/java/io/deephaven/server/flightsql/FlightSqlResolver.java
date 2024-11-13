@@ -500,7 +500,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         // This general interface does not make sense; resolution should always be done against a _ticket_. Nothing
         // calls io.deephaven.server.session.TicketRouter.resolve(SessionState, FlightDescriptor, String)
-        throw new IllegalStateException();
+        // noinspection DataFlowIssue
+        throw Assert.statementNeverExecuted();
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -553,7 +554,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         if (!handlesActionType(action.getType())) {
             // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction /
             // handlesActionType
-            throw new IllegalStateException(String.format("Unexpected action type '%s'", action.getType()));
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         if (session == null) {
             throw unauthenticatedError();
@@ -1334,20 +1336,29 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             final Schema[] tableSchemas = includeSchema ? new Schema[size] : null;
             int count = 0;
             for (Entry<String, Table> e : queryScopeTables.entrySet()) {
-                final Table table = authorization.transform(e.getValue());
-                if (table == null) {
-                    continue;
-                }
                 final String tableName = e.getKey();
                 if (!tableNameFilter.test(tableName)) {
                     continue;
+                }
+                final Schema schema;
+                if (includeSchema) {
+                    final Table table = authorization.transform(e.getValue());
+                    if (table == null) {
+                        continue;
+                    }
+                    schema = BarrageUtil.schemaFromTable(table);
+                } else {
+                    if (authorization.isDeniedAccess(e.getValue())) {
+                        continue;
+                    }
+                    schema = null;
                 }
                 catalogNames[count] = null;
                 dbSchemaNames[count] = null;
                 tableNames[count] = tableName;
                 tableTypes[count] = TABLE_TYPE_TABLE;
                 if (includeSchema) {
-                    tableSchemas[count] = BarrageUtil.schemaFromTable(table);
+                    tableSchemas[count] = schema;
                 }
                 ++count;
             }

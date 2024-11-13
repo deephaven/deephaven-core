@@ -6,6 +6,7 @@ package io.deephaven.server.flightsql;
 import com.google.protobuf.Any;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status;
 import org.apache.arrow.flight.Action;
@@ -117,8 +118,8 @@ final class FlightSqlActionHelper {
             case CREATE_PREPARED_SUBSTRAIT_PLAN_ACTION_TYPE:
                 return visitor.visit(unpack(action.getBody(), ActionCreatePreparedSubstraitPlanRequest.class));
         }
-        // Should not get here unless handlesAction is implemented incorrectly.
-        throw new IllegalStateException(String.format("Unexpected Flight SQL Action type '%s'", type));
+        // noinspection DataFlowIssue
+        throw Assert.statementNeverExecuted();
     }
 
     private static <T extends com.google.protobuf.Message> T unpack(byte[] body, Class<T> clazz) {

@@ -7,6 +7,7 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -84,7 +85,8 @@ final class FlightSqlTicketHelper {
         if (ticket.get() != TICKET_PREFIX) {
             // If we get here, it means there is an error with FlightSqlResolver.ticketRoute /
             // io.deephaven.server.session.TicketRouter.getResolver
-            throw new IllegalStateException("Could not resolve Flight SQL ticket '" + logId + "': invalid prefix");
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         try {
             return Any.parseFrom(ticket);

@@ -8,6 +8,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.deephaven.base.verify.Assert;
 import io.grpc.Status;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetCatalogs;
@@ -63,7 +64,8 @@ final class FlightSqlCommandHelper {
 
     public static boolean handlesCommand(FlightDescriptor descriptor) {
         if (descriptor.getType() != FlightDescriptor.DescriptorType.CMD) {
-            throw new IllegalStateException("descriptor is not a command");
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         // No good way to check if this is a valid command without parsing to Any first.
         final Any command = parseOrNull(descriptor.getCmd());
@@ -75,19 +77,22 @@ final class FlightSqlCommandHelper {
         if (descriptor.getType() != FlightDescriptor.DescriptorType.CMD) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
             // handlesPath
-            throw new IllegalStateException("Flight SQL only supports Command-based descriptors");
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         final Any command = parseOrNull(descriptor.getCmd());
         if (command == null) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
             // handlesCommand
-            throw new IllegalStateException("Received invalid message from remote.");
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         final String typeUrl = command.getTypeUrl();
         if (!typeUrl.startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
             // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
             // handlesCommand
-            throw new IllegalStateException(String.format("Unexpected command typeUrl '%s'", typeUrl));
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
         }
         switch (typeUrl) {
             case FlightSqlSharedConstants.COMMAND_STATEMENT_QUERY_TYPE_URL:
