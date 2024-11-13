@@ -141,12 +141,12 @@ class FilterSelectColumn implements SelectColumn {
 
             @Override
             public Object get(final long rowKey) {
-                return TypeUtils.box(getBoolean(rowKey));
+                return getBoolean(rowKey);
             }
 
             @Override
             public Object getPrev(final long rowKey) {
-                return TypeUtils.box(getPrevBoolean(rowKey));
+                return getPrevBoolean(rowKey);
             }
 
             @Override
@@ -165,6 +165,14 @@ class FilterSelectColumn implements SelectColumn {
                     @NotNull final WritableChunk<? super Values> destination,
                     @NotNull final RowSequence rowSequence) {
                 doFill(rowSequence, destination, false);
+            }
+
+            @Override
+            public void fillPrevChunk(
+                    @NotNull final FillContext fillContext,
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final RowSequence rowSequence) {
+                doFill(rowSequence, destination, true);
             }
 
             private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination,
@@ -187,14 +195,6 @@ class FilterSelectColumn implements SelectColumn {
                     // fill everything else up with false, because nothing else can match
                     booleanDestination.fillWithBoxedValue(offset, booleanDestination.size() - offset, false);
                 }
-            }
-
-            @Override
-            public void fillPrevChunk(
-                    @NotNull final FillContext fillContext,
-                    @NotNull final WritableChunk<? super Values> destination,
-                    @NotNull final RowSequence rowSequence) {
-                doFill(rowSequence, destination, true);
             }
         }, false);
     }
