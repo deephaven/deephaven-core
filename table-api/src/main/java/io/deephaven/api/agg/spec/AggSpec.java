@@ -47,7 +47,7 @@ public interface AggSpec {
         return AggSpecAvg.of();
     }
 
-    static AggSpecCountValues countValues(AggSpecCountValues.AggCountType aggCountType) {
+    static AggSpecCountValues countValues(AggCountType aggCountType) {
         return AggSpecCountValues.of(aggCountType);
     }
 
@@ -275,6 +275,7 @@ public interface AggSpec {
         visitor.visit((AggSpecAbsSum) null);
         visitor.visit((AggSpecApproximatePercentile) null);
         visitor.visit((AggSpecAvg) null);
+        visitor.visit((AggSpecCountValues) null);
         visitor.visit((AggSpecCountDistinct) null);
         visitor.visit((AggSpecDistinct) null);
         visitor.visit((AggSpecFirst) null);

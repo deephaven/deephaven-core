@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.agg.spec.AggSpecCountValues;
+import io.deephaven.api.agg.spec.AggCountType;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -20,7 +20,7 @@ class ObjectChunkedCountOperator extends BaseChunkedCountOperator {
      */
     ObjectChunkedCountOperator(
             @NotNull final String resultName,
-            @NotNull final AggSpecCountValues.AggCountType countType) {
+            @NotNull final AggCountType countType) {
         super(resultName);
         this.countFunction = getObjectCountFunction(countType);
     }

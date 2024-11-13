@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.agg.spec.AggSpecCountValues;
+import io.deephaven.api.agg.spec.AggCountType;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +19,7 @@ class CharChunkedCountOperator extends BaseChunkedCountOperator {
      */
     CharChunkedCountOperator(
             @NotNull final String resultName,
-            @NotNull final AggSpecCountValues.AggCountType countType) {
+            @NotNull final AggCountType countType) {
         super(resultName);
         this.countFunction = getCharCountFunction(countType);
     }

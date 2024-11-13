@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.agg.spec.AggSpecCountValues;
+import io.deephaven.api.agg.spec.AggCountType;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -245,7 +245,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         boolean count(BigInteger value);
     }
 
-    ByteCountFunction getByteCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    ByteCountFunction getByteCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -267,7 +267,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    CharCountFunction getCharCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    CharCountFunction getCharCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -288,7 +288,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    ShortCountFunction getShortCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    ShortCountFunction getShortCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -310,7 +310,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    IntCountFunction getIntCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    IntCountFunction getIntCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -332,7 +332,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    LongCountFunction getLongCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    LongCountFunction getLongCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -354,7 +354,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    FloatCountFunction getFloatCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    FloatCountFunction getFloatCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
                 return value -> value != QueryConstants.NULL_FLOAT;
@@ -378,7 +378,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    DoubleCountFunction getDoubleCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    DoubleCountFunction getDoubleCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
                 return value -> value != QueryConstants.NULL_DOUBLE;
@@ -402,7 +402,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    ObjectCountFunction getObjectCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    ObjectCountFunction getObjectCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
                 return Objects::nonNull;
@@ -414,7 +414,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    BigDecimalCountFunction getBigDecimalCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    BigDecimalCountFunction getBigDecimalCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:
@@ -436,7 +436,7 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         }
     }
 
-    BigIntegerCountFunction getBigIntegerCountFunction(@NotNull final AggSpecCountValues.AggCountType countType) {
+    BigIntegerCountFunction getBigIntegerCountFunction(@NotNull final AggCountType countType) {
         switch (countType) {
             case NON_NULL:
             case FINITE:

@@ -835,6 +835,7 @@ message ComboAggregateRequest {
     STD = 11;
     VAR = 12;
     WEIGHTED_AVG = 13;
+    COUNT_VALUES = 14;
   }
 }
 
@@ -857,6 +858,20 @@ message AggSpec {
     // T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
     // When not specified, the server will choose a compression value.
     optional double compression = 2;
+  }
+
+  message AggSpecCountValues {
+      enum AggCountType {
+        COUNT_NON_NULL = 0;
+        COUNT_NULL = 1;
+        COUNT_NEGATIVE = 2;
+        COUNT_POSITIVE = 3;
+        COUNT_ZERO = 4;
+        COUNT_NAN = 5;
+        COUNT_INFINITE = 6;
+        COUNT_FINITE = 7;
+      }
+      AggCountType count_type = 1;
   }
 
   message AggSpecCountDistinct {
@@ -1008,6 +1023,7 @@ message AggSpec {
     AggSpecWeighted weighted_avg = 21;
     AggSpecWeighted weighted_sum = 22;
     AggSpecVar var = 23;
+    AggSpecCountValues count_values = 24;
   }
 }
 

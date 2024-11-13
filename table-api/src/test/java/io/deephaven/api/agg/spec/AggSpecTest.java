@@ -52,6 +52,11 @@ public class AggSpecTest {
         }
 
         @Override
+        public void visit(AggSpecCountValues countValues) {
+            ++count;
+        }
+
+        @Override
         public void visit(AggSpecCountDistinct countDistinct) {
             ++count;
         }

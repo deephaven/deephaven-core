@@ -14,7 +14,7 @@ _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JUnionObject = jpy.get_type("io.deephaven.api.object.UnionObject")
-
+_JAggCountType = jpy.get_type("io.deephaven.api.agg.spec.AggCountType")
 
 class Aggregation:
     """An Aggregation object represents an aggregation operation.
@@ -127,6 +127,118 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     if not isinstance(col, str):
         raise DHError(message="partition aggregation requires a string value for the 'col' argument.")
     return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
+
+
+def count_non_null(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-null values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NON_NULL), cols=cols)
+
+
+def count_null(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of null values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NULL), cols=cols)
+
+
+def count_neg(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of negative values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NEGATIVE), cols=cols)
+
+
+def count_pos(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of positive values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.POSITIVE), cols=cols)
+
+
+def count_zero(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of zero values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.ZERO), cols=cols)
+
+
+def count_nan(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of NaN values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NAN), cols=cols)
+
+
+def count_inf(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of infinite values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.INFINITE), cols=cols)
+
+
+def count_finite(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of finite values within an aggregation group for
+    each of the given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.FINITE), cols=cols)
 
 
 def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False) -> Aggregation:

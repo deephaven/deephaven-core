@@ -205,7 +205,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name. This
+     * aggregation will count all values, including {@code null}.
      *
      * @param resultColumn The column name from which to count values
      * @return The aggregation
@@ -222,7 +223,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountNonNull(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NON_NULL), pairs);
+        return of(AggSpec.countValues(AggCountType.NON_NULL), pairs);
     }
 
     /**
@@ -233,7 +234,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountNull(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NULL), pairs);
+        return of(AggSpec.countValues(AggCountType.NULL), pairs);
     }
 
     /**
@@ -244,7 +245,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountNegative(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NEGATIVE), pairs);
+        return of(AggSpec.countValues(AggCountType.NEGATIVE), pairs);
     }
 
     /**
@@ -255,7 +256,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountPositive(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.POSITIVE), pairs);
+        return of(AggSpec.countValues(AggCountType.POSITIVE), pairs);
     }
 
     /**
@@ -266,7 +267,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountZero(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.ZERO), pairs);
+        return of(AggSpec.countValues(AggCountType.ZERO), pairs);
     }
 
     /**
@@ -277,7 +278,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountNaN(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.NAN), pairs);
+        return of(AggSpec.countValues(AggCountType.NAN), pairs);
     }
 
     /**
@@ -288,7 +289,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountInfinite(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.INFINITE), pairs);
+        return of(AggSpec.countValues(AggCountType.INFINITE), pairs);
     }
 
     /**
@@ -299,7 +300,7 @@ public interface Aggregation {
      * @return The aggregation
      */
     static Aggregation AggCountFinite(String... pairs) {
-        return of(AggSpec.countValues(AggSpecCountValues.AggCountType.FINITE), pairs);
+        return of(AggSpec.countValues(AggCountType.FINITE), pairs);
     }
 
     /**

@@ -10,7 +10,9 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, \
+    count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite
+
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -248,6 +250,14 @@ class TableTestCase(BaseTestCase):
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
                 count_(col="ca"),
                 partition(col="aggPartition"),
+                count_non_null("aggCountNonNull=b"),
+                count_null("aggCountNull=c"),
+                count_neg("aggCountNeg=d"),
+                count_pos("aggCountPos=b"),
+                count_zero("aggCountZero=c"),
+                count_nan("aggCountNaN=d"),
+                count_inf("aggCountInf=b"),
+                count_finite("aggCountFinite=c"),
                 ]
 
         result_table = test_table.agg_by(aggs=aggs, by=["a"])
@@ -271,6 +281,8 @@ class TableTestCase(BaseTestCase):
                 avg(),
                 pct(percentile=0.5),
                 weighted_avg(wcol="d"),
+                count_null(), # works for all types
+                count_non_null(), # works for all types
                 ]
         for agg in aggs:
             with self.subTest(agg):
@@ -282,6 +294,12 @@ class TableTestCase(BaseTestCase):
                 avg(cols=["AvgB = b", "AvgD = d"]),
                 pct(percentile=0.5, cols=["PctC = c"]),
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
+                count_neg("aggCountNeg=d"),
+                count_pos("aggCountPos=b"),
+                count_zero("aggCountZero=c"),
+                count_nan("aggCountNaN=d"),
+                count_inf("aggCountInf=b"),
+                count_finite("aggCountFinite=c"),
                 ]
 
         for agg in aggs:

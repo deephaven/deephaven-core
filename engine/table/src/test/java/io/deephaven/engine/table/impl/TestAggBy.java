@@ -8,8 +8,8 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggCountType;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecCountValues;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -345,9 +345,9 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable
-                        .aggAllBy(AggSpec.countValues(AggSpecCountValues.AggCountType.NON_NULL), "Sym").sort("Sym")),
+                        .aggAllBy(AggSpec.countValues(AggCountType.NON_NULL), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable
-                        .aggAllBy(AggSpec.countValues(AggSpecCountValues.AggCountType.NULL), "Sym").sort("Sym")),
+                        .aggAllBy(AggSpec.countValues(AggCountType.NULL), "Sym").sort("Sym")),
                 // Sym and BoolCol (String and Boolean)
                 EvalNugget.from(() -> queryTable.aggBy(AggCountNegative(supportedColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(supportedColumns), "Sym").sort("Sym")),
@@ -405,9 +405,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                     }
                 },
                 EvalNugget.from(() -> queryTable
-                        .aggAllBy(AggSpec.countValues(AggSpecCountValues.AggCountType.NON_NULL), "Sym").sort("Sym")),
+                        .aggAllBy(AggSpec.countValues(AggCountType.NON_NULL), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable
-                        .aggAllBy(AggSpec.countValues(AggSpecCountValues.AggCountType.NULL), "Sym").sort("Sym")),
+                        .aggAllBy(AggSpec.countValues(AggCountType.NULL), "Sym").sort("Sym")),
                 // Exclude Sym column from the countValues test, as it is not supported
                 EvalNugget.from(() -> queryTable.aggBy(AggCountNegative(primitiveColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(primitiveColumns), "Sym").sort("Sym")),

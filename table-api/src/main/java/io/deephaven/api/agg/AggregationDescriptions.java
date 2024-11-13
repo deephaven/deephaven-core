@@ -61,7 +61,7 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(Count count) {
-        out.put(count.column().name() + " - ", "count");
+        out.put(count.column().name(), "count");
     }
 
     @Override

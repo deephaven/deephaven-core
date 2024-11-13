@@ -15,13 +15,6 @@ import org.immutables.value.Value.Parameter;
 public abstract class AggSpecCountValues extends AggSpecBase {
 
     /**
-     * The types of counts that can be performed.
-     */
-    public enum AggCountType {
-        NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE
-    }
-
-    /**
      * Create a new AggSpecCountValues with {@code countType} of {@code NON_NULL}.
      *
      * @return the agg spec

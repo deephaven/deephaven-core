@@ -8,7 +8,8 @@ from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition, unique, count_distinct, distinct
+    var, formula, partition, unique, count_distinct, distinct, count_non_null, count_null, count_neg, count_pos, \
+    count_zero, count_nan, count_inf, count_finite
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
@@ -43,6 +44,14 @@ class TableTestCase(BaseTestCase):
         self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            count_non_null("aggCountNonNull=var"),
+            count_null("aggCountNull=var"),
+            count_neg("aggCountNeg=var"),
+            count_pos("aggCountPos=var"),
+            count_zero("aggCountZero=var"),
+            count_nan("aggCountNaN=var"),
+            count_inf("aggCountInf=var"),
+            count_finite("aggCountFinite=var"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
@@ -461,6 +470,14 @@ class TableTestCase(BaseTestCase):
             formula(
                 formula="min(each)", formula_param="each", cols=["MinA=a", "MinD=d"]
             ),
+            count_non_null("aggCountNonNull=b"),
+            count_null("aggCountNull=c"),
+            count_neg("aggCountNeg=d"),
+            count_pos("aggCountPos=b"),
+            count_zero("aggCountZero=c"),
+            count_nan("aggCountNaN=d"),
+            count_inf("aggCountInf=b"),
+            count_finite("aggCountFinite=c"),
         ]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
@@ -591,6 +608,8 @@ class TableTestCase(BaseTestCase):
             sum_(),
             abs_sum(),
             var(),
+            count_null(), # works for all types
+            count_non_null(), # works for all types
             weighted_avg("var"),
         ]
         for agg in aggs:
@@ -608,6 +627,12 @@ class TableTestCase(BaseTestCase):
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
             weighted_avg("var", ["weights"]),
+            count_neg("aggCountNeg=var"),
+            count_pos("aggCountPos=var"),
+            count_zero("aggCountZero=var"),
+            count_nan("aggCountNaN=var"),
+            count_inf("aggCountInf=var"),
+            count_finite("aggCountFinite=var"),
         ]
         for agg in aggs:
             with self.subTest(agg):

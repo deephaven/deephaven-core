@@ -962,7 +962,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecCountValues countValues) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
+            addBasicOperators((t, n) -> makeCountOperator(t, n, countValues.countType()));
         }
 
         @Override
@@ -1486,7 +1486,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     private static IterativeChunkedAggregationOperator makeCountOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
-            final AggSpecCountValues.AggCountType countType) {
+            final AggCountType countType) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedCountOperator(name, countType);
         } else if (type == Character.class || type == char.class) {
