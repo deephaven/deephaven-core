@@ -35,6 +35,8 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 /**
@@ -247,6 +249,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
                     errorTransformer.transform(error));
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

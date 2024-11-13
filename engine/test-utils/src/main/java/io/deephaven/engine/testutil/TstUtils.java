@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.engine.rowset.*;
@@ -430,7 +431,7 @@ public class TstUtils {
             System.out.println("================ NEXT ITERATION ================");
         }
         for (int i = 0; i < en.length; i++) {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                 if (RefreshingTableTestCase.printTableUpdates) {
                     if (i != 0) {
                         System.out.println("================ NUGGET (" + i + ") ================");
