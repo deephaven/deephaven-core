@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
@@ -95,7 +96,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(validateParquetFile(parquetFileUri), order, partitions);
-        this.channelsProvider = channelsProvider;
+        this.channelsProvider = Objects.requireNonNull(channelsProvider);
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
