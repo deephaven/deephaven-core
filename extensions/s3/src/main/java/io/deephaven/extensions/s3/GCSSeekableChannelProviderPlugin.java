@@ -25,7 +25,7 @@ public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsP
             S3Instructions.builder().endpointOverride(DEFAULT_ENDPOINT_OVERRIDE).build();
 
     @Override
-    public boolean isCompatible(@NotNull String uriScheme, @Nullable Object config) {
+    public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object config) {
         return GCS_URI_SCHEME.equals(uriScheme);
     }
 

@@ -15,5 +15,5 @@ public interface DataInstructionsProviderPlugin {
     /**
      * Create a data instructions object for the given URI scheme.
      */
-    Object createInstructions(@NotNull String uriScheme, @NotNull final Map<String, String> properties);
+    Object createInstructions(@NotNull String uriScheme, @NotNull Map<String, String> properties);
 }

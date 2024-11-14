@@ -40,6 +40,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final TableDefinition tableDef;
 
     /**
+     * The URI scheme from the Table {@link Table#location() location}.
+     */
+    private final String uriScheme;
+
+    /**
      * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
      */
     private final Map<URI, IcebergTableLocationKey> cache;
@@ -82,11 +87,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.tableAdapter = tableAdapter;
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
-        final String locationUriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
+        this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
         // data instructions from the properties collection and URI scheme.
         final Object specialInstructions = instructions.dataInstructions()
-                .orElseGet(() -> dataInstructionsProvider.load(locationUriScheme));
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
         {
             // Start with user-supplied instructions (if provided).
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
@@ -105,8 +110,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
             this.parquetInstructions = builder.build();
         }
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance()
-                .load(locationUriScheme, specialInstructions);
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
         this.cache = new HashMap<>();
     }
 
@@ -143,6 +147,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
                     for (DataFile df : reader) {
                         final URI fileUri = dataFileUri(table, df);
+                        if (!uriScheme.equals(fileUri.getScheme())) {
+                            throw new TableDataException(String.format(
+                                    "%s:%d - multiple URI schemes are not currently supported. uriScheme=%s, fileUri=%s",
+                                    table, snapshot.snapshotId(), uriScheme, fileUri));
+                        }
                         final IcebergTableLocationKey locationKey =
                                 cache.computeIfAbsent(fileUri, uri -> keyFromDataFile(df, fileUri));
                         if (locationKey != null) {
