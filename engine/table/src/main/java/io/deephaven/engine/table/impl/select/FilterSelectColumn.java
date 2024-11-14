@@ -10,16 +10,15 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
-import io.deephaven.qst.column.header.ColumnHeader;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -176,12 +175,17 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public boolean isStateless() {
-        return false;
+        return filter.permitParallelization();
     }
 
     @Override
     public FilterSelectColumn copy() {
         return new FilterSelectColumn(destName, filter.copy());
+    }
+
+    @Override
+    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+        filter.validateSafeForRefresh(sourceTable);
     }
 
     private class FilterFormula extends Formula {
