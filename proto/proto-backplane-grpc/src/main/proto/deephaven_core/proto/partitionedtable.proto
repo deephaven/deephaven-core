@@ -1,0 +1,95 @@
+/*
+ * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ */
+
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/partitionedtable";
+
+import "deephaven_core/proto/table.proto";
+import "deephaven_core/proto/ticket.proto";
+
+/*
+ * This service provides tools to create and query partitioned tables.
+ */
+service PartitionedTableService {
+  /*
+   * Transforms a table into a partitioned table, consisting of many separate tables, each individually
+   * addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
+   */
+  rpc PartitionBy(PartitionByRequest) returns (PartitionByResponse);
+  /*
+   * Given a partitioned table, returns a table with the contents of all of the constituent tables.
+   */
+  rpc Merge(MergeRequest) returns (ExportedTableCreationResponse);
+  /*
+   * Given a partitioned table and a row described by another table's contents, returns a table
+   * that matched that row, if any. If none is present, NOT_FOUND will be sent in response. If
+   * more than one is present, FAILED_PRECONDITION will be sent in response.
+   *
+   * If the provided key table has any number of rows other than one, INVALID_ARGUMENT will be
+   * sent in response.
+   *
+   * The simplest way to generally use this is to subscribe to the key columns of the underlying
+   * table of a given PartitionedTable, then use /FlightService/DoPut to create a table with the
+   * desired keys, and pass that ticket to this service. After that request is sent (note that it
+   * is not required to wait for it to complete), that new table ticket can be used to make this
+   * GetTable request.
+   */
+  rpc GetTable(GetTableRequest) returns (ExportedTableCreationResponse);
+}
+
+message PartitionByRequest {
+  Ticket table_id = 1;
+  Ticket result_id = 2;
+  repeated string key_column_names = 3;
+  bool drop_keys = 4;
+}
+message PartitionByResponse {
+  // Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket.
+}
+
+message MergeRequest {
+  // The ticket for the PartitionedTable object to merge.
+  Ticket partitioned_table = 1;
+  // The ticket to use to hold the results of the merge operation.
+  Ticket result_id = 2;
+}
+
+message GetTableRequest {
+  // The ticket for the PartitionedTable object to query.
+  Ticket partitioned_table = 1;
+
+  // The ticket for the table containing the key to fetch from the partitioned table.
+  Ticket key_table_ticket = 2;
+
+  // The ticket to use to hold the newly returned table.
+  Ticket result_id = 4;
+}
+
+/*
+ * A message that describes a partitioned table, able to be sent as a plugin object to a client.
+ * This object will also come with a ticket to the underlying table that can be used to get the
+ * constituent tables by key.
+ */
+message PartitionedTableDescriptor {
+  // The names of the key columns. The underlying table will contain these columns - a client can
+  // subscribe to these columns to see what keys are present.
+  repeated string key_column_names = 1;
+  // The name of the column in the underlying table that contains the table represented by that row.
+  string constituent_column_name = 4;
+  // True if the keys will be unique, so any set of known keys can be queried using GetTable.
+  bool unique_keys = 2;
+
+  // Returns a flight Messsage wrapping a Schema that will describe every table contained in this
+  // PartitionedTable.
+  bytes constituent_definition_schema = 3;
+
+  // True if the underlying table may tick with updates. See PartitionedTable.constituentChangesPermitted()
+  // for more details.
+  bool constituent_changes_permitted = 5;
+}

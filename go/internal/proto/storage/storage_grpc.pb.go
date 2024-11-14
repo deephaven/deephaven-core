@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/storage.proto
+// source: deephaven_core/proto/storage.proto
 
 package storage
 
@@ -295,5 +295,5 @@ var StorageService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "deephaven/proto/storage.proto",
+	Metadata: "deephaven_core/proto/storage.proto",
 }
