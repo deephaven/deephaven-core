@@ -246,7 +246,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final RowSet keyspaceViewport;
         private final BitSet subscribedColumns;
 
-        private final long numClientAddRows;
+        private final long numClientIncludedRows;
         private final long numClientModRows;
         private final RowSet clientIncludedRows;
         private final RowSet clientIncludedRowOffsets;
@@ -318,40 +318,41 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             } else {
                 Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
                 try (final SafeCloseableList toClose = new SafeCloseableList()) {
-                    final WritableRowSet clientIncludedRows =
+                    final WritableRowSet keyspaceClientIncludedRows =
                             toClose.add(keyspaceViewport.intersect(rowsIncluded.original));
                     // all included rows are sent to viewport clients as adds (already includes repainted rows)
-                    this.clientIncludedRows = keyspaceViewport.invert(clientIncludedRows);
-                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
+                    clientIncludedRows = keyspaceViewport.invert(keyspaceClientIncludedRows);
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(keyspaceClientIncludedRows);
 
                     // A row may slide out of the viewport and back into the viewport within the same coalesced message.
                     // The coalesced adds/removes will not contain this row, but the server has recorded it as needing
                     // to be sent to the client in its entirety. The client will process this row as both removed and
                     // added.
-                    final WritableRowSet clientRepaintedRows = toClose.add(clientIncludedRows.copy());
+                    final WritableRowSet keyspacePrevClientRepaintedRows =
+                            toClose.add(keyspaceClientIncludedRows.copy());
                     if (!isSnapshot) {
                         // note that snapshot rowsAdded contain all rows; we "repaint" only rows shared between prev and
                         // new viewports.
-                        clientRepaintedRows.remove(rowsAdded.original);
-                        shifted.original.unapply(clientRepaintedRows);
+                        keyspacePrevClientRepaintedRows.remove(rowsAdded.original);
+                        shifted.original.unapply(keyspacePrevClientRepaintedRows);
                     }
-                    clientRepaintedRows.retain(keyspaceViewportPrev);
+                    keyspacePrevClientRepaintedRows.retain(keyspaceViewportPrev);
 
                     // any pre-existing rows that are no longer in the viewport also need to be removed
-                    final WritableRowSet existing;
+                    final WritableRowSet rowsToRetain;
                     if (isSnapshot) {
-                        existing = toClose.add(keyspaceViewport.copy());
+                        rowsToRetain = toClose.add(keyspaceViewport.copy());
                     } else {
-                        existing = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                        rowsToRetain = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                        shifted.original.unapply(rowsToRetain);
                     }
-                    shifted.original.unapply(existing);
-                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(existing));
-                    noLongerExistingRows.insert(clientRepaintedRows);
+                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(rowsToRetain));
+                    noLongerExistingRows.insert(keyspacePrevClientRepaintedRows);
                     clientRemovedRows = keyspaceViewportPrev.invert(noLongerExistingRows);
                 }
             }
 
-            this.numClientAddRows = clientIncludedRowOffsets.size();
+            this.numClientIncludedRows = clientIncludedRowOffsets.size();
         }
 
         @Override
@@ -365,7 +366,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final MutableInt actualBatchSize = new MutableInt();
 
-            if (numClientAddRows == 0 && numClientModRows == 0) {
+            if (numClientIncludedRows == 0 && numClientModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 final DefensiveDrainable is = getInputStream(this, 0, 0, actualBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns);
@@ -377,11 +378,12 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             // send the add batches (if any)
             try {
-                processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
+                processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
 
                 // send the mod batches (if any) but don't send metadata twice
-                processBatches(visitor, this, numClientModRows, maxBatchSize, numClientAddRows > 0 ? null : metadata,
+                processBatches(visitor, this, numClientModRows, maxBatchSize,
+                        numClientIncludedRows > 0 ? null : metadata,
                         BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
             } finally {
                 clientIncludedRows.close();
@@ -445,7 +447,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int rowsAddedOffset;
             if (!isFullSubscription) {
-                // viewport clients consider all rows as added; scoped rows will also appear in the removed set
+                // viewport clients consider all included rows as added; scoped rows will also appear in the removed set
                 try (final RowSetGenerator clientIncludedRowsGen = new RowSetGenerator(clientIncludedRows)) {
                     rowsAddedOffset = clientIncludedRowsGen.addToFlatBuffer(metadata);
                 }

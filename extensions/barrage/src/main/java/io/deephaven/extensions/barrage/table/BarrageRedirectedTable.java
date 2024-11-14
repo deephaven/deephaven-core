@@ -130,7 +130,8 @@ public class BarrageRedirectedTable extends BarrageTable {
 
             // removes
             currentRowSet.remove(update.rowsRemoved);
-            try (final RowSet populatedRowsRemoved = populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
+            try (final RowSet populatedRowsRemoved =
+                    populatedRows != null ? populatedRows.extract(update.rowsRemoved) : null) {
                 freeRows(populatedRowsRemoved != null ? populatedRowsRemoved : update.rowsRemoved);
             }
 
