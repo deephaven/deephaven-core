@@ -17,7 +17,7 @@ public abstract class CumCountSpec extends UpdateBySpecBase {
      * The types of counts that can be performed.
      */
     public enum CumCountType {
-        NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE
+        ALL, NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE
     }
 
     public static CumCountSpec of(final CumCountType countType) {
@@ -29,7 +29,9 @@ public abstract class CumCountSpec extends UpdateBySpecBase {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        if (countType() == CumCountType.NULL || countType() == CumCountType.NON_NULL) {
+        if (countType() == CumCountType.ALL
+                || countType() == CumCountType.NULL
+                || countType() == CumCountType.NON_NULL) {
             // null/non-null applies to all types
             return true;
         }

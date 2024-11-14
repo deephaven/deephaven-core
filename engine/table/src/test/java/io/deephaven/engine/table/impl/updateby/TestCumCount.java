@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -49,9 +50,14 @@ public class TestCumCount extends BaseUpdateByTest {
 
         t.setRefreshing(false);
 
-        final Table count_non_null = t.updateBy(UpdateByOperation.CumCount());
+        final Table count_all = t.updateBy(UpdateByOperation.CumCountAll());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumCount(
+            assertWithCumCountAll(ColumnVectors.of(count_all, col).toArray());
+        }
+
+        final Table count_non_null = t.updateBy(UpdateByOperation.CumCountNonNull());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithCumCountNonNull(
                     ColumnVectors.of(t, col).toArray(),
                     ColumnVectors.of(count_non_null, col).toArray());
         }
@@ -137,9 +143,14 @@ public class TestCumCount extends BaseUpdateByTest {
 
         t.setRefreshing(false);
 
-        final Table count_non_null = t.updateBy(UpdateByOperation.CumCount());
+        final Table count_all = t.updateBy(UpdateByOperation.CumCountAll());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumCount(
+            assertWithCumCountAll(ColumnVectors.of(count_all, col).toArray());
+        }
+
+        final Table count_non_null = t.updateBy(UpdateByOperation.CumCountNonNull());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithCumCountNonNull(
                     ColumnVectors.of(t, col).toArray(),
                     ColumnVectors.of(count_non_null, col).toArray());
         }
@@ -238,9 +249,9 @@ public class TestCumCount extends BaseUpdateByTest {
                 longCol("IntValSum", 1, 2, 0, 1));
 
         final Table r = t.updateBy(List.of(
-                UpdateByOperation.CumCount("ByteValSum=ByteVal"),
-                UpdateByOperation.CumCount("ShortValSum=ShortVal"),
-                UpdateByOperation.CumCount("IntValSum=IntVal")), "Sym");
+                UpdateByOperation.CumCountNonNull("ByteValSum=ByteVal"),
+                UpdateByOperation.CumCountNonNull("ShortValSum=ShortVal"),
+                UpdateByOperation.CumCountNonNull("IntValSum=IntVal")), "Sym");
 
         assertTableEquals(expected, r);
     }
@@ -259,18 +270,31 @@ public class TestCumCount extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131).t;
         final PartitionedTable preOp = t.partitionBy("Sym");
 
-        final Table count_non_null =
-                t.updateBy(UpdateByOperation.CumCount("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+        final Table count_all =
+                t.updateBy(UpdateByOperation.CumCountAll("byteCol", "shortCol", "intCol", "longCol", "floatCol",
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
 
-        PartitionedTable postOp = count_non_null.partitionBy("Sym");
+        PartitionedTable postOp = count_all.partitionBy("Sym");
 
         final String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
                 .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumCount(
+                assertWithCumCountAll(ColumnVectors.of(actual, col).toArray());
+            });
+            return source;
+        });
+
+        final Table count_non_null =
+                t.updateBy(UpdateByOperation.CumCountNonNull("byteCol", "shortCol", "intCol", "longCol", "floatCol",
+                        "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"), "Sym");
+
+        postOp = count_non_null.partitionBy("Sym");
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
+                assertWithCumCountNonNull(
                         ColumnVectors.of(source, col).toArray(),
                         ColumnVectors.of(actual, col).toArray());
             });
@@ -430,8 +454,11 @@ public class TestCumCount extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
-                        ? t.updateBy(UpdateByOperation.CumCount(), "Sym")
-                        : t.updateBy(UpdateByOperation.CumCount())),
+                        ? t.updateBy(UpdateByOperation.CumCountAll(), "Sym")
+                        : t.updateBy(UpdateByOperation.CumCountAll())),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.CumCountNonNull(), "Sym")
+                        : t.updateBy(UpdateByOperation.CumCountNonNull())),
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.CumCountNull(), "Sym")
                         : t.updateBy(UpdateByOperation.CumCountNull())),
@@ -471,7 +498,8 @@ public class TestCumCount extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCount())),
+                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountAll())),
+                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNonNull())),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNull())),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNegative())),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountPositive())),
@@ -497,7 +525,8 @@ public class TestCumCount extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCount(), "Sym")),
+                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountAll(), "Sym")),
+                EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNonNull(), "Sym")),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNull(), "Sym")),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountNegative(), "Sym")),
                 EvalNugget.from(() -> t.updateBy(UpdateByOperation.CumCountPositive(), "Sym")),
@@ -671,23 +700,30 @@ public class TestCumCount extends BaseUpdateByTest {
     // endregion
 
     // region External verification methods for the supported types
-    final void assertWithCumCount(
+    final void assertWithCumCountAll(@NotNull final Object actual) {
+        final long[] actualValues = (long[]) actual;
+        final long[] expectedValues = LongStream.range(1, actualValues.length + 1).toArray();
+
+        assertArrayEquals(expectedValues, actualValues);
+    }
+
+    final void assertWithCumCountNonNull(
             @NotNull final Object expected,
             @NotNull final Object actual) {
         final long[] actualValues = (long[]) actual;
 
         if (expected instanceof byte[]) {
-            assertArrayEquals(Numeric.cumcount((byte[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((byte[]) expected), actualValues);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(Numeric.cumcount((short[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((short[]) expected), actualValues);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(Numeric.cumcount((int[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((int[]) expected), actualValues);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(Numeric.cumcount((long[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((long[]) expected), actualValues);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumcount((float[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((float[]) expected), actualValues);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(Numeric.cumcount((double[]) expected), actualValues);
+            assertArrayEquals(Numeric.cumcountnonnull((double[]) expected), actualValues);
         } else {
             assertArrayEquals(object_cumcount((Object[]) expected, Objects::nonNull), actualValues);
         }

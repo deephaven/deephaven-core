@@ -1909,13 +1909,13 @@ public class Numeric {
     }
 
     /**
-     * Returns the cumulative count of non-null values.
+     * Returns the cumulative count of all values (including null).
      *
      * @param values values.
      * @return cumulative count of non-null values.
      */
-    public static long[] cumcount(${pt.boxed}[] values) {
-        return cumcount(unbox(values));
+    public static long[] cumcountall(${pt.boxed}[] values) {
+        return cumcountall(unbox(values));
     }
 
     /**
@@ -1924,12 +1924,12 @@ public class Numeric {
      * @param values values.
      * @return cumulative count of non-null values.
      */
-    public static long[] cumcount(${pt.primitive}... values) {
+    public static long[] cumcountall(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
 
-        return cumcount(new ${pt.vectorDirect}(values));
+        return cumcountall(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1938,7 +1938,63 @@ public class Numeric {
      * @param values values.
      * @return cumulative count of non-null values.
      */
-    public static long[] cumcount(${pt.vector} values) {
+    public static long[] cumcountall(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumcount");
+        final long[] result = new long[n];
+        long count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            int i = 0;
+
+            while (vi.hasNext()) {
+                vi.${pt.iteratorNext}();
+                result[i] = ++count;
+                i++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcountnonnull(${pt.boxed}[] values) {
+        return cumcountnonnull(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcountnonnull(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumcountnonnull(new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the cumulative count of non-null values.
+     *
+     * @param values values.
+     * @return cumulative count of non-null values.
+     */
+    public static long[] cumcountnonnull(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -2378,7 +2434,7 @@ public class Numeric {
     public static long[] cumcountfinite(${pt.vector} values) {
 <#if pt.valueType.isInteger >
         // ${pt.primitive} is always finite, so we can just count non-null values.
-        return cumcount(values);
+        return cumcountnonnull(values);
 <#else>
         if (values == null) {
             return null;

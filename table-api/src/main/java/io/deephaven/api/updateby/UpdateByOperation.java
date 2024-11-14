@@ -47,12 +47,22 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create a {@link CumCountSpec cumulative count} of all values for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountAll(String... pairs) {
+        return CumCountSpec.of(CumCountSpec.CumCountType.ALL).clause(pairs);
+    }
+
+    /**
      * Create a {@link CumCountSpec cumulative count} of non-null values for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation CumCount(String... pairs) {
+    static UpdateByOperation CumCountNonNull(String... pairs) {
         return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL).clause(pairs);
     }
 

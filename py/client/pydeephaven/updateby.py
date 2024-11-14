@@ -125,7 +125,23 @@ class UpdateByOperation(_UpdateByBase):
         return _GrpcUpdateByOperation(column=self.ub_column)
 
 
-def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
+def cum_count_all(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of all values in the supplied column names.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the operation on all applicable columns.
+
+    Returns:
+        UpdateByOperation
+    """
+    ub_spec_options = _GrpcUpdateBySpec.UpdateByCumulativeCount.CountType.COUNT_TYPE_ALL
+    ub_spec = _GrpcUpdateBySpec(count=_GrpcUpdateBySpec.UpdateByCumulativeCount(count_type=ub_spec_options))
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
+    return UpdateByOperation(ub_column=ub_column)
+
+
+def cum_count_non_null(cols: Union[str, List[str]]) -> UpdateByOperation:
     """Creates a cumulative count UpdateByOperation of non-null values in the supplied column names.
 
     Args:

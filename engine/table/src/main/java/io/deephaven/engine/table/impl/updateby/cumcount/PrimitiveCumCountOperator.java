@@ -8,16 +8,34 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
 
 public class PrimitiveCumCountOperator extends BaseCumCountOperator {
+    /*
+     * This class leverages assumptions about the null values for the various primitive types to optimize the count
+     * operations. This assert ensures that the assumptions are regularly verified against future changes.
+     */
+    static {
+        assert QueryConstants.NULL_BYTE < 0;
+        assert QueryConstants.NULL_CHAR > 0; // null char is the only positive value
+        assert QueryConstants.NULL_SHORT < 0;
+        assert QueryConstants.NULL_INT < 0;
+        assert QueryConstants.NULL_LONG < 0;
+        assert QueryConstants.NULL_FLOAT < 0;
+        assert QueryConstants.NULL_DOUBLE < 0;
+    }
 
     @Override
     protected ValueCountFunction createValueCountFunction(
             final Chunk<? extends Values> chunk,
             final CumCountSpec.CumCountType countType) {
+
+        if (countType == CumCountSpec.CumCountType.ALL) {
+            return index -> true;
+        }
 
         if (columnType == byte.class || columnType == Byte.class) {
             return createByteValueCountFunction(chunk.asByteChunk(), countType);

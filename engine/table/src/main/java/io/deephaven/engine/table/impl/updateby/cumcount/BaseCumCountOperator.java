@@ -12,12 +12,14 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 public abstract class BaseCumCountOperator extends BaseLongUpdateByOperator {
     final CumCountSpec spec;
     final Class<?> columnType;
 
     /**
-     * Functional interface for testing if the value at a given index in a {@link Chunk} is null.
+     * Functional interface for testing if the value at a given index in a {@link Chunk} should be counted.
      */
     @FunctionalInterface
     protected interface ValueCountFunction {
@@ -26,6 +28,7 @@ public abstract class BaseCumCountOperator extends BaseLongUpdateByOperator {
 
     protected class Context extends BaseLongUpdateByOperator.Context {
         private ValueCountFunction valueCountFunction;
+        private Chunk<? extends Values> chunkReference;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -35,7 +38,11 @@ public abstract class BaseCumCountOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            valueCountFunction = createValueCountFunction(valueChunks[0], spec.countType());
+            // Update the value count function if the chunk reference has changed (e.g. when this context is reused)
+            if (!Objects.equals(valueChunks[0], chunkReference)) {
+                valueCountFunction = createValueCountFunction(valueChunks[0], spec.countType());
+                chunkReference = valueChunks[0];
+            }
         }
 
         @Override

@@ -20,6 +20,8 @@ public class BooleanCumCountOperator extends BaseCumCountOperator {
 
         final ByteChunk<?> valueChunk = chunk.asByteChunk();
         switch (countType) {
+            case ALL:
+                return index -> true;
             case NON_NULL:
                 return index -> valueChunk.get(index) != NULL_BOOLEAN_AS_BYTE;
             case NULL:

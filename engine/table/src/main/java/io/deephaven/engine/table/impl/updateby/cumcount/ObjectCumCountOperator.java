@@ -18,6 +18,8 @@ public class ObjectCumCountOperator extends BaseCumCountOperator {
             final CumCountSpec.CumCountType countType) {
         final ObjectChunk<Object, ? extends Values> valueChunk = chunk.asObjectChunk();
         switch (countType) {
+            case ALL:
+                return index -> true;
             case NON_NULL:
                 return index -> valueChunk.get(index) != null;
             case NULL:
