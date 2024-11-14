@@ -36,6 +36,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -174,8 +175,10 @@ public class StreamToBlinkTableAdapter
                 }
             }
 
+            @OverridingMethodsMustInvokeSuper
             @Override
             public void destroy() {
+                super.destroy();
                 StreamToBlinkTableAdapter.this.close();
             }
         };

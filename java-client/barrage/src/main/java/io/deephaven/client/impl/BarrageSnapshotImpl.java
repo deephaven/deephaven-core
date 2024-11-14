@@ -35,6 +35,7 @@ import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
@@ -218,6 +219,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         return CONNECTED_UPDATER.compareAndSet(this, 1, 0);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

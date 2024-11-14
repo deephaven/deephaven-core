@@ -24,6 +24,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
@@ -174,11 +175,13 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean systemicResult() {
-        return result == null ? false : SystemicObjectTracker.isSystemic(result);
+        return result != null && SystemicObjectTracker.isSystemic(result);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
+        super.destroy();
         recorders.forEach(ListenerRecorder::forceReferenceCountToZero);
     }
 

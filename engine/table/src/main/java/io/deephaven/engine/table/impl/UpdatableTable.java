@@ -13,6 +13,7 @@ import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -144,6 +145,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         notifyListeners(update);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void destroy() {
         super.destroy();

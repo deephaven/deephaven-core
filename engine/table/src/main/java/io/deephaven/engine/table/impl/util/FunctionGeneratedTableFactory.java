@@ -16,6 +16,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -279,6 +280,7 @@ public class FunctionGeneratedTableFactory {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

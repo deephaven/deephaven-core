@@ -16,6 +16,7 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,8 +64,10 @@ public abstract class AbstractTableLocation
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
 
         livenessReferent = new ReferenceCountedLivenessReferent() {
+            @OverridingMethodsMustInvokeSuper
             @Override
             protected void destroy() {
+                super.destroy();
                 AbstractTableLocation.this.destroy();
             }
         };
