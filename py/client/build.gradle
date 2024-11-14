@@ -10,6 +10,7 @@ evaluationDependsOn Docker.registryProject('python')
 
 wheel {
     src 'pydeephaven'
+    src 'deephaven_core'
     src 'examples'
     src 'tests'
 }
@@ -61,6 +62,9 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
+        }
+        from('deephaven_core') {
+            into 'project/deephaven_core'
         }
         from('tests') {
             into 'project/tests'
