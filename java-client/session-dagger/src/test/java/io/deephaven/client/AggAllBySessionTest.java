@@ -8,8 +8,10 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
+import io.deephaven.api.agg.spec.AggCountType;
 import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
+import io.deephaven.api.agg.spec.AggSpecCountValues;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
 import io.deephaven.api.agg.spec.AggSpecFirst;
 import io.deephaven.api.agg.spec.AggSpecFormula;
@@ -129,6 +131,18 @@ public class AggAllBySessionTest extends TableSpecTestBase {
         @Override
         public void visit(AggSpecAvg avg) {
             out.add(AggSpecAvg.of());
+        }
+
+        @Override
+        public void visit(AggSpecCountValues countValues) {
+            out.add(AggSpecCountValues.of(AggCountType.NON_NULL));
+            out.add(AggSpecCountValues.of(AggCountType.NULL));
+            out.add(AggSpecCountValues.of(AggCountType.NEGATIVE));
+            out.add(AggSpecCountValues.of(AggCountType.POSITIVE));
+            out.add(AggSpecCountValues.of(AggCountType.ZERO));
+            out.add(AggSpecCountValues.of(AggCountType.NAN));
+            out.add(AggSpecCountValues.of(AggCountType.INFINITE));
+            out.add(AggSpecCountValues.of(AggCountType.FINITE));
         }
 
         @Override
