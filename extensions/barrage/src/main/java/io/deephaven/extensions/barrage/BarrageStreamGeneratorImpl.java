@@ -245,13 +245,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final RowSet keyspaceViewportPrev;
         private final RowSet keyspaceViewport;
         private final BitSet subscribedColumns;
+
         private final long numClientAddRows;
         private final long numClientModRows;
-        private final RowSet clientAddedRows;
-        private final RowSet clientAddedRowOffsets;
+        private final RowSet clientIncludedRows;
+        private final RowSet clientIncludedRowOffsets;
         private final RowSet[] clientModdedRows;
         private final RowSet[] clientModdedRowOffsets;
-        private final RowSet clientAddOrScopedRows;
+        private final RowSet clientRemovedRows;
 
         public SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
@@ -299,38 +300,58 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             }
             this.numClientModRows = numModRows;
 
-            if (keyspaceViewport != null) {
-                if (isFullSubscription) {
-                    clientAddOrScopedRows = RowSetFactory.empty();
-                    clientAddedRows = keyspaceViewport.intersect(rowsIncluded.original);
-                    clientAddedRowOffsets = rowsIncluded.original.invert(clientAddedRows);
+            if (isFullSubscription) {
+                clientRemovedRows = null; // we'll send full subscriptions the full removed set
+
+                if (keyspaceViewport != null) {
+                    // growing viewport clients need to know about all rows, including those that were scoped into view
+                    clientIncludedRows = keyspaceViewport.intersect(rowsIncluded.original);
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
+                } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+                    // there are scoped rows that need to be removed from the data sent to the client
+                    clientIncludedRows = rowsAdded.original.copy();
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
                 } else {
-                    Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
-                    try (final WritableRowSet clientIncludedRows = keyspaceViewport.intersect(rowsIncluded.original);
-                            final WritableRowSet existingRows = keyspaceViewportPrev.minus(rowsRemoved.original)) {
-                        clientAddedRows = keyspaceViewport.invert(clientIncludedRows);
-                        clientAddedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
-                        shifted.original.apply(existingRows);
-                        try (final WritableRowSet toInclude = keyspaceViewport.minus(existingRows)) {
-                            if (!toInclude.subsetOf(rowsIncluded.original)) {
-                                throw new IllegalStateException("did not record row data needed for client");
-                            }
-                            clientAddOrScopedRows = keyspaceViewport.invert(toInclude);
-                        }
-                    }
+                    clientIncludedRows = rowsAdded.original.copy();
+                    clientIncludedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
                 }
-            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-                // there are scoped rows included in the chunks that need to be removed
-                clientAddedRows = rowsAdded.original.copy();
-                clientAddedRowOffsets = rowsIncluded.original.invert(clientAddedRows);
-                clientAddOrScopedRows = RowSetFactory.empty();
             } else {
-                clientAddedRows = rowsAdded.original.copy();
-                clientAddedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
-                clientAddOrScopedRows = RowSetFactory.empty();
+                Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
+                try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                    final WritableRowSet clientIncludedRows =
+                            toClose.add(keyspaceViewport.intersect(rowsIncluded.original));
+                    // all included rows are sent to viewport clients as adds (already includes repainted rows)
+                    this.clientIncludedRows = keyspaceViewport.invert(clientIncludedRows);
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
+
+                    // A row may slide out of the viewport and back into the viewport within the same coalesced message.
+                    // The coalesced adds/removes will not contain this row, but the server has recorded it as needing
+                    // to be sent to the client in its entirety. The client will process this row as both removed and
+                    // added.
+                    final WritableRowSet clientRepaintedRows = toClose.add(clientIncludedRows.copy());
+                    if (!isSnapshot) {
+                        // note that snapshot rowsAdded contain all rows; we "repaint" only rows shared between prev and
+                        // new viewports.
+                        clientRepaintedRows.remove(rowsAdded.original);
+                        shifted.original.unapply(clientRepaintedRows);
+                    }
+                    clientRepaintedRows.retain(keyspaceViewportPrev);
+
+                    // any pre-existing rows that are no longer in the viewport also need to be removed
+                    final WritableRowSet existing;
+                    if (isSnapshot) {
+                        existing = toClose.add(keyspaceViewport.copy());
+                    } else {
+                        existing = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                    }
+                    shifted.original.unapply(existing);
+                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(existing));
+                    noLongerExistingRows.insert(clientRepaintedRows);
+                    clientRemovedRows = keyspaceViewportPrev.invert(noLongerExistingRows);
+                }
             }
 
-            this.numClientAddRows = clientAddedRowOffsets.size();
+            this.numClientAddRows = clientIncludedRowOffsets.size();
         }
 
         @Override
@@ -363,11 +384,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 processBatches(visitor, this, numClientModRows, maxBatchSize, numClientAddRows > 0 ? null : metadata,
                         BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
             } finally {
-                clientAddedRowOffsets.close();
-                clientAddedRows.close();
+                clientIncludedRows.close();
+                clientIncludedRowOffsets.close();
                 if (clientModdedRowOffsets != null) {
                     SafeCloseable.closeAll(clientModdedRows);
                     SafeCloseable.closeAll(clientModdedRowOffsets);
+                }
+                if (clientRemovedRows != null) {
+                    clientRemovedRows.close();
                 }
             }
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
@@ -393,7 +417,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         @Override
         public RowSet addRowOffsets() {
-            return clientAddedRowOffsets;
+            return clientIncludedRowOffsets;
         }
 
         @Override
@@ -421,8 +445,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int rowsAddedOffset;
             if (!isFullSubscription) {
-                try (final RowSetGenerator clientAddedRowsGen = new RowSetGenerator(clientAddOrScopedRows)) {
-                    rowsAddedOffset = clientAddedRowsGen.addToFlatBuffer(metadata);
+                // viewport clients consider all rows as added; scoped rows will also appear in the removed set
+                try (final RowSetGenerator clientIncludedRowsGen = new RowSetGenerator(clientIncludedRows)) {
+                    rowsAddedOffset = clientIncludedRowsGen.addToFlatBuffer(metadata);
                 }
             } else if (isSnapshot && !isInitialSnapshot) {
                 // Growing viewport clients don't need/want to receive the full RowSet on every snapshot
@@ -433,30 +458,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final int rowsRemovedOffset;
             if (!isFullSubscription) {
-                // while rowsIncluded knows about rows that were scoped into view, rowsRemoved does not, and we need to
-                // infer them by comparing the previous keyspace viewport with the current keyspace viewport
-                try (final SafeCloseableList toClose = new SafeCloseableList()) {
-                    final WritableRowSet existingRows;
-                    if (isSnapshot) {
-                        existingRows = toClose.add(keyspaceViewport.copy());
-                    } else {
-                        existingRows = toClose.add(keyspaceViewport.minus(rowsAdded.original));
-                    }
-                    shifted.original.unapply(existingRows);
-                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(existingRows));
-                    if (isSnapshot) {
-                        // then we must filter noLongerExistingRows to only include rows in the table
-                        noLongerExistingRows.retain(rowsAdded.original);
-                    }
-                    final WritableRowSet removedInPosSpace =
-                            toClose.add(keyspaceViewportPrev.invert(noLongerExistingRows));
-                    try (final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(removedInPosSpace)) {
-                        rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
-                    }
+                // viewport clients need to also remove rows that were scoped out of view; computed in the constructor
+                try (final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(clientRemovedRows)) {
+                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
                 }
             } else {
                 rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
             }
+
             final int shiftDataOffset;
             if (!isFullSubscription) {
                 // we only send shifts to full table subscriptions
@@ -468,17 +477,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
 
-            // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isFullSubscription) {
-                if (isSnapshot || !clientAddedRows.equals(rowsAdded.original)) {
-                    addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
-                }
-            } else if (!clientAddedRows.equals(clientAddOrScopedRows)) {
-                // the clientAddedRows on a viewport are all rows sent with the message; including rows that scoped out
-                // of view, were modified, and then scoped back into view within the same coalesced source message
-                try (final RowSetGenerator clientAddOrScopedRowsGen = new RowSetGenerator(clientAddedRows)) {
-                    addedRowsIncludedOffset = clientAddOrScopedRowsGen.addToFlatBuffer(metadata);
-                }
+            // don't send `rowsIncluded` to viewport clients or if identical to `rowsAdded`
+            if (isFullSubscription && (isSnapshot || !clientIncludedRows.equals(rowsAdded.original))) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientIncludedRows, metadata);
             }
 
             // now add mod-column streams, and write the mod column indexes

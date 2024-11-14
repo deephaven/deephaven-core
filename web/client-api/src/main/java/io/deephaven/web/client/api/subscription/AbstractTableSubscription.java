@@ -9,7 +9,6 @@ import elemental2.core.JsArray;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
