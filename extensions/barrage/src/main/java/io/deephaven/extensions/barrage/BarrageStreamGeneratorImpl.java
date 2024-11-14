@@ -343,16 +343,16 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 }
 
                 try (final WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
+                    // some rows may be marked both as included and modified; viewport clients must be sent
+                    // the full row data for these rows, so we do not also need to send them as modified
+                    intersect.remove(rowsIncluded.original);
                     if (isFullSubscription) {
                         clientModdedRows[ii] = intersect.copy();
                     } else {
-                        // some rows may be marked both as included and modified; viewport clients must be sent
-                        // the full row data for these rows, so we do not also need to send them as modified
-                        intersect.remove(rowsIncluded.original);
                         clientModdedRows[ii] = keyspaceViewport.invert(intersect);
                     }
                     clientModdedRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
-                    numModRows = Math.max(numModRows, clientModdedRows[ii].size());
+                    numModRows = Math.max(numModRows, intersect.size());
                 }
             }
             numClientModRows = numModRows;
