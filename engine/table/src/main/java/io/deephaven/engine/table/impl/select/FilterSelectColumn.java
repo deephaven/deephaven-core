@@ -128,13 +128,14 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public List<String> getColumnArrays() {
+        /* This should always be empty, because initDef throws when arrays or ii and friends are used. */
         return List.of();
     }
 
     @Override
     public boolean hasVirtualRowVariables() {
         /* This should always be false, because initDef throws when arrays or ii and friends are used. */
-        return filter.hasVirtualRowVariables();
+        return false;
     }
 
     @NotNull
