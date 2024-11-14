@@ -22,8 +22,6 @@ public class BigDecimalCumCountOperator extends BaseCumCountOperator {
 
         final ObjectChunk<BigDecimal, ? extends Values> valueChunk = chunk.asObjectChunk();
         switch (countType) {
-            case ALL:
-                return index -> true;
             case NON_NULL:
             case FINITE:
                 return index -> valueChunk.get(index) != null;

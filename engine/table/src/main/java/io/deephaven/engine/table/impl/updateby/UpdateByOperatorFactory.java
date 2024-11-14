@@ -849,6 +849,10 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeCumCountOperator(MatchPair pair, TableDefinition tableDef, CumCountSpec spec) {
+            if (spec.countType() == CumCountSpec.CumCountType.ALL) {
+                return new CumCountAllOperator(pair);
+            }
+
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
 

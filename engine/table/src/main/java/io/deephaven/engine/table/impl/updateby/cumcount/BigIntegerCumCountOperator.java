@@ -21,8 +21,6 @@ public class BigIntegerCumCountOperator extends BaseCumCountOperator {
 
         final ObjectChunk<BigInteger, ? extends Values> valueChunk = chunk.asObjectChunk();
         switch (countType) {
-            case ALL:
-                return index -> true;
             case NON_NULL:
             case FINITE:
                 return index -> valueChunk.get(index) != null;

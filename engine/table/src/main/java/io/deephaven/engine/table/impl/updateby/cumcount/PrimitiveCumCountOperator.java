@@ -32,11 +32,6 @@ public class PrimitiveCumCountOperator extends BaseCumCountOperator {
     protected ValueCountFunction createValueCountFunction(
             final Chunk<? extends Values> chunk,
             final CumCountSpec.CumCountType countType) {
-
-        if (countType == CumCountSpec.CumCountType.ALL) {
-            return index -> true;
-        }
-
         if (columnType == byte.class || columnType == Byte.class) {
             return createByteValueCountFunction(chunk.asByteChunk(), countType);
         }
