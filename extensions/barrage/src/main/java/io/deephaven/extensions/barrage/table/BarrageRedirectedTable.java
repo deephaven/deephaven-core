@@ -265,9 +265,6 @@ public class BarrageRedirectedTable extends BarrageTable {
                 return coalescer;
             }
 
-            if (!isFullSubscription) {
-                totalMods.remove(update.rowsIncluded);
-            }
             final TableUpdate downstream = new TableUpdateImpl(
                     update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
 

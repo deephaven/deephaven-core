@@ -242,17 +242,16 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final boolean isFullSubscription;
         private final RowSet viewport;
         private final boolean reverseViewport;
-        private final RowSet keyspaceViewportPrev;
         private final RowSet keyspaceViewport;
         private final BitSet subscribedColumns;
 
         private final long numClientIncludedRows;
         private final long numClientModRows;
-        private final RowSet clientIncludedRows;
-        private final RowSet clientIncludedRowOffsets;
-        private final RowSet[] clientModdedRows;
-        private final RowSet[] clientModdedRowOffsets;
-        private final RowSet clientRemovedRows;
+        private final WritableRowSet clientIncludedRows;
+        private final WritableRowSet clientIncludedRowOffsets;
+        private final WritableRowSet[] clientModdedRows;
+        private final WritableRowSet[] clientModdedRowOffsets;
+        private final WritableRowSet clientRemovedRows;
 
         public SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
@@ -267,39 +266,10 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.isFullSubscription = isFullSubscription;
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
-            this.keyspaceViewportPrev = keyspaceViewportPrev;
             this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
 
-            if (keyspaceViewport != null) {
-                this.clientModdedRows = new WritableRowSet[modColumnData.length];
-                this.clientModdedRowOffsets = new WritableRowSet[modColumnData.length];
-            } else {
-                this.clientModdedRows = null;
-                this.clientModdedRowOffsets = null;
-            }
-
-            // precompute the modified column indexes, and calculate total rows needed
-            long numModRows = 0;
-            for (int ii = 0; ii < modColumnData.length; ++ii) {
-                final ModColumnGenerator mcd = modColumnData[ii];
-
-                if (keyspaceViewport != null) {
-                    try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
-                        if (isFullSubscription) {
-                            clientModdedRows[ii] = intersect.copy();
-                        } else {
-                            clientModdedRows[ii] = keyspaceViewport.invert(intersect);
-                        }
-                        clientModdedRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
-                        numModRows = Math.max(numModRows, intersect.size());
-                    }
-                } else {
-                    numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
-                }
-            }
-            this.numClientModRows = numModRows;
-
+            // precompute the included rows / offsets and viewport removed rows
             if (isFullSubscription) {
                 clientRemovedRows = null; // we'll send full subscriptions the full removed set
 
@@ -341,6 +311,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     // any pre-existing rows that are no longer in the viewport also need to be removed
                     final WritableRowSet rowsToRetain;
                     if (isSnapshot) {
+                        // for a snapshot, the goal is to calculate which rows to remove due to viewport changes
                         rowsToRetain = toClose.add(keyspaceViewport.copy());
                     } else {
                         rowsToRetain = toClose.add(keyspaceViewport.minus(rowsAdded.original));
@@ -351,8 +322,39 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     clientRemovedRows = keyspaceViewportPrev.invert(noLongerExistingRows);
                 }
             }
-
             this.numClientIncludedRows = clientIncludedRowOffsets.size();
+
+            // precompute the modified column indexes, and calculate total rows needed
+            if (keyspaceViewport != null) {
+                this.clientModdedRows = new WritableRowSet[modColumnData.length];
+                this.clientModdedRowOffsets = new WritableRowSet[modColumnData.length];
+            } else {
+                this.clientModdedRows = null;
+                this.clientModdedRowOffsets = null;
+            }
+
+            long numModRows = 0;
+            for (int ii = 0; ii < modColumnData.length; ++ii) {
+                final ModColumnGenerator mcd = modColumnData[ii];
+
+                if (keyspaceViewport != null) {
+                    try (final WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
+                        if (isFullSubscription) {
+                            clientModdedRows[ii] = intersect.copy();
+                        } else {
+                            // some rows may be marked both as included and modified; viewport clients must be sent
+                            // the full row data for these rows, so we do not also need to send them as modified
+                            intersect.remove(rowsIncluded.original);
+                            clientModdedRows[ii] = keyspaceViewport.invert(intersect);
+                        }
+                        clientModdedRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
+                        numModRows = Math.max(numModRows, clientModdedRows[ii].size());
+                    }
+                } else {
+                    numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
+                }
+            }
+            this.numClientModRows = numModRows;
         }
 
         @Override
