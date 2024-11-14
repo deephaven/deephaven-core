@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -55,8 +56,8 @@ class FilterSelectColumn implements SelectColumn {
      * @param filter the filter that is evaluated to true or false for each row of the table
      * @return a new FilterSelectColumn representing the provided filter.
      */
-    static FilterSelectColumn of(@NotNull final String destName, @NotNull final WhereFilter filter) {
-        return new FilterSelectColumn(destName, filter);
+    static FilterSelectColumn of(@NotNull final String destName, @NotNull final Filter filter) {
+        return new FilterSelectColumn(destName, WhereFilter.of(filter));
     }
 
     private FilterSelectColumn(@NotNull final String destName, @NotNull final WhereFilter filter) {
