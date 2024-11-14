@@ -8,10 +8,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.UncheckedTableException;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
@@ -20,7 +17,6 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.qst.column.header.ColumnHeader;
-import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -53,7 +49,18 @@ class FilterSelectColumn implements SelectColumn {
     private RowSet rowSet;
     private Table tableToFilter;
 
-    public FilterSelectColumn(@NotNull final String destName, @NotNull final WhereFilter filter) {
+    /**
+     * Create a FilterSelectColumn with the given name and {@link WhereFilter}.
+     *
+     * @param destName the name of the result column
+     * @param filter the filter that is evaluated to true or false for each row of the table
+     * @return a new FilterSelectColumn representing the provided filter.
+     */
+    static FilterSelectColumn of(@NotNull final String destName, @NotNull final WhereFilter filter) {
+        return new FilterSelectColumn(destName, filter);
+    }
+
+    private FilterSelectColumn(@NotNull final String destName, @NotNull final WhereFilter filter) {
         this.destName = destName;
         this.filter = filter;
     }
@@ -72,19 +79,24 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        return initDef(columnDefinitionMap, QueryCompilerRequestProcessor.immediate());
+        filter.init(TableDefinition.of(columnDefinitionMap.values()));
+        return checkForInvalidFilters();
     }
 
     @Override
     public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
-        final List<ColumnHeader<?>> columnHeaders = new ArrayList<>();
-        for (Map.Entry<String, ColumnDefinition<?>> entry : columnDefinitionMap.entrySet()) {
-            columnHeaders.add(ColumnHeader.of(entry.getKey(), entry.getValue().getDataType()));
-        }
-        final TableDefinition fromColumns = TableDefinition.from(columnHeaders);
-        filter.init(fromColumns, compilationRequestProcessor);
+        filter.init(TableDefinition.of(columnDefinitionMap.values()), compilationRequestProcessor);
+        return checkForInvalidFilters();
+    }
 
+    /**
+     * Validates the filter to ensure it does not contain invalid filters such as column vectors or virtual row
+     * variables. Throws an {@link UncheckedTableException} if any invalid filters are found.
+     *
+     * @return the list of columns required by the filter.
+     */
+    private List<String> checkForInvalidFilters() {
         if (!filter.getColumnArrays().isEmpty()) {
             throw new UncheckedTableException(
                     "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: "
@@ -121,86 +133,14 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public boolean hasVirtualRowVariables() {
+        /* This should always be false, because initDef throws when arrays or ii and friends are used. */
         return filter.hasVirtualRowVariables();
     }
 
     @NotNull
     @Override
     public ColumnSource<Boolean> getDataView() {
-        return new ViewColumnSource<>(Boolean.class, new Formula(null) {
-
-            @Override
-            public Boolean getBoolean(long rowKey) {
-                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, false).containsRange(rowKey,
-                        rowKey);
-            }
-
-            @Override
-            public Boolean getPrevBoolean(long rowKey) {
-                return filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, true).containsRange(rowKey,
-                        rowKey);
-            }
-
-            @Override
-            public Object get(final long rowKey) {
-                return getBoolean(rowKey);
-            }
-
-            @Override
-            public Object getPrev(final long rowKey) {
-                return getPrevBoolean(rowKey);
-            }
-
-            @Override
-            public ChunkType getChunkType() {
-                return ChunkType.Object;
-            }
-
-            @Override
-            public FillContext makeFillContext(final int chunkCapacity) {
-                return FILL_CONTEXT_INSTANCE;
-            }
-
-            @Override
-            public void fillChunk(
-                    @NotNull final FillContext fillContext,
-                    @NotNull final WritableChunk<? super Values> destination,
-                    @NotNull final RowSequence rowSequence) {
-                doFill(rowSequence, destination, false);
-            }
-
-            @Override
-            public void fillPrevChunk(
-                    @NotNull final FillContext fillContext,
-                    @NotNull final WritableChunk<? super Values> destination,
-                    @NotNull final RowSequence rowSequence) {
-                doFill(rowSequence, destination, true);
-            }
-
-            private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination,
-                    boolean usePrev) {
-                final WritableObjectChunk<Boolean, ?> booleanDestination = destination.asWritableObjectChunk();
-                try (final RowSet inputRowSet = rowSequence.asRowSet();
-                        final RowSet filtered = filter.filter(inputRowSet, rowSet, tableToFilter, usePrev);
-                        final RowSet.Iterator inputIt = inputRowSet.iterator();
-                        final RowSet.Iterator trueIt = filtered.iterator()) {
-                    long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
-                    int offset = 0;
-                    while (nextTrue >= 0) {
-                        // the input iterator is a superset of the true iterator, so we can always find out what
-                        // the next value is without needing to check hasNext
-                        final long nextInput = inputIt.nextLong();
-                        final boolean found = nextInput == nextTrue;
-                        booleanDestination.set(offset++, found);
-                        if (found) {
-                            nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
-                        }
-                    }
-                    // fill everything else up with false, because nothing else can match
-                    booleanDestination.fillWithBoxedValue(offset, booleanDestination.size() - offset, false);
-                }
-            }
-        }, false);
+        return new ViewColumnSource<>(Boolean.class, new FilterFormula(), false);
     }
 
     @NotNull
@@ -242,5 +182,84 @@ class FilterSelectColumn implements SelectColumn {
     @Override
     public FilterSelectColumn copy() {
         return new FilterSelectColumn(destName, filter.copy());
+    }
+
+    private class FilterFormula extends Formula {
+        public FilterFormula() {
+            super(null);
+        }
+
+        @Override
+        public Boolean getBoolean(long rowKey) {
+            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, false);
+            return filteredIndex.isNonempty();
+        }
+
+        @Override
+        public Boolean getPrevBoolean(long rowKey) {
+            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, true);
+            return filteredIndex.isNonempty();
+        }
+
+        @Override
+        public Object get(final long rowKey) {
+            return getBoolean(rowKey);
+        }
+
+        @Override
+        public Object getPrev(final long rowKey) {
+            return getPrevBoolean(rowKey);
+        }
+
+        @Override
+        public ChunkType getChunkType() {
+            return ChunkType.Object;
+        }
+
+        @Override
+        public FillContext makeFillContext(final int chunkCapacity) {
+            return FILL_CONTEXT_INSTANCE;
+        }
+
+        @Override
+        public void fillChunk(
+                @NotNull final FillContext fillContext,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            doFill(rowSequence, destination, false);
+        }
+
+        @Override
+        public void fillPrevChunk(
+                @NotNull final FillContext fillContext,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            doFill(rowSequence, destination, true);
+        }
+
+        private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination,
+                boolean usePrev) {
+            final WritableObjectChunk<Boolean, ?> booleanDestination = destination.asWritableObjectChunk();
+            booleanDestination.setSize(rowSequence.intSize());
+            try (final RowSet inputRowSet = rowSequence.asRowSet();
+                    final RowSet filtered = filter.filter(inputRowSet, rowSet, tableToFilter, usePrev);
+                    final RowSet.Iterator inputIt = inputRowSet.iterator();
+                    final RowSet.Iterator trueIt = filtered.iterator()) {
+                long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
+                int offset = 0;
+                while (nextTrue >= 0) {
+                    // the input iterator is a superset of the true iterator, so we can always find out what
+                    // the next value is without needing to check hasNext
+                    final long nextInput = inputIt.nextLong();
+                    final boolean found = nextInput == nextTrue;
+                    booleanDestination.set(offset++, found);
+                    if (found) {
+                        nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
+                    }
+                }
+                // fill everything else up with false, because nothing else can match
+                booleanDestination.fillWithBoxedValue(offset, booleanDestination.size() - offset, false);
+            }
+        }
     }
 }

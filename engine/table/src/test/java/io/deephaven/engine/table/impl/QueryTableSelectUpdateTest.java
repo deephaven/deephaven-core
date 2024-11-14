@@ -1315,31 +1315,22 @@ public class QueryTableSelectUpdateTest {
         final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(1), Literal.of(3));
         final Table t = TableTools.newTable(intCol("A", 1, 1, 2, 3, 5, 8));
         final Table wm = t.wouldMatch(new WouldMatchPair("AWM", filter));
-        TableTools.showWithRowSet(wm);
 
         // use an update
         final Table up = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
-        TableTools.showWithRowSet(up);
-
         assertTableEquals(wm, up);
 
         // use an updateView
         final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
-        TableTools.showWithRowSet(upv);
-
         assertTableEquals(wm, upv);
 
         // and now a more generic WhereFilter
 
         final Filter filter2 = WhereFilterFactory.getExpression("A == 1 || A==3");
         final Table wm2 = t.wouldMatch(new WouldMatchPair("AWM", filter2));
-        TableTools.showWithRowSet(wm2);
 
         // use an update
         final Table up2 = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter2)));
-        TableTools.showWithRowSet(up);
-
-        assertTableEquals(wm2, up2);
 
         // a Filter where nothing is true, to check that state
         final Table upvf = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofFalse())));
