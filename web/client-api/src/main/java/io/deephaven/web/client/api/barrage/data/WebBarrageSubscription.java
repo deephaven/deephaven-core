@@ -79,7 +79,8 @@ public abstract class WebBarrageSubscription {
 
         if (cts.getTableDef().getAttributes().isBlinkTable()) {
             return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
-        } else if (subscriptionType == SubscriptionType.FULL_SUBSCRIPTION) {
+        } else if (subscriptionType == SubscriptionType.FULL_SUBSCRIPTION
+                || subscriptionType == SubscriptionType.SNAPSHOT) {
             return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
         } else {
             return new ViewportImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
@@ -462,7 +463,7 @@ public abstract class WebBarrageSubscription {
     }
 
     public static class ViewportImpl extends WebBarrageSubscription {
-        private long lastTableSize = -1;
+        private long lastTableSize = 0;
 
         public ViewportImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
                 DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
@@ -477,12 +478,16 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public RangeSet getCurrentRowSet() {
+            if (lastTableSize <= 0) {
+                return RangeSet.empty();
+            }
             return RangeSet.ofRange(0, lastTableSize - 1);
         }
 
         @Override
         public void applyUpdates(WebBarrageMessage message) {
             final BitSet prevServerColumns = serverColumns == null ? null : (BitSet) serverColumns.clone();
+            assert message.tableSize >= 0;
             lastTableSize = message.tableSize;
 
             final RangeSet prevServerViewport = serverViewport.copy();
@@ -535,11 +540,10 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
-            assert message.tableSize >= 0;
             state.setSize(message.tableSize);
             dataChangedHandler.onDataChanged(
-                    serverViewport.copy(),
-                    prevServerViewport.copy(),
+                    serverViewport == null ? RangeSet.empty() : serverViewport.copy(),
+                    prevServerViewport == null ? RangeSet.empty() : prevServerViewport.copy(),
                     RangeSet.empty(),
                     new ShiftedRange[0],
                     serverColumns == null ? null : (BitSet) serverColumns.clone());
