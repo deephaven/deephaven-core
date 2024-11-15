@@ -53,6 +53,9 @@ public class FileUtilsTest extends TestCase {
         // Check if multiple slashes get normalized
         Assert.assertEquals("s3://bucket/key/", FileUtils.convertToURI("s3://bucket///key///", true).toString());
 
+        // Check if trailing slash gets added to bucket root
+        Assert.assertEquals("s3://bucket/", FileUtils.convertToURI("s3://bucket", true).toString());
+
         try {
             FileUtils.convertToURI("", false);
             Assert.fail("Expected IllegalArgumentException");

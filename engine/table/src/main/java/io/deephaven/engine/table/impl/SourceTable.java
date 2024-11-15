@@ -25,6 +25,7 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -71,7 +72,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
     /**
      * The update source object for refreshing locations and location sizes.
      */
-    private Runnable locationChangePoller;
+    private LocationChangePoller locationChangePoller;
 
     /**
      * Construct a new disk-backed table.
@@ -310,9 +311,11 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             }
 
             if (snapshotControl != null) {
+                // noinspection MethodDoesntCallSuperMethod
                 final ListenerImpl listener =
                         new ListenerImpl("SourceTable.coalesce", this, resultTable) {
 
+                            @OverridingMethodsMustInvokeSuper
                             @Override
                             protected void destroy() {
                                 // This impl cannot call super.destroy() because we must unsubscribe from the actual
@@ -330,12 +333,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         return result.getValue();
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();
         if (updateSourceRegistrar != null) {
             if (locationChangePoller != null) {
                 updateSourceRegistrar.removeSource(locationChangePoller);
+                // NB: we do not want to null out any locationChangePoller.locationBuffer here, as they may still be in
+                // use by a notification delivery running currently with this destroy.
+                locationChangePoller.locationBuffer.reset();
             }
         }
     }

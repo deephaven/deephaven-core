@@ -5,16 +5,15 @@ package io.deephaven.iceberg.internal;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
 import java.util.Map;
 
 /**
  * A plugin interface for providing {@link DataInstructionsProviderPlugin} implementations for different property
- * collections and URI values. Check out {@link DataInstructionsProviderLoader} for more details.
+ * collections and URI schemes. Check out {@link DataInstructionsProviderLoader} for more details.
  */
 public interface DataInstructionsProviderPlugin {
     /**
-     * Create a data instructions object for the given URI.
+     * Create a data instructions object for the given URI scheme.
      */
-    Object createInstructions(@NotNull URI uri, @NotNull final Map<String, String> properties);
+    Object createInstructions(@NotNull String uriScheme, @NotNull Map<String, String> properties);
 }

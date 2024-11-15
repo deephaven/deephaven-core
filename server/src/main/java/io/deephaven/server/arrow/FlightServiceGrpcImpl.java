@@ -44,6 +44,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNextAndComplete;
+
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
@@ -97,7 +101,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                 @Override
                 public void onCompleted() {
-                    GrpcUtil.safelyComplete(responseObserver);
+                    safelyComplete(responseObserver);
                 }
             };
         }
@@ -118,7 +122,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         public void onNext(final Flight.HandshakeRequest value) {
             final AuthenticationRequestHandler.HandshakeResponseListener handshakeResponseListener =
                     (protocol, response) -> {
-                        GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+                        safelyOnNextAndComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
                                 .setProtocolVersion(protocol)
                                 .setPayload(ByteStringAccess.wrap(response))
                                 .build());
@@ -222,14 +226,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.FlightInfo>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(export.get());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess((final Flight.FlightInfo resultFlightInfo) -> safelyOnNextAndComplete(
+                                responseObserver, resultFlightInfo))
+                        .submit(export::get);
                 return;
             }
 
@@ -237,15 +240,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
-                        GrpcUtil.safelyOnNext(responseObserver, export.get());
-                        GrpcUtil.safelyComplete(responseObserver);
+                        safelyOnNextAndComplete(responseObserver, export.get());
                     }
                 } finally {
                     export.dropReference();
                 }
             } else {
                 exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
-                GrpcUtil.safelyError(responseObserver, exception);
+                safelyError(responseObserver, exception);
             }
 
             if (queryPerformanceRecorder.endQuery() || exception != null) {
@@ -269,16 +271,16 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.SchemaResult>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                                    .setSchema(export.get().getSchema())
-                                    .build());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess((final Flight.SchemaResult resultSchema) -> safelyOnNextAndComplete(
+                                responseObserver,
+                                resultSchema))
+                        .submit(() -> Flight.SchemaResult.newBuilder()
+                                .setSchema(export.get().getSchema())
+                                .build());
                 return;
             }
 
@@ -286,10 +288,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
-                        GrpcUtil.safelyOnNext(responseObserver, Flight.SchemaResult.newBuilder()
+                        safelyOnNextAndComplete(responseObserver, Flight.SchemaResult.newBuilder()
                                 .setSchema(export.get().getSchema())
                                 .build());
-                        GrpcUtil.safelyComplete(responseObserver);
                     }
                 } finally {
                     export.dropReference();

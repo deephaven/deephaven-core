@@ -1,0 +1,15 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'util-thread: Deephaven utilities for threading and thread dumps'
+
+dependencies {
+    api project(':IO')
+
+    implementation project(':Configuration')
+    implementation project(':log-factory')
+
+    compileOnly libs.jetbrains.annotations
+}

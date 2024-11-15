@@ -7,6 +7,7 @@ import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 
 /**
@@ -64,6 +65,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
         updateGraph.requestRefresh();
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void destroy() {
         super.destroy();

@@ -662,6 +662,23 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
+
+        // expect table locations to be cleaned up via LivenessScope release as the test exits
+        IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
     }
 
     private static void maybePrintStackTrace(@NotNull final Exception e) {

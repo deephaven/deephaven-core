@@ -21,6 +21,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -114,6 +115,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl
         listener.setIsRefreshing(true);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

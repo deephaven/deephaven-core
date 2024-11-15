@@ -47,6 +47,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @param serverUrl The url used when connecting to the server. Read-only.
      * @param connectOptions Optional Object
      */
+    @JsIgnore
     public IdeConnection(String serverUrl, Object connectOptions) {
         // Remove trailing slashes from the url
         this.serverUrl = serverUrl.replaceAll("/+$", "");
