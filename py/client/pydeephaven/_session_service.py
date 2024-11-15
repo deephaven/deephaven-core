@@ -5,7 +5,7 @@
 import grpc
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import session_pb2_grpc, session_pb2, ticket_pb2
+from deephaven_core.proto import session_pb2_grpc, session_pb2, ticket_pb2
 from pydeephaven.ticket import Ticket, ExportTicket
 
 

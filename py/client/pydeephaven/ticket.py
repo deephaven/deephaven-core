@@ -8,7 +8,7 @@ from typing import Optional
 from uuid import uuid4
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import ticket_pb2
+from deephaven_core.proto import ticket_pb2
 
 
 class Ticket(ABC):
