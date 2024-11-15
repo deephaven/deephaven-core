@@ -14,6 +14,8 @@ import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
@@ -37,9 +39,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final TableDefinition tableDef;
 
     /**
-     * The instructions for customizations while reading.
+     * The URI scheme from the Table {@link Table#location() location}.
      */
-    final IcebergReadInstructions instructions;
+    private final String uriScheme;
 
     /**
      * The {@link Snapshot} from which to discover data files.
@@ -47,15 +49,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     Snapshot snapshot;
 
     /**
-     * The data instructions provider for creating instructions from URI and user-supplied properties.
+     * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table.
      */
-    final DataInstructionsProviderLoader dataInstructionsProvider;
+    private final ParquetInstructions parquetInstructions;
 
     /**
-     * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
-     * accessed while synchronized on {@code this}.
+     * The {@link SeekableChannelsProvider} object that will be used for {@link IcebergTableParquetLocationKey}
+     * creation.
      */
-    private ParquetInstructions parquetInstructions;
+    private final SeekableChannelsProvider channelsProvider;
+
 
     /**
      * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
@@ -76,35 +79,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
-            if (parquetInstructions == null) {
-                // Start with user-supplied instructions (if provided).
-                final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
-
-                // Add the table definition.
-                builder.setTableDefinition(tableDef);
-
-                // Add any column rename mappings.
-                if (!instructions.columnRenames().isEmpty()) {
-                    for (final Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
-                        builder.addColumnNameMapping(entry.getKey(), entry.getValue());
-                    }
-                }
-
-                // Add the data instructions if provided as part of the IcebergReadInstructions.
-                if (instructions.dataInstructions().isPresent()) {
-                    builder.setSpecialInstructions(instructions.dataInstructions().get());
-                } else {
-                    // Attempt to create data instructions from the properties collection and URI.
-                    final Object dataInstructions = dataInstructionsProvider.fromServiceLoader(fileUri);
-                    if (dataInstructions != null) {
-                        builder.setSpecialInstructions(dataInstructions);
-                    }
-                }
-
-                parquetInstructions = builder.build();
-            }
             return new IcebergTableParquetLocationKey(dataFile, manifestFile, fileUri, 0, partitions,
-                    parquetInstructions);
+                    parquetInstructions, channelsProvider);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -120,21 +96,46 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
         this.snapshot = tableAdapter.getSnapshot(instructions);
-        this.instructions = instructions;
-        this.dataInstructionsProvider = dataInstructionsProvider;
         this.tableDef = tableAdapter.definition(instructions);
+
+        this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
+        // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
+        // data instructions from the properties collection and URI scheme.
+        final Object specialInstructions = instructions.dataInstructions()
+                .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+        {
+            // Start with user-supplied instructions (if provided).
+            final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
+
+            // Add the table definition.
+            builder.setTableDefinition(tableDef);
+
+            // Add any column rename mappings.
+            if (!instructions.columnRenames().isEmpty()) {
+                for (Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
+                    builder.addColumnNameMapping(entry.getKey(), entry.getValue());
+                }
+            }
+            if (specialInstructions != null) {
+                builder.setSpecialInstructions(specialInstructions);
+            }
+            this.parquetInstructions = builder.build();
+        }
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().load(uriScheme, specialInstructions);
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
 
-    @NotNull
-    private URI dataFileUri(@NotNull DataFile df) {
-        String path = df.path().toString();
-        final FileIO fileIO = tableAdapter.icebergTable().io();
-        if (fileIO instanceof RelativeFileIO) {
-            path = ((RelativeFileIO) fileIO).absoluteLocation(path);
-        }
-        return FileUtils.convertToURI(path, false);
+    private static String path(String path, FileIO io) {
+        return io instanceof RelativeFileIO ? ((RelativeFileIO) io).absoluteLocation(path) : path;
+    }
+
+    private static URI locationUri(Table table) {
+        return FileUtils.convertToURI(path(table.location(), table.io()), true);
+    }
+
+    private static URI dataFileUri(Table table, DataFile dataFile) {
+        return FileUtils.convertToURI(path(dataFile.path().toString(), table.io()), false);
     }
 
     @Override
@@ -155,7 +156,12 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 }
                 try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
                     for (final DataFile dataFile : reader) {
-                        final URI fileUri = dataFileUri(dataFile);
+                        final URI fileUri = dataFileUri(table, dataFile);
+                        if (!uriScheme.equals(fileUri.getScheme())) {
+                            throw new TableDataException(String.format(
+                                    "%s:%d - multiple URI schemes are not currently supported. uriScheme=%s, fileUri=%s",
+                                    table, snapshot.snapshotId(), uriScheme, fileUri));
+                        }
                         final IcebergTableLocationKey locationKey = keyFromDataFile(manifestFile, dataFile, fileUri);
                         if (locationKey != null) {
                             locationKeyObserver.accept(locationKey);

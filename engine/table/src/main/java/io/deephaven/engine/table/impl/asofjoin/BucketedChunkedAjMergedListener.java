@@ -32,6 +32,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -786,8 +787,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         return rowSet;
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
+        super.destroy();
         leftSsaFactory.close();
         rightSsaFactory.close();
     }

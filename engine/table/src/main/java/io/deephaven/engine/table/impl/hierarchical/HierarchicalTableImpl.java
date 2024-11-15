@@ -37,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
@@ -388,6 +389,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             perLevelSharedContexts.clear();
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();

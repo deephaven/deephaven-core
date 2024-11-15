@@ -9,6 +9,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,6 +57,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
      *        be made, so the calling code is free to mutate the map after this call
      * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for reading the file
      */
     public IcebergTableParquetLocationKey(
             @NotNull final DataFile dataFile,
@@ -63,8 +65,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
-            @NotNull final ParquetInstructions readInstructions) {
-        super(fileUri, order, partitions, readInstructions);
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        super(fileUri, order, partitions, channelsProvider);
 
         // Files with unknown sequence numbers should be ordered last.
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
