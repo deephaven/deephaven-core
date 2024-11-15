@@ -89,9 +89,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
-     * {@code partitions}, then {@code dataSequenceNumber}, then {@code fileSequenceNumber}, then
-     * {@code manifestSequenceNumber}, then {@code dataFilePos}, and finally compares {@code uri}.
+     * Precedence-wise this implementation compares {@code order}, then {@code dataSequenceNumber}, then
+     * {@code fileSequenceNumber}, then {@code manifestSequenceNumber}, then {@code dataFilePos}, and finally compares
+     * {@code uri}.
      *
      * @inheritDoc
      */
@@ -102,9 +102,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
             int comparisonResult;
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
-                return comparisonResult;
-            }
-            if ((comparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
@@ -121,7 +118,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             }
             return uri.compareTo(otherTyped.uri);
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        // When comparing with non-iceberg location key, we want to compare both partitions and URI
+        return super.compareTo(other);
     }
 
     @Override
@@ -140,7 +138,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
-                && super.equals(otherTyped);
+                && uri.equals(otherTyped.uri);
     }
 
     @Override
@@ -152,7 +150,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
             result = prime * result + Long.hashCode(manifestSequenceNumber);
-            result = prime * result + super.hashCode();
+            result = prime * result + uri.hashCode();
             // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
             if (result == 0) {
                 final int fallbackHashCode = IcebergTableParquetLocationKey.class.hashCode();

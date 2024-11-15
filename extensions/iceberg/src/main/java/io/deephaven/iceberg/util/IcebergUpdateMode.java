@@ -37,7 +37,7 @@ public abstract class IcebergUpdateMode {
     }
 
     /**
-     * Set a automatically-refreshing update mode for this table using the default refresh interval of 60 seconds. The
+     * Set an automatically-refreshing update mode for this table using the default refresh interval of 60 seconds. The
      * ordering of the data in the table will depend on the order in which the data files are discovered on refresh.
      */
     public static IcebergUpdateMode autoRefreshingMode() {
@@ -45,7 +45,8 @@ public abstract class IcebergUpdateMode {
     }
 
     /**
-     * Set a automatically-refreshing update mode for this table using the provided refresh interval
+     * Set an automatically-refreshing update mode for this table using the provided refresh interval. The ordering of
+     * the data in the table will depend on the order in which the data files are discovered on refresh.
      *
      * @param refreshMs the refresh interval in milliseconds
      */

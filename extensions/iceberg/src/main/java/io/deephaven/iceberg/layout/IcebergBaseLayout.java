@@ -20,7 +20,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -41,11 +40,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * The instructions for customizations while reading.
      */
     final IcebergReadInstructions instructions;
-
-    /**
-     * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
-     */
-    final Map<URI, IcebergTableLocationKey> cache;
 
     /**
      * The {@link Snapshot} from which to discover data files.
@@ -129,8 +123,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.instructions = instructions;
         this.dataInstructionsProvider = dataInstructionsProvider;
         this.tableDef = tableAdapter.definition(instructions);
-
-        this.cache = new HashMap<>();
     }
 
     abstract IcebergTableLocationKey keyFromDataFile(ManifestFile manifestFile, DataFile dataFile, URI fileUri);
