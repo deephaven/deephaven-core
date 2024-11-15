@@ -63,6 +63,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from("${sourcePath}/../client") {
                 include 'setup.py'
                 include 'pydeephaven/**'
+                include 'deephaven_core/**'
                 include 'README.md'
                 into 'python/client'
             }
