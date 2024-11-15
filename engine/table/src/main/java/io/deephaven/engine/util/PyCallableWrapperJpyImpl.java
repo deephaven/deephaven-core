@@ -193,17 +193,28 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             vectorized = false;
         }
         pyUdfDecorator = dh_udf_module.call("_udf_parser", pyCallable);
-        signatureString = pyUdfDecorator.getAttribute("signature").toString();
+        // The Python UDF parser failed to get/parse the callable's signature. This is likely due to it being
+        // a function in an extension module or a signature-less/multi-signature builtin function such as 'max'.
+        if (pyUdfDecorator.isNone()) {
+            pyUdfDecorator = null;
+            signature = Signature.EMPTY;
+        } else {
+            signatureString = pyUdfDecorator.getAttribute("signature").toString();
+        }
     }
 
 
     @Override
     public void parseSignature() {
-        if (signatureString != null) {
+        if (signature != null) {
             return;
         }
 
         prepareSignature();
+
+        if (signature == Signature.EMPTY) {
+            return;
+        }
 
         // the 'types' field of a vectorized function follows the pattern of '[ilhfdb?O]*->[ilhfdb?O]',
         // eg. [ll->d] defines two int64 (long) arguments and a double return type.
@@ -287,6 +298,10 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
     }
 
     public void verifyArguments(Class<?>[] argTypes) {
+        if (signature == Signature.EMPTY) {
+            return;
+        }
+
         String callableName = pyCallable.getAttribute("__name__").toString();
         List<Parameter> parameters = signature.getParameters();
 
@@ -358,7 +373,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     // In vectorized mode, we want to call the vectorized function directly.
     public PyObject vectorizedCallable() {
-        if (numbaVectorized) {
+        if (numbaVectorized || pyUdfDecorator == null) {
             return pyCallable;
         } else {
             return pyUdfDecorator.call("__call__", this.argTypesStr, true);

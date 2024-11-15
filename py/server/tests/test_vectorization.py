@@ -342,5 +342,15 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
             self.assertEqual(_udf.vectorized_count, 1)
             _udf.vectorized_count = 0
 
+    def test_no_signature_array(self):
+        builtin_max = max
+
+        t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: `rocks`"]).group_by("X").update("Y = Y.toArray()")
+        t1 = t.update(["X1 = builtin_max(Y)"])
+        self.assertEqual(t1.columns[2].data_type, dtypes.JObject)
+        self.assertEqual(_udf.vectorized_count, 0)
+        _udf.vectorized_count = 0
+
+
 if __name__ == "__main__":
     unittest.main()
