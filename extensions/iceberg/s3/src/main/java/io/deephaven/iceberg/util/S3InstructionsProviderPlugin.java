@@ -12,7 +12,6 @@ import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URI;
 import java.util.Map;
 
 /**
@@ -25,7 +24,8 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public final class S3InstructionsProviderPlugin implements DataInstructionsProviderPlugin {
     @Override
-    public S3Instructions createInstructions(@NotNull final URI uri, @NotNull final Map<String, String> properties) {
+    public S3Instructions createInstructions(@NotNull final String uriScheme,
+            @NotNull final Map<String, String> properties) {
         final S3Instructions s3Instructions = DeephavenAwsClientFactory.getInstructions(properties).orElse(null);
         if (s3Instructions != null) {
             return s3Instructions;
@@ -33,9 +33,9 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
 
         // If the URI scheme is "s3","s3a","s3n" or if the properties contain one of these specific keys, we can
         // create a useful S3Instructions object.
-        if (uri.getScheme().equals("s3")
-                || uri.getScheme().equals("s3a")
-                || uri.getScheme().equals("s3n")
+        if (uriScheme.equals("s3")
+                || uriScheme.equals("s3a")
+                || uriScheme.equals("s3n")
                 || properties.containsKey(AwsClientProperties.CLIENT_REGION)
                 || properties.containsKey(S3FileIOProperties.ACCESS_KEY_ID)
                 || properties.containsKey(S3FileIOProperties.SECRET_ACCESS_KEY)
