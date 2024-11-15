@@ -1413,7 +1413,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
 
             // prepare updates to propagate
-            final long maxStep = snapshot != null ? snapshot.step : Long.MAX_VALUE;
+            final long maxStep = snapshot != null ? snapshot.firstSeq : Long.MAX_VALUE;
 
             int deltaSplitIdx = pendingDeltas.size();
             for (; deltaSplitIdx > 0; --deltaSplitIdx) {
@@ -2037,6 +2037,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         propagationRowSet.remove(downstream.rowsRemoved);
         downstream.shifted.apply(propagationRowSet);
         propagationRowSet.insert(downstream.rowsAdded);
+        downstream.tableSize = propagationRowSet.size();
 
         return downstream;
     }

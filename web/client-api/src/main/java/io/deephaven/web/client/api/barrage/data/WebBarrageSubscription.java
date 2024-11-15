@@ -467,6 +467,7 @@ public abstract class WebBarrageSubscription {
         public ViewportImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
                 DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
             super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
+            serverViewport = RangeSet.empty();
         }
 
         @Override
@@ -481,8 +482,10 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public void applyUpdates(WebBarrageMessage message) {
+            final BitSet prevServerColumns = serverColumns == null ? null : (BitSet) serverColumns.clone();
             lastTableSize = message.tableSize;
 
+            final RangeSet prevServerViewport = serverViewport.copy();
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
                 viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
@@ -497,15 +500,22 @@ public abstract class WebBarrageSubscription {
                 currentRowSet.removeRange(new Range(newSize, prevSize - 1));
             }
 
-            if (!message.rowsAdded.isEmpty() || !message.rowsRemoved.isEmpty()) {
-                for (int ii = 0; ii < message.addColumnData.length; ii++) {
-                    if (!isSubscribedColumn(ii)) {
-                        continue;
-                    }
+            for (int ii = 0; ii < message.addColumnData.length; ii++) {
+                final WebBarrageMessage.AddColumnData column = message.addColumnData[ii];
+                final boolean prevSubscribed = prevServerColumns == null || prevServerColumns.get(ii);
+                final boolean currSubscribed = serverColumns == null || serverColumns.get(ii);
 
-                    final WebBarrageMessage.AddColumnData column = message.addColumnData[ii];
-                    for (int j = 0; j < column.data.size(); j++) {
+                if (!currSubscribed && prevSubscribed && prevSize > 0) {
+                    destSources[ii].applyUpdate(column.data, RangeSet.empty(), RangeSet.ofRange(0, prevSize - 1));
+                    continue;
+                }
+
+                if (!message.rowsAdded.isEmpty() || !message.rowsRemoved.isEmpty()) {
+                    if (prevSubscribed && currSubscribed) {
                         destSources[ii].applyUpdate(column.data, message.rowsAdded, message.rowsRemoved);
+                    } else if (currSubscribed) {
+                        // this column is a new subscription
+                        destSources[ii].applyUpdate(column.data, message.rowsAdded, RangeSet.empty());
                     }
                 }
             }
@@ -513,7 +523,7 @@ public abstract class WebBarrageSubscription {
             final BitSet modifiedColumnSet = new BitSet(numColumns());
             for (int ii = 0; ii < message.modColumnData.length; ii++) {
                 WebBarrageMessage.ModColumnData column = message.modColumnData[ii];
-                if (column.rowsModified.isEmpty()) {
+                if (!isSubscribedColumn(ii) || column.rowsModified.isEmpty()) {
                     continue;
                 }
 
@@ -525,11 +535,14 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
+            assert message.tableSize >= 0;
             state.setSize(message.tableSize);
             dataChangedHandler.onDataChanged(
-                    RangeSet.ofRange(0, currentRowSet.size()),
-                    RangeSet.ofRange(0, prevSize),
-                    RangeSet.empty(), new ShiftedRange[0], modifiedColumnSet);
+                    serverViewport.copy(),
+                    prevServerViewport.copy(),
+                    RangeSet.empty(),
+                    new ShiftedRange[0],
+                    serverColumns == null ? null : (BitSet) serverColumns.clone());
         }
 
         @Override

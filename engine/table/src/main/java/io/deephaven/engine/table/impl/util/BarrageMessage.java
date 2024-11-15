@@ -45,7 +45,7 @@ public class BarrageMessage implements SafeCloseable {
 
     public long firstSeq = -1;
     public long lastSeq = -1;
-    public long step = -1;
+    /** The size of the table after this update. -1 if unknown. */
     public long tableSize = -1;
 
     public boolean isSnapshot;

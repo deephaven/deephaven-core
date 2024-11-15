@@ -618,7 +618,7 @@ public class ConstructSnapshot {
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
             final BarrageMessage snapshot = snapshotMsg.getValue();
-            snapshot.step = snapshot.firstSeq = snapshot.lastSeq = clockStep;
+            snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
     }

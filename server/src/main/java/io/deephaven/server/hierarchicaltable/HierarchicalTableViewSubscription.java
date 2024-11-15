@@ -14,6 +14,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -92,7 +93,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     // region Guarded by snapshot lock
     private BitSet columns;
     private RowSet rows;
-    private long lastExpandedSize;
+    private final WritableRowSet prevKeyspaceViewportRows = RowSetFactory.empty();
     // endregion Guarded by snapshot lock
 
     private enum State {
@@ -282,8 +283,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 return;
             }
             try {
-                lastExpandedSize = buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
-                        this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, lastExpandedSize);
+                buildAndSendSnapshot(streamGeneratorFactory, listener, subscriptionOptions, view,
+                        this::recordSnapshotNanos, this::recordWriteMetrics, columns, rows, prevKeyspaceViewportRows);
             } catch (Exception e) {
                 GrpcUtil.safelyError(listener, errorTransformer.transform(e));
                 state = State.Done;
@@ -291,7 +292,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
     }
 
-    private static long buildAndSendSnapshot(
+    private static void buildAndSendSnapshot(
             @NotNull final BarrageStreamGenerator.Factory streamGeneratorFactory,
             @NotNull final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
@@ -300,7 +301,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeMetricsConsumer,
             @NotNull final BitSet columns,
             @NotNull final RowSet rows,
-            final long lastExpandedSize) {
+            @NotNull final WritableRowSet prevKeyspaceViewportRows) {
         // 1. Grab some schema and snapshot information
         final List<ColumnDefinition<?>> columnDefinitions =
                 view.getHierarchicalTable().getAvailableColumnDefinitions();
@@ -322,18 +323,20 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 columns, rows, destinations);
         snapshotNanosConsumer.accept(System.nanoTime() - snapshotStartNanos);
 
+        // note that keyspace is identical to position space for HierarchicalTableView snapshots
+        final RowSet snapshotRows = RowSetFactory.flat(expandedSize);
+        final RowSet keyspaceViewportRows = rows.intersect(snapshotRows);
+
         // 4. Make and populate a BarrageMessage
         final BarrageMessage barrageMessage = new BarrageMessage();
-        barrageMessage.isSnapshot = true;
-        // We don't populate length, snapshotRowSet, snapshotRowSetIsReversed, or snapshotColumns; they are only set by
-        // the client.
-        // We don't populate step, firstSeq, or lastSeq debugging information; they are not relevant to this use case.
+        // We don't populate firstSeq, or lastSeq debugging information; they are not relevant to this use case.
 
-        barrageMessage.rowsAdded = RowSetFactory.flat(expandedSize);
-        barrageMessage.rowsIncluded = RowSetFactory.fromRange(rows.firstRowKey(),
-                Math.min(barrageMessage.rowsAdded.lastRowKey(), rows.lastRowKey()));
-        barrageMessage.rowsRemoved = RowSetFactory.flat(lastExpandedSize);
+        barrageMessage.isSnapshot = true;
+        barrageMessage.rowsAdded = snapshotRows;
+        barrageMessage.rowsIncluded = keyspaceViewportRows;
+        barrageMessage.rowsRemoved = RowSetFactory.empty();
         barrageMessage.shifted = RowSetShiftData.EMPTY;
+        barrageMessage.tableSize = expandedSize;
 
         barrageMessage.addColumnData = new BarrageMessage.AddColumnData[numAvailableColumns];
         for (int ci = 0, di = 0; ci < numAvailableColumns; ++ci) {
@@ -357,15 +360,16 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         // 5. Send the BarrageMessage
         try (final BarrageStreamGenerator streamGenerator =
                 streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer)) {
-            // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
-            // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
-            // (2) we're relying on added rows to signal the full expanded size to the client.
-            GrpcUtil.safelyOnNext(listener,
-                    streamGenerator.getSubView(subscriptionOptions, true, true, rows, false, rows, rows, columns));
+            // initialSnapshot flag is ignored for non-growing viewports
+            final boolean initialSnapshot = false;
+            final boolean isFullSubscription = false;
+            GrpcUtil.safelyOnNext(listener, streamGenerator.getSubView(
+                    subscriptionOptions, initialSnapshot, isFullSubscription, rows, false,
+                    prevKeyspaceViewportRows, keyspaceViewportRows, columns));
         }
 
-        // 6. Let the caller know what the expanded size was
-        return expandedSize;
+        prevKeyspaceViewportRows.clear();
+        prevKeyspaceViewportRows.insert(keyspaceViewportRows);
     }
 
     public void setViewport(
