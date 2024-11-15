@@ -37,7 +37,7 @@ setup(
     description='The Deephaven Python Client',
     long_description=_get_readme(),
     long_description_content_type="text/markdown",
-    packages=find_namespace_packages(exclude=("tests", "examples", "docs.source", "build"),),
+    packages=find_namespace_packages(exclude=("tests", "examples", "docs.source", "build")),
     url='https://deephaven.io/',
     license='Deephaven Community License Agreement Version 1.0',
     author='Deephaven Data Labs',
