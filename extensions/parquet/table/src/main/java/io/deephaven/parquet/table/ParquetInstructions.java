@@ -3,16 +3,18 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.hash.KeyedObjectKey.Basic;
 import io.deephaven.parquet.base.ParquetUtils;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -114,6 +117,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract boolean useDictionary(String columnName);
 
+    /**
+     * The field ID for the given {@code columnName}.
+     *
+     * @param columnName the Deephaven column name
+     * @return the field id
+     */
+    public abstract OptionalInt getFieldId(final String columnName);
+
     public abstract Object getSpecialInstructions();
 
     public abstract String getCompressionCodecName();
@@ -200,6 +211,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     }
 
     public static final ParquetInstructions EMPTY = new ParquetInstructions() {
+
         @Override
         public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
             return columnName;
@@ -226,6 +238,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean useDictionary(final String columnName) {
             return false;
+        }
+
+        @Override
+        public OptionalInt getFieldId(String columnName) {
+            return OptionalInt.empty();
         }
 
         @Override
@@ -319,14 +336,31 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     };
 
     private static class ColumnInstructions {
+
+        private static final KeyedObjectKey<String, ColumnInstructions> COLUMN_NAME_KEY = new Basic<>() {
+            @Override
+            public String getKey(ColumnInstructions columnInstructions) {
+                return columnInstructions.getColumnName();
+            }
+        };
+
+        private static final KeyedObjectKey<String, ColumnInstructions> PARQUET_COLUMN_NAME_KEY = new Basic<>() {
+            @Override
+            public String getKey(ColumnInstructions columnInstructions) {
+                return columnInstructions.getParquetColumnName();
+            }
+        };
+
         private final String columnName;
         private String parquetColumnName;
         private String codecName;
         private String codecArgs;
         private boolean useDictionary;
+        private Integer fieldId;
 
         public ColumnInstructions(final String columnName) {
-            this.columnName = columnName;
+            this.columnName = Objects.requireNonNull(columnName);
+            NameValidator.validateColumnName(columnName);
         }
 
         public String getColumnName() {
@@ -338,6 +372,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public ColumnInstructions setParquetColumnName(final String parquetColumnName) {
+            if (this.parquetColumnName != null && !this.parquetColumnName.equals(parquetColumnName)) {
+                throw new IllegalArgumentException(
+                        "Cannot add a mapping from parquetColumnName=" + parquetColumnName
+                                + ": columnName=" + columnName + " already mapped to parquetColumnName="
+                                + this.parquetColumnName);
+            }
             this.parquetColumnName = parquetColumnName;
             return this;
         }
@@ -366,6 +406,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         public void useDictionary(final boolean useDictionary) {
             this.useDictionary = useDictionary;
+        }
+
+        public OptionalInt fieldId() {
+            return fieldId == null ? OptionalInt.empty() : OptionalInt.of(fieldId);
+        }
+
+        public void setFieldId(final int fieldId) {
+            if (this.fieldId != null && this.fieldId != fieldId) {
+                throw new IllegalArgumentException(
+                        String.format("Inconsistent fieldId for columnName=%s, already set fieldId=%d", columnName,
+                                this.fieldId));
+            }
+            this.fieldId = fieldId;
         }
     }
 
@@ -424,8 +477,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                             .collect(Collectors.toUnmodifiableList());
         }
 
-        private String getOrDefault(final String columnName, final String defaultValue,
-                final Function<ColumnInstructions, String> fun) {
+        private <T> T getOrDefault(final String columnName, final T defaultValue,
+                final Function<ColumnInstructions, T> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -478,6 +531,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean useDictionary(final String columnName) {
             return getOrDefault(columnName, false, ColumnInstructions::useDictionary);
+        }
+
+        @Override
+        public OptionalInt getFieldId(String columnName) {
+            return getOrDefault(columnName, OptionalInt.empty(), ColumnInstructions::fieldId);
         }
 
         @Override
@@ -656,75 +714,22 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
         }
 
-        private void newColumnNameToInstructionsMap() {
-            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
-                @Override
-                public String getKey(@NotNull final ColumnInstructions value) {
-                    return value.getColumnName();
-                }
-            });
-        }
-
-        private void newParquetColumnNameToInstructionsMap() {
-            parquetColumnNameToInstructions =
-                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
-                        @Override
-                        public String getKey(@NotNull final ColumnInstructions value) {
-                            return value.getParquetColumnName();
-                        }
-                    });
-        }
-
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
-            if (parquetColumnName.equals(columnName)) {
-                return this;
-            }
-            if (columnNameToInstructions == null) {
-                newColumnNameToInstructionsMap();
-                final ColumnInstructions ci = new ColumnInstructions(columnName);
-                ci.setParquetColumnName(parquetColumnName);
-                columnNameToInstructions.put(columnName, ci);
-                newParquetColumnNameToInstructionsMap();
-                parquetColumnNameToInstructions.put(parquetColumnName, ci);
-                return this;
-            }
-
-            ColumnInstructions ci = columnNameToInstructions.get(columnName);
-            if (ci != null) {
-                if (ci.parquetColumnName != null) {
-                    if (ci.parquetColumnName.equals(parquetColumnName)) {
-                        return this;
-                    }
-                    throw new IllegalArgumentException(
-                            "Cannot add a mapping from parquetColumnName=" + parquetColumnName
-                                    + ": columnName=" + columnName + " already mapped to parquetColumnName="
-                                    + ci.parquetColumnName);
-                }
-            } else {
-                ci = new ColumnInstructions(columnName);
-                columnNameToInstructions.put(columnName, ci);
-            }
-
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
+            ci.setParquetColumnName(parquetColumnName);
             if (parquetColumnNameToInstructions == null) {
-                newParquetColumnNameToInstructionsMap();
-                parquetColumnNameToInstructions.put(parquetColumnName, ci);
-                return this;
+                parquetColumnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.PARQUET_COLUMN_NAME_KEY);
             }
-
-            final ColumnInstructions fromParquetColumnNameInstructions =
-                    parquetColumnNameToInstructions.get(parquetColumnName);
-            if (fromParquetColumnNameInstructions != null) {
-                if (fromParquetColumnNameInstructions == ci) {
-                    return this;
-                }
+            final ColumnInstructions existing = parquetColumnNameToInstructions.putIfAbsent(parquetColumnName, ci);
+            if (existing != null) {
+                // Note: this is a limitation that doesn't need to exist. Technically, we could allow a single physical
+                // parquet column to manifest as multiple Deephaven columns.
                 throw new IllegalArgumentException(
                         "Cannot add new mapping from parquetColumnName=" + parquetColumnName + " to columnName="
                                 + columnName
                                 + ": already mapped to columnName="
-                                + fromParquetColumnNameInstructions.getColumnName());
+                                + existing.getColumnName());
             }
-            ci.setParquetColumnName(parquetColumnName);
-            parquetColumnNameToInstructions.put(parquetColumnName, ci);
             return this;
         }
 
@@ -737,7 +742,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder addColumnCodec(final String columnName, final String codecName, final String codecArgs) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setCodecName(codecName);
             ci.setCodecArgs(codecArgs);
             return this;
@@ -751,21 +756,72 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * @param useDictionary The hint value
          */
         public Builder useDictionary(final String columnName, final boolean useDictionary) {
-            final ColumnInstructions ci = getColumnInstructions(columnName);
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.useDictionary(useDictionary);
             return this;
         }
 
-        private ColumnInstructions getColumnInstructions(final String columnName) {
-            final ColumnInstructions ci;
+        // /**
+        // * For reading, provides a mapping between a Deephaven column name and a parquet column by field id. This
+        // allows
+        // * resolving a parquet column where the physical "parquet column name" may not be known apriori by the caller.
+        // * In the case where both a field id mapping and a parquet colum name mapping is provided, the field id will
+        // * take precedence over the parquet column name. This may happen in cases where the parquet file is managed by
+        // a
+        // * higher-level schema that has the concept of a "field id"; for example, Iceberg. As <a href=
+        // *
+        // "https://github.com/apache/parquet-format/blob/apache-parquet-format-2.10.0/src/main/thrift/parquet.thrift#L456-L459">documented
+        // * in the parquet format</a>:
+        // *
+        // * <pre>
+        // * When the original schema supports field ids, this will save the original field id in the parquet schema
+        // * </pre>
+        // *
+        // * In the case where a field id mapping is provided but no matching parquet column is found, the column will
+        // not
+        // * be inferred; and in the case where it's explicitly included as part of a
+        // * {@link #setTableDefinition(TableDefinition)}, the resulting column will contain the appropriate default
+        // * ({@code null}) values. In the case where there are multiple parquet columns with the same field_id, those
+        // * parquet columns will not be resolvable via a field id.
+        // *
+        // * <p>
+        // * For writing, this will set the {@code field_id} in the proper Parquet {@code SchemaElement}.
+        // *
+        // * <p>
+        // * Setting multiple field ids for a single column name is not allowed.
+        // *
+        // * <p>
+        // * Field ids are not typically configured by end users.
+        // *
+        // * @param columnName the Deephaven column name
+        // * @param fieldId the field id
+        // */
+
+        /**
+         * This is currently only used for writing, allowing the setting of {@code field_id} in the proper Parquet
+         * {@code SchemaElement}.
+         *
+         * <p>
+         * Setting multiple field ids for a single column name is not allowed.
+         *
+         * <p>
+         * Field ids are not typically configured by end users.
+         *
+         * @param columnName the Deephaven column name
+         * @param fieldId the field id
+         */
+        @InternalUseOnly
+        public Builder setFieldId(final String columnName, final int fieldId) {
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
+            ci.setFieldId(fieldId);
+            return this;
+        }
+
+        private ColumnInstructions getOrCreateColumnInstructions(final String columnName) {
             if (columnNameToInstructions == null) {
-                newColumnNameToInstructionsMap();
-                ci = new ColumnInstructions(columnName);
-                columnNameToInstructions.put(columnName, ci);
-            } else {
-                ci = columnNameToInstructions.putIfAbsent(columnName, ColumnInstructions::new);
+                columnNameToInstructions = new KeyedObjectHashMap<>(ColumnInstructions.COLUMN_NAME_KEY);
             }
-            return ci;
+            return columnNameToInstructions.putIfAbsent(columnName, ColumnInstructions::new);
         }
 
         public Builder setCompressionCodecName(final String compressionCodecName) {

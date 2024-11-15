@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
@@ -57,7 +57,7 @@ final class ColumnWriterImpl implements ColumnWriter {
     private final RunLengthBitPackingHybridEncoder dlEncoder;
     private final RunLengthBitPackingHybridEncoder rlEncoder;
     private long dictionaryOffset = -1;
-    private final Set<Encoding> encodings = new HashSet<>();
+    private final Set<Encoding> encodings = EnumSet.noneOf(Encoding.class);
     private long firstDataPageOffset = -1;
     private long uncompressedLength;
     private long compressedLength;
