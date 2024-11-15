@@ -66,6 +66,8 @@ public interface BarrageStreamGenerator extends SafeCloseable {
 
     /**
      * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
      *
      * @param options serialization options for this specific view
      * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
@@ -97,6 +99,8 @@ public interface BarrageStreamGenerator extends SafeCloseable {
 
     /**
      * Obtain a View of this StreamGenerator that can be sent to a single requestor.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
      *
      * @param options serialization options for this specific view
      * @param viewport is the position-space viewport
@@ -104,7 +108,10 @@ public interface BarrageStreamGenerator extends SafeCloseable {
      * @param snapshotColumns are the columns included for this view
      * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
      */
-    MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport, boolean reverseViewport,
+    MessageView getSnapshotView(
+            BarrageSnapshotOptions options,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
 }

@@ -75,8 +75,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     100 * 1024 * 1024);
 
     public interface RecordBatchMessageView extends MessageView {
-        boolean isViewport();
-
         StreamReaderOptions options();
 
         RowSet addRowOffsets();
@@ -240,13 +238,13 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final BarrageSubscriptionOptions options;
         private final boolean isInitialSnapshot;
         private final boolean isFullSubscription;
-        private final RowSet viewport;
         private final boolean reverseViewport;
         private final boolean hasViewport;
         private final BitSet subscribedColumns;
 
         private final long numClientIncludedRows;
         private final long numClientModRows;
+        private final WritableRowSet clientViewport;
         private final WritableRowSet clientIncludedRows;
         private final WritableRowSet clientIncludedRowOffsets;
         private final WritableRowSet[] clientModdedRows;
@@ -264,7 +262,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.isFullSubscription = isFullSubscription;
-            this.viewport = viewport;
+            this.clientViewport = viewport.copy();
             this.reverseViewport = reverseViewport;
             this.hasViewport = keyspaceViewport != null;
             this.subscribedColumns = subscribedColumns;
@@ -389,6 +387,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         numClientIncludedRows > 0 ? null : metadata,
                         BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
             } finally {
+                clientViewport.close();
                 clientIncludedRows.close();
                 clientIncludedRowOffsets.close();
                 if (clientModdedRowOffsets != null) {
@@ -408,11 +407,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 batchSize = DEFAULT_BATCH_SIZE;
             }
             return batchSize;
-        }
-
-        @Override
-        public boolean isViewport() {
-            return viewport != null;
         }
 
         @Override
@@ -437,8 +431,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
-            if (isSnapshot && isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+            if (isSnapshot && clientViewport != null) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(clientViewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
@@ -551,12 +545,13 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private final class SnapshotView implements RecordBatchMessageView {
         private final BarrageSnapshotOptions options;
-        private final RowSet viewport;
         private final boolean reverseViewport;
         private final BitSet subscribedColumns;
         private final long numClientAddRows;
-        private final RowSet clientAddedRows;
-        private final RowSet clientAddedRowOffsets;
+
+        private final WritableRowSet clientViewport;
+        private final WritableRowSet clientAddedRows;
+        private final WritableRowSet clientAddedRowOffsets;
 
         public SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
@@ -564,7 +559,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.options = options;
-            this.viewport = viewport;
+            this.clientViewport = viewport.copy();
             this.reverseViewport = reverseViewport;
 
             this.subscribedColumns = subscribedColumns;
@@ -590,17 +585,22 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // batch size is maximum, will write fewer rows when needed
             int maxBatchSize = batchSize();
             final MutableInt actualBatchSize = new MutableInt();
-            if (numClientAddRows == 0) {
-                // we still need to send a message containing metadata when there are no rows
-                visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns));
-            } else {
-                // send the add batches
-                processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+            try {
+                if (numClientAddRows == 0) {
+                    // we still need to send a message containing metadata when there are no rows
+                    visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
+                            BarrageStreamGeneratorImpl.this::appendAddColumns));
+                } else {
+                    // send the add batches
+                    processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
+                            BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+                }
+            } finally {
+                clientViewport.close();
+                clientAddedRowOffsets.close();
+                clientAddedRows.close();
             }
-            clientAddedRowOffsets.close();
-            clientAddedRows.close();
+
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
@@ -610,11 +610,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 batchSize = DEFAULT_BATCH_SIZE;
             }
             return batchSize;
-        }
-
-        @Override
-        public boolean isViewport() {
-            return viewport != null;
         }
 
         @Override
@@ -636,8 +631,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
-            if (isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+            if (clientViewport != null) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(clientViewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
