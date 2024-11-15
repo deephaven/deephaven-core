@@ -208,11 +208,21 @@ public interface Aggregation {
      * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name. This
      * aggregation will count all values, including {@code null}.
      *
-     * @param resultColumn The column name from which to count values
+     * @param resultColumn The output column name containing the count
      * @return The aggregation
      */
     static Count AggCount(String resultColumn) {
         return Count.of(resultColumn);
+    }
+
+    /**
+     * An alias for {@link #AggCount(String)}, creates aggregations that count all values.
+     *
+     * @param resultColumn The output column name containing the count
+     * @return The aggregation
+     */
+    static Aggregation AggCountAll(String resultColumn) {
+        return AggCount(resultColumn);
     }
 
     /**

@@ -129,6 +129,18 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
 
 
+def count_all(col: str) -> Aggregation:
+    """An alias for count_(), creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
+
+    Args:
+        col (str): the column to hold the counts of each distinct group
+
+    Returns:
+        an aggregation
+    """
+    return count_(col)
+
+
 def count_non_null(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a count aggregation which computes the count of non-null values within an aggregation group for
     each of the given columns.

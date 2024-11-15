@@ -15,7 +15,6 @@ import java.util.Map.Entry;
 public final class AggregationOptimizer implements Aggregation.Visitor {
 
     private static final Object COUNT_OBJ = new Object();
-    private static final Object COUNT_VALUES_OBJ = new Object();
     private static final Object FIRST_ROW_KEY_OBJ = new Object();
     private static final Object LAST_ROW_KEY_OBJ = new Object();
     private static final Object PARTITION_KEEPING_OBJ = new Object();
@@ -41,22 +40,19 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     public List<Aggregation> build() {
         List<Aggregation> out = new ArrayList<>();
         for (Entry<Object, List<Aggregation>> e : visitOrder.entrySet()) {
-            if (e.getKey() == COUNT_OBJ) {
-                // These aggregations are now grouped together, output them together
-                out.addAll(e.getValue());
-            } else if (e.getKey() == COUNT_VALUES_OBJ) {
-                // These aggregations are now grouped together, output them together
-                out.addAll(e.getValue());
-            } else if (e.getKey() == FIRST_ROW_KEY_OBJ
+            if (e.getKey() == COUNT_OBJ
+                    || e.getKey() == FIRST_ROW_KEY_OBJ
                     || e.getKey() == LAST_ROW_KEY_OBJ
                     || e.getKey() == PARTITION_KEEPING_OBJ
                     || e.getKey() == PARTITION_DROPPING_OBJ) {
                 // These aggregations are now grouped together, output them together
                 out.addAll(e.getValue());
-            } else if (e.getValue() == null) {
-                // The key is the aggregation itself
-                out.add((Aggregation) e.getKey());
             } else {
+                // Assert that the key is an AggSpec
+                if (!(e.getKey() instanceof AggSpec)) {
+                    throw new IllegalStateException("Unexpected key type: " + e.getKey());
+                }
+
                 // Group all the aggregations with the same spec together
                 final AggSpec aggSpec = (AggSpec) e.getKey();
                 final List<Pair> pairs = new ArrayList<>();
@@ -97,11 +93,7 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
 
     @Override
     public void visit(Count count) {
-        if (count.countType() == Count.AggCountType.ALL) {
-            visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count);
-        } else {
-            visitOrder.computeIfAbsent(COUNT_VALUES_OBJ, k -> new ArrayList<>()).add(count);
-        }
+        visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count);
     }
 
     @Override

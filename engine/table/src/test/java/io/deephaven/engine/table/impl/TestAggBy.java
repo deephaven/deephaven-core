@@ -102,6 +102,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                 List.of(
                         AggCount("Count1"),
                         AggCount("Count2"),
+                        AggCountAll("Count3"),
                         AggCountNonNull("nonNullD=D", "nonNullE=E", "nonNullF=F", "nonNullG=G", "nonNullH=H"),
                         AggCountNull("nullD=D", "nullE=E", "nullF=F", "nullG=G", "nullH=H"),
                         AggCountNegative("negD=D", "negE=E", "negF=F", "negG=G"),
@@ -118,6 +119,9 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
         counts = ColumnVectors.ofLong(doubleCounted, "Count2");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "Count3");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
         //////////////////////////////
