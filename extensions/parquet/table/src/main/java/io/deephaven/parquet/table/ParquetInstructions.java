@@ -33,7 +33,15 @@ import java.util.stream.Collectors;
  */
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
-    private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
+    public static final String DEFAULT_COMPRESSION_CODEC_NAME = CompressionCodecName.SNAPPY.toString();
+    public static final int DEFAULT_MAXIMUM_DICTIONARY_KEYS = 1 << 20;
+    public static final int DEFAULT_MAXIMUM_DICTIONARY_SIZE = 1 << 20;
+
+    public static final int MIN_TARGET_PAGE_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.minTargetPageSize", 1 << 11); // 2KB
+
+    public static final int DEFAULT_TARGET_PAGE_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.defaultTargetPageSize", 1 << 16); // 64KB
 
     /**
      * Throws an exception if {@link ParquetInstructions#getTableDefinition()} is empty.
@@ -41,97 +49,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @param parquetInstructions the parquet instructions
      * @throws IllegalArgumentException if there is not a table definition
      */
-    public static TableDefinition ensureDefinition(ParquetInstructions parquetInstructions) {
+    static TableDefinition ensureDefinition(final ParquetInstructions parquetInstructions) {
         return parquetInstructions.getTableDefinition()
                 .orElseThrow(() -> new IllegalArgumentException("Table definition must be provided"));
     }
 
-    /**
-     * Set the default for {@link #getCompressionCodecName()}.
-     *
-     * @deprecated Use {@link Builder#setCompressionCodecName(String)} instead.
-     * @param name The new default
-     */
-    @Deprecated
-    public static void setDefaultCompressionCodecName(final String name) {
-        defaultCompressionCodecName = name;
-    }
-
-    /**
-     * @return The default for {@link #getCompressionCodecName()}
-     */
-    public static String getDefaultCompressionCodecName() {
-        return defaultCompressionCodecName;
-    }
-
-    private static volatile int defaultMaximumDictionaryKeys = 1 << 20;
-
-    /**
-     * Set the default for {@link #getMaximumDictionaryKeys()}.
-     *
-     * @param maximumDictionaryKeys The new default
-     * @see Builder#setMaximumDictionaryKeys(int)
-     */
-    public static void setDefaultMaximumDictionaryKeys(final int maximumDictionaryKeys) {
-        defaultMaximumDictionaryKeys = Require.geqZero(maximumDictionaryKeys, "maximumDictionaryKeys");
-    }
-
-    /**
-     * @return The default for {@link #getMaximumDictionaryKeys()}
-     */
-    public static int getDefaultMaximumDictionaryKeys() {
-        return defaultMaximumDictionaryKeys;
-    }
-
-    private static volatile int defaultMaximumDictionarySize = 1 << 20;
-
-    /**
-     * Set the default for {@link #getMaximumDictionarySize()}.
-     *
-     * @param maximumDictionarySize The new default
-     * @see Builder#setMaximumDictionarySize(int)
-     */
-    public static void setDefaultMaximumDictionarySize(final int maximumDictionarySize) {
-        defaultMaximumDictionarySize = Require.geqZero(maximumDictionarySize, "maximumDictionarySize");
-    }
-
-    /**
-     * @return The default for {@link #getMaximumDictionarySize()}
-     */
-    public static int getDefaultMaximumDictionarySize() {
-        return defaultMaximumDictionarySize;
-    }
-
-    public static final int MIN_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.minTargetPageSize", 1 << 11); // 2KB
-    private static final int DEFAULT_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.defaultTargetPageSize", 1 << 16); // 64KB
-    private static volatile int defaultTargetPageSize = DEFAULT_TARGET_PAGE_SIZE;
-
     private static final boolean DEFAULT_IS_REFRESHING = false;
-
-    /**
-     * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
-     * number should be no smaller than {@link #MIN_TARGET_PAGE_SIZE}.
-     *
-     * @param newDefaultSizeBytes the new default target page size.
-     */
-    public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
-        if (newDefaultSizeBytes < MIN_TARGET_PAGE_SIZE) {
-            throw new IllegalArgumentException(
-                    "Default target page size should be larger than " + MIN_TARGET_PAGE_SIZE + " bytes");
-        }
-        defaultTargetPageSize = newDefaultSizeBytes;
-    }
-
-    /**
-     * Get the current default target page size in bytes.
-     * 
-     * @return the current default target page size in bytes.
-     */
-    public static int getDefaultTargetPageSize() {
-        return defaultTargetPageSize;
-    }
 
     public enum ParquetFileLayout {
         /**
@@ -168,7 +91,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     static final String FILE_INDEX_TOKEN = "{i}";
     private static final String DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA = UUID_TOKEN;
 
-    public ParquetInstructions() {}
+    private ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
         final String mapped = getColumnNameFromParquetColumnName(parquetColumnName);
@@ -313,17 +236,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public String getCompressionCodecName() {
-            return defaultCompressionCodecName;
+            return DEFAULT_COMPRESSION_CODEC_NAME;
         }
 
         @Override
         public int getMaximumDictionaryKeys() {
-            return defaultMaximumDictionaryKeys;
+            return DEFAULT_MAXIMUM_DICTIONARY_KEYS;
         }
 
         @Override
         public int getMaximumDictionarySize() {
-            return defaultMaximumDictionarySize;
+            return DEFAULT_MAXIMUM_DICTIONARY_SIZE;
         }
 
         @Override
@@ -333,7 +256,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public int getTargetPageSize() {
-            return defaultTargetPageSize;
+            return DEFAULT_TARGET_PAGE_SIZE;
         }
 
         @Override
@@ -692,11 +615,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
         // different than the columnName (ie, the column name mapping is not the default mapping)
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
-        private String compressionCodecName = defaultCompressionCodecName;
-        private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
-        private int maximumDictionarySize = defaultMaximumDictionarySize;
+        private String compressionCodecName = DEFAULT_COMPRESSION_CODEC_NAME;
+        private int maximumDictionaryKeys = DEFAULT_MAXIMUM_DICTIONARY_KEYS;
+        private int maximumDictionarySize = DEFAULT_MAXIMUM_DICTIONARY_SIZE;
         private boolean isLegacyParquet;
-        private int targetPageSize = defaultTargetPageSize;
+        private int targetPageSize = DEFAULT_TARGET_PAGE_SIZE;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private Object specialInstructions;
         private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
