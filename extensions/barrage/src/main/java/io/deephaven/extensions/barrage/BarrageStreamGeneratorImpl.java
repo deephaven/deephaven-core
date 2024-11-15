@@ -149,7 +149,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     private final RowSetGenerator rowsAdded;
     private final RowSetGenerator rowsIncluded;
     private final RowSetGenerator rowsRemoved;
-    private final RowSetShiftDataGenerator original;
+    private final RowSetShiftDataGenerator shifted;
 
     private final ChunkListInputStreamGenerator[] addColumnData;
     private final ModColumnGenerator[] modColumnData;
@@ -172,7 +172,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             rowsAdded = new RowSetGenerator(message.rowsAdded);
             rowsIncluded = new RowSetGenerator(message.rowsIncluded);
             rowsRemoved = new RowSetGenerator(message.rowsRemoved);
-            original = new RowSetShiftDataGenerator(message.shifted);
+            shifted = new RowSetShiftDataGenerator(message.shifted);
 
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
@@ -304,7 +304,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         // note that snapshot rowsAdded contain all rows; we "repaint" only rows shared between prev and
                         // new viewports.
                         keyspacePrevClientRepaintedRows.remove(rowsAdded.original);
-                        original.original.unapply(keyspacePrevClientRepaintedRows);
+                        shifted.original.unapply(keyspacePrevClientRepaintedRows);
                     }
                     keyspacePrevClientRepaintedRows.retain(keyspaceViewportPrev);
 
@@ -315,7 +315,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         rowsToRetain = toClose.add(keyspaceViewport.copy());
                     } else {
                         rowsToRetain = toClose.add(keyspaceViewport.minus(rowsAdded.original));
-                        original.original.unapply(rowsToRetain);
+                        shifted.original.unapply(rowsToRetain);
                     }
                     final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(rowsToRetain));
                     noLongerExistingRows.insert(keyspacePrevClientRepaintedRows);
@@ -476,7 +476,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 // we only send shifts to full table subscriptions
                 shiftDataOffset = 0;
             } else {
-                shiftDataOffset = original.addToFlatBuffer(metadata);
+                shiftDataOffset = shifted.addToFlatBuffer(metadata);
             }
 
             // Added Chunk Data:
@@ -650,7 +650,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
 
             // no shifts in a snapshot, but need to provide a valid structure
-            final int shiftDataOffset = original.addToFlatBuffer(metadata);
+            final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
 
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
@@ -1187,18 +1187,23 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final BitSet original;
 
         public BitSetGenerator(final BitSet bitset) {
-            original = bitset == null ? new BitSet() : bitset;
+            original = bitset == null ? new BitSet() : (BitSet) bitset.clone();
         }
 
         @Override
-        protected synchronized void ensureComputed() {
+        protected void ensureComputed() {
             if (raw != null) {
                 return;
             }
+            synchronized (this) {
+                if (raw != null) {
+                    return;
+                }
 
-            raw = original.toByteArray();
-            final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            len = (int) ((long) nBits + 7) / 8;
+                raw = original.toByteArray();
+                final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
+                len = (int) ((long) nBits + 7) / 8;
+            }
         }
     }
 
@@ -1209,41 +1214,46 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             original = shifted;
         }
 
-        protected synchronized void ensureComputed() throws IOException {
+        protected void ensureComputed() throws IOException {
             if (raw != null) {
                 return;
             }
-
-            final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
-
-            if (original != null) {
-                for (int i = 0; i < original.size(); ++i) {
-                    long s = original.getBeginRange(i);
-                    final long dt = original.getShiftDelta(i);
-
-                    if (dt < 0 && s < -dt) {
-                        s = -dt;
-                    }
-
-                    sRangeBuilder.appendKey(s);
-                    eRangeBuilder.appendKey(original.getEndRange(i));
-                    destBuilder.appendKey(s + dt);
+            synchronized (this) {
+                if (raw != null) {
+                    return;
                 }
-            }
 
-            try (final RowSet sRange = sRangeBuilder.build();
-                    final RowSet eRange = eRangeBuilder.build();
-                    final RowSet dest = destBuilder.build();
-                    final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
-                oos.flush();
-                raw = baos.peekBuffer();
-                len = baos.size();
+                final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
+
+                if (original != null) {
+                    for (int i = 0; i < original.size(); ++i) {
+                        long s = original.getBeginRange(i);
+                        final long dt = original.getShiftDelta(i);
+
+                        if (dt < 0 && s < -dt) {
+                            s = -dt;
+                        }
+
+                        sRangeBuilder.appendKey(s);
+                        eRangeBuilder.appendKey(original.getEndRange(i));
+                        destBuilder.appendKey(s + dt);
+                    }
+                }
+
+                try (final RowSet sRange = sRangeBuilder.build();
+                     final RowSet eRange = eRangeBuilder.build();
+                     final RowSet dest = destBuilder.build();
+                     final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
+                    oos.flush();
+                    raw = baos.peekBuffer();
+                    len = baos.size();
+                }
             }
         }
     }
