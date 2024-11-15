@@ -224,10 +224,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         final Map<String, ColumnSource<?>> sourceColumns;
         if (inputKeyColumns.length == 0) {
             // noinspection unchecked
-            sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getResultColumns();
+            sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getInputResultColumns();
         } else {
             final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
-            sourceColumns = new HashMap<>(groupBy.getResultColumns());
+            sourceColumns = new HashMap<>(groupBy.getInputResultColumns());
             Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
         }
         selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);

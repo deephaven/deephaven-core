@@ -15,6 +15,9 @@ import io.deephaven.api.agg.spec.AggSpecSortedLast;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.object.UnionObject;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
@@ -42,6 +45,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
 import io.deephaven.proto.backplane.grpc.NullValue;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
+import io.deephaven.server.table.validation.ColumnExpressionValidator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -346,7 +350,18 @@ class AggSpecAdapter {
                     TypeCase.FORMULA,
                     AggSpecFormula.class,
                     io.deephaven.api.agg.spec.AggSpecFormula.class,
-                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    msg -> {
+                        GrpcErrorHelper.checkHasNoUnknownFieldsRecursive(msg);
+
+                        final Table parent = sourceTables.get(0).get();
+                        final String[] columnSpecs = request.getColumnSpecsList().toArray(String[]::new);
+                        final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
+                        ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
+
+
+
+                        GrpcErrorHelper.checkHasField(msg, AggSpecFormula.FORMULA_FIELD_NUMBER);
+                    },
                     AggSpecAdapter::adapt);
         }
 

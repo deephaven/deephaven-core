@@ -720,7 +720,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
 
             // Get or create a column definition map composed of vectors of the original column types (or scalars when
-            // part of the group_by columns).
+            // part of the key columns).
             final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
             if (vectorColumnDefinitions == null) {
                 vectorColumnDefinitions = table.getDefinition().getColumnStream().collect(Collectors.toMap(
@@ -736,12 +736,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             // Get the input column names from the formula and provide them to the groupBy operator
             final String[] allInputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
-            final String[] inputKeyColumns = Arrays.stream(allInputColumns)
-                    .filter(groupByColumnSet::contains)
-                    .toArray(String[]::new);
-            final String[] inputNonKeyColumns = Arrays.stream(allInputColumns)
-                    .filter(col -> !groupByColumnSet.contains(col))
-                    .toArray(String[]::new);
+
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
 
             if (!selectColumn.getColumnArrays().isEmpty()) {
                 throw new IllegalArgumentException("AggFormula does not support column arrays ("
