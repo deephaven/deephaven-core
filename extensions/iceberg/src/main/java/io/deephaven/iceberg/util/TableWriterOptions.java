@@ -31,11 +31,11 @@ public abstract class TableWriterOptions {
      * <p>
      * Users can specify the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
      * <p>
-     * If not provided, we use the initial schema from the table.
+     * If not provided, we use the current schema from the table.
      */
     @Value.Default
     public SchemaSpec schemaSpec() {
-        return SchemaSpec.initial();
+        return SchemaSpec.current();
     }
 
     /**

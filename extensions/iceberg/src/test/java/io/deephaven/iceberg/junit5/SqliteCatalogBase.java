@@ -182,10 +182,10 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         // Add some data to the table
-        final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, instructionsBuilder()
-                        .addTables(source)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.append(instructionsBuilder()
+                .addTables(source)
+                .build());
 
         // Overwrite with more data
         final Table moreData = TableTools.emptyTable(5)
@@ -228,10 +228,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter =
-                catalogAdapter.createTableAndAppend(tableIdentifier, instructionsBuilder()
-                        .addTables(source)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.append(instructionsBuilder()
+                .addTables(source)
+                .build());
         {
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(source, fromIceberg);
@@ -284,10 +284,10 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
         // By default, schema verification should be enabled for appending
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(source)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.append(instructionsBuilder()
+                .addTables(source)
+                .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
         verifySnapshots(tableIdentifier, List.of("append"));
@@ -300,8 +300,7 @@ public abstract class SqliteCatalogBase {
                     .build());
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("New schema contains field shortCol that is not present in" +
-                    " the existing schema");
+            assertThat(e).hasMessageContaining("Column shortCol not found in the schema");
         }
 
         // Append a table with just the int column, should be compatible with the existing schema
@@ -343,10 +342,10 @@ public abstract class SqliteCatalogBase {
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(source)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.append(instructionsBuilder()
+                .addTables(source)
+                .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
 
@@ -432,27 +431,25 @@ public abstract class SqliteCatalogBase {
                         "intCol = (int) stringCol.charAt(0)");
         final Namespace myNamespace = Namespace.of("MyNamespace");
         final TableIdentifier tableIdentifier = TableIdentifier.of(myNamespace, "MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, badSource.getDefinition());
 
         try {
-            catalogAdapter.createTableAndAppend(
-                    tableIdentifier, instructionsBuilder()
-                            .addTables(badSource)
-                            .build());
+            tableAdapter.append(instructionsBuilder()
+                    .addTables(badSource)
+                    .build());
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
             assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
         }
-        assertThat(catalogAdapter.listNamespaces()).isEmpty();
 
         // Now create a table with good data with same schema and append a bad source to it
         final Table goodSource = TableTools.emptyTable(5)
                 .update("stringCol = Long.toString(ii)",
                         "intCol = (int) i");
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(goodSource)
-                        .build());
+        tableAdapter.append(instructionsBuilder()
+                .addTables(goodSource)
+                .build());
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(goodSource, fromIceberg);
 
@@ -585,32 +582,35 @@ public abstract class SqliteCatalogBase {
                         "doubleCol = (double) 3.5 * i + 20");
         final List<String> partitionPaths = List.of("PC=cat", "PC=apple");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
-        try {
-            catalogAdapter.createTableAndAppend(
-                    tableIdentifier, instructionsBuilder()
-                            .addTables(part1, part2)
-                            .addAllPartitionPaths(partitionPaths)
-                            .build());
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (IllegalArgumentException e) {
-            // Exception expected since no partitioning table definition is provided
-            assertThat(e).hasMessageContaining("partition paths");
+        {
+            final TableDefinition tableDefinition = part1.getDefinition();
+            final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+            try {
+                tableAdapter.append(instructionsBuilder()
+                        .addTables(part1, part2)
+                        .addAllPartitionPaths(partitionPaths)
+                        .build());
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                // Exception expected since partition paths provided with non partitioned table
+                assertThat(e).hasMessageContaining("partition paths");
+            }
+            catalogAdapter.catalog().dropTable(tableIdentifier, true);
         }
 
-        final TableDefinition tableDefinition = TableDefinition.of(
+        final TableDefinition partitioningTableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(part1, part2)
-                        .addAllPartitionPaths(partitionPaths)
-                        .tableDefinition(tableDefinition)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, partitioningTableDef);
+        tableAdapter.append(instructionsBuilder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .tableDefinition(partitioningTableDef)
+                .build());
         final Table fromIceberg = tableAdapter.table();
-        assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
-        assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
+        assertThat(tableAdapter.definition()).isEqualTo(partitioningTableDef);
+        assertThat(fromIceberg.getDefinition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
                 part1.update("PC = `cat`"),
@@ -624,7 +624,7 @@ public abstract class SqliteCatalogBase {
         tableAdapter.append(instructionsBuilder()
                 .addTables(part3)
                 .addPartitionPaths(partitionPath)
-                .tableDefinition(tableDefinition)
+                .tableDefinition(partitioningTableDef)
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `boy`"));
@@ -646,12 +646,12 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofInt("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(part1, part2)
-                        .addAllPartitionPaths(partitionPaths)
-                        .tableDefinition(tableDefinition)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        tableAdapter.append(instructionsBuilder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .tableDefinition(tableDefinition)
+                .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
@@ -776,12 +776,12 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(part1, part2)
-                        .addAllPartitionPaths(partitionPaths)
-                        .tableDefinition(tableDefinition)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        tableAdapter.append(instructionsBuilder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .tableDefinition(tableDefinition)
+                .build());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -829,12 +829,12 @@ public abstract class SqliteCatalogBase {
                 ColumnDefinition.ofInt("intCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("PC").withPartitioning());
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTableAndAppend(
-                tableIdentifier, instructionsBuilder()
-                        .addTables(part1, part2)
-                        .addAllPartitionPaths(partitionPaths)
-                        .tableDefinition(tableDefinition)
-                        .build());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        tableAdapter.append(instructionsBuilder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(partitionPaths)
+                .tableDefinition(tableDefinition)
+                .build());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 

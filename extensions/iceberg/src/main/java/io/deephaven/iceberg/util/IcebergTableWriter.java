@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -10,6 +11,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.iceberg.util.SchemaSpecInternal.SchemaSpecImpl;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -37,15 +39,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.iceberg.base.IcebergUtils.allDataFiles;
-import static io.deephaven.iceberg.base.IcebergUtils.convertToIcebergType;
-import static io.deephaven.iceberg.base.IcebergUtils.createPartitionSpec;
 import static io.deephaven.iceberg.base.IcebergUtils.partitionDataFromPaths;
-import static io.deephaven.iceberg.base.IcebergUtils.verifyWriteCompatibility;
+import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
+import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
 /**
  * This class is responsible for writing Deephaven tables to an Iceberg table. Each instance of this class is associated
@@ -68,22 +67,13 @@ public class IcebergTableWriter {
     private final TableDefinition tableDefinition;
 
     /**
-     * The table definition used for writing the Parquet file. This differs from {@link #tableDefinition} as it:
-     * <ul>
-     * <li>Excludes the partitioning columns</li>
-     * <li>Includes type promotions needed to make {@link #tableDefinition} compatible with the existing table</li>
-     * </ul>
-     */
-    private TableDefinition parquetTableDefinition;
-
-    /**
      * The schema to use when in conjunction with the {@link #fieldIdToColumnName} to map Deephaven columns from
      * {@link #tableDefinition} to Iceberg columns.
      */
     private final Schema userSchema;
 
     /**
-     * Mapping from Iceberg field IDs to Deephaven column names.
+     * Mapping from Iceberg field IDs to Deephaven column names, populated inside the parquet file.
      */
     private final Map<Integer, String> fieldIdToColumnName;
 
@@ -100,9 +90,7 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
 
-    IcebergTableWriter(
-            final TableWriterOptions tableWriterOptions,
-            final IcebergTableAdapter tableAdapter) {
+    IcebergTableWriter(final TableWriterOptions tableWriterOptions, final IcebergTableAdapter tableAdapter) {
         this.tableAdapter = tableAdapter;
         this.table = tableAdapter.icebergTable();
 
@@ -113,111 +101,26 @@ public class IcebergTableWriter {
         }
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
+        verifyRequiredFields(table.schema(), tableDefinition);
+        verifyPartitioningColumns(table.spec(), tableDefinition);
 
-        // We only write non-partitioning columns to parquet file
-        this.parquetTableDefinition = TableDefinition.of(tableDefinition.getColumnStream()
-                .filter(columnDefinition -> !columnDefinition.isPartitioning())
-                .collect(Collectors.toList()));
+        this.userSchema = ((SchemaSpecImpl) tableWriterOptions.schemaSpec()).getSchema(table);
+        verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
 
-        this.userSchema = tableWriterOptions.schemaSpec().getSchema(table);
+        // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
+        // provided by the user.
+        this.fieldIdToColumnName = new HashMap<>(tableWriterOptions.fieldIdToColumnName());
+        addFieldIdsForAllColumns(tableWriterOptions);
 
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
                 .build();
-
-        // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
-        // present in the schema.
-        this.fieldIdToColumnName = new HashMap<>(tableWriterOptions.fieldIdToColumnName());
-        verifyFieldIds(fieldIdToColumnName.keySet(), userSchema);
-
-        // Populate the fieldIdToColumnName map for all the columns in the table definition and do additional checks
-        // to ensure that the table definition is compatible with the existing table.
-        {
-            final int lastColumnId;
-            if (tableMetadata != null) {
-                lastColumnId = tableMetadata.lastColumnId();
-            } else {
-                lastColumnId = table.schema().highestFieldId();
-            }
-
-            // AtomicInteger to generate new field IDs starting from the lastColumnId
-            final AtomicInteger columnIdGenerator = new AtomicInteger(lastColumnId);
-
-            // List to hold the new fields for the inferred schema
-            final List<Types.NestedField> inferredSchemaFields = new ArrayList<>();
-
-            // Collect the partitioning columns to build partition spec
-            final Collection<String> partitioningColumns = new ArrayList<>();
-
-            final Map<String, Integer> dhColumnNameToFieldId = tableWriterOptions.dhColumnNameToFieldId();
-
-            // Iterate through each column in the table definition and build the new spec and schema
-            for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
-                final String columnName = columnDefinition.getName();
-                Types.NestedField nestedField = null;
-
-                // Check in the Field ID -> column name map
-                if (dhColumnNameToFieldId.containsKey(columnName)) {
-                    final int fieldId = dhColumnNameToFieldId.get(columnName);
-                    // Assuming nestedField is not null, as we have already verified above
-                    nestedField = Require.neqNull(userSchema.findField(fieldId), "nestedField");
-                }
-
-                // Check in the schema.name_mapping.default map
-                if (nestedField == null) {
-                    final Integer fieldId = lazyNameMappingDefault().get(columnName);
-                    if (fieldId != null) {
-                        nestedField = userSchema.findField(fieldId);
-                        if (nestedField == null) {
-                            throw new IllegalArgumentException("Field ID " + fieldId + " extracted for column " +
-                                    columnName + " from the schema.name_mapping map not found in schema " + userSchema);
-                        }
-                    }
-                }
-
-                // Directly lookup in the user provided schema using column name
-                if (nestedField == null) {
-                    nestedField = userSchema.findField(columnName);
-                }
-
-                if (nestedField == null) {
-                    // We couldn't find the field in the schema, so we assign a new field ID and use the name and type
-                    // from the table definition
-                    final int newFieldId = columnIdGenerator.incrementAndGet();
-                    nestedField = Types.NestedField.of(newFieldId, true, columnName,
-                            convertToIcebergType(columnDefinition.getDataType()));
-                } else {
-                    // Field was found in the schema, so we will derive the type from the schema.
-                    // But first, need to check if the type from schema is assignable from the table definition
-                    // TODO (deephaven-core#6372): Add support for type promotion
-                    if (!convertToIcebergType(columnDefinition.getDataType()).equals(nestedField.type())) {
-                        throw new IllegalArgumentException("Cannot write data from deephaven column type " +
-                                columnDefinition.getDataType() + " to iceberg column type " + nestedField.type());
-                    }
-                }
-                inferredSchemaFields.add(nestedField);
-
-                // Store the mapping from field ID to column name to be populated inside the parquet file
-                fieldIdToColumnName.putIfAbsent(nestedField.fieldId(), columnName);
-
-                if (columnDefinition.isPartitioning()) {
-                    partitioningColumns.add(nestedField.name());
-                }
-            }
-
-            // Verify that the inferred schema and partition spec are compatible with the existing table
-            final Schema inferredSchema = new Schema(inferredSchemaFields);
-            verifyWriteCompatibility(table.schema(), inferredSchema);
-
-            final PartitionSpec inferredPartitionSpec = createPartitionSpec(inferredSchema, partitioningColumns);
-            verifyWriteCompatibility(table.spec(), inferredPartitionSpec);
-        }
     }
 
     /**
      * Check that all the field IDs are present in the schema.
      */
-    private static void verifyFieldIds(final Collection<Integer> fieldIds, final Schema schema) {
+    private static void verifyFieldIdsInSchema(final Collection<Integer> fieldIds, final Schema schema) {
         if (!fieldIds.isEmpty()) {
             for (final Integer fieldId : fieldIds) {
                 if (schema.findField(fieldId) == null) {
@@ -225,6 +128,52 @@ public class IcebergTableWriter {
                             "found in schema, available columns in schema are: " + schema.columns());
                 }
             }
+        }
+    }
+
+    /**
+     * Populate the {@link #fieldIdToColumnName} map for all the columns in the {@link #tableDefinition} and do
+     * additional checks to ensure that the table definition is compatible with schema provided by user.
+     */
+    private void addFieldIdsForAllColumns(final TableWriterOptions tableWriterOptions) {
+        final Map<String, Integer> dhColumnNameToFieldId = tableWriterOptions.dhColumnNameToFieldId();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            final String columnName = columnDefinition.getName();
+
+            // We are done if we already have the mapping between column name and field ID
+            if (dhColumnNameToFieldId.containsKey(columnName)) {
+                continue;
+            }
+
+            // To be populated by the end of this block for each column, else throw an exception
+            Integer fieldId = null;
+            Types.NestedField nestedField;
+
+            // Check in the schema.name_mapping.default map
+            fieldId = lazyNameMappingDefault().get(columnName);
+            if (fieldId != null) {
+                nestedField = userSchema.findField(fieldId);
+                if (nestedField == null) {
+                    throw new IllegalArgumentException("Field ID " + fieldId + " extracted for " +
+                            "column " + columnName + " from the schema.name_mapping map not found in schema " +
+                            userSchema);
+                }
+            }
+
+            // Directly lookup in the user provided schema using column name
+            if (fieldId == null) {
+                nestedField = userSchema.findField(columnName);
+                if (nestedField != null) {
+                    fieldId = nestedField.fieldId();
+                }
+            }
+
+            if (fieldId == null) {
+                throw new IllegalArgumentException("Column " + columnName + " not found in the schema or " +
+                        "the name mapping for the table");
+            }
+
+            fieldIdToColumnName.put(fieldId, columnName);
         }
     }
 
@@ -301,9 +250,11 @@ public class IcebergTableWriter {
 
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(table, partitionPaths);
-        final List<PartitionData> partitionData = partitionDataFromPaths(table.spec(), partitionPaths);
-
-        final List<CompletedParquetWrite> parquetFileInfo = writeParquet(partitionData, writeInstructions);
+        final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(table.spec(), partitionPaths);
+        final List<PartitionData> partitionData = ret.getFirst();
+        final List<String[]> dhTableUpdateStrings = ret.getSecond();
+        final List<CompletedParquetWrite> parquetFileInfo =
+                writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         return dataFilesFromParquet(parquetFileInfo, partitionData);
     }
 
@@ -331,29 +282,38 @@ public class IcebergTableWriter {
     @NotNull
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
+            @NotNull final List<String[]> dhTableUpdateStrings,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
         final List<Table> dhTables = writeInstructions.tables();
+        final boolean isPartitioned = table.spec().isPartitioned();
+        if (isPartitioned) {
+            Require.eq(dhTables.size(), "dhTables.size()",
+                    partitionDataList.size(), "partitionDataList.size()");
+            Require.eq(dhTables.size(), "dhTables.size()",
+                    dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
+        }
 
         // Build the parquet instructions
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
         final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
-                onWriteCompleted, parquetTableDefinition, fieldIdToColumnName);
+                onWriteCompleted, tableDefinition, fieldIdToColumnName);
 
         // Write the data to parquet files
         for (int idx = 0; idx < dhTables.size(); idx++) {
-            final Table dhTable = dhTables.get(idx);
+            Table dhTable = dhTables.get(idx);
             if (dhTable.numColumns() == 0) {
                 // Skip writing empty tables with no columns
                 continue;
             }
             final String newDataLocation;
-            if (table.spec().isPartitioned()) {
+            if (isPartitioned) {
                 newDataLocation = getDataLocation(partitionDataList.get(idx));
+                dhTable = dhTable.updateView(dhTableUpdateStrings.get(idx));
             } else {
                 newDataLocation = getDataLocation();
             }
-            // TODO (deephaven-core#6343): Set writeDefault() values for columns that are not present in the table
+            // TODO (deephaven-core#6343): Set writeDefault() values for required columns that not present in the table
             ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         }
         return parquetFilesWritten;

@@ -32,8 +32,7 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
     /**
      * Returns {@link #tableDefinition()} if present, else the definition of the first table in {@link #tables()}.
      */
-    @Value.Lazy
-    TableDefinition tableDefinitionOrFirst() {
+    final TableDefinition tableDefinitionOrFirst() {
         return tableDefinition().orElse(tables().get(0).getDefinition());
     }
 
@@ -47,7 +46,6 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
 
         INSTRUCTIONS_BUILDER addAllTables(Iterable<? extends Table> elements);
 
-        // TODO Discuss about the API for partition paths, and add tests
         INSTRUCTIONS_BUILDER addPartitionPaths(String element);
 
         INSTRUCTIONS_BUILDER addPartitionPaths(String... elements);

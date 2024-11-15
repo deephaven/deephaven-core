@@ -300,45 +300,4 @@ public class IcebergCatalogAdapter {
             throw throwable;
         }
     }
-
-    // TODO Will delete this API, keeping it here since the tests use it.
-    /**
-     * Create a new Iceberg table in the catalog with the given table identifier and definition, and append the data
-     * from the given append instructions.
-     *
-     * @param tableIdentifier The identifier of the new table.
-     * @param writeInstructions The instructions for customizations while writing.
-     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
-     * @throws AlreadyExistsException if the table already exists
-     */
-    public IcebergTableAdapter createTableAndAppend(
-            @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final IcebergWriteInstructions writeInstructions) {
-        final TableDefinition useDefinition = writeInstructions.tableDefinitionOrFirst();
-        final IcebergUtils.SpecAndSchema specAndSchema = IcebergUtils.createSpecAndSchema(useDefinition);
-
-        final boolean newNamespaceCreated = createNamespaceIfNotExists(catalog, tableIdentifier.namespace());
-        final IcebergTableAdapter tableAdapter;
-        try {
-            tableAdapter = createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
-            tableAdapter.append(writeInstructions);
-        } catch (final Throwable throwable) {
-            // Delete it to avoid leaving a partial table in the catalog
-            try {
-                catalog.dropTable(tableIdentifier, true);
-            } catch (final RuntimeException dropException) {
-                throwable.addSuppressed(dropException);
-            }
-            if (newNamespaceCreated) {
-                // Delete it to avoid leaving a partial namespace in the catalog
-                try {
-                    dropNamespaceIfExists(catalog, tableIdentifier.namespace());
-                } catch (final RuntimeException dropException) {
-                    throwable.addSuppressed(dropException);
-                }
-            }
-            throw throwable;
-        }
-        return tableAdapter;
-    }
 }
