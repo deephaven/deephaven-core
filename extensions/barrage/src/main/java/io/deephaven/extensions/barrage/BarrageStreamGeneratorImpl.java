@@ -149,7 +149,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     private final RowSetGenerator rowsAdded;
     private final RowSetGenerator rowsIncluded;
     private final RowSetGenerator rowsRemoved;
-    private final RowSetShiftDataGenerator shifted;
+    private final RowSetShiftDataGenerator original;
 
     private final ChunkListInputStreamGenerator[] addColumnData;
     private final ModColumnGenerator[] modColumnData;
@@ -172,7 +172,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             rowsAdded = new RowSetGenerator(message.rowsAdded);
             rowsIncluded = new RowSetGenerator(message.rowsIncluded);
             rowsRemoved = new RowSetGenerator(message.rowsRemoved);
-            shifted = new RowSetShiftDataGenerator(message.shifted);
+            original = new RowSetShiftDataGenerator(message.shifted);
 
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
@@ -304,7 +304,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         // note that snapshot rowsAdded contain all rows; we "repaint" only rows shared between prev and
                         // new viewports.
                         keyspacePrevClientRepaintedRows.remove(rowsAdded.original);
-                        shifted.original.unapply(keyspacePrevClientRepaintedRows);
+                        original.original.unapply(keyspacePrevClientRepaintedRows);
                     }
                     keyspacePrevClientRepaintedRows.retain(keyspaceViewportPrev);
 
@@ -315,7 +315,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         rowsToRetain = toClose.add(keyspaceViewport.copy());
                     } else {
                         rowsToRetain = toClose.add(keyspaceViewport.minus(rowsAdded.original));
-                        shifted.original.unapply(rowsToRetain);
+                        original.original.unapply(rowsToRetain);
                     }
                     final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(rowsToRetain));
                     noLongerExistingRows.insert(keyspacePrevClientRepaintedRows);
@@ -476,7 +476,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 // we only send shifts to full table subscriptions
                 shiftDataOffset = 0;
             } else {
-                shiftDataOffset = shifted.addToFlatBuffer(metadata);
+                shiftDataOffset = original.addToFlatBuffer(metadata);
             }
 
             // Added Chunk Data:
@@ -650,7 +650,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
 
             // no shifts in a snapshot, but need to provide a valid structure
-            final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+            final int shiftDataOffset = original.addToFlatBuffer(metadata);
 
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
@@ -1121,7 +1121,10 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         protected int len;
         protected byte[] raw;
 
-        protected int addToFlatBuffer(final FlatBufferBuilder builder) {
+        protected abstract void ensureComputed() throws IOException;
+
+        protected int addToFlatBuffer(final FlatBufferBuilder builder) throws IOException {
+            ensureComputed();
             return builder.createByteVector(raw, 0, len);
         }
     }
@@ -1131,13 +1134,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         public RowSetGenerator(final RowSet rowSet) throws IOException {
             this.original = rowSet.copy();
-            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
-                oos.flush();
-                raw = baos.peekBuffer();
-                len = baos.size();
-            }
         }
 
         @Override
@@ -1145,8 +1141,18 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             original.close();
         }
 
-        public DrainableByteArrayInputStream getInputStream() {
-            return new DrainableByteArrayInputStream(raw, 0, len);
+        protected synchronized void ensureComputed() throws IOException {
+            if (raw != null) {
+                return;
+            }
+
+            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, original);
+                oos.flush();
+                raw = baos.peekBuffer();
+                len = baos.size();
+            }
         }
 
         /**
@@ -1158,6 +1164,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
          */
         protected int addToFlatBuffer(final RowSet viewport, final FlatBufferBuilder builder) throws IOException {
             if (original.subsetOf(viewport)) {
+                ensureComputed();
                 return addToFlatBuffer(builder);
             }
 
@@ -1177,11 +1184,21 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     public static class BitSetGenerator extends ByteArrayGenerator {
+        private final BitSet original;
+
         public BitSetGenerator(final BitSet bitset) {
-            BitSet original = bitset == null ? new BitSet() : bitset;
-            this.raw = original.toByteArray();
+            original = bitset == null ? new BitSet() : bitset;
+        }
+
+        @Override
+        protected synchronized void ensureComputed() {
+            if (raw != null) {
+                return;
+            }
+
+            raw = original.toByteArray();
             final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            this.len = (int) ((long) nBits + 7) / 8;
+            len = (int) ((long) nBits + 7) / 8;
         }
     }
 
@@ -1190,22 +1207,28 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
             original = shifted;
+        }
+
+        protected synchronized void ensureComputed() throws IOException {
+            if (raw != null) {
+                return;
+            }
 
             final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
 
-            if (shifted != null) {
-                for (int i = 0; i < shifted.size(); ++i) {
-                    long s = shifted.getBeginRange(i);
-                    final long dt = shifted.getShiftDelta(i);
+            if (original != null) {
+                for (int i = 0; i < original.size(); ++i) {
+                    long s = original.getBeginRange(i);
+                    final long dt = original.getShiftDelta(i);
 
                     if (dt < 0 && s < -dt) {
                         s = -dt;
                     }
 
                     sRangeBuilder.appendKey(s);
-                    eRangeBuilder.appendKey(shifted.getEndRange(i));
+                    eRangeBuilder.appendKey(original.getEndRange(i));
                     destBuilder.appendKey(s + dt);
                 }
             }
