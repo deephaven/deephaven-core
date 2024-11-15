@@ -1119,7 +1119,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     public static abstract class ByteArrayGenerator {
         protected int len;
-        protected byte[] raw;
+        protected volatile byte[] raw;
 
         protected abstract void ensureComputed() throws IOException;
 
@@ -1141,17 +1141,23 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             original.close();
         }
 
-        protected synchronized void ensureComputed() throws IOException {
+        protected void ensureComputed() throws IOException {
             if (raw != null) {
                 return;
             }
 
-            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, original);
-                oos.flush();
-                raw = baos.peekBuffer();
-                len = baos.size();
+            synchronized (this) {
+                if (raw != null) {
+                    return;
+                }
+
+                try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, original);
+                    oos.flush();
+                    len = baos.size();
+                    raw = baos.peekBuffer();
+                }
             }
         }
 
@@ -1195,14 +1201,15 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             if (raw != null) {
                 return;
             }
+
             synchronized (this) {
                 if (raw != null) {
                     return;
                 }
 
-                raw = original.toByteArray();
                 final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
                 len = (int) ((long) nBits + 7) / 8;
+                raw = original.toByteArray();
             }
         }
     }
@@ -1218,6 +1225,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             if (raw != null) {
                 return;
             }
+
             synchronized (this) {
                 if (raw != null) {
                     return;
@@ -1251,8 +1259,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
                     oos.flush();
-                    raw = baos.peekBuffer();
                     len = baos.size();
+                    raw = baos.peekBuffer();
                 }
             }
         }
