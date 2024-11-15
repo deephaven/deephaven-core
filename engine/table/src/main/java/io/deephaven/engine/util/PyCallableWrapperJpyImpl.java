@@ -197,7 +197,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         // a function in an extension module or a signature-less/multi-signature builtin function such as 'max'.
         if (pyUdfDecorator.isNone()) {
             pyUdfDecorator = null;
-            signature = Signature.EMPTY_SIGNATURE;
+            signature = Signature.EMPTY;
         } else {
             signatureString = pyUdfDecorator.getAttribute("signature").toString();
         }
@@ -212,7 +212,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
         prepareSignature();
 
-        if (signature == Signature.EMPTY_SIGNATURE) {
+        if (signature == Signature.EMPTY) {
             return;
         }
 
@@ -297,9 +297,8 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         return false;
     }
 
-
     public void verifyArguments(Class<?>[] argTypes) {
-        if (signature == Signature.EMPTY_SIGNATURE) {
+        if (signature == Signature.EMPTY) {
             return;
         }
 

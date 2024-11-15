@@ -56,7 +56,7 @@ public interface PyCallableWrapper {
     class Signature {
         private final List<Parameter> parameters;
         private final Class<?> returnType;
-        public static Signature EMPTY_SIGNATURE = new Signature(List.of(), null);
+        public final static Signature EMPTY = new Signature(List.of(), null);
 
         public Signature(List<Parameter> parameters, Class<?> returnType) {
             this.parameters = parameters;
