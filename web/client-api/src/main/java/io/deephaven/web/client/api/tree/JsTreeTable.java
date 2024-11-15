@@ -34,6 +34,7 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
@@ -535,7 +536,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         private RangeSet serverViewport;
 
         public TreeSubscription(ClientTableState state, WorkerConnection connection) {
-            super(state, connection);
+            super(SubscriptionType.VIEWPORT_SUBSCRIPTION, state, connection);
         }
 
         @Override

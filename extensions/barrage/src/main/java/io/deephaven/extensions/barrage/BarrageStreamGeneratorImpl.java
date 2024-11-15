@@ -520,6 +520,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
             BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
             BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, reverseViewport);
+            BarrageUpdateMetadata.addTableSize(metadata, message.tableSize);
             metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
             final FlatBufferBuilder header = new FlatBufferBuilder();

@@ -60,7 +60,7 @@ public interface StreamReaderOptions {
      * @return the maximum length of any list / array to encode; zero means no limit; negative values indicate to treat
      *         the limit as a tail instead of a head
      */
-    default int previewListLengthLimit() {
+    default long previewListLengthLimit() {
         return 0;
     }
 }

@@ -133,6 +133,7 @@ public class BarrageStreamReader implements StreamReader {
 
                         msg.firstSeq = metadata.firstSeq();
                         msg.lastSeq = metadata.lastSeq();
+                        msg.tableSize = metadata.tableSize();
                         msg.rowsAdded = extractIndex(metadata.addedRowsAsByteBuffer());
                         msg.rowsRemoved = extractIndex(metadata.removedRowsAsByteBuffer());
                         final ByteBuffer shiftData = metadata.shiftDataAsByteBuffer();

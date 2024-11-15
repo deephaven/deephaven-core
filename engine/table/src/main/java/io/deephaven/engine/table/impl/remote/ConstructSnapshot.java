@@ -1314,6 +1314,7 @@ public class ConstructSnapshot {
             @Nullable final RowSet keysToSnapshot) {
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
+        snapshot.tableSize = snapshot.rowsAdded.size();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 

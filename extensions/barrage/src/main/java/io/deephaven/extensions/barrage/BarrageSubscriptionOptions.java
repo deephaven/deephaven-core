@@ -86,7 +86,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
 
     @Override
     @Default
-    public int previewListLengthLimit() {
+    public long previewListLengthLimit() {
         return 0;
     }
 
@@ -162,7 +162,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
          * @param previewListLengthLimit the magnitude of the number of elements to include in a preview list
          * @return this builder
          */
-        Builder previewListLengthLimit(int previewListLengthLimit);
+        Builder previewListLengthLimit(long previewListLengthLimit);
 
         /**
          * @return a new BarrageSubscriptionOptions instance
