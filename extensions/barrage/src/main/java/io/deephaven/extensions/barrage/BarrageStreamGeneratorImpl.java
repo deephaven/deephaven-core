@@ -242,7 +242,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         private final boolean isFullSubscription;
         private final RowSet viewport;
         private final boolean reverseViewport;
-        private final RowSet keyspaceViewport;
+        private final boolean hasViewport;
         private final BitSet subscribedColumns;
 
         private final long numClientIncludedRows;
@@ -266,7 +266,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.isFullSubscription = isFullSubscription;
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
-            this.keyspaceViewport = keyspaceViewport;
+            this.hasViewport = keyspaceViewport != null;
             this.subscribedColumns = subscribedColumns;
 
             // precompute the included rows / offsets and viewport removed rows
@@ -491,7 +491,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
-                if (keyspaceViewport != null) {
+                if (hasViewport) {
                     try (final RowSetGenerator modRowsGen = new RowSetGenerator(clientModdedRows[ii])) {
                         myModRowOffset = modRowsGen.addToFlatBuffer(metadata);
                     }
@@ -1152,7 +1152,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 }
 
                 try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                        final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, original);
                     oos.flush();
                     len = baos.size();
@@ -1181,8 +1181,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     final RowSet viewOfOriginal = original.intersect(viewport)) {
                 ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
-                nraw = baos.peekBuffer();
                 nlen = baos.size();
+                nraw = baos.peekBuffer();
             }
 
             return builder.createByteVector(nraw, 0, nlen);

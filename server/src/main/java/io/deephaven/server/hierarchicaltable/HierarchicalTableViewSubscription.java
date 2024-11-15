@@ -323,17 +323,14 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 columns, rows, destinations);
         snapshotNanosConsumer.accept(System.nanoTime() - snapshotStartNanos);
 
-        // note that keyspace is identical to position space for HierarchicalTableView snapshots
-        final RowSet snapshotRows = RowSetFactory.flat(expandedSize);
-        final RowSet keyspaceViewportRows = rows.intersect(snapshotRows);
-
         // 4. Make and populate a BarrageMessage
         final BarrageMessage barrageMessage = new BarrageMessage();
-        // We don't populate firstSeq, or lastSeq debugging information; they are not relevant to this use case.
+        // We don't populate firstSeq or lastSeq debugging information; they are not relevant to this use case.
 
         barrageMessage.isSnapshot = true;
-        barrageMessage.rowsAdded = snapshotRows;
-        barrageMessage.rowsIncluded = keyspaceViewportRows;
+        barrageMessage.rowsAdded = RowSetFactory.flat(expandedSize);
+        barrageMessage.rowsIncluded = RowSetFactory.fromRange(
+                rows.firstRowKey(), Math.min(expandedSize - 1, rows.lastRowKey()));
         barrageMessage.rowsRemoved = RowSetFactory.empty();
         barrageMessage.shifted = RowSetShiftData.EMPTY;
         barrageMessage.tableSize = expandedSize;
@@ -365,11 +362,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             final boolean isFullSubscription = false;
             GrpcUtil.safelyOnNext(listener, streamGenerator.getSubView(
                     subscriptionOptions, initialSnapshot, isFullSubscription, rows, false,
-                    prevKeyspaceViewportRows, keyspaceViewportRows, columns));
-        }
+                    prevKeyspaceViewportRows, barrageMessage.rowsIncluded, columns));
 
-        prevKeyspaceViewportRows.clear();
-        prevKeyspaceViewportRows.insert(keyspaceViewportRows);
+            prevKeyspaceViewportRows.resetTo(barrageMessage.rowsIncluded);
+        }
     }
 
     public void setViewport(

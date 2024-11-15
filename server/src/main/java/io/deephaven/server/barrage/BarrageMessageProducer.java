@@ -1379,6 +1379,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     if (!snapshot.rowsAdded.isEmpty()) {
                         snapshot.rowsAdded.close();
                         snapshot.rowsAdded = RowSetFactory.empty();
+                        snapshot.tableSize = 0;
                     }
                 }
                 long elapsed = System.nanoTime() - start;
