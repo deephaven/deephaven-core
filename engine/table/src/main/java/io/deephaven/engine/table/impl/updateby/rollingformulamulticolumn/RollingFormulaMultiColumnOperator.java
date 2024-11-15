@@ -455,7 +455,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     }
     // endregion value-setters
 
-
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();

@@ -1471,9 +1471,11 @@ public class UpdateByOperatorFactory {
                 throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
             }
 
-            final String[] inputKeyColumns = Arrays.stream(allInputColumns)
-                    .filter(groupByColumnSet::contains)
-                    .toArray(String[]::new);
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
             final Class<?>[] inputKeyColumnTypes = new Class[inputKeyColumns.length];
             final Class<?>[] inputKeyComponentTypes = new Class[inputKeyColumns.length];
             for (int i = 0; i < inputKeyColumns.length; i++) {
@@ -1482,9 +1484,6 @@ public class UpdateByOperatorFactory {
                 inputKeyComponentTypes[i] = columnDef.getComponentType();
             }
 
-            final String[] inputNonKeyColumns = Arrays.stream(allInputColumns)
-                    .filter(col -> !groupByColumnSet.contains(col))
-                    .toArray(String[]::new);
             final Class<?>[] inputNonKeyColumnTypes = new Class[inputNonKeyColumns.length];
             final Class<?>[] inputNonKeyVectorTypes = new Class[inputNonKeyColumns.length];
             for (int i = 0; i < inputNonKeyColumns.length; i++) {
@@ -1492,7 +1491,6 @@ public class UpdateByOperatorFactory {
                 inputNonKeyColumnTypes[i] = columnDef.getDataType();
                 inputNonKeyVectorTypes[i] = vectorColumnDefinitions.get(inputNonKeyColumns[i]).getDataType();
             }
-
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
