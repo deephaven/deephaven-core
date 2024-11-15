@@ -262,7 +262,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.isFullSubscription = isFullSubscription;
-            this.clientViewport = viewport.copy();
+            this.clientViewport = viewport == null ? null : viewport.copy();
             this.reverseViewport = reverseViewport;
             this.hasViewport = keyspaceViewport != null;
             this.subscribedColumns = subscribedColumns;
@@ -387,15 +387,10 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                         numClientIncludedRows > 0 ? null : metadata,
                         BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
             } finally {
-                clientViewport.close();
-                clientIncludedRows.close();
-                clientIncludedRowOffsets.close();
+                SafeCloseable.closeAll(clientViewport, clientIncludedRows, clientIncludedRowOffsets, clientRemovedRows);
                 if (clientModdedRowOffsets != null) {
                     SafeCloseable.closeAll(clientModdedRows);
                     SafeCloseable.closeAll(clientModdedRowOffsets);
-                }
-                if (clientRemovedRows != null) {
-                    clientRemovedRows.close();
                 }
             }
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
@@ -559,7 +554,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.options = options;
-            this.clientViewport = viewport.copy();
+            this.clientViewport = viewport == null ? null : viewport.copy();
             this.reverseViewport = reverseViewport;
 
             this.subscribedColumns = subscribedColumns;
@@ -596,9 +591,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                             BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
                 }
             } finally {
-                clientViewport.close();
-                clientAddedRowOffsets.close();
-                clientAddedRows.close();
+                SafeCloseable.closeAll(clientViewport, clientAddedRows, clientAddedRowOffsets);
             }
 
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
