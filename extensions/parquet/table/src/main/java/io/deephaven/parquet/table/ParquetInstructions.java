@@ -12,6 +12,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,15 +36,15 @@ import java.util.stream.Collectors;
  */
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
-    public static final String DEFAULT_COMPRESSION_CODEC_NAME = "SNAPPY";
+    public static final String DEFAULT_COMPRESSION_CODEC_NAME = CompressionCodecName.SNAPPY.toString();
     public static final int DEFAULT_MAXIMUM_DICTIONARY_KEYS = 1 << 20;
     public static final int DEFAULT_MAXIMUM_DICTIONARY_SIZE = 1 << 20;
-    public static final int MIN_TARGET_PAGE_SIZE = 1 << 11; // 2KB
-    private static final int minTargetPageSize = Configuration.getInstance().getIntegerWithDefault(
-            "Parquet.minTargetPageSize", MIN_TARGET_PAGE_SIZE);
-    public static final int DEFAULT_TARGET_PAGE_SIZE = 1 << 16; // 64KB
-    private static final int defaultTargetPageSize = Configuration.getInstance().getIntegerWithDefault(
-            "Parquet.defaultTargetPageSize", DEFAULT_TARGET_PAGE_SIZE);
+
+    public static final int MIN_TARGET_PAGE_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.minTargetPageSize", 1 << 11); // 2KB
+
+    public static final int DEFAULT_TARGET_PAGE_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.defaultTargetPageSize", 1 << 16); // 64KB
 
     /**
      * Throws an exception if {@link ParquetInstructions#getTableDefinition()} is empty.
@@ -275,7 +276,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public int getTargetPageSize() {
-            return defaultTargetPageSize;
+            return DEFAULT_TARGET_PAGE_SIZE;
         }
 
         @Override
@@ -665,7 +666,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int maximumDictionaryKeys = DEFAULT_MAXIMUM_DICTIONARY_KEYS;
         private int maximumDictionarySize = DEFAULT_MAXIMUM_DICTIONARY_SIZE;
         private boolean isLegacyParquet;
-        private int targetPageSize = defaultTargetPageSize;
+        private int targetPageSize = DEFAULT_TARGET_PAGE_SIZE;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
         private Object specialInstructions;
         private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
@@ -899,8 +900,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder setTargetPageSize(final int targetPageSize) {
-            if (targetPageSize < minTargetPageSize) {
-                throw new IllegalArgumentException("Target page size should be >= " + minTargetPageSize);
+            if (targetPageSize < MIN_TARGET_PAGE_SIZE) {
+                throw new IllegalArgumentException("Target page size should be >= " + MIN_TARGET_PAGE_SIZE);
             }
             this.targetPageSize = targetPageSize;
             return this;

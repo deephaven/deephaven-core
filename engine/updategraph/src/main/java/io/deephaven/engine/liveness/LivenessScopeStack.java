@@ -28,7 +28,7 @@ public class LivenessScopeStack {
     private static final ThreadLocal<LivenessManager> THREAD_BASE_MANAGER =
             ThreadLocal.withInitial(PermanentLivenessManager::new);
 
-    private final Deque<LivenessScope> stack = new ArrayDeque<>();
+    private final Deque<LivenessManager> stack = new ArrayDeque<>();
 
     private LivenessScopeStack() {}
 
@@ -38,7 +38,7 @@ public class LivenessScopeStack {
      *
      * @param scope The scope
      */
-    public static void push(@NotNull final LivenessScope scope) {
+    public static void push(@NotNull final LivenessManager scope) {
         THREAD_STACK.get().pushInternal(scope);
     }
 
@@ -50,7 +50,7 @@ public class LivenessScopeStack {
      *
      * @param scope The scope
      */
-    public static void pop(@NotNull final LivenessScope scope) {
+    public static void pop(@NotNull final LivenessManager scope) {
         THREAD_STACK.get().popInternal(scope);
     }
 
@@ -76,11 +76,11 @@ public class LivenessScopeStack {
      *
      * @param scope The scope
      * @param releaseOnClose Whether the scope should be released when the result is closed
-     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessScope)}
+     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessManager)}
      *         for the scope (followed by {@link LivenessScope#release()} if releaseOnClose is true)
      */
     @NotNull
-    public static SafeCloseable open(@NotNull final LivenessScope scope, final boolean releaseOnClose) {
+    public static SafeCloseable open(@NotNull final ReleasableLivenessManager scope, final boolean releaseOnClose) {
         push(scope);
         return releaseOnClose ? new PopAndReleaseOnClose(scope) : new PopOnClose(scope);
     }
@@ -93,7 +93,7 @@ public class LivenessScopeStack {
      * This is useful enclosing a series of query engine actions whose results must be explicitly retained externally in
      * order to preserve liveness.
      *
-     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessScope)}
+     * @return A {@link SafeCloseable} whose {@link SafeCloseable#close()} method invokes {@link #pop(LivenessManager)}
      *         for the scope, followed by {@link LivenessScope#release()}
      */
     @NotNull
@@ -103,18 +103,18 @@ public class LivenessScopeStack {
         return new PopAndReleaseOnClose(scope);
     }
 
-    private void pushInternal(@NotNull final LivenessScope scope) {
+    private void pushInternal(@NotNull final LivenessManager scope) {
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Pushing scope ").append(Utils.REFERENT_FORMATTER, scope).endl();
         }
         stack.push(scope);
     }
 
-    private void popInternal(@NotNull final LivenessScope scope) {
+    private void popInternal(@NotNull final LivenessManager scope) {
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Popping scope ").append(Utils.REFERENT_FORMATTER, scope).endl();
         }
-        final LivenessScope peeked = stack.peekFirst();
+        final LivenessManager peeked = stack.peekFirst();
         if (peeked != scope) {
             throw new IllegalStateException(
                     "Caller requested to pop " + scope + " but the top of the scope stack is " + peeked);
@@ -124,15 +124,15 @@ public class LivenessScopeStack {
 
     @NotNull
     private LivenessManager peekInternal() {
-        final LivenessScope peeked = stack.peekFirst();
+        final LivenessManager peeked = stack.peekFirst();
         return peeked != null ? peeked : THREAD_BASE_MANAGER.get();
     }
 
     private static final class PopOnClose implements SafeCloseable {
 
-        private final LivenessScope scope;
+        private final LivenessManager scope;
 
-        private PopOnClose(@NotNull final LivenessScope scope) {
+        private PopOnClose(@NotNull final LivenessManager scope) {
             this.scope = scope;
         }
 
@@ -144,9 +144,9 @@ public class LivenessScopeStack {
 
     private static final class PopAndReleaseOnClose implements SafeCloseable {
 
-        private final LivenessScope scope;
+        private final ReleasableLivenessManager scope;
 
-        private PopAndReleaseOnClose(@NotNull final LivenessScope scope) {
+        private PopAndReleaseOnClose(@NotNull final ReleasableLivenessManager scope) {
             this.scope = scope;
         }
 

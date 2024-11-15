@@ -43,6 +43,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
@@ -1131,6 +1132,7 @@ public class SessionState {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected synchronized void destroy() {
             super.destroy();

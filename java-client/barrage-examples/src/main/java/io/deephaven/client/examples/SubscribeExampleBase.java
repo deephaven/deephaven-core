@@ -20,6 +20,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import picocli.CommandLine;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.concurrent.CountDownLatch;
 
 abstract class SubscribeExampleBase extends BarrageClientExampleBase {
@@ -85,6 +86,7 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                     manage(tableRef);
                 }
 
+                @OverridingMethodsMustInvokeSuper
                 @Override
                 protected void destroy() {
                     super.destroy();

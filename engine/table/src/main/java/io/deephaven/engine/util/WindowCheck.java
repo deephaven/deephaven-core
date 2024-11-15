@@ -35,6 +35,7 @@ import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 
 /**
@@ -891,6 +892,7 @@ public class WindowCheck {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();

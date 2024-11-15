@@ -613,8 +613,8 @@ public abstract class SqliteCatalogBase {
         assertThat(fromIceberg.getDefinition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
-                part1.update("PC = `cat`"),
-                part2.update("PC = `apple`"));
+                part2.update("PC = `apple`"),
+                part1.update("PC = `cat`"));
         assertTableEquals(expected, fromIceberg.select());
 
         final Table part3 = TableTools.emptyTable(5)
@@ -627,7 +627,10 @@ public abstract class SqliteCatalogBase {
                 .tableDefinition(partitioningTableDef)
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
-        final Table expected2 = TableTools.merge(expected, part3.update("PC = `boy`"));
+        final Table expected2 = TableTools.merge(
+                part2.update("PC = `apple`"),
+                part3.update("PC = `boy`"),
+                part1.update("PC = `cat`"));
         assertTableEquals(expected2, fromIceberg2.select());
     }
 
@@ -657,8 +660,8 @@ public abstract class SqliteCatalogBase {
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
-                part1.update("PC = 3"),
-                part2.update("PC = 1"));
+                part2.update("PC = 1"),
+                part1.update("PC = 3"));
         assertTableEquals(expected, fromIceberg.select());
 
         final Table part3 = TableTools.emptyTable(5)
@@ -671,7 +674,10 @@ public abstract class SqliteCatalogBase {
                 .tableDefinition(tableDefinition)
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
-        final Table expected2 = TableTools.merge(expected, part3.update("PC = 2"));
+        final Table expected2 = TableTools.merge(
+                part2.update("PC = 1"),
+                part3.update("PC = 2"),
+                part1.update("PC = 3"));
         assertTableEquals(expected2, fromIceberg2.select());
     }
 

@@ -10,8 +10,6 @@ import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.URI;
-
 import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
 
 /**
@@ -21,14 +19,14 @@ import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
 public final class TrackedSeekableChannelsProviderPlugin implements SeekableChannelsProviderPlugin {
 
     @Override
-    public boolean isCompatible(@NotNull final URI uri, @Nullable final Object object) {
-        return FILE_URI_SCHEME.equals(uri.getScheme());
+    public boolean isCompatible(@NotNull final String uriScheme, @Nullable final Object object) {
+        return FILE_URI_SCHEME.equals(uriScheme);
     }
 
     @Override
-    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object object) {
-        if (!isCompatible(uri, object)) {
-            throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
+    public SeekableChannelsProvider createProvider(@NotNull final String uriScheme, @Nullable final Object object) {
+        if (!isCompatible(uriScheme, object)) {
+            throw new IllegalArgumentException("Arguments not compatible, provided uri scheme " + uriScheme);
         }
         if (object != null) {
             throw new IllegalArgumentException("Arguments not compatible, provided non null object");

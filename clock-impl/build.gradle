@@ -8,14 +8,33 @@ dependencies {
     implementation project(':clock')
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 }
+
+test {
+    useJUnitPlatform()
+}
+
+// TODO(deephaven-core#6345): Improve build process for jars that depend on JVM internals
+// In the meantime, we can be relatively confident this JAR works for the multiple versions of java since we do nightly
+// tests with a range of testRuntimeVersions.
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
-    // Explicitly set the source compatibility so gradle will invoke javac with `-source 11` instead of `--release`
-    sourceCompatibility = 11
+    // Explicitly unset release so gradle will invoke javac with `-source <languageLevel> -target <languageLevel>`
+    // instead of `--release <languageLevel>`, which would otherwise produce
+    // > error: exporting a package from system module java.base is not allowed with --release
+    options.release.unset()
 }
 
 tasks.withType(Javadoc).configureEach {
     options.addStringOption('-add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+}
+
+tasks.withType(Test).configureEach {
+    jvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }

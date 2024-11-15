@@ -4,15 +4,15 @@ plugins {
   id 'java'
 }
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
+def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '21')
 def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
 
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '21')
 def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
@@ -79,16 +79,49 @@ tasks.withType(JavaCompile).configureEach {
   options.incremental = true
   options.compilerArgs << '-parameters'
 
-  if (name == 'compileTestJava') {
-    if (compilerVersion != testLanguageLevel) {
-      options.release.set testLanguageLevel
-    }
-  } else {
+  if (name == 'compileJava') {
     if (compilerVersion != languageLevel) {
       options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
+    }
+  } else {
+    // This assumes that any JavaCompile task _not_ named 'compileJava' wants to target the testLanguageLevel.
+    // If this does not hold in the future, we can update this logic.
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
     }
   }
 }
+
+tasks.withType(GroovyCompile).configureEach {
+  javaLauncher.set groovyCompilerLauncher
+
+  options.fork = true
+  options.forkOptions.memoryMaximumSize = '2G'
+  options.encoding = 'UTF-8'
+  options.incremental = true
+  options.compilerArgs << '-parameters'
+
+  if (name == 'compileGroovy') {
+    if (compilerVersion != languageLevel) {
+      options.release.set languageLevel
+      sourceCompatibility = languageLevel
+      targetCompatibility = languageLevel
+    }
+  } else {
+    // This assumes that any GroovyCompile task _not_ named 'compileGroovy' wants to target the testLanguageLevel.
+    // If this does not hold in the future, we can update this logic.
+    if (compilerVersion != testLanguageLevel) {
+      options.release.set testLanguageLevel
+      sourceCompatibility = testLanguageLevel
+      targetCompatibility = testLanguageLevel
+    }
+  }
+}
+
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
@@ -197,10 +230,6 @@ tasks.withType(Test).configureEach {
   // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
   // That said, the current approach used here more closely matches how the application start script is defined.
   jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + START_OPTS
-}
-
-tasks.withType(GroovyCompile).configureEach {
-  javaLauncher.set groovyCompilerLauncher
 }
 
 JavaApplication application = extensions.findByType(JavaApplication)
