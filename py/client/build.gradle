@@ -29,7 +29,6 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
         directory layout.projectDirectory
         ignore {
             it.exclude 'deephaven_core/proto/**'
-//            it.include '__init__.py'
         }
     }
     generateTask.set ':py-client:updateProto'
@@ -44,7 +43,6 @@ tasks.register('updateProtobuf', Sync) {
     into layout.projectDirectory
     preserve {
         exclude 'deephaven_core/proto/**'
-//        include '__init__.py'
     }
 }
 
