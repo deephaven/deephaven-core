@@ -11,6 +11,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
  */
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
-    public static final String DEFAULT_COMPRESSION_CODEC_NAME = "SNAPPY";
+    public static final String DEFAULT_COMPRESSION_CODEC_NAME = CompressionCodecName.SNAPPY.toString();
     public static final int DEFAULT_MAXIMUM_DICTIONARY_KEYS = 1 << 20;
     public static final int DEFAULT_MAXIMUM_DICTIONARY_SIZE = 1 << 20;
 
@@ -48,7 +49,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @param parquetInstructions the parquet instructions
      * @throws IllegalArgumentException if there is not a table definition
      */
-    public static TableDefinition ensureDefinition(ParquetInstructions parquetInstructions) {
+    static TableDefinition ensureDefinition(final ParquetInstructions parquetInstructions) {
         return parquetInstructions.getTableDefinition()
                 .orElseThrow(() -> new IllegalArgumentException("Table definition must be provided"));
     }
