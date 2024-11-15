@@ -1243,10 +1243,10 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 }
 
                 try (final RowSet sRange = sRangeBuilder.build();
-                     final RowSet eRange = eRangeBuilder.build();
-                     final RowSet dest = destBuilder.build();
-                     final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                        final RowSet eRange = eRangeBuilder.build();
+                        final RowSet dest = destBuilder.build();
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                        final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
                     ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
