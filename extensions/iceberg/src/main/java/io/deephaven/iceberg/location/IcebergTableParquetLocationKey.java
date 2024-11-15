@@ -49,8 +49,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     /**
      * Construct a new IcebergTableParquetLocationKey for the supplied {@code fileUri} and {@code partitions}.
      *
-     * @param dataFile The data file that backs the keyed location
      * @param manifestFile The manifest file from which the data file was discovered
+     * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
      * @param order Explicit ordering index, taking precedence over other fields
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
@@ -60,8 +60,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param channelsProvider the provider for reading the file
      */
     public IcebergTableParquetLocationKey(
-            @NotNull final DataFile dataFile,
             @NotNull final ManifestFile manifestFile,
+            @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
             final int order,
             @Nullable final Map<String, Comparable<?>> partitions,

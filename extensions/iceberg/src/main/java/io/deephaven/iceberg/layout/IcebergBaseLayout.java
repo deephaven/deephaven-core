@@ -79,7 +79,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
-            return new IcebergTableParquetLocationKey(dataFile, manifestFile, fileUri, 0, partitions,
+            return new IcebergTableParquetLocationKey(manifestFile, dataFile, fileUri, 0, partitions,
                     parquetInstructions, channelsProvider);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
