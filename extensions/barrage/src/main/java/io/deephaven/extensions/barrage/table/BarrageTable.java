@@ -104,7 +104,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * Due to the asynchronous aspect of this protocol, the client may have multiple requests in-flight and the server
      * may choose to honor the most recent request and assumes that the client no longer wants earlier but unacked
      * viewport changes.
-     *
+     * <p>
      * The server notifies the client which viewport it is respecting by including it inside of each snapshot. Note that
      * the server assumes that the client has maintained its state prior to these server-side viewport acks and will not
      * re-send data that the client should already have within the existing viewport.
@@ -426,6 +426,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      * @param executorService an executor service used to flush stats
      * @param tableDefinition the table definition
      * @param attributes Key-Value pairs of attributes to forward to the QueryTable's metadata
+     * @param isFullSubscription whether this table is a full subscription
      *
      * @return a properly initialized {@link BarrageTable}
      */
@@ -434,9 +435,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             @Nullable final ScheduledExecutorService executorService,
             final TableDefinition tableDefinition,
             final Map<String, Object> attributes,
+            final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
         final UpdateGraph ug = ExecutionContext.getContext().getUpdateGraph();
-        return make(ug, ug, executorService, tableDefinition, attributes, vpCallback);
+        return make(ug, ug, executorService, tableDefinition, attributes, isFullSubscription, vpCallback);
     }
 
     @VisibleForTesting
@@ -446,6 +448,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             @Nullable final ScheduledExecutorService executor,
             final TableDefinition tableDefinition,
             final Map<String, Object> attributes,
+            final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
         final List<ColumnDefinition<?>> columns = tableDefinition.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
@@ -474,7 +477,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                     makeColumns(columns, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
                     registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isFlat,
-                    vpCallback);
+                    isFullSubscription, vpCallback);
         }
 
         return table;

@@ -93,15 +93,4 @@ public class IntRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         // endregion extra-copy-args
         );
     }
-
-    /**
-     * Get the names of the input column(s) for this operator.
-     *
-     * @return the names of the input column
-     */
-    @NotNull
-    @Override
-    protected String[] getInputColumnNames() {
-        return new String[] {pair.rightColumn, weightColumnName};
-    }
 }

@@ -17,6 +17,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.batch.TableConfig;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.HasTableState;
@@ -426,6 +427,10 @@ public final class ClientTableState extends TableConfig {
     }
 
     public void setSize(long size) {
+        if (this.size == Long.MIN_VALUE) {
+            // Table is uncoalesced, ignore size change
+            return;
+        }
         boolean log = this.size != size;
         if (log) {
             JsLog.debug("CTS", this, " set size; was ", this.size, " is now ", size);
@@ -914,7 +919,7 @@ public final class ClientTableState extends TableConfig {
             // notify any retainers who have events that we've been released.
             for (Object retainer : JsItr.iterate(retainers.values())) {
                 if (retainer instanceof HasEventHandling) {
-                    ((HasEventHandling) retainer).fireEventWithDetail(HasEventHandling.INTERNAL_EVENT_RELEASED, this);
+                    ((HasEventHandling) retainer).fireEvent(HasEventHandling.INTERNAL_EVENT_RELEASED, this);
                 }
             }
 

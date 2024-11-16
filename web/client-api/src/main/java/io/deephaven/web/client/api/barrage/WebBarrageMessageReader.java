@@ -104,9 +104,11 @@ public class WebBarrageMessageReader {
 
                 msg.firstSeq = metadata.firstSeq();
                 msg.lastSeq = metadata.lastSeq();
+                msg.tableSize = metadata.tableSize();
                 msg.rowsAdded = extractIndex(metadata.addedRowsAsByteBuffer());
                 msg.rowsRemoved = extractIndex(metadata.removedRowsAsByteBuffer());
-                msg.shifted = extractIndexShiftData(metadata.shiftDataAsByteBuffer());
+                final ByteBuffer shiftData = metadata.shiftDataAsByteBuffer();
+                msg.shifted = shiftData != null ? extractIndexShiftData(shiftData) : new ShiftedRange[0];
 
                 final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
                 msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded;

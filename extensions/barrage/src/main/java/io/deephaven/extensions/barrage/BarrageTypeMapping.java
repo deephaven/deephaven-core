@@ -124,7 +124,8 @@ public interface BarrageTypeMapping {
     @FinalDefault
     default ByteString schemaBytesFrom(
             @NotNull final Table table) {
-        return schemaBytesFrom(new BarrageTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat()));
+        return schemaBytesFrom(
+                new BarrageTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat()));
     }
 
     /**

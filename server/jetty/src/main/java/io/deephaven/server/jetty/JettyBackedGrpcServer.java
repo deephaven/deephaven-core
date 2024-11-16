@@ -47,16 +47,17 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -93,9 +94,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
         jetty = new Server();
         jetty.addConnector(createConnector(jetty, config));
 
-        final WebAppContext context =
-                new WebAppContext(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
+        final ServletContextHandler context =
+                new ServletContextHandler(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
         try {
+            // Build a URL to a known file on the classpath, so Jetty can load resources from that jar to serve as
+            // static content
             String knownFile = "/ide/index.html";
             URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
             Resource jarContents = Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
@@ -103,7 +106,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } catch (IOException ioException) {
             throw new UncheckedIOException(ioException);
         }
-        context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
+        // Register a DefaultServlet to serve our custom resources
+        context.addServlet(servletHolder("default", null), "/*");
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -380,12 +384,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
         return serverConnector;
     }
 
-    private static ServletHolder servletHolder(String name, URI filesystemUri) {
+    private static ServletHolder servletHolder(String name, @Nullable URI filesystemUri) {
         final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
-        // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
-        // resource creation implementation, see
-        // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
-        jsPlugins.setInitParameter("resourceBase", filesystemUri.toString());
+        if (filesystemUri != null) {
+            // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
+            // resource creation implementation, see
+            // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
+            jsPlugins.setInitParameter("resourceBase", filesystemUri.toString());
+        }
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
         jsPlugins.setAsyncSupported(true);

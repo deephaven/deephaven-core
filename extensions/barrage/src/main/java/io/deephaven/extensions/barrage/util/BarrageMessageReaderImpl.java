@@ -52,7 +52,7 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     private static final int MAX_CHUNK_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
 
-    private final LongConsumer deserializeTmConsumer;
+    private volatile LongConsumer deserializeTmConsumer;
 
     private long numAddRowsRead = 0;
     private long numAddRowsTotal = 0;
@@ -64,7 +64,16 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReaderFactory.INSTANCE;
     private final List<ChunkReader<?>> readers = new ArrayList<>();
 
+    public BarrageMessageReaderImpl() {
+        this(tm -> {
+        });
+    }
+
     public BarrageMessageReaderImpl(final LongConsumer deserializeTmConsumer) {
+        this.deserializeTmConsumer = deserializeTmConsumer;
+    }
+
+    public void setDeserializeTmConsumer(final LongConsumer deserializeTmConsumer) {
         this.deserializeTmConsumer = deserializeTmConsumer;
     }
 
@@ -125,9 +134,11 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
                         msg.firstSeq = metadata.firstSeq();
                         msg.lastSeq = metadata.lastSeq();
+                        msg.tableSize = metadata.tableSize();
                         msg.rowsAdded = extractIndex(metadata.addedRowsAsByteBuffer());
                         msg.rowsRemoved = extractIndex(metadata.removedRowsAsByteBuffer());
-                        msg.shifted = extractIndexShiftData(metadata.shiftDataAsByteBuffer());
+                        final ByteBuffer shiftData = metadata.shiftDataAsByteBuffer();
+                        msg.shifted = shiftData != null ? extractIndexShiftData(shiftData) : RowSetShiftData.EMPTY;
 
                         final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
                         msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.copy();

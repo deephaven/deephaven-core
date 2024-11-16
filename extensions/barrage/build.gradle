@@ -22,6 +22,7 @@ dependencies {
 
     implementation libs.arrow.vector
     implementation libs.arrow.format
+    implementation project(path: ':extensions-source-support')
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

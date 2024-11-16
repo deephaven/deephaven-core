@@ -5,7 +5,6 @@ package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
@@ -17,13 +16,10 @@ import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDescriptor;
-import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -40,38 +36,26 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     public static final String EVENT_SHUTDOWN = "shutdown";
 
-    private final JsRunnable deathListenerCleanup;
     private final String serverUrl;
 
     private final ConnectToken token = new ConnectToken();
     private final ConnectOptions options;
 
     /**
-     * creates a new instance, from which console sessions can be made. <b>options</b> are optional.
+     * Creates a new instance, from which console sessions can be made.
      * 
      * @param serverUrl The url used when connecting to the server. Read-only.
      * @param connectOptions Optional Object
-     * @param fromJava Optional boolean
      */
-    @Deprecated
-    @JsConstructor
-    public IdeConnection(String serverUrl, @TsTypeRef(ConnectOptions.class) @JsOptional Object connectOptions,
-            @JsOptional Boolean fromJava) {
+    @JsIgnore
+    public IdeConnection(String serverUrl, Object connectOptions) {
+        // Remove trailing slashes from the url
         this.serverUrl = serverUrl.replaceAll("/+$", "");
-        deathListenerCleanup = JsRunnable.doNothing();
 
         if (connectOptions != null) {
             options = new ConnectOptions(connectOptions);
         } else {
             options = new ConnectOptions();
-        }
-
-        if (fromJava != Boolean.TRUE) {
-            JsLog.warn(
-                    "dh.IdeConnection constructor is deprecated, please create a dh.CoreClient, call login(), then call getAsIdeConnection()");
-            token.setType("Anonymous");
-            token.setValue("");
-            connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
         }
     }
 
@@ -80,33 +64,24 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         return "IdeConnection on " + getServerUrl() + ": ";
     }
 
-    /**
-     * Temporary method to split logic between IdeConnection and CoreClient
-     */
     @JsIgnore
+    @Override
     public ConnectToken getToken() {
         return token;
     }
 
     @JsIgnore
     @Override
-    public Promise<ConnectToken> getConnectToken() {
-        return Promise.resolve(token);
-    }
-
-    @JsIgnore
-    @Override
-    public Promise<ConnectOptions> getConnectOptions() {
-        return Promise.resolve(options);
+    public ConnectOptions getOptions() {
+        return options;
     }
 
     /**
-     * closes the current connection, releasing any resources on the server or client.
+     * Closes the current connection, releasing any resources on the server or client.
      */
+    // Made public to expose to JS
     public void close() {
         super.close();
-
-        deathListenerCleanup.run();
     }
 
     /**
@@ -182,9 +157,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
 
         // fire shutdown advice event
-        CustomEventInit<String> eventDetails = CustomEventInit.create();
-        eventDetails.setDetail(details);
-        fireEvent(EVENT_SHUTDOWN, eventDetails);
+        fireEvent(EVENT_SHUTDOWN, details);
 
         // fire deprecated event
         notifyConnectionError(new ResponseStreamWrapper.Status() {

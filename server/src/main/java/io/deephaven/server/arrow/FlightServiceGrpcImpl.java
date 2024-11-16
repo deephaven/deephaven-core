@@ -3,6 +3,8 @@
 //
 package io.deephaven.server.arrow;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -27,6 +29,7 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
@@ -35,9 +38,15 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
+
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNextAndComplete;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
@@ -73,6 +82,30 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Override
     public StreamObserver<Flight.HandshakeRequest> handshake(
             @NotNull final StreamObserver<Flight.HandshakeResponse> responseObserver) {
+        // handle the scenario where authentication headers initialized a session
+        SessionState session = sessionService.getOptionalSession();
+        if (session != null) {
+            // Do not reply over the stream, some clients will break if they receive a message here - but since the
+            // session was already created, our "200 OK" will include the Bearer response already. Do not close
+            // yet to avoid hitting https://github.com/envoyproxy/envoy/issues/30149.
+            return new StreamObserver<>() {
+                @Override
+                public void onNext(Flight.HandshakeRequest value) {
+                    // noop, already sent response
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    // ignore, already closed
+                }
+
+                @Override
+                public void onCompleted() {
+                    safelyComplete(responseObserver);
+                }
+            };
+        }
+
         return new HandshakeObserver(responseObserver);
     }
 
@@ -87,16 +120,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         @Override
         public void onNext(final Flight.HandshakeRequest value) {
-            // handle the scenario where authentication headers initialized a session
-            SessionState session = sessionService.getOptionalSession();
-            if (session != null) {
-                respondWithAuthTokenBin(session);
-                return;
-            }
-
             final AuthenticationRequestHandler.HandshakeResponseListener handshakeResponseListener =
                     (protocol, response) -> {
-                        GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+                        safelyOnNextAndComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
                                 .setProtocolVersion(protocol)
                                 .setPayload(ByteStringAccess.wrap(response))
                                 .build());
@@ -109,6 +135,23 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 auth = login(BasicAuthMarshaller.AUTH_TYPE, protocolVersion, payload, handshakeResponseListener);
                 if (auth.isEmpty()) {
                     final WrappedAuthenticationRequest req = WrappedAuthenticationRequest.parseFrom(payload);
+                    // If the auth request is bearer, the v1 auth might be trying to renew an existing session
+                    if (req.getType().equals(Auth2Constants.BEARER_PREFIX.trim())) {
+                        try {
+                            UUID uuid = UuidCreator.fromString(req.getPayload().toString(StandardCharsets.US_ASCII));
+                            SessionState session = sessionService.getSessionForToken(uuid);
+                            if (session != null) {
+                                SessionService.TokenExpiration expiration = session.getExpiration();
+                                if (expiration != null) {
+                                    respondWithAuthTokenBin(expiration);
+                                }
+                            }
+                            return;
+                        } catch (IllegalArgumentException | InvalidUuidException ignored) {
+                        }
+                    }
+
+                    // Attempt to log in with the given type and token
                     auth = login(req.getType(), protocolVersion, req.getPayload(), handshakeResponseListener);
                 }
             } catch (final AuthenticationException | InvalidProtocolBufferException err) {
@@ -122,8 +165,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 return;
             }
 
-            session = sessionService.newSession(auth.get());
-            respondWithAuthTokenBin(session);
+            SessionState session = sessionService.newSession(auth.get());
+            respondWithAuthTokenBin(session.getExpiration());
         }
 
         private Optional<AuthContext> login(String type, long version, ByteString payload,
@@ -137,10 +180,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         }
 
         /** send the bearer token as an AuthTokenBin, as headers might have already been sent */
-        private void respondWithAuthTokenBin(SessionState session) {
+        private void respondWithAuthTokenBin(SessionService.TokenExpiration expiration) {
             isComplete = true;
             responseObserver.onNext(Flight.HandshakeResponse.newBuilder()
-                    .setPayload(session.getExpiration().getTokenAsByteString())
+                    .setPayload(expiration.getTokenAsByteString())
                     .build());
             responseObserver.onCompleted();
         }
@@ -183,14 +226,13 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.FlightInfo>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(export.get());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess((final Flight.FlightInfo resultFlightInfo) -> safelyOnNextAndComplete(
+                                responseObserver, resultFlightInfo))
+                        .submit(export::get);
                 return;
             }
 
@@ -198,15 +240,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
-                        GrpcUtil.safelyOnNext(responseObserver, export.get());
-                        GrpcUtil.safelyComplete(responseObserver);
+                        safelyOnNextAndComplete(responseObserver, export.get());
                     }
                 } finally {
                     export.dropReference();
                 }
             } else {
                 exception = Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info");
-                GrpcUtil.safelyError(responseObserver, exception);
+                safelyError(responseObserver, exception);
             }
 
             if (queryPerformanceRecorder.endQuery() || exception != null) {
@@ -230,16 +271,16 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     ticketRouter.flightInfoFor(session, request, "request");
 
             if (session != null) {
-                session.nonExport()
+                session.<Flight.SchemaResult>nonExport()
                         .queryPerformanceRecorder(queryPerformanceRecorder)
                         .require(export)
                         .onError(responseObserver)
-                        .submit(() -> {
-                            responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                                    .setSchema(export.get().getSchema())
-                                    .build());
-                            responseObserver.onCompleted();
-                        });
+                        .onSuccess((final Flight.SchemaResult resultSchema) -> safelyOnNextAndComplete(
+                                responseObserver,
+                                resultSchema))
+                        .submit(() -> Flight.SchemaResult.newBuilder()
+                                .setSchema(export.get().getSchema())
+                                .build());
                 return;
             }
 
@@ -247,10 +288,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (export.tryRetainReference()) {
                 try {
                     if (export.getState() == ExportNotification.State.EXPORTED) {
-                        GrpcUtil.safelyOnNext(responseObserver, Flight.SchemaResult.newBuilder()
+                        safelyOnNextAndComplete(responseObserver, Flight.SchemaResult.newBuilder()
                                 .setSchema(export.get().getSchema())
                                 .build());
-                        GrpcUtil.safelyComplete(responseObserver);
                     }
                 } finally {
                     export.dropReference();

@@ -92,15 +92,28 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
-        compilationProcessor.compile();
-
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);
+    }
+
+    /**
+     * Initialize the filters.
+     *
+     * <p>
+     * We must initialize our filters before the wouldMatch operation's call to QueryTable's getResult method, so that
+     * memoization processing can correctly compare them. MatchFilters do not properly implement memoization before
+     * initialization, and they are the most common filter to memoize.
+     * </p>
+     *
+     * @param parent the parent table to have wouldMatch applied
+     */
+    void initializeFilters(@NotNull QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
     }
 
     @Override
@@ -180,7 +193,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public MemoizedOperationKey getMemoizedOperationKey() {
-        return MemoizedOperationKey.wouldMatch();
+        return MemoizedOperationKey.wouldMatch(
+                matchColumns.stream().map(ColumnHolder::getColumnName).toArray(String[]::new), whereFilters);
     }
 
     /**
@@ -432,14 +446,21 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void requestRecomputeUnmatched() {
-            // TODO: No need to recompute matched rows
+            // TODO: No need to recompute matched rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }
 
         @Override
         public void requestRecomputeMatched() {
-            // TODO: No need to recompute unmatched rows
+            // TODO: No need to recompute unmatched rows (https://github.com/deephaven/deephaven-core/issues/6083)
+            doRecompute = true;
+            Require.neqNull(mergedListener, "mergedListener").notifyChanges();
+        }
+
+        @Override
+        public void requestRecompute(RowSet rowSet) {
+            // TODO: No need to recompute the remaining rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
         }

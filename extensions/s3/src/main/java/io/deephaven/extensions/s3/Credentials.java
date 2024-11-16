@@ -3,16 +3,37 @@
 //
 package io.deephaven.extensions.s3;
 
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+
 public interface Credentials {
 
     /**
-     * The default credentials.
+     * Default credentials provider used by Deephaven which resolves credentials in the following order:
+     * <ol>
+     * <li>If a profile name, config file path, or credentials file path is provided, use
+     * {@link ProfileCredentialsProvider}</li>
+     * <li>If not, check all places mentioned in {@link DefaultCredentialsProvider} and fall back to
+     * {@link AnonymousCredentialsProvider}</li>
+     * </ol>
      *
-     * @see <a href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html">Default
-     *      credentials provider chain</a>
+     * @see ProfileCredentialsProvider
+     * @see DefaultCredentialsProvider
+     * @see AnonymousCredentialsProvider
+     */
+    static Credentials resolving() {
+        return ResolvingCredentials.INSTANCE;
+    }
+
+    /**
+     * Default credentials provider used by the AWS SDK that looks for credentials at a number of locations as described
+     * in {@link DefaultCredentialsProvider}
+     *
+     * @see DefaultCredentialsProvider
      */
     static Credentials defaultCredentials() {
-        return DefaultCredentials.DEFAULT_CREDENTIALS;
+        return DefaultCredentials.INSTANCE;
     }
 
     /**
@@ -30,5 +51,14 @@ public interface Credentials {
      */
     static Credentials anonymous() {
         return AnonymousCredentials.ANONYMOUS_CREDENTIALS;
+    }
+
+    /**
+     * Profile specific credentials that uses configuration and credentials files.
+     *
+     * @see ProfileCredentialsProvider
+     */
+    static Credentials profile() {
+        return ProfileCredentials.INSTANCE;
     }
 }

@@ -26,6 +26,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -52,7 +53,7 @@ public class ArrowToTableConverter {
 
     private volatile boolean completed = false;
 
-    private static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) throws IOException {
+    public static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -71,6 +72,39 @@ public class ArrowToTableConverter {
         return mi;
     }
 
+    public static Schema parseArrowSchema(final BarrageProtoUtil.MessageInfo mi) {
+        if (mi.header.headerType() != MessageHeader.Schema) {
+            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
+        }
+
+        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
+        // the header to use after the return of this method.
+        ByteBuffer original = mi.header.getByteBuffer();
+        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
+        Schema schema = new Schema();
+        Message.getRootAsMessage(copy).header(schema);
+
+        return schema;
+    }
+
+    public static PrimitiveIterator.OfLong extractBufferInfo(@NotNull final RecordBatch batch) {
+        final long[] bufferInfo = new long[batch.buffersLength()];
+        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+            if (bi < batch.buffersLength() - 1) {
+                final int nextOffset =
+                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                // our parsers handle overhanging buffers
+                length += Math.max(0, nextOffset - offset - length);
+            }
+            bufferInfo[bi] = length;
+        }
+        return Arrays.stream(bufferInfo).iterator();
+    }
+
     @ScriptApi
     public synchronized void setSchema(final ByteBuffer ipcMessage) {
         // The input ByteBuffer instance (especially originated from Python) can't be assumed to be valid after the
@@ -79,11 +113,8 @@ public class ArrowToTableConverter {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
-        if (mi.header.headerType() != MessageHeader.Schema) {
-            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
-        }
-        parseSchema(mi.header);
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
+        configureWithSchema(parseArrowSchema(mi));
     }
 
     @ScriptApi
@@ -108,7 +139,7 @@ public class ArrowToTableConverter {
             throw new IllegalStateException("Arrow schema must be provided before record batches can be added");
         }
 
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
         if (mi.header.headerType() != MessageHeader.RecordBatch) {
             throw new IllegalArgumentException("The input is not a valid Arrow RecordBatch IPC message");
         }
@@ -138,20 +169,13 @@ public class ArrowToTableConverter {
         completed = true;
     }
 
-    protected void parseSchema(final Message message) {
-        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
-        // the header to use after the return of this method.
-        ByteBuffer original = message.getByteBuffer();
-        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
-        Schema schema = new Schema();
-        Message.getRootAsMessage(copy).header(schema);
+    protected void configureWithSchema(final Schema schema) {
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
+        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, true, null);
         resultTable.setFlat();
 
         columnTypes = result.computeWireTypes();
@@ -176,20 +200,7 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkWriter.FieldNodeInfo(batch.nodes(i)));
 
-        final long[] bufferInfo = new long[batch.buffersLength()];
-        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
-            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
-            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
-
-            if (bi < batch.buffersLength() - 1) {
-                final int nextOffset =
-                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
-                // our parsers handle overhanging buffers
-                length += Math.max(0, nextOffset - offset - length);
-            }
-            bufferInfo[bi] = length;
-        }
-        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+        final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(batch);
 
         msg.rowsRemoved = RowSetFactory.empty();
         msg.shifted = RowSetShiftData.EMPTY;
@@ -219,16 +230,4 @@ public class ArrowToTableConverter {
         msg.length = numRowsAdded;
         return msg;
     }
-
-    private BarrageProtoUtil.MessageInfo getMessageInfo(ByteBuffer ipcMessage) {
-        final BarrageProtoUtil.MessageInfo mi;
-        try {
-            mi = parseArrowIpcMessage(ipcMessage);
-        } catch (IOException unexpected) {
-            throw new UncheckedDeephavenException(unexpected);
-        }
-        return mi;
-    }
-
-
 }

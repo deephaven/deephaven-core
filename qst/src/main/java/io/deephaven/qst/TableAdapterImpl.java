@@ -28,6 +28,7 @@ import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
@@ -165,6 +166,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public Void visit(TailTable tailTable) {
         addOp(tailTable, parentOps(tailTable).tail(tailTable.size()));
+        return null;
+    }
+
+    @Override
+    public Void visit(SliceTable sliceTable) {
+        addOp(sliceTable,
+                parentOps(sliceTable).slice(sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive()));
         return null;
     }
 

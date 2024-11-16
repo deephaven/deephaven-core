@@ -9,7 +9,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.function.Function;
 
 /**
@@ -43,19 +42,6 @@ public interface SelectableDataSet<KEY_TYPE, VALUE_TYPE> {
      */
     default SwappableTable getSwappableTable(final Comparable seriesName, final ChartImpl chart, final String... cols) {
         return getSwappableTable(seriesName, chart, null, cols);
-    }
-
-    /**
-     * Gets a version of the SelectableDataSet with a lastBy applied to the tables.
-     *
-     * @param groupByColumns The grouping columns for the lastBy
-     * @return a new SelectableDataSet with lastBy applied
-     *
-     * @deprecated This method will be removed in a future release, use {@link #transform(Object, Function)} instead.
-     */
-    @Deprecated()
-    default SelectableDataSet<KEY_TYPE, VALUE_TYPE> getLastBy(final Collection<String> groupByColumns) {
-        return transform(groupByColumns, t -> t.lastBy(groupByColumns));
     }
 
     /**

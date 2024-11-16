@@ -10,15 +10,14 @@ import elemental2.core.ArrayBuffer;
 import elemental2.core.ArrayBufferView;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsOverlay;
@@ -153,9 +152,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                     hasFetched = true;
                     resolve.onInvoke(this);
                 } else {
-                    CustomEventInit<EventDetails> messageEvent = CustomEventInit.create();
-                    messageEvent.setDetail(new EventDetails(res.getData(), responseObjects));
-                    fireEvent(EVENT_MESSAGE, messageEvent);
+                    fireEvent(EVENT_MESSAGE, new EventDetails(res.getData(), responseObjects));
                 }
             });
             messageStream.onStatus(status -> {

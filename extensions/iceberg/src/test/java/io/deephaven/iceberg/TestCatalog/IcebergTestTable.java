@@ -3,14 +3,11 @@
 //
 package io.deephaven.iceberg.TestCatalog;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.*;
 import org.apache.iceberg.encryption.EncryptionManager;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.io.LocationProvider;
-import org.apache.iceberg.io.ResolvingFileIO;
 import org.jetbrains.annotations.NotNull;
-import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -20,12 +17,12 @@ import java.util.Map;
 
 public class IcebergTestTable implements Table {
     private final TableMetadata metadata;
-    private final Map<String, String> properties;
-    private final Configuration hadoopConf;
+    private final FileIO fileIO;
 
-    private IcebergTestTable(@NotNull final String path, @NotNull final Map<String, String> properties) {
-        this.properties = properties;
-        hadoopConf = new Configuration();
+    private IcebergTestTable(
+            @NotNull final String path,
+            @NotNull final FileIO fileIO) {
+        this.fileIO = fileIO;
 
         final File metadataRoot = new File(path, "metadata");
 
@@ -51,8 +48,8 @@ public class IcebergTestTable implements Table {
 
     public static IcebergTestTable loadFromMetadata(
             @NotNull final String path,
-            @NotNull final Map<String, String> properties) {
-        return new IcebergTestTable(path, properties);
+            @NotNull final FileIO fileIO) {
+        return new IcebergTestTable(path, fileIO);
     }
 
     @Override
@@ -60,7 +57,7 @@ public class IcebergTestTable implements Table {
 
     @Override
     public TableScan newScan() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -141,100 +138,97 @@ public class IcebergTestTable implements Table {
 
     @Override
     public List<HistoryEntry> history() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public UpdateSchema updateSchema() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public UpdatePartitionSpec updateSpec() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public UpdateProperties updateProperties() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public ReplaceSortOrder replaceSortOrder() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public UpdateLocation updateLocation() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public AppendFiles newAppend() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public RewriteFiles newRewrite() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public RewriteManifests rewriteManifests() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public OverwriteFiles newOverwrite() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public RowDelta newRowDelta() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public ReplacePartitions newReplacePartitions() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public DeleteFiles newDelete() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public ExpireSnapshots expireSnapshots() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public ManageSnapshots manageSnapshots() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public Transaction newTransaction() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public FileIO io() {
-        final ResolvingFileIO io = new ResolvingFileIO();
-        io.setConf(hadoopConf);
-        io.initialize(properties);
-        return io;
+        return fileIO;
     }
 
     @Override
     public EncryptionManager encryption() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
     public LocationProvider locationProvider() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -244,6 +238,6 @@ public class IcebergTestTable implements Table {
 
     @Override
     public Map<String, SnapshotRef> refs() {
-        throw new NotImplementedException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

@@ -5,9 +5,9 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
-import elemental2.dom.CustomEvent;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -331,7 +331,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 // confirm the grand totals are unchanged
                                 return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
-                                    ViewportData viewportData = (ViewportData) update.detail;
+                                    ViewportData viewportData = (ViewportData) update.getDetail();
 
                                     // 2 rows (one for k=0, one for k=1)
                                     assertEquals(2, viewportData.getRows().length);
@@ -389,7 +389,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
         }
     }
 
-    private Consumer<CustomEvent> checkTotals(
+    private Consumer<Event<ViewportData>> checkTotals(
             JsTotalsTable totals,
             long i,
             double avg,
@@ -397,7 +397,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             String messages) {
         String ext = messages;
         return update -> {
-            ViewportData viewportData = (ViewportData) update.detail;
+            ViewportData viewportData = update.getDetail();
 
             assertEquals(1, viewportData.getRows().length);
             assertEquals(3, viewportData.getColumns().length);
@@ -412,13 +412,13 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
         };
     }
 
-    private Consumer<CustomEvent> checkTotals(
+    private Consumer<Event<ViewportData>> checkTotals(
             JsTotalsTable totals,
             String messages,
             TotalsResults... expected) {
         String ext = messages;
         return update -> {
-            ViewportData viewportData = (ViewportData) update.detail;
+            ViewportData viewportData = update.getDetail();
 
             assertEquals("Viewport data rows", expected.length, viewportData.getRows().length);
             assertEquals("Viewport columns", 4, viewportData.getColumns().length);
@@ -442,9 +442,9 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
      * Specialized waitForEvent since JsTotalsTable isn't a HasEventHandling subtype, and doesnt make sense to shoehorn
      * it in just for tests.
      */
-    private <T> Promise<JsTotalsTable> waitForEvent(JsTotalsTable table, String eventName, Consumer<CustomEvent> check,
+    private <T> Promise<JsTotalsTable> waitForEvent(JsTotalsTable table, String eventName, Consumer<Event<T>> check,
             int timeout) {
-        return waitForEvent(table.getWrappedTable(), eventName, check::accept, timeout)
+        return waitForEvent(table.getWrappedTable(), eventName, check, timeout)
                 .then(t -> Promise.resolve(table));
     }
 

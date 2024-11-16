@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import jpy
 import numpy as np
-
+from time import sleep
 from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
     input_table, time, _wrapper
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
@@ -16,7 +16,7 @@ from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NU
 from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
-from deephaven.stream import blink_to_append_only, stream_to_append_only
+from deephaven.stream import blink_to_append_only, stream_to_append_only, add_only_to_blink
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
@@ -409,6 +409,17 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(ring_t.is_refreshing)
         self.wait_ticking_table_update(ring_t, 6, 5)
 
+    def test_add_only_to_blink(self):
+        t = time_table("PT00:00:01")
+        bt = add_only_to_blink(t)
+        self.assertTrue(bt.is_refreshing)
+        self.assertTrue(bt.is_blink)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        with self.assertRaises(DHError) as cm:
+            add_only_to_blink(t)
+        self.assertIn("failed to create a blink table", str(cm.exception))
+
     def test_blink_to_append_only(self):
         _JTimeTable = jpy.get_type("io.deephaven.engine.table.impl.TimeTable")
         _JBaseTable = jpy.get_type("io.deephaven.engine.table.impl.BaseTable")
@@ -430,10 +441,7 @@ class TableFactoryTestCase(BaseTestCase):
         from deephaven import dtypes as dht
         from deephaven import time as dhtu
 
-        col_defs_5 = \
-            { \
-                "InstantArray": dht.instant_array \
-                }
+        col_defs_5 = {"InstantArray": dht.instant_array}
 
         dtw5 = DynamicTableWriter(col_defs_5)
         t5 = dtw5.table
@@ -477,6 +485,60 @@ class TableFactoryTestCase(BaseTestCase):
         t = _wrapper.wrap_j_object(t.j_object)
         self.assertFalse(isinstance(t, InputTable))
         self.assertTrue(isinstance(t, Table))
+
+    def test_input_table_async(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, -1]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+
+        with self.subTest("async add"):
+            self.assertEqual(t.size, 2)
+            success_count = 0
+            def on_success():
+                nonlocal success_count
+                success_count += 1
+            append_only_input_table = input_table(col_defs=t.definition)
+            append_only_input_table.add_async(t, on_success=on_success)
+            append_only_input_table.add_async(t, on_success=on_success)
+            while success_count < 2:
+                sleep(0.1)
+            self.assertEqual(append_only_input_table.size, 4)
+
+            keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
+            keyed_input_table.add_async(t, on_success=on_success)
+            keyed_input_table.add_async(t, on_success=on_success)
+            while success_count < 4:
+                sleep(0.1)
+            self.assertEqual(keyed_input_table.size, 2)
+
+        with self.subTest("async delete"):
+            keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
+            keyed_input_table.delete_async(t.select(["String", "Double"]), on_success=on_success)
+            while success_count < 5:
+                sleep(0.1)
+            self.assertEqual(keyed_input_table.size, 0)
+            t1 = t.drop_columns("String")
+
+        with self.subTest("schema mismatch"):
+            error_count = 0
+            def on_error(e: Exception):
+                nonlocal error_count
+                error_count += 1
+
+            append_only_input_table = input_table(col_defs=t1.definition)
+            with self.assertRaises(DHError) as cm:
+                append_only_input_table.add_async(t, on_success=on_success, on_error=on_error)
+            self.assertEqual(error_count, 0)
 
 
 if __name__ == '__main__':

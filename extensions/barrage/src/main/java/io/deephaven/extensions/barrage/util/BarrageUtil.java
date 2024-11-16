@@ -36,6 +36,7 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -214,7 +215,8 @@ public class BarrageUtil {
             Instant.class,
             Boolean.class,
             LocalDate.class,
-            LocalTime.class));
+            LocalTime.class,
+            Schema.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -486,8 +488,7 @@ public class BarrageUtil {
         public TableDefinition tableDef;
         public Map<String, Object> attributes;
 
-        public ConvertedArrowSchema() {
-        }
+        public ConvertedArrowSchema() {}
 
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
@@ -506,6 +507,29 @@ public class BarrageUtil {
         public Class<?>[] computeWireComponentTypes() {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
+        }
+
+        public ChunkReader<? extends Values>[] computeChunkReaders(
+                @NotNull final ChunkReader.Factory chunkReaderFactory,
+                @NotNull final org.apache.arrow.flatbuf.Schema schema,
+                @NotNull final BarrageOptions barrageOptions) {
+            // noinspection unchecked
+            final ChunkReader<? extends Values>[] readers =
+                    (ChunkReader<? extends Values>[]) new ChunkReader[tableDef.numColumns()];
+
+            final List<ColumnDefinition<?>> columns = tableDef.getColumns();
+            for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
+                // final ColumnDefinition<?> columnDefinition = columns.get(ii);
+                // final BarrageTypeInfo typeInfo = typeInfo(
+                // ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(columnDefinition.getDataType()),
+                // columnDefinition.getDataType(),
+                // columnDefinition.getComponentType(),
+                // schema.fields(ii));
+                // readers[ii] = DefaultChunkReadingFactory.INSTANCE.getReader(barrageOptions, factor, typeInfo);
+                throw new UnsupportedOperationException("TODO NOCOMMIT NATE");
+            }
+
+            return readers;
         }
     }
 
@@ -761,7 +785,8 @@ public class BarrageUtil {
                     return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                        || type == BigInteger.class
+                        || type == Schema.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == Instant.class || type == ZonedDateTime.class) {

@@ -2304,6 +2304,16 @@ class Table(JObjectWrapper):
 
         Raises:
             DHError
+
+        Examples:
+            >>> table.slice(0, 5)    # first 5 rows
+            >>> table.slice(-5, 0)   # last 5 rows
+            >>> table.slice(2, 6)    # rows from index 2 to 5
+            >>> table.slice(6, 2)    # ERROR: cannot slice start after end
+            >>> table.slice(-6, -2)  # rows from 6th last to 2nd last (exclusive)
+            >>> table.slice(-2, -6)  # ERROR: cannot slice start after end
+            >>> table.slice(2, -3)   # all rows except the first 2 and the last 3
+            >>> table.slice(-6, 8)   # rows from 6th last to index 8 (exclusive)
         """
         try:
             return Table(j_table=self.j_table.slice(start, stop))
@@ -3786,7 +3796,7 @@ class MultiJoinInput(JObjectWrapper):
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:
@@ -3803,13 +3813,14 @@ class MultiJoinInput(JObjectWrapper):
 
 class MultiJoinTable(JObjectWrapper):
     """A MultiJoinTable is an object that contains the result of a multi-table natural join. To retrieve the underlying
-    result Table, use the table() method. """
+    result Table, use the :attr:`.table` property. """
     j_object_type = _JMultiJoinTable
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_multijointable
 
+    @property
     def table(self) -> Table:
         """Returns the Table containing the multi-table natural join output. """
         return Table(j_table=self.j_multijointable.table())
@@ -3866,7 +3877,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
     Returns:
         MultiJoinTable: the result of the multi-table natural join operation. To access the underlying Table, use the
-            table() method.
+            :attr:`~MultiJoinTable.table` property.
     """
     return MultiJoinTable(input, on)
 
