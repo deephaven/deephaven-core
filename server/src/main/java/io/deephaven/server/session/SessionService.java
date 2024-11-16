@@ -85,7 +85,7 @@ public class SessionService {
                 } else if (sre.getStatus().getCode().equals(Status.CANCELLED.getCode())) {
                     log.debug().append("ignoring cancelled request").endl();
                 } else {
-                    log.error().append(sre).endl();
+                    log.debug().append(sre).endl();
                 }
                 return sre;
             } else if (err instanceof InterruptedException) {

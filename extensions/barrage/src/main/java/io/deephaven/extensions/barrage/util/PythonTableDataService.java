@@ -71,7 +71,7 @@ public class PythonTableDataService extends AbstractTableDataService {
         return new PythonTableDataService(
                 pyTableDataService,
                 chunkReaderFactory == null ? DefaultChunkReaderFactory.INSTANCE : chunkReaderFactory,
-                streamReaderOptions == null ? BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS : streamReaderOptions,
+                streamReaderOptions == null ? BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS : streamReaderOptions,
                 pageSize <= 0 ? DEFAULT_PAGE_SIZE : pageSize);
     }
 

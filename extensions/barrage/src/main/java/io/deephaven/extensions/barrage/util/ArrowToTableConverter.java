@@ -37,7 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
+import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SUBSCRIPTION_OPTIONS;
 
 /**
  * This class allows the incremental making of a BarrageTable from Arrow IPC messages, starting with an Arrow Schema
@@ -48,7 +48,7 @@ public class ArrowToTableConverter {
     protected BarrageTable resultTable;
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
-    protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
+    protected BarrageSubscriptionOptions options = DEFAULT_SUBSCRIPTION_OPTIONS;
     private final List<ChunkReader<WritableChunk<Values>>> readers = new ArrayList<>();
 
     private volatile boolean completed = false;

@@ -56,8 +56,6 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
-
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
@@ -141,12 +139,12 @@ public class ArrowFlightUtil {
 
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
-                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
+                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
                                         table.getDefinition(), table.getAttributes(), table.isFlat())));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
                     });
         }
     }

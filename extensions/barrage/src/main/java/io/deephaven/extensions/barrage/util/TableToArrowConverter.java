@@ -14,7 +14,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.NoSuchElementException;
 
-import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_DESER_OPTIONS;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTable;
 
 /**
@@ -22,10 +21,10 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.schemaBytesFromTa
  * split into chunks and returned as multiple Arrow RecordBatch messages.
  */
 public class TableToArrowConverter {
-    private final BaseTable table;
+    private final BaseTable<?> table;
     private ArrowBuilderObserver listener = null;
 
-    public TableToArrowConverter(BaseTable table) {
+    public TableToArrowConverter(BaseTable<?> table) {
         this.table = table;
     }
 
@@ -38,7 +37,7 @@ public class TableToArrowConverter {
                 new BarragePerformanceLog.SnapshotMetricsHelper();
         listener = new ArrowBuilderObserver();
         BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null,
-                false, DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
+                false, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
     }
 
     public byte[] getSchema() {

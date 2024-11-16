@@ -33,6 +33,7 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
@@ -81,7 +82,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BarrageUtil {
-    public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_DESER_OPTIONS =
+    public static final BarrageSubscriptionOptions DEFAULT_SUBSCRIPTION_OPTIONS =
+            BarrageSubscriptionOptions.builder().build();
+    public static final BarrageSnapshotOptions DEFAULT_SNAPSHOT_OPTIONS =
             BarrageSnapshotOptions.builder().build();
 
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
@@ -227,7 +230,7 @@ public class BarrageUtil {
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
         return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS, tableDefinition, attributes, isFlat));
+                fbb, DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat));
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
