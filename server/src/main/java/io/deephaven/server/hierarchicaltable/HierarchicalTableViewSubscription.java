@@ -329,8 +329,12 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         barrageMessage.isSnapshot = true;
         barrageMessage.rowsAdded = RowSetFactory.flat(expandedSize);
-        barrageMessage.rowsIncluded = RowSetFactory.fromRange(
-                rows.firstRowKey(), Math.min(expandedSize - 1, rows.lastRowKey()));
+        if (rows.isEmpty() || expandedSize <= rows.firstRowKey()) {
+            barrageMessage.rowsIncluded = RowSetFactory.empty();
+        } else {
+            barrageMessage.rowsIncluded = RowSetFactory.fromRange(
+                    rows.firstRowKey(), Math.min(expandedSize - 1, rows.lastRowKey()));
+        }
         barrageMessage.rowsRemoved = RowSetFactory.empty();
         barrageMessage.shifted = RowSetShiftData.EMPTY;
         barrageMessage.tableSize = expandedSize;
