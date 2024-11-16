@@ -6,7 +6,6 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.base.Charsets;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;

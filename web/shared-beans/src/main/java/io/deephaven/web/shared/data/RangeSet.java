@@ -451,6 +451,10 @@ public class RangeSet {
         return sortedRanges.size();
     }
 
+    public boolean isFlat() {
+        return sortedRanges.isEmpty() || sortedRanges.size() == 1 && getFirstRow() == 0;
+    }
+
     /**
      * The total count of items contained in this collection. In some cases this can be expensive to compute, and
      * generally should not be needed except for debugging purposes, or preallocating space (i.e., do not call this

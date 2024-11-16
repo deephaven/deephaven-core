@@ -497,6 +497,7 @@ public abstract class WebBarrageSubscription {
             }
 
             // Update the currentRowSet; we're guaranteed to be flat
+            assert currentRowSet.isFlat();
             final long prevSize = currentRowSet.size();
             final long newSize = prevSize - message.rowsRemoved.size() + message.rowsAdded.size();
             if (prevSize < newSize) {
@@ -504,6 +505,7 @@ public abstract class WebBarrageSubscription {
             } else if (prevSize > newSize) {
                 currentRowSet.removeRange(new Range(newSize, prevSize - 1));
             }
+            assert currentRowSet.isFlat();
 
             for (int ii = 0; ii < message.addColumnData.length; ii++) {
                 final WebBarrageMessage.AddColumnData column = message.addColumnData[ii];

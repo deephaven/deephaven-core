@@ -60,8 +60,6 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 long intervalMillis);
     }
 
-    private static final Logger log = LoggerFactory.getLogger(HierarchicalTableViewSubscription.class);
-
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
     private final BarrageStreamGenerator.Factory streamGeneratorFactory;

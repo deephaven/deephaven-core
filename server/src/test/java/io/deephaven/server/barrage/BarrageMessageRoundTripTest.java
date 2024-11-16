@@ -247,8 +247,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (viewport == null) {
                 // Since key-space needs to be kept the same, the RowSets should also be identical between producer and
                 // consumer (not RowSets between expected and consumer; as the consumer maintains the entire RowSet).
-                Assert.equals(barrageMessageProducer.getRowSet(), "barrageMessageProducer.build()",
-                        barrageTable.getRowSet(), ".build()");
+                Assert.equals(barrageMessageProducer.getRowSet(), "barrageMessageProducer.getRowSet()",
+                        barrageTable.getRowSet(), "barrageTable.getRowSet()");
             } else {
                 // otherwise, the RowSet should represent a flattened view of the viewport
                 Assert.eqTrue(barrageTable.getRowSet().isFlat(), "barrageTable.getRowSet().isFlat()");
