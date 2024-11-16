@@ -16,6 +16,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -85,7 +86,7 @@ public abstract class AbstractTableLocationProvider
         private final ImmutableTableLocationKey key;
 
         private volatile TableLocation tableLocation;
-        private volatile boolean active;
+        private boolean active;
 
         TrackedKeySupplier(@NotNull final ImmutableTableLocationKey key) {
             super(false);
@@ -118,15 +119,22 @@ public abstract class AbstractTableLocationProvider
 
         /**
          * Mark this supplier inactive. Indicates that this key is not included in the live set for new subscribers.
+         * Only called under the lock on {@link #tableLocationKeyMap}.
          */
         private void deactivate() {
             active = false;
         }
 
+        /**
+         * Test whether this key is active. Only called under the lock on {@link #tableLocationKeyMap}.
+         *
+         * @return Whether this key is active (included in the live set for new subscribers)
+         */
         private boolean active() {
             return active;
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
@@ -406,8 +414,12 @@ public abstract class AbstractTableLocationProvider
 
         if (!supportsSubscriptions()) {
             final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
-            trackedKey.deactivate();
-            livenessManager.unmanage(trackedKey);
+            if (trackedKey != null) {
+                synchronized (tableLocationKeyMap) {
+                    trackedKey.deactivate();
+                }
+                livenessManager.unmanage(trackedKey);
+            }
             return;
         }
 
@@ -415,7 +427,9 @@ public abstract class AbstractTableLocationProvider
         synchronized (subscriptions) {
             final TrackedKeySupplier trackedKey = tableLocationKeyMap.get(locationKey);
             if (trackedKey != null) {
-                trackedKey.deactivate();
+                synchronized (tableLocationKeyMap) {
+                    trackedKey.deactivate();
+                }
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
                         trackedKey,

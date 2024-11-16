@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.liveness;
 
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
@@ -107,7 +108,8 @@ public abstract class ReferenceCountedLivenessNode extends ReferenceCountedLiven
 
     @Override
     public final void onReferenceCountAtZero() {
-        super.onReferenceCountAtZero();
-        tracker.ensureReferencesDropped();
+        try (final SafeCloseable ignored = tracker.enqueueReferencesForDrop()) {
+            super.onReferenceCountAtZero();
+        }
     }
 }

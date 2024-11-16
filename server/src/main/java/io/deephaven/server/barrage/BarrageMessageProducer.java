@@ -58,6 +58,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -715,6 +716,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         public void destroy() {
             super.destroy();
@@ -2335,6 +2337,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         return msg;
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected synchronized void destroy() {
         super.destroy();

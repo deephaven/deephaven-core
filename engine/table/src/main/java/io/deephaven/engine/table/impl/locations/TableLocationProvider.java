@@ -133,7 +133,7 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
-     * guaranteed to succeed for all results.
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
      */
     @TestUseOnly
     default Collection<ImmutableTableLocationKey> getTableLocationKeys() {
@@ -145,7 +145,7 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
-     * guaranteed to succeed for all results.
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
      *
      * @param consumer A consumer to receive the location keys
      */
@@ -156,7 +156,7 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
-     * guaranteed to succeed for all results.
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
      *
      * @param consumer A consumer to receive the location keys
      * @param filter A filter to apply to the location keys before the consumer is called
@@ -174,6 +174,10 @@ public interface TableLocationProvider extends NamedImplementation {
     boolean hasTableLocationKey(@NotNull TableLocationKey tableLocationKey);
 
     /**
+     * Get the {@link TableLocation} associated with the given key. Callers should ensure that they retain the
+     * {@link LiveSupplier} returned by {@link #getTableLocationKeys(Consumer, Predicate)} for the key they are
+     * interested in, as the location may be removed if the supplier is no longer live.
+     *
      * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
      * @return The {@link TableLocation} matching the given key
      */
@@ -187,6 +191,10 @@ public interface TableLocationProvider extends NamedImplementation {
     }
 
     /**
+     * Get the {@link TableLocation} associated with the given key if it exists. Callers should ensure that they retain
+     * the {@link LiveSupplier} returned by {@link #getTableLocationKeys(Consumer, Predicate)} for the key they are
+     * interested in, as the location may be removed if the supplier is no longer live.
+     *
      * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
      * @return The {@link TableLocation} matching the given key if present, else null.
      */
