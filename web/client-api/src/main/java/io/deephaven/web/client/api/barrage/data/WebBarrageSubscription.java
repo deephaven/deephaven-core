@@ -463,7 +463,7 @@ public abstract class WebBarrageSubscription {
     }
 
     public static class ViewportImpl extends WebBarrageSubscription {
-        private long lastTableSize = 0;
+        private long tableSize = 0;
 
         public ViewportImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
                 DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
@@ -473,22 +473,23 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public long getCurrentSize() {
-            return lastTableSize;
+            return tableSize;
         }
 
         @Override
         public RangeSet getCurrentRowSet() {
-            if (lastTableSize <= 0) {
+            if (tableSize <= 0) {
                 return RangeSet.empty();
             }
-            return RangeSet.ofRange(0, lastTableSize - 1);
+            return RangeSet.ofRange(0, tableSize - 1);
         }
 
         @Override
         public void applyUpdates(WebBarrageMessage message) {
             final BitSet prevServerColumns = serverColumns == null ? null : (BitSet) serverColumns.clone();
             assert message.tableSize >= 0;
-            lastTableSize = message.tableSize;
+            final long prevTableSize = tableSize;
+            tableSize = message.tableSize;
 
             final RangeSet prevServerViewport = serverViewport.copy();
             if (message.isSnapshot) {
@@ -543,11 +544,16 @@ public abstract class WebBarrageSubscription {
             }
 
             state.setSize(message.tableSize);
+            final RangeSet rowsAdded = serverViewport == null ? RangeSet.empty() : serverViewport.copy();
+            if (!rowsAdded.isEmpty() && rowsAdded.getLastRow() >= tableSize) {
+                rowsAdded.removeRange(new Range(tableSize, rowsAdded.getLastRow()));
+            }
+            final RangeSet rowsRemoved = prevServerViewport == null ? RangeSet.empty() : prevServerViewport.copy();
+            if (!rowsRemoved.isEmpty() && rowsRemoved.getLastRow() >= prevTableSize) {
+                rowsRemoved.removeRange(new Range(prevTableSize, rowsRemoved.getLastRow()));
+            }
             dataChangedHandler.onDataChanged(
-                    serverViewport == null ? RangeSet.empty() : serverViewport.copy(),
-                    prevServerViewport == null ? RangeSet.empty() : prevServerViewport.copy(),
-                    RangeSet.empty(),
-                    new ShiftedRange[0],
+                    rowsAdded, rowsRemoved, RangeSet.empty(), new ShiftedRange[0],
                     serverColumns == null ? null : (BitSet) serverColumns.clone());
         }
 
