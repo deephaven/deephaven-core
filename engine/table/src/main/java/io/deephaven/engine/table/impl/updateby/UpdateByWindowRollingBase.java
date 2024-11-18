@@ -41,14 +41,16 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 final TrackingRowSet timestampValidRowSet,
                 final boolean timestampsModified,
                 final int chunkSize,
-                final boolean initialStep) {
+                final boolean initialStep,
+                final Object[] bucketKeyValues) {
             super(sourceRowSet,
                     timestampColumnSource,
                     timestampSsa,
                     timestampValidRowSet,
                     timestampsModified,
                     chunkSize,
-                    initialStep);
+                    initialStep,
+                    bucketKeyValues);
         }
 
         @Override
@@ -60,7 +62,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
     }
 
     UpdateByWindowRollingBase(@NotNull final UpdateByOperator[] operators,
-            @NotNull final int[][] operatorSourceSlots,
+            final int[][] operatorSourceSlots,
             final long prevUnits,
             final long fwdUnits,
             @Nullable final String timestampColumnName) {
@@ -152,7 +154,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator rollingOp = operators[opIdx];
-                rollingOp.initializeRolling(winOpContexts[ii], bucketRowSet);
+                rollingOp.initializeRollingWithKeyValues(winOpContexts[ii], bucketRowSet, context.bucketKeyValues);
             }
 
             int affectedChunkOffset = 0;

@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwr
 import io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.windowconsumer.RingBufferWindowConsumer;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
@@ -56,8 +57,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         private final SingleValueColumnSource<?>[] keyValueSources;
         private final RingBufferWindowConsumer[] inputConsumers;
-
-        private boolean keyValuesSet;
 
         @SuppressWarnings("unused")
         private Context(final int affectedChunkSize, final int influencerChunkSize) {
@@ -128,8 +127,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         @Override
         protected void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks) {
-            // NOTE: the value chunks are supplied in the order of the response to `getInputColumnNames()` which we
-            // have set to non-key columns, then key columns.
             for (int i = 0; i < inputConsumers.length; i++) {
                 inputConsumers[i].setInputChunk(valueChunks[i]);
             }
@@ -183,13 +180,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
                 // push for this row
                 if (pushCount > 0) {
-                    if (!keyValuesSet) {
-                        for (int i = 0; i < keyValueSources.length; i++) {
-                            assignKeyValue(influencerValueChunkArr[i + inputNonKeyColumnNames.length],
-                                    ii, keyValueSources[i]);
-                        }
-                        keyValuesSet = true;
-                    }
                     for (RingBufferWindowConsumer consumer : inputConsumers) {
                         consumer.push(pushIndex, pushCount);
                     }
@@ -221,7 +211,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             for (RingBufferWindowConsumer consumer : inputConsumers) {
                 consumer.reset();
             }
-            keyValuesSet = false;
             nullCount = 0;
         }
 
@@ -229,6 +218,12 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         public void close() {
             outputValues.close();
             outputFillContext.close();
+        }
+
+        private void setBucketKeyValues(final Object[] bucketKeyValues) {
+            for (int i = 0; i < keyValueSources.length; i++) {
+                assignKeyValue(bucketKeyValues[i], keyValueSources[i]);
+            }
         }
     }
 
@@ -409,47 +404,39 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
      * particularly efficient but is only be called once per bucket.
      */
     private static void assignKeyValue(
-            @NotNull final Chunk<?> valueChunk,
-            final int index,
-            @NotNull SingleValueColumnSource<?> inputColumnSource) {
-        final ChunkType chunkType = valueChunk.getChunkType();
+            @NotNull final Object keyValue,
+            @NotNull final SingleValueColumnSource<?> inputColumnSource) {
+
+        final ChunkType chunkType = inputColumnSource.getChunkType();
         switch (chunkType) {
             case Boolean:
                 throw new IllegalStateException(
                         "Input chunk type should not be Boolean but should have been reinterpreted to byte");
             case Byte:
-                final ByteChunk<?> byteChunk = valueChunk.asByteChunk();
-                inputColumnSource.set(byteChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Byte) keyValue));
                 break;
             case Char:
-                final CharChunk<?> charChunk = valueChunk.asCharChunk();
-                inputColumnSource.set(charChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Character) keyValue));
                 break;
             case Double:
-                final DoubleChunk<?> doubleChunk = valueChunk.asDoubleChunk();
-                inputColumnSource.set(doubleChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Double) keyValue));
                 break;
             case Float:
-                final FloatChunk<?> floatChunk = valueChunk.asFloatChunk();
-                inputColumnSource.set(floatChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Float) keyValue));
                 break;
             case Int:
-                final IntChunk<?> intChunk = valueChunk.asIntChunk();
-                inputColumnSource.set(intChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Integer) keyValue));
                 break;
             case Long:
-                final LongChunk<?> longChunk = valueChunk.asLongChunk();
-                inputColumnSource.set(longChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Long) keyValue));
                 break;
             case Short:
-                final ShortChunk<?> shortChunk = valueChunk.asShortChunk();
-                inputColumnSource.set(shortChunk.get(index));
+                inputColumnSource.set(TypeUtils.unbox((Short) keyValue));
                 break;
             default:
-                final ObjectChunk<Object, ?> objectChunk = valueChunk.asObjectChunk();
                 // noinspection unchecked
                 final ObjectSingleValueSource<Object> source = (ObjectSingleValueSource<Object>) inputColumnSource;
-                source.set(objectChunk.get(index));
+                source.set(keyValue);
                 break;
         }
     }
@@ -480,6 +467,17 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         }
     }
 
+    @Override
+    public void initializeRollingWithKeyValues(
+            @NotNull final UpdateByOperator.Context context,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        super.initializeRollingWithKeyValues(context, bucketRowSet, bucketKeyValues);
+
+        final Context rollingContext = (Context) context;
+        rollingContext.setBucketKeyValues(bucketKeyValues);
+    }
+
     @NotNull
     @Override
     public Map<String, ColumnSource<?>> getOutputColumns() {
@@ -505,7 +503,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     @Override
     @NotNull
     protected String[] getInputColumnNames() {
-        // Non-key columns first, then key chunks
-        return ArrayUtils.addAll(inputNonKeyColumnNames, inputKeyColumnNames);
+        return ArrayUtils.addAll(inputNonKeyColumnNames);
     }
 }
