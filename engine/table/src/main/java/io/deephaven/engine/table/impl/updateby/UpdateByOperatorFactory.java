@@ -1460,7 +1460,7 @@ public class UpdateByOperatorFactory {
                                         cd.getDataType())));
             }
 
-            // Get the input column names from the formula and provide them to the groupBy operator
+            // Get the input column names from the formula and provide them to the rolling formula operator
             final String[] allInputColumns =
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
             if (!selectColumn.getColumnArrays().isEmpty()) {
@@ -1494,10 +1494,9 @@ public class UpdateByOperatorFactory {
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = ArrayUtils.addAll(inputKeyColumns, inputNonKeyColumns);
+                affectingColumns = inputNonKeyColumns;
             } else {
-                affectingColumns = ArrayUtils.add(ArrayUtils.addAll(inputKeyColumns, inputNonKeyColumns),
-                        rs.revWindowScale().timestampCol());
+                affectingColumns = ArrayUtils.add(inputNonKeyColumns, rs.revWindowScale().timestampCol());
             }
 
             // Create a new column pair with the same name for the left and right columns

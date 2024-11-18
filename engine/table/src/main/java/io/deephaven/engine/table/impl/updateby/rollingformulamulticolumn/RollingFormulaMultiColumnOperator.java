@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwr
 import io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.windowconsumer.RingBufferWindowConsumer;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +54,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         private final IntConsumer outputSetter;
         private final IntConsumer outputNullSetter;
 
-        private final SingleValueColumnSource<?>[] keyValueSources;
+        @SuppressWarnings("rawtypes")
+        private final SingleValueColumnSource[] keyValueSources;
         private final RingBufferWindowConsumer[] inputConsumers;
 
         @SuppressWarnings("unused")
@@ -222,7 +222,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         private void setBucketKeyValues(final Object[] bucketKeyValues) {
             for (int i = 0; i < keyValueSources.length; i++) {
-                assignKeyValue(bucketKeyValues[i], keyValueSources[i]);
+                // noinspection unchecked
+                keyValueSources[i].set(bucketKeyValues[i]);
             }
         }
     }
@@ -396,48 +397,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             default:
                 final WritableObjectChunk<Object, ? extends Values> objectChunk = valueChunk.asWritableObjectChunk();
                 return index -> objectChunk.set(index, null);
-        }
-    }
-
-    /**
-     * This assigns the value at {@code index} in {@code valueChunk} to the {@code inputColumnSource}. This is not
-     * particularly efficient but is only be called once per bucket.
-     */
-    private static void assignKeyValue(
-            @NotNull final Object keyValue,
-            @NotNull final SingleValueColumnSource<?> inputColumnSource) {
-
-        final ChunkType chunkType = inputColumnSource.getChunkType();
-        switch (chunkType) {
-            case Boolean:
-                throw new IllegalStateException(
-                        "Input chunk type should not be Boolean but should have been reinterpreted to byte");
-            case Byte:
-                inputColumnSource.set(TypeUtils.unbox((Byte) keyValue));
-                break;
-            case Char:
-                inputColumnSource.set(TypeUtils.unbox((Character) keyValue));
-                break;
-            case Double:
-                inputColumnSource.set(TypeUtils.unbox((Double) keyValue));
-                break;
-            case Float:
-                inputColumnSource.set(TypeUtils.unbox((Float) keyValue));
-                break;
-            case Int:
-                inputColumnSource.set(TypeUtils.unbox((Integer) keyValue));
-                break;
-            case Long:
-                inputColumnSource.set(TypeUtils.unbox((Long) keyValue));
-                break;
-            case Short:
-                inputColumnSource.set(TypeUtils.unbox((Short) keyValue));
-                break;
-            default:
-                // noinspection unchecked
-                final ObjectSingleValueSource<Object> source = (ObjectSingleValueSource<Object>) inputColumnSource;
-                source.set(keyValue);
-                break;
         }
     }
     // endregion value-setters
