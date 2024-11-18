@@ -124,7 +124,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
 
         this.catalogName = tableAdapter.catalog().name();
-        this.tableIdentifier = tableAdapter.tableIdentifier().name();
+        this.tableIdentifier = tableAdapter.tableIdentifier().toString();
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);

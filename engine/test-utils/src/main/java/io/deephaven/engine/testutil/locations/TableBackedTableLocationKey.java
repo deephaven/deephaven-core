@@ -49,10 +49,10 @@ public final class TableBackedTableLocationKey implements ImmutableTableLocation
         if (other instanceof TableBackedTableLocationKey) {
             final TableBackedTableLocationKey otherTyped = (TableBackedTableLocationKey) other;
             // noinspection DataFlowIssue
-            final int partitionComparisonResult =
+            final int idComparisonResult =
                     Integer.compare((int) table.getAttribute("ID"), (int) otherTyped.table.getAttribute("ID"));
-            if (partitionComparisonResult != 0) {
-                return partitionComparisonResult;
+            if (idComparisonResult != 0) {
+                return idComparisonResult;
             }
         }
         return ImmutableTableLocationKey.super.compareTo(other);
