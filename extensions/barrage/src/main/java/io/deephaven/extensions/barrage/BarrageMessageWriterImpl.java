@@ -31,8 +31,6 @@ import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderWriter;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
@@ -57,9 +55,6 @@ import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.PADDING_BUFF
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
 public class BarrageMessageWriterImpl implements BarrageMessageWriter {
-
-    private static final Logger log = LoggerFactory.getLogger(BarrageMessageWriterImpl.class);
-
     // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
     // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()

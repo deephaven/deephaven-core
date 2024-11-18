@@ -62,7 +62,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final BarrageSnapshotOptions options;
     private final ClientCallStreamObserver<FlightData> observer;
     private final BarrageUtil.ConvertedArrowSchema schema;
-    private final BarrageMessageReaderImpl barrageStreamReader;
+    private final BarrageMessageReaderImpl barrageMessageReader;
 
     private volatile BarrageTable resultTable;
     private final CompletableFuture<Table> future;
@@ -95,10 +95,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         future = new SnapshotCompletableFuture();
 
-        barrageStreamReader = new BarrageMessageReaderImpl();
+        barrageMessageReader = new BarrageMessageReaderImpl();
         final MethodDescriptor<FlightData, BarrageMessage> snapshotDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                        schema.computeWireComponentTypes(), barrageStreamReader);
+                        schema.computeWireComponentTypes(), barrageMessageReader);
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -235,7 +235,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final BarrageTable localResultTable = BarrageTable.make(
                 executorService, schema.tableDef, schema.attributes, isFullSubscription, new CheckForCompletion());
         resultTable = localResultTable;
-        barrageStreamReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
+        barrageMessageReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()

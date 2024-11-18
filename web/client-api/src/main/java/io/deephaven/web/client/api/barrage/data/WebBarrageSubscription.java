@@ -79,11 +79,10 @@ public abstract class WebBarrageSubscription {
 
         if (cts.getTableDef().getAttributes().isBlinkTable()) {
             return new BlinkImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
-        } else if (subscriptionType == SubscriptionType.FULL_SUBSCRIPTION
-                || subscriptionType == SubscriptionType.SNAPSHOT) {
-            return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
-        } else {
+        } else if (subscriptionType == SubscriptionType.VIEWPORT_SUBSCRIPTION) {
             return new ViewportImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
+        } else {
+            return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
         }
     }
 

@@ -20,6 +20,7 @@ import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
@@ -30,6 +31,7 @@ import org.apache.arrow.vector.PeriodDuration;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -95,6 +97,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.Binary, byte[].class, DefaultChunkReaderFactory::binaryToByteArray);
         register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkReaderFactory::binaryToBigInt);
         register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkReaderFactory::binaryToBigDecimal);
+        register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkReaderFactory::binaryToSchema);
         register(ArrowType.ArrowTypeID.Time, long.class, DefaultChunkReaderFactory::timeToLong);
         register(ArrowType.ArrowTypeID.Time, LocalTime.class, DefaultChunkReaderFactory::timeToLocalTime);
         register(ArrowType.ArrowTypeID.Decimal, byte.class, DefaultChunkReaderFactory::decimalToByte);
@@ -472,6 +475,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
             return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
         });
+    }
+
+    private static ChunkReader<WritableObjectChunk<Schema, Values>> binaryToSchema(
+            final ArrowType arrowType,
+            final BarrageTypeInfo typeInfo,
+            final BarrageOptions options) {
+        return new VarBinaryChunkReader<>(ArrowIpcUtil::deserialize);
     }
 
     private static ChunkReader<WritableLongChunk<Values>> timeToLong(

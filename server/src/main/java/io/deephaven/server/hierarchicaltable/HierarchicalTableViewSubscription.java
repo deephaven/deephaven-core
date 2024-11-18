@@ -28,8 +28,6 @@ import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -300,7 +298,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private static void buildAndSendSnapshot(
-            @NotNull final BarrageMessageWriter.Factory streamGeneratorFactory,
+            @NotNull final BarrageMessageWriter.Factory messageWriterFactory,
             @NotNull final StreamObserver<BarrageMessageWriter.MessageView> listener,
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @NotNull final HierarchicalTableView view,
@@ -375,7 +373,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         // 5. Send the BarrageMessage
         try (final BarrageMessageWriter bmw =
-                streamGeneratorFactory.newMessageWriter(barrageMessage, chunkWriters, writeMetricsConsumer)) {
+                messageWriterFactory.newMessageWriter(barrageMessage, chunkWriters, writeMetricsConsumer)) {
             // initialSnapshot flag is ignored for non-growing viewports
             final boolean initialSnapshot = false;
             final boolean isFullSubscription = false;

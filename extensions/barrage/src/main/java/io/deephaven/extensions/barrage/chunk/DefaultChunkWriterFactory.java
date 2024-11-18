@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.Float16;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -32,6 +34,7 @@ import org.apache.arrow.vector.PeriodDuration;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.DataOutput;
@@ -93,6 +96,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         register(ArrowType.ArrowTypeID.Binary, byte[].class, DefaultChunkWriterFactory::binaryFromByteArray);
         register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkWriterFactory::binaryFromBigInt);
         register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkWriterFactory::binaryFromBigDecimal);
+        register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkWriterFactory::binaryFromSchema);
         register(ArrowType.ArrowTypeID.Time, long.class, DefaultChunkWriterFactory::timeFromLong);
         register(ArrowType.ArrowTypeID.Time, LocalTime.class, DefaultChunkWriterFactory::timeFromLocalTime);
         register(ArrowType.ArrowTypeID.Decimal, byte.class, DefaultChunkWriterFactory::decimalFromByte);
@@ -510,6 +514,12 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             out.write(0xFF & (v >> 24));
             out.write(normal.unscaledValue().toByteArray());
         });
+    }
+
+    private static ChunkWriter<ObjectChunk<Schema, Values>> binaryFromSchema(
+            final ArrowType arrowType,
+            final BarrageTypeInfo typeInfo) {
+        return new VarBinaryChunkWriter<>(ArrowIpcUtil::serialize);
     }
 
     private static ChunkWriter<LongChunk<Values>> timeFromLong(
