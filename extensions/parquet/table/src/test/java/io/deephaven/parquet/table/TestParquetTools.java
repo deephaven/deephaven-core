@@ -643,6 +643,7 @@ public class TestParquetTools {
         // to know whenever our serialization changes in any way.
         assertEquals("c21f162b2c186d0a95a8d2302c9ed3fab172747b45501b2ee5e5bb04b98e92e0", sha256sum(file.toPath()));
 
+        // TODO(deephaven-core#6128): Allow Parquet column access by field_id
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
         // we are writing it down correctly if we can read it correctly.
         // {
@@ -685,7 +686,7 @@ public class TestParquetTools {
      *
      * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
      */
-    @Ignore("We don't have reading field_id support yet")
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
     @Test
     public void testParquetFieldIds() {
         final String file = TestParquetTools.class.getResource("/ReferenceSimpleParquetFieldIds.parquet").getFile();
@@ -873,7 +874,7 @@ public class TestParquetTools {
      *
      * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
      */
-    @Ignore("We don't have reading field_id support yet")
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
     @Test
     public void testPartitionedParquetFieldIds() {
         final String file = TestParquetTools.class.getResource("/ReferencePartitionedFieldIds").getFile();
@@ -929,7 +930,7 @@ public class TestParquetTools {
      *
      * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
      */
-    @Ignore("We don't have reading field_id support yet")
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
     @Test
     public void testParquetFieldIdsWithListType() {
         final String file = TestParquetTools.class.getResource("/ReferenceListParquetFieldIds.parquet").getFile();
@@ -961,7 +962,7 @@ public class TestParquetTools {
      * this column as "FirstName". Both standalone, and in combination with the newer file, we should be able to read it
      * with the latest schema.
      */
-    @Ignore("We don't have reading field_id support yet")
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
     @Test
     public void testRenamingResolveViaFieldId() {
         final File f1 = new File(testRoot, "testRenamingResolveViaFieldId.00.parquet");
@@ -1076,12 +1077,6 @@ public class TestParquetTools {
             }
         }
     }
-
-    // // We are unable to generate this sort of file via DH atm.
-    // @Test
-    // public void parquetWithNonUniqueColumnNames() {
-    //
-    // }
 
     /**
      * <pre>

@@ -57,6 +57,8 @@ final class ColumnWriterImpl implements ColumnWriter {
     private final RunLengthBitPackingHybridEncoder dlEncoder;
     private final RunLengthBitPackingHybridEncoder rlEncoder;
     private long dictionaryOffset = -1;
+    // The downstream writing code (ParquetFileWriter) seems to respect the traversal order of this set. As such, to
+    // improve determinism, we are using an EnumSet.
     private final Set<Encoding> encodings = EnumSet.noneOf(Encoding.class);
     private long firstDataPageOffset = -1;
     private long uncompressedLength;

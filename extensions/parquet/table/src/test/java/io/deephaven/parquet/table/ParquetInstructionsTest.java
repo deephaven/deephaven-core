@@ -22,15 +22,10 @@ public class ParquetInstructionsTest {
         assertThat(instructions.getFieldId("Bar")).hasValue(99);
         assertThat(instructions.getFieldId("Baz")).hasValue(99);
         assertThat(instructions.getFieldId("Zap")).isEmpty();
-
-        // assertThat(instructions.getColumnNamesFromParquetFieldId(42)).containsExactly("Foo");
-        // assertThat(instructions.getColumnNamesFromParquetFieldId(99)).containsExactly("Bar", "Baz");
-        // assertThat(instructions.getColumnNamesFromParquetFieldId(100)).isEmpty();
     }
 
     @Test
     public void setFieldIdAlreadySet() {
-
         // Setting the same fieldId on a given column name is "ok" if it's the same value, this is to be more consistent
         // with how addColumnNameMapping works.
         {
@@ -76,11 +71,6 @@ public class ParquetInstructionsTest {
         assertThat(instructions.getColumnNameFromParquetColumnName("PARQUET COLUMN 2!")).isEqualTo("Bar");
         assertThat(instructions.getColumnNameFromParquetColumnName("ParquetColumn3")).isEqualTo("Baz");
         assertThat(instructions.getColumnNameFromParquetColumnName("Does Not Exist")).isNull();
-
-        // assertThat(instructions.getParquetColumnName("Foo")).hasValue("Foo");
-        // assertThat(instructions.getParquetColumnName("Bar")).hasValue("PARQUET COLUMN 2!");
-        // assertThat(instructions.getParquetColumnName("Baz")).hasValue("ParquetColumn3");
-        // assertThat(instructions.getParquetColumnName("Zap")).isEmpty();
 
         assertThat(instructions.getParquetColumnNameFromColumnNameOrDefault("Foo")).isEqualTo("Foo");
         assertThat(instructions.getParquetColumnNameFromColumnNameOrDefault("Bar")).isEqualTo("PARQUET COLUMN 2!");

@@ -15,6 +15,7 @@ import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -339,14 +340,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         private static final KeyedObjectKey<String, ColumnInstructions> COLUMN_NAME_KEY = new Basic<>() {
             @Override
-            public String getKey(ColumnInstructions columnInstructions) {
+            public String getKey(@NotNull final ColumnInstructions columnInstructions) {
                 return columnInstructions.getColumnName();
             }
         };
 
         private static final KeyedObjectKey<String, ColumnInstructions> PARQUET_COLUMN_NAME_KEY = new Basic<>() {
             @Override
-            public String getKey(ColumnInstructions columnInstructions) {
+            public String getKey(@NotNull final ColumnInstructions columnInstructions) {
                 return columnInstructions.getParquetColumnName();
             }
         };
@@ -760,42 +761,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             ci.useDictionary(useDictionary);
             return this;
         }
-
-        // /**
-        // * For reading, provides a mapping between a Deephaven column name and a parquet column by field id. This
-        // allows
-        // * resolving a parquet column where the physical "parquet column name" may not be known apriori by the caller.
-        // * In the case where both a field id mapping and a parquet colum name mapping is provided, the field id will
-        // * take precedence over the parquet column name. This may happen in cases where the parquet file is managed by
-        // a
-        // * higher-level schema that has the concept of a "field id"; for example, Iceberg. As <a href=
-        // *
-        // "https://github.com/apache/parquet-format/blob/apache-parquet-format-2.10.0/src/main/thrift/parquet.thrift#L456-L459">documented
-        // * in the parquet format</a>:
-        // *
-        // * <pre>
-        // * When the original schema supports field ids, this will save the original field id in the parquet schema
-        // * </pre>
-        // *
-        // * In the case where a field id mapping is provided but no matching parquet column is found, the column will
-        // not
-        // * be inferred; and in the case where it's explicitly included as part of a
-        // * {@link #setTableDefinition(TableDefinition)}, the resulting column will contain the appropriate default
-        // * ({@code null}) values. In the case where there are multiple parquet columns with the same field_id, those
-        // * parquet columns will not be resolvable via a field id.
-        // *
-        // * <p>
-        // * For writing, this will set the {@code field_id} in the proper Parquet {@code SchemaElement}.
-        // *
-        // * <p>
-        // * Setting multiple field ids for a single column name is not allowed.
-        // *
-        // * <p>
-        // * Field ids are not typically configured by end users.
-        // *
-        // * @param columnName the Deephaven column name
-        // * @param fieldId the field id
-        // */
 
         /**
          * This is currently only used for writing, allowing the setting of {@code field_id} in the proper Parquet
