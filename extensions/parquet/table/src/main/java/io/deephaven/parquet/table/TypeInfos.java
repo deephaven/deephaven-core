@@ -58,6 +58,12 @@ public class TypeInfos {
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
 
+    /**
+     * A list's element must be named this, see
+     * <a href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#lists">lists</a>
+     */
+    private static final String ELEMENT_NAME = "element";
+
     static {
         final Map<Class<?>, TypeInfo> fa = new HashMap<>();
         for (final TypeInfo typeInfo : TYPE_INFOS) {
@@ -477,10 +483,14 @@ public class TypeInfos {
             if (!isRepeating) {
                 return builder.named(parquetColumnName);
             }
-            return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
-                    Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(parquetColumnName))
-                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
+            // Note: the Parquet type builder would take care of the element name for us if we were constructing it
+            // ahead of time via ListBuilder.optionalElement
+            // (org.apache.parquet.schema.Types.BaseListBuilder.ElementBuilder.named) when we named the outer list; but
+            // since we are constructing types recursively (without regard to the outer type), we are responsible for
+            // setting the element name correctly at this point in time.
+            return Types.optionalList()
+                    .element(builder.named(ELEMENT_NAME))
+                    .named(parquetColumnName);
         }
     }
 
