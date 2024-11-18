@@ -6,29 +6,22 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
-import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
-import io.deephaven.engine.table.impl.select.FormulaUtil;
-import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.select.DhFormulaColumn;
-import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ChunkSink.FillFromContext;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 
@@ -37,17 +30,17 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#applyToAllBy}.
  */
-class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
+class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOperator {
+
+    private final QueryTable inputTable;
 
     private final GroupByChunkedOperator groupBy;
     private final boolean delegateToBy;
-    private final String[] inputColumnNames;
-    private final String[] resultColumnNames;
+    private final SelectColumn selectColumn;
+    private final WritableColumnSource<?> resultColumn;
+    private final String[] inputKeyColumns;
 
-    private final FormulaColumn[] formulaColumns;
-    private final ChunkSource<Values>[] formulaDataSources;
-    private final WritableColumnSource<?>[] resultColumns;
-    private final ModifiedColumnSet[] resultColumnModifiedColumnSets;
+    private ChunkSource<Values> formulaDataSource;
 
     /**
      * Converts the upstream MCS to a downstream MCS.
@@ -60,49 +53,28 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
     private ModifiedColumnSet updateUpstreamModifiedColumnSet;
 
     /**
-     * Construct an operator for applying a formula to a set of aggregation result columns.
+     * Construct an operator for applying a formula to slot-vectors over an aggregated table..
      *
      * @param groupBy The {@link GroupByChunkedOperator} to use for tracking indices
      * @param delegateToBy Whether this operator is responsible for passing methods through to {@code groupBy}. Should
-     *        be false if {@code groupBy} is updated by the helper (and {@code groupBy} must come before this operator
-     *        if so), or if this is not the first operator sharing {@code groupBy}.
-     * @param formula The formula, before any column name substitutions
-     * @param columnParamName The token to substitute column names for
-     * @param resultColumnPairs The names for formula input and result columns
+     *        be false if {@code groupBy} is updated by the helper, or if this is not the first operator sharing
+     *        {@code groupBy}.
+     * @param selectColumn The formula column that will produce the results
      */
-    FormulaChunkedOperator(
+    FormulaMultiColumnChunkedOperator(
+            @NotNull final QueryTable inputTable,
             @NotNull final GroupByChunkedOperator groupBy,
             final boolean delegateToBy,
-            @NotNull final String formula,
-            @NotNull final String columnParamName,
-            @NotNull final QueryCompilerRequestProcessor compilationProcessor,
-            @NotNull final MatchPair... resultColumnPairs) {
+            @NotNull final SelectColumn selectColumn,
+            @NotNull final String[] inputKeyColumns) {
+        this.inputTable = inputTable;
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
-        this.inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
-        this.resultColumnNames = MatchPair.getLeftColumns(resultColumnPairs);
+        this.selectColumn = selectColumn;
+        this.inputKeyColumns = inputKeyColumns;
 
-        formulaColumns = new DhFormulaColumn[resultColumnPairs.length];
-        // noinspection unchecked
-        formulaDataSources = new ChunkSource[resultColumnPairs.length]; // Not populated until propagateInitialState
-        resultColumns = new WritableColumnSource[resultColumnPairs.length];
-        resultColumnModifiedColumnSets = new ModifiedColumnSet[resultColumnPairs.length]; // Not populated until
-                                                                                          // initializeRefreshing
-        final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
-        for (int ci = 0; ci < resultColumnPairs.length; ++ci) {
-            final String inputColumnName = inputColumnNames[ci];
-            final String outputColumnName = resultColumnNames[ci];
-            final FormulaColumn formulaColumn = formulaColumns[ci] = FormulaColumn.createFormulaColumn(outputColumnName,
-                    FormulaUtil.replaceFormulaTokens(formula, columnParamName, inputColumnName));
-            final ColumnSource<?> inputColumnSource = byResultColumns.get(inputColumnName);
-            final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
-                    .fromGenericType(inputColumnName, inputColumnSource.getType(),
-                            inputColumnSource.getComponentType());
-            formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition),
-                    compilationProcessor);
-            resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
-                    0, formulaColumn.getReturnedType(), formulaColumn.getReturnedComponentType());
-        }
+        resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
+                0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
     }
 
     @Override
@@ -235,19 +207,12 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         if (delegateToBy) {
             groupBy.ensureCapacity(tableSize);
         }
-        for (@NotNull
-        final WritableColumnSource<?> resultColumn : resultColumns) {
-            resultColumn.ensureCapacity(tableSize);
-        }
+        resultColumn.ensureCapacity(tableSize);
     }
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        final Map<String, WritableColumnSource<?>> resultColumnsMap = new LinkedHashMap<>();
-        for (int ci = 0; ci < resultColumnNames.length; ++ci) {
-            resultColumnsMap.put(resultColumnNames[ci], resultColumns[ci]);
-        }
-        return resultColumnsMap;
+        return Map.of(selectColumn.getName(), resultColumn);
     }
 
     @Override
@@ -256,19 +221,19 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             groupBy.propagateInitialState(resultTable, startingDestinationsCount);
         }
 
-        final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
-        for (int ci = 0; ci < inputColumnNames.length; ++ci) {
-            final String inputColumnName = inputColumnNames[ci];
-            final FormulaColumn formulaColumn = formulaColumns[ci];
-            final ColumnSource<?> inputColumnSource = byResultColumns.get(inputColumnName);
-            formulaColumn.initInputs(resultTable.getRowSet(),
-                    Collections.singletonMap(inputColumnName, inputColumnSource));
+        final Map<String, ColumnSource<?>> sourceColumns;
+        if (inputKeyColumns.length == 0) {
             // noinspection unchecked
-            formulaDataSources[ci] = formulaColumn.getDataView();
+            sourceColumns = (Map<String, ColumnSource<?>>) groupBy.getInputResultColumns();
+        } else {
+            final Map<String, ColumnSource<?>> columnSourceMap = resultTable.getColumnSourceMap();
+            sourceColumns = new HashMap<>(groupBy.getInputResultColumns());
+            Arrays.stream(inputKeyColumns).forEach(col -> sourceColumns.put(col, columnSourceMap.get(col)));
         }
+        selectColumn.initInputs(resultTable.getRowSet(), sourceColumns);
+        formulaDataSource = selectColumn.getDataView();
 
-        final boolean[] allColumnsMask = makeAllColumnsMask();
-        try (final DataCopyContext dataCopyContext = new DataCopyContext(allColumnsMask, allColumnsMask)) {
+        try (final DataCopyContext dataCopyContext = new DataCopyContext()) {
             dataCopyContext.copyData(resultTable.getRowSet());
         }
     }
@@ -278,26 +243,32 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         if (delegateToBy) {
             groupBy.startTrackingPrevValues();
         }
-        for (@NotNull
-        final WritableColumnSource<?> resultColumn : resultColumns) {
-            resultColumn.startTrackingPrevValues();
-        }
+        resultColumn.startTrackingPrevValues();
     }
 
     @Override
     public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
-        for (int ci = 0; ci < resultColumnNames.length; ++ci) {
-            resultColumnModifiedColumnSets[ci] = resultTable.newModifiedColumnSet(resultColumnNames[ci]);
-        }
         if (delegateToBy) {
-            // We cannot use the groupBy's result MCS factory, because the result column names are not guaranteed
-            // to be the same.
+            // We cannot use the groupBy's result MCS factory, because the result column names are not
+            // guaranteed to be the same.
             groupBy.initializeRefreshing(resultTable, aggregationUpdateListener);
         }
+
         // Note that we also use the factory in propagateUpdates to identify the set of modified columns to handle.
-        return inputToResultModifiedColumnSetFactory =
-                groupBy.makeInputToResultModifiedColumnSetFactory(resultTable, resultColumnNames);
+        if (selectColumn.getColumns().isEmpty()) {
+            return inputToResultModifiedColumnSetFactory = input -> ModifiedColumnSet.EMPTY;
+        }
+        final ModifiedColumnSet resultMCS = resultTable.newModifiedColumnSet(selectColumn.getName());
+        final String[] inputColumnNames = selectColumn.getColumns().toArray(String[]::new);
+        final ModifiedColumnSet inputMCS = inputTable.newModifiedColumnSet(inputColumnNames);
+        return inputToResultModifiedColumnSetFactory = input -> {
+            if (groupBy.getSomeKeyHasAddsOrRemoves() ||
+                    (groupBy.getSomeKeyHasModifies() && input.containsAny(inputMCS))) {
+                return resultMCS;
+            }
+            return ModifiedColumnSet.EMPTY;
+        };
     }
 
     @Override
@@ -324,30 +295,27 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         final boolean removesToProcess = downstream.removed().isNonempty();
 
         if (!addsToProcess && !modifiesToProcess && !removesToProcess) {
+            // Nothing to do.
             return;
         }
 
-        // Now we know we have some removes.
         if (!addsToProcess && !modifiesToProcess) {
-            try (final DataFillerContext dataFillerContext = new DataFillerContext(makeObjectColumnsMask())) {
-                dataFillerContext.clearObjectColumnData(downstream.removed());
+            // Only removes to handle, clear the removed objects.
+            if (!resultColumn.getType().isPrimitive()) {
+                try (final DataFillerContext dataFillerContext = new DataFillerContext()) {
+                    dataFillerContext.clearObjectColumnData(downstream.removed());
+                }
             }
             return;
         }
 
-        // Now we know we have some adds or modifies.
-        final boolean[] modifiedColumnsMask =
-                modifiesToProcess ? makeModifiedColumnsMask(resultModifiedColumnSet) : null;
-        final boolean[] columnsToFillMask = addsToProcess ? makeAllColumnsMask()
-                : removesToProcess ? makeObjectOrModifiedColumnsMask(resultModifiedColumnSet) : modifiedColumnsMask;
-        final boolean[] columnsToGetMask = addsToProcess ? columnsToFillMask : modifiedColumnsMask;
-
-        try (final DataCopyContext dataCopyContext = new DataCopyContext(columnsToFillMask, columnsToGetMask)) {
-            if (removesToProcess) {
+        try (final DataCopyContext dataCopyContext = new DataCopyContext()) {
+            // Clear removed objects from the result column.
+            if (removesToProcess && !resultColumn.getType().isPrimitive()) {
                 dataCopyContext.clearObjectColumnData(downstream.removed());
             }
             if (modifiesToProcess) {
-                dataCopyContext.copyData(downstream.modified(), modifiedColumnsMask);
+                dataCopyContext.copyData(downstream.modified());
             }
             if (addsToProcess) {
                 dataCopyContext.copyData(downstream.added());
@@ -373,19 +341,15 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         return delegateToBy ? groupBy.makeSingletonContext(size) : null;
     }
 
+    /**
+     * Helper class to efficiently clear object data from the result columns.
+     */
     private class DataFillerContext implements SafeCloseable {
 
-        private final boolean[] columnsToFillMask;
-        final FillFromContext[] fillFromContexts;
+        final FillFromContext fillFromContext;
 
-        private DataFillerContext(final boolean @NotNull [] columnsToFillMask) {
-            this.columnsToFillMask = columnsToFillMask;
-            fillFromContexts = new FillFromContext[resultColumnNames.length];
-            for (int ci = 0; ci < resultColumnNames.length; ++ci) {
-                if (columnsToFillMask[ci]) {
-                    fillFromContexts[ci] = resultColumns[ci].makeFillFromContext(BLOCK_SIZE);
-                }
-            }
+        private DataFillerContext() {
+            fillFromContext = resultColumn.makeFillFromContext(BLOCK_SIZE);
         }
 
         void clearObjectColumnData(@NotNull final RowSequence rowSequence) {
@@ -397,56 +361,37 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                     final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
                             calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
                     nullValueChunk.setSize(rowSequenceSlice.intSize());
-                    for (int ci = 0; ci < columnsToFillMask.length; ++ci) {
-                        final WritableColumnSource<?> resultColumn = resultColumns[ci];
-                        if (columnsToFillMask[ci] && !resultColumn.getType().isPrimitive()) {
-                            resultColumn.fillFromChunk(fillFromContexts[ci], nullValueChunk, rowSequenceSlice);
-                        }
-                    }
+                    resultColumn.fillFromChunk(fillFromContext, nullValueChunk, rowSequenceSlice);
                 }
             }
         }
 
         @Override
         public void close() {
-            SafeCloseable.closeAll(fillFromContexts);
+            fillFromContext.close();
         }
     }
 
+    /**
+     * Helper class to efficiently copy data from the formula data source to the result column.
+     */
     private class DataCopyContext extends DataFillerContext {
 
-        private final boolean[] columnsToGetMask;
         private final SharedContext sharedContext;
-        private final GetContext[] getContexts;
+        private final GetContext getContext;
 
-        private DataCopyContext(@NotNull final boolean[] columnsToFillMask, @NotNull final boolean[] columnsToGetMask) {
-            super(columnsToFillMask);
-            this.columnsToGetMask = columnsToGetMask;
+        private DataCopyContext() {
             sharedContext = SharedContext.makeSharedContext();
-            getContexts = new GetContext[resultColumnNames.length];
-            for (int ci = 0; ci < resultColumnNames.length; ++ci) {
-                if (columnsToGetMask[ci]) {
-                    getContexts[ci] = formulaDataSources[ci].makeGetContext(BLOCK_SIZE, sharedContext);
-                }
-            }
+            getContext = formulaDataSource.makeGetContext(BLOCK_SIZE, sharedContext);
         }
 
         private void copyData(@NotNull final RowSequence rowSequence) {
-            copyData(rowSequence, columnsToGetMask);
-        }
-
-        private void copyData(@NotNull final RowSequence rowSequence, @NotNull final boolean[] columnsMask) {
             try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
                 while (rowSequenceIterator.hasMore()) {
                     final RowSequence rowSequenceSlice = rowSequenceIterator.getNextRowSequenceThrough(
                             calculateContainingBlockLastKey(rowSequenceIterator.peekNextKey()));
-                    for (int ci = 0; ci < columnsToGetMask.length; ++ci) {
-                        if (columnsMask[ci]) {
-                            resultColumns[ci].fillFromChunk(fillFromContexts[ci],
-                                    formulaDataSources[ci].getChunk(getContexts[ci], rowSequenceSlice),
-                                    rowSequenceSlice);
-                        }
-                    }
+                    resultColumn.fillFromChunk(fillFromContext,
+                            formulaDataSource.getChunk(getContext, rowSequenceSlice), rowSequenceSlice);
                     sharedContext.reset();
                 }
             }
@@ -456,42 +401,11 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         public void close() {
             super.close();
             sharedContext.close();
-            SafeCloseable.closeAll(getContexts);
+            getContext.close();
         }
     }
 
     private static long calculateContainingBlockLastKey(final long firstKey) {
         return (firstKey / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
-    }
-
-    private boolean[] makeAllColumnsMask() {
-        final boolean[] columnsMask = new boolean[resultColumnNames.length];
-        Arrays.fill(columnsMask, true);
-        return columnsMask;
-    }
-
-    private boolean[] makeObjectColumnsMask() {
-        final boolean[] columnsMask = new boolean[resultColumns.length];
-        for (int ci = 0; ci < resultColumns.length; ++ci) {
-            columnsMask[ci] = !resultColumns[ci].getType().isPrimitive();
-        }
-        return columnsMask;
-    }
-
-    private boolean[] makeModifiedColumnsMask(@NotNull final ModifiedColumnSet resultModifiedColumnSet) {
-        final boolean[] columnsMask = new boolean[resultColumnModifiedColumnSets.length];
-        for (int ci = 0; ci < resultColumnModifiedColumnSets.length; ++ci) {
-            columnsMask[ci] = resultModifiedColumnSet.containsAny(resultColumnModifiedColumnSets[ci]);
-        }
-        return columnsMask;
-    }
-
-    private boolean[] makeObjectOrModifiedColumnsMask(@NotNull final ModifiedColumnSet resultModifiedColumnSet) {
-        final boolean[] columnsMask = new boolean[resultColumns.length];
-        for (int ci = 0; ci < resultColumns.length; ++ci) {
-            columnsMask[ci] = !resultColumns[ci].getType().isPrimitive()
-                    || resultModifiedColumnSet.containsAny(resultColumnModifiedColumnSets[ci]);
-        }
-        return columnsMask;
     }
 }

@@ -15,6 +15,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
+@Deprecated
 public abstract class AggSpecFormula extends AggSpecBase {
 
     public static final String PARAM_TOKEN_DEFAULT = "each";
