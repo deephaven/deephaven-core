@@ -15,12 +15,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
+
+    @Nullable
+    private final UUID tableUuid;
+
+    @NotNull
+    private final String catalogName;
+
+    @NotNull
+    private final String tableIdentifier;
 
     /**
      * The {@link DataFile#dataSequenceNumber()} of the data file backing this keyed location.
@@ -42,6 +52,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     private final long manifestSequenceNumber;
 
+    @NotNull
     private final ParquetInstructions readInstructions;
 
     private int cachedHashCode;
@@ -49,6 +60,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     /**
      * Construct a new IcebergTableParquetLocationKey for the supplied {@code fileUri} and {@code partitions}.
      *
+     * @param tableUuid The UUID of the table, or {@code null} if not available
+     * @param catalogName The name of the catalog using which the table is accessed
+     * @param tableIdentifier The table identified string
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location
@@ -60,6 +74,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * @param channelsProvider the provider for reading the file
      */
     public IcebergTableParquetLocationKey(
+            @Nullable final UUID tableUuid,
+            @NotNull final String catalogName,
+            @NotNull final String tableIdentifier,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
             @NotNull final URI fileUri,
@@ -68,6 +85,10 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(fileUri, order, partitions, channelsProvider);
+
+        this.tableUuid = tableUuid;
+        this.catalogName = catalogName;
+        this.tableIdentifier = tableIdentifier;
 
         // Files with unknown sequence numbers should be ordered last.
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
@@ -92,11 +113,24 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then {@code dataSequenceNumber}, then
-     * {@code fileSequenceNumber}, then {@code manifestSequenceNumber}, then {@code dataFilePos}, and finally compares
-     * {@code uri}.
-     *
-     * @inheritDoc
+     * When comparing with another {@link IcebergTableParquetLocationKey}, precedence-wise this implementation compares:
+     * <ul>
+     * <li>{@code order}</li>
+     * <li>{@code uuid}, if not null, else:
+     * <ul>
+     * <li>{@code catalogName}</li>
+     * <li>{@code tableIdentifier}</li>
+     * </ul>
+     * </li>
+     * <li>{@code dataSequenceNumber}</li>
+     * <li>{@code fileSequenceNumber}</li>
+     * <li>{@code manifestSequenceNumber}</li>
+     * <li>{@code dataFilePos}</li>
+     * <li>{@code uri}</li>
+     * </ul>
+     * Otherwise, it delegates to the parent class.
+     * <p>
+     * {@inheritDoc}
      */
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
@@ -106,6 +140,19 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             int comparisonResult;
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
                 return comparisonResult;
+            }
+            // Establish an ordering for data files from different tables
+            if (tableUuid != null && otherTyped.tableUuid != null) {
+                if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
+                    return comparisonResult;
+                }
+            } else {
+                if ((comparisonResult = catalogName.compareTo(otherTyped.catalogName)) != 0) {
+                    return comparisonResult;
+                }
+                if ((comparisonResult = tableIdentifier.compareTo(otherTyped.tableIdentifier)) != 0) {
+                    return comparisonResult;
+                }
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
                 return comparisonResult;
@@ -137,7 +184,15 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // enough checks to enforce that. So for safety, we are comparing all fields and not just URI.
         // https://apache-iceberg.slack.com/archives/C03LG1D563F/p1731352244907559
         final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
-        return dataSequenceNumber == otherTyped.dataSequenceNumber
+        final boolean sameTable;
+        if (tableUuid != null && otherTyped.tableUuid != null) {
+            sameTable = tableUuid.equals(otherTyped.tableUuid);
+        } else {
+            sameTable =
+                    catalogName.equals(otherTyped.catalogName) && tableIdentifier.equals(otherTyped.tableIdentifier);
+        }
+        return sameTable
+                && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
                 && manifestSequenceNumber == otherTyped.manifestSequenceNumber
@@ -149,6 +204,11 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (cachedHashCode == 0) {
             final int prime = 31;
             int result = 1;
+            if (tableUuid != null) {
+                result = prime * result + tableUuid.hashCode();
+            }
+            result = prime * result + catalogName.hashCode();
+            result = prime * result + tableIdentifier.hashCode();
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);

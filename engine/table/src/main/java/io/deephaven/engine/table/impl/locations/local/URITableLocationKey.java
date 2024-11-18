@@ -72,10 +72,11 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
-     * {@code partitions}, then compares {@code uri}.
-     *
-     * @inheritDoc
+     * When comparing with another {@link URITableLocationKey}, precedence-wise this implementation compares
+     * {@code order}, then applies a {@link PartitionsComparator} to {@code partitions}, then compares {@code uri}.
+     * Otherwise, it delegates to parent class.
+     * <p>
+     * {@inheritDoc}
      */
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
@@ -92,7 +93,7 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
             }
             return uri.compareTo(otherTyped.uri);
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        return super.compareTo(other);
     }
 
     @Override

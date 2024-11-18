@@ -17,6 +17,7 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
@@ -32,6 +34,21 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      */
     final IcebergTableAdapter tableAdapter;
 
+    /**
+     * The UUID of the table, if available.
+     */
+    @Nullable
+    private final UUID tableUuid;
+
+    /**
+     * Name of the {@link Catalog} used to access this table.
+     */
+    private final String catalogName;
+
+    /**
+     * The table identifier string.
+     */
+    private final String tableIdentifier;
     /**
      * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
      * schema changes are not supported in Deephaven.
@@ -79,8 +96,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
-            return new IcebergTableParquetLocationKey(manifestFile, dataFile, fileUri, 0, partitions,
-                    parquetInstructions, channelsProvider);
+            return new IcebergTableParquetLocationKey(tableUuid, catalogName, tableIdentifier, manifestFile, dataFile,
+                    fileUri, 0, partitions, parquetInstructions, channelsProvider);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -95,6 +112,20 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final IcebergReadInstructions instructions,
             @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableAdapter = tableAdapter;
+        {
+            UUID uuid;
+            try {
+                uuid = tableAdapter.icebergTable().uuid();
+            } catch (final RuntimeException e) {
+                // The UUID method is unsupported for v1 Iceberg tables since uuid is optional for v1 tables.
+                uuid = null;
+            }
+            this.tableUuid = uuid;
+        }
+
+        this.catalogName = tableAdapter.catalog().name();
+        this.tableIdentifier = tableAdapter.tableIdentifier().name();
+
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
         this.uriScheme = locationUri(tableAdapter.icebergTable()).getScheme();
