@@ -6,7 +6,6 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.base.Charsets;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
@@ -170,17 +169,12 @@ public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
                     return StringChunkReader.STRING_CHUNK_READER;
                 }
                 // TODO (core#58): add custom barrage serialization/deserialization support
-                // // Migrate Schema to custom format when available.
                 if (typeInfo.type() == Schema.class) {
+                    // Migrate Schema to custom format when available.
                     return SchemaChunkReader.SCHEMA_CHUNK_READER;
                 }
-                // Note: this Stringify check should come last
-                if (options.columnConversionMode().equals(ColumnConversionMode.Stringify)) {
-                    return StringChunkReader.STRING_CHUNK_READER;
-                }
-                // TODO (core#936): support column conversion modes
-                throw new UnsupportedOperationException(
-                        "Do not yet support column conversion mode: " + options.columnConversionMode());
+                // All other object types are sent from the server as strings
+                return StringChunkReader.STRING_CHUNK_READER;
             default:
                 throw new UnsupportedOperationException();
         }

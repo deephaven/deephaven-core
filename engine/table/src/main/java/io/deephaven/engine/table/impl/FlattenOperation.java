@@ -12,6 +12,7 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -98,6 +99,34 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         try (final RowSet prevRowSet = rowSet.copyPrev()) {
             downstream.removed = prevRowSet.invert(upstream.removed());
         }
+
+        if (newSize < prevSize) {
+            resultTable.getRowSet().writableCast().removeRange(newSize, prevSize - 1);
+        } else if (newSize > prevSize) {
+            resultTable.getRowSet().writableCast().insertRange(prevSize, newSize - 1);
+        }
+
+        downstream.shifted = computeFlattenedRowSetShiftData(downstream.removed(), downstream.added(), prevSize);
+        prevSize = newSize;
+        resultTable.notifyListeners(downstream);
+    }
+
+    /**
+     * Compute the shift data for a flattened row set given which rows were removed and which were added.
+     *
+     * @param removed the rows that were removed in the flattened pre-update key-space
+     * @param added the rows that were added in the flattened post-update key-space
+     * @param prevSize the size of the table before the update
+     * @return the shift data
+     */
+    public static RowSetShiftData computeFlattenedRowSetShiftData(
+            @NotNull final RowSet removed,
+            @NotNull final RowSet added,
+            final long prevSize) {
+        if (removed.isEmpty() && added.isEmpty()) {
+            return RowSetShiftData.EMPTY;
+        }
+
         final RowSetShiftData.Builder outShifted = new RowSetShiftData.Builder();
 
         // Helper to ensure that we can prime iterators and still detect the end.
@@ -110,8 +139,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         };
 
         // Create our range iterators and prime them.
-        final MutableObject<RowSet.RangeIterator> rmIt = new MutableObject<>(downstream.removed().rangeIterator());
-        final MutableObject<RowSet.RangeIterator> addIt = new MutableObject<>(downstream.added().rangeIterator());
+        final MutableObject<RowSet.RangeIterator> rmIt = new MutableObject<>(removed.rangeIterator());
+        final MutableObject<RowSet.RangeIterator> addIt = new MutableObject<>(added.rangeIterator());
         updateIt.accept(rmIt);
         updateIt.accept(addIt);
 
@@ -163,14 +192,6 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
             outShifted.shiftRange(currMarker, prevSize - 1, currDelta);
         }
 
-        if (newSize < prevSize) {
-            resultTable.getRowSet().writableCast().removeRange(newSize, prevSize - 1);
-        } else if (newSize > prevSize) {
-            resultTable.getRowSet().writableCast().insertRange(prevSize, newSize - 1);
-        }
-
-        downstream.shifted = outShifted.build();
-        prevSize = newSize;
-        resultTable.notifyListeners(downstream);
+        return outShifted.build();
     }
 }
