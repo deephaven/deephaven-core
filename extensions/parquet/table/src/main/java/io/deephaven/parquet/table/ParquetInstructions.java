@@ -12,7 +12,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.hash.KeyedObjectKey.Basic;
 import io.deephaven.parquet.base.ParquetUtils;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
@@ -775,7 +774,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * @param columnName the Deephaven column name
          * @param fieldId the field id
          */
-        @InternalUseOnly
         public Builder setFieldId(final String columnName, final int fieldId) {
             final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setFieldId(fieldId);

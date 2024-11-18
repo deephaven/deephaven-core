@@ -481,12 +481,11 @@ public class TypeInfos {
                 instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
             }
-            final GroupBuilder<GroupType> groupBuilder = Types.buildGroup(Repetition.OPTIONAL);
-            instructions.getFieldId(columnDefinition.getName()).ifPresent(groupBuilder::id);
-            return groupBuilder.addField(
-                    Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(parquetColumnName))
-                    .as(LogicalTypeAnnotation.listType()).named(parquetColumnName);
+            final Types.ListBuilder<GroupType> listBuilder = Types.optionalList();
+            instructions.getFieldId(columnDefinition.getName()).ifPresent(listBuilder::id);
+            return listBuilder
+                    .element(builder.named("element"))
+                    .named(parquetColumnName);
         }
     }
 

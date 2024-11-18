@@ -20,11 +20,14 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.FloatVector;
@@ -36,6 +39,10 @@ import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import junit.framework.TestCase;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
+import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
@@ -48,6 +55,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestOutputStream;
@@ -618,6 +626,8 @@ public class TestParquetTools {
         final int ZAP_ID = 112;
         final String BAZ = "Baz";
         final String ZAP = "Zap";
+        final String BAZ_PARQUET_NAME = "Some Random Parquet Column Name";
+        final String ZAP_PARQUET_NAME = "ABCDEFG";
         final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
         final ColumnDefinition<?> zapCol = ColumnDefinition.of(ZAP, Type.stringType().arrayType());
         final TableDefinition td = TableDefinition.of(bazCol, zapCol);
@@ -627,21 +637,35 @@ public class TestParquetTools {
                         new String[] {"Hello"}));
         final File file = new File(testRoot, "testWriteParquetFieldIds.parquet");
         {
-            // Writing down random parquet column names that we _don't_ keep a reference to. This way, the only way we
-            // can successfully resolve them is by field id.
             final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                     .setFieldId(BAZ, BAZ_ID)
                     .setFieldId(ZAP, ZAP_ID)
-                    .addColumnNameMapping("Some Random Parquet Column Name", BAZ)
-                    .addColumnNameMapping("ABCDEFG", ZAP)
+                    .addColumnNameMapping(BAZ_PARQUET_NAME, BAZ)
+                    .addColumnNameMapping(ZAP_PARQUET_NAME, ZAP)
                     .build();
             ParquetTools.writeTable(expected, file.getPath(), writeInstructions);
         }
 
+        {
+            final MessageType expectedSchema = Types.buildMessage()
+                    .optional(PrimitiveTypeName.INT64)
+                    .id(BAZ_ID)
+                    .named(BAZ_PARQUET_NAME)
+                    .optionalList()
+                    .id(ZAP_ID)
+                    .optionalElement(PrimitiveTypeName.BINARY)
+                    .as(LogicalTypeAnnotation.stringType())
+                    .named(ZAP_PARQUET_NAME)
+                    .named("root");
+            final MessageType actualSchema = readSchema(file);
+            assertEquals(expectedSchema, actualSchema);
+        }
+
+        //
         // This is somewhat fragile, but has been manually verified to contain the field_ids that we expect.
         // We may want to consider more explicit tests that verify our writing logic is consistent, as it would be good
-        // to know whenever our serialization changes in any way.
-        assertEquals("c21f162b2c186d0a95a8d2302c9ed3fab172747b45501b2ee5e5bb04b98e92e0", sha256sum(file.toPath()));
+        // to know whenever serialization changes in any way.
+        assertEquals("2ea68b0ddaeb432e9c2721f15460b6c42449a479c1960e836f6ebe3b14f33dc1", sha256sum(file.toPath()));
 
         // TODO(deephaven-core#6128): Allow Parquet column access by field_id
         // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
@@ -1180,5 +1204,17 @@ public class TestParquetTools {
         final DigestOutputStream out = new DigestOutputStream(OutputStream.nullOutputStream(), digest);
         Files.copy(path, out);
         return BaseEncoding.base16().lowerCase().encode(digest.digest());
+    }
+
+    private static MessageType readSchema(File file) {
+        final URI uri = FileUtils.convertToURI(file, false);
+        try (final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(FileUtils.FILE_URI_SCHEME, null)) {
+            final ParquetTableLocationKey locationKey = new ParquetTableLocationKey(uri, 0, null, channelsProvider);
+            // TODO: which is more appropriate?
+            // locationKey.getFileReader().getSchema();
+            // locationKey.getMetadata().getFileMetaData().getSchema();
+            return locationKey.getFileReader().getSchema();
+        }
     }
 }
