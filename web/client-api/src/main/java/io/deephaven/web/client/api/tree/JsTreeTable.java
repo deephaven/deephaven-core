@@ -809,9 +809,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * the size of the table will change. If node is to be expanded and the third parameter, <b>expandDescendants</b>,
      * is true, then its children will also be expanded.
      *
-     * @param row
-     * @param isExpanded
-     * @param expandDescendants
+     * @param row the row to expand or collapse, either the absolute row index or the row object
+     * @param isExpanded true to expand the row, false to collapse
+     * @param expandDescendants true to expand the row and all descendants, false to expand only the row, defaults to
+     *        false
      */
     public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
@@ -826,7 +827,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
+                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
             r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
@@ -846,16 +848,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * true if the given row is expanded, false otherwise. Equivalent to `TreeRow.isExpanded`, if an instance of the row
-     * is available
+     * Tests if the specified row is expanded.
      * 
-     * @param row
-     * @return boolean
+     * @param row the row to test, either the absolute row index or the row object
+     * @return boolean true if the row is expanded, false otherwise
      */
     public boolean isExpanded(RowReferenceUnion row) {
         final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
+                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
             r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
