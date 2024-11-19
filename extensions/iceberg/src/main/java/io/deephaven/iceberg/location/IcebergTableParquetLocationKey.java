@@ -21,9 +21,11 @@ import java.util.UUID;
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
+    private static final UUID MAX_UUID = new UUID(Long.MAX_VALUE, Long.MAX_VALUE);
+    private static final String EMPTY_STRING = "";
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
 
-    @Nullable
+    @NotNull
     private final UUID tableUuid;
 
     @NotNull
@@ -75,7 +77,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      */
     public IcebergTableParquetLocationKey(
             @Nullable final UUID tableUuid,
-            @NotNull final String catalogName,
+            @Nullable final String catalogName,
             @NotNull final String tableIdentifier,
             @NotNull final ManifestFile manifestFile,
             @NotNull final DataFile dataFile,
@@ -86,11 +88,13 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(fileUri, order, partitions, channelsProvider);
 
-        this.tableUuid = tableUuid;
-        this.catalogName = catalogName;
+        // Files with unknown UUIDs should be ordered last
+        this.tableUuid = tableUuid != null ? tableUuid : MAX_UUID;
+
+        this.catalogName = catalogName != null ? catalogName : EMPTY_STRING;
         this.tableIdentifier = tableIdentifier;
 
-        // Files with unknown sequence numbers should be ordered last.
+        // Files with unknown sequence numbers should be ordered last
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
         fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MAX_VALUE;
 
@@ -141,18 +145,14 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
                 return comparisonResult;
             }
-            // Establish an ordering for data files from different tables
-            if (tableUuid != null && otherTyped.tableUuid != null) {
-                if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
-                    return comparisonResult;
-                }
-            } else {
-                if ((comparisonResult = catalogName.compareTo(otherTyped.catalogName)) != 0) {
-                    return comparisonResult;
-                }
-                if ((comparisonResult = tableIdentifier.compareTo(otherTyped.tableIdentifier)) != 0) {
-                    return comparisonResult;
-                }
+            if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
+                return comparisonResult;
+            }
+            if ((comparisonResult = catalogName.compareTo(otherTyped.catalogName)) != 0) {
+                return comparisonResult;
+            }
+            if ((comparisonResult = tableIdentifier.compareTo(otherTyped.tableIdentifier)) != 0) {
+                return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
                 return comparisonResult;
@@ -184,14 +184,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // enough checks to enforce that. So for safety, we are comparing all fields and not just URI.
         // https://apache-iceberg.slack.com/archives/C03LG1D563F/p1731352244907559
         final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
-        final boolean sameTable;
-        if (tableUuid != null && otherTyped.tableUuid != null) {
-            sameTable = tableUuid.equals(otherTyped.tableUuid);
-        } else {
-            sameTable =
-                    catalogName.equals(otherTyped.catalogName) && tableIdentifier.equals(otherTyped.tableIdentifier);
-        }
-        return sameTable
+        return tableUuid.equals(otherTyped.tableUuid)
+                && catalogName.equals(otherTyped.catalogName)
+                && tableIdentifier.equals(otherTyped.tableIdentifier)
                 && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos

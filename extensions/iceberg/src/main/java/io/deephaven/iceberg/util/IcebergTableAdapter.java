@@ -71,7 +71,7 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Name of the {@link Catalog} used to access this table.
+     * {@link Catalog} used to access this table.
      */
     public Catalog catalog() {
         return catalog;

@@ -41,8 +41,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     private final UUID tableUuid;
 
     /**
-     * Name of the {@link Catalog} used to access this table.
+     * Name of the {@link Catalog} used to access this table, if available.
      */
+    @Nullable
     private final String catalogName;
 
     /**
