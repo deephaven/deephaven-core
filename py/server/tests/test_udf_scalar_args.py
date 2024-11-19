@@ -619,6 +619,17 @@ def test_udf(x: {np_type}) -> bool:
         self.assertEqual(t.columns[0].data_type, dtypes.int32)
         self.assertEqual(10, t.to_string().count("3"))
 
+    def test_no_name(self):
+        from functools import partial
+        def fn(i: int, z: int) -> int:
+            return i * 5 - z
+        local_fn = partial(fn, z=5)
+
+        t = empty_table(5).update("col=i*2")
+        t = t.update('col2=local_fn(col)')
+        self.assertEqual(t.columns[1].data_type, dtypes.int64)
+        self.assertEqual(5, t.size)
+
 
 if __name__ == "__main__":
     unittest.main()
