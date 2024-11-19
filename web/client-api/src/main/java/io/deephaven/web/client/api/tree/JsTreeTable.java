@@ -825,7 +825,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
             r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
@@ -848,13 +848,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * true if the given row is expanded, false otherwise. Equivalent to `TreeRow.isExpanded`, if an instance of the row
      * is available
      * 
-     * @param row
+     * @param row the row to test
      * @return boolean
      */
     public boolean isExpanded(RowReferenceUnion row) {
         final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
             r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
