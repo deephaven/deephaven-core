@@ -28,28 +28,14 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
-import io.deephaven.vector.DoubleVector;
-import io.deephaven.vector.DoubleVectorDirect;
-import io.deephaven.vector.FloatVector;
-import io.deephaven.vector.FloatVectorDirect;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.IntVectorDirect;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.LongVectorDirect;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.assertj.core.api.Assertions;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,14 +58,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.doubleCol;
-import static io.deephaven.engine.util.TableTools.emptyTable;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.util.TableTools.newTable;
-import static io.deephaven.engine.util.TableTools.shortCol;
-import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -648,12 +627,12 @@ public class TestParquetTools {
 
         {
             final MessageType expectedSchema = Types.buildMessage()
-                    .optional(PrimitiveTypeName.INT64)
+                    .optional(PrimitiveType.PrimitiveTypeName.INT64)
                     .id(BAZ_ID)
                     .named(BAZ_PARQUET_NAME)
                     .optionalList()
                     .id(ZAP_ID)
-                    .optionalElement(PrimitiveTypeName.BINARY)
+                    .optionalElement(PrimitiveType.PrimitiveTypeName.BINARY)
                     .as(LogicalTypeAnnotation.stringType())
                     .named(ZAP_PARQUET_NAME)
                     .named(MappedSchema.SCHEMA_NAME);
