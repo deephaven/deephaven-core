@@ -12,7 +12,9 @@ import java.util.Comparator;
 
 public class IcebergUtils {
 
-    public enum TableIdentifierComparator implements Comparator<TableIdentifier> {
+    public static final Comparator<TableIdentifier> TABLE_IDENTIFIER_COMPARATOR = TableIdentifierComparator.INSTANCE;
+
+    private enum TableIdentifierComparator implements Comparator<TableIdentifier> {
         INSTANCE;
 
         /**

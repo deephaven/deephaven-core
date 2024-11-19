@@ -5,7 +5,6 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.iceberg.util.IcebergUtils.TableIdentifierComparator;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -18,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
+
+import static io.deephaven.iceberg.util.IcebergUtils.TABLE_IDENTIFIER_COMPARATOR;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
@@ -159,8 +160,10 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult =
-                    TableIdentifierComparator.INSTANCE.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
+            // If both UUIDs are MIN_UUID, we should compare tableIdentifier.
+            // Note that we have already verified that the UUIDs are equal.
+            if (tableUuid == MIN_UUID && (comparisonResult =
+                    TABLE_IDENTIFIER_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
@@ -195,7 +198,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
         return catalogName.equals(otherTyped.catalogName)
                 && tableUuid.equals(otherTyped.tableUuid)
-                && tableIdentifier.equals(otherTyped.tableIdentifier)
+                && (tableUuid != MIN_UUID || otherTyped.tableUuid != MIN_UUID
+                        || tableIdentifier.equals(otherTyped.tableIdentifier))
                 && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
@@ -210,7 +214,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             int result = 1;
             result = prime * result + catalogName.hashCode();
             result = prime * result + tableUuid.hashCode();
-            result = prime * result + tableIdentifier.hashCode();
+            // Intentionally excluding tableIdentifier since it is only conditionally considered in equality checks
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);
