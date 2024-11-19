@@ -759,13 +759,14 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 final long totalRecords = totalRecords();
                 if (totalRecords != -1) {
                     if (table.isRefreshing()) {
-                        // TicketHandler implementation error; should only override totalRecords for non-refreshing tables
-                        //noinspection DataFlowIssue
+                        // TicketHandler implementation error; should only override totalRecords for non-refreshing
+                        // tables
+                        // noinspection DataFlowIssue
                         throw Assert.statementNeverExecuted();
                     }
                     if (table.size() != totalRecords) {
                         // Ticket handler implementation error; totalRecords does not match the table size
-                        //noinspection DataFlowIssue
+                        // noinspection DataFlowIssue
                         throw Assert.statementNeverExecuted();
                     }
                 }
@@ -984,7 +985,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         CommandStaticTable(Table table, Function<T, Ticket> f) {
             super();
             if (table.isRefreshing()) {
-                //noinspection DataFlowIssue
+                // noinspection DataFlowIssue
                 throw Assert.statementNeverExecuted();
             }
             this.table = Objects.requireNonNull(table);
