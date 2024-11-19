@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,8 +30,6 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
     private static final String EMPTY_STRING = "";
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
-
-    private static final Comparator<TableIdentifier> TABLE_IDENTIFIER_COMPARATOR = new TableIdentifierComparator();
 
     @NotNull
     private final UUID tableUuid;
@@ -163,7 +160,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
                 return comparisonResult;
             }
             if ((comparisonResult =
-                    TABLE_IDENTIFIER_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
+                    TableIdentifierComparator.INSTANCE.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
@@ -211,10 +208,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (cachedHashCode == 0) {
             final int prime = 31;
             int result = 1;
-            if (tableUuid != null) {
-                result = prime * result + tableUuid.hashCode();
-            }
             result = prime * result + catalogName.hashCode();
+            result = prime * result + tableUuid.hashCode();
             result = prime * result + tableIdentifier.hashCode();
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);

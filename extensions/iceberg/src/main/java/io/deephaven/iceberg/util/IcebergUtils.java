@@ -12,7 +12,8 @@ import java.util.Comparator;
 
 public class IcebergUtils {
 
-    public static final class TableIdentifierComparator implements Comparator<TableIdentifier> {
+    public enum TableIdentifierComparator implements Comparator<TableIdentifier> {
+        INSTANCE;
 
         /**
          * Compare two {@link TableIdentifier} instances.
@@ -33,11 +34,11 @@ public class IcebergUtils {
          */
         @Override
         public int compare(@NotNull final TableIdentifier ti1, @NotNull final TableIdentifier ti2) {
-            int result = Arrays.compare(ti1.namespace().levels(), ti2.namespace().levels());
-            if (result == 0) {
-                result = ti1.name().compareTo(ti2.name());
+            final int comparisonResult;
+            if ((comparisonResult = Arrays.compare(ti1.namespace().levels(), ti2.namespace().levels())) != 0) {
+                return comparisonResult;
             }
-            return result;
+            return ti1.name().compareTo(ti2.name());
         }
     }
 }
