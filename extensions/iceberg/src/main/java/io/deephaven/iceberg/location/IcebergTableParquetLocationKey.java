@@ -5,7 +5,6 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.iceberg.util.IcebergUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -30,8 +29,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
 
     private static final Comparator<String> CATALONG_NAME_COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
     private static final Comparator<UUID> UUID_COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
-    private static final Comparator<TableIdentifier> TABLE_ID_COMPARATOR =
-            Comparator.nullsFirst(IcebergUtils.TABLE_IDENTIFIER_COMPARATOR);
+    private static final Comparator<TableIdentifier> TABLE_IDENTIFIER_COMPARATOR =
+            Comparator.nullsFirst(TableIdentifierComparator.INSTANCE);
 
     @Nullable
     private final String catalogName;
@@ -157,7 +156,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = UUID_COMPARATOR.compare(tableUuid, otherTyped.tableUuid)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = TABLE_ID_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
+            if ((comparisonResult =
+                    TABLE_IDENTIFIER_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
