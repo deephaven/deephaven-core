@@ -50,6 +50,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     private final ColumnSource<?> timestampColumnSource;
     private final ModifiedColumnSet timestampColumnSet;
 
+    /** Store boxed key values for this bucket */
+    private final Object[] bucketKeyValues;
+
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     private boolean isDirty;
     /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
@@ -65,8 +68,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
      * @param control the control object.
+     * @param failureNotifier a consumer to notify of any failures
+     * @param bucketKeyValues the key values for this bucket (empty for zero-key)
      */
-
     protected UpdateByBucketHelper(
             @NotNull final String description,
             @NotNull final QueryTable source,
@@ -74,13 +78,15 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
-            @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
+            @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier,
+            @NotNull final Object[] bucketKeyValues) {
         this.description = description;
         this.source = source;
         // some columns will have multiple inputs, such as time-based and Weighted computations
         this.windows = windows;
         this.control = control;
         this.failureNotifier = failureNotifier;
+        this.bucketKeyValues = bucketKeyValues;
 
         result = new QueryTable(source.getRowSet(), resultSources);
 
@@ -331,7 +337,8 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                     timestampValidRowSet,
                     timestampsModified,
                     control.chunkCapacityOrDefault(),
-                    initialStep);
+                    initialStep,
+                    bucketKeyValues);
 
             // compute the affected/influenced operators and rowsets within this window
             windows[winIdx].computeAffectedRowsAndOperators(windowContexts[winIdx], upstream);
