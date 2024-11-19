@@ -6,6 +6,7 @@ package io.deephaven.api.agg;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.*;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.object.UnionObject;
 

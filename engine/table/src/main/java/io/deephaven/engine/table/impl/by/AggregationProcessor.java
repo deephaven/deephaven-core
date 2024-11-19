@@ -8,6 +8,7 @@ import io.deephaven.api.Pair;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.*;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
@@ -1487,6 +1488,10 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final Class<?> type,
             @NotNull final String name,
             final AggCountType countType) {
+        if (countType == AggCountType.ALL) {
+            // Type is irrelevant for CountAggregationOperator, use the optimized version.
+            return new CountAggregationOperator(name);
+        }
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedCountOperator(name, countType);
         } else if (type == Character.class || type == char.class) {

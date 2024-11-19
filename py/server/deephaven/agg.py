@@ -14,7 +14,7 @@ _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JUnionObject = jpy.get_type("io.deephaven.api.object.UnionObject")
-_JAggCountType = jpy.get_type("io.deephaven.api.agg.spec.AggCountType")
+_JAggCountType = jpy.get_type("io.deephaven.api.agg.util.AggCountType")
 
 class Aggregation:
     """An Aggregation object represents an aggregation operation.

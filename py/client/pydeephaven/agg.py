@@ -17,6 +17,7 @@ _GrpcAggregationColumns = _GrpcAggregation.AggregationColumns
 _GrpcAggregationCount = _GrpcAggregation.AggregationCount
 _GrpcAggregationPartition = _GrpcAggregation.AggregationPartition
 _GrpcAggSpec = table_pb2.AggSpec
+_GrpcAggCountType = table_pb2.AggCountType
 _GrpcNullValue = table_pb2.NullValue
 
 
@@ -152,7 +153,7 @@ def count_non_null(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_NON_NULL
+    count_type = _GrpcAggCountType.COUNT_NON_NULL
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -168,7 +169,7 @@ def count_null(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_NULL
+    count_type = _GrpcAggCountType.COUNT_NULL
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -184,7 +185,7 @@ def count_neg(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_NEGATIVE
+    count_type = _GrpcAggCountType.COUNT_NEGATIVE
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -200,7 +201,7 @@ def count_pos(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_POSITIVE
+    count_type = _GrpcAggCountType.COUNT_POSITIVE
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -216,7 +217,7 @@ def count_zero(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_ZERO
+    count_type = _GrpcAggCountType.COUNT_ZERO
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -232,7 +233,7 @@ def count_nan(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_NAN
+    count_type = _GrpcAggCountType.COUNT_NAN
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -248,7 +249,7 @@ def count_inf(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_INFINITE
+    count_type = _GrpcAggCountType.COUNT_INFINITE
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
@@ -264,7 +265,7 @@ def count_finite(cols: Union[str, List[str]] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    count_type = table_pb2.AggSpec.AggSpecCountValues.AggCountType.COUNT_FINITE
+    count_type = _GrpcAggCountType.COUNT_FINITE
     agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 

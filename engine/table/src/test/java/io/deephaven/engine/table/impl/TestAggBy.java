@@ -8,7 +8,7 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.spec.AggCountType;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.chunk.IntChunk;

@@ -8,7 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
-import io.deephaven.api.agg.spec.AggCountType;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecCountValues;

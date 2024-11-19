@@ -7,14 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.agg.spec.AggCountType;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 class FloatChunkedCountOperator extends BaseChunkedCountOperator {
 
-    private final FloatCountFunction countFunction;
+    private final AggCountType.FloatCountFunction countFunction;
 
     /**
      * Construct a count aggregation operator that tests individual data values.
@@ -25,7 +25,7 @@ class FloatChunkedCountOperator extends BaseChunkedCountOperator {
             @NotNull final String resultName,
             @NotNull final AggCountType countType) {
         super(resultName);
-        this.countFunction = getFloatCountFunction(countType);
+        this.countFunction = AggCountType.getFloatCountFunction(countType);
     }
 
     @Override

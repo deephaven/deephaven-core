@@ -10,6 +10,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
@@ -139,23 +140,25 @@ class AggSpecAdapter {
                 : AggSpec.approximatePercentile(percentile.getPercentile());
     }
 
-    private static AggCountType adapt(
-            io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountValues.AggCountType countType) {
+    private static io.deephaven.api.agg.util.AggCountType adapt(
+            io.deephaven.proto.backplane.grpc.AggCountType countType) {
         switch (countType) {
+            case COUNT_ALL:
+                return io.deephaven.api.agg.util.AggCountType.ALL;
             case COUNT_NON_NULL:
-                return AggCountType.NON_NULL;
+                return io.deephaven.api.agg.util.AggCountType.NON_NULL;
             case COUNT_NULL:
-                return AggCountType.NULL;
+                return io.deephaven.api.agg.util.AggCountType.NULL;
             case COUNT_NEGATIVE:
-                return AggCountType.NEGATIVE;
+                return io.deephaven.api.agg.util.AggCountType.NEGATIVE;
             case COUNT_POSITIVE:
-                return AggCountType.POSITIVE;
+                return io.deephaven.api.agg.util.AggCountType.POSITIVE;
             case COUNT_ZERO:
-                return AggCountType.ZERO;
+                return io.deephaven.api.agg.util.AggCountType.ZERO;
             case COUNT_NAN:
-                return AggCountType.NAN;
+                return io.deephaven.api.agg.util.AggCountType.NAN;
             case COUNT_INFINITE:
-                return AggCountType.INFINITE;
+                return io.deephaven.api.agg.util.AggCountType.INFINITE;
             case COUNT_FINITE:
                 return AggCountType.FINITE;
             default:

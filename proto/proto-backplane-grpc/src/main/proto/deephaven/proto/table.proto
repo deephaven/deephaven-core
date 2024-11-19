@@ -854,6 +854,18 @@ enum NullValue {
   NULL_VALUE = 0;
 }
 
+enum AggCountType {
+  COUNT_ALL = 0;
+  COUNT_NON_NULL = 1;
+  COUNT_NULL = 2;
+  COUNT_NEGATIVE = 3;
+  COUNT_POSITIVE = 4;
+  COUNT_ZERO = 5;
+  COUNT_NAN = 6;
+  COUNT_INFINITE = 7;
+  COUNT_FINITE = 8;
+}
+
 message AggSpec {
   message AggSpecApproximatePercentile {
     // Percentile. Must be in range [0.0, 1.0].
@@ -865,16 +877,6 @@ message AggSpec {
   }
 
   message AggSpecCountValues {
-      enum AggCountType {
-        COUNT_NON_NULL = 0;
-        COUNT_NULL = 1;
-        COUNT_NEGATIVE = 2;
-        COUNT_POSITIVE = 3;
-        COUNT_ZERO = 4;
-        COUNT_NAN = 5;
-        COUNT_INFINITE = 6;
-        COUNT_FINITE = 7;
-      }
       AggCountType count_type = 1;
   }
 

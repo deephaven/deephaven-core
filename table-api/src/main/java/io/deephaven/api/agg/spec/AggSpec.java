@@ -8,6 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;

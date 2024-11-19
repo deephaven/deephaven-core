@@ -5,7 +5,7 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.MessageOrBuilder;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.spec.AggCountType;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.api.object.UnionObject.Visitor;
 import io.deephaven.proto.backplane.grpc.AggSpec;
@@ -80,25 +80,27 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
                 .setCountType(adapt(countValues.countType())));
     }
 
-    private static AggSpec.AggSpecCountValues.AggCountType adapt(
+    private static io.deephaven.proto.backplane.grpc.AggCountType adapt(
             AggCountType countType) {
         switch (countType) {
+            case ALL:
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_ALL;
             case NON_NULL:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_NON_NULL;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NON_NULL;
             case NULL:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_NULL;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NULL;
             case NEGATIVE:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_NEGATIVE;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NEGATIVE;
             case POSITIVE:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_POSITIVE;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_POSITIVE;
             case ZERO:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_ZERO;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_ZERO;
             case NAN:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_NAN;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NAN;
             case INFINITE:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_INFINITE;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_INFINITE;
             case FINITE:
-                return AggSpec.AggSpecCountValues.AggCountType.COUNT_FINITE;
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_FINITE;
             default:
                 throw new IllegalArgumentException(String.format("Unable to adapt AggCountType %s", countType));
         }
