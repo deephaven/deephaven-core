@@ -5,6 +5,7 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
+import io.deephaven.iceberg.util.IcebergUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -15,30 +16,30 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-
-import static io.deephaven.iceberg.util.IcebergUtils.TABLE_IDENTIFIER_COMPARATOR;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
-    /**
-     * Minimum possible {@link UUID} value for numerical comparison using {@link UUID#compareTo(UUID)}.
-     */
-    private static final UUID MIN_UUID = new UUID(Long.MIN_VALUE, Long.MIN_VALUE);
 
-    private static final String EMPTY_STRING = "";
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
 
-    @NotNull
-    private final UUID tableUuid;
+    private static final Comparator<String> CATALONG_NAME_COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
+    private static final Comparator<UUID> UUID_COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());
+    private static final Comparator<TableIdentifier> TABLE_ID_COMPARATOR =
+            Comparator.nullsFirst(IcebergUtils.TABLE_IDENTIFIER_COMPARATOR);
 
-    @NotNull
+    @Nullable
     private final String catalogName;
 
-    @NotNull
+    @Nullable
+    private final UUID tableUuid;
+
+    @Nullable
     private final TableIdentifier tableIdentifier;
 
     /**
@@ -95,13 +96,12 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(fileUri, order, partitions, channelsProvider);
 
-        // Files with unknown catalog names should be ordered first
-        this.catalogName = catalogName != null ? catalogName : EMPTY_STRING;
+        this.catalogName = catalogName;
+        this.tableUuid = tableUuid;
 
-        // Files with unknown UUIDs should be ordered first
-        this.tableUuid = tableUuid != null ? tableUuid : MIN_UUID;
-
-        this.tableIdentifier = tableIdentifier;
+        // We don't save tableIdentifier (and thus don't use it in comparisons/equality-testing/hashCode) unless
+        // tableUUID was null
+        this.tableIdentifier = tableUuid != null ? null : tableIdentifier;
 
         // Files with unknown sequence numbers should be ordered first
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MIN_VALUE;
@@ -129,12 +129,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
      * When comparing with another {@link IcebergTableParquetLocationKey}, precedence-wise this implementation compares:
      * <ul>
      * <li>{@code order}</li>
-     * <li>{@code uuid}, if not null, else:
-     * <ul>
      * <li>{@code catalogName}</li>
+     * <li>{@code uuid}</li>
      * <li>{@code tableIdentifier}</li>
-     * </ul>
-     * </li>
      * <li>{@code dataSequenceNumber}</li>
      * <li>{@code fileSequenceNumber}</li>
      * <li>{@code manifestSequenceNumber}</li>
@@ -154,16 +151,13 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = Integer.compare(order, otherTyped.order)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = catalogName.compareTo(otherTyped.catalogName)) != 0) {
+            if ((comparisonResult = CATALONG_NAME_COMPARATOR.compare(catalogName, otherTyped.catalogName)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
+            if ((comparisonResult = UUID_COMPARATOR.compare(tableUuid, otherTyped.tableUuid)) != 0) {
                 return comparisonResult;
             }
-            // If both UUIDs are MIN_UUID, we should compare tableIdentifier.
-            // Note that we have already verified that the UUIDs are equal.
-            if (tableUuid == MIN_UUID && (comparisonResult =
-                    TABLE_IDENTIFIER_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
+            if ((comparisonResult = TABLE_ID_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
@@ -196,10 +190,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // enough checks to enforce that. So for safety, we are comparing all fields and not just URI.
         // https://apache-iceberg.slack.com/archives/C03LG1D563F/p1731352244907559
         final IcebergTableParquetLocationKey otherTyped = (IcebergTableParquetLocationKey) other;
-        return catalogName.equals(otherTyped.catalogName)
-                && tableUuid.equals(otherTyped.tableUuid)
-                && (tableUuid != MIN_UUID || otherTyped.tableUuid != MIN_UUID
-                        || tableIdentifier.equals(otherTyped.tableIdentifier))
+        return Objects.equals(catalogName, otherTyped.catalogName)
+                && Objects.equals(tableUuid, otherTyped.tableUuid)
+                && Objects.equals(tableIdentifier, otherTyped.tableIdentifier)
                 && dataSequenceNumber == otherTyped.dataSequenceNumber
                 && fileSequenceNumber == otherTyped.fileSequenceNumber
                 && dataFilePos == otherTyped.dataFilePos
@@ -212,9 +205,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         if (cachedHashCode == 0) {
             final int prime = 31;
             int result = 1;
-            result = prime * result + catalogName.hashCode();
-            result = prime * result + tableUuid.hashCode();
-            // Intentionally excluding tableIdentifier since it is only conditionally considered in equality checks
+            result = prime * result + Objects.hashCode(catalogName);
+            result = prime * result + Objects.hashCode(tableUuid);
+            result = prime * result + Objects.hashCode(tableIdentifier);
             result = prime * result + Long.hashCode(dataSequenceNumber);
             result = prime * result + Long.hashCode(fileSequenceNumber);
             result = prime * result + Long.hashCode(dataFilePos);

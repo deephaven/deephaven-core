@@ -36,6 +36,9 @@ public class IcebergUtils {
          */
         @Override
         public int compare(@NotNull final TableIdentifier ti1, @NotNull final TableIdentifier ti2) {
+            if (ti1 == ti2) {
+                return 0;
+            }
             final int comparisonResult;
             if ((comparisonResult = Arrays.compare(ti1.namespace().levels(), ti2.namespace().levels())) != 0) {
                 return comparisonResult;
