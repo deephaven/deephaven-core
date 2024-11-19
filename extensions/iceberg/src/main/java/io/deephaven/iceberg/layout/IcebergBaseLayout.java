@@ -18,6 +18,7 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,9 +48,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     private final String catalogName;
 
     /**
-     * The table identifier string.
+     * The table identifier used to access this table.
      */
-    private final String tableIdentifier;
+    private final TableIdentifier tableIdentifier;
     /**
      * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
      * schema changes are not supported in Deephaven.
@@ -97,7 +98,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @Nullable final Map<String, Comparable<?>> partitions) {
         final org.apache.iceberg.FileFormat format = dataFile.format();
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
-            return new IcebergTableParquetLocationKey(tableUuid, catalogName, tableIdentifier, manifestFile, dataFile,
+            return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestFile, dataFile,
                     fileUri, 0, partitions, parquetInstructions, channelsProvider);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
@@ -125,7 +126,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         }
 
         this.catalogName = tableAdapter.catalog().name();
-        this.tableIdentifier = tableAdapter.tableIdentifier().toString();
+        this.tableIdentifier = tableAdapter.tableIdentifier();
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
