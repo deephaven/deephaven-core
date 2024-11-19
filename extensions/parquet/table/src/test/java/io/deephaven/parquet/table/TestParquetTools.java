@@ -656,7 +656,7 @@ public class TestParquetTools {
                     .optionalElement(PrimitiveTypeName.BINARY)
                     .as(LogicalTypeAnnotation.stringType())
                     .named(ZAP_PARQUET_NAME)
-                    .named("root");
+                    .named(MappedSchema.SCHEMA_NAME);
             final MessageType actualSchema = readSchema(file);
             assertEquals(expectedSchema, actualSchema);
         }

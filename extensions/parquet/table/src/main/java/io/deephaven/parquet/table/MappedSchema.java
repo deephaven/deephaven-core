@@ -22,6 +22,9 @@ import static io.deephaven.parquet.table.TypeInfos.getTypeInfo;
  */
 class MappedSchema {
 
+    @VisibleForTesting
+    static final String SCHEMA_NAME = "root";
+
     static MappedSchema create(
             final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             final TableDefinition definition,
@@ -32,7 +35,7 @@ class MappedSchema {
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             builder.addField(createType(computedCache, columnDefinition, rowSet, columnSourceMap, instructions));
         }
-        final MessageType schema = builder.named("root");
+        final MessageType schema = builder.named(SCHEMA_NAME);
         return new MappedSchema(definition, schema);
     }
 
