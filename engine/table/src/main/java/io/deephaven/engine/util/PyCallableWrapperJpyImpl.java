@@ -302,7 +302,12 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
             return;
         }
 
-        String callableName = pyCallable.getAttribute("__name__").toString();
+        String callableName;
+        if (pyCallable.hasAttribute("__name__")) {
+            callableName = pyCallable.getAttribute("__name__").toString();
+        } else {
+            callableName = pyCallable.toString();
+        }
         List<Parameter> parameters = signature.getParameters();
 
         if (parameters.size() == 0 && argTypes.length > 0) {
