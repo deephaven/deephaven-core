@@ -9,15 +9,18 @@ import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
+import io.deephaven.api.agg.Formula;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.Pair;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
+import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
+import io.deephaven.proto.backplane.grpc.Selectable;
 
 import java.util.Collection;
 import java.util.List;
@@ -94,5 +97,12 @@ class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
         out = singletonList(of(Builder::setPartition, AggregationPartition.newBuilder()
                 .setColumnName(partition.column().name())
                 .setIncludeGroupByColumns(partition.includeGroupByColumns())));
+    }
+
+    @Override
+    public void visit(Formula formula) {
+        final Selectable selectable = Selectable.newBuilder().setRaw(formula.formulaString()).build();
+        out = singletonList(of(Builder::setFormula, AggregationFormula.newBuilder()
+                .setSelectable(selectable)));
     }
 }

@@ -59,24 +59,35 @@ public interface BarrageStreamGenerator extends SafeCloseable {
      * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
      *
      * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
+     * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot);
 
     /**
      * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
      *
      * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
+     * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
+     * @param isFullSubscription whether this is a full subscription (possibly a growing viewport)
      * @param viewport is the position-space viewport
      * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
+     * @param keyspaceViewportPrev is the key-space viewport prior to applying the update
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
-    MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot, @Nullable RowSet viewport,
-            boolean reverseViewport, @Nullable RowSet keyspaceViewport, BitSet subscribedColumns);
+    MessageView getSubView(
+            BarrageSubscriptionOptions options,
+            boolean isInitialSnapshot,
+            boolean isFullSubscription,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
+            @Nullable RowSet keyspaceViewportPrev,
+            @Nullable RowSet keyspaceViewport,
+            BitSet subscribedColumns);
 
     /**
      * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single requestor.
@@ -88,6 +99,8 @@ public interface BarrageStreamGenerator extends SafeCloseable {
 
     /**
      * Obtain a View of this StreamGenerator that can be sent to a single requestor.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
      *
      * @param options serialization options for this specific view
      * @param viewport is the position-space viewport
@@ -95,7 +108,10 @@ public interface BarrageStreamGenerator extends SafeCloseable {
      * @param snapshotColumns are the columns included for this view
      * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
      */
-    MessageView getSnapshotView(BarrageSnapshotOptions options, @Nullable RowSet viewport, boolean reverseViewport,
+    MessageView getSnapshotView(
+            BarrageSnapshotOptions options,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
 
 }

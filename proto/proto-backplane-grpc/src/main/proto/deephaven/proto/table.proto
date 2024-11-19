@@ -276,9 +276,13 @@ service TableService {
 
 message TableReference {
   oneof ref {
-    // an exported ticket
+    // A ticket to resolve to get the table. It's preferable to use export tickets in order to avoid races that are
+    // possible with tickets controlled by the server, but any ticket type will suffice as long as it resolves to a
+    // table.
     Ticket ticket = 1;
-    // an offset into a BatchRequest -- used to reference a result that will not be exported
+
+    // An offset into a BatchRequest's ops field, used to reference an intermediate operation which may not have been
+    // exported. Only valid to set when used in the context of a BatchRequest.
     sint32 batch_offset = 2;
   }
 }
@@ -346,6 +350,17 @@ message SelectOrUpdateRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_specs = 3;
+}
+
+message Selectable {
+  // message ColumnExpression {
+  //  string column_name = 1;
+  //  Expression expression = 2;
+  // }
+  oneof type {
+    string raw = 1;
+    // ColumnExpression column_expression = 2;
+  }
 }
 
 message MathContext {
@@ -1049,12 +1064,17 @@ message Aggregation {
     bool include_group_by_columns = 2;
   }
 
+  message AggregationFormula {
+    Selectable selectable = 1;
+  }
+
   oneof type {
     AggregationColumns columns = 1;
     AggregationCount count = 2;
     AggregationRowKey first_row_key = 3;
     AggregationRowKey last_row_key = 4;
     AggregationPartition partition = 5;
+    AggregationFormula formula = 6;
   }
 }
 

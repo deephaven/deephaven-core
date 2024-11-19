@@ -4,6 +4,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.Strings;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -78,5 +79,10 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     public void visit(Partition partition) {
         out.put(partition.column().name(), "partition sub-table"
                 + (partition.includeGroupByColumns() ? " (including group-by columns)" : ""));
+    }
+
+    @Override
+    public void visit(Formula formula) {
+        out.put(formula.column().name(), "from formula `" + Strings.of(formula.expression()) + "`");
     }
 }
