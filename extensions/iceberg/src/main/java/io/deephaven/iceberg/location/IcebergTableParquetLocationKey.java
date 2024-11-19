@@ -5,7 +5,7 @@ package io.deephaven.iceberg.location;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.iceberg.util.IcebergUtils;
+import io.deephaven.iceberg.util.IcebergUtils.TableIdentifierComparator;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.apache.iceberg.DataFile;
@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,9 +24,15 @@ import java.util.UUID;
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
-    private static final UUID MAX_UUID = new UUID(Long.MAX_VALUE, Long.MAX_VALUE);
+    /**
+     * Minimum possible {@link UUID} value for numerical comparison using {@link UUID#compareTo(UUID)}.
+     */
+    private static final UUID MIN_UUID = new UUID(Long.MIN_VALUE, Long.MIN_VALUE);
+
     private static final String EMPTY_STRING = "";
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
+
+    private static final Comparator<TableIdentifier> TABLE_IDENTIFIER_COMPARATOR = new TableIdentifierComparator();
 
     @NotNull
     private final UUID tableUuid;
@@ -90,16 +97,17 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(fileUri, order, partitions, channelsProvider);
 
+        // Files with unknown catalog names should be ordered first
         this.catalogName = catalogName != null ? catalogName : EMPTY_STRING;
 
-        // Files with unknown UUIDs should be ordered last
-        this.tableUuid = tableUuid != null ? tableUuid : MAX_UUID;
+        // Files with unknown UUIDs should be ordered first
+        this.tableUuid = tableUuid != null ? tableUuid : MIN_UUID;
 
         this.tableIdentifier = tableIdentifier;
 
-        // Files with unknown sequence numbers should be ordered last
-        dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MAX_VALUE;
-        fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MAX_VALUE;
+        // Files with unknown sequence numbers should be ordered first
+        dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MIN_VALUE;
+        fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MIN_VALUE;
 
         // This should never be null because we are discovering this data file through a non-null manifest file
         dataFilePos = Require.neqNull(dataFile.pos(), "dataFile.pos()");
@@ -154,7 +162,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             if ((comparisonResult = tableUuid.compareTo(otherTyped.tableUuid)) != 0) {
                 return comparisonResult;
             }
-            if ((comparisonResult = IcebergUtils.compareTo(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
+            if ((comparisonResult =
+                    TABLE_IDENTIFIER_COMPARATOR.compare(tableIdentifier, otherTyped.tableIdentifier)) != 0) {
                 return comparisonResult;
             }
             if ((comparisonResult = Long.compare(dataSequenceNumber, otherTyped.dataSequenceNumber)) != 0) {
