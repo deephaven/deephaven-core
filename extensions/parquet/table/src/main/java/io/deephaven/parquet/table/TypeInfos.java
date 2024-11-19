@@ -13,6 +13,7 @@ import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
@@ -481,6 +482,7 @@ public class TypeInfos {
                 isRepeating = false;
             }
             if (!isRepeating) {
+                instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
             }
             // Note: the Parquet type builder would take care of the element name for us if we were constructing it
@@ -488,7 +490,9 @@ public class TypeInfos {
             // (org.apache.parquet.schema.Types.BaseListBuilder.ElementBuilder.named) when we named the outer list; but
             // since we are constructing types recursively (without regard to the outer type), we are responsible for
             // setting the element name correctly at this point in time.
-            return Types.optionalList()
+            final Types.ListBuilder<GroupType> listBuilder = Types.optionalList();
+            instructions.getFieldId(columnDefinition.getName()).ifPresent(listBuilder::id);
+            return listBuilder
                     .element(builder.named(ELEMENT_NAME))
                     .named(parquetColumnName);
         }
