@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
@@ -29,13 +30,22 @@ class MappedSchema {
             final ParquetInstructions instructions) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            final TypeInfos.TypeInfo typeInfo =
-                    getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
-            final Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
-            builder.addField(schemaType);
+            builder.addField(createType(computedCache, columnDefinition, rowSet, columnSourceMap, instructions));
         }
         final MessageType schema = builder.named("root");
         return new MappedSchema(definition, schema);
+    }
+
+    @VisibleForTesting
+    static Type createType(
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            final ColumnDefinition<?> columnDefinition,
+            final RowSet rowSet,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
+            final ParquetInstructions instructions) {
+        final TypeInfos.TypeInfo typeInfo =
+                getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
+        return typeInfo.createSchemaType(columnDefinition, instructions);
     }
 
     private final TableDefinition tableDefinition;

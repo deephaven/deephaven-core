@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.FinalDefault;
 
 public interface StreamReaderOptions {
     /**
@@ -13,9 +14,15 @@ public interface StreamReaderOptions {
     boolean useDeephavenNulls();
 
     /**
+     * @deprecated Since 0.37.0 and is marked for removal. (Note, GWT does not support encoding this context via
+     *             annotation values.)
      * @return the conversion mode to use for object columns
      */
-    ColumnConversionMode columnConversionMode();
+    @FinalDefault
+    @Deprecated
+    default ColumnConversionMode columnConversionMode() {
+        return ColumnConversionMode.Stringify;
+    }
 
     /**
      * @return the ideal number of records to send per record batch
@@ -35,5 +42,25 @@ public interface StreamReaderOptions {
      */
     default boolean columnsAsList() {
         return false;
+    }
+
+    /**
+     * The maximum length of any list / array to encode.
+     * <ul>
+     * <li>If zero, list lengths will not be limited.</li>
+     * <li>If non-zero, the server will limit the length of any encoded list / array to the absolute value of the
+     * returned length.</li>
+     * <li>If less than zero, the server will encode elements from the end of the list / array, rather than rom the
+     * beginning.</li>
+     * </ul>
+     * <p>
+     * Note: The server is unable to indicate when truncation occurs. To detect truncation request one more element than
+     * the maximum number you wish to display.
+     *
+     * @return the maximum length of any list / array to encode; zero means no limit; negative values indicate to treat
+     *         the limit as a tail instead of a head
+     */
+    default long previewListLengthLimit() {
+        return 0;
     }
 }

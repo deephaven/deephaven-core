@@ -10,11 +10,14 @@ import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.object.UnionObject;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -60,7 +63,8 @@ public class TestAggBy extends RefreshingTableTestCase {
     public void testBy() {
         ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-        Table table = TableTools.newTable(aHolder, bHolder);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder);
         show(table);
         assertEquals(10, table.size());
         assertEquals(2, table.groupBy("A").size());
@@ -68,16 +72,52 @@ public class TestAggBy extends RefreshingTableTestCase {
         Table minMax = table.aggBy(
                 List.of(
                         AggFormula("min(each)", "each", "Min=B"),
-                        AggFormula("max(each)", "each", "Max=B")),
+                        AggFormula("max(each)", "each", "Max=B"),
+                        AggFormula("sum(each)", "each", "Sum=B"),
+                        AggFormula("f_const=6.0 + 3"),
+                        AggFormula("f_min=min(B)"),
+                        AggFormula("f_max=max(B)"),
+                        AggFormula("f_sum=sum(B)"),
+                        AggFormula("f_sum_two_col=sum(B) + sum(C)"),
+                        AggFormula("f_custom_sum=A * (sum(B) + sum(C))"),
+                        AggFormula("f_weighted_avg=wavg(B, C)")),
                 "A");
         show(minMax);
+
         assertEquals(2, minMax.size());
+
+        DoubleVector consts = ColumnVectors.ofDouble(minMax, "f_const");
+        assertEquals(9.0, consts.get(0));
+        assertEquals(9.0, consts.get(1));
+
         IntVector mins = ColumnVectors.ofInt(minMax, "Min");
         assertEquals(1, mins.get(0));
         assertEquals(3, mins.get(1));
+        mins = ColumnVectors.ofInt(minMax, "f_min");
+        assertEquals(1, mins.get(0));
+        assertEquals(3, mins.get(1));
+
         IntVector maxes = ColumnVectors.ofInt(minMax, "Max");
         assertEquals(10, maxes.get(0));
         assertEquals(8, maxes.get(1));
+        maxes = ColumnVectors.ofInt(minMax, "f_max");
+        assertEquals(10, maxes.get(0));
+        assertEquals(8, maxes.get(1));
+
+        LongVector sums = ColumnVectors.ofLong(minMax, "Sum");
+        assertEquals(33, sums.get(0));
+        assertEquals(22, sums.get(1));
+        sums = ColumnVectors.ofLong(minMax, "f_sum");
+        assertEquals(33, sums.get(0));
+        assertEquals(22, sums.get(1));
+
+        sums = ColumnVectors.ofLong(minMax, "f_sum_two_col");
+        assertEquals(33 + 6, sums.get(0));
+        assertEquals(22 + 4, sums.get(1));
+
+        sums = ColumnVectors.ofLong(minMax, "f_custom_sum");
+        assertEquals(0, sums.get(0));
+        assertEquals(22 + 4, sums.get(1));
 
         Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
         show(doubleCounted);
@@ -127,8 +167,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         for (int ii = 0; ii < bChunk.size(); ++ii) {
             doubles[ii] = 1.1 * bChunk.get(ii);
         }
-        ColumnHolder<?> cHolder = col("C", doubles);
-        table = TableTools.newTable(aHolder, bHolder, cHolder);
+        ColumnHolder<?> dHolder = col("D", doubles);
+        table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder);
         show(table);
         Table summary = table.aggBy(summaryStatistics, "A");
         show(summary);
@@ -215,7 +255,16 @@ public class TestAggBy extends RefreshingTableTestCase {
                     public Table e() {
                         return queryTable.aggBy(List.of(
                                 AggFormula("min(each)", "each", "MinI=intCol", "MinD=doubleCol"),
-                                AggFormula("max(each)", "each", "MaxI=intCol")), "Sym").sort("Sym");
+                                AggFormula("max(each)", "each", "MaxI=intCol"),
+                                AggFormula("f_const=6.0 / 3"),
+                                AggFormula("f_min=min(intColNulls)"),
+                                AggFormula("f_max=max(doubleColNulls)"),
+                                AggFormula("f_sum=sum(intColNulls + doubleColNulls)"),
+                                AggFormula("f_key=Sym.equals(\"a\") ? \"a\" : \"not a\""),
+                                AggFormula("f_key_sum=Sym + ':' + sum(intColNulls + doubleColNulls)"),
+                                AggFormula(
+                                        "f_custom_sum=sum(intColNulls) + sum(doubleCol) + min(doubleColNulls)")),
+                                "Sym").sort("Sym");
                     }
                 },
                 new QueryTableTest.TableComparator(
@@ -831,5 +880,180 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(3.1, cs.get(0));
         cs = result.getColumnSource("Integers");
         assertEquals(1, cs.get(0));
+    }
+
+    @Test
+    public void testFormulaUpdatePropagation() {
+        final QueryTable table = TstUtils.testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("Key", "A", "B", "A"),
+                doubleCol("Double", 1.0, 2.0, 2.0),
+                shortCol("Short", (short) 10, (short) 20, (short) 30),
+                intCol("Int", 2, 4, 6));
+        final QueryTable result = (QueryTable) table.aggBy(
+                List.of(AggFormula("sumInt=sum(Int)"),
+                        AggFormula("sumDouble=sum(Double)"),
+                        AggFormula("sumCustom=sum(Int) + sum(Double)")),
+                "Key");
+
+        // Add to "B" bucket
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final SimpleListener resultListener = new SimpleListener(result);
+        result.addUpdateListener(resultListener);
+        int lastResultListenerCount = 0;
+
+        final ModifiedColumnSet sumIntMCS = result.newModifiedColumnSet("sumInt");
+        final ModifiedColumnSet sumDoubleMCS = result.newModifiedColumnSet("sumDouble");
+        final ModifiedColumnSet sumCustomMCS = result.newModifiedColumnSet("sumCustom");
+        final ModifiedColumnSet allFormulaMCS = result.newModifiedColumnSet("sumInt", "sumDouble", "sumCustom");
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(8),
+                    col("Key", "B"),
+                    doubleCol("Double", 3.0),
+                    shortCol("Short", (short) 40),
+                    intCol("Int", 8)); // Add to "B" bucket
+            table.notifyListeners(i(8), i(), i());
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().isEmpty(), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().equals(i(1)), "modified() matches expected");
+
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAll(allFormulaMCS), "MCS matches expected");
+        lastResultListenerCount = resultListener.count;
+
+        // Change a row in the "B" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(8),
+                    col("Key", "B"),
+                    doubleCol("Double", 3.0),
+                    shortCol("Short", (short) 40),
+                    intCol("Int", 9)); // Change Int
+
+            table.notifyListeners(new TableUpdateImpl(
+                    i(), i(), i(8),
+                    RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Int")));
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().isEmpty(), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().equals(i(1)), "modified() matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAny(sumIntMCS), "MCS matches expected");
+        Assert.eqFalse(resultListener.update.modifiedColumnSet().containsAny(sumDoubleMCS), "MCS matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAny(sumCustomMCS), "MCS matches expected");
+        lastResultListenerCount = resultListener.count;
+
+        // Change a row in the "B" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(8),
+                    col("Key", "B"),
+                    doubleCol("Double", 5.0), // Change Double
+                    shortCol("Short", (short) 40),
+                    intCol("Int", 9));
+
+            table.notifyListeners(new TableUpdateImpl(
+                    i(), i(), i(8),
+                    RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Double")));
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().isEmpty(), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().equals(i(1)), "modified() matches expected");
+        Assert.eqFalse(resultListener.update.modifiedColumnSet().containsAny(sumIntMCS), "MCS matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAny(sumDoubleMCS), "MCS matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAny(sumCustomMCS), "MCS matches expected");
+        lastResultListenerCount = resultListener.count;
+
+        // Change a row in the "B" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(8),
+                    col("Key", "B"),
+                    doubleCol("Double", 5.0),
+                    shortCol("Short", (short) 50), // Change Short
+                    intCol("Int", 9));
+
+            table.notifyListeners(new TableUpdateImpl(
+                    i(), i(), i(8),
+                    RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Short")));
+        });
+        // No update expected from the result table,
+        Assert.eq(lastResultListenerCount, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+
+        // New "C" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(9),
+                    col("Key", "C"),
+                    doubleCol("Double", 4.0),
+                    shortCol("Short", (short) 40),
+                    intCol("Int", 10)); // New "C" bucket in isolation
+            table.notifyListeners(i(9), i(), i());
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().equals(i(2)), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().isEmpty(), "modified() matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().empty(), "MCS matches expected");
+        lastResultListenerCount = resultListener.count;
+
+        // Row from "B" bucket to "C" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(8),
+                    col("Key", "C"),
+                    doubleCol("Double", 3.0),
+                    shortCol("Short", (short) 40),
+                    intCol("Int", 11)); // Row from "B" bucket to "C" bucket
+            table.notifyListeners(new TableUpdateImpl(
+                    i(), i(), i(8),
+                    RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Key")));
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().isEmpty(), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().equals(i(1, 2)), "modified() matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAll(allFormulaMCS), "MCS matches expected");
+        lastResultListenerCount = resultListener.count;
+
+        // New "D" bucket, and new row in "C"
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table,
+                    i(10, 11),
+                    col("Key", "D", "C"),
+                    doubleCol("Double", 5.0, 6.0),
+                    shortCol("Short", (short) 40, (short) 50),
+                    intCol("Int", 10, 11)); // New "D" bucket
+            table.notifyListeners(i(10, 11), i(), i());
+        });
+        Assert.eq(lastResultListenerCount + 1, "lastResultListenerCount + 1",
+                resultListener.count, "resultListener.count");
+        Assert.eqTrue(resultListener.update.added().equals(i(3)), "added() matches expected");
+        Assert.eqTrue(resultListener.update.removed().isEmpty(), "removed() matches expected");
+        Assert.eqTrue(resultListener.update.shifted().empty(), "shifted() matches expected");
+        Assert.eqTrue(resultListener.update.modified().equals(i(2)), "modified() matches expected");
+        Assert.eqTrue(resultListener.update.modifiedColumnSet().containsAll(allFormulaMCS), "MCS matches expected");
+
+        TableTools.show(result);
     }
 }

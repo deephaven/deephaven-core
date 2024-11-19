@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.windowc
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.vector.Vector;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,9 +33,14 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 512;
 
     private final SelectColumn selectColumn;
-    private final String[] inputColumnNames;
-    private final Class<?>[] inputColumnTypes;
-    private final Class<?>[] inputVectorTypes;
+
+    private final String[] inputKeyColumnNames;
+    private final Class<?>[] inputKeyColumnTypes;
+    private final Class<?>[] inputKeyComponentTypes;
+
+    private final String[] inputNonKeyColumnNames;
+    private final Class<?>[] inputNonKeyColumnTypes;
+    private final Class<?>[] inputNonKeyVectorTypes;
 
     private WritableColumnSource<?> primitiveOutputSource;
     private WritableColumnSource<?> outputSource;
@@ -48,6 +54,8 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         private final IntConsumer outputSetter;
         private final IntConsumer outputNullSetter;
 
+        @SuppressWarnings("rawtypes")
+        private final SingleValueColumnSource[] keyValueSources;
         private final RingBufferWindowConsumer[] inputConsumers;
 
         @SuppressWarnings("unused")
@@ -58,13 +66,14 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             // Make a copy of the operator formula column.
             final SelectColumn contextSelectColumn = selectColumn.copy();
 
-            inputConsumers = new RingBufferWindowConsumer[inputColumnNames.length];
+            keyValueSources = new SingleValueColumnSource<?>[inputKeyColumnNames.length];
+            inputConsumers = new RingBufferWindowConsumer[inputNonKeyColumnNames.length];
 
             // To perform the calculation, we will leverage SelectColumn and for its input sources we create a set of
-            // SingleValueColumnSources, each containing a Vector of values. This vector will contain exactly the
-            // values from the input columns that are appropriate for output row given the window configuration.
-            // The formula column is evaluated once per output row and the result written to the output column
-            // source.
+            // SingleValueColumnSources, each containing a Vector of values (or a scalar when the source is a key).
+            // These sources will contain exactly the values from the input columns that are appropriate for the output
+            // row given the window configuration and state. The formula column is evaluated once per output row and
+            // the result written to the output column source.
 
             // The SingleValueColumnSources is backed by RingBuffers through use of a RingBufferVectorWrapper.
             // The underlying RingBuffer is updated with the values from the input columns with assistance from
@@ -72,10 +81,22 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             // column data chunks into the RingBuffer.
 
             final Map<String, ColumnSource<?>> inputSources = new HashMap<>();
-            for (int i = 0; i < inputColumnNames.length; i++) {
-                final String inputColumnName = inputColumnNames[i];
-                final Class<?> inputColumnType = inputColumnTypes[i];
-                final Class<?> inputVectorType = inputVectorTypes[i];
+
+            for (int i = 0; i < inputKeyColumnNames.length; i++) {
+                final String inputColumnName = inputKeyColumnNames[i];
+                final Class<?> inputColumnType = inputKeyColumnTypes[i];
+                final Class<?> inputComponentType = inputKeyComponentTypes[i];
+
+                // Create a single value column source wrapping a scalar of the appropriate type for this key.
+                keyValueSources[i] =
+                        SingleValueColumnSource.getSingleValueColumnSource(inputColumnType, inputComponentType);
+                inputSources.put(inputColumnName, keyValueSources[i]);
+            }
+
+            for (int i = 0; i < inputNonKeyColumnNames.length; i++) {
+                final String inputColumnName = inputNonKeyColumnNames[i];
+                final Class<?> inputColumnType = inputNonKeyColumnTypes[i];
+                final Class<?> inputVectorType = inputNonKeyVectorTypes[i];
 
                 // Create and store the ring buffer for the input column.
                 final RingBuffer ringBuffer = RingBuffer.makeRingBuffer(
@@ -88,19 +109,15 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 final SingleValueColumnSource<Vector<?>> formulaInputSource =
                         (SingleValueColumnSource<Vector<?>>) SingleValueColumnSource
                                 .getSingleValueColumnSource(inputVectorType, inputColumnType);
-
                 final RingBufferVectorWrapper<?> wrapper = RingBufferVectorWrapper.makeRingBufferVectorWrapper(
                         ringBuffer,
                         inputColumnType);
-
                 formulaInputSource.set(wrapper);
-
                 inputSources.put(inputColumnName, formulaInputSource);
-
                 inputConsumers[i] = RingBufferWindowConsumer.create(ringBuffer);
             }
-            contextSelectColumn.initInputs(RowSetFactory.flat(1).toTracking(), inputSources);
 
+            contextSelectColumn.initInputs(RowSetFactory.flat(1).toTracking(), inputSources);
             final ColumnSource<?> formulaOutputSource =
                     ReinterpretUtils.maybeConvertToPrimitive(contextSelectColumn.getDataView());
 
@@ -110,8 +127,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
 
         @Override
         protected void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks) {
-            // Assign the influencer values chunks to the input consumers.
-            for (int i = 0; i < valueChunks.length; i++) {
+            for (int i = 0; i < inputConsumers.length; i++) {
                 inputConsumers[i].setInputChunk(valueChunks[i]);
             }
         }
@@ -203,6 +219,13 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             outputValues.close();
             outputFillContext.close();
         }
+
+        private void setBucketKeyValues(final Object[] bucketKeyValues) {
+            for (int i = 0; i < keyValueSources.length; i++) {
+                // noinspection unchecked
+                keyValueSources[i].set(bucketKeyValues[i]);
+            }
+        }
     }
 
     /**
@@ -215,9 +238,12 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
      * @param reverseWindowScaleUnits The size of the reverse window in ticks (or nanoseconds when time-based)
      * @param forwardWindowScaleUnits The size of the forward window in ticks (or nanoseconds when time-based)
      * @param selectColumn The {@link SelectColumn} specifying the calculation to be performed
-     * @param inputColumnNames The names of the columns to be used as inputs
-     * @param inputColumnTypes The types of the columns to be used as inputs
-     * @param inputVectorTypes The vector types of the columns to be used as inputs
+     * @param inputKeyColumnNames The names of the key columns to be used as inputs
+     * @param inputKeyColumnTypes The types of the key columns to be used as inputs
+     * @param inputKeyComponentTypes The component types of the key columns to be used as inputs
+     * @param inputNonKeyColumnNames The names of the non-key columns to be used as inputs
+     * @param inputNonKeyColumnTypes The types of the non-key columns to be used as inputs
+     * @param inputNonKeyVectorTypes The vector types of the non-key columns to be used as inputs
      */
     public RollingFormulaMultiColumnOperator(
             @NotNull final MatchPair pair,
@@ -226,14 +252,20 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final SelectColumn selectColumn,
-            @NotNull final String[] inputColumnNames,
-            @NotNull final Class<?>[] inputColumnTypes,
-            @NotNull final Class<?>[] inputVectorTypes) {
+            @NotNull final String[] inputKeyColumnNames,
+            @NotNull final Class<?>[] inputKeyColumnTypes,
+            @NotNull final Class<?>[] inputKeyComponentTypes,
+            @NotNull final String[] inputNonKeyColumnNames,
+            @NotNull final Class<?>[] inputNonKeyColumnTypes,
+            @NotNull final Class<?>[] inputNonKeyVectorTypes) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.selectColumn = selectColumn;
-        this.inputColumnNames = inputColumnNames;
-        this.inputColumnTypes = inputColumnTypes;
-        this.inputVectorTypes = inputVectorTypes;
+        this.inputKeyColumnNames = inputKeyColumnNames;
+        this.inputKeyColumnTypes = inputKeyColumnTypes;
+        this.inputKeyComponentTypes = inputKeyComponentTypes;
+        this.inputNonKeyColumnNames = inputNonKeyColumnNames;
+        this.inputNonKeyColumnTypes = inputNonKeyColumnTypes;
+        this.inputNonKeyVectorTypes = inputNonKeyVectorTypes;
     }
 
     @Override
@@ -245,9 +277,12 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
                 selectColumn,
-                inputColumnNames,
-                inputColumnTypes,
-                inputVectorTypes);
+                inputKeyColumnNames,
+                inputKeyColumnTypes,
+                inputKeyComponentTypes,
+                inputNonKeyColumnNames,
+                inputNonKeyColumnTypes,
+                inputNonKeyVectorTypes);
     }
 
     @Override
@@ -273,6 +308,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         outputChunkType = primitiveOutputSource.getChunkType();
     }
 
+    // region value-setters
     protected static IntConsumer getChunkSetter(
             final WritableChunk<? extends Values> valueChunk,
             final ColumnSource<?> formulaOutputSource) {
@@ -363,6 +399,7 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
                 return index -> objectChunk.set(index, null);
         }
     }
+    // endregion value-setters
 
     @Override
     public void startTrackingPrev() {
@@ -387,6 +424,17 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }
+    }
+
+    @Override
+    public void initializeRollingWithKeyValues(
+            @NotNull final UpdateByOperator.Context context,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        super.initializeRollingWithKeyValues(context, bucketRowSet, bucketKeyValues);
+
+        final Context rollingContext = (Context) context;
+        rollingContext.setBucketKeyValues(bucketKeyValues);
     }
 
     @NotNull
@@ -414,6 +462,6 @@ public class RollingFormulaMultiColumnOperator extends UpdateByOperator {
     @Override
     @NotNull
     protected String[] getInputColumnNames() {
-        return inputColumnNames;
+        return ArrayUtils.addAll(inputNonKeyColumnNames);
     }
 }
