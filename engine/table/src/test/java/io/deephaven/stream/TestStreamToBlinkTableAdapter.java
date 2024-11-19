@@ -4,6 +4,7 @@
 package io.deephaven.stream;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -444,6 +445,17 @@ public class TestStreamToBlinkTableAdapter {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(adapter::run);
         TestCase.assertTrue(listenerFailed.booleanValue());
+    }
+
+    @Test
+    public void testCleanup() {
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("O", "B", "S", "I", "L", "F", "D", "C"),
+                List.of(String.class, byte.class, short.class, int.class, long.class, float.class, double.class,
+                        char.class));
+        final Table test1 = emptyTable(ChunkPoolConstants.SMALLEST_POOLED_CHUNK_CAPACITY).updateView(
+                "O=Long.toString(ii)", "B=(byte)ii", "S=(short)ii", "I=(int)ii", "L=ii", "F=(float)ii",
+                "D=(double)ii", "C=(char)ii");
     }
 
     private static class DummyStreamPublisher implements StreamPublisher {
