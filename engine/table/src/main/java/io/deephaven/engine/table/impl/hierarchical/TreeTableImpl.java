@@ -414,7 +414,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     NotificationStepSource[] getSourceDependencies() {
-        // NB: The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
+        // The reverse lookup may be derived from an unfiltered parent of our source, hence we need to treat it as a
         // separate dependency if we're filtered.
         return filtered
                 ? new NotificationStepSource[] {source, sourceRowLookup}
@@ -423,9 +423,12 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
-        // NB: Our root is just a node in the tree (which is a partitioned table of constituent nodes), so waiting for
+        // Our root is just a node in the tree (which is a partitioned table of constituent nodes), so waiting for
         // satisfaction of the root would be insufficient (and unnecessary if we're waiting for the tree).
         maybeWaitForSatisfaction(tree);
+        if (!filtered) {
+            // The row lookup aggregation must also be satisfied if we aren't using it as a source dependency.
+            maybeWaitForSatisfaction(sourceRowLookup);
+        }
     }
-
 }
