@@ -8,12 +8,9 @@ import io.deephaven.api.updateby.DeltaControl;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.UpdateBySpec.Visitor;
-import io.deephaven.proto.backplane.grpc.UpdateByDeltaOptions;
-import io.deephaven.proto.backplane.grpc.UpdateByEmOptions;
-import io.deephaven.proto.backplane.grpc.UpdateByNullBehavior;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
-import io.deephaven.proto.backplane.grpc.UpdateByWindowScale;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -103,36 +100,34 @@ public class UpdateBySpecBuilderTest {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
-            final UpdateByCumulativeCount.CountType countType;
+            final io.deephaven.proto.backplane.grpc.AggCountType countType;
             switch (spec.countType()) {
                 case NULL:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NULL;
+                    countType = AggCountType.COUNT_NULL;
                     break;
                 case NEGATIVE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NEGATIVE;
+                    countType = AggCountType.COUNT_NEGATIVE;
                     break;
                 case POSITIVE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_POSITIVE;
+                    countType = AggCountType.COUNT_POSITIVE;
                     break;
                 case ZERO:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_ZERO;
+                    countType = AggCountType.COUNT_ZERO;
                     break;
                 case NAN:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NAN;
+                    countType = AggCountType.COUNT_NAN;
                     break;
                 case INFINITE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_INFINITE;
+                    countType = AggCountType.COUNT_INFINITE;
                     break;
                 case FINITE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_FINITE;
+                    countType = AggCountType.COUNT_FINITE;
                     break;
                 case NON_NULL:
                 default:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NON_NULL;
+                    countType = AggCountType.COUNT_NON_NULL;
                     break;
             }
-
-
             return UpdateByColumn.UpdateBySpec.newBuilder().setCount(UpdateByCumulativeCount
                     .newBuilder().setCountType(countType).build()).build();
         }
@@ -451,42 +446,42 @@ public class UpdateBySpecBuilderTest {
 
     @Test
     void cumulativeCount() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.NON_NULL));
     }
 
     @Test
     void cumulativeCountNull() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.NULL));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.NULL));
     }
 
     @Test
     void cumulativeCountNegative() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.NEGATIVE));
     }
 
     @Test
     void cumulativeCountPositive() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.POSITIVE));
     }
 
     @Test
     void cumulativeCountZero() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.ZERO));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.ZERO));
     }
 
     @Test
     void cumulativeCountNan() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.NAN));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.NAN));
     }
 
     @Test
     void cumulativeCountInfinite() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.INFINITE));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.INFINITE));
     }
 
     @Test
     void cumulativeCountFinite() {
-        check(CumCountSpec.of(CumCountSpec.CumCountType.FINITE));
+        check(CumCountSpec.of(io.deephaven.api.agg.util.AggCountType.FINITE));
     }
 
     @Test
