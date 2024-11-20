@@ -11,17 +11,18 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WouldMatchPair;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -53,6 +54,7 @@ import org.junit.Test;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -1363,25 +1365,30 @@ public class QueryTableSelectUpdateTest {
         final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
 
         // Test the getBoolean method
-        assertEquals(false, upv.getColumnSource("AWM").get(rs.get(0)));
-        assertEquals(true, upv.getColumnSource("AWM").get(rs.get(1)));
-        assertEquals(false, upv.getColumnSource("AWM").get(rs.get(2)));
-        assertEquals(true, upv.getColumnSource("AWM").get(rs.get(3)));
+        ColumnSource<Object> resultColumn = upv.getColumnSource("AWM");
+        assertEquals(false, resultColumn.get(rs.get(0)));
+        assertEquals(true, resultColumn.get(rs.get(1)));
+        assertEquals(false, resultColumn.get(rs.get(2)));
+        assertEquals(true, resultColumn.get(rs.get(3)));
+
+        // and do it with chunks
+        try (final CloseableIterator<Object> awm = upv.columnIterator("AWM")) {
+            assertEquals(Arrays.asList(false, true, false, true), awm.stream().collect(Collectors.toList()));
+        }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(0)));
-            assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(1)));
-            assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(2)));
-            assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(3)));
+            assertEquals(false, resultColumn.get(t.getRowSet().get(0)));
+            assertEquals(true, resultColumn.get(t.getRowSet().get(1)));
+            assertEquals(false, resultColumn.get(t.getRowSet().get(2)));
+            assertEquals(true, resultColumn.get(t.getRowSet().get(3)));
 
-            // noinspection resource
             final RowSet prevRowset = rs.prev();
-            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(0)));
-            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(1)));
-            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(2)));
-            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(3)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(0)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(1)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(2)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(3)));
 
             addToTable(t, i(1, 2, 9), intCol("A", 2, 2, 4));
             removeRows(t, i(8));
@@ -1389,16 +1396,25 @@ public class QueryTableSelectUpdateTest {
             rs.remove(8);
             t.notifyListeners(i(1, 9), i(8), i());
 
-            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(0)));
-            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(1)));
-            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(2)));
-            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(3)));
+            // with a chunk
+            try (final ChunkSource.GetContext fc = resultColumn.makeGetContext(4)) {
+                final ObjectChunk<Boolean, ? extends Values> prevValues = resultColumn.getPrevChunk(fc, prevRowset).asObjectChunk();
+                assertEquals(false, prevValues.get(0));
+                assertEquals(true, prevValues.get(1));
+                assertEquals(false, prevValues.get(2));
+                assertEquals(true, prevValues.get(3));
+            }
 
-            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(0)));
-            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(1)));
-            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(2)));
-            assertEquals(false, upv.getColumnSource("AWM").get(rs.get(3)));
-            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(4)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(0)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(1)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(2)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(3)));
+
+            assertEquals(true, resultColumn.get(rs.get(0)));
+            assertEquals(true, resultColumn.get(rs.get(1)));
+            assertEquals(true, resultColumn.get(rs.get(2)));
+            assertEquals(false, resultColumn.get(rs.get(3)));
+            assertEquals(true, resultColumn.get(rs.get(4)));
         });
 
     }
