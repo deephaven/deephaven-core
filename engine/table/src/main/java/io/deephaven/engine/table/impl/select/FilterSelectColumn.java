@@ -25,16 +25,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The FilterSelectColumn wraps a {@link io.deephaven.api.filter.Filter} and producing a column of true or false Boolean
- * values described by the filter.
- *
+ * The FilterSelectColumn wraps a {@link Filter} and producing a column of true or false Boolean values described by the
+ * filter.
  * <p>
- * This column is appropriate as an argument to a {@link Table#view(Collection)} or {@link Table#updateView(String...)},
- * lazily evaluating the equivalent of a {@link Table#wouldMatch(String...)} operation. Although select and update can
- * also use Filters, the wouldMatch provides a more efficient path for realized results as it stores and updates only a
- * {@link RowSet}. The FilterSelectColumn can only evaluate the filter one chunk at a time, and must write to an
- * in-memory Boolean column source.
- * </p>
+ * This SelectColumn is appropriate as an argument to a {@link Table#view(Collection)} or
+ * {@link Table#updateView(String...)}, lazily evaluating the equivalent of a {@link Table#wouldMatch(String...)}
+ * operation. Although select and update can also use Filters, wouldMatch provides a more efficient path for realized
+ * results as it stores and updates only a {@link RowSet}. The FilterSelectColumn can only evaluate the Filter one chunk
+ * at a time, and must write to an in-memory {@link Boolean} {@link ColumnSource}.
  */
 class FilterSelectColumn implements SelectColumn {
 
@@ -128,7 +126,7 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public List<String> getColumnArrays() {
-        /* This should always be empty, because initDef throws when arrays or ii and friends are used. */
+        /* This should always be empty, because initDef throws when arrays or virtual row variables are used. */
         return List.of();
     }
 
@@ -141,7 +139,7 @@ class FilterSelectColumn implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<Boolean> getDataView() {
-        return new ViewColumnSource<>(Boolean.class, new FilterFormula(), false);
+        return new ViewColumnSource<>(Boolean.class, new FilterFormula(), isStateless());
     }
 
     @NotNull
@@ -203,7 +201,7 @@ class FilterSelectColumn implements SelectColumn {
 
         @Override
         public Boolean getPrevBoolean(long rowKey) {
-            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, true);
+            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet.prev(), tableToFilter, true);
             return filteredIndex.isNonempty();
         }
 
@@ -264,7 +262,7 @@ class FilterSelectColumn implements SelectColumn {
                     }
                 }
                 // fill everything else up with false, because nothing else can match
-                booleanDestination.fillWithBoxedValue(offset, booleanDestination.size() - offset, false);
+                booleanDestination.fillWithValue(offset, booleanDestination.size() - offset, false);
             }
         }
     }
