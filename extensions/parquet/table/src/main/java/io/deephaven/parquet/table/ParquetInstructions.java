@@ -252,7 +252,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public OptionalInt getFieldId(final String columnName) {
+        public OptionalInt getFieldId(String columnName) {
             return OptionalInt.empty();
         }
 

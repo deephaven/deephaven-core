@@ -481,7 +481,6 @@ public class TypeInfos {
                 builder = getBuilder(isRequired(columnDefinition), false, dataType);
                 isRepeating = false;
             }
-
             if (!isRepeating) {
                 instructions.getFieldId(columnDefinition.getName()).ifPresent(builder::id);
                 return builder.named(parquetColumnName);
