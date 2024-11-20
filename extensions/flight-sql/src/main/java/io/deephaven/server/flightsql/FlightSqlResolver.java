@@ -754,9 +754,9 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 final Table table = CommandHandlerFixedBase.this.table(command);
                 final long totalRecords = totalRecords();
                 if (totalRecords != -1) {
-                    // If false, TicketHandler implementation error; should only override totalRecords for
+                    // If true, TicketHandler implementation error; should only override totalRecords for
                     // non-refreshing tables
-                    Assert.eqTrue(table.isRefreshing(), "table.isRefreshing()");
+                    Assert.eqFalse(table.isRefreshing(), "table.isRefreshing()");
                     // If false, Ticket handler implementation error; totalRecords does not match the table size
                     Assert.eq(table.size(), "table.size()", totalRecords, "totalRecords");
                 }

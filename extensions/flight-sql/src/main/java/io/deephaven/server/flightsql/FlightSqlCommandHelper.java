@@ -67,7 +67,7 @@ final class FlightSqlCommandHelper {
 
     public static boolean handlesCommand(FlightDescriptor descriptor) {
         // If not CMD, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver / handlesPath
-        Assert.equals(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD);
+        Assert.eq(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD, "CMD");
         // No good way to check if this is a valid command without parsing to Any first.
         final Any command = parseOrNull(descriptor.getCmd());
         return command != null
@@ -76,7 +76,7 @@ final class FlightSqlCommandHelper {
 
     public static <T> T visit(FlightDescriptor descriptor, CommandVisitor<T> visitor, String logId) {
         // If not CMD, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver / handlesPath
-        Assert.equals(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD);
+        Assert.eq(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD, "CMD");
         final Any command = parseOrNull(descriptor.getCmd());
         // If null, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver / handlesCommand
         Assert.neqNull(command, "command");
