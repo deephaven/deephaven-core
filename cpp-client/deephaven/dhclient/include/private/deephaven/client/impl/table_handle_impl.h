@@ -14,10 +14,10 @@
 #include "deephaven/dhcore/clienttable/schema.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/types.h"
-#include "deephaven/proto/session.pb.h"
-#include "deephaven/proto/session.grpc.pb.h"
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
+#include "deephaven_core/proto/session.pb.h"
+#include "deephaven_core/proto/session.grpc.pb.h"
+#include "deephaven_core/proto/table.pb.h"
+#include "deephaven_core/proto/table.grpc.pb.h"
 
 namespace deephaven::client {
 class SortPair;

@@ -3,7 +3,7 @@
 #
 from pydeephaven.table import Table
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import inputtable_pb2, inputtable_pb2_grpc
+from deephaven_core.proto import inputtable_pb2, inputtable_pb2_grpc
 from pydeephaven.table import InputTable
 
 

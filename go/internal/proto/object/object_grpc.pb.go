@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/object.proto
+// source: deephaven_core/proto/object.proto
 
 package object
 
@@ -374,5 +374,5 @@ var ObjectService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "deephaven/proto/object.proto",
+	Metadata: "deephaven_core/proto/object.proto",
 }

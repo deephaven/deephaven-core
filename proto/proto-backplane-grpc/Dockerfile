@@ -22,17 +22,17 @@ RUN set -eux; \
     -I/dependencies \
     -I/includes \
     /dependencies/BrowserFlight.proto \
-    /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/console.proto \
-    /includes/deephaven/proto/object.proto \
-    /includes/deephaven/proto/session.proto \
-    /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto \
-    /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto \
-    /includes/deephaven/proto/config.proto \
-    /includes/deephaven/proto/hierarchicaltable.proto \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/ticket.proto \
+    /includes/deephaven_core/proto/console.proto \
+    /includes/deephaven_core/proto/object.proto \
+    /includes/deephaven_core/proto/session.proto \
+    /includes/deephaven_core/proto/table.proto \
+    /includes/deephaven_core/proto/application.proto \
+    /includes/deephaven_core/proto/inputtable.proto \
+    /includes/deephaven_core/proto/partitionedtable.proto \
+    /includes/deephaven_core/proto/config.proto \
+    /includes/deephaven_core/proto/hierarchicaltable.proto \
+    /includes/deephaven_core/proto/storage.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
     --js_out=import_style=commonjs_strict:/generated/js \
@@ -41,32 +41,32 @@ RUN set -eux; \
     -I/includes \
     /dependencies/BrowserFlight.proto \
     /dependencies/Flight.proto \
-    /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/console.proto \
-    /includes/deephaven/proto/object.proto \
-    /includes/deephaven/proto/session.proto \
-    /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto \
-    /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto \
-    /includes/deephaven/proto/config.proto \
-    /includes/deephaven/proto/hierarchicaltable.proto \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/ticket.proto \
+    /includes/deephaven_core/proto/console.proto \
+    /includes/deephaven_core/proto/object.proto \
+    /includes/deephaven_core/proto/session.proto \
+    /includes/deephaven_core/proto/table.proto \
+    /includes/deephaven_core/proto/application.proto \
+    /includes/deephaven_core/proto/inputtable.proto \
+    /includes/deephaven_core/proto/partitionedtable.proto \
+    /includes/deephaven_core/proto/config.proto \
+    /includes/deephaven_core/proto/hierarchicaltable.proto \
+    /includes/deephaven_core/proto/storage.proto; \
   python3 -m grpc_tools.protoc \
     --grpc_python_out=/generated/python \
     --python_out=/generated/python \
     -I/includes \
-    /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/console.proto \
-    /includes/deephaven/proto/object.proto \
-    /includes/deephaven/proto/session.proto \
-    /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto \
-    /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto \
-    /includes/deephaven/proto/config.proto \
-    /includes/deephaven/proto/hierarchicaltable.proto \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/ticket.proto \
+    /includes/deephaven_core/proto/console.proto \
+    /includes/deephaven_core/proto/object.proto \
+    /includes/deephaven_core/proto/session.proto \
+    /includes/deephaven_core/proto/table.proto \
+    /includes/deephaven_core/proto/application.proto \
+    /includes/deephaven_core/proto/inputtable.proto \
+    /includes/deephaven_core/proto/partitionedtable.proto \
+    /includes/deephaven_core/proto/config.proto \
+    /includes/deephaven_core/proto/hierarchicaltable.proto \
+    /includes/deephaven_core/proto/storage.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-go=/opt/go/bin/protoc-gen-go \
     --plugin=protoc-gen-go-grpc=/opt/go/bin/protoc-gen-go-grpc \
@@ -78,17 +78,17 @@ RUN set -eux; \
     --cpp_out=generated/cpp \
     --cpp_grpc_out=generated/cpp \
     -I/includes \
-    /includes/deephaven/proto/ticket.proto \
-    /includes/deephaven/proto/console.proto \
-    /includes/deephaven/proto/object.proto \
-    /includes/deephaven/proto/session.proto \
-    /includes/deephaven/proto/table.proto \
-    /includes/deephaven/proto/application.proto \
-    /includes/deephaven/proto/inputtable.proto \
-    /includes/deephaven/proto/partitionedtable.proto \
-    /includes/deephaven/proto/config.proto \
-    /includes/deephaven/proto/hierarchicaltable.proto \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/ticket.proto \
+    /includes/deephaven_core/proto/console.proto \
+    /includes/deephaven_core/proto/object.proto \
+    /includes/deephaven_core/proto/session.proto \
+    /includes/deephaven_core/proto/table.proto \
+    /includes/deephaven_core/proto/application.proto \
+    /includes/deephaven_core/proto/inputtable.proto \
+    /includes/deephaven_core/proto/partitionedtable.proto \
+    /includes/deephaven_core/proto/config.proto \
+    /includes/deephaven_core/proto/hierarchicaltable.proto \
+    /includes/deephaven_core/proto/storage.proto; \
   # proto-doc-gen does not support writing multiple proto files to multiple docs, must break up command \
   # we are going to generate 4 sets of docs - single html, multi html, single markdown, multi markdown \
   # first, single html \
@@ -97,145 +97,145 @@ RUN set -eux; \
     --doc_out=generated/proto-doc/single-html \
     --doc_opt=html,index.html \
     -I/includes \
-    /includes/deephaven/proto/*.proto; \
+    /includes/deephaven_core/proto/*.proto; \
   # next, single markdown \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/single-md \
     --doc_opt=markdown,index.md \
     -I/includes \
-    /includes/deephaven/proto/*.proto; \
+    /includes/deephaven_core/proto/*.proto; \
   # then, multi html \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,ticket.html \
     -I/includes \
-    /includes/deephaven/proto/ticket.proto; \
+    /includes/deephaven_core/proto/ticket.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,console.html \
     -I/includes \
-    /includes/deephaven/proto/console.proto; \
+    /includes/deephaven_core/proto/console.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,object.html \
     -I/includes \
-    /includes/deephaven/proto/object.proto; \
+    /includes/deephaven_core/proto/object.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,session.html \
     -I/includes \
-    /includes/deephaven/proto/session.proto; \
+    /includes/deephaven_core/proto/session.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,table.html \
     -I/includes \
-    /includes/deephaven/proto/table.proto; \
+    /includes/deephaven_core/proto/table.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,application.html \
     -I/includes \
-    /includes/deephaven/proto/application.proto; \
+    /includes/deephaven_core/proto/application.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,inputtable.html \
     -I/includes \
-    /includes/deephaven/proto/inputtable.proto; \
+    /includes/deephaven_core/proto/inputtable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,partitionedtable.html \
     -I/includes \
-    /includes/deephaven/proto/partitionedtable.proto; \
+    /includes/deephaven_core/proto/partitionedtable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,config.html \
     -I/includes \
-    /includes/deephaven/proto/config.proto; \
+    /includes/deephaven_core/proto/config.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,hierarchicaltable.html \
     -I/includes \
-    /includes/deephaven/proto/hierarchicaltable.proto; \
+    /includes/deephaven_core/proto/hierarchicaltable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-html \
     --doc_opt=html,storage.html \
     -I/includes \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/storage.proto; \
   # finally, multi md \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,ticket.md \
     -I/includes \
-    /includes/deephaven/proto/ticket.proto; \
+    /includes/deephaven_core/proto/ticket.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,console.md \
     -I/includes \
-    /includes/deephaven/proto/console.proto; \
+    /includes/deephaven_core/proto/console.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,object.md \
     -I/includes \
-    /includes/deephaven/proto/object.proto; \
+    /includes/deephaven_core/proto/object.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,session.md \
     -I/includes \
-    /includes/deephaven/proto/session.proto; \
+    /includes/deephaven_core/proto/session.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,table.md \
     -I/includes \
-    /includes/deephaven/proto/table.proto; \
+    /includes/deephaven_core/proto/table.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,application.md \
     -I/includes \
-    /includes/deephaven/proto/application.proto; \
+    /includes/deephaven_core/proto/application.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,inputtable.md \
     -I/includes \
-    /includes/deephaven/proto/inputtable.proto; \
+    /includes/deephaven_core/proto/inputtable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,partitionedtable.md \
     -I/includes \
-    /includes/deephaven/proto/partitionedtable.proto; \
+    /includes/deephaven_core/proto/partitionedtable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,config.md \
     -I/includes \
-    /includes/deephaven/proto/config.proto; \
+    /includes/deephaven_core/proto/config.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,hierarchicaltable.md \
     -I/includes \
-    /includes/deephaven/proto/hierarchicaltable.proto; \
+    /includes/deephaven_core/proto/hierarchicaltable.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
     --doc_out=generated/proto-doc/multi-md \
     --doc_opt=markdown,storage.md \
     -I/includes \
-    /includes/deephaven/proto/storage.proto; \
+    /includes/deephaven_core/proto/storage.proto; \
