@@ -6,6 +6,7 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.spec.*;
@@ -185,27 +186,28 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
     }
 
     private static CumCountSpec adaptCount(@SuppressWarnings("unused") UpdateByCumulativeCount count) {
+        // TODO: hava a shared adapter for AggCountType used by AggCount, CumCount, RollingCount
         switch (count.getCountType()) {
-            case COUNT_TYPE_NOT_SPECIFIED: // default to ALL when not specified
-            case COUNT_TYPE_ALL:
-                return CumCountSpec.of(CumCountSpec.CumCountType.ALL);
-            case COUNT_TYPE_NULL:
-                return CumCountSpec.of(CumCountSpec.CumCountType.NULL);
-            case COUNT_TYPE_NEGATIVE:
-                return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE);
-            case COUNT_TYPE_POSITIVE:
-                return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE);
-            case COUNT_TYPE_ZERO:
-                return CumCountSpec.of(CumCountSpec.CumCountType.ZERO);
-            case COUNT_TYPE_NAN:
-                return CumCountSpec.of(CumCountSpec.CumCountType.NAN);
-            case COUNT_TYPE_INFINITE:
-                return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE);
-            case COUNT_TYPE_FINITE:
-                return CumCountSpec.of(CumCountSpec.CumCountType.FINITE);
-            case COUNT_TYPE_NON_NULL:
+            case COUNT_TYPE_NOT_SPECIFIED: // CumCount defaults default to ALL
+            case COUNT_ALL:
+                return CumCountSpec.of(AggCountType.ALL);
+            case COUNT_NULL:
+                return CumCountSpec.of(AggCountType.NULL);
+            case COUNT_NEGATIVE:
+                return CumCountSpec.of(AggCountType.NEGATIVE);
+            case COUNT_POSITIVE:
+                return CumCountSpec.of(AggCountType.POSITIVE);
+            case COUNT_ZERO:
+                return CumCountSpec.of(AggCountType.ZERO);
+            case COUNT_NAN:
+                return CumCountSpec.of(AggCountType.NAN);
+            case COUNT_INFINITE:
+                return CumCountSpec.of(AggCountType.INFINITE);
+            case COUNT_FINITE:
+                return CumCountSpec.of(AggCountType.FINITE);
+            case COUNT_NON_NULL:
             default:
-                return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL);
+                return CumCountSpec.of(AggCountType.NON_NULL);
         }
     }
 

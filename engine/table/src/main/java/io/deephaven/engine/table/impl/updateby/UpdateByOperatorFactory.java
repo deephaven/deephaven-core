@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -849,29 +850,13 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeCumCountOperator(MatchPair pair, TableDefinition tableDef, CumCountSpec spec) {
-            if (spec.countType() == CumCountSpec.CumCountType.ALL) {
+            if (spec.countType() == AggCountType.ALL) {
                 return new CumCountAllOperator(pair);
             }
 
             final ColumnDefinition<?> columnDef = tableDef.getColumn(pair.rightColumn);
             final Class<?> csType = columnDef.getDataType();
-
-            if (csType == BigInteger.class) {
-                return new BigIntegerCumCountOperator(pair, spec, csType);
-            } else if (csType == BigDecimal.class) {
-                return new BigDecimalCumCountOperator(pair, spec, csType);
-            } else if (csType == boolean.class || csType == Boolean.class) {
-                return new BooleanCumCountOperator(pair, spec, csType);
-            } else if (csType == byte.class || csType == Byte.class
-                    || csType == char.class || csType == Character.class
-                    || csType == short.class || csType == Short.class
-                    || csType == int.class || csType == Integer.class
-                    || csType == long.class || csType == Long.class
-                    || csType == float.class || csType == Float.class
-                    || csType == double.class || csType == Double.class) {
-                return new PrimitiveCumCountOperator(pair, spec, csType);
-            }
-            return new ObjectCumCountOperator(pair, spec, csType);
+            return new CumCountOperator(pair, spec, csType);
         }
 
         private UpdateByOperator makeCumSumOperator(MatchPair pair, TableDefinition tableDef) {

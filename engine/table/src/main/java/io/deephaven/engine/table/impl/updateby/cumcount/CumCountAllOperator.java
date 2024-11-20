@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Incredibly simple CumCount operator that accumulates a count of all rows.
+ * Simple CumCount operator that accumulates a count of all values, including nulls.
  */
 public class CumCountAllOperator extends BaseLongUpdateByOperator {
     protected class Context extends BaseLongUpdateByOperator.Context {

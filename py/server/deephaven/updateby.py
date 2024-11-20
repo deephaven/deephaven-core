@@ -477,8 +477,9 @@ def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[s
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Std UpdateByOperation.") from e
 
-def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
-    """Creates a cumulative count UpdateByOperation of non-null values in the supplied column names.
+
+def cum_count_all(cols: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count UpdateByOperation of all values (including null) in the supplied column names.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
@@ -493,9 +494,9 @@ def cum_count(cols: Union[str, List[str]]) -> UpdateByOperation:
     """
     try:
         cols = to_sequence(cols)
-        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCount(cols))
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountAll(cols))
     except Exception as e:
-        raise DHError(e, "failed to create a cum_count UpdateByOperation.") from e
+        raise DHError(e, "failed to create a cum_count_all UpdateByOperation.") from e
 
 
 def cum_count_null(cols: Union[str, List[str]]) -> UpdateByOperation:
@@ -559,6 +560,7 @@ def cum_count_pos(cols: Union[str, List[str]]) -> UpdateByOperation:
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountPositive(cols))
     except Exception as e:
         raise DHError(e, "failed to create a cum_count_pos UpdateByOperation.") from e
+
 
 def cum_count_zero(cols: Union[str, List[str]]) -> UpdateByOperation:
     """Creates a cumulative count UpdateByOperation of zero values in the supplied column names.

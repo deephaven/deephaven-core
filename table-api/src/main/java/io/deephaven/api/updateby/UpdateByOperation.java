@@ -4,6 +4,7 @@
 package io.deephaven.api.updateby;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.updateby.spec.*;
 
 import java.time.Duration;
@@ -53,7 +54,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountAll(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.ALL).clause(pairs);
+        return CumCountSpec.of(AggCountType.ALL).clause(pairs);
     }
 
     /**
@@ -63,7 +64,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountNonNull(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.NON_NULL).clause(pairs);
+        return CumCountSpec.of(AggCountType.NON_NULL).clause(pairs);
     }
 
 
@@ -74,7 +75,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountNull(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.NULL).clause(pairs);
+        return CumCountSpec.of(AggCountType.NULL).clause(pairs);
     }
 
     /**
@@ -85,7 +86,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountNegative(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.NEGATIVE).clause(pairs);
+        return CumCountSpec.of(AggCountType.NEGATIVE).clause(pairs);
     }
 
     /**
@@ -96,7 +97,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountPositive(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.POSITIVE).clause(pairs);
+        return CumCountSpec.of(AggCountType.POSITIVE).clause(pairs);
     }
 
     /**
@@ -107,7 +108,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountZero(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.ZERO).clause(pairs);
+        return CumCountSpec.of(AggCountType.ZERO).clause(pairs);
     }
 
     /**
@@ -118,7 +119,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountNaN(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.NAN).clause(pairs);
+        return CumCountSpec.of(AggCountType.NAN).clause(pairs);
     }
 
     /**
@@ -129,7 +130,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountInfinite(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.INFINITE).clause(pairs);
+        return CumCountSpec.of(AggCountType.INFINITE).clause(pairs);
     }
 
     /**
@@ -140,7 +141,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation CumCountFinite(String... pairs) {
-        return CumCountSpec.of(CumCountSpec.CumCountType.FINITE).clause(pairs);
+        return CumCountSpec.of(AggCountType.FINITE).clause(pairs);
     }
 
     /**

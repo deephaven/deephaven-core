@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -52,7 +51,9 @@ public class TestCumCount extends BaseUpdateByTest {
 
         final Table count_all = t.updateBy(UpdateByOperation.CumCountAll());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumCountAll(ColumnVectors.of(count_all, col).toArray());
+            assertWithCumCountAll(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(count_all, col).toArray());
         }
 
         final Table count_non_null = t.updateBy(UpdateByOperation.CumCountNonNull());
@@ -145,7 +146,9 @@ public class TestCumCount extends BaseUpdateByTest {
 
         final Table count_all = t.updateBy(UpdateByOperation.CumCountAll());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumCountAll(ColumnVectors.of(count_all, col).toArray());
+            assertWithCumCountAll(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(count_all, col).toArray());
         }
 
         final Table count_non_null = t.updateBy(UpdateByOperation.CumCountNonNull());
@@ -281,7 +284,9 @@ public class TestCumCount extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumCountAll(ColumnVectors.of(actual, col).toArray());
+                assertWithCumCountAll(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray());
             });
             return source;
         });
@@ -700,11 +705,26 @@ public class TestCumCount extends BaseUpdateByTest {
     // endregion
 
     // region External verification methods for the supported types
-    final void assertWithCumCountAll(@NotNull final Object actual) {
+    final void assertWithCumCountAll(
+            @NotNull final Object expected,
+            @NotNull final Object actual) {
         final long[] actualValues = (long[]) actual;
-        final long[] expectedValues = LongStream.range(1, actualValues.length + 1).toArray();
 
-        assertArrayEquals(expectedValues, actualValues);
+        if (expected instanceof byte[]) {
+            assertArrayEquals(Numeric.cumcountall((byte[]) expected), actualValues);
+        } else if (expected instanceof short[]) {
+            assertArrayEquals(Numeric.cumcountall((short[]) expected), actualValues);
+        } else if (expected instanceof int[]) {
+            assertArrayEquals(Numeric.cumcountall((int[]) expected), actualValues);
+        } else if (expected instanceof long[]) {
+            assertArrayEquals(Numeric.cumcountall((long[]) expected), actualValues);
+        } else if (expected instanceof float[]) {
+            assertArrayEquals(Numeric.cumcountall((float[]) expected), actualValues);
+        } else if (expected instanceof double[]) {
+            assertArrayEquals(Numeric.cumcountall((double[]) expected), actualValues);
+        } else {
+            assertArrayEquals(object_cumcount((Object[]) expected, o -> true), actualValues);
+        }
     }
 
     final void assertWithCumCountNonNull(

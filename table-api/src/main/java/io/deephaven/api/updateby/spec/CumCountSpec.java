@@ -4,6 +4,7 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.api.agg.util.AggCountType;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
@@ -13,25 +14,19 @@ import org.immutables.value.Value.Immutable;
 @Immutable
 @SimpleStyle
 public abstract class CumCountSpec extends UpdateBySpecBase {
-    /**
-     * The types of counts that can be performed.
-     */
-    public enum CumCountType {
-        ALL, NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE
-    }
 
-    public static CumCountSpec of(final CumCountType countType) {
+    public static CumCountSpec of(final AggCountType countType) {
         return ImmutableCumCountSpec.of(countType);
     }
 
     @Value.Parameter
-    public abstract CumCountType countType();
+    public abstract AggCountType countType();
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        if (countType() == CumCountType.ALL
-                || countType() == CumCountType.NULL
-                || countType() == CumCountType.NON_NULL) {
+        if (countType() == AggCountType.ALL
+                || countType() == AggCountType.NULL
+                || countType() == AggCountType.NON_NULL) {
             // null/non-null applies to all types
             return true;
         }

@@ -163,31 +163,31 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(CumCountSpec spec) {
-            final UpdateByCumulativeCount.CountType countType;
+            final io.deephaven.proto.backplane.grpc.AggCountType countType;
             switch (spec.countType()) {
                 case NULL:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NULL;
+                    countType = AggCountType.COUNT_NULL;
                     break;
                 case NEGATIVE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NEGATIVE;
+                    countType = AggCountType.COUNT_NEGATIVE;
                     break;
                 case POSITIVE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_POSITIVE;
+                    countType = AggCountType.COUNT_POSITIVE;
                     break;
                 case ZERO:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_ZERO;
+                    countType = AggCountType.COUNT_ZERO;
                     break;
                 case NAN:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NAN;
+                    countType = AggCountType.COUNT_NAN;
                     break;
                 case INFINITE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_INFINITE;
+                    countType = AggCountType.COUNT_INFINITE;
                     break;
                 case FINITE:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_FINITE;
+                    countType = AggCountType.COUNT_FINITE;
                     break;
                 default:
-                    countType = UpdateByCumulativeCount.CountType.COUNT_TYPE_NON_NULL;
+                    countType = AggCountType.COUNT_NON_NULL;
             }
 
             return UpdateByColumn.UpdateBySpec.newBuilder()

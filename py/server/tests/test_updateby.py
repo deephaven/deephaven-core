@@ -11,7 +11,7 @@ from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, D
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
     rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time, rolling_formula_tick, rolling_formula_time, \
-    cum_count, cum_count_null, cum_count_neg, cum_count_pos, cum_count_zero, cum_count_nan, cum_count_inf, cum_count_finite
+    cum_count_all, cum_count_null, cum_count_neg, cum_count_pos, cum_count_zero, cum_count_nan, cum_count_inf, cum_count_finite
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 
@@ -75,7 +75,7 @@ class UpdateByTestCase(BaseTestCase):
             cum_prod(cols=simple_op_pairs),
             cum_min(cols=simple_op_pairs),
             cum_max(cols=simple_op_pairs),
-            cum_count(cols=simple_op_pairs),
+            cum_count_all(cols=simple_op_pairs),
             cum_count_null(cols=simple_op_pairs),
             cum_count_neg(cols=simple_op_pairs),
             cum_count_pos(cols=simple_op_pairs),
