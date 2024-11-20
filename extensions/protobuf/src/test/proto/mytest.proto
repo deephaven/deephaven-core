@@ -131,6 +131,28 @@ message RepeatedObject {
   repeated XYZ xyz = 1;
 }
 
+message RepeatedWithoutOptional {
+  message N {
+    message NN {
+      repeated string s = 1;
+    }
+    NN nn = 1;
+  }
+  int32 y = 1;
+  repeated N n = 2;
+}
+
+message RepeatedWithOptional {
+  message N {
+    message NN {
+      repeated string s = 1;
+    }
+    optional NN nn = 1;
+  }
+  int32 y = 1;
+  repeated N n = 2;
+}
+
 message MultiRepeated {
   repeated RepeatedBasics my_basics = 1;
   repeated RepeatedWrappers my_wrappers = 2;

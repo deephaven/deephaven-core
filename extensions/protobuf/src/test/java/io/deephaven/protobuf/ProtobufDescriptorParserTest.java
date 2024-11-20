@@ -54,6 +54,8 @@ import io.deephaven.protobuf.test.RepeatedDuration;
 import io.deephaven.protobuf.test.RepeatedMessage;
 import io.deephaven.protobuf.test.RepeatedMessage.Person;
 import io.deephaven.protobuf.test.RepeatedTimestamp;
+import io.deephaven.protobuf.test.RepeatedWithOptional;
+import io.deephaven.protobuf.test.RepeatedWithoutOptional;
 import io.deephaven.protobuf.test.RepeatedWrappers;
 import io.deephaven.protobuf.test.TheWrappers;
 import io.deephaven.protobuf.test.TwoTs;
@@ -1468,6 +1470,46 @@ public class ProtobufDescriptorParserTest {
                 .build();
         final Map<List<String>, TypedFunction<Message>> nf = nf(TwoTs.getDescriptor(), options);
         assertThat(nf.keySet()).containsExactly(List.of("ts1"), List.of("ts2", "seconds"), List.of("ts2", "nanos"));
+    }
+
+    @Test
+    void repeatedWithOptional() {
+        final RepeatedWithOptional msg = RepeatedWithOptional.newBuilder()
+                .setY(1)
+                .addN(
+                        RepeatedWithOptional.N.newBuilder().build()
+                )
+                .build();
+
+        checkKey(
+                RepeatedWithOptional.getDescriptor(),
+                List.of("n", "nn", "s"),
+                Type.stringType().arrayType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(msg, new String[][]{null});
+                    }
+                });
+    }
+
+    @Test
+    void repeatedWithoutOptional() {
+        final RepeatedWithoutOptional msg = RepeatedWithoutOptional.newBuilder()
+                .setY(1)
+                .addN(
+                        RepeatedWithoutOptional.N.newBuilder().build()
+                )
+                .build();
+
+        checkKey(
+                RepeatedWithoutOptional.getDescriptor(),
+                List.of("n", "nn", "s"),
+                Type.stringType().arrayType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(msg, new String[][]{null});
+                    }
+                });
     }
 
     private static Map<List<String>, TypedFunction<Message>> nf(Descriptor descriptor) {
