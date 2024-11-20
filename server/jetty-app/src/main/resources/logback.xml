@@ -24,8 +24,6 @@
   <!--<logger name="io.deephaven" level="INFO"/>-->
   <!--<logger name="io.grpc" level="TRACE"/>-->
 
-  <logger name="io.deephaven.sql.SqlAdapter" level="DEBUG"/>
-
   <!-- Increase the log level to WARN to avoid excessive logging when getting/returning compressors/decompressors -->
   <logger name="org.apache.hadoop.io.compress.CodecPool" level="WARN"/>
 
