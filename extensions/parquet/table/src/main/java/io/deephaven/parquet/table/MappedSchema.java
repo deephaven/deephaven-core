@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.apache.parquet.schema.Types;
@@ -21,28 +22,33 @@ import static io.deephaven.parquet.table.TypeInfos.getTypeInfo;
  */
 class MappedSchema {
 
+    @VisibleForTesting
+    static final String SCHEMA_NAME = "root";
+
     static MappedSchema create(
             final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             final TableDefinition definition,
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
-            final ParquetInstructions instructions,
-            final ColumnDefinition<?>... extraColumns) {
+            final ParquetInstructions instructions) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            TypeInfos.TypeInfo typeInfo =
-                    getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
-            Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
-            builder.addField(schemaType);
+            builder.addField(createType(computedCache, columnDefinition, rowSet, columnSourceMap, instructions));
         }
-
-        for (final ColumnDefinition<?> extraColumn : extraColumns) {
-            builder.addField(getTypeInfo(computedCache, extraColumn, rowSet, columnSourceMap, instructions)
-                    .createSchemaType(extraColumn, instructions));
-        }
-
-        final MessageType schema = builder.named("root");
+        final MessageType schema = builder.named(SCHEMA_NAME);
         return new MappedSchema(definition, schema);
+    }
+
+    @VisibleForTesting
+    static Type createType(
+            final Map<String, Map<ParquetCacheTags, Object>> computedCache,
+            final ColumnDefinition<?> columnDefinition,
+            final RowSet rowSet,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
+            final ParquetInstructions instructions) {
+        final TypeInfos.TypeInfo typeInfo =
+                getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
+        return typeInfo.createSchemaType(columnDefinition, instructions);
     }
 
     private final TableDefinition tableDefinition;

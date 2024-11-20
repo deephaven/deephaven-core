@@ -96,8 +96,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         final URI metadataFileURI = isMetadataFile ? source : directory.resolve(METADATA_FILE_NAME);
         final URI commonMetadataFileURI = isCommonMetadataFile ? source : directory.resolve(COMMON_METADATA_FILE_NAME);
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(source,
-                    inputInstructions.getSpecialInstructions());
+            // noinspection resource
+            channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                    .load(source.getScheme(), inputInstructions.getSpecialInstructions());
         }
         return new ParquetMetadataFileLayout(directory, metadataFileURI, commonMetadataFileURI, inputInstructions,
                 channelsProvider);
@@ -232,7 +233,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             }
             final URI partitionFileURI = resolve(tableRootDirectory, relativePathString);
             final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFileURI,
-                    partitionOrder.getAndIncrement(), partitions, inputInstructions, channelsProvider);
+                    partitionOrder.getAndIncrement(), partitions, channelsProvider);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(getParquetMetadataForFile(relativePathString, metadataFileMetadata));
             tlk.setRowGroupIndices(rowGroupIndices);

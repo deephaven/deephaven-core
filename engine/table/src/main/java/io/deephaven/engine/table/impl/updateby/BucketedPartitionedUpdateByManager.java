@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -83,9 +82,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);
             final PartitionedTable transformed = partitioned.transform(t -> {
                 final long firstSourceRowKey = t.getRowSet().firstRowKey();
+                final Object[] bucketKeyValues = Arrays.stream(byColumnNames)
+                        .map(colName -> t.getColumnSource(colName).get(firstSourceRowKey))
+                        .toArray();
                 final String bucketDescription = BucketedPartitionedUpdateByManager.this + "-bucket-" +
-                        Arrays.stream(byColumnNames)
-                                .map(bcn -> Objects.toString(t.getColumnSource(bcn).get(firstSourceRowKey)))
+                        Arrays.stream(bucketKeyValues)
+                                .map(Objects::toString)
                                 .collect(Collectors.joining(", ", "[", "]"));
                 UpdateByBucketHelper bucket = new UpdateByBucketHelper(
                         bucketDescription,
@@ -94,7 +96,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                         resultSources,
                         timestampColumnName,
                         control,
-                        this::onBucketFailure);
+                        this::onBucketFailure,
+                        bucketKeyValues);
                 // add this to the bucket list
                 synchronized (buckets) {
                     buckets.offer(bucket);

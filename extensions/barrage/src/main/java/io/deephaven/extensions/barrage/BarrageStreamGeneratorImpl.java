@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -35,6 +36,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
@@ -56,8 +58,8 @@ import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerato
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
 public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
-
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGeneratorImpl.class);
+
     // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
     // to receive multiple record batches we crank this up to MAX_INT.
     private static final int DEFAULT_BATCH_SIZE = Configuration.getInstance()
@@ -73,8 +75,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                     100 * 1024 * 1024);
 
     public interface RecordBatchMessageView extends MessageView {
-        boolean isViewport();
-
         StreamReaderOptions options();
 
         RowSet addRowOffsets();
@@ -175,6 +175,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             addColumnData = new ChunkListInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 BarrageMessage.AddColumnData columnData = message.addColumnData[i];
+                // noinspection resource
                 addColumnData[i] = new ChunkListInputStreamGenerator(DefaultChunkInputStreamGeneratorFactory.INSTANCE,
                         columnData.type, columnData.componentType,
                         columnData.data, columnData.chunkType);
@@ -182,6 +183,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             modColumnData = new ModColumnGenerator[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
+                // noinspection resource
                 modColumnData[i] = new ModColumnGenerator(DefaultChunkInputStreamGeneratorFactory.INSTANCE,
                         message.modColumnData[i]);
             }
@@ -213,101 +215,145 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewport is the key-space viewport
-     * @param subscribedColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
-    public MessageView getSubView(final BarrageSubscriptionOptions options,
+    public MessageView getSubView(
+            final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
+            final boolean isFullSubscription,
             @Nullable final RowSet viewport,
             final boolean reverseViewport,
+            @Nullable final RowSet keyspaceViewportPrev,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
-        return new SubView(options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
-                subscribedColumns);
+        return new SubView(options, isInitialSnapshot, isFullSubscription, viewport, reverseViewport,
+                keyspaceViewportPrev, keyspaceViewport, subscribedColumns);
     }
 
-    /**
-     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
-     *
-     * @param options serialization options for this specific view
-     * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
-        return getSubView(options, isInitialSnapshot, null, false, null, null);
+        return getSubView(options, isInitialSnapshot, true, null, false, null, null, null);
     }
 
     private final class SubView implements RecordBatchMessageView {
         private final BarrageSubscriptionOptions options;
         private final boolean isInitialSnapshot;
-        private final RowSet viewport;
+        private final boolean isFullSubscription;
         private final boolean reverseViewport;
-        private final RowSet keyspaceViewport;
+        private final boolean hasViewport;
         private final BitSet subscribedColumns;
-        private final long numAddRows;
-        private final long numModRows;
-        private final RowSet addRowOffsets;
-        private final RowSet addRowKeys;
-        private final RowSet[] modRowOffsets;
+
+        private final long numClientIncludedRows;
+        private final long numClientModRows;
+        private final WritableRowSet clientViewport;
+        private final WritableRowSet clientIncludedRows;
+        private final WritableRowSet clientIncludedRowOffsets;
+        private final WritableRowSet[] clientModdedRows;
+        private final WritableRowSet[] clientModdedRowOffsets;
+        private final WritableRowSet clientRemovedRows;
 
         public SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
+                final boolean isFullSubscription,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
+                @Nullable final RowSet keyspaceViewportPrev,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
-            this.viewport = viewport;
+            this.isFullSubscription = isFullSubscription;
+            this.clientViewport = viewport == null ? null : viewport.copy();
             this.reverseViewport = reverseViewport;
-            this.keyspaceViewport = keyspaceViewport;
+            this.hasViewport = keyspaceViewport != null;
             this.subscribedColumns = subscribedColumns;
 
-            if (keyspaceViewport != null) {
-                this.modRowOffsets = new WritableRowSet[modColumnData.length];
+            // precompute the included rows / offsets and viewport removed rows
+            if (isFullSubscription) {
+                clientRemovedRows = null; // we'll send full subscriptions the full removed set
+
+                if (keyspaceViewport != null) {
+                    // growing viewport clients need to know about all rows, including those that were scoped into view
+                    clientIncludedRows = keyspaceViewport.intersect(rowsIncluded.original);
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
+                } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
+                    // there are scoped rows that need to be removed from the data sent to the client
+                    clientIncludedRows = rowsAdded.original.copy();
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(clientIncludedRows);
+                } else {
+                    clientIncludedRows = rowsAdded.original.copy();
+                    clientIncludedRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
+                }
             } else {
-                this.modRowOffsets = null;
+                Assert.neqNull(keyspaceViewportPrev, "keyspaceViewportPrev");
+                try (final SafeCloseableList toClose = new SafeCloseableList()) {
+                    final WritableRowSet keyspaceClientIncludedRows =
+                            toClose.add(keyspaceViewport.intersect(rowsIncluded.original));
+                    // all included rows are sent to viewport clients as adds (already includes repainted rows)
+                    clientIncludedRows = keyspaceViewport.invert(keyspaceClientIncludedRows);
+                    clientIncludedRowOffsets = rowsIncluded.original.invert(keyspaceClientIncludedRows);
+
+                    // A row may slide out of the viewport and back into the viewport within the same coalesced message.
+                    // The coalesced adds/removes will not contain this row, but the server has recorded it as needing
+                    // to be sent to the client in its entirety. The client will process this row as both removed and
+                    // added.
+                    final WritableRowSet keyspacePrevClientRepaintedRows =
+                            toClose.add(keyspaceClientIncludedRows.copy());
+                    if (!isSnapshot) {
+                        // note that snapshot rowsAdded contain all rows; we "repaint" only rows shared between prev and
+                        // new viewports.
+                        keyspacePrevClientRepaintedRows.remove(rowsAdded.original);
+                        shifted.original.unapply(keyspacePrevClientRepaintedRows);
+                    }
+                    keyspacePrevClientRepaintedRows.retain(keyspaceViewportPrev);
+
+                    // any pre-existing rows that are no longer in the viewport also need to be removed
+                    final WritableRowSet rowsToRetain;
+                    if (isSnapshot) {
+                        // for a snapshot, the goal is to calculate which rows to remove due to viewport changes
+                        rowsToRetain = toClose.add(keyspaceViewport.copy());
+                    } else {
+                        rowsToRetain = toClose.add(keyspaceViewport.minus(rowsAdded.original));
+                        shifted.original.unapply(rowsToRetain);
+                    }
+                    final WritableRowSet noLongerExistingRows = toClose.add(keyspaceViewportPrev.minus(rowsToRetain));
+                    noLongerExistingRows.insert(keyspacePrevClientRepaintedRows);
+                    clientRemovedRows = keyspaceViewportPrev.invert(noLongerExistingRows);
+                }
             }
+            numClientIncludedRows = clientIncludedRowOffsets.size();
 
             // precompute the modified column indexes, and calculate total rows needed
+            if (keyspaceViewport != null) {
+                clientModdedRows = new WritableRowSet[modColumnData.length];
+                clientModdedRowOffsets = new WritableRowSet[modColumnData.length];
+            } else {
+                clientModdedRows = null;
+                clientModdedRowOffsets = null;
+            }
+
             long numModRows = 0;
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final ModColumnGenerator mcd = modColumnData[ii];
 
-                if (keyspaceViewport != null) {
-                    try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
-                        this.modRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
-                        numModRows = Math.max(numModRows, intersect.size());
-                    }
-                } else {
+                if (keyspaceViewport == null) {
                     numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
+                    continue;
+                }
+
+                try (final WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
+                    // some rows may be marked both as included and modified; viewport clients must be sent
+                    // the full row data for these rows, so we do not also need to send them as modified
+                    intersect.remove(rowsIncluded.original);
+                    if (isFullSubscription) {
+                        clientModdedRows[ii] = intersect.copy();
+                    } else {
+                        clientModdedRows[ii] = keyspaceViewport.invert(intersect);
+                    }
+                    clientModdedRowOffsets[ii] = mcd.rowsModified.original.invert(intersect);
+                    numModRows = Math.max(numModRows, intersect.size());
                 }
             }
-            this.numModRows = numModRows;
-
-            if (keyspaceViewport != null) {
-                addRowKeys = keyspaceViewport.intersect(rowsIncluded.original);
-                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
-            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
-                // there are scoped rows included in the chunks that need to be removed
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
-            } else {
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
-            }
-
-            this.numAddRows = addRowOffsets.size();
+            numClientModRows = numModRows;
         }
 
         @Override
@@ -321,7 +367,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             final MutableInt actualBatchSize = new MutableInt();
 
-            if (numAddRows == 0 && numModRows == 0) {
+            if (numClientIncludedRows == 0 && numClientModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
                 final DefensiveDrainable is = getInputStream(this, 0, 0, actualBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns);
@@ -332,19 +378,19 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             }
 
             // send the add batches (if any)
-            processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
-                    BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+            try {
+                processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
+                        BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
 
-            // send the mod batches (if any) but don't send metadata twice
-            processBatches(visitor, this, numModRows, maxBatchSize, numAddRows > 0 ? null : metadata,
-                    BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
-
-            // clean up the helper indexes
-            addRowOffsets.close();
-            addRowKeys.close();
-            if (modRowOffsets != null) {
-                for (final RowSet modViewport : modRowOffsets) {
-                    modViewport.close();
+                // send the mod batches (if any) but don't send metadata twice
+                processBatches(visitor, this, numClientModRows, maxBatchSize,
+                        numClientIncludedRows > 0 ? null : metadata,
+                        BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
+            } finally {
+                SafeCloseable.closeAll(clientViewport, clientIncludedRows, clientIncludedRowOffsets, clientRemovedRows);
+                if (clientModdedRowOffsets != null) {
+                    SafeCloseable.closeAll(clientModdedRows);
+                    SafeCloseable.closeAll(clientModdedRowOffsets);
                 }
             }
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
@@ -359,34 +405,29 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public boolean isViewport() {
-            return viewport != null;
-        }
-
-        @Override
         public StreamReaderOptions options() {
             return options;
         }
 
         @Override
         public RowSet addRowOffsets() {
-            return addRowOffsets;
+            return clientIncludedRowOffsets;
         }
 
         @Override
         public RowSet modRowOffsets(int col) {
-            if (modRowOffsets == null) {
+            if (clientModdedRowOffsets == null) {
                 return null;
             }
-            return modRowOffsets[col];
+            return clientModdedRowOffsets[col];
         }
 
         private ByteBuffer getSubscriptionMetadata() throws IOException {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
-            if (isSnapshot && isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+            if (isSnapshot && clientViewport != null) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(clientViewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
@@ -397,32 +438,54 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             }
 
             final int rowsAddedOffset;
-            if (isSnapshot && !isInitialSnapshot) {
-                // client's don't need/want to receive the full RowSet on every snapshot
+            if (!isFullSubscription) {
+                // viewport clients consider all included rows as added; scoped rows will also appear in the removed set
+                try (final RowSetGenerator clientIncludedRowsGen = new RowSetGenerator(clientIncludedRows)) {
+                    rowsAddedOffset = clientIncludedRowsGen.addToFlatBuffer(metadata);
+                }
+            } else if (isSnapshot && !isInitialSnapshot) {
+                // Growing viewport clients don't need/want to receive the full RowSet on every snapshot
                 rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
             } else {
                 rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
             }
 
-            final int rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
-            final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+            final int rowsRemovedOffset;
+            if (!isFullSubscription) {
+                // viewport clients need to also remove rows that were scoped out of view; computed in the constructor
+                try (final RowSetGenerator clientRemovedRowsGen = new RowSetGenerator(clientRemovedRows)) {
+                    rowsRemovedOffset = clientRemovedRowsGen.addToFlatBuffer(metadata);
+                }
+            } else {
+                rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
+            }
+
+            final int shiftDataOffset;
+            if (!isFullSubscription) {
+                // we only send shifts to full table subscriptions
+                shiftDataOffset = 0;
+            } else {
+                shiftDataOffset = shifted.addToFlatBuffer(metadata);
+            }
 
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
 
-            // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
-                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+            // don't send `rowsIncluded` to viewport clients or if identical to `rowsAdded`
+            if (isFullSubscription && (isSnapshot || !clientIncludedRows.equals(rowsAdded.original))) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientIncludedRows, metadata);
             }
 
             // now add mod-column streams, and write the mod column indexes
             TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
-            for (final ModColumnGenerator mcd : modColumnData) {
+            for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
-                if (keyspaceViewport != null) {
-                    myModRowOffset = mcd.rowsModified.addToFlatBuffer(keyspaceViewport, metadata);
+                if (hasViewport) {
+                    try (final RowSetGenerator modRowsGen = new RowSetGenerator(clientModdedRows[ii])) {
+                        myModRowOffset = modRowsGen.addToFlatBuffer(metadata);
+                    }
                 } else {
-                    myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
+                    myModRowOffset = modColumnData[ii].rowsModified.addToFlatBuffer(metadata);
                 }
                 modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
             }
@@ -446,6 +509,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
             BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
             BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, reverseViewport);
+            BarrageUpdateMetadata.addTableSize(metadata, message.tableSize);
             metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
             final FlatBufferBuilder header = new FlatBufferBuilder();
@@ -460,16 +524,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
     }
 
-    /**
-     * Obtain a View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @param viewport is the position-space viewport
-     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
-     * @param keyspaceViewport is the key-space viewport
-     * @param snapshotColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
@@ -479,12 +533,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
     }
 
-    /**
-     * Obtain a Full-Snapshot View of this StreamGenerator that can be sent to a single snapshot requestor.
-     *
-     * @param options serialization options for this specific view
-     * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
-     */
     @Override
     public MessageView getSnapshotView(BarrageSnapshotOptions options) {
         return getSnapshotView(options, null, false, null, null);
@@ -492,12 +540,13 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private final class SnapshotView implements RecordBatchMessageView {
         private final BarrageSnapshotOptions options;
-        private final RowSet viewport;
         private final boolean reverseViewport;
         private final BitSet subscribedColumns;
-        private final long numAddRows;
-        private final RowSet addRowKeys;
-        private final RowSet addRowOffsets;
+        private final long numClientAddRows;
+
+        private final WritableRowSet clientViewport;
+        private final WritableRowSet clientAddedRows;
+        private final WritableRowSet clientAddedRowOffsets;
 
         public SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
@@ -505,21 +554,21 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
             this.options = options;
-            this.viewport = viewport;
+            this.clientViewport = viewport == null ? null : viewport.copy();
             this.reverseViewport = reverseViewport;
 
             this.subscribedColumns = subscribedColumns;
 
             // precompute add row offsets
             if (keyspaceViewport != null) {
-                addRowKeys = keyspaceViewport.intersect(rowsIncluded.original);
-                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
+                clientAddedRows = keyspaceViewport.intersect(rowsIncluded.original);
+                clientAddedRowOffsets = rowsIncluded.original.invert(clientAddedRows);
             } else {
-                addRowKeys = rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(addRowKeys.size());
+                clientAddedRows = rowsAdded.original.copy();
+                clientAddedRowOffsets = RowSetFactory.flat(clientAddedRows.size());
             }
 
-            numAddRows = addRowOffsets.size();
+            numClientAddRows = clientAddedRowOffsets.size();
         }
 
         @Override
@@ -531,17 +580,20 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // batch size is maximum, will write fewer rows when needed
             int maxBatchSize = batchSize();
             final MutableInt actualBatchSize = new MutableInt();
-            if (numAddRows == 0) {
-                // we still need to send a message containing metadata when there are no rows
-                visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns));
-            } else {
-                // send the add batches
-                processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
-                        BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+            try {
+                if (numClientAddRows == 0) {
+                    // we still need to send a message containing metadata when there are no rows
+                    visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
+                            BarrageStreamGeneratorImpl.this::appendAddColumns));
+                } else {
+                    // send the add batches
+                    processBatches(visitor, this, numClientAddRows, maxBatchSize, metadata,
+                            BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
+                }
+            } finally {
+                SafeCloseable.closeAll(clientViewport, clientAddedRows, clientAddedRowOffsets);
             }
-            addRowOffsets.close();
-            addRowKeys.close();
+
             writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
@@ -554,18 +606,13 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public boolean isViewport() {
-            return viewport != null;
-        }
-
-        @Override
         public StreamReaderOptions options() {
             return options;
         }
 
         @Override
         public RowSet addRowOffsets() {
-            return addRowOffsets;
+            return clientAddedRowOffsets;
         }
 
         @Override
@@ -577,8 +624,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int effectiveViewportOffset = 0;
-            if (isViewport()) {
-                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+            if (clientViewport != null) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(clientViewport)) {
                     effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
                 }
             }
@@ -596,8 +643,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             // Added Chunk Data:
             int addedRowsIncludedOffset = 0;
             // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
-                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+            if (isSnapshot || !clientAddedRows.equals(rowsAdded.original)) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(clientAddedRows, metadata);
             }
 
             BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
@@ -663,9 +710,13 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
      * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private DefensiveDrainable getInputStream(final RecordBatchMessageView view, final long offset,
+    private DefensiveDrainable getInputStream(
+            final RecordBatchMessageView view,
+            final long offset,
             final int targetBatchSize,
-            final MutableInt actualBatchSize, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
+            final MutableInt actualBatchSize,
+            final ByteBuffer metadata,
+            final ColumnVisitor columnVisitor)
             throws IOException {
         final ArrayDeque<DefensiveDrainable> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
@@ -703,12 +754,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             nodeOffsets.ensureCapacity(addColumnData.length);
             nodeOffsets.get().setSize(0);
             bufferInfos.ensureCapacity(addColumnData.length * 3);
+            // noinspection DataFlowIssue
             bufferInfos.get().setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
                     (numElements, nullCount) -> {
                         nodeOffsets.ensureCapacityPreserve(nodeOffsets.get().size() + 1);
+                        // noinspection resource
                         nodeOffsets.get().asWritableObjectChunk()
                                 .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
                     };
@@ -1054,9 +1107,12 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     public static abstract class ByteArrayGenerator {
         protected int len;
-        protected byte[] raw;
+        protected volatile byte[] raw;
 
-        protected int addToFlatBuffer(final FlatBufferBuilder builder) {
+        protected abstract void ensureComputed() throws IOException;
+
+        protected int addToFlatBuffer(final FlatBufferBuilder builder) throws IOException {
+            ensureComputed();
             return builder.createByteVector(raw, 0, len);
         }
     }
@@ -1066,14 +1122,6 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         public RowSetGenerator(final RowSet rowSet) throws IOException {
             this.original = rowSet.copy();
-            // noinspection UnstableApiUsage
-            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
-                oos.flush();
-                raw = baos.peekBuffer();
-                len = baos.size();
-            }
         }
 
         @Override
@@ -1081,8 +1129,24 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             original.close();
         }
 
-        public DrainableByteArrayInputStream getInputStream() {
-            return new DrainableByteArrayInputStream(raw, 0, len);
+        protected void ensureComputed() throws IOException {
+            if (raw != null) {
+                return;
+            }
+
+            synchronized (this) {
+                if (raw != null) {
+                    return;
+                }
+
+                try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                        final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, original);
+                    oos.flush();
+                    len = baos.size();
+                    raw = baos.peekBuffer();
+                }
+            }
         }
 
         /**
@@ -1094,19 +1158,19 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
          */
         protected int addToFlatBuffer(final RowSet viewport, final FlatBufferBuilder builder) throws IOException {
             if (original.subsetOf(viewport)) {
+                ensureComputed();
                 return addToFlatBuffer(builder);
             }
 
             final int nlen;
             final byte[] nraw;
-            // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
                     final RowSet viewOfOriginal = original.intersect(viewport)) {
                 ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
-                nraw = baos.peekBuffer();
                 nlen = baos.size();
+                nraw = baos.peekBuffer();
             }
 
             return builder.createByteVector(nraw, 0, nlen);
@@ -1114,47 +1178,78 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     public static class BitSetGenerator extends ByteArrayGenerator {
+        private final BitSet original;
+
         public BitSetGenerator(final BitSet bitset) {
-            BitSet original = bitset == null ? new BitSet() : bitset;
-            this.raw = original.toByteArray();
-            final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            this.len = (int) ((long) nBits + 7) / 8;
+            original = bitset == null ? new BitSet() : (BitSet) bitset.clone();
+        }
+
+        @Override
+        protected void ensureComputed() {
+            if (raw != null) {
+                return;
+            }
+
+            synchronized (this) {
+                if (raw != null) {
+                    return;
+                }
+
+                final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
+                len = (int) ((long) nBits + 7) / 8;
+                raw = original.toByteArray();
+            }
         }
     }
 
     public static class RowSetShiftDataGenerator extends ByteArrayGenerator {
+        private final RowSetShiftData original;
+
         public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
-            final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
-            final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
+            original = shifted;
+        }
 
-            if (shifted != null) {
-                for (int i = 0; i < shifted.size(); ++i) {
-                    long s = shifted.getBeginRange(i);
-                    final long dt = shifted.getShiftDelta(i);
-
-                    if (dt < 0 && s < -dt) {
-                        s = -dt;
-                    }
-
-                    sRangeBuilder.appendKey(s);
-                    eRangeBuilder.appendKey(shifted.getEndRange(i));
-                    destBuilder.appendKey(s + dt);
-                }
+        protected void ensureComputed() throws IOException {
+            if (raw != null) {
+                return;
             }
 
-            // noinspection UnstableApiUsage
-            try (final RowSet sRange = sRangeBuilder.build();
-                    final RowSet eRange = eRangeBuilder.build();
-                    final RowSet dest = destBuilder.build();
-                    final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                    final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
-                oos.flush();
-                raw = baos.peekBuffer();
-                len = baos.size();
+            synchronized (this) {
+                if (raw != null) {
+                    return;
+                }
+
+                final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
+
+                if (original != null) {
+                    for (int i = 0; i < original.size(); ++i) {
+                        long s = original.getBeginRange(i);
+                        final long dt = original.getShiftDelta(i);
+
+                        if (dt < 0 && s < -dt) {
+                            s = -dt;
+                        }
+
+                        sRangeBuilder.appendKey(s);
+                        eRangeBuilder.appendKey(original.getEndRange(i));
+                        destBuilder.appendKey(s + dt);
+                    }
+                }
+
+                try (final RowSet sRange = sRangeBuilder.build();
+                        final RowSet eRange = eRangeBuilder.build();
+                        final RowSet dest = destBuilder.build();
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                        final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
+                    ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
+                    oos.flush();
+                    len = baos.size();
+                    raw = baos.peekBuffer();
+                }
             }
         }
     }

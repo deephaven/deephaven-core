@@ -65,22 +65,20 @@ public class ParquetKeyValuePartitionedLayout
             @NotNull final ParquetInstructions readInstructions,
             @Nullable SeekableChannelsProvider channelsProvider) {
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                    readInstructions.getSpecialInstructions());
+            // noinspection resource
+            channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                    .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
         }
-        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, tableDefinition, readInstructions,
-                channelsProvider);
+        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, tableDefinition, channelsProvider);
     }
 
     private ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
-                        channelsProvider),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, channelsProvider),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
         this.channelsProvider = channelsProvider;
     }
@@ -102,22 +100,20 @@ public class ParquetKeyValuePartitionedLayout
             @NotNull final ParquetInstructions readInstructions,
             @Nullable SeekableChannelsProvider channelsProvider) {
         if (channelsProvider == null) {
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                    readInstructions.getSpecialInstructions());
+            // noinspection resource
+            channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                    .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
         }
-        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, maxPartitioningLevels, readInstructions,
-                channelsProvider);
+        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, maxPartitioningLevels, channelsProvider);
     }
 
     private ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             final int maxPartitioningLevels,
-            @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
-                        channelsProvider),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, channelsProvider),
                 maxPartitioningLevels);
         this.channelsProvider = channelsProvider;
     }
