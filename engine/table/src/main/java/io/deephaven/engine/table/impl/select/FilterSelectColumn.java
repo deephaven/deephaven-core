@@ -203,16 +203,18 @@ class FilterSelectColumn implements SelectColumn {
 
         @Override
         public Boolean getBoolean(final long rowKey) {
-            final WritableRowSet filteredRowSet =
-                    filter.filter(RowSetFactory.fromKeys(rowKey), tableToFilter.getRowSet(), tableToFilter, false);
-            return filteredRowSet.isNonempty();
+            try (final WritableRowSet filteredRowSet =
+                    filter.filter(RowSetFactory.fromKeys(rowKey), tableToFilter.getRowSet(), tableToFilter, false)) {
+                return filteredRowSet.isNonempty();
+            }
         }
 
         @Override
         public Boolean getPrevBoolean(final long rowKey) {
-            final WritableRowSet filteredRowSet = filter.filter(RowSetFactory.fromKeys(rowKey),
-                    tableToFilter.getRowSet().prev(), tableToFilter, true);
-            return filteredRowSet.isNonempty();
+            try (final WritableRowSet filteredRowSet = filter.filter(RowSetFactory.fromKeys(rowKey),
+                    tableToFilter.getRowSet().prev(), tableToFilter, true)) {
+                return filteredRowSet.isNonempty();
+            }
         }
 
         @Override

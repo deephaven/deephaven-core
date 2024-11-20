@@ -1324,6 +1324,10 @@ public class QueryTableSelectUpdateTest {
         final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
         assertTableEquals(wm, upv);
 
+        // Test the getBoolean method
+        assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(0)));
+        assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(2)));
+
         // and now a more generic WhereFilter
 
         final Filter filter2 = WhereFilterFactory.getExpression("A == 1 || A==3");
@@ -1331,6 +1335,7 @@ public class QueryTableSelectUpdateTest {
 
         // use an update
         final Table up2 = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter2)));
+        assertTableEquals(wm2, up2);
 
         // a Filter where nothing is true, to check that state
         final Table upvf = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofFalse())));
@@ -1345,6 +1350,57 @@ public class QueryTableSelectUpdateTest {
         final Table wm3 = t.wouldMatch(new WouldMatchPair("AWM", filter3));
         final Table upv3 = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter3)));
         assertTableEquals(wm3, upv3);
+    }
+
+    @Test
+    public void testFilterExpressionGetPrev() {
+        final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(2), Literal.of(4));
+        final QueryTable t = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(), intCol("A", 1, 2, 3, 4));
+        // noinspection resource
+        final TrackingWritableRowSet rs = t.getRowSet().writableCast();
+
+        // use an updateView
+        final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+
+        // Test the getBoolean method
+        assertEquals(false, upv.getColumnSource("AWM").get(rs.get(0)));
+        assertEquals(true, upv.getColumnSource("AWM").get(rs.get(1)));
+        assertEquals(false, upv.getColumnSource("AWM").get(rs.get(2)));
+        assertEquals(true, upv.getColumnSource("AWM").get(rs.get(3)));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(0)));
+            assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(1)));
+            assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(2)));
+            assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(3)));
+
+            // noinspection resource
+            final RowSet prevRowset = rs.prev();
+            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(0)));
+            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(1)));
+            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(2)));
+            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(3)));
+
+            addToTable(t, i(1, 2, 9), intCol("A", 2, 2, 4));
+            removeRows(t, i(8));
+            rs.insert(i(1, 9));
+            rs.remove(8);
+            t.notifyListeners(i(1, 9), i(8), i());
+
+            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(0)));
+            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(1)));
+            assertEquals(false, upv.getColumnSource("AWM").getPrev(prevRowset.get(2)));
+            assertEquals(true, upv.getColumnSource("AWM").getPrev(prevRowset.get(3)));
+
+            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(0)));
+            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(1)));
+            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(2)));
+            assertEquals(false, upv.getColumnSource("AWM").get(rs.get(3)));
+            assertEquals(true, upv.getColumnSource("AWM").get(rs.get(4)));
+        });
+
     }
 
     @Test
