@@ -4,7 +4,7 @@ The purpose of this library is to add a "Custom Action" to our
 Advanced Installer package. This custom action does the actions
 needed to manipulate the Windows Registry in order to do things like
 
-1. detect whether the version of Office installed is 32 or 64 bit
+1. Detect whether the version of Office installed is 32 or 64 bit
 2. Add the special keys that tell Excel to open an Excel Add-In at startup
 
 # Information about this library
@@ -12,7 +12,7 @@ needed to manipulate the Windows Registry in order to do things like
 This library is a .NET 4.8.0 Class Library with some special boilerplate
 code provided by Advanced Installer.
 
-.NET 4.8.0 is pretty old at this point, but I chose it because (I believe)
+.NET 4.8.0 is pretty old at this point, but it was chosen because
 it is guaranteed to be present on Windows 10/11 installations. Note that
 this is *not* the runtime used by the Excel Add-In itself; that add-in uses
 a much more modern runtime (.NET 8). This is just the runtime used to
@@ -24,16 +24,27 @@ The process for adding the extension is documented here:
 
 https://www.advancedinstaller.com/user-guide/create-dot-net-ca.html
 
-Basically the steps are:
+The steps are:
 
 * Open Visual Studio and navigate to Extensions → Manage Extensions.
-* In the Online section, search for Advanced Installer for Visual Studio
-* In Visual Studio navigate to File → New Project
-* From the list of templates, select the C# Custom Action template or the
-  C# Custom Action (.NET Framework) template, depending on your needs
+* In the Browse tab, search for Advanced Installer for Visual Studio
+  and press the Install button
+* Close and reopen Visual Studio to finalize the installation.
+* Now navigate to File → New → Project
+* From the list of templates, you will find two very-similar looking
+  templates:
+  1. "C# Custom Action" with description ".Net Custom Action Project
+     for Advanced Installer"
+  2. "C# Custom Action (.NET Framework)" with description ".Net Framework
+     Custom Action Project for Advanced Installer"
 
-Because of the above compatibility requirements I have decided that
-the right version is "C# Custom Action (.NET Framework)".
+The difference between these two templates has to do with the
+evolution of .NET. The original, Windows-only application framework
+was called ".NET Framework" and it ran only on Windows. The modern,
+cross-platform application framework is called simply .NET.
+Because for our purposes here we have decided to target an old
+.NET Framework version (4.8.0, see above), we choose the second
+option: "C# Custom Action (.NET Framework)".
 
 # Windows Registry
 
@@ -48,19 +59,23 @@ installed, we look at this registry key:
 HKEY_LOCAL_MACHINE\Software\Microsoft\Office\${VERSION}\Outlook
 ```
 
-And yes, this information is stored at the "Outlook" part of the path,
+Notably, this information is stored at the "Outlook" part of the path,
 not Excel. This key contains an entry with the name
-which contains the name "Bitness" and the values "x86" or "x64".
+"Bitness" and the values "x86" or "x64".
 
-When I say ${VERSION} I mean one of the known versions of Office, one of
+${VERSION} refers to one of the known versions of Office, namely one of
 the strings in the set 11.0, 12.0, 14.0, 15.0, 16.0
 
 Version 16.0 covers Office 2016, 2019, and 2021 and Office 365, so
 for Deephaven purposes we can hardcode this to 16.0 and ignore previous
 versions we might find.
 
-Note that for reasons when we look up this key programmatically, we need
-to look it up in the "Registry Hive" that corresponds to the machine's
+As Windows evolved, the registry was divided into a 32-bit partition
+and a 64-bit partition. Office itself is published in 32-bit and 64-bit versions.
+The only configuration we currently support is 64-bit Office on 64-bit Windows.
+
+Due to this registry organization, when we look up this key programmatically,
+we need to look it up in the "Registry Hive" that corresponds to the machine's
 operating system bitness. This is why we have code like
 
 ```
@@ -70,9 +85,7 @@ var regBase = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, regView);
 var bitnessValue = subKey.GetValue(RegistryKeys.Bitness.Name);
 ```
 
-Apparently, the Bitness key for a 32 bit installation of Office will still
-be in the 64 bit registry "hive" on a 64 bit machine. We may need to look
-into this further if it turns out to matter.
+However, this code is needlessly general because at this time we only support 64-bit Windows.
 
 ## Modifying the set of installed Excel Add-Ins
 
@@ -91,16 +104,17 @@ var subKey = Registry.CurrentUser.OpenSubKey(RegistryKeys.OpenEntries.Key, true)
 ```
 
 This key contains zero or more entries indicating which addins Excel
-should load when it starts. These entries have the following names, which follow the almost-regular pattern:
+should load when it starts. These entries have the following names,
+which follow the almost-regular pattern:
 
 OPEN, OPEN1, OPEN2, OPEN3, ...
 
-I say "almost-regular" because the first name is OPEN when you might
+We say "almost-regular" because the first name is OPEN when you might
 expect to to be named OPEN0.
 
 These names must be kept dense. That is, if you delete some name that is
 not at the end of the sequence, you will need to move the later entries
-down to fill in the gap. (e.g. the entry keyed by OPEN2 becomes OPEN1 etc).
+down to fill in the gap (e.g. the entry keyed by OPEN2 becomes OPEN1 etc).
 
 The value of these entries is a string that looks like the pattern
 
@@ -108,14 +122,13 @@ The value of these entries is a string that looks like the pattern
 /R "${FULLPATHTOXLL}"
 ```
 
-including the space and the quotation marks. On my computer the value of OPEN is currently
+including the space and the quotation marks. For example, for user "kosak" the
+installer would make an entry that looks like this:
 
 ```
-/R "C:\Users\kosak\Desktop\exceladdin-v7\ExcelAddIn-AddIn64-packed.xll"
+/R "C:\Users\kosak\AppData\Local\Deephaven Data Labs LLC\Deephaven Excel Add-In\DeephavenExcelAddIn64.xll"
 ```
 
-The fact that I have installed my addin on the Desktop is not a best practice. The point here is to show the syntax.
-
-We take care to make our entry follow the above format. Of course when we are moving
-the entries installed by other people, we treat them as opaque strings and don't look
-at the values.
+The entry created by the installer follows the above format. Of course when we
+have to move the entries installed by other software (e.g. if we have to
+change OPEN3 to OPEN2), we treat the values as opaque strings.

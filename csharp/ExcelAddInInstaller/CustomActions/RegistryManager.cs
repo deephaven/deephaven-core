@@ -64,7 +64,6 @@ namespace Deephaven.ExcelAddInInstaller.CustomActions {
     /// <param name="is64Bit"></param>
     /// <param name="failureReason"></param>
     /// <returns></returns>
-
     public bool TryDetermineBitness(out bool is64Bit, out string failureReason) {
       is64Bit = false;
       failureReason = "";
