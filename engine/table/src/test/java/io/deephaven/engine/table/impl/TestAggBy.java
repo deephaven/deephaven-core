@@ -12,8 +12,6 @@ import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -324,7 +322,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new IntGenerator(10, 100),
+                        new CharGenerator('a', 'z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
@@ -368,7 +366,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new IntGenerator(10, 100),
+                        new CharGenerator('a', 'z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
