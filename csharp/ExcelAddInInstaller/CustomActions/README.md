@@ -39,7 +39,7 @@ The steps are:
      Custom Action Project for Advanced Installer"
 
 The difference between these two templates has to do with the
-evolution of .NET. The original, Windows-only application framework
+evolution of .NET. The original application framework
 was called ".NET Framework" and it ran only on Windows. The modern,
 cross-platform application framework is called simply .NET.
 Because for our purposes here we have decided to target an old
