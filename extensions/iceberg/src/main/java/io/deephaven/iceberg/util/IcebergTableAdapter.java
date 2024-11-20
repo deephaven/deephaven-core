@@ -577,6 +577,10 @@ public class IcebergTableAdapter {
 
     /**
      * Create a new {@link IcebergTableWriter} for this Iceberg table using the provided {@link TableWriterOptions}.
+     * <p>
+     * This method will perform schema validation to ensure that the provided
+     * {@link TableWriterOptions#tableDefinition()} is compatible with the Iceberg table schema. All further writes
+     * performed by the returned writer will not be validated against the table's schema, and thus would be faster.
      *
      * @param tableWriterOptions The options to configure the table writer.
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
@@ -586,8 +590,13 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
-     * will not change the schema of the existing table.
+     * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
+     * table in a single snapshot. This will not change the schema of the existing table.
+     * <p>
+     * This method will create a new {@link IcebergTableWriter} with the provided
+     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
+     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
+     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
      *
      * @param writeInstructions The instructions for customizations while writing.
      */
@@ -599,10 +608,15 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Overwrite the existing Iceberg table with the provided Deephaven tables in a single snapshot. This will overwrite
-     * the schema of the existing table to match the provided Deephaven table if they do not match.
-     * <p>
+     * Overwrite the existing Iceberg table with the provided Deephaven {@link IcebergWriteInstructions#tables()} in a
+     * single snapshot. This will delete all existing data but will not change the schema of the existing table.
      * Overwriting a table while racing with other writers can lead to failure/undefined results.
+     * <p>
+     * This method will create a new {@link IcebergTableWriter} with the provided
+     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
+     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
+     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
+     *
      *
      * @param writeInstructions The instructions for customizations while writing.
      */
@@ -616,6 +630,11 @@ public class IcebergTableAdapter {
     /**
      * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
      * of data files that were written. Users can use this list to create a transaction/snapshot if needed.
+     * <p>
+     * This method will create a new {@link IcebergTableWriter} with the provided
+     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
+     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
+     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
      *
      * @param writeInstructions The instructions for customizations while writing.
      */

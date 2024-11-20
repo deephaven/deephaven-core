@@ -207,8 +207,9 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Append the provided Deephaven table as a new partition to the existing Iceberg table in a single snapshot. This
-     * will not change the schema of the existing table.
+     * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
+     * table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
+     * the provided Deephaven tables.
      *
      * @param writeInstructions The instructions for customizations while writing.
      */
@@ -218,8 +219,9 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Overwrite the existing Iceberg table with the provided Deephaven tables in a single snapshot. This will overwrite
-     * the schema of the existing table to match the provided Deephaven table if they do not match.
+     * Overwrite the existing Iceberg table with the provided Deephaven {@link IcebergWriteInstructions#tables()} in a
+     * single snapshot. This will delete all existing data and will not change the schema of the existing table. This
+     * method will not perform any compatibility checks between the existing schema and the provided Deephaven tables.
      * <p>
      * Overwriting a table while racing with other writers can lead to failure/undefined results.
      *
@@ -231,8 +233,10 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
-     * of data files that were written. Users can use this list to create a transaction/snapshot if needed.
+     * Writes data from Deephaven {@link IcebergWriteInstructions#tables()} to an Iceberg table without creating a new
+     * snapshot. This method returns a list of data files that were written. Users can use this list to create a
+     * transaction/snapshot if needed. This method will not perform any compatibility checks between the existing schema
+     * and the provided Deephaven tables.
      *
      * @param instructions The instructions for customizations while writing.
      */

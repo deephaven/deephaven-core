@@ -24,8 +24,8 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
      * The partition paths where each table will be written. For example, if the table is partitioned by "year" and
      * "month", the partition path could be "year=2021/month=01".
      * <p>
-     * Users must provide partition path for each table in {@link #tables()} in the same order if writing to a
-     * partitioned table. For writing to a non-partitioned tables, this should be an empty list.
+     * If writing to a partitioned iceberg table, users must provide partition path for each table in {@link #tables()}
+     * in the same order. Else, this should be an empty list.
      */
     public abstract List<String> partitionPaths();
 
