@@ -111,4 +111,10 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
         visitOrder.computeIfAbsent(partition.includeGroupByColumns() ? PARTITION_KEEPING_OBJ : PARTITION_DROPPING_OBJ,
                 k -> new ArrayList<>()).add(partition.column());
     }
+
+    @Override
+    public void visit(Formula formula) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(formula, null);
+    }
 }

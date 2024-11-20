@@ -83,7 +83,9 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
 
         // Add parquet writing specific instructions.
         builder.setTableDefinition(tableDefinition);
-        builder.addFieldIdMapping(fieldIdToName);
+        for (final Map.Entry<Integer, String> entry : fieldIdToName.entrySet()) {
+            builder.setFieldId(entry.getValue(), entry.getKey());
+        }
         builder.setCompressionCodecName(compressionCodecName());
         builder.setMaximumDictionaryKeys(maximumDictionaryKeys());
         builder.setMaximumDictionarySize(maximumDictionarySize());

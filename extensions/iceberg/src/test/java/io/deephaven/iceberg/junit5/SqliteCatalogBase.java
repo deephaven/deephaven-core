@@ -569,7 +569,13 @@ public abstract class SqliteCatalogBase {
 
         // Verify that the data files are now in the table
         verifySnapshots(tableIdentifier, List.of("append", "append"));
-        verifyDataFiles(tableIdentifier, List.of(moreData, source, anotherSource));
+        verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
+
+        {
+            // Verify thaty we read the data files in the correct order
+            final Table fromIceberg = tableAdapter.table();
+            assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
+        }
     }
 
     @Test
@@ -613,8 +619,8 @@ public abstract class SqliteCatalogBase {
         assertThat(fromIceberg.getDefinition()).isEqualTo(partitioningTableDef);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
-                part2.update("PC = `apple`"),
-                part1.update("PC = `cat`"));
+                part1.update("PC = `cat`"),
+                part2.update("PC = `apple`"));
         assertTableEquals(expected, fromIceberg.select());
 
         final Table part3 = TableTools.emptyTable(5)
@@ -628,9 +634,9 @@ public abstract class SqliteCatalogBase {
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(
+                part1.update("PC = `cat`"),
                 part2.update("PC = `apple`"),
-                part3.update("PC = `boy`"),
-                part1.update("PC = `cat`"));
+                part3.update("PC = `boy`"));
         assertTableEquals(expected2, fromIceberg2.select());
     }
 
@@ -660,8 +666,8 @@ public abstract class SqliteCatalogBase {
         assertThat(fromIceberg.getDefinition()).isEqualTo(tableDefinition);
         assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
         final Table expected = TableTools.merge(
-                part2.update("PC = 1"),
-                part1.update("PC = 3"));
+                part1.update("PC = 3"),
+                part2.update("PC = 1"));
         assertTableEquals(expected, fromIceberg.select());
 
         final Table part3 = TableTools.emptyTable(5)
@@ -675,9 +681,9 @@ public abstract class SqliteCatalogBase {
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(
+                part1.update("PC = 3"),
                 part2.update("PC = 1"),
-                part3.update("PC = 2"),
-                part1.update("PC = 3"));
+                part3.update("PC = 2"));
         assertTableEquals(expected2, fromIceberg2.select());
     }
 

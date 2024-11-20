@@ -63,4 +63,10 @@ public class AggregationPairs implements Aggregation.Visitor {
     public void visit(Partition partition) {
         out = Stream.empty();
     }
+
+    @Override
+    public void visit(Formula formula) {
+        out = Stream.empty();
+    }
+
 }

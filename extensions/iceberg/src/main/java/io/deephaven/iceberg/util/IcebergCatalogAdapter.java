@@ -250,7 +250,7 @@ public class IcebergCatalogAdapter {
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
         }
-        return new IcebergTableAdapter(tableIdentifier, table, dataInstructionsProvider);
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
     }
 
     /**
@@ -287,7 +287,7 @@ public class IcebergCatalogAdapter {
             final org.apache.iceberg.Table table =
                     catalog.createTable(tableIdentifier, schema, partitionSpec,
                             Map.of(TableProperties.DEFAULT_FILE_FORMAT, TableProperties.DEFAULT_FILE_FORMAT_DEFAULT));
-            return new IcebergTableAdapter(tableIdentifier, table, dataInstructionsProvider);
+            return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
         } catch (final Throwable throwable) {
             if (newNamespaceCreated) {
                 // Delete it to avoid leaving a partial namespace in the catalog

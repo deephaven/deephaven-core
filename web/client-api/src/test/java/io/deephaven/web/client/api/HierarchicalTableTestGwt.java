@@ -56,21 +56,101 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             .then(data -> {
                                 assertEquals(1d, data.getTreeSize());
 
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) data.getRows().getAt(0);
+                                assertFalse(row0.isExpanded());
+                                assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(0)));
+                                assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(row0)));
+                                assertTrue(row0.hasChildren());
+                                assertEquals(1, row0.depth());
+
                                 treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
                                 return treeTable.<TreeViewportData>nextEvent(
                                         JsTreeTable.EVENT_UPDATED, 2001d);
                             }).then(event -> {
                                 assertEquals(10d, event.getDetail().getTreeSize());
-                                assertEquals(10, event.getDetail().getRows().length);
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                assertEquals(10, rows.length);
+                                TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row0.isExpanded());
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(0)));
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(row0)));
+                                assertTrue(row0.hasChildren());
+                                assertEquals(1, row0.depth());
 
+                                // Next 9 are collapsed, have children, are children of row0
+                                for (int i = 1; i < 10; i++) {
+                                    TreeViewportData.TreeRow row = (TreeViewportData.TreeRow) rows.getAt(i);
+                                    assertFalse(row.isExpanded());
+                                    assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(i)));
+                                    assertTrue(row.hasChildren());
+                                    assertEquals(2, row.depth());
+                                }
 
                                 // move the viewport and try again
                                 treeTable.setViewport(5, 50, treeTable.getColumns(), null);
-                                return treeTable.<TreeViewportData>nextEvent(
-                                        JsTreeTable.EVENT_UPDATED, 2002d);
+                                return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2002d);
                             }).then(event -> {
                                 assertEquals(10d, event.getDetail().getTreeSize());
-                                assertEquals(5, event.getDetail().getRows().length);
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                assertEquals(5, rows.length);
+
+                                // Row 0 is already expanded and is the parent of rows 1-9, so expand row 5
+                                treeTable.expand(JsTreeTable.RowReferenceUnion.of(5), null);
+
+                                return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2003d);
+                            }).then(event -> {
+                                assertEquals(20d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                assertEquals(15, rows.length);
+                                TreeViewportData.TreeRow row5 = (TreeViewportData.TreeRow) rows.getAt(0);
+                                assertTrue(row5.isExpanded());
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(5)));
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(row5)));
+                                assertTrue(row5.hasChildren());
+                                assertEquals(2, row5.depth());
+
+                                // Next 10 are collapsed, have children, are children of row5
+                                for (int i = 1; i < 11; i++) {
+                                    TreeViewportData.TreeRow row = (TreeViewportData.TreeRow) rows.getAt(i);
+                                    assertFalse(row.isExpanded());
+                                    assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(i + 5)));
+                                    assertTrue(row.hasChildren());
+                                    assertEquals(3, row.depth());
+                                }
+                                TreeViewportData.TreeRow row16 = (TreeViewportData.TreeRow) rows.getAt(11);
+                                assertFalse(row16.isExpanded());
+                                assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(16)));
+                                assertTrue(row16.hasChildren());
+                                assertEquals(2, row16.depth());
+
+                                // Expand row 6 by row reference
+                                treeTable.expand((JsTreeTable.RowReferenceUnion) rows.getAt(1), null);
+
+                                return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2004d);
+                            }).then(event -> {
+                                assertEquals(30d, event.getDetail().getTreeSize());
+                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                assertEquals(25, rows.length);
+                                TreeViewportData.TreeRow row6 = (TreeViewportData.TreeRow) rows.getAt(1);
+                                assertTrue(row6.isExpanded());
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(5)));
+                                assertTrue(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(row6)));
+                                assertTrue(row6.hasChildren());
+                                assertEquals(3, row6.depth());
+
+                                // Next 10 are collapsed, are leaf nodes, are children of row5
+                                for (int i = 2; i < 12; i++) {
+                                    TreeViewportData.TreeRow row = (TreeViewportData.TreeRow) rows.getAt(i);
+                                    assertFalse(row.isExpanded());
+                                    assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(i + 5)));
+                                    assertFalse(row.hasChildren());
+                                    assertEquals(4, row.depth());
+                                }
+                                TreeViewportData.TreeRow row17 = (TreeViewportData.TreeRow) rows.getAt(12);
+                                assertFalse(row17.isExpanded());
+                                assertFalse(treeTable.isExpanded(JsTreeTable.RowReferenceUnion.of(17)));
+                                assertTrue(row17.hasChildren());
+                                assertEquals(3, row17.depth());
 
                                 treeTable.close();
 

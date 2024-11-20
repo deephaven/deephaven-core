@@ -26,7 +26,6 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
-import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.types.Conversions;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -85,10 +84,21 @@ public final class IcebergUtils {
      * @return A stream of {@link DataFile} objects.
      */
     public static Stream<DataFile> allDataFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
-        final List<ManifestFile> manifestFiles = allManifests(table, snapshot);
-        // Sort manifest files by sequence number to read data files in the correct commit order
-        manifestFiles.sort(Comparator.comparingLong(ManifestFile::sequenceNumber));
-        return manifestFiles.stream()
+        return allManifestFiles(table, snapshot)
+                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
+                .flatMap(IcebergUtils::toStream);
+    }
+
+    /**
+     * Get a stream of all {@link ManifestFile} objects from the given {@link Table} and {@link Snapshot}.
+     *
+     * @param table The {@link Table} to retrieve manifest files for.
+     * @param snapshot The {@link Snapshot} to retrieve manifest files from.
+     *
+     * @return A stream of {@link ManifestFile} objects.
+     */
+    public static Stream<ManifestFile> allManifestFiles(@NotNull final Table table, @NotNull final Snapshot snapshot) {
+        return allManifests(table, snapshot).stream()
                 .peek(manifestFile -> {
                     if (manifestFile.content() != ManifestContent.DATA) {
                         throw new TableDataException(
@@ -96,9 +106,7 @@ public final class IcebergUtils {
                                         "%s:%d - only DATA manifest files are currently supported, encountered %s",
                                         table, snapshot.snapshotId(), manifestFile.content()));
                     }
-                })
-                .map(manifestFile -> ManifestFiles.read(manifestFile, table.io()))
-                .flatMap(IcebergUtils::toStream);
+                });
     }
 
     /**
@@ -119,7 +127,11 @@ public final class IcebergUtils {
         }
     }
 
-    private static <T> Stream<T> toStream(final CloseableIterable<T> iterable) {
+    /**
+     * Convert a {@link org.apache.iceberg.io.CloseableIterable} to a {@link Stream} that will close the iterable when
+     * the stream is closed.
+     */
+    public static <T> Stream<T> toStream(final org.apache.iceberg.io.CloseableIterable<T> iterable) {
         return StreamSupport.stream(iterable.spliterator(), false).onClose(() -> {
             try {
                 iterable.close();

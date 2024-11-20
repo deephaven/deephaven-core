@@ -30,6 +30,7 @@ public class WebBarrageMessage {
     public long firstSeq = -1;
     public long lastSeq = -1;
     public long step = -1;
+    public long tableSize = -1;
 
     public boolean isSnapshot;
     public RangeSet snapshotRowSet;
