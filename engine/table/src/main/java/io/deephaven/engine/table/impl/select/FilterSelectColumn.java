@@ -113,6 +113,18 @@ class FilterSelectColumn implements SelectColumn {
                     "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: "
                             + filter);
         }
+        if (filter.isRefreshing()) {
+            // TODO: DH-18052: updateView and view should support refreshing Filter Expressions
+            //
+            // This would enable us to use a whereIn or whereNotIn for things like conditional formatting; which could
+            // be attractive. However, a join or actualy wouldMatch gets you there without the additional complexity.
+            //
+            // Supporting this requires SelectColumn dependencies, which have not previously existed. Additionally,
+            // if we were to support these for select and update (as opposed to view and updateView), then the filter
+            // could require recomputing the entire result table whenever anything changes.
+            throw new UncheckedTableException(
+                    "Cannot use a refreshing filter in select, view, update, or updateView: " + filter);
+        }
 
         return filter.getColumns();
     }
@@ -258,24 +270,50 @@ class FilterSelectColumn implements SelectColumn {
             final WritableObjectChunk<Boolean, ?> booleanDestination = destination.asWritableObjectChunk();
             booleanDestination.setSize(rowSequence.intSize());
             final RowSet fullSet = usePrev ? tableToFilter.getRowSet().prev() : tableToFilter.getRowSet();
+
             try (final RowSet inputRowSet = rowSequence.asRowSet();
-                    final RowSet filtered = filter.filter(inputRowSet, fullSet, tableToFilter, usePrev);
-                    final RowSet.Iterator inputIt = inputRowSet.iterator();
-                    final RowSet.Iterator trueIt = filtered.iterator()) {
-                long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
+                    final RowSet filtered = filter.filter(inputRowSet, fullSet, tableToFilter, usePrev)) {
+                if (filtered.size() == inputRowSet.size()) {
+                    // if everything matches, short circuit the iteration
+                    booleanDestination.fillWithValue(0, booleanDestination.size(), true);
+                    return;
+                }
+
                 int offset = 0;
-                while (nextTrue >= 0) {
-                    // the input iterator is a superset of the true iterator, so we can always find out what
-                    // the next value is without needing to check hasNext
-                    final long nextInput = inputIt.nextLong();
-                    final boolean found = nextInput == nextTrue;
-                    booleanDestination.set(offset++, found);
-                    if (found) {
-                        nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
+
+                try (final RowSet.Iterator inputRows = inputRowSet.iterator();
+                        final RowSet.Iterator trueRows = filtered.iterator()) {
+                    long nextTrue = trueRows.hasNext() ? trueRows.nextLong() : -1;
+                    while (nextTrue >= 0) {
+                        // the input iterator is a superset of the true iterator, so we can always find out what
+                        // the next value is without needing to check hasNext
+                        final long nextInput = inputRows.nextLong();
+                        final boolean found = nextInput == nextTrue;
+                        booleanDestination.set(offset++, found);
+                        if (found) {
+                            nextTrue = trueRows.hasNext() ? trueRows.nextLong() : -1;
+                        }
                     }
                 }
-                // fill everything else up with false, because nothing else can match
-                booleanDestination.fillWithValue(offset, booleanDestination.size() - offset, false);
+
+                /*
+                 * This alternative formulation from Ryan is fairly close in terms of performance. It might be very
+                 * slightly worse on the dense cases, and slightly better on the sparse cases.
+                 */
+                /*
+                 * try (final RowSequence.Iterator inputRows = inputRowSet.getRowSequenceIterator(); final
+                 * RowSet.Iterator trueRows = filtered.iterator()) { while (trueRows.hasNext()) { final long nextTrue =
+                 * trueRows.nextLong(); // Find all the false rows between the last consumed input row and the next true
+                 * row final int falsesSkipped = (int) inputRows.advanceAndGetPositionDistance(nextTrue + 1) - 1; if
+                 * (falsesSkipped > 0) { booleanDestination.fillWithValue(offset, falsesSkipped, false); offset +=
+                 * falsesSkipped; } booleanDestination.set(offset++, true); } }
+                 */
+
+                final int remainingFalses = booleanDestination.size() - offset;
+                // Fill everything else up with false, because we've exhausted the trues
+                if (remainingFalses > 0) {
+                    booleanDestination.fillWithValue(offset, remainingFalses, false);
+                }
             }
         }
     }
