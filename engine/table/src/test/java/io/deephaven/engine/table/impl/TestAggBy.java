@@ -504,6 +504,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                 EvalNugget.from(() -> queryTable.aggBy(AggCountNaN(primitiveColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountInfinite(primitiveColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountFinite(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonZero(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonNegative(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(primitiveColumns), "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MinD=min(doubleCol)").sort("Sym"),
                         "view",
