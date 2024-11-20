@@ -14,6 +14,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable.SnapshotState;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
@@ -82,7 +83,7 @@ public class TestHierarchicalTableSnapshots {
                 byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
 
         final Table initialSnapshot = snapshotToTable(rollupTable, snapshotState,
-                expandAllKeys, ColumnName.of("Action"), null, RowSetFactory.flat(4));
+                expandAllKeys, ColumnName.of("Action"), null, RowSetFactory.flat(4) /* Ask for 1 extra. */);
         final Table initialExpected = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 3),
                 booleanCol(rollupTable.getRowExpandedColumn().name(), true, true, null),
@@ -107,9 +108,9 @@ public class TestHierarchicalTableSnapshots {
             assertFalse(snapshotFuture.isDone());
             updateGraph.flushOneNotificationForUnitTests();
         }
-        // We may need to deliver one additional notification, in case the concurrent snapshot is waiting for a
-        // WaitNotification to fire. We should not assert that the future isn't done, however, since a race might
-        // prevent that notification from being needed.
+        // We may need to deliver 1 additional notification, in case the concurrent snapshot is waiting for a
+        // WaitNotification on the rollup root to fire. We should not assert that the future isn't done, however, since
+        // a race might prevent that notification from being needed.
         updateGraph.flushOneNotificationForUnitTests();
 
         final Table updatedSnapshot = snapshotFuture.get();
@@ -120,6 +121,69 @@ public class TestHierarchicalTableSnapshots {
                 intCol("A", NULL_INT, 1, 1),
                 intCol("B", NULL_INT, NULL_INT, 2),
                 intCol("MaxC", 4, 4, 4));
+        assertTableEquals(updatedExpected, updatedSnapshot);
+        freeSnapshotTableChunks(updatedSnapshot);
+
+        concurrentExecutor.shutdown();
+    }
+
+    @Test
+    public void testTreeSnapshotSatisfaction() throws ExecutionException, InterruptedException {
+        // noinspection resource
+        final QueryTable source = testRefreshingTable(
+                RowSetFactory.fromKeys(10, 11, 12).toTracking(),
+                intCol("CID", 0, 1, 2),
+                intCol("PID", NULL_INT, 0, 1),
+                intCol("Other", 50, 60, 70));
+        final TreeTable treeTable = source.tree("CID", "PID");
+
+        final SnapshotState snapshotState = treeTable.makeSnapshotState();
+
+        final Table expandAllKeys = newTable(
+                intCol(treeTable.getRowDepthColumn().name(), 0),
+                intCol("CID", NULL_INT),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+        final Table initialSnapshot = snapshotToTable(treeTable, snapshotState,
+                expandAllKeys, ColumnName.of("Action"), null, RowSetFactory.flat(4));
+        final Table initialExpected = newTable(
+                intCol(treeTable.getRowDepthColumn().name(), 1, 2, 3),
+                booleanCol(treeTable.getRowExpandedColumn().name(), true, true, null),
+                intCol("CID", 0, 1, 2),
+                intCol("PID", NULL_INT, 0, 1),
+                intCol("Other", 50, 60, 70));
+        assertTableEquals(initialExpected, initialSnapshot);
+        freeSnapshotTableChunks(initialSnapshot);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutorService concurrentExecutor = Executors.newSingleThreadScheduledExecutor();
+
+        updateGraph.startCycleForUnitTests();
+        addToTable(source, RowSetFactory.fromKeys(20), intCol("CID", 3), intCol("PID", 2), intCol("Other", 800));
+        source.notifyListeners(new TableUpdateImpl(RowSetFactory.fromKeys(20),
+                RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        final Future<Table> snapshotFuture = concurrentExecutor.submit(() -> snapshotToTable(
+                treeTable, snapshotState, expandAllKeys, ColumnName.of("Action"), null, RowSetFactory.flat(5)));
+        // We need to deliver 2 notifications to ensure that the tree's partition and lookup aggregations are satisfied.
+        // The future cannot complete before that happens.
+        for (int ni = 0; ni < 2; ++ni) {
+            assertFalse(snapshotFuture.isDone());
+            updateGraph.flushOneNotificationForUnitTests();
+        }
+        // We may need to deliver 2 additional notifications, in case the concurrent snapshot is waiting for a
+        // WaitNotification on the tree or lookup to fire. We should not assert that the future isn't done, however,
+        // since a race might prevent those notifications from being needed.
+        updateGraph.flushOneNotificationForUnitTests();
+        updateGraph.flushOneNotificationForUnitTests();
+
+        final Table updatedSnapshot = snapshotFuture.get();
+        updateGraph.completeCycleForUnitTests();
+        final Table updatedExpected = newTable(
+                intCol(treeTable.getRowDepthColumn().name(), 1, 2, 3, 4),
+                booleanCol(treeTable.getRowExpandedColumn().name(), true, true, true, null),
+                intCol("CID", 0, 1, 2, 3),
+                intCol("PID", NULL_INT, 0, 1, 2),
+                intCol("Other", 50, 60, 70, 800));
         assertTableEquals(updatedExpected, updatedSnapshot);
         freeSnapshotTableChunks(updatedSnapshot);
 
