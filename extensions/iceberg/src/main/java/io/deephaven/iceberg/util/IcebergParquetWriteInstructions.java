@@ -29,7 +29,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
 
     /**
      * The name of the compression codec to use when writing Parquet files; defaults to
-     * {@value ParquetInstructions#DEFAULT_COMPRESSION_CODEC_NAME}.
+     * {@link ParquetInstructions#DEFAULT_COMPRESSION_CODEC_NAME}.
      */
     @Default
     public String compressionCodecName() {
@@ -58,8 +58,8 @@ public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstru
 
     /**
      * The target page size for writing the parquet files; defaults to
-     * {@value ParquetInstructions#DEFAULT_TARGET_PAGE_SIZE}, should be greater than or equal to
-     * {@value ParquetInstructions#MIN_TARGET_PAGE_SIZE}.
+     * {@link ParquetInstructions#DEFAULT_TARGET_PAGE_SIZE}, should be greater than or equal to
+     * {@link ParquetInstructions#MIN_TARGET_PAGE_SIZE}.
      */
     @Default
     public int targetPageSize() {
