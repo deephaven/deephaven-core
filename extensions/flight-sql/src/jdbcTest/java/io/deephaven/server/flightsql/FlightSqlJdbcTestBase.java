@@ -139,10 +139,8 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
             try {
                 preparedStatement.executeQuery();
                 failBecauseExceptionWasNotThrown(SQLException.class);
-            } catch (SQLException e) {
-                assertThat((Throwable) e).getRootCause()
-                        .hasMessageContaining(
-                                "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
+            } catch (RuntimeException e) {
+                assertHelpfulClientErrorMessage(e);
             }
             // If our authentication is bad, we won't be able to close the prepared statement either. If we want to
             // solve for this scenario, we would probably need to use randomized handles for the prepared statements
@@ -151,13 +149,18 @@ public abstract class FlightSqlJdbcTestBase extends DeephavenServerTestBase {
                 preparedStatement.close();
                 failBecauseExceptionWasNotThrown(RuntimeException.class);
             } catch (RuntimeException e) {
-                // Note: this is arguably a JDBC implementation bug; it should be throwing SQLException, but it's
-                // exposing shadowed internal error from Flight.
-                assertThat(e.getClass().getName()).isEqualTo("cfjd.org.apache.arrow.flight.FlightRuntimeException");
-                assertThat(e).hasMessageContaining(
-                        "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
+                assertHelpfulClientErrorMessage(e);
             }
         }
+    }
+
+    private static void assertHelpfulClientErrorMessage(RuntimeException e) {
+        // Note: this is arguably a JDBC implementation bug; it should be throwing java.sql.SQLException, but it's
+        // exposing shadowed internal error from Flight.
+        assertThat(e.getClass().getName()).isEqualTo(
+                "org.apache.arrow.driver.jdbc.shaded.org.apache.arrow.flight.FlightRuntimeException");
+        assertThat(e).hasMessageContaining(
+                "Flight SQL: Must use the original session; is the client echoing the authentication token properly?");
     }
 
     private static void consume(ResultSet rs, int numCols, int numRows) throws SQLException {
