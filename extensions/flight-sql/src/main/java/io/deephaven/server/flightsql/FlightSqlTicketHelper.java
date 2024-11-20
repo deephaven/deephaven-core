@@ -82,12 +82,8 @@ final class FlightSqlTicketHelper {
 
     private static Any partialUnpackTicket(ByteBuffer ticket, final String logId) {
         ticket = ticket.slice();
-        if (ticket.get() != TICKET_PREFIX) {
-            // If we get here, it means there is an error with FlightSqlResolver.ticketRoute /
-            // io.deephaven.server.session.TicketRouter.getResolver
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If false, it means there is an error with FlightSqlResolver.ticketRoute / TicketRouter.getResolver
+        Assert.eq(ticket.get(), "ticket.get()", TICKET_PREFIX, "TICKET_PREFIX");
         try {
             return Any.parseFrom(ticket);
         } catch (InvalidProtocolBufferException e) {

@@ -551,12 +551,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             @Nullable final SessionState session,
             final Action action,
             final StreamObserver<Result> observer) {
-        if (!handlesActionType(action.getType())) {
-            // If we get here, there is an error with io.deephaven.server.session.ActionRouter.doAction /
-            // handlesActionType
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If false, there is an error with io.deephaven.server.session.ActionRouter.doAction / handlesActionType
+        Assert.eqTrue(handlesActionType(action.getType()), "handlesActionType(action.getType())");
         if (session == null) {
             throw unauthenticatedError();
         }
@@ -758,17 +754,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 final Table table = CommandHandlerFixedBase.this.table(command);
                 final long totalRecords = totalRecords();
                 if (totalRecords != -1) {
-                    if (table.isRefreshing()) {
-                        // TicketHandler implementation error; should only override totalRecords for non-refreshing
-                        // tables
-                        // noinspection DataFlowIssue
-                        throw Assert.statementNeverExecuted();
-                    }
-                    if (table.size() != totalRecords) {
-                        // Ticket handler implementation error; totalRecords does not match the table size
-                        // noinspection DataFlowIssue
-                        throw Assert.statementNeverExecuted();
-                    }
+                    // If false, TicketHandler implementation error; should only override totalRecords for
+                    // non-refreshing tables
+                    Assert.eqTrue(table.isRefreshing(), "table.isRefreshing()");
+                    // If false, Ticket handler implementation error; totalRecords does not match the table size
+                    Assert.eq(table.size(), "table.size()", totalRecords, "totalRecords");
                 }
                 return table;
             }
@@ -984,10 +974,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         CommandStaticTable(Table table, Function<T, Ticket> f) {
             super();
-            if (table.isRefreshing()) {
-                // noinspection DataFlowIssue
-                throw Assert.statementNeverExecuted();
-            }
+            Assert.eqFalse(table.isRefreshing(), "table.isRefreshing()");
             this.table = Objects.requireNonNull(table);
             this.f = Objects.requireNonNull(f);
             this.schemaBytes = BarrageUtil.schemaBytesFromTable(table);
@@ -1686,6 +1673,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
      */
     @VisibleForTesting
     static Predicate<String> flightSqlFilterPredicate(String flightSqlPattern) {
+        // TODO(deephaven-core#6403): Flight SQL filter pattern improvements
         // This is the technically correct, although likely represents a Flight SQL client mis-use, as the results will
         // be empty (unless an empty db_schema_name is allowed).
         //

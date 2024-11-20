@@ -66,10 +66,8 @@ final class FlightSqlCommandHelper {
     }
 
     public static boolean handlesCommand(FlightDescriptor descriptor) {
-        if (descriptor.getType() != FlightDescriptor.DescriptorType.CMD) {
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If not CMD, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver / handlesPath
+        Assert.equals(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD);
         // No good way to check if this is a valid command without parsing to Any first.
         final Any command = parseOrNull(descriptor.getCmd());
         return command != null
@@ -77,26 +75,16 @@ final class FlightSqlCommandHelper {
     }
 
     public static <T> T visit(FlightDescriptor descriptor, CommandVisitor<T> visitor, String logId) {
-        if (descriptor.getType() != FlightDescriptor.DescriptorType.CMD) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver /
-            // handlesPath
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If not CMD, there is an error with io.deephaven.server.session.TicketRouter.getPathResolver / handlesPath
+        Assert.equals(descriptor.getType(), "descriptor.getType()", FlightDescriptor.DescriptorType.CMD);
         final Any command = parseOrNull(descriptor.getCmd());
-        if (command == null) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
-            // handlesCommand
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If null, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver / handlesCommand
+        Assert.neqNull(command, "command");
         final String typeUrl = command.getTypeUrl();
-        if (!typeUrl.startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX)) {
-            // If we get here, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
-            // handlesCommand
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        }
+        // If not true, there is an error with io.deephaven.server.session.TicketRouter.getCommandResolver /
+        // handlesCommand
+        Assert.eqTrue(typeUrl.startsWith(FlightSqlSharedConstants.FLIGHT_SQL_COMMAND_TYPE_PREFIX),
+                "typeUrl.startsWith");
         switch (typeUrl) {
             case FlightSqlSharedConstants.COMMAND_STATEMENT_QUERY_TYPE_URL:
                 return visitor.visit(unpack(command, CommandStatementQuery.class, logId));
