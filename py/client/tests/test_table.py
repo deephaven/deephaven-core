@@ -11,7 +11,7 @@ from pyarrow import csv
 from pydeephaven import DHError
 from pydeephaven import SortDirection
 from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, \
-    count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite
+    formula, count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite
 
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -250,14 +250,20 @@ class TableTestCase(BaseTestCase):
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
                 count_(col="ca"),
                 partition(col="aggPartition"),
-                count_non_null("aggCountNonNull=b"),
-                count_null("aggCountNull=c"),
-                count_neg("aggCountNeg=d"),
-                count_pos("aggCountPos=b"),
-                count_zero("aggCountZero=c"),
-                count_nan("aggCountNaN=d"),
-                count_inf("aggCountInf=b"),
-                count_finite("aggCountFinite=c"),
+                formula(formula="min(x)", formula_param="x", cols=["min_a=a", "min_b=b"]),
+                formula(formula="avg(x)", formula_param="x", cols=["avg_c=c", "avg_d=d"]),
+                formula(formula="f_const=5.0 + 3"),
+                formula(formula="f_min=min(a)"),
+                formula(formula="f_sum=sum(a) + sum(b)"),
+                formula(formula="f_sum_3col=sum(a) + sum(b) + max(c)"),
+                count_non_null(cols=["aggCountNonNull=b"]),
+                count_null(cols=["aggCountNull=c"]),
+                count_neg(cols=["aggCountNeg=d"]),
+                count_pos(cols=["aggCountPos=b"]),
+                count_zero(cols=["aggCountZero=c"]),
+                count_nan(cols=["aggCountNaN=d"]),
+                count_inf(cols=["aggCountInf=b"]),
+                count_finite(cols=["aggCountFinite=c"]),
                 ]
 
         result_table = test_table.agg_by(aggs=aggs, by=["a"])

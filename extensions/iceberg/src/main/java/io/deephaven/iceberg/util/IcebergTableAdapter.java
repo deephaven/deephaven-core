@@ -30,6 +30,7 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -53,17 +54,34 @@ public class IcebergTableAdapter {
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
 
+    private final Catalog catalog;
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
     public IcebergTableAdapter(
+            final Catalog catalog,
             final TableIdentifier tableIdentifier,
             final org.apache.iceberg.Table table,
             final DataInstructionsProviderLoader dataInstructionsProviderLoader) {
+        this.catalog = catalog;
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+    }
+
+    /**
+     * {@link Catalog} used to access this table.
+     */
+    public Catalog catalog() {
+        return catalog;
+    }
+
+    /**
+     * Get the Iceberg {@link TableIdentifier table identifier}.
+     */
+    public TableIdentifier tableIdentifier() {
+        return tableIdentifier;
     }
 
     /**

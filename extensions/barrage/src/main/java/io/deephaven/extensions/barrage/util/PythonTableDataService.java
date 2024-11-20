@@ -705,15 +705,6 @@ public class PythonTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public int compareTo(@NotNull final TableLocationKey other) {
-            if (getClass() != other.getClass()) {
-                throw new ClassCastException(String.format("Cannot compare %s to %s", getClass(), other.getClass()));
-            }
-            final TableLocationKeyImpl otherTableLocationKey = (TableLocationKeyImpl) other;
-            return PartitionsComparator.INSTANCE.compare(partitions, otherTableLocationKey.partitions);
-        }
-
-        @Override
         public LogOutput append(@NotNull final LogOutput logOutput) {
             return logOutput.append(getImplementationName())
                     .append(":[key=").append(locationKey.toString())

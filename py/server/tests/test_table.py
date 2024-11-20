@@ -470,14 +470,18 @@ class TableTestCase(BaseTestCase):
             formula(
                 formula="min(each)", formula_param="each", cols=["MinA=a", "MinD=d"]
             ),
-            count_non_null("aggCountNonNull=b"),
-            count_null("aggCountNull=c"),
-            count_neg("aggCountNeg=d"),
-            count_pos("aggCountPos=b"),
-            count_zero("aggCountZero=c"),
-            count_nan("aggCountNaN=d"),
-            count_inf("aggCountInf=b"),
-            count_finite("aggCountFinite=c"),
+            formula(formula="f_const=5.0 + 3"),
+            formula(formula="f_min=min(a)"),
+            formula(formula="f_sum=sum(a) + sum(b)"),
+            formula(formula="f_sum_3_col=sum(a) + sum(b) + max(c)"),
+            count_non_null(cols=["aggCountNonNull=b"]),
+            count_null(cols=["aggCountNull=c"]),
+            count_neg(cols=["aggCountNeg=d"]),
+            count_pos(cols=["aggCountPos=b"]),
+            count_zero(cols=["aggCountZero=c"]),
+            count_nan(cols=["aggCountNaN=d"]),
+            count_inf(cols=["aggCountInf=b"]),
+            count_finite(cols=["aggCountFinite=c"]),
         ]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])

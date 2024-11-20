@@ -9,7 +9,6 @@ import elemental2.core.JsArray;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
@@ -71,6 +70,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         DONE;
     }
 
+    private final SubscriptionType subscriptionType;
     private final ClientTableState state;
     private final WorkerConnection connection;
     protected final int rowStyleColumn;
@@ -87,8 +87,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     private String failMsg;
 
-    public AbstractTableSubscription(ClientTableState state, WorkerConnection connection) {
+    protected AbstractTableSubscription(
+            SubscriptionType subscriptionType,
+            ClientTableState state,
+            WorkerConnection connection) {
         state.retain(this);
+        this.subscriptionType = subscriptionType;
         this.state = state;
         this.connection = connection;
         rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
@@ -112,16 +116,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
             status = Status.ACTIVE;
-            this.barrageSubscription =
-                    WebBarrageSubscription.subscribe(state, viewportChangedHandler, dataChangedHandler);
+            this.barrageSubscription = WebBarrageSubscription.subscribe(
+                    subscriptionType, state, viewportChangedHandler, dataChangedHandler);
 
-            doExchange =
-                    connection.<FlightData, FlightData>streamFactory().create(
-                            headers -> connection.flightServiceClient().doExchange(headers),
-                            (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                            (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                                    c::apply),
-                            new FlightData());
+            doExchange = connection.<FlightData, FlightData>streamFactory().create(
+                    headers -> connection.flightServiceClient().doExchange(headers),
+                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
+                            c::apply),
+                    new FlightData());
 
             doExchange.onData(this::onFlightData);
             doExchange.onEnd(this::onStreamEnd);
@@ -180,10 +183,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.options = BarrageSubscriptionOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
-                .columnConversionMode(ColumnConversionMode.Stringify)
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
                 .columnsAsList(false)// TODO(deephaven-core#5927) flip this to true
                 .useDeephavenNulls(true)
+                .previewListLengthLimit(0)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
                 Js.uncheckedCast(state.getHandle().getTicket()),
@@ -215,7 +218,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     public double size() {
         if (status == Status.ACTIVE) {
-            return barrageSubscription.getCurrentRowSet().size();
+            return barrageSubscription.getCurrentSize();
         }
         if (status == Status.DONE) {
             throw new IllegalStateException("Can't read size when already closed");

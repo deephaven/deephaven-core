@@ -797,6 +797,22 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
+        // using the key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                "out_val=sum(intCol) - max(longCol) + (Sym == null ? 0 : Sym.length())"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"), "Sym")
+                .update("out_val=sum(a) - max(b) + (Sym == null ? 0 : Sym.length())").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        // using the byte key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                "out_val=byteCol == null ? -1 : byteCol + sum(intCol) - max(longCol)"), "byteCol");
+        expected =
+                t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "a=intCol", "b=longCol"), "byteCol")
+                        .update("out_val=byteCol == null ? -1 : byteCol + sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -963,6 +979,23 @@ public class TestRollingFormula extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime,
                 "a=intCol", "b=longCol"), "Sym")
                 .update("out_val=a + b").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        // using the key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=(Sym == null ? 0 : Sym.length()) + sum(intCol) - max(longCol)"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "a=intCol", "b=longCol"), "Sym")
+                .update("out_val=(Sym == null ? 0 : Sym.length()) + sum(a) - max(b)").dropColumns("a", "b");
+
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
+
+        // using the byte key column
+        actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                "out_val=byteCol == null ? -1 : byteCol + sum(intCol) - max(longCol)"), "byteCol");
+        expected =
+                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "a=intCol", "b=longCol"), "byteCol")
+                        .update("out_val=byteCol == null ? -1 : byteCol + sum(a) - max(b)").dropColumns("a", "b");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
     }
@@ -1172,6 +1205,13 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
                                 "sum=min(intCol) + min(longCol) * max(doubleCol)"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                        "out_col=Sym == null ? 0.0 : min(intCol) + min(longCol) * max(doubleCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks,
+                                "out_col=true"))), // This is a dummy test, we care about the bucketed test
         };
 
         final Random billy = new Random(0xB177B177L);
@@ -1234,6 +1274,13 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
                                 "sum=min(intCol) + min(longCol) * max(doubleCol)"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                        "out_col=Sym == null ? null : min(intCol) + min(longCol) * max(doubleCol)"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
+                                "out_col=true"))), // This is a dummy test, we care about the bucketed test
         };
 
         final Random billy = new Random(0xB177B177L);

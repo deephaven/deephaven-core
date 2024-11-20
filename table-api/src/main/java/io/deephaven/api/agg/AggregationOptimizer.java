@@ -19,6 +19,7 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     private static final Object LAST_ROW_KEY_OBJ = new Object();
     private static final Object PARTITION_KEEPING_OBJ = new Object();
     private static final Object PARTITION_DROPPING_OBJ = new Object();
+    private static final Object FORMULA_OBJ = new Object();
 
     /**
      * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together. The
@@ -44,7 +45,8 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                     || e.getKey() == FIRST_ROW_KEY_OBJ
                     || e.getKey() == LAST_ROW_KEY_OBJ
                     || e.getKey() == PARTITION_KEEPING_OBJ
-                    || e.getKey() == PARTITION_DROPPING_OBJ) {
+                    || e.getKey() == PARTITION_DROPPING_OBJ
+                    || e.getKey() == FORMULA_OBJ) {
                 // These aggregations are now grouped together, output them together
                 out.addAll(e.getValue());
             } else {
@@ -110,5 +112,10 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     public void visit(Partition partition) {
         visitOrder.computeIfAbsent(partition.includeGroupByColumns() ? PARTITION_KEEPING_OBJ : PARTITION_DROPPING_OBJ,
                 k -> new ArrayList<>()).add(partition);
+    }
+
+    @Override
+    public void visit(Formula formula) {
+        visitOrder.computeIfAbsent(FORMULA_OBJ, k -> new ArrayList<>()).add(formula);
     }
 }
