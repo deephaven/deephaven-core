@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/hierarchicaltable.proto
+// source: deephaven_core/proto/hierarchicaltable.proto
 
 package hierarchicaltable
 
@@ -261,5 +261,5 @@ var HierarchicalTableService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "deephaven/proto/hierarchicaltable.proto",
+	Metadata: "deephaven_core/proto/hierarchicaltable.proto",
 }

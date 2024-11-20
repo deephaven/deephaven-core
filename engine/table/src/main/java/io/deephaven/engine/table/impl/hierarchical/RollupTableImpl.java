@@ -815,6 +815,6 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     void maybeWaitForStructuralSatisfaction() {
-        // NB: It's sufficient to wait for the root node, which is done at the beginning of traversal.
+        maybeWaitForSatisfaction(getRoot());
     }
 }

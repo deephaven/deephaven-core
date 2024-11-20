@@ -10,6 +10,7 @@ evaluationDependsOn Docker.registryProject('python')
 
 wheel {
     src 'pydeephaven'
+    src 'deephaven_core'
     src 'examples'
     src 'tests'
 }
@@ -22,40 +23,12 @@ dependencies {
     python project(path: ':proto:proto-backplane-grpc', configuration: 'python')
 }
 
-def generatedProtoDir = layout.buildDirectory.dir('generatedProto')
-
-def updatePyNamespaces = tasks.register('updatePyNamespaces', Sync) {
-    from(configurations.python) {
-        // change directory from deephaven to pydeephaven
-        eachFile { it.path = 'pydeephaven/' + it.path.substring('deephaven/'.length()) }
-        // rewrite specific imports/namespaces from deephaven to pydeephaven
-        filter { contents ->
-            def scanner = new Scanner(contents)
-            def lines = []
-            while (scanner.hasNextLine()) {
-                def line = scanner.nextLine();
-                if (line.trim().startsWith('\'__module__\' :')) {
-                    line = line.replace('\'deephaven.', '\'pydeephaven.')
-                } else if (line.startsWith('from deephaven.proto')) {
-                    line = line.replace('from deephaven.proto', 'from pydeephaven.proto')
-                }
-                lines.add(line)
-            }
-            return lines.join(System.lineSeparator());
-        }
-    }
-
-    into generatedProtoDir
-}
-
 def compare = tasks.register('compareProtobuf', DiffTask) {
-    dependsOn updatePyNamespaces
-
-    expectedContents.set generatedProtoDir.get().dir('pydeephaven/proto')
+    expectedContents.set configurations.python
     actualContents {
-        directory layout.projectDirectory.dir('pydeephaven/proto')
+        directory layout.projectDirectory
         ignore {
-            it.include '__init__.py'
+            it.exclude 'deephaven_core/proto/**'
         }
     }
     generateTask.set ':py-client:updateProto'
@@ -65,12 +38,11 @@ def compare = tasks.register('compareProtobuf', DiffTask) {
 tasks.getByName('quick').dependsOn(compare)
 
 tasks.register('updateProtobuf', Sync) {
-    dependsOn(updatePyNamespaces)
     finalizedBy compare
-    from generatedProtoDir.get().dir('pydeephaven/proto')
-    into layout.projectDirectory.dir('pydeephaven/proto')
+    from configurations.python
+    into layout.projectDirectory
     preserve {
-        include '__init__.py'
+        exclude 'deephaven_core/proto/**'
     }
 }
 
@@ -88,6 +60,9 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     copyIn {
         from('pydeephaven') {
             into 'project/pydeephaven'
+        }
+        from('deephaven_core') {
+            into 'project/deephaven_core'
         }
         from('tests') {
             into 'project/tests'
