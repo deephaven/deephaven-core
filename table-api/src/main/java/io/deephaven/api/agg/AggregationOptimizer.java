@@ -55,7 +55,7 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                     throw new IllegalStateException("Unexpected key type: " + e.getKey());
                 }
 
-                // Group all the aggregations with the same spec together
+                // Group all the aggregations with the same spec into a single operator
                 final AggSpec aggSpec = (AggSpec) e.getKey();
                 final List<Pair> pairs = new ArrayList<>();
 

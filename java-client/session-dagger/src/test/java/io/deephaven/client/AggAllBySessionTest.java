@@ -143,6 +143,9 @@ public class AggAllBySessionTest extends TableSpecTestBase {
             out.add(AggSpecCountValues.of(AggCountType.NAN));
             out.add(AggSpecCountValues.of(AggCountType.INFINITE));
             out.add(AggSpecCountValues.of(AggCountType.FINITE));
+            out.add(AggSpecCountValues.of(AggCountType.NON_ZERO));
+            out.add(AggSpecCountValues.of(AggCountType.NON_NEGATIVE));
+            out.add(AggSpecCountValues.of(AggCountType.NON_POSITIVE));
         }
 
         @Override

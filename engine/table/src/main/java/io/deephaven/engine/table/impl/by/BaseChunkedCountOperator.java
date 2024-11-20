@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -104,7 +105,9 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
             int chunkSize) {
         final int count = doCount(chunkStart, chunkSize, values);
         if (count > 0) {
-            resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), -count));
+            final long newCount = plusLong(resultColumnSource.getUnsafe(destination), -count);
+            Assert.geqZero(newCount, "newCount");
+            resultColumnSource.set(destination, newCount);
             return true;
         }
         return false;

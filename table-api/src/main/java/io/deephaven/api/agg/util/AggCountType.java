@@ -13,12 +13,68 @@ import java.util.Objects;
  * The types of counts that can be performed.
  */
 public enum AggCountType {
-    ALL, NON_NULL, NULL, NEGATIVE, POSITIVE, ZERO, NAN, INFINITE, FINITE;
-
-    /*
-     * This class leverages assumptions about null values for the various primitive types to optimize count operations.
-     * This assert ensures that the assumptions are regularly verified against future changes.
+    /**
+     * Count all values, including null
      */
+    ALL,
+
+    /**
+     * Count non-null values
+     */
+    NON_NULL,
+
+    /**
+     * Count null values
+     */
+    NULL,
+
+    /**
+     * Count non-null negative values. For floating point types, this includes -inf but excludes +/-0.0
+     */
+    NEGATIVE,
+
+    /**
+     * Count non-null positive values. For floating point types, this includes +inf but excludes +/-0.0
+     */
+    POSITIVE,
+
+    /**
+     * Count zero values. For floating point types, this includes both -0.0 and +0.0
+     */
+    ZERO,
+
+    /**
+     * Count NaN values. For non-floating point types, this count is always 0
+     */
+    NAN,
+
+    /**
+     * Count +/-inf values. For non-floating point types, this count is always 0
+     */
+    INFINITE,
+
+    /**
+     * Count finite values. This excludes NaN, +/-inf, and null values
+     */
+    FINITE,
+
+    /**
+     * Count non-null non-zero values. For floating point types, this excludes +/-0.0 but includes +/- inf
+     */
+    NON_ZERO,
+
+    /**
+     * Count non-null non-negative values. For floating point types, this excludes -inf but includes +/-0.0 and +inf
+     */
+    NON_NEGATIVE,
+
+    /**
+     * Count non-null non-positive values. For floating point types, this excludes +inf but includes +/-0.0 and -inf
+     */
+    NON_POSITIVE;
+
+    // This class leverages assumptions about null values for the various primitive types to optimize count operations.
+    // This assert ensures that the assumptions are regularly verified against future changes.
     static {
         assert QueryConstants.NULL_BYTE < 0;
         assert QueryConstants.NULL_CHAR > 0; // null char is the only positive value
@@ -101,6 +157,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return value -> false;
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_BYTE && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_BYTE is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_BYTE && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for byte data type");
@@ -113,6 +175,7 @@ public enum AggCountType {
                 return value -> true;
             case NON_NULL:
             case FINITE:
+            case NON_NEGATIVE: // char is unsigned
                 return value -> value != QueryConstants.NULL_CHAR;
             case NULL:
                 return value -> value == QueryConstants.NULL_CHAR;
@@ -124,6 +187,10 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return value -> false;
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_CHAR && value != 0;
+            case NON_POSITIVE:
+                return value -> value == QueryConstants.NULL_CHAR || value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for char data type");
@@ -148,6 +215,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return value -> false;
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_SHORT && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_SHORT is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_SHORT && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for short data type");
@@ -172,6 +245,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return value -> false;
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_INT && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_INT is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_INT && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for int data type");
@@ -196,6 +275,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return value -> false;
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_LONG && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_LONG is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_LONG && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for long data type");
@@ -203,6 +288,8 @@ public enum AggCountType {
     }
 
     public static FloatCountFunction getFloatCountFunction(final AggCountType countType) {
+        // NOTE: we are leveraging the fact that comparisons with NaN always return false (<, >, <=, >= etc.) to
+        // filter out NaN values
         switch (countType) {
             case ALL:
                 return value -> true;
@@ -222,6 +309,12 @@ public enum AggCountType {
                 return Float::isInfinite;
             case FINITE:
                 return value -> value != QueryConstants.NULL_FLOAT && Float.isFinite(value);
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_FLOAT && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_FLOAT is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_FLOAT && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for float data type");
@@ -229,6 +322,8 @@ public enum AggCountType {
     }
 
     public static DoubleCountFunction getDoubleCountFunction(final AggCountType countType) {
+        // NOTE: we are leveraging the fact that comparisons with NaN always return false (<, >, <=, >= etc.) to
+        // filter out NaN values
         switch (countType) {
             case ALL:
                 return value -> true;
@@ -248,6 +343,12 @@ public enum AggCountType {
                 return Double::isInfinite;
             case FINITE:
                 return value -> value != QueryConstants.NULL_DOUBLE && Double.isFinite(value);
+            case NON_ZERO:
+                return value -> value != QueryConstants.NULL_DOUBLE && value != 0;
+            case NON_NEGATIVE:
+                return value -> value >= 0; // NULL_DOUBLE is negative
+            case NON_POSITIVE:
+                return value -> value != QueryConstants.NULL_DOUBLE && value <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for double data type");
@@ -286,6 +387,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return index -> false;
+            case NON_ZERO:
+                return value -> value != null && value.signum() != 0;
+            case NON_NEGATIVE:
+                return value -> value != null && value.signum() >= 0;
+            case NON_POSITIVE:
+                return value -> value != null && value.signum() <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for BigDecimal data type");
@@ -310,6 +417,12 @@ public enum AggCountType {
             case NAN:
             case INFINITE:
                 return index -> false;
+            case NON_ZERO:
+                return value -> value != null && value.signum() != 0;
+            case NON_NEGATIVE:
+                return value -> value != null && value.signum() >= 0;
+            case NON_POSITIVE:
+                return value -> value != null && value.signum() <= 0;
             default:
                 throw new UnsupportedOperationException(
                         "Unsupported count type: " + countType + " for BigInteger data type");

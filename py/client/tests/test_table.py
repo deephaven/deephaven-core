@@ -11,7 +11,8 @@ from pyarrow import csv
 from pydeephaven import DHError
 from pydeephaven import SortDirection
 from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, \
-    formula, count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite
+    formula, count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite, \
+    count_non_zero, count_non_negative, count_non_positive
 
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -264,6 +265,9 @@ class TableTestCase(BaseTestCase):
                 count_nan(cols=["aggCountNaN=d"]),
                 count_inf(cols=["aggCountInf=b"]),
                 count_finite(cols=["aggCountFinite=c"]),
+                count_non_zero(cols=["aggCountNonZero=d"]),
+                count_non_negative(cols=["aggCountNonNeg=b"]),
+                count_non_positive(cols=["aggCountNonPos=c"]),
                 ]
 
         result_table = test_table.agg_by(aggs=aggs, by=["a"])

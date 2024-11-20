@@ -9,7 +9,7 @@ from typing import List, Any
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition, unique, count_distinct, distinct, count_non_null, count_null, count_neg, count_pos, \
-    count_zero, count_nan, count_inf, count_finite
+    count_zero, count_nan, count_inf, count_finite, count_non_zero, count_non_negative, count_non_positive
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
@@ -52,6 +52,9 @@ class TableTestCase(BaseTestCase):
             count_nan("aggCountNaN=var"),
             count_inf("aggCountInf=var"),
             count_finite("aggCountFinite=var"),
+            count_non_zero("aggCountNonZero=var"),
+            count_non_negative("aggCountNonNeg=var"),
+            count_non_positive("aggCountNonPos=var"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
@@ -482,6 +485,9 @@ class TableTestCase(BaseTestCase):
             count_nan(cols=["aggCountNaN=d"]),
             count_inf(cols=["aggCountInf=b"]),
             count_finite(cols=["aggCountFinite=c"]),
+            count_non_zero(cols=["aggCountNonZero=d"]),
+            count_non_negative(cols=["aggCountNonNeg=b"]),
+            count_non_positive(cols=["aggCountNonPos=c"]),
         ]
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])

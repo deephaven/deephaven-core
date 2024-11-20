@@ -217,7 +217,7 @@ public interface Aggregation {
     }
 
     /**
-     * An alias for {@link #AggCount(String)}, creates aggregations that count all values.
+     * An alias for {@link #AggCount(String)}, creates an aggregation that counts all values.
      *
      * @param resultColumn The output column name containing the count
      * @return The aggregation
@@ -227,8 +227,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * non-null values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only non-null values.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -238,8 +238,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * null values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only null values.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -249,8 +249,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * negative values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only negative values.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -260,8 +260,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * positive values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only positive values.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -271,8 +271,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * zero values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only zero values.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -282,8 +282,9 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * NaN values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only NaN values. This applies only to floating-point types (float, double) and will return zero
+     * for all other types.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -293,8 +294,9 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * infinite values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only +/- infinite values. This applies only to floating-point types and will return zero for all
+     * other types.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
@@ -304,14 +306,51 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name including only
-     * finite values.
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only finite values. A finite value is any value other than {@code NaN}, {@code +/- inf}, or
+     * {@code null}.
      *
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
     static Aggregation AggCountFinite(String... pairs) {
         return of(AggSpec.countValues(AggCountType.FINITE), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only non-zero, non-null values. For floating-point types, {@code NaN} values are excluded but
+     * {@code +/-inf} values are included.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNonZero(String... pairs) {
+        return of(AggSpec.countValues(AggCountType.NON_ZERO), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only non-negative, non-null values. For floating-point types, {@code NaN} and {@code -inf} values
+     * are excluded but {@code +inf} values are included.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNonNegative(String... pairs) {
+        return of(AggSpec.countValues(AggCountType.NON_NEGATIVE), pairs);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.spec.AggSpecCountValues count} aggregation with the supplied output column
+     * name including only non-positive, non-null values. For floating-point types, {@code NaN} and {@code +inf} values
+     * are excluded but {@code -inf} values are included
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static Aggregation AggCountNonPositive(String... pairs) {
+        return of(AggSpec.countValues(AggCountType.NON_POSITIVE), pairs);
     }
 
     /**

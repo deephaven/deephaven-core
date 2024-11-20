@@ -876,6 +876,9 @@ enum AggCountType {
   COUNT_NAN = 7;
   COUNT_INFINITE = 8;
   COUNT_FINITE = 9;
+  COUNT_NON_ZERO = 10;
+  COUNT_NON_NEGATIVE = 11;
+  COUNT_NON_POSITIVE = 12;
 }
 
 message AggSpec {

@@ -213,7 +213,8 @@ def count_zero(cols: Union[str, List[str]] = None) -> Aggregation:
 
 def count_nan(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a count aggregation which computes the count of NaN values within an aggregation group for
-    each of the given columns.
+    each of the given columns. This applies only to floating-point types (float, double) and will return zero
+    for all other types.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -226,8 +227,9 @@ def count_nan(cols: Union[str, List[str]] = None) -> Aggregation:
 
 
 def count_inf(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Creates a count aggregation which computes the count of infinite values within an aggregation group for
-    each of the given columns.
+    """Creates a count aggregation which computes the count of +/-inf values within an aggregation group for
+    each of the given columns. This applies only to floating-point types (float, double) and will return zero
+    for all other types.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -241,7 +243,7 @@ def count_inf(cols: Union[str, List[str]] = None) -> Aggregation:
 
 def count_finite(cols: Union[str, List[str]] = None) -> Aggregation:
     """Creates a count aggregation which computes the count of finite values within an aggregation group for
-    each of the given columns.
+    each of the given columns. A finite value is any value other than `NaN`, `+/-inf`, or `null`.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -251,6 +253,50 @@ def count_finite(cols: Union[str, List[str]] = None) -> Aggregation:
         an aggregation
     """
     return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.FINITE), cols=cols)
+
+
+def count_non_zero(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-zero values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` values are excluded but  `+/-inf` values are included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NON_ZERO), cols=cols)
+
+
+def count_non_negative(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-negative values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` and `-inf` values are excluded but `+inf` values are
+    included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NON_NEGATIVE), cols=cols)
+
+
+def count_non_positive(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-positive values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` and `+inf` values are excluded but `-inf` values are
+    included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.countValues(_JAggCountType.NON_POSITIVE), cols=cols)
 
 
 def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False) -> Aggregation:

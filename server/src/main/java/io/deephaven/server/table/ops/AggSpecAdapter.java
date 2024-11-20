@@ -162,6 +162,12 @@ class AggSpecAdapter {
                 return io.deephaven.api.agg.util.AggCountType.INFINITE;
             case COUNT_FINITE:
                 return AggCountType.FINITE;
+            case COUNT_NON_ZERO:
+                return AggCountType.NON_ZERO;
+            case COUNT_NON_NEGATIVE:
+                return AggCountType.NON_NEGATIVE;
+            case COUNT_NON_POSITIVE:
+                return AggCountType.NON_POSITIVE;
             default:
                 throw new IllegalArgumentException("Unsupported AggSpecCountValues.AggCountType - " + countType);
         }

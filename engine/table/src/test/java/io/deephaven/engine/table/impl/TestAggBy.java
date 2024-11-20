@@ -64,7 +64,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
         ColumnHolder<?> dHolder = col("D", -5, NULL_INT, -3, NULL_INT, -1, 0, 1, NULL_INT, 3, NULL_INT);
-        ColumnHolder<?> eHolder = col("E", Double.NEGATIVE_INFINITY, -4.0, NULL_DOUBLE, NULL_DOUBLE, -1.0, 0.0, 1.0,
+        ColumnHolder<?> eHolder = col("E", Double.NEGATIVE_INFINITY, -4.0, NULL_DOUBLE, NULL_DOUBLE, -1.0, -0.0, 1.0,
                 Double.NaN, 3.0, Double.POSITIVE_INFINITY);
         ColumnHolder<?> fHolder =
                 col("F", BigDecimal.valueOf(-5), null, BigDecimal.valueOf(-3), null, BigDecimal.valueOf(-1),
@@ -141,7 +141,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggCountZero("zeroD=D", "zeroE=E", "zeroF=F", "zeroG=G"),
                         AggCountNaN("nanD=D", "nanE=E", "nanF=F", "nanG=G"),
                         AggCountInfinite("infD=D", "infE=E", "infF=F", "infG=G"),
-                        AggCountFinite("finiteD=D", "finiteE=E", "finiteF=F", "finiteG=G")),
+                        AggCountFinite("finiteD=D", "finiteE=E", "finiteF=F", "finiteG=G"),
+                        AggCountNonZero("nonZeroD=D", "nonZeroE=E", "nonZeroF=F", "nonZeroG=G"),
+                        AggCountNonNegative("nonNegD=D", "nonNegE=E", "nonNegF=F", "nonNegG=G"),
+                        AggCountNonPositive("nonPosD=D", "nonPosE=E", "nonPosF=F", "nonPosG=G")),
                 "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
@@ -265,6 +268,45 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "finiteG");
         assertEquals(4L, counts.get(0));
         assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroD");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroE");
+        assertEquals(5L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroF");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroG");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegD");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegE");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegF");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegG");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosD");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosE");
+        assertEquals(4L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosF");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosG");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -390,6 +432,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                 EvalNugget.from(() -> queryTable.aggBy(AggCountNaN(supportedColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountInfinite(supportedColumns), "Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.aggBy(AggCountFinite(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonZero(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonNegative(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonPositive(supportedColumns), "Sym").sort("Sym")),
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {

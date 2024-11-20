@@ -101,6 +101,12 @@ class AggSpecBuilder implements io.deephaven.api.agg.spec.AggSpec.Visitor {
                 return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_INFINITE;
             case FINITE:
                 return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_FINITE;
+            case NON_ZERO:
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NON_ZERO;
+            case NON_NEGATIVE:
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NON_NEGATIVE;
+            case NON_POSITIVE:
+                return io.deephaven.proto.backplane.grpc.AggCountType.COUNT_NON_POSITIVE;
             default:
                 throw new IllegalArgumentException(String.format("Unable to adapt AggCountType %s", countType));
         }

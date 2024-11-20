@@ -16,15 +16,6 @@ import org.immutables.value.Value.Parameter;
 public abstract class AggSpecCountValues extends AggSpecBase {
 
     /**
-     * Create a new AggSpecCountValues with {@code countType} of {@code NON_NULL}.
-     *
-     * @return the agg spec
-     */
-    public static AggSpecCountValues of() {
-        return of(AggCountType.NON_NULL);
-    }
-
-    /**
      * Create a new AggSpecCountValues with the specified {@code countType}.
      *
      * @param countType the count type for this aggregation

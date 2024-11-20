@@ -279,6 +279,56 @@ def count_finite(cols: Union[str, List[str]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
+def count_non_zero(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-zero values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` values are excluded but  `+/-inf` values are included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    count_type = _GrpcAggCountType.COUNT_NON_ZERO
+    agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
+
+
+def count_non_negative(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-negative values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` and `-inf` values are excluded but `+inf` values are
+    included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    count_type = _GrpcAggCountType.COUNT_NON_NEGATIVE
+    agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
+
+
+def count_non_positive(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a count aggregation which computes the count of non-positive values within an aggregation group for
+    each of the given columns. For floating-point types, `NaN` and `+inf` values are excluded but `-inf` values are
+    included.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+
+    Returns:
+        an aggregation
+    """
+    count_type = _GrpcAggCountType.COUNT_NON_POSITIVE
+    agg_spec = _GrpcAggSpec(count_values=_GrpcAggSpec.AggSpecCountValues(count_type=count_type))
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
+
+
 def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False) -> Aggregation:
     """Creates a Count Distinct aggregation which computes the count of distinct values within an aggregation group for
     each of the given columns.
