@@ -143,6 +143,7 @@ class AggSpecAdapter {
     private static io.deephaven.api.agg.util.AggCountType adapt(
             io.deephaven.proto.backplane.grpc.AggCountType countType) {
         switch (countType) {
+            case COUNT_TYPE_NOT_SPECIFIED: // AggCount defaults to COUNT_ALL
             case COUNT_ALL:
                 return io.deephaven.api.agg.util.AggCountType.ALL;
             case COUNT_NON_NULL:
