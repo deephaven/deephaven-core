@@ -44,8 +44,11 @@ class FilterSelectColumn implements SelectColumn {
     @NotNull
     private final WhereFilter filter;
 
-    private RowSet rowSet;
     private Table tableToFilter;
+    /**
+     * We store a copy of our table definition, to ensure that it is identical between initDef and initInputs.
+     */
+    private TableDefinition computedDefinition;
 
     /**
      * Create a FilterSelectColumn with the given name and {@link WhereFilter}.
@@ -69,22 +72,27 @@ class FilterSelectColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
-        this.rowSet = rowSet;
-        this.tableToFilter = new QueryTable(rowSet, columnsOfInterest);
+    public List<String> initInputs(final TrackingRowSet rowSet,
+            final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        tableToFilter = new QueryTable(rowSet, columnsOfInterest);
+        if (!computedDefinition.equals(tableToFilter.getDefinition())) {
+            throw new IllegalStateException(
+                    "Definition changed between initDef and initInputs in FilterSelectColumn: initDef="
+                            + computedDefinition + ", initInputs" + tableToFilter.getDefinition());
+        }
         return filter.getColumns();
     }
 
     @Override
-    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
-        filter.init(TableDefinition.of(columnDefinitionMap.values()));
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        filter.init(computedDefinition = TableDefinition.of(columnDefinitionMap.values()));
         return checkForInvalidFilters();
     }
 
     @Override
     public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
-        filter.init(TableDefinition.of(columnDefinitionMap.values()), compilationRequestProcessor);
+        filter.init(computedDefinition = TableDefinition.of(columnDefinitionMap.values()), compilationRequestProcessor);
         return checkForInvalidFilters();
     }
 
@@ -184,7 +192,7 @@ class FilterSelectColumn implements SelectColumn {
     }
 
     @Override
-    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+    public void validateSafeForRefresh(final BaseTable<?> sourceTable) {
         filter.validateSafeForRefresh(sourceTable);
     }
 
@@ -194,15 +202,17 @@ class FilterSelectColumn implements SelectColumn {
         }
 
         @Override
-        public Boolean getBoolean(long rowKey) {
-            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet, tableToFilter, false);
-            return filteredIndex.isNonempty();
+        public Boolean getBoolean(final long rowKey) {
+            final WritableRowSet filteredRowSet =
+                    filter.filter(RowSetFactory.fromKeys(rowKey), tableToFilter.getRowSet(), tableToFilter, false);
+            return filteredRowSet.isNonempty();
         }
 
         @Override
-        public Boolean getPrevBoolean(long rowKey) {
-            WritableRowSet filteredIndex = filter.filter(RowSetFactory.fromKeys(rowKey), rowSet.prev(), tableToFilter, true);
-            return filteredIndex.isNonempty();
+        public Boolean getPrevBoolean(final long rowKey) {
+            final WritableRowSet filteredRowSet = filter.filter(RowSetFactory.fromKeys(rowKey),
+                    tableToFilter.getRowSet().prev(), tableToFilter, true);
+            return filteredRowSet.isNonempty();
         }
 
         @Override
@@ -241,12 +251,13 @@ class FilterSelectColumn implements SelectColumn {
             doFill(rowSequence, destination, true);
         }
 
-        private void doFill(@NotNull RowSequence rowSequence, WritableChunk<? super Values> destination,
-                boolean usePrev) {
+        private void doFill(@NotNull final RowSequence rowSequence, final WritableChunk<? super Values> destination,
+                final boolean usePrev) {
             final WritableObjectChunk<Boolean, ?> booleanDestination = destination.asWritableObjectChunk();
             booleanDestination.setSize(rowSequence.intSize());
+            final RowSet fullSet = usePrev ? tableToFilter.getRowSet().prev() : tableToFilter.getRowSet();
             try (final RowSet inputRowSet = rowSequence.asRowSet();
-                    final RowSet filtered = filter.filter(inputRowSet, rowSet, tableToFilter, usePrev);
+                    final RowSet filtered = filter.filter(inputRowSet, fullSet, tableToFilter, usePrev);
                     final RowSet.Iterator inputIt = inputRowSet.iterator();
                     final RowSet.Iterator trueIt = filtered.iterator()) {
                 long nextTrue = trueIt.hasNext() ? trueIt.nextLong() : -1;
