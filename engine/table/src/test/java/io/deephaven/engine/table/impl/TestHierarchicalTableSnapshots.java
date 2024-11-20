@@ -37,6 +37,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.api.agg.Aggregation.AggMax;
 import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.byteToBooleanSource;
@@ -50,9 +52,7 @@ import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link HierarchicalTable#snapshot(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])
@@ -65,7 +65,7 @@ public class TestHierarchicalTableSnapshots {
     public final EngineCleanup framework = new EngineCleanup();
 
     @Test
-    public void testRollupSnapshotSatisfaction() throws ExecutionException, InterruptedException {
+    public void testRollupSnapshotSatisfaction() throws ExecutionException, InterruptedException, TimeoutException {
         // noinspection resource
         final QueryTable source = testRefreshingTable(
                 RowSetFactory.fromKeys(10).toTracking(),
@@ -105,16 +105,24 @@ public class TestHierarchicalTableSnapshots {
         // We need to deliver 3 notifications to ensure that the rollup's 3 aggregation layers are satisfied.
         // The future cannot complete before that happens.
         for (int ni = 0; ni < 3; ++ni) {
-            assertFalse(snapshotFuture.isDone());
+            assertThat(snapshotFuture.isDone()).isFalse();
             updateGraph.flushOneNotificationForUnitTests();
         }
         // We may need to deliver 1 additional notification, in case the concurrent snapshot is waiting for a
         // WaitNotification on the rollup root to fire. We should not assert that the future isn't done, however, since
         // a race might prevent that notification from being needed.
-        updateGraph.flushOneNotificationForUnitTests();
+        int extraNotificationsFlushed = 0;
+        while (!snapshotFuture.isDone() && updateGraph.flushOneNotificationForUnitTests()) {
+            ++extraNotificationsFlushed;
+        }
+        assertThat(extraNotificationsFlushed).isLessThanOrEqualTo(1);
 
-        final Table updatedSnapshot = snapshotFuture.get();
-        updateGraph.completeCycleForUnitTests();
+        final Table updatedSnapshot;
+        try {
+            updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
         final Table updatedExpected = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 3),
                 booleanCol(rollupTable.getRowExpandedColumn().name(), true, true, null),
@@ -128,7 +136,7 @@ public class TestHierarchicalTableSnapshots {
     }
 
     @Test
-    public void testTreeSnapshotSatisfaction() throws ExecutionException, InterruptedException {
+    public void testTreeSnapshotSatisfaction() throws ExecutionException, InterruptedException, TimeoutException {
         // noinspection resource
         final QueryTable source = testRefreshingTable(
                 RowSetFactory.fromKeys(10, 11, 12).toTracking(),
@@ -167,17 +175,24 @@ public class TestHierarchicalTableSnapshots {
         // We need to deliver 2 notifications to ensure that the tree's partition and lookup aggregations are satisfied.
         // The future cannot complete before that happens.
         for (int ni = 0; ni < 2; ++ni) {
-            assertFalse(snapshotFuture.isDone());
+            assertThat(snapshotFuture.isDone()).isFalse();
             updateGraph.flushOneNotificationForUnitTests();
         }
         // We may need to deliver 2 additional notifications, in case the concurrent snapshot is waiting for a
         // WaitNotification on the tree or lookup to fire. We should not assert that the future isn't done, however,
         // since a race might prevent those notifications from being needed.
-        updateGraph.flushOneNotificationForUnitTests();
-        updateGraph.flushOneNotificationForUnitTests();
+        int extraNotificationsFlushed = 0;
+        while (!snapshotFuture.isDone() && updateGraph.flushOneNotificationForUnitTests()) {
+            ++extraNotificationsFlushed;
+        }
+        assertThat(extraNotificationsFlushed).isLessThanOrEqualTo(2);
 
-        final Table updatedSnapshot = snapshotFuture.get();
-        updateGraph.completeCycleForUnitTests();
+        final Table updatedSnapshot;
+        try {
+            updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
         final Table updatedExpected = newTable(
                 intCol(treeTable.getRowDepthColumn().name(), 1, 2, 3, 4),
                 booleanCol(treeTable.getRowExpandedColumn().name(), true, true, true, null),
@@ -204,7 +219,7 @@ public class TestHierarchicalTableSnapshots {
                 ? availableColumns
                 : columns.stream().mapToObj(ci -> availableColumns[ci]).toArray(ColumnDefinition[]::new);
 
-        assertTrue(rows.isContiguous());
+        assertThat(rows.isContiguous()).isTrue();
         final int rowsSize = rows.intSize();
         // noinspection rawtypes
         final WritableChunk[] chunks = Arrays.stream(includedColumns)
@@ -219,7 +234,7 @@ public class TestHierarchicalTableSnapshots {
         final long expectedSnapshotSize = rows.isEmpty()
                 ? 0
                 : Math.min(rows.lastRowKey() + 1, expandedSize) - rows.firstRowKey();
-        assertEquals(expectedSnapshotSize, snapshotSize);
+        assertThat(snapshotSize).isEqualTo(expectedSnapshotSize);
 
         final LinkedHashMap<String, ColumnSource<?>> sources = new LinkedHashMap<>(includedColumns.length);
         for (int ci = 0; ci < includedColumns.length; ++ci) {
