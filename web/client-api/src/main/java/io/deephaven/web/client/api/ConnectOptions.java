@@ -3,7 +3,9 @@
 //
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Function;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.TransportFactory;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
@@ -44,6 +46,17 @@ public class ConnectOptions {
     // @JsNullable
     // public Function fetch;
 
+    /**
+     * The transport factory to use for creating gRPC streams. If specified, the JS API will ignore
+     * {@link #useWebsockets} and its own internal logic for determining the appropriate transport to use.
+     * <p>
+     * Defaults to null, indicating that the JS API should determine the appropriate transport to use. If
+     * {@code useWebsockets} is set to true, the JS API will use websockets, otherwise if the server url begins with
+     * https, it will use fetch, otherwise it will use websockets.
+     */
+    @JsNullable
+    public @TsTypeRef(Function.class) TransportFactory transportFactory;
+
     public ConnectOptions() {
 
     }
@@ -65,5 +78,8 @@ public class ConnectOptions {
         // if (map.has("fetch")) {
         // fetch = map.getAsAny("fetch").uncheckedCast();
         // }
+        if (map.has("transportFactory")) {
+            transportFactory = map.getAsAny("transportFactory").uncheckedCast();
+        }
     }
 }
