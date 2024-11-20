@@ -23,6 +23,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementUpdate;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementIngest;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
@@ -60,6 +61,8 @@ final class FlightSqlCommandHelper {
         T visit(CommandPreparedStatementUpdate command);
 
         T visit(CommandGetXdbcTypeInfo command);
+
+        T visit(CommandStatementIngest command);
     }
 
     public static boolean handlesCommand(FlightDescriptor descriptor) {
@@ -125,6 +128,8 @@ final class FlightSqlCommandHelper {
                 return visitor.visit(unpack(command, CommandPreparedStatementUpdate.class, logId));
             case FlightSqlSharedConstants.COMMAND_GET_XDBC_TYPE_INFO_TYPE_URL:
                 return visitor.visit(unpack(command, CommandGetXdbcTypeInfo.class, logId));
+            case FlightSqlSharedConstants.COMMAND_STATEMENT_INGEST_TYPE_URL:
+                return visitor.visit(unpack(command, CommandStatementIngest.class, logId));
         }
         throw FlightSqlErrorHelper.error(Status.Code.UNIMPLEMENTED, String.format("command '%s' is unknown", typeUrl));
     }
@@ -222,6 +227,11 @@ final class FlightSqlCommandHelper {
         @Override
         public T visit(CommandGetXdbcTypeInfo command) {
             return visitDefault(CommandGetXdbcTypeInfo.getDescriptor(), command);
+        }
+
+        @Override
+        public T visit(CommandStatementIngest command) {
+            return visitDefault(CommandStatementIngest.getDescriptor(), command);
         }
     }
 }

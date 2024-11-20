@@ -41,6 +41,5 @@ final class FlightSqlSharedConstants {
 
     static final String COMMAND_STATEMENT_QUERY_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementQuery";
 
-    // Need to update to newer FlightSql version for this
-    // static final String COMMAND_STATEMENT_INGEST_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementIngest";
+    static final String COMMAND_STATEMENT_INGEST_TYPE_URL = FLIGHT_SQL_COMMAND_TYPE_PREFIX + "StatementIngest";
 }

@@ -65,6 +65,7 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementIngest;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementSubstraitPlan;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementUpdate;
@@ -795,12 +796,14 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
 
     @Test
     public void commandStatementIngest() {
-        // This is a real newer Flight SQL command.
-        // Once we upgrade to newer Flight SQL, we can change this to Unimplemented and use the proper APIs.
-        final String typeUrl = "type.googleapis.com/arrow.flight.protocol.sql.CommandStatementIngest";
-        final FlightDescriptor descriptor = unpackableCommand(typeUrl);
-        getSchemaUnknown(() -> flightClient.getSchema(descriptor), typeUrl);
-        commandUnknown(() -> flightClient.getInfo(descriptor), typeUrl);
+        // Note: if we actually want to test out FlightSqlClient behavior more directly, we can set up scaffolding to
+        // call FlightSqlClient#executeIngest.
+        final FlightDescriptor ingestCommand =
+                FlightDescriptor.command(Any.pack(CommandStatementIngest.getDefaultInstance()).toByteArray());
+        getSchemaUnimplemented(() -> flightClient.getSchema(ingestCommand), CommandStatementIngest.getDescriptor());
+        commandUnimplemented(() -> flightClient.getInfo(ingestCommand), CommandStatementIngest.getDescriptor());
+        misbehave(CommandStatementIngest.getDefaultInstance(), CommandStatementIngest.getDescriptor());
+        unpackable(CommandStatementIngest.getDescriptor(), CommandStatementIngest.class);
     }
 
     @Test
