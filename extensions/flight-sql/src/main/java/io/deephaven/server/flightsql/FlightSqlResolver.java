@@ -97,11 +97,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static io.deephaven.server.flightsql.FlightSqlErrorHelper.error;
 
@@ -1698,7 +1700,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // Flight SQL JDBC driver.
             return flightSqlPattern::equals;
         }
-        final int L = flightSqlPattern.length();
         final StringBuilder pattern = new StringBuilder();
         final StringBuilder quoted = new StringBuilder();
         final Runnable appendQuoted = () -> {
@@ -1707,16 +1708,24 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 quoted.setLength(0);
             }
         };
-        for (int i = 0; i < L; ++i) {
-            final char c = flightSqlPattern.charAt(i);
-            if (c == '%') {
-                appendQuoted.run();
-                pattern.append(".*");
-            } else if (c == '_') {
-                appendQuoted.run();
-                pattern.append('.');
-            } else {
-                quoted.append(c);
+        try (final IntStream codePoints = flightSqlPattern.codePoints()) {
+            final PrimitiveIterator.OfInt it = codePoints.iterator();
+            while (it.hasNext()) {
+                final int codePoint = it.nextInt();
+                if (Character.isBmpCodePoint(codePoint)) {
+                    final char c = (char) codePoint;
+                    if (c == '%') {
+                        appendQuoted.run();
+                        pattern.append(".*");
+                    } else if (c == '_') {
+                        appendQuoted.run();
+                        pattern.append('.');
+                    } else {
+                        quoted.append(c);
+                    }
+                } else {
+                    quoted.appendCodePoint(codePoint);
+                }
             }
         }
         appendQuoted.run();

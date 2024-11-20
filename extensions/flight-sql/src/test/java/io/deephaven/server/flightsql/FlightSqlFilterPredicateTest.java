@@ -154,6 +154,25 @@ class FlightSqlFilterPredicateTest {
                 .rejectsAll(THREE_CHARS);
     }
 
+    @Test
+    void predicateContainsUnicode() {
+        // A better test would be to include a Unicode character that contains '_' or '%' encoded as part of the low
+        // surrogate (if this is possible), that way we could ensure that it is not treated as a special character
+        predicate("𞸷")
+                .accepts("𞸷")
+                .rejectsAll(EMPTY_STRING)
+                .rejectsAll(ONE_CHARS)
+                .rejectsAll(TWO_CHARS)
+                .rejectsAll(THREE_CHARS);
+        predicate("_𞸷_")
+                .accepts("𞸷𞸷𞸷", "x𞸷X", "T𞸷a", " 𞸷 ")
+                .rejects("𞸷", "𞸷𞸷")
+                .rejectsAll(EMPTY_STRING)
+                .rejectsAll(ONE_CHARS)
+                .rejectsAll(TWO_CHARS)
+                .rejectsAll(THREE_CHARS);
+    }
+
     private static PredicateAssert<String> predicate(String flightSqlPattern) {
         return assertThat(FlightSqlResolver.flightSqlFilterPredicate(flightSqlPattern));
     }
