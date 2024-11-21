@@ -1,0 +1,78 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The Deephaven Flight SQL library'
+
+sourceSets {
+    jdbcTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+configurations {
+    jdbcTestImplementation.extendsFrom implementation
+    jdbcTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
+dependencies {
+    api project(':server')
+    implementation project(':sql')
+    implementation project(':engine-sql')
+    // :sql does not expose calcite as a dependency (maybe it should?); in the meantime, we want to make sure we can
+    // provide reasonable error messages to the client
+    implementation libs.calcite.core
+
+    implementation libs.dagger
+    implementation libs.arrow.flight.sql
+
+    // FlightSqlClient testing does not depend on a public port being bound (ie, does not require server-jetty) because
+    // it can use io.grpc.inprocess.InProcessChannelBuilder (via io.deephaven.server.runner.ServerBuilderInProcessModule).
+
+    testImplementation project(':authorization')
+    testImplementation project(':server-test-utils')
+    testAnnotationProcessor libs.dagger.compiler
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly libs.junit.vintage.engine
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+
+    // JDBC testing needs an actually server instance bound to a port because it can only connect over JDBC URIs like
+    // jdbc:arrow-flight-sql://localhost:1000.
+    jdbcTestImplementation project(':server-jetty')
+    jdbcTestRuntimeOnly libs.arrow.flight.sql.jdbc
+
+    jdbcTestImplementation project(':server-test-utils')
+    jdbcTestAnnotationProcessor libs.dagger.compiler
+    jdbcTestImplementation libs.assertj
+    jdbcTestImplementation platform(libs.junit.bom)
+    jdbcTestImplementation libs.junit.jupiter
+    jdbcTestRuntimeOnly libs.junit.platform.launcher
+    jdbcTestRuntimeOnly libs.junit.vintage.engine
+    jdbcTestRuntimeOnly project(':log-to-slf4j')
+    jdbcTestRuntimeOnly libs.slf4j.simple
+}
+
+test {
+    useJUnitPlatform()
+}
+
+def jdbcTest = tasks.register('jdbcTest', Test) {
+    description = 'Runs JDBC tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.jdbcTest.output.classesDirs
+    classpath = sourceSets.jdbcTest.runtimeClasspath
+    shouldRunAfter test
+
+    useJUnitPlatform()
+}
+
+check.dependsOn jdbcTest
+
+apply plugin: 'io.deephaven.java-open-nio'

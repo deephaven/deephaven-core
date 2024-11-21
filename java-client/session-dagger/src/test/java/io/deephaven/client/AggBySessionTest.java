@@ -11,6 +11,7 @@ import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
+import io.deephaven.api.agg.Formula;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.object.UnionObject;
@@ -181,6 +182,15 @@ public class AggBySessionTest extends TableSpecTestBase {
         public void visit(Partition partition) {
             out.add(Partition.of("Output", false));
             out.add(Partition.of("Output", true));
+        }
+
+        @Override
+        public void visit(Formula formula) {
+            out.add(Formula.of("Formula", "3.0 + 1"));
+            out.add(Formula.of("Formula", "sum(S)"));
+            out.add(Formula.of("Formula", "sum(S + I)"));
+            out.add(Formula.of("Formula", "sum(S + I + D)"));
+            out.add(Formula.of("Formula", "sum(S + I + D + L)"));
         }
     }
 }

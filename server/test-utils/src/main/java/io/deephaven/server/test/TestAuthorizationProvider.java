@@ -96,6 +96,14 @@ public class TestAuthorizationProvider implements AuthorizationProvider {
     public TicketResolver.Authorization getTicketResolverAuthorization() {
         return new TicketResolver.Authorization() {
             @Override
+            public boolean isDeniedAccess(Object source) {
+                if (delegateTicketTransformation != null) {
+                    return delegateTicketTransformation.isDeniedAccess(source);
+                }
+                return source == null;
+            }
+
+            @Override
             public <T> T transform(final T source) {
                 if (delegateTicketTransformation != null) {
                     return delegateTicketTransformation.transform(source);

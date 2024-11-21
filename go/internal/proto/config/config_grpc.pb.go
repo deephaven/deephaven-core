@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/config.proto
+// source: deephaven_core/proto/config.proto
 
 package config
 
@@ -137,5 +137,5 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "deephaven/proto/config.proto",
+	Metadata: "deephaven_core/proto/config.proto",
 }

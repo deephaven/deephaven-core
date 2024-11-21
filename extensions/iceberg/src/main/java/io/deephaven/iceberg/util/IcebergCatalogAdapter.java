@@ -243,7 +243,7 @@ public class IcebergCatalogAdapter {
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
         }
-        return new IcebergTableAdapter(tableIdentifier, table, dataInstructionsProvider);
+        return new IcebergTableAdapter(catalog, tableIdentifier, table, dataInstructionsProvider);
     }
 
     /**

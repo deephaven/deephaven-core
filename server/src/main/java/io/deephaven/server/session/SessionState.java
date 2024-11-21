@@ -717,7 +717,7 @@ public class SessionState {
                 return;
             }
 
-            this.exportMain = exportMain;
+            this.exportMain = Objects.requireNonNull(exportMain);
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
@@ -797,6 +797,13 @@ public class SessionState {
          */
         public Ticket getExportId() {
             return ExportTicketHelper.wrapExportIdInTicket(exportId);
+        }
+
+        /**
+         * @return the export id for this export
+         */
+        public int getExportIdInt() {
+            return exportId;
         }
 
         /**
@@ -1369,7 +1376,6 @@ public class SessionState {
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {

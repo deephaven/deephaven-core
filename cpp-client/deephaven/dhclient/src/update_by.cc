@@ -3,8 +3,8 @@
  */
 #include "deephaven/client/client.h"
 
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
+#include "deephaven_core/proto/table.pb.h"
+#include "deephaven_core/proto/table.grpc.pb.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/impl/util.h"
 #include "deephaven/client/update_by.h"

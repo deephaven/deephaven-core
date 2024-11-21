@@ -80,15 +80,9 @@ public interface AggSpec {
     }
 
     /**
-     * @return {@link AggSpecFormula#of(String)} for {@code formula}
-     */
-    static AggSpecFormula formula(String formula) {
-        return AggSpecFormula.of(formula);
-    }
-
-    /**
      * @return {@link AggSpecFormula#of(String, String)} for {@code formula} and {@code paramToken}
      */
+    @Deprecated
     static AggSpecFormula formula(String formula, String paramToken) {
         return AggSpecFormula.of(formula, paramToken);
     }

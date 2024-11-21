@@ -38,7 +38,7 @@ gwt = "2.11.0"
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.1"
 hdrhistogram = "2.2.2"
-iceberg = "1.6.1"
+iceberg = "1.7.0"
 immutables = "2.10.1"
 jackson = "2.18.1"
 jakarta-servlet = "5.0.0"
@@ -98,6 +98,8 @@ arrow-compression = { module = "org.apache.arrow:arrow-compression", version.ref
 arrow-format = { module = "org.apache.arrow:arrow-format", version.ref = "arrow" }
 arrow-vector = { module = "org.apache.arrow:arrow-vector", version.ref = "arrow" }
 arrow-flight-core = { module = "org.apache.arrow:flight-core", version.ref = "arrow" }
+arrow-flight-sql = { module = "org.apache.arrow:flight-sql", version.ref = "arrow" }
+arrow-flight-sql-jdbc = { module = "org.apache.arrow:flight-sql-jdbc-driver", version.ref = "arrow" }
 
 autoservice = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }
 autoservice-compiler = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }

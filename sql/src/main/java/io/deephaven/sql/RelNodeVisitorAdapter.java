@@ -56,7 +56,7 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
         // SELECT * FROM time_table("00:00:01")
         //
         // Potentially related to design decisions around SQLTODO(catalog-reader-implementation)
-        throw new UnsupportedOperationException("SQLTODO(custom-sources)");
+        throw new UnsupportedSqlOperation("SQLTODO(custom-sources)", TableFunctionScan.class);
     }
 
     @Override
@@ -73,7 +73,7 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
 
     @Override
     public RelNode visit(LogicalCalc calc) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(LogicalCalc.class);
     }
 
     @Override
@@ -90,7 +90,7 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
 
     @Override
     public RelNode visit(LogicalCorrelate correlate) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(LogicalCorrelate.class);
     }
 
     @Override
@@ -103,14 +103,14 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
     public RelNode visit(LogicalIntersect intersect) {
         // SQLTODO(logical-intersect)
         // table.whereIn
-        throw new UnsupportedOperationException("SQLTODO(logical-intersect)");
+        throw new UnsupportedSqlOperation("SQLTODO(logical-intersect)", LogicalIntersect.class);
     }
 
     @Override
     public RelNode visit(LogicalMinus minus) {
         // SQLTODO(logical-minus)
         // table.whereNotIn
-        throw new UnsupportedOperationException("SQLTODO(logical-minus)");
+        throw new UnsupportedSqlOperation("SQLTODO(logical-minus)", LogicalMatch.class);
     }
 
     @Override
@@ -121,7 +121,7 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
 
     @Override
     public RelNode visit(LogicalMatch match) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(LogicalMatch.class);
     }
 
     @Override
@@ -132,16 +132,16 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
 
     @Override
     public RelNode visit(LogicalExchange exchange) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(LogicalExchange.class);
     }
 
     @Override
     public RelNode visit(LogicalTableModify modify) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(LogicalTableModify.class);
     }
 
     @Override
     public RelNode visit(RelNode other) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedSqlOperation(RelNode.class);
     }
 }

@@ -14,6 +14,23 @@ import java.util.function.Consumer;
 
 public interface TicketResolver {
     interface Authorization {
+
+        /**
+         * Check if the caller is denied access to {@code source}; semantically equivalent to
+         * {@code transform(source) == null}. A {@code false} result does <b>not</b> mean that the caller may use
+         * {@code source} untransformed; they must still call {@link #transform(Object)} as needed.
+         *
+         * <p>
+         * The default implementation is equivalent to {@code transform(source) == null}. Implementations that perform
+         * expensive transformations may want to override this method to provide a more efficient check.
+         *
+         * @param source the source object
+         * @return if the transform of {@code source} will result in {@code null}.
+         */
+        default boolean isDeniedAccess(Object source) {
+            return transform(source) == null;
+        }
+
         /**
          * Implementations must type check the provided source as any type of object can be stored in an export.
          * <p>
@@ -60,14 +77,6 @@ public interface TicketResolver {
      * @return the single byte prefix used as a route on the ticket
      */
     byte ticketRoute();
-
-    /**
-     * The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve
-     * the descriptor.
-     *
-     * @return the string that will route from flight descriptor to this resolver
-     */
-    String flightDescriptorRoute();
 
     /**
      * Resolve a flight ticket to an export object future.
@@ -175,4 +184,6 @@ public interface TicketResolver {
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
+
+    // TODO(deephaven-core#6295): Consider use of Flight POJOs instead of protobufs
 }

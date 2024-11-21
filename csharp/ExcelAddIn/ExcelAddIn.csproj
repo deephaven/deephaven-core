@@ -21,4 +21,10 @@
 	<ItemGroup>
 		<ProjectReference Include="..\client\DeephavenClient\DeephavenClient.csproj" />
 	</ItemGroup>
+
+	<PropertyGroup>
+		<ExcelDnaCreate32BitAddIn>false</ExcelDnaCreate32BitAddIn>
+		<ExcelDnaPack64BitXllName>DeephavenExcelAddIn64</ExcelDnaPack64BitXllName>
+	</PropertyGroup>
+
 </Project>
