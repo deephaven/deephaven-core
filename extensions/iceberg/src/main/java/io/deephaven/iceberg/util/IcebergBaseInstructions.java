@@ -33,16 +33,27 @@ public interface IcebergBaseInstructions {
     Optional<Object> dataInstructions();
 
     /**
-     * The identifier of the snapshot to load for reading/updating. If both this and {@link #snapshot()} are provided,
-     * the {@link Snapshot#snapshotId()} should match this. Otherwise, only one of them should be provided. If neither
-     * is provided, the latest snapshot will be loaded.
+     * <ul>
+     * <li>When reading an iceberg table, the snapshot with this {@link Snapshot#snapshotId()} will be loaded.</li>
+     * <li>When {@link IcebergTableWriter#overwrite overwriting} an iceberg table, the snapshot with this
+     * {@link Snapshot#snapshotId()} will be used for extracting all the data files to be deleted.</li>
+     * </ul>
+     * <p>
+     * If both this and {@link #snapshot()} are provided, the {@link Snapshot#snapshotId()} should match this.
+     * Otherwise, only one of them should be provided. If neither is provided, the latest snapshot will be loaded.
      */
     OptionalLong snapshotId();
 
     /**
-     * The snapshot to load for reading/updating. If both this and {@link #snapshotId()} are provided, the
-     * {@link Snapshot#snapshotId()} should match the {@link #snapshotId()}. Otherwise, only one of them should be
-     * provided. If neither is provided, the latest snapshot will be loaded.
+     * <ul>
+     * <li>When reading an iceberg table, this snapshot will be loaded.</li>
+     * <li>When {@link IcebergTableWriter#overwrite overwriting} an iceberg table, this snapshot will be used for
+     * extracting all the data files to be deleted.</li>
+     * </ul>
+     * <p>
+     * If both this and {@link #snapshotId()} are provided, the {@link Snapshot#snapshotId()} should match the
+     * {@link #snapshotId()}. Otherwise, only one of them should be provided. If neither is provided, the latest
+     * snapshot will be loaded.
      */
     Optional<Snapshot> snapshot();
 

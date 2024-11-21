@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.Schema;
 import org.immutables.value.Value;
 
 import java.util.Collection;
@@ -25,22 +26,22 @@ public abstract class TableWriterOptions {
     public abstract TableDefinition tableDefinition();
 
     /**
-     * The schema specification to use in conjunction with the {@link #fieldIdToColumnName()} to map Deephaven columns
-     * from {@link #tableDefinition()} to Iceberg columns. If {@link #fieldIdToColumnName()} is not provided, the
-     * mapping is done by column name.
+     * Used to extract a {@link Schema} from a table. That schema will be used in conjunction with the
+     * {@link #fieldIdToColumnName()} to map Deephaven columns from {@link #tableDefinition()} to Iceberg columns. If
+     * {@link #fieldIdToColumnName()} is not provided, the mapping is done by column name.
      * <p>
-     * Users can specify the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
+     * Users can specify how to extract the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
      * <p>
      * If not provided, we use the current schema from the table.
      */
     @Value.Default
-    public SchemaSpec schemaSpec() {
-        return SchemaSpec.current();
+    public SchemaProvider schemaProvider() {
+        return SchemaProvider.current();
     }
 
     /**
-     * A one-to-one {@link Map map} from Iceberg field IDs from the {@link #schemaSpec()} to Deephaven column names from
-     * the {@link #tableDefinition()}.
+     * A one-to-one {@link Map map} from Iceberg field IDs from the {@link #schemaProvider()} to Deephaven column names
+     * from the {@link #tableDefinition()}.
      */
     public abstract Map<Integer, String> fieldIdToColumnName();
 
@@ -63,7 +64,7 @@ public abstract class TableWriterOptions {
     public interface Builder {
         Builder tableDefinition(TableDefinition tableDefinition);
 
-        Builder schemaSpec(SchemaSpec schemaSpec);
+        Builder schemaProvider(SchemaProvider schemaProvider);
 
         Builder putFieldIdToColumnName(int value, String key);
 

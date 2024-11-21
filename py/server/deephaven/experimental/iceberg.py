@@ -17,7 +17,7 @@ from deephaven.jcompat import j_hashmap
 _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
 _JIcebergParquetWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergParquetWriteInstructions")
-_JSchemaSpec = jpy.get_type("io.deephaven.iceberg.util.SchemaSpec")
+_JSchemaProvider = jpy.get_type("io.deephaven.iceberg.util.SchemaProvider")
 _JTableWriterOptions = jpy.get_type("io.deephaven.iceberg.util.TableWriterOptions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
@@ -171,7 +171,9 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 For example, if the iceberg table is partitioned by "year" and "month", a partition path could be
                 "year=2021/month=01".
                 If writing to a partitioned iceberg table, users must provide partition path for each table in tables
-                argument in the same order. Else, this should be an empty list.
+                argument in the same order.
+                Else when writing to a non-partitioned table, users should not provide any partition paths.
+                By default, the deephaven tables will be written to the root data directory of the iceberg table.
             compression_codec_name (Optional[str]): The compression codec to use. Allowed values include "UNCOMPRESSED",
                 "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
             maximum_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a
@@ -182,14 +184,16 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 2^20 (1,048,576)
             target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to
                 2^20 bytes (1 MiB)
-            snapshot_id (Optional[int]): The identifier of the snapshot to load for updating.; if omitted, the most
-                recent snapshot will be used.
+            snapshot_id (Optional[int]): When overwriting an iceberg table, the snapshot with this id will be used for
+                extracting all the data files to be deleted. By default, the most recent snapshot's ID will be used.
             table_definition (Optional[TableDefinitionLike]): the TableDefinition to use when writing Iceberg data
                 files, instead of the one implied by the table being written itself. This definition can be used to skip
                 some columns or add additional columns with null values.
                 When passing this value to an IcebergTableWriter, this table definition should either:
                 - Not be provided, in which case the definition will be derived from the writer instance, or
                 - Match the writer's table definition if it is provided.
+                By default, the table definition is inferred from the deephaven tables being written, and all tables
+                must have the same definition.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -242,18 +246,19 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
         return self._j_object
 
 
-class SchemaSpec(JObjectWrapper):
+class SchemaProvider(JObjectWrapper):
     """
-    A specification for extracting the schema from a table.
+    Used for extracting the schema from a table.
+    Instances of this class are used for configuring IcebergTableWriter.
     """
-    j_object_type = _JSchemaSpec
+    j_object_type = _JSchemaProvider
 
     def __init__(self, _j_object: jpy.JType):
         """
-        Initializes the SchemaSpec object.
+        Initializes the SchemaProvider object.
 
         Args:
-            _j_object (SchemaSpec): the Java SchemaSpec object.
+            _j_object (SchemaProvider): the Java SchemaProvider object.
         """
         self._j_object = _j_object
 
@@ -262,17 +267,17 @@ class SchemaSpec(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def resolving(cls) -> 'SchemaSpec':
+    def current(cls) -> 'SchemaProvider':
         """
         Used for extracting the current schema from the table.
 
         Returns:
-            the SchemaSpec object.
+            the SchemaProvider object.
         """
-        return cls(_JSchemaSpec.current())
+        return cls(_JSchemaProvider.current())
 
     @classmethod
-    def from_schema_id(cls, schema_id: int) -> 'SchemaSpec':
+    def from_schema_id(cls, schema_id: int) -> 'SchemaProvider':
         """
         Used for extracting the schema from the table using the specified schema id.
 
@@ -280,12 +285,12 @@ class SchemaSpec(JObjectWrapper):
             schema_id (int): the schema id to use.
 
         Returns:
-            the SchemaSpec object.
+            the SchemaProvider object.
         """
-        return cls(_JSchemaSpec.fromSchemaId(schema_id))
+        return cls(_JSchemaProvider.fromSchemaId(schema_id))
 
     @classmethod
-    def from_snapshot_d(cls, snapshot_id: int) -> 'SchemaSpec':
+    def from_snapshot_d(cls, snapshot_id: int) -> 'SchemaProvider':
         """
         Used for extracting the schema from the table using the specified snapshot id.
 
@@ -293,19 +298,19 @@ class SchemaSpec(JObjectWrapper):
             snapshot_id (int): the snapshot id to use.
 
         Returns:
-            the SchemaSpec object.
+            the SchemaProvider object.
         """
-        return cls(_JSchemaSpec.fromSnapshotId(snapshot_id))
+        return cls(_JSchemaProvider.fromSnapshotId(snapshot_id))
 
     @classmethod
-    def from_current_snapshot(cls) -> 'SchemaSpec':
+    def from_current_snapshot(cls) -> 'SchemaProvider':
         """
         Used for extracting the schema from the table using the current snapshot.
 
         Returns:
-            the SchemaSpec object.
+            the SchemaProvider object.
         """
-        return cls(_JSchemaSpec.fromCurrentSnapshot())
+        return cls(_JSchemaProvider.fromCurrentSnapshot())
 
 
 class TableWriterOptions(JObjectWrapper):
@@ -316,23 +321,25 @@ class TableWriterOptions(JObjectWrapper):
     j_object_type = _JTableWriterOptions
 
     def __init__(self,
-                 table_definition: TableDefinitionLike = None,
-                 schema_spec: Optional[SchemaSpec] = None,
+                 table_definition: TableDefinitionLike,
+                 schema_provider: Optional[SchemaProvider] = None,
                  field_id_to_column_name: Optional[Dict[int, str]] = None):
         """
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition: Optional[TableDefinitionLike]: The table definition to use when writing Iceberg data
-                files, instead of the one implied by the table being written itself. This definition can be used to skip
-                some columns or add additional columns with null values.
-            schema_spec: Optional[SchemaSpec]: The schema specification to use in conjunction with the
-                field_id_to_column_name to map Deephaven columns from table_definition to Iceberg columns.
-                If field_id_to_column_name is not provided, the mapping is done by column name.
-                Users can specify the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
-                If not provided, we use the current schema from the table.
-            field_id_to_column_name: Optional[Dict[int, str]]: A one-to-one map from Iceberg field IDs from the schema_spec
-                to Deephaven column names from the table_definition.
+            table_definition: TableDefinitionLike: The table definition to use when writing Iceberg data files using
+                this writer instance. This definition can be used to skip some columns or add additional columns with
+                null values.
+            schema_provider: Optional[SchemaProvider]: Used to extract a Schema from a iceberg table. This schema will
+                be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
+                to Iceberg columns.
+                Users can specify how to extract the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
+                By default, we use the current schema from the table.
+            field_id_to_column_name: Optional[Dict[int, str]]: A one-to-one map from Iceberg field IDs from the
+                schema_spec to Deephaven column names from the table_definition.
+                By default, we assume this dictionary is empty, and we will map Iceberg columns to Deephaven columns
+                using column names.
 
         Raises:
             DHError: If unable to build the object.
@@ -343,8 +350,8 @@ class TableWriterOptions(JObjectWrapper):
 
             builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
 
-            if schema_spec:
-                builder.schemaSpec(schema_spec.j_object)
+            if schema_provider:
+                builder.schemaProvider(schema_provider.j_object)
 
             if field_id_to_column_name:
                 for field_id, column_name in field_id_to_column_name.items():
@@ -417,7 +424,7 @@ class IcebergTableWriter(JObjectWrapper):
         the provided Deephaven tables.
 
         Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
+            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
         """
         self.j_object.append(instructions.j_object)
 
@@ -429,27 +436,9 @@ class IcebergTableWriter(JObjectWrapper):
         method will not perform any compatibility checks between the existing schema and the provided Deephaven tables.
 
         Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
+            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
         """
         self.j_object.overwrite(instructions.j_object)
-
-    def write_data_file(self, instructions: IcebergParquetWriteInstructions) -> list:
-        """
-        Writes data from Deephaven tables from the write instructions to an Iceberg table without creating a new
-        snapshot. This method returns a list of data files that were written. Users can use this list to create a
-        transaction/snapshot if needed. This method will not perform any compatibility checks between the existing schema
-        and the provided Deephaven tables.
-
-        Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
-
-        Returns:
-            the list of data files written.
-        """
-        java_list = self.j_object.writeDataFiles(instructions.j_object)
-
-        # Convert to Python list
-        return [element for element in java_list]
 
     @property
     def j_object(self) -> jpy.JType:
@@ -533,6 +522,7 @@ class IcebergTableAdapter(JObjectWrapper):
         Returns:
             the table writer object
         """
+        return IcebergTableWriter(self.j_object.tableWriter(writer_options.j_object))
 
     def append(self, instructions: IcebergParquetWriteInstructions):
         """
@@ -545,7 +535,7 @@ class IcebergTableAdapter(JObjectWrapper):
         to append multiple times.
 
         Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
+            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
         """
         self.j_object.append(instructions.j_object)
 
@@ -561,31 +551,9 @@ class IcebergTableAdapter(JObjectWrapper):
         to write multiple times.
 
         Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
+            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
         """
         self.j_object.overwrite(instructions.j_object)
-
-    def write_data_file(self, instructions: IcebergParquetWriteInstructions) -> list:
-        """
-        Writes data from Deephaven tables from the write instructions to an Iceberg table without creating a new
-        snapshot. This method returns a list of data files that were written. Users can use this list to create a
-        transaction/snapshot if needed.
-
-        This method will create a new IcebergTableWriter with the provided table definition from the write instructions,
-        and use that writer to write the data to the table. Therefore, this method is not recommended if users want to
-        write to the iceberg table multiple times. Instead, users should create a single IcebergTableWriter and use it
-        to write multiple times.
-
-        Args:
-            instructions (IcebergParquetWriteInstructions): the instructions for customizations while writing.
-
-        Returns:
-            the list of data files written.
-        """
-        java_list = self.j_object.writeDataFiles(instructions.j_object)
-
-        # Convert to Python list
-        return [element for element in java_list]
 
     @property
     def j_object(self) -> jpy.JType:
@@ -632,7 +600,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str) -> IcebergTableAdapter:
+    def load_table(self, table_identifier: str) -> IcebergCatalogAdapter:
         """
         Load the table from the catalog.
 

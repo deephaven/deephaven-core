@@ -8,29 +8,29 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 
 /**
- * Internal class containing the implementations of SchemaSpec.
+ * Internal class containing the implementations of {@link SchemaProvider}.
  */
-class SchemaSpecInternal {
+class SchemaProviderInternal {
 
-    interface SchemaSpecImpl {
+    interface SchemaProviderImpl {
         /**
-         * Returns the schema for the given table based on this SchemaSpec.
+         * Returns the schema for the given table based on this {@link SchemaProvider}.
          */
         Schema getSchema(Table table);
     }
 
-    // Implementations of SchemaSpec
-    static class CurrentSchemaSpec implements SchemaSpec, SchemaSpecImpl {
+    // Implementations of SchemaProvider
+    static class CurrentSchemaProvider implements SchemaProvider, SchemaProviderImpl {
         @Override
         public Schema getSchema(final Table table) {
             return getCurrentSchema(table);
         }
     }
 
-    static class IdSchemaSpec implements SchemaSpec, SchemaSpecImpl {
+    static class IdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
         private final int schemaId;
 
-        IdSchemaSpec(final int schemaId) {
+        IdSchemaProvider(final int schemaId) {
             this.schemaId = schemaId;
         }
 
@@ -40,10 +40,10 @@ class SchemaSpecInternal {
         }
     }
 
-    static class DirectSchemaSpec implements SchemaSpec, SchemaSpecImpl {
+    static class DirectSchemaProvider implements SchemaProvider, SchemaProviderImpl {
         private final Schema schema;
 
-        DirectSchemaSpec(final Schema schema) {
+        DirectSchemaProvider(final Schema schema) {
             this.schema = schema;
         }
 
@@ -53,10 +53,10 @@ class SchemaSpecInternal {
         }
     }
 
-    static class SnapshotIdSchemaSpec implements SchemaSpec, SchemaSpecImpl {
+    static class SnapshotIdSchemaProvider implements SchemaProvider, SchemaProviderImpl {
         private final int snapshotId;
 
-        SnapshotIdSchemaSpec(final int snapshotId) {
+        SnapshotIdSchemaProvider(final int snapshotId) {
             this.snapshotId = snapshotId;
         }
 
@@ -66,7 +66,7 @@ class SchemaSpecInternal {
         }
     }
 
-    static class CurrentSnapshotSchemaSpec implements SchemaSpec, SchemaSpecImpl {
+    static class CurrentSnapshotSchemaProvider implements SchemaProvider, SchemaProviderImpl {
         @Override
         public Schema getSchema(final Table table) {
             return getSchemaForCurrentSnapshot(table);

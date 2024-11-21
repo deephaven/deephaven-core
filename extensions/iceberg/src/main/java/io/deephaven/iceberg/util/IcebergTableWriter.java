@@ -11,7 +11,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.iceberg.util.SchemaSpecInternal.SchemaSpecImpl;
+import io.deephaven.iceberg.util.SchemaProviderInternal.SchemaProviderImpl;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -104,7 +104,7 @@ public class IcebergTableWriter {
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(table.spec(), tableDefinition);
 
-        this.userSchema = ((SchemaSpecImpl) tableWriterOptions.schemaSpec()).getSchema(table);
+        this.userSchema = ((SchemaProviderImpl) tableWriterOptions.schemaProvider()).getSchema(table);
         verifyFieldIdsInSchema(tableWriterOptions.fieldIdToColumnName().keySet(), userSchema);
 
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
@@ -347,21 +347,22 @@ public class IcebergTableWriter {
             final boolean overwrite,
             @NotNull final IcebergBaseInstructions writeInstructions) {
         final Transaction icebergTransaction = table.newTransaction();
-        final Snapshot referenceSnapshot;
-        {
-            final Snapshot snapshotFromInstructions = tableAdapter.getSnapshot(writeInstructions);
-            if (snapshotFromInstructions != null) {
-                referenceSnapshot = snapshotFromInstructions;
-            } else {
-                referenceSnapshot = table.currentSnapshot();
-            }
-        }
+
+
         if (overwrite) {
             // Fail if the table gets changed concurrently
-            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite()
-                    .validateFromSnapshot(referenceSnapshot.snapshotId())
-                    .validateNoConflictingDeletes()
-                    .validateNoConflictingData();
+            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite();
+
+            // Find the snapshot from where we will extract the data files in case of overwriting
+            final Snapshot referenceSnapshot;
+            {
+                final Snapshot snapshotFromInstructions = tableAdapter.getSnapshot(writeInstructions);
+                if (snapshotFromInstructions != null) {
+                    referenceSnapshot = snapshotFromInstructions;
+                } else {
+                    referenceSnapshot = table.currentSnapshot();
+                }
+            }
 
             // Delete all the existing data files in the table
             try (final Stream<DataFile> existingDataFiles = allDataFiles(table, referenceSnapshot)) {
