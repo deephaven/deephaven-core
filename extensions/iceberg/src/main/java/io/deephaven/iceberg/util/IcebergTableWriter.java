@@ -48,7 +48,7 @@ import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
 /**
  * This class is responsible for writing Deephaven tables to an Iceberg table. Each instance of this class is associated
- * with a single Iceberg table and can be used to write multiple Deephaven tables to this Iceberg table.
+ * with a single {@link IcebergTableAdapter} and can be used to write multiple Deephaven tables to this Iceberg table.
  */
 public class IcebergTableWriter {
 

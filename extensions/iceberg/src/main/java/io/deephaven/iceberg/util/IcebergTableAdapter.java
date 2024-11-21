@@ -581,6 +581,9 @@ public class IcebergTableAdapter {
      * This method will perform schema validation to ensure that the provided
      * {@link TableWriterOptions#tableDefinition()} is compatible with the Iceberg table schema. All further writes
      * performed by the returned writer will not be validated against the table's schema, and thus would be faster.
+     * <p>
+     * Creating an {@link IcebergTableWriter} is the recommended approach if users want to write to the same iceberg
+     * table multiple times.
      *
      * @param tableWriterOptions The options to configure the table writer.
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
