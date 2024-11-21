@@ -281,33 +281,19 @@ class FilterSelectColumn implements SelectColumn {
 
                 int offset = 0;
 
-                try (final RowSet.Iterator inputRows = inputRowSet.iterator();
+                try (final RowSequence.Iterator inputRows = inputRowSet.getRowSequenceIterator();
                         final RowSet.Iterator trueRows = filtered.iterator()) {
-                    long nextTrue = trueRows.hasNext() ? trueRows.nextLong() : -1;
-                    while (nextTrue >= 0) {
-                        // the input iterator is a superset of the true iterator, so we can always find out what
-                        // the next value is without needing to check hasNext
-                        final long nextInput = inputRows.nextLong();
-                        final boolean found = nextInput == nextTrue;
-                        booleanDestination.set(offset++, found);
-                        if (found) {
-                            nextTrue = trueRows.hasNext() ? trueRows.nextLong() : -1;
+                    while (trueRows.hasNext()) {
+                        final long nextTrue = trueRows.nextLong();
+                        // Find all the false rows between the last consumed input row and the next true row
+                        final int falsesSkipped = (int) inputRows.advanceAndGetPositionDistance(nextTrue + 1) - 1;
+                        if (falsesSkipped > 0) {
+                            booleanDestination.fillWithValue(offset, falsesSkipped, false);
+                            offset += falsesSkipped;
                         }
+                        booleanDestination.set(offset++, true);
                     }
                 }
-
-                /*
-                 * This alternative formulation from Ryan is fairly close in terms of performance. It might be very
-                 * slightly worse on the dense cases, and slightly better on the sparse cases.
-                 */
-                /*
-                 * try (final RowSequence.Iterator inputRows = inputRowSet.getRowSequenceIterator(); final
-                 * RowSet.Iterator trueRows = filtered.iterator()) { while (trueRows.hasNext()) { final long nextTrue =
-                 * trueRows.nextLong(); // Find all the false rows between the last consumed input row and the next true
-                 * row final int falsesSkipped = (int) inputRows.advanceAndGetPositionDistance(nextTrue + 1) - 1; if
-                 * (falsesSkipped > 0) { booleanDestination.fillWithValue(offset, falsesSkipped, false); offset +=
-                 * falsesSkipped; } booleanDestination.set(offset++, true); } }
-                 */
 
                 final int remainingFalses = booleanDestination.size() - offset;
                 // Fill everything else up with false, because we've exhausted the trues
