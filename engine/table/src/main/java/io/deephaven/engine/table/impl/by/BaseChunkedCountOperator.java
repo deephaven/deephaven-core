@@ -105,9 +105,9 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
             int chunkSize) {
         final int count = doCount(chunkStart, chunkSize, values);
         if (count > 0) {
-            final long newCount = plusLong(resultColumnSource.getUnsafe(destination), -count);
-            Assert.geqZero(newCount, "newCount");
-            resultColumnSource.set(destination, newCount);
+            final long updatedCount = plusLong(resultColumnSource.getUnsafe(destination), -count);
+            Assert.geqZero(updatedCount, "updatedCount");
+            resultColumnSource.set(destination, updatedCount);
             return true;
         }
         return false;
@@ -152,7 +152,9 @@ abstract class BaseChunkedCountOperator implements IterativeChunkedAggregationOp
         final int newCount = doCount(chunkStart, chunkSize, newValues);
         final int count = newCount - oldCount;
         if (count != 0) {
-            resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), count));
+            final long updatedCount = plusLong(resultColumnSource.getUnsafe(destination), count);
+            Assert.geqZero(updatedCount, "updatedCount");
+            resultColumnSource.set(destination, updatedCount);
             return true;
         }
         return false;
