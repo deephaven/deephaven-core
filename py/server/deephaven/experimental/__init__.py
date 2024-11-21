@@ -7,6 +7,7 @@
 import jpy
 from deephaven import DHError
 from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 _JWindowCheck = jpy.get_type("io.deephaven.engine.util.WindowCheck")
 
@@ -31,6 +32,7 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JWindowCheck.addTimeWindow(table.j_table, ts_col, window, bool_col))
+        with auto_locking_ctx(table):
+            return Table(j_table=_JWindowCheck.addTimeWindow(table.j_table, ts_col, window, bool_col))
     except Exception as e:
         raise DHError(e, "failed to create a time window table.") from e
