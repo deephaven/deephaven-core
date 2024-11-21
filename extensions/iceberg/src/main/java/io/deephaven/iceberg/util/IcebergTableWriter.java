@@ -17,11 +17,9 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.HasTableOperations;
-import org.apache.iceberg.OverwriteFiles;
 import org.apache.iceberg.PartitionData;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
-import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.TableMetadata;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.Transaction;
@@ -39,9 +37,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import static io.deephaven.iceberg.base.IcebergUtils.allDataFiles;
 import static io.deephaven.iceberg.base.IcebergUtils.partitionDataFromPaths;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
@@ -53,9 +49,8 @@ import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 public class IcebergTableWriter {
 
     /**
-     * The Iceberg table adapter and table which will be written to by this instance.
+     * The Iceberg table which will be written to by this instance.
      */
-    private final IcebergTableAdapter tableAdapter;
     private final org.apache.iceberg.Table table;
 
     @Nullable
@@ -91,7 +86,6 @@ public class IcebergTableWriter {
 
 
     IcebergTableWriter(final TableWriterOptions tableWriterOptions, final IcebergTableAdapter tableAdapter) {
-        this.tableAdapter = tableAdapter;
         this.table = tableAdapter.icebergTable();
 
         if (table instanceof HasTableOperations) {
@@ -215,21 +209,7 @@ public class IcebergTableWriter {
      */
     public void append(@NotNull final IcebergWriteInstructions writeInstructions) {
         final List<DataFile> dataFilesWritten = writeDataFiles(writeInstructions);
-        commit(dataFilesWritten, false, writeInstructions);
-    }
-
-    /**
-     * Overwrite the existing Iceberg table with the provided Deephaven {@link IcebergWriteInstructions#tables()} in a
-     * single snapshot. This will delete all existing data and will not change the schema of the existing table. This
-     * method will not perform any compatibility checks between the existing schema and the provided Deephaven tables.
-     * <p>
-     * Overwriting a table while racing with other writers can lead to failure/undefined results.
-     *
-     * @param writeInstructions The instructions for customizations while writing.
-     */
-    public void overwrite(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final List<DataFile> dataFilesWritten = writeDataFiles(writeInstructions);
-        commit(dataFilesWritten, true, writeInstructions);
+        commit(dataFilesWritten);
     }
 
     /**
@@ -343,42 +323,15 @@ public class IcebergTableWriter {
      * Commit the changes to the Iceberg table by creating a snapshot.
      */
     private void commit(
-            @NotNull final Iterable<DataFile> dataFiles,
-            final boolean overwrite,
-            @NotNull final IcebergBaseInstructions writeInstructions) {
+            @NotNull final Iterable<DataFile> dataFiles) {
         final Transaction icebergTransaction = table.newTransaction();
 
+        // Append the new data files to the table
+        final AppendFiles append = icebergTransaction.newAppend();
+        dataFiles.forEach(append::appendFile);
+        append.commit();
 
-        if (overwrite) {
-            // Fail if the table gets changed concurrently
-            final OverwriteFiles overwriteFiles = icebergTransaction.newOverwrite();
-
-            // Find the snapshot from where we will extract the data files in case of overwriting
-            final Snapshot referenceSnapshot;
-            {
-                final Snapshot snapshotFromInstructions = tableAdapter.getSnapshot(writeInstructions);
-                if (snapshotFromInstructions != null) {
-                    referenceSnapshot = snapshotFromInstructions;
-                } else {
-                    referenceSnapshot = table.currentSnapshot();
-                }
-            }
-
-            // Delete all the existing data files in the table
-            try (final Stream<DataFile> existingDataFiles = allDataFiles(table, referenceSnapshot)) {
-                existingDataFiles.forEach(overwriteFiles::deleteFile);
-            }
-            dataFiles.forEach(overwriteFiles::addFile);
-            overwriteFiles.commit();
-        } else {
-            // Append the new data files to the table
-            final AppendFiles append = icebergTransaction.newAppend();
-            dataFiles.forEach(append::appendFile);
-            append.commit();
-        }
-
-        // Commit the transaction, creating new snapshot for append/overwrite.
-        // Note that no new snapshot will be created for the schema change.
+        // Commit the transaction, creating new snapshot
         icebergTransaction.commitTransaction();
     }
 

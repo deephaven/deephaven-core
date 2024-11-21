@@ -159,7 +159,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                  maximum_dictionary_keys: Optional[int] = None,
                  maximum_dictionary_size: Optional[int] = None,
                  target_page_size: Optional[int] = None,
-                 snapshot_id: Optional[int] = None,
                  table_definition: Optional[TableDefinitionLike] = None,
                  data_instructions: Optional[s3.S3Instructions] = None):
         """
@@ -184,8 +183,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 2^20 (1,048,576)
             target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to
                 2^20 bytes (1 MiB)
-            snapshot_id (Optional[int]): When overwriting an iceberg table, the snapshot with this id will be used for
-                extracting all the data files to be deleted. By default, the most recent snapshot's ID will be used.
             table_definition (Optional[TableDefinitionLike]): the TableDefinition to use when writing Iceberg data
                 files, instead of the one implied by the table being written itself. This definition can be used to skip
                 some columns or add additional columns with null values.
@@ -226,9 +223,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
 
             if target_page_size:
                 builder.targetPageSize(target_page_size)
-
-            if snapshot_id:
-                builder.snapshotId(snapshot_id)
 
             if table_definition:
                 builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
@@ -428,18 +422,6 @@ class IcebergTableWriter(JObjectWrapper):
         """
         self.j_object.append(instructions.j_object)
 
-    def overwrite(self, instructions: IcebergParquetWriteInstructions):
-        """
-        Overwrite the existing Iceberg table with the provided Deephaven tables from the write instructions in a
-        single snapshot. This will delete all existing data but will not change the schema of the existing table.
-        Overwriting a table while racing with other writers can lead to failure/undefined results. This
-        method will not perform any compatibility checks between the existing schema and the provided Deephaven tables.
-
-        Args:
-            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
-        """
-        self.j_object.overwrite(instructions.j_object)
-
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table_writer
@@ -538,22 +520,6 @@ class IcebergTableAdapter(JObjectWrapper):
             instructions (IcebergParquetWriteInstructions): the customization instructions for write.
         """
         self.j_object.append(instructions.j_object)
-
-    def overwrite(self, instructions: IcebergParquetWriteInstructions):
-        """
-        Overwrite the existing Iceberg table with the provided Deephaven tables from the write instructions in a
-        single snapshot. This will delete all existing data but will not change the schema of the existing table.
-        Overwriting a table while racing with other writers can lead to failure/undefined results.
-
-        This method will create a new IcebergTableWriter with the provided table definition from the write instructions,
-        and use that writer to write the data to the table. Therefore, this method is not recommended if users want to
-        write to the iceberg table multiple times. Instead, users should create a single IcebergTableWriter and use it
-        to write multiple times.
-
-        Args:
-            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
-        """
-        self.j_object.overwrite(instructions.j_object)
 
     @property
     def j_object(self) -> jpy.JType:

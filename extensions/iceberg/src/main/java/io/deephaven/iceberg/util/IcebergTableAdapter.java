@@ -611,26 +611,6 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Overwrite the existing Iceberg table with the provided Deephaven {@link IcebergWriteInstructions#tables()} in a
-     * single snapshot. This will delete all existing data but will not change the schema of the existing table.
-     * Overwriting a table while racing with other writers can lead to failure/undefined results.
-     * <p>
-     * This method will create a new {@link IcebergTableWriter} with the provided
-     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
-     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
-     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
-     *
-     *
-     * @param writeInstructions The instructions for customizations while writing.
-     */
-    public void overwrite(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
-        final IcebergTableWriter newWriter =
-                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        newWriter.overwrite(writeInstructions);
-    }
-
-    /**
      * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
      * of data files that were written. Users can use this list to create a transaction/snapshot if needed.
      * <p>
