@@ -286,7 +286,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return Table(self.j_object.tables(namespace))
 
-    def load_table(self, table_identifier: str) -> IcebergCatalogAdapter:
+    def load_table(self, table_identifier: str) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
 
