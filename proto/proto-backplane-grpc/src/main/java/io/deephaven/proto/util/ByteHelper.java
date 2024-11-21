@@ -6,10 +6,10 @@ package io.deephaven.proto.util;
 import java.nio.ByteBuffer;
 
 public class ByteHelper {
-    public static String byteBufToHex(final ByteBuffer ticket) {
+    public static String byteBufToHex(final ByteBuffer buffer) {
         StringBuilder sb = new StringBuilder();
-        for (int i = ticket.position(); i < ticket.limit(); ++i) {
-            sb.append(String.format("%02x", ticket.get(i)));
+        for (int i = buffer.position(); i < buffer.limit(); ++i) {
+            sb.append(String.format("%02x", buffer.get(i)));
         }
         return sb.toString();
     }

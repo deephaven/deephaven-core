@@ -21,6 +21,6 @@ public interface JettyClientChannelFactoryModule {
     @Provides
     @UserAgent
     static String providesUserAgent() {
-        return BarrageSessionFactoryConfig.userAgent(List.of("deephaven-server-jetty"));
+        return BarrageSessionFactoryConfig.userAgent(List.of("deephaven-server-jetty-app"));
     }
 }
