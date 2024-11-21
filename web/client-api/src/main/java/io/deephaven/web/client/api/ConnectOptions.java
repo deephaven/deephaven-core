@@ -5,7 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Function;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.TransportFactory;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportFactory;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
