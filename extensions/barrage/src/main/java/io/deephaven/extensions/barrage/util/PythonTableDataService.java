@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.*;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
@@ -449,15 +450,17 @@ public class PythonTableDataService extends AbstractTableDataService {
                                     .reduce((a, b) -> a + ", " + b).orElse(""))));
                     return;
                 }
-                if (!columnDefinition.isCompatible(schemaPlus.tableDef.getColumns().get(0))) {
+                final ColumnDefinition<?> dataColumn = ReinterpretUtils.maybeConvertToPrimitive(
+                        schemaPlus.tableDef.getColumns().get(0));
+                if (!columnDefinition.isCompatible(dataColumn)) {
                     asyncState.setError(new IllegalArgumentException(String.format(
                             "Received incompatible column definition. Expected %s, but received %s.",
-                            columnDefinition, schemaPlus.tableDef.getColumns().get(0))));
+                            columnDefinition, dataColumn)));
                     return;
                 }
 
                 final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
-                final ChunkReader<? extends Values> reader = schemaPlus.computeChunkReaders(
+                final ChunkReader<? extends Values> reader = schemaPlus.computePrimitiveChunkReaders(
                         chunkReaderFactory, schema, streamReaderOptions)[0];
                 int mi = 1;
                 try {
@@ -898,7 +901,7 @@ public class PythonTableDataService extends AbstractTableDataService {
             private final @NotNull ColumnDefinition<?> columnDefinition;
 
             public TableServiceGetRangeAdapter(@NotNull ColumnDefinition<?> columnDefinition) {
-                this.columnDefinition = columnDefinition;
+                this.columnDefinition = ReinterpretUtils.maybeConvertToPrimitive(columnDefinition);
             }
 
             @Override

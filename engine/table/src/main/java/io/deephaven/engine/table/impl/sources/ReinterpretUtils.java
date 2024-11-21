@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -210,6 +211,27 @@ public class ReinterpretUtils {
             result[ii] = maybeConvertToPrimitive(sources[ii]);
         }
         return result;
+    }
+
+    /**
+     * If {@code columnDefinition.getDataType()} or {@code columnDefinition.getComponentType} are something that we
+     * prefer to handle as a primitive, do the appropriate conversion.
+     *
+     * @param columnDefinition The column definition to convert
+     * @return if possible, {@code columnDefinition} converted to a primitive, otherewise {@code columnDefinition}
+     */
+    @NotNull
+    public static ColumnDefinition<?> maybeConvertToPrimitive(@NotNull final ColumnDefinition<?> columnDefinition) {
+        final Class<?> dataType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType());
+        Class<?> componentType = columnDefinition.getComponentType();
+        if (componentType != null) {
+            componentType = ReinterpretUtils.maybeConvertToPrimitiveDataType(componentType);
+        }
+        if (columnDefinition.getDataType() == dataType
+                && columnDefinition.getComponentType() == componentType) {
+            return columnDefinition;
+        }
+        return columnDefinition.withDataType(dataType, componentType);
     }
 
     /**

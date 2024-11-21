@@ -95,6 +95,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.FloatingPoint, BigDecimal.class,
                 DefaultChunkReaderFactory::floatingPointToBigDecimal);
         register(ArrowType.ArrowTypeID.Binary, byte[].class, DefaultChunkReaderFactory::binaryToByteArray);
+        register(ArrowType.ArrowTypeID.Binary, String.class, DefaultChunkReaderFactory::utf8ToString);
         register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkReaderFactory::binaryToBigInt);
         register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkReaderFactory::binaryToBigDecimal);
         register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkReaderFactory::binaryToSchema);
@@ -149,7 +150,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         // TODO (deephaven/deephaven-core#6038): these arrow types require 64-bit offsets
         if (typeId == ArrowType.ArrowTypeID.LargeUtf8
                 || typeId == ArrowType.ArrowTypeID.LargeBinary
-                || typeId == ArrowType.ArrowTypeID.LargeList) {
+                || typeId == ArrowType.ArrowTypeID.LargeList
+                || typeId == ArrowType.ArrowTypeID.LargeListView) {
             throw new UnsupportedOperationException(String.format(
                     "No support for 64-bit offsets to map arrow type %s to %s.",
                     field.getType().toString(),
@@ -184,13 +186,15 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.List
+                || typeId == ArrowType.ArrowTypeID.ListView
                 || typeId == ArrowType.ArrowTypeID.FixedSizeList) {
 
-            // TODO (deephaven/deephaven-core#5947): Add SPARSE branch for ListView
             int fixedSizeLength = 0;
             final ListChunkReader.Mode mode;
             if (typeId == ArrowType.ArrowTypeID.List) {
                 mode = ListChunkReader.Mode.DENSE;
+            } else if (typeId == ArrowType.ArrowTypeID.ListView) {
+                mode = ListChunkReader.Mode.SPARSE;
             } else {
                 mode = ListChunkReader.Mode.FIXED;
                 fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();

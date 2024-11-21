@@ -543,20 +543,31 @@ public class BarrageUtil {
                 @NotNull final ChunkReader.Factory chunkReaderFactory,
                 @NotNull final org.apache.arrow.flatbuf.Schema schema,
                 @NotNull final BarrageOptions barrageOptions) {
+            return computeChunkReaders(chunkReaderFactory, schema, barrageOptions, false);
+        }
+
+        public ChunkReader<? extends Values>[] computePrimitiveChunkReaders(
+                @NotNull final ChunkReader.Factory chunkReaderFactory,
+                @NotNull final org.apache.arrow.flatbuf.Schema schema,
+                @NotNull final BarrageOptions barrageOptions) {
+            return computeChunkReaders(chunkReaderFactory, schema, barrageOptions, true);
+        }
+
+        private ChunkReader<? extends Values>[] computeChunkReaders(
+                @NotNull final ChunkReader.Factory chunkReaderFactory,
+                @NotNull final org.apache.arrow.flatbuf.Schema schema,
+                @NotNull final BarrageOptions barrageOptions,
+                final boolean convertToPrimitive) {
             // noinspection unchecked
             final ChunkReader<? extends Values>[] readers =
                     (ChunkReader<? extends Values>[]) new ChunkReader[tableDef.numColumns()];
 
             final List<ColumnDefinition<?>> columns = tableDef.getColumns();
             for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
-                // final ColumnDefinition<?> columnDefinition = columns.get(ii);
-                // final BarrageTypeInfo typeInfo = typeInfo(
-                // ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType(columnDefinition.getDataType()),
-                // columnDefinition.getDataType(),
-                // columnDefinition.getComponentType(),
-                // schema.fields(ii));
-                // readers[ii] = DefaultChunkReadingFactory.INSTANCE.getReader(barrageOptions, factor, typeInfo);
-                throw new UnsupportedOperationException("TODO NOCOMMIT NATE");
+                final ColumnDefinition<?> columnDefinition = ReinterpretUtils.maybeConvertToPrimitive(columns.get(ii));
+                final BarrageTypeInfo typeInfo = BarrageTypeInfo.make(
+                        columnDefinition.getDataType(), columnDefinition.getComponentType(), schema.fields(ii));
+                readers[ii] = chunkReaderFactory.newReader(typeInfo, barrageOptions);
             }
 
             return readers;

@@ -36,6 +36,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
+import org.jpy.PyObject;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -74,6 +75,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 final BarrageTypeInfo typeInfo);
     }
 
+    private boolean toStringUnknownTypes = true;
     private final Map<ArrowType.ArrowTypeID, Map<Class<?>, ArrowTypeChunkWriterSupplier>> registeredFactories =
             new EnumMap<>(ArrowType.ArrowTypeID.class);
 
@@ -84,6 +86,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 DefaultChunkWriterFactory::timestampFromZonedDateTime);
         register(ArrowType.ArrowTypeID.Utf8, String.class, DefaultChunkWriterFactory::utf8FromString);
         register(ArrowType.ArrowTypeID.Utf8, Object.class, DefaultChunkWriterFactory::utf8FromObject);
+        register(ArrowType.ArrowTypeID.Utf8, PyObject.class, DefaultChunkWriterFactory::utf8FromPyObject);
         register(ArrowType.ArrowTypeID.Utf8, ArrayPreview.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Utf8, DisplayWrapper.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Duration, long.class, DefaultChunkWriterFactory::durationFromLong);
@@ -132,6 +135,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 DefaultChunkWriterFactory::intervalFromPeriodDuration);
     }
 
+    public void disableToStringUnknownTypes() {
+        toStringUnknownTypes = false;
+    }
+
     @Override
     public <T extends Chunk<Values>> ChunkWriter<T> newWriter(
             @NotNull final BarrageTypeInfo typeInfo) {
@@ -172,6 +179,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         if (!isSpecialType) {
+            if (toStringUnknownTypes) {
+                // noinspection unchecked
+                return (ChunkWriter<T>) new VarBinaryChunkWriter<>(
+                        (out, item) -> out.write(item.toString().getBytes(StandardCharsets.UTF_8)));
+            }
             throw new UnsupportedOperationException(String.format(
                     "No known ChunkWriter for arrow type %s from %s. Supported types: %s",
                     field.getType().toString(),
@@ -387,6 +399,12 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
     }
 
     private static ChunkWriter<ObjectChunk<Object, Values>> utf8FromObject(
+            final ArrowType arrowType,
+            final BarrageTypeInfo typeInfo) {
+        return new VarBinaryChunkWriter<>((out, item) -> out.write(item.toString().getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static ChunkWriter<ObjectChunk<PyObject, Values>> utf8FromPyObject(
             final ArrowType arrowType,
             final BarrageTypeInfo typeInfo) {
         return new VarBinaryChunkWriter<>((out, item) -> out.write(item.toString().getBytes(StandardCharsets.UTF_8)));
