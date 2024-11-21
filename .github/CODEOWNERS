@@ -20,8 +20,8 @@
 /TRIAGE.md @chipkent @rcaudy
 /licenses @chipkent @rcaudy
 /docker @devinrsmith @jcferretti @rcaudy
-/engine/function/ @chipkent @kosak @rcaudy
-/py @chipkent @jmao-denver @rcaudy
-/R @chipkent @alexpeters1208 @rcaudy
-*.proto @devinrsmith @nbauernfeind @niloc132 @rcaudy
-*.gwt.xml @niloc132 @rcaudy @nbauernfeind
+/engine/function/ @chipkent @kosak @rcaudy @cpwright
+/py @chipkent @jmao-denver @rcaudy @cpwright
+/R @chipkent @rcaudy @cpwright
+*.proto @devinrsmith @nbauernfeind @niloc132 @rcaudy @cpwright
+*.gwt.xml @niloc132 @rcaudy @nbauernfeind @cpwright
