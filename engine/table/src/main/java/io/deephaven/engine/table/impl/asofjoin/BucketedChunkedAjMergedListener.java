@@ -29,6 +29,8 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -791,7 +793,17 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     @Override
     protected void destroy() {
         super.destroy();
-        leftSsaFactory.close();
-        rightSsaFactory.close();
+        if (getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
+            leftSsaFactory.close();
+            rightSsaFactory.close();
+        } else {
+            getUpdateGraph().addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    leftSsaFactory.close();
+                    rightSsaFactory.close();
+                }
+            });
+        }
     }
 }
