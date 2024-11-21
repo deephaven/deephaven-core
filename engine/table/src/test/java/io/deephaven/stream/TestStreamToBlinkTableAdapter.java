@@ -466,11 +466,13 @@ public class TestStreamToBlinkTableAdapter {
             // Add buffered chunks
             tablePublisher.add(tableToAdd);
             // Move buffered chunks to current
-            updateGraph.runWithinUnitTestCycle(() -> {});
+            updateGraph.runWithinUnitTestCycle(() -> {
+            });
             // Add more buffered chunks
             tablePublisher.add(tableToAdd);
             // Move current to previous, buffered to current
-            updateGraph.runWithinUnitTestCycle(() -> {});
+            updateGraph.runWithinUnitTestCycle(() -> {
+            });
             // Add even more buffered chunks
             tablePublisher.add(tableToAdd);
         }
