@@ -4,7 +4,11 @@
 package io.deephaven.stream;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
@@ -18,6 +22,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.ArrayTypeUtils;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -444,6 +449,34 @@ public class TestStreamToBlinkTableAdapter {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(adapter::run);
         TestCase.assertTrue(listenerFailed.booleanValue());
+    }
+
+    @Test
+    public void testCleanup() {
+        final TableDefinition tableDefinition = TableDefinition.from(
+                List.of("O", "B", "S", "I", "L", "F", "D", "C"),
+                List.of(String.class, byte.class, short.class, int.class, long.class, float.class, double.class,
+                        char.class));
+        final Table tableToAdd = emptyTable(ChunkPoolConstants.SMALLEST_POOLED_CHUNK_CAPACITY).updateView(
+                "O=Long.toString(ii)", "B=(byte)ii", "S=(short)ii", "I=(int)ii", "L=ii", "F=(float)ii",
+                "D=(double)ii", "C=(char)ii");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+            final TablePublisher tablePublisher = TablePublisher.of("Test", tableDefinition, null, null);
+            // Add buffered chunks
+            tablePublisher.add(tableToAdd);
+            // Move buffered chunks to current
+            updateGraph.runWithinUnitTestCycle(() -> {
+            });
+            // Add more buffered chunks
+            tablePublisher.add(tableToAdd);
+            // Move current to previous, buffered to current
+            updateGraph.runWithinUnitTestCycle(() -> {
+            });
+            // Add even more buffered chunks
+            tablePublisher.add(tableToAdd);
+        }
+        ChunkPoolReleaseTracking.check();
     }
 
     private static class DummyStreamPublisher implements StreamPublisher {

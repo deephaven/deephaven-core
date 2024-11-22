@@ -189,7 +189,7 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer>
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         totalSize = 0;
         data.forEach(SafeCloseable::close);
         data.clear();

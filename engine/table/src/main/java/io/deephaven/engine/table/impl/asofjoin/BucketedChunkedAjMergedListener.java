@@ -791,7 +791,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     @Override
     protected void destroy() {
         super.destroy();
-        leftSsaFactory.close();
-        rightSsaFactory.close();
+        getUpdateGraph().runWhenIdle(() -> {
+            leftSsaFactory.close();
+            rightSsaFactory.close();
+        });
     }
 }
