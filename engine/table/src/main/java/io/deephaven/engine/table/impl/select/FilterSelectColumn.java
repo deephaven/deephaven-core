@@ -114,14 +114,16 @@ class FilterSelectColumn implements SelectColumn {
                             + filter);
         }
         if (filter.isRefreshing()) {
-            /* TODO: DH-18052: updateView and view should support refreshing Filter Expressions
-            *
-            * This would enable us to use a whereIn or whereNotIn for things like conditional formatting; which could
-            * be attractive. However, a join or wouldMatch gets you there without the additional complexity.
-           *
-            * Supporting this requires SelectColumn dependencies, which have not previously existed. Additionally,
-            * if we were to support these for select and update (as opposed to view and updateView), then the filter
-            * could require recomputing the entire result table whenever anything changes. */
+            /*
+             * TODO: DH-18052: updateView and view should support refreshing Filter Expressions
+             *
+             * This would enable us to use a whereIn or whereNotIn for things like conditional formatting; which could
+             * be attractive. However, a join or wouldMatch gets you there without the additional complexity.
+             *
+             * Supporting this requires SelectColumn dependencies, which have not previously existed. Additionally, if
+             * we were to support these for select and update (as opposed to view and updateView), then the filter could
+             * require recomputing the entire result table whenever anything changes.
+             */
             throw new UncheckedTableException(
                     "Cannot use a refreshing filter in select, view, update, or updateView: " + filter);
         }
@@ -217,7 +219,7 @@ class FilterSelectColumn implements SelectColumn {
         public Boolean getBoolean(final long rowKey) {
             try (final WritableRowSet selection = RowSetFactory.fromKeys(rowKey);
                     final WritableRowSet filteredRowSet =
-                    filter.filter(selection, tableToFilter.getRowSet(), tableToFilter, false)) {
+                            filter.filter(selection, tableToFilter.getRowSet(), tableToFilter, false)) {
                 return filteredRowSet.isNonempty();
             }
         }
@@ -225,8 +227,8 @@ class FilterSelectColumn implements SelectColumn {
         @Override
         public Boolean getPrevBoolean(final long rowKey) {
             try (final WritableRowSet selection = RowSetFactory.fromKeys(rowKey);
-                 final WritableRowSet filteredRowSet = filter.filter(selection,
-                    tableToFilter.getRowSet().prev(), tableToFilter, true)) {
+                    final WritableRowSet filteredRowSet = filter.filter(selection,
+                            tableToFilter.getRowSet().prev(), tableToFilter, true)) {
                 return filteredRowSet.isNonempty();
             }
         }
