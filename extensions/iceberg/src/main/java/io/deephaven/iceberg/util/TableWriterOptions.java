@@ -104,4 +104,11 @@ public abstract class TableWriterOptions {
             columnNames.add(columnName);
         }
     }
+
+    @Value.Check
+    final void checkNonEmptyDefinition() {
+        if (tableDefinition().numColumns() == 0) {
+            throw new IllegalArgumentException("Cannot write to an Iceberg table using empty table definition");
+        }
+    }
 }

@@ -19,7 +19,8 @@ class TableParquetWriterOptionsTest {
      * Create a new TableParquetWriterOptions builder with an empty table definition.
      */
     private static TableParquetWriterOptions.Builder instructions() {
-        return TableParquetWriterOptions.builder().tableDefinition(TableDefinition.of());
+        return TableParquetWriterOptions.builder().tableDefinition(TableDefinition.of(
+                ColumnDefinition.ofInt("someCol")));
     }
 
     @Test
@@ -43,6 +44,18 @@ class TableParquetWriterOptionsTest {
                 .build()
                 .tableDefinition())
                 .isEqualTo(definition);
+    }
+
+    @Test
+    void testEmptyTableDefinition() {
+        try {
+            TableParquetWriterOptions.builder()
+                    .tableDefinition(TableDefinition.of())
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("table definition");
+        }
     }
 
     @Test
