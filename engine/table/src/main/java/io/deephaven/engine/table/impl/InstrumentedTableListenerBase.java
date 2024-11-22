@@ -313,7 +313,22 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
         void doRun(final Runnable invokeOnUpdate) {
             try {
-                doRunInternal(invokeOnUpdate);
+                final long currentStep = getUpdateGraph().clock().currentStep();
+                try {
+                    beforeRunNotification(currentStep);
+                    // Retain a reference during update processing to prevent interference from concurrent destroys
+                    if (!tryRetainReference()) {
+                        // This listener is no longer live, there's no point to doing any work for this notification
+                        return;
+                    }
+                    try {
+                        doRunInternal(invokeOnUpdate);
+                    } finally {
+                        dropReference();
+                    }
+                } finally {
+                    afterRunNotification(currentStep);
+                }
             } finally {
                 update.release();
             }
@@ -328,9 +343,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
             }
 
-            final long currentStep = getUpdateGraph().clock().currentStep();
             try {
-                beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
                 final LogEntry en = log.error().append("Uncaught exception for entry= ");
@@ -363,7 +376,6 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 failed = true;
                 onFailure(e, entry);
             } finally {
-                afterRunNotification(currentStep);
                 if (entry != null) {
                     entry.onUpdateEnd();
                 }
