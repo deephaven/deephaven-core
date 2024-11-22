@@ -262,7 +262,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         RpcOptions options = RpcOptions.create();
         options.setDebug(getOptions().debug);
         if (getOptions().transportFactory != null) {
-            options.setTransport(getOptions().transportFactory);
+            options.setTransport(getOptions().transportFactory.adapt());
         } else if (useWebsockets()) {
             // Replace with our custom websocket impl, with fallback to the built-in one
             options.setTransport(o -> new MultiplexedWebsocketTransport(o, () -> {

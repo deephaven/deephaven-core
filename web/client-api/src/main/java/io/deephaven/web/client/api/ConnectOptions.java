@@ -3,9 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsTypeRef;
-import elemental2.core.Function;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportFactory;
+import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
@@ -55,7 +53,7 @@ public class ConnectOptions {
      * https, it will use fetch, otherwise it will use websockets.
      */
     @JsNullable
-    public @TsTypeRef(Function.class) TransportFactory transportFactory;
+    public GrpcTransportFactory transportFactory;
 
     public ConnectOptions() {
 

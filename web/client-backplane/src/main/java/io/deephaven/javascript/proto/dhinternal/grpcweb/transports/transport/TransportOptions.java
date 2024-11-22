@@ -33,7 +33,7 @@ public interface TransportOptions {
 
     @JsFunction
     public interface OnHeadersFn {
-        void onInvoke(BrowserHeaders p0, double p1);
+        void onInvoke(BrowserHeaders p0, int p1);
     }
 
     @JsOverlay
