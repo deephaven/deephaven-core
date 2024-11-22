@@ -72,6 +72,13 @@ public final class ParquetFileWriter implements AutoCloseable {
         return rowGroupWriter;
     }
 
+    /**
+     * Get the number of bytes written to the parquet file so far.
+     */
+    public long bytesWritten() {
+        return countingOutput.getCount();
+    }
+
     @Override
     public void close() throws IOException {
         serializeOffsetIndexes();

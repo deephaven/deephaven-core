@@ -7,7 +7,6 @@ import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.io.IOException;

@@ -25,6 +25,7 @@ except Exception:
     module will fail to find the java types.
 """
 
+
 class Credentials(JObjectWrapper):
     """
     Credentials object for authenticating with an S3 server.

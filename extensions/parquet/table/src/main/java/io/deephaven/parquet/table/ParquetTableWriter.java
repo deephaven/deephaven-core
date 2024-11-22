@@ -173,8 +173,14 @@ public class ParquetTableWriter {
         if (!sortedColumns.isEmpty()) {
             tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
         }
-        write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
+        final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);
+        writeInstructions.onWriteCompleted()
+                .ifPresent(callback -> callback.onWriteCompleted(CompletedParquetWrite.builder()
+                        .destination(dest)
+                        .numRows(t.size())
+                        .numBytes(numBytes)
+                        .build()));
     }
 
     /**
@@ -191,9 +197,11 @@ public class ParquetTableWriter {
      * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
      *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
      * @param computedCache Per column cache tags
+     * @return The number of bytes written
+     *
      * @throws IOException For file writing related errors
      */
-    private static void write(
+    private static long write(
             @NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
@@ -207,13 +215,18 @@ public class ParquetTableWriter {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
-            try (final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
-                    tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
-                    tableInfoBuilder, metadataFileWriter)) {
+            final long numBytesWritten;
+            {
+                final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
+                        tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
+                        tableInfoBuilder, metadataFileWriter);
                 // Given the transformation, do not use the original table's "definition" for writing
                 write(t, writeInstructions, parquetFileWriter, computedCache);
+                parquetFileWriter.close();
+                numBytesWritten = parquetFileWriter.bytesWritten();
             }
             destOutputStream.done();
+            return numBytesWritten;
         }
     }
 

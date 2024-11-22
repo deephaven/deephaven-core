@@ -22,9 +22,8 @@ import java.util.OptionalLong;
 public abstract class IcebergReadInstructions {
     /**
      * The default {@link IcebergReadInstructions} to use when reading Iceberg data files. Providing this will use
-     * system defaults for cloud provider-specific parameters
+     * system defaults for cloud provider-specific parameters.
      */
-    @SuppressWarnings("unused")
     public static final IcebergReadInstructions DEFAULT = builder().build();
 
     public static Builder builder() {

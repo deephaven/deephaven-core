@@ -20,11 +20,16 @@ import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.extensions.s3.testlib.S3Helper.TIMEOUT_SECONDS;
 
-public abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
+abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
 
     public abstract S3Instructions s3Instructions();
 
     public abstract S3AsyncClient s3AsyncClient();
+
+    @Override
+    public final Object dataInstructions() {
+        return s3Instructions();
+    }
 
     @Override
     protected IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir, Map<String, String> properties)

@@ -13,7 +13,9 @@ import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.AwsProperties;
 import org.apache.iceberg.aws.HttpClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
+import org.apache.iceberg.aws.s3.S3FileIO;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,9 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Tools for accessing tables in the Iceberg table format.
+ * Tools for accessing tables in the Iceberg table format from S3.
  */
-@SuppressWarnings("unused")
 public final class IcebergToolsS3 {
 
     /**
@@ -52,14 +53,6 @@ public final class IcebergToolsS3 {
 
         // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
-
-        final RESTCatalog catalog = new RESTCatalog();
-
-        properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
-        properties.put(CatalogProperties.URI, catalogURI);
-        properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
-
-        // Configure the properties map from the Iceberg instructions.
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
             properties.put(S3FileIOProperties.ACCESS_KEY_ID, accessKeyId);
             properties.put(S3FileIOProperties.SECRET_ACCESS_KEY, secretAccessKey);
@@ -71,10 +64,9 @@ public final class IcebergToolsS3 {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
-        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        final RESTCatalog catalog = new RESTCatalog();
         catalog.setConf(new Configuration());
-        catalog.initialize(catalogName, properties);
-        return IcebergCatalogAdapter.of(catalog);
+        return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
     }
 
     /**
@@ -97,16 +89,28 @@ public final class IcebergToolsS3 {
         final Map<String, String> properties = new HashMap<>();
 
         final GlueCatalog catalog = new GlueCatalog();
+        catalog.setConf(new Configuration());
+        return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
+    }
 
+    private static IcebergCatalogAdapter createAdapterCommon(
+            @Nullable final String name,
+            @NotNull final String catalogURI,
+            @NotNull final String warehouseLocation,
+            @NotNull final Catalog catalog,
+            @NotNull final Map<String, String> properties) {
         properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
+        // Following is needed to write new manifest files when writing new data.
+        // Not setting this will result in using ResolvingFileIO.
+        properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
+
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
-        catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
-        return new IcebergCatalogAdapter(catalog, properties);
+        return IcebergCatalogAdapter.of(catalog, properties);
     }
 
     /**
