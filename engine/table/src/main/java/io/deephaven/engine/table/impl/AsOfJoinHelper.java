@@ -34,8 +34,6 @@ import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
@@ -1342,18 +1340,10 @@ public class AsOfJoinHelper {
                     @Override
                     protected void destroy() {
                         super.destroy();
-                        if (getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
+                        getUpdateGraph().runWhenIdle(() -> {
                             leftStampKeys.close();
                             leftStampValues.close();
-                        } else {
-                            getUpdateGraph().addNotification(new TerminalNotification() {
-                                @Override
-                                public void run() {
-                                    leftStampKeys.close();
-                                    leftStampValues.close();
-                                }
-                            });
-                        }
+                        });
                     }
                 });
 
@@ -1534,18 +1524,10 @@ public class AsOfJoinHelper {
                                 @Override
                                 protected void destroy() {
                                     super.destroy();
-                                    if (getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
+                                    getUpdateGraph().runWhenIdle(() -> {
                                         compactedRightStampKeys.close();
                                         compactedRightStampValues.close();
-                                    } else {
-                                        getUpdateGraph().addNotification(new TerminalNotification() {
-                                            @Override
-                                            public void run() {
-                                                compactedRightStampKeys.close();
-                                                compactedRightStampValues.close();
-                                            }
-                                        });
-                                    }
+                                    });
                                 }
                             });
 

@@ -26,9 +26,7 @@ import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSourc
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.internal.log.LoggerFactory;
@@ -280,7 +278,7 @@ public class StreamToBlinkTableAdapter
                 Stream.of(bufferChunkSources, currentChunkSources, prevChunkSources)
                         .filter(Objects::nonNull)
                         .flatMap(Arrays::stream)
-                        .map(ccs -> () -> ccs.clear()));
+                        .map(ccs -> ccs::clear));
         bufferChunkSources = currentChunkSources = prevChunkSources = null;
     }
 
@@ -319,16 +317,7 @@ public class StreamToBlinkTableAdapter
                     .endl();
             updateSourceRegistrar.removeSource(this);
             streamPublisher.shutdown();
-            if (updateSourceRegistrar.getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
-                clearChunkColumnSources();
-            } else {
-                updateSourceRegistrar.getUpdateGraph().addNotification(new TerminalNotification() {
-                    @Override
-                    public void run() {
-                        clearChunkColumnSources();
-                    }
-                });
-            }
+            getUpdateGraph().runWhenIdle(this::clearChunkColumnSources);
         }
     }
 
