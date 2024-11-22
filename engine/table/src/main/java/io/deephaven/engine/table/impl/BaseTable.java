@@ -525,26 +525,23 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     @Override
-    public boolean awaitUpdate(long timeout) throws InterruptedException {
+    public boolean awaitUpdate(long timeoutMillis) throws InterruptedException {
 
         final long startTime = System.nanoTime();
-        if (!updateGraph.exclusiveLock().tryLock(timeout, TimeUnit.MILLISECONDS)) {
+        if (!updateGraph.exclusiveLock().tryLock(timeoutMillis, TimeUnit.MILLISECONDS)) {
             // Usually, users will already be holding the exclusive lock when calling this method. If they are not and
             // cannot acquire the lock within the timeout, we should return false now.
             return false;
         }
-        timeout -= (System.nanoTime() - startTime) / 1_000_000;
+        timeoutMillis -= TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
 
-        boolean result;
         try {
             // Note that we must reacquire the exclusive lock before returning from await. This deadline may be
             // exceeded if the thread must wait to reacquire the lock.
-            result = ensureCondition().await(timeout, TimeUnit.MILLISECONDS);
+            return ensureCondition().await(timeoutMillis, TimeUnit.MILLISECONDS);
         } finally {
             updateGraph.exclusiveLock().unlock();
         }
-
-        return result;
     }
 
     private Condition ensureCondition() {
