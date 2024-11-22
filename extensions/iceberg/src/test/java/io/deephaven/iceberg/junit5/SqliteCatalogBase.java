@@ -26,6 +26,7 @@ import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.qst.type.Type;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Schema;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -212,15 +214,21 @@ public abstract class SqliteCatalogBase {
         verifySnapshots(tableIdentifier, List.of("append"));
 
         // Append a table with just the int column
-        final Table singleColumnSource = TableTools.emptyTable(10)
-                .update("intCol = (int) 5 * i + 10");
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(singleColumnSource)
-                .build());
-        fromIceberg = tableAdapter.table();
-        final Table expected = TableTools.merge(source, singleColumnSource.update("doubleCol = NULL_DOUBLE"));
-        assertTableEquals(expected, fromIceberg);
-        verifySnapshots(tableIdentifier, List.of("append", "append"));
+        final Table expected;
+        {
+            final IcebergTableWriter tableWriterWithOneColumn = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.ofInt("intCol")))
+                    .build());
+            final Table singleColumnSource = TableTools.emptyTable(10)
+                    .update("intCol = (int) 5 * i + 10");
+            tableWriterWithOneColumn.append(IcebergWriteInstructions.builder()
+                    .addTables(singleColumnSource)
+                    .build());
+            fromIceberg = tableAdapter.table();
+            expected = TableTools.merge(source, singleColumnSource.update("doubleCol = NULL_DOUBLE"));
+            assertTableEquals(expected, fromIceberg);
+            verifySnapshots(tableIdentifier, List.of("append", "append"));
+        }
 
         // Append more data
         final Table moreData = TableTools.emptyTable(5)
@@ -236,7 +244,9 @@ public abstract class SqliteCatalogBase {
 
         // Append an empty table
         tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(TableTools.emptyTable(0))
+                .addTables(TableTools.emptyTable(0).update(
+                        "intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20"))
                 .build());
         fromIceberg = tableAdapter.table();
         assertTableEquals(expected2, fromIceberg);
@@ -244,42 +254,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void appendWithDifferentDefinitionWithTabeWriterTest() {
-        final Table source = TableTools.emptyTable(10)
-                .update("intCol = (int) 2 * i + 10",
-                        "doubleCol = (double) 2.5 * i + 10");
-        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
-        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
-        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
-                .tableDefinition(source.getDefinition())
-                .build());
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(source)
-                .build());
-        {
-            final Table fromIceberg = tableAdapter.table();
-            assertTableEquals(source, fromIceberg);
-        }
-
-        // Table writer should not do any schema verification at the time of writing
-        final Table differentSource = TableTools.emptyTable(10)
-                .update("shortCol = (short) 2 * i + 10");
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(differentSource)
-                .build());
-        {
-            final Table fromIceberg = tableAdapter.table();
-            final Table expected = TableTools.merge(source, differentSource
-                    .update("intCol = NULL_INT", "doubleCol = NULL_DOUBLE")
-                    .dropColumns("shortCol"));
-            assertTableEquals(expected, fromIceberg);
-        }
-    }
-
-
-    @Test
-    void appendMultipleTablesWithDefinitionTest() {
+    void appendMultipleTablesWithDifferentDefinitionTest() {
         final Table source = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
@@ -294,23 +269,19 @@ public abstract class SqliteCatalogBase {
         Table fromIceberg = tableAdapter.table();
         assertTableEquals(source, fromIceberg);
 
-        final Table appendTable1 = TableTools.emptyTable(5)
-                .update("intCol = (int) 3 * i + 20",
-                        "doubleCol = (double) 3.5 * i + 20",
-                        "shortCol = (short) 3 * i + 20");
-        final Table appendTable2 = TableTools.emptyTable(5)
-                .update("charCol = (char) 65 + i % 26",
-                        "intCol = (int) 4 * i + 30",
-                        "doubleCol = (double) 4.5 * i + 30");
-        tableWriter.append(IcebergWriteInstructions.builder()
-                .addTables(appendTable1, appendTable2)
-                .build());
-        fromIceberg = tableAdapter.table();
-        final Table expected = TableTools.merge(
-                source,
-                appendTable1.dropColumns("shortCol"),
-                appendTable2.dropColumns("charCol"));
-        assertTableEquals(expected, fromIceberg);
+        try {
+            final Table appendTable = TableTools.emptyTable(5)
+                    .update("intCol = (int) 3 * i + 20",
+                            "doubleCol = (double) 3.5 * i + 20",
+                            "shortCol = (short) 3 * i + 20");
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(appendTable)
+                    .build());
+            failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
+        } catch (IllegalArgumentException e) {
+            // Table definition mismatch between table writer and append table
+            assertThat(e).hasMessageContaining("Table definition");
+        }
     }
 
     @Test
@@ -682,9 +653,7 @@ public abstract class SqliteCatalogBase {
         final Table part2 = TableTools.emptyTable(5)
                 .update("intCol = (int) 3 * i + 20",
                         "doubleCol = (double) 3.5 * i + 20");
-        final List<String> partitionPaths = List.of("PC=3", "PC=1");
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
-
 
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofInt("intCol"),
@@ -694,9 +663,24 @@ public abstract class SqliteCatalogBase {
         final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(tableDefinition)
                 .build());
+
+        {
+            // Add partition paths of incorrect type
+            try {
+                tableWriter.append(IcebergWriteInstructions.builder()
+                        .addTables(part1, part2)
+                        .addAllPartitionPaths(List.of("PC=cat", "PC=apple"))
+                        .build());
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                // Exception expected since partition paths provided of incorrect type
+                assertThat(e).hasMessageContaining("partition path");
+            }
+        }
+
         tableWriter.append(IcebergWriteInstructions.builder()
                 .addTables(part1, part2)
-                .addAllPartitionPaths(partitionPaths)
+                .addAllPartitionPaths(List.of("PC=3", "PC=1"))
                 .build());
         final Table fromIceberg = tableAdapter.table();
         assertThat(tableAdapter.definition()).isEqualTo(tableDefinition);
@@ -721,6 +705,63 @@ public abstract class SqliteCatalogBase {
                 part2.update("PC = 1"),
                 part3.update("PC = 2"));
         assertTableEquals(expected2, fromIceberg2.select());
+    }
+
+    @Test
+    void testPartitionedAppendWithAllPartitioningTypes() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("StringPC").withPartitioning(),
+                ColumnDefinition.ofBoolean("BooleanPC").withPartitioning(),
+                ColumnDefinition.ofInt("IntegerPC").withPartitioning(),
+                ColumnDefinition.ofLong("LongPC").withPartitioning(),
+                ColumnDefinition.ofFloat("FloatPC").withPartitioning(),
+                ColumnDefinition.ofDouble("DoublePC").withPartitioning(),
+                ColumnDefinition.of("LocalDatePC", Type.find(LocalDate.class)).withPartitioning(),
+                ColumnDefinition.ofInt("data"));
+
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+
+        final Table source = TableTools.emptyTable(10)
+                .update("data = (int) 2 * i + 10");
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(definition)
+                .build());
+
+        final List<String> partitionPaths = List.of(
+                "StringPC=AA/" +
+                        "BooleanPC=true/" +
+                        "IntegerPC=1/" +
+                        "LongPC=2/" +
+                        "FloatPC=3.0/" +
+                        "DoublePC=4.0/" +
+                        "LocalDatePC=2023-10-01");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .addAllPartitionPaths(partitionPaths)
+                .build());
+        final Table fromIceberg = tableAdapter.table();
+        assertThat(tableAdapter.definition()).isEqualTo(definition);
+        assertThat(fromIceberg.getDefinition()).isEqualTo(definition);
+        assertThat(fromIceberg).isInstanceOf(PartitionAwareSourceTable.class);
+
+        final Table expected = source.updateView(
+                "StringPC = `AA`",
+                "BooleanPC = (Boolean) true",
+                "IntegerPC = (int) 1",
+                "LongPC = (long) 2",
+                "FloatPC = (float) 3.0",
+                "DoublePC = (double) 4.0",
+                "LocalDatePC = LocalDate.parse(`2023-10-01`)")
+                .moveColumns(7, "data");
+
+        // TODO (deephaven-core#6419) Dropping the local data column since it is not supported on the read side.
+        // Remove this when the issue is fixed.
+        final TableDefinition tableDefinitionWithoutLocalDate = fromIceberg.dropColumns("LocalDatePC").getDefinition();
+        final Table fromIcebergWithoutLocalDate = tableAdapter.table(IcebergReadInstructions.builder()
+                .tableDefinition(tableDefinitionWithoutLocalDate)
+                .build());
+        assertTableEquals(expected.dropColumns("LocalDatePC"), fromIcebergWithoutLocalDate);
     }
 
     @Test
@@ -878,7 +919,7 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
-    void testAutoRefreshingPartitionedAppend() {
+    void testAutoRefreshingPartitionedAppend() throws InterruptedException {
         final Table part1 = TableTools.emptyTable(10)
                 .update("intCol = (int) 2 * i + 10",
                         "doubleCol = (double) 2.5 * i + 10");
@@ -925,11 +966,8 @@ public abstract class SqliteCatalogBase {
                 .build());
 
         // Sleep for 0.5 second
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        Thread.sleep(500);
+
         updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));

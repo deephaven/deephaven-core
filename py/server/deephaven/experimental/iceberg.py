@@ -293,7 +293,7 @@ class TableParquetWriterOptions(JObjectWrapper):
         Args:
             table_definition: TableDefinitionLike: The table definition to use when writing Iceberg data files using
                 this writer instance. This definition can be used to skip some columns or add additional columns with
-                null values.
+                null values. The provided definition should have at least one column.
             schema_provider: Optional[SchemaProvider]: Used to extract a Schema from a iceberg table. This schema will
                 be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
                 to Iceberg columns.

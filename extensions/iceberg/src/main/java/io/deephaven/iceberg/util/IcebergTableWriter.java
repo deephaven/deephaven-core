@@ -41,8 +41,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,6 +79,13 @@ public class IcebergTableWriter {
     private final TableDefinition tableDefinition;
 
     /**
+     * The column definitions for non-partitioning columns. All tables written by this writer are expected to have these
+     * columns. The partitioning column values will be provided separately by the user via
+     * {@link IcebergWriteInstructions}.
+     */
+    private final List<ColumnDefinition<?>> nonPartitioningColumns;
+
+    /**
      * The schema to use when in conjunction with the {@link #fieldIdToColumnName} to map Deephaven columns from
      * {@link #tableDefinition} to Iceberg columns.
      */
@@ -111,6 +116,7 @@ public class IcebergTableWriter {
         this.tableSpec = table.spec();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
+        this.nonPartitioningColumns = nonPartitioningColumnDefinitions(tableDefinition);
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(tableSpec, tableDefinition);
 
@@ -136,6 +142,21 @@ public class IcebergTableWriter {
                             " writing Iceberg table, expected: " + TableParquetWriterOptions.class);
         }
         return (TableParquetWriterOptions) tableWriterOptions;
+    }
+
+    /**
+     * Return a {@link TableDefinition} which contains only the non-partitioning columns from the provided table
+     * definition.
+     */
+    private static List<ColumnDefinition<?>> nonPartitioningColumnDefinitions(
+            @NotNull final TableDefinition tableDefinition) {
+        final List<ColumnDefinition<?>> nonPartitioningColumns = new ArrayList<>();
+        for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
+            if (!columnDefinition.isPartitioning()) {
+                nonPartitioningColumns.add(columnDefinition);
+            }
+        }
+        return nonPartitioningColumns;
     }
 
     /**
@@ -253,6 +274,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
+        verifyTableDefinition(writeInstructions.tables(), nonPartitioningColumns);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
@@ -267,6 +289,22 @@ public class IcebergTableWriter {
             parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         }
         return dataFilesFromParquet(parquetFileInfo, partitionData);
+    }
+
+    /**
+     * Verify that all the tables have the same column definitions definition as expected.
+     */
+    private static void verifyTableDefinition(
+            @NotNull final Iterable<Table> tables,
+            @NotNull final List<ColumnDefinition<?>> expectedColumnDefinitions) {
+        for (final Table table : tables) {
+            final List<ColumnDefinition<?>> actualColumnDefinitions = table.getDefinition().getColumns();
+            if (!actualColumnDefinitions.equals(expectedColumnDefinitions)) {
+                throw new IllegalArgumentException("Table definition mismatch, all tables written by this writer " +
+                        "are expected to have columns with definition: " + expectedColumnDefinitions +
+                        ", found: " + actualColumnDefinitions);
+            }
+        }
     }
 
     private static void verifyPartitionPaths(
@@ -288,6 +326,10 @@ public class IcebergTableWriter {
      * @param partitionPaths The list of partition paths to process.
      * @return A pair containing a list of PartitionData objects and a list of update strings for Deephaven tables.
      * @throws IllegalArgumentException if the partition paths are not compatible with the partition spec.
+     *
+     * @implNote Check implementations of {@link DataFiles#data} and {@link Conversions#fromPartitionString} for more
+     *           details on how partition paths should be parsed, how each type of value is parsed from a string and
+     *           what types are allowed for partitioning columns.
      */
     private static Pair<List<PartitionData>, List<String[]>> partitionDataFromPaths(
             final PartitionSpec partitionSpec,
@@ -321,7 +363,7 @@ public class IcebergTableWriter {
                 }
             } catch (final Exception e) {
                 throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
-                        " partition spec " + partitionSpec, e);
+                        " partition spec " + partitionSpec + ", check cause for more details ", e);
             }
             dhTableUpdateStringList.add(dhTableUpdateString);
             partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
@@ -366,19 +408,10 @@ public class IcebergTableWriter {
             queryScope.putParam(paramName, Long.parseLong(value));
         } else if (typeId == Type.TypeID.STRING) {
             queryScope.putParam(paramName, value);
-        } else if (typeId == Type.TypeID.TIMESTAMP) {
-            final Types.TimestampType timestampType = (Types.TimestampType) colType;
-            if (timestampType == Types.TimestampType.withZone()) {
-                queryScope.putParam(paramName, Instant.parse(value));
-            } else {
-                queryScope.putParam(paramName, LocalDateTime.parse(value));
-            }
         } else if (typeId == Type.TypeID.DATE) {
             queryScope.putParam(paramName, LocalDate.parse(value));
-        } else if (typeId == Type.TypeID.TIME) {
-            queryScope.putParam(paramName, LocalTime.parse(value));
         } else {
-            // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals
+            // TODO (deephaven-core#6327) Add support for more partitioning types like Big Decimals
             throw new TableDataException("Unsupported partitioning column type " + typeId.name());
         }
         return colName + " = " + paramName;

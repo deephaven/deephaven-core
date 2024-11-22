@@ -3,7 +3,7 @@
 #
 import jpy
 
-from deephaven import dtypes, empty_table
+from deephaven import dtypes
 from deephaven.column import col_def, ColumnType
 
 from tests.testbase import BaseTestCase
@@ -79,7 +79,7 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345)
 
     def test_writer_options_create_default(self):
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition)
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32})
         self.assertEqual(writer_options.j_object.compressionCodecName(), "SNAPPY")
         self.assertEqual(writer_options.j_object.maximumDictionaryKeys(), 1048576)
         self.assertEqual(writer_options.j_object.maximumDictionarySize(), 1048576)
@@ -90,7 +90,8 @@ class IcebergTestCase(BaseTestCase):
                                             access_key_id="some_access_key_id",
                                             secret_access_key="some_secret_access_key"
                                             )
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition, data_instructions=s3_instructions)
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
+                                                           data_instructions=s3_instructions)
 
     def test_writer_options_create_with_table_definition_dict(self):
         table_def = {
@@ -120,21 +121,21 @@ class IcebergTestCase(BaseTestCase):
         self.assertTrue(col_names[3] == "z")
 
     def test_writer_options_create_with_compression_codec(self):
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition,
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
                                                            compression_codec_name="GZIP")
         self.assertEqual(writer_options.j_object.compressionCodecName(), "GZIP")
 
     def test_writer_options_create_with_max_dictionary_keys(self):
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition,
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
                                                            maximum_dictionary_keys=1024)
         self.assertEqual(writer_options.j_object.maximumDictionaryKeys(), 1024)
 
     def test_writer_options_create_with_max_dictionary_size(self):
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition,
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
                                                            maximum_dictionary_size=8192)
         self.assertEqual(writer_options.j_object.maximumDictionarySize(), 8192)
 
     def test_writer_options_create_with_target_page_size(self):
-        writer_options = iceberg.TableParquetWriterOptions(empty_table(0).definition,
+        writer_options = iceberg.TableParquetWriterOptions(table_definition={"x": dtypes.int32},
                                                            target_page_size=4096)
         self.assertEqual(writer_options.j_object.targetPageSize(), 4096)

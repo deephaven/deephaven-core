@@ -23,6 +23,12 @@ public abstract class IcebergWriteInstructions {
 
     /**
      * The Deephaven tables to be written.
+     * <p>
+     * All tables must have the same table definition as definition for non-partitioning columns specified in the
+     * {@link IcebergTableWriter}. For example, if an iceberg table is partitioned by "year" and "month" and has a
+     * non-partitioning column "data," then {@link IcebergTableWriter} should be configured with a definition that
+     * includes all three columns: "year," "month," and "data." But, the tables provided here should only include the
+     * non-partitioning column, such as "data."
      */
     public abstract List<Table> tables();
 
@@ -63,7 +69,8 @@ public abstract class IcebergWriteInstructions {
     @Value.Check
     final void countCheckPartitionPaths() {
         if (!partitionPaths().isEmpty() && partitionPaths().size() != tables().size()) {
-            throw new IllegalArgumentException("Partition path must be provided for each table");
+            throw new IllegalArgumentException("Partition path must be provided for each table, partitionPaths.size()="
+                    + partitionPaths().size() + ", tables.size()=" + tables().size());
         }
     }
 }
