@@ -35,6 +35,7 @@ import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.session.ActionResolver;
@@ -69,10 +70,13 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
+import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandPreparedStatementQuery;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandStatementQuery;
+import org.apache.arrow.flight.sql.impl.FlightSql.SqlInfo;
+import org.apache.arrow.flight.sql.impl.FlightSql.SqlSupportedTransaction;
 import org.apache.arrow.flight.sql.impl.FlightSql.TicketStatementQuery;
 import org.apache.arrow.vector.types.pojo.ArrowType.Utf8;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -93,6 +97,7 @@ import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -344,6 +349,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             return submit(new CommandPreparedStatementQueryImpl(session), command);
         }
 
+        @Override
+        public ExportObject<FlightInfo> visit(CommandGetSqlInfo command) {
+            return submit(commandGetSqlInfo, command);
+        }
+
         private <T> ExportObject<FlightInfo> submit(CommandHandler<T> handler, T command) {
             return session.<FlightInfo>nonExport().submit(() -> getInfo(handler, command));
         }
@@ -431,6 +441,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         @Override
         public ExportObject<Table> visit(CommandGetTables ticket) {
             return submit(commandGetTables, ticket);
+        }
+
+        @Override
+        public ExportObject<Table> visit(CommandGetSqlInfo ticket) {
+            return submit(commandGetSqlInfo, ticket);
         }
 
         private <C extends Message> ExportObject<Table> submit(CommandHandlerFixedBase<C> fixed, C command) {
@@ -1368,6 +1383,78 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             return count == size
                     ? newTable
                     : newTable.head(count);
+        }
+    }
+
+    private static final CommandHandlerFixedBase<CommandGetSqlInfo> commandGetSqlInfo = new CommandGetSqlInfoImpl();
+
+    private static class CommandGetSqlInfoImpl extends CommandHandlerFixedBase<CommandGetSqlInfo> {
+
+        @VisibleForTesting
+        static final TableDefinition DEFINITION = TableDefinition.of(
+                ColumnDefinition.ofInt("info_name"),
+                ColumnDefinition.of("value", Type.ofCustom(Object.class)));
+
+        private static final Map<String, Object> ATTRIBUTES = Map.of();
+
+        private static final ByteString SCHEMA_BYTES =
+                BarrageUtil.schemaBytesFromTableDefinition(DEFINITION, ATTRIBUTES, true);
+
+        private static final Map<Integer, Object> VALUES = Map.of(
+                SqlInfo.FLIGHT_SQL_SERVER_NAME_VALUE, "Deephaven",
+                // SqlInfo.FLIGHT_SQL_SERVER_VERSION_VALUE,
+                // FlightSqlResolver.class.getPackage().getImplementationVersion(),
+                // SqlInfo.FLIGHT_SQL_SERVER_ARROW_VERSION_VALUE, Schema.class.getPackage().getImplementationVersion(),
+                SqlInfo.FLIGHT_SQL_SERVER_READ_ONLY_VALUE, true,
+                SqlInfo.FLIGHT_SQL_SERVER_SQL_VALUE, true,
+                SqlInfo.FLIGHT_SQL_SERVER_SUBSTRAIT_VALUE, false,
+                SqlInfo.FLIGHT_SQL_SERVER_TRANSACTION_VALUE,
+                SqlSupportedTransaction.SQL_SUPPORTED_TRANSACTION_NONE_VALUE,
+                SqlInfo.FLIGHT_SQL_SERVER_CANCEL_VALUE, false,
+                SqlInfo.FLIGHT_SQL_SERVER_BULK_INGESTION_VALUE, false,
+                // This is not true, but needs to be injected,
+                // @Named("session.tokenExpireMs") final long tokenExpireMs
+                SqlInfo.FLIGHT_SQL_SERVER_STATEMENT_TIMEOUT_VALUE, 0);
+
+        private static final Table TABLE = sqlInfo(VALUES);
+
+        private static Table sqlInfo(Map<Integer, Object> values) {
+            final int size = values.size();
+            final int[] names = new int[size];
+            final Object[] objects = new Object[size];
+            int i = 0;
+            for (Entry<Integer, Object> e : values.entrySet()) {
+                names[i] = e.getKey();
+                objects[i] = e.getValue();
+                ++i;
+            }
+            return TableTools.newTable(DEFINITION, ATTRIBUTES,
+                    TableTools.intCol("info_name", names),
+                    new ColumnHolder<>("value", Object.class, null, false, objects));
+        }
+
+        @Override
+        Ticket ticket(CommandGetSqlInfo command) {
+            return FlightSqlTicketHelper.ticketCreator().visit(command);
+        }
+
+        @Override
+        ByteString schemaBytes(CommandGetSqlInfo command) {
+            return SCHEMA_BYTES;
+        }
+
+        @Override
+        Table table(CommandGetSqlInfo command) {
+            final int count = command.getInfoCount();
+            if (count == 0) {
+                return TABLE;
+            }
+            final Map<Integer, Object> values = new LinkedHashMap<>(count);
+            for (int i = 0; i < count; i++) {
+                final int infoName = command.getInfo(i);
+                values.put(infoName, VALUES.get(infoName));
+            }
+            return sqlInfo(values);
         }
     }
 
