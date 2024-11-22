@@ -11,7 +11,7 @@ import org.apache.iceberg.Schema;
 public interface SchemaProvider {
 
     // Static factory methods for creating SchemaProvider instances
-    static SchemaProvider current() {
+    static SchemaProvider fromCurrent() {
         return new SchemaProviderInternal.CurrentSchemaProvider();
     }
 

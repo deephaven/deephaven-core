@@ -36,11 +36,11 @@ public abstract class TableWriterOptions {
      * <p>
      * Users can specify how to extract the schema in multiple ways (by schema ID, snapshot ID, etc.).
      * <p>
-     * Defaults to {@link SchemaProvider#current()}, which means use the current schema from the table.
+     * Defaults to {@link SchemaProvider#fromCurrent()}, which means use the current schema from the table.
      */
     @Value.Default
     public SchemaProvider schemaProvider() {
-        return SchemaProvider.current();
+        return SchemaProvider.fromCurrent();
     }
 
     /**

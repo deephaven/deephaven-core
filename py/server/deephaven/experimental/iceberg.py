@@ -38,7 +38,8 @@ _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
 
 class IcebergUpdateMode(JObjectWrapper):
     """
-    IcebergUpdateMode specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes are:
+    :class:`.IcebergUpdateMode` specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes
+    are:
 
     - :py:func:`static() <IcebergUpdateMode.static>`: The table is loaded once and does not change
     - :py:func:`manual_refresh() <IcebergUpdateMode.manual_refresh>`: The table can be manually refreshed by the user.
@@ -85,9 +86,9 @@ class IcebergUpdateMode(JObjectWrapper):
 
 class IcebergReadInstructions(JObjectWrapper):
     """
-    IcebergReadInstructions specifies the instructions for reading an Iceberg table into Deephaven. These include column
-    rename instructions and table definitions, as well as special data instructions for loading data files from the
-    cloud.
+    :class:`.IcebergReadInstructions` specifies the instructions for reading an Iceberg table into Deephaven. These
+    include column rename instructions and table definitions, as well as special data instructions for loading data
+    files from the cloud.
     """
 
     j_object_type = _JIcebergReadInstructions
@@ -202,19 +203,19 @@ class IcebergWriteInstructions(JObjectWrapper):
 
 class SchemaProvider(JObjectWrapper):
     """
-    Used for extracting the schema from an Iceberg table. Users can specify multiple ways to do so, for example, by
-    schema ID, snapshot ID, current schema, etc. This can be useful for passing a schema when writing to an Iceberg
-    table.
+    :class:`.SchemaProvider` is used to extract the schema from an Iceberg table. Users can specify multiple ways to do
+    so, for example, by schema ID, snapshot ID, current schema, etc. This can be useful for passing a schema when
+    writing to an Iceberg table.
     """
 
     j_object_type = _JSchemaProvider
 
     def __init__(self, _j_object: jpy.JType):
         """
-        Initializes the SchemaProvider object.
+        Initializes the :class:`.SchemaProvider` object.
 
         Args:
-            _j_object (SchemaProvider): the Java SchemaProvider object.
+            _j_object (SchemaProvider): the Java :class:`.SchemaProvider` object.
         """
         self._j_object = _j_object
 
@@ -223,14 +224,14 @@ class SchemaProvider(JObjectWrapper):
         return self._j_object
 
     @classmethod
-    def current(cls) -> 'SchemaProvider':
+    def from_current(cls) -> 'SchemaProvider':
         """
         Used for extracting the current schema from the table.
 
         Returns:
             the SchemaProvider object.
         """
-        return cls(_JSchemaProvider.current())
+        return cls(_JSchemaProvider.fromCurrent())
 
     @classmethod
     def from_schema_id(cls, schema_id: int) -> 'SchemaProvider':
@@ -241,7 +242,7 @@ class SchemaProvider(JObjectWrapper):
             schema_id (int): the schema id to use.
 
         Returns:
-            the SchemaProvider object.
+            the :class:`.SchemaProvider` object.
         """
         return cls(_JSchemaProvider.fromSchemaId(schema_id))
 
@@ -254,7 +255,7 @@ class SchemaProvider(JObjectWrapper):
             snapshot_id (int): the snapshot id to use.
 
         Returns:
-            the SchemaProvider object.
+            the :class:`.SchemaProvider` object.
         """
         return cls(_JSchemaProvider.fromSnapshotId(snapshot_id))
 
@@ -356,8 +357,8 @@ class TableParquetWriterOptions(JObjectWrapper):
 
 class IcebergTable(Table):
     """
-    IcebergTable is a subclass of Table that allows users to dynamically update the table with new snapshots from
-    the Iceberg catalog.
+    :class:`.IcebergTable` is a subclass of Table that allows users to dynamically update the table with new snapshots
+    from the Iceberg catalog.
     """
     j_object_type = _JIcebergTable
 
@@ -396,8 +397,8 @@ class IcebergTable(Table):
 class IcebergTableWriter(JObjectWrapper):
     """
     :class:`.IcebergTableWriter` is responsible for writing Deephaven tables to an Iceberg table. Each
-    :class:`.IcebergTableWriter` instance associated with a single IcebergTableAdapter and can be used to write multiple
-    Deephaven tables to this Iceberg table.
+    :class:`.IcebergTableWriter` instance associated with a single :class:`.IcebergTableAdapter` and can be used to
+    write multiple Deephaven tables to this Iceberg table.
     """
     j_object_type = _JIcebergTableWriter or type(None)
 
@@ -425,8 +426,8 @@ class IcebergTableWriter(JObjectWrapper):
 
 class IcebergTableAdapter(JObjectWrapper):
     """
-    IcebergTableAdapter provides an interface for interacting with Iceberg tables. It allows the user to list snapshots,
-    retrieve table definitions and reading Iceberg tables into Deephaven tables.
+    :class:`.IcebergTableAdapter` provides an interface for interacting with Iceberg tables. It allows the user to list
+    snapshots, retrieve table definitions and reading Iceberg tables into Deephaven tables.
     """
     j_object_type = _JIcebergTableAdapter or type(None)
 
@@ -506,8 +507,8 @@ class IcebergTableAdapter(JObjectWrapper):
 
 class IcebergCatalogAdapter(JObjectWrapper):
     """
-    IcebergCatalogAdapter provides an interface for interacting with Iceberg catalogs. It allows listing namespaces,
-    tables and snapshots, as well as reading Iceberg tables into Deephaven tables.
+    :class:`.IcebergCatalogAdapter` provides an interface for interacting with Iceberg catalogs. It allows listing
+    namespaces, tables and snapshots, as well as reading Iceberg tables into Deephaven tables.
     """
     j_object_type = _JIcebergCatalogAdapter or type(None)
 
@@ -567,7 +568,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
             table_definition (TableDefinitionLike): the table definition of the new table.
 
         Returns:
-            IcebergTableAdapter: the table adapter for the new Iceberg table.
+            :class:`.IcebergTableAdapter`: the table adapter for the new Iceberg table.
         """
 
         return IcebergTableAdapter(self.j_object.createTable(table_identifier,
@@ -607,7 +608,7 @@ def adapter_s3_rest(
             need to set this; it is most useful when connecting to non-AWS, S3-compatible APIs.
 
     Returns:
-        IcebergCatalogAdapter: the catalog adapter for the provided S3 REST catalog.
+        :class:`.IcebergCatalogAdapter`: the catalog adapter for the provided S3 REST catalog.
 
     Raises:
         DHError: If unable to build the catalog adapter.
@@ -645,7 +646,7 @@ def adapter_aws_glue(
             catalog URI.
 
     Returns:
-        IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
+        :class:`.IcebergCatalogAdapter`: the catalog adapter for the provided AWS Glue catalog.
 
     Raises:
         DHError: If unable to build the catalog adapter.
@@ -741,7 +742,7 @@ def adapter(
         hadoop_config (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
         s3_instructions (Optional[s3.S3Instructions]): the S3 instructions if applicable
     Returns:
-        IcebergCatalogAdapter: the catalog adapter created from the provided properties
+        :class:`.IcebergCatalogAdapter`: the catalog adapter created from the provided properties
 
     Raises:
         DHError: If unable to build the catalog adapter
