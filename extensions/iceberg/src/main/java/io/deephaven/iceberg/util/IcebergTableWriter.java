@@ -5,19 +5,25 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.iceberg.util.SchemaProviderInternal.SchemaProviderImpl;
+import io.deephaven.util.SafeCloseable;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.HasTableOperations;
 import org.apache.iceberg.PartitionData;
+import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.TableMetadata;
@@ -28,17 +34,22 @@ import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.mapping.MappedField;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
+import org.apache.iceberg.types.Conversions;
+import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
-import static io.deephaven.iceberg.base.IcebergUtils.partitionDataFromPaths;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 
@@ -58,9 +69,6 @@ public class IcebergTableWriter {
      */
     private final org.apache.iceberg.Table table;
 
-    @Nullable
-    private final TableMetadata tableMetadata;
-
     /**
      * The table definition used for all writes by this writer instance.
      */
@@ -78,28 +86,21 @@ public class IcebergTableWriter {
     private final Map<Integer, String> fieldIdToColumnName;
 
     /**
-     * Initialized lazily from the {@value TableProperties#DEFAULT_NAME_MAPPING} property in the table metadata, if
-     * needed.
-     */
-    @Nullable
-    private Map<String, Integer> nameMappingDefault;
-
-    /**
      * The factory to create new output file locations for writing data files.
      */
     private final OutputFileFactory outputFileFactory;
+
+    /**
+     * Characters to be used for generating random variable names of length {@link #VARIABLE_NAME_LENGTH}.
+     */
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    private static final int VARIABLE_NAME_LENGTH = 6;
 
     IcebergTableWriter(
             final TableWriterOptions tableWriterOptions,
             final IcebergTableAdapter tableAdapter) {
         this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
-
-        if (table instanceof HasTableOperations) {
-            tableMetadata = ((HasTableOperations) table).operations().current();
-        } else {
-            tableMetadata = null;
-        }
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
         verifyRequiredFields(table.schema(), tableDefinition);
@@ -111,7 +112,7 @@ public class IcebergTableWriter {
         // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
         // provided by the user.
         this.fieldIdToColumnName = new HashMap<>(tableWriterOptions.fieldIdToColumnName());
-        addFieldIdsForAllColumns(tableWriterOptions);
+        addFieldIdsForAllColumns();
 
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
@@ -147,8 +148,9 @@ public class IcebergTableWriter {
      * Populate the {@link #fieldIdToColumnName} map for all the columns in the {@link #tableDefinition} and do
      * additional checks to ensure that the table definition is compatible with schema provided by user.
      */
-    private void addFieldIdsForAllColumns(final TableWriterOptions tableWriterOptions) {
+    private void addFieldIdsForAllColumns() {
         final Map<String, Integer> dhColumnNameToFieldId = tableWriterOptions.dhColumnNameToFieldId();
+        Map<String, Integer> nameMappingDefault = null; // Lazily initialized
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             final String columnName = columnDefinition.getName();
 
@@ -162,7 +164,10 @@ public class IcebergTableWriter {
             Types.NestedField nestedField;
 
             // Check in the schema.name_mapping.default map
-            fieldId = lazyNameMappingDefault().get(columnName);
+            if (nameMappingDefault == null) {
+                nameMappingDefault = readNameMappingDefault();
+            }
+            fieldId = nameMappingDefault.get(columnName);
             if (fieldId != null) {
                 nestedField = userSchema.findField(fieldId);
                 if (nestedField == null) {
@@ -195,19 +200,20 @@ public class IcebergTableWriter {
      * <p>
      * Return an empty map if the table metadata is null or the mapping is not present in the table metadata.
      */
-    private Map<String, Integer> lazyNameMappingDefault() {
-        if (nameMappingDefault != null) {
-            return nameMappingDefault;
-        }
-        if (tableMetadata == null) {
-            return nameMappingDefault = Map.of();
+    private Map<String, Integer> readNameMappingDefault() {
+        final TableMetadata tableMetadata;
+        if (table instanceof HasTableOperations) {
+            tableMetadata = ((HasTableOperations) table).operations().current();
+        } else {
+            // TableMetadata is not available, so nothing to add to the map
+            return Map.of();
         }
         final String nameMappingJson = tableMetadata.property(TableProperties.DEFAULT_NAME_MAPPING, null);
         if (nameMappingJson == null) {
-            return nameMappingDefault = Map.of();
+            return Map.of();
         }
         // Iterate over all mapped fields and build a reverse map from column name to field ID
-        nameMappingDefault = new HashMap<>();
+        final Map<String, Integer> nameMappingDefault = new HashMap<>();
         final NameMapping nameMapping = NameMappingParser.fromJson(nameMappingJson);
         for (final MappedField field : nameMapping.asMappedFields().fields()) {
             final Integer fieldId = field.id();
@@ -241,11 +247,17 @@ public class IcebergTableWriter {
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(table, partitionPaths);
-        final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(table.spec(), partitionPaths);
-        final List<PartitionData> partitionData = ret.getFirst();
-        final List<String[]> dhTableUpdateStrings = ret.getSecond();
-        final List<CompletedParquetWrite> parquetFileInfo =
-                writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+        final List<PartitionData> partitionData;
+        final List<CompletedParquetWrite> parquetFileInfo;
+        // Start a new query scope to avoid polluting the existing query scope with new parameters added for
+        // partitioning columns
+        try (final SafeCloseable _ignore =
+                ExecutionContext.getContext().withQueryScope(new StandaloneQueryScope()).open()) {
+            final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(table.spec(), partitionPaths);
+            partitionData = ret.getFirst();
+            final List<String[]> dhTableUpdateStrings = ret.getSecond();
+            parquetFileInfo = writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
+        }
         return dataFilesFromParquet(parquetFileInfo, partitionData);
     }
 
@@ -260,6 +272,123 @@ public class IcebergTableWriter {
         }
     }
 
+    /**
+     * Creates a list of {@link PartitionData} and corresponding update strings for Deephaven tables from partition
+     * paths and spec. Also, validates that the partition paths are compatible with the provided partition spec.
+     *
+     * @param partitionSpec The partition spec to use for validation.
+     * @param partitionPaths The list of partition paths to process.
+     * @return A pair containing a list of PartitionData objects and a list of update strings for Deephaven tables.
+     * @throws IllegalArgumentException if the partition paths are not compatible with the partition spec.
+     */
+    private static Pair<List<PartitionData>, List<String[]>> partitionDataFromPaths(
+            final PartitionSpec partitionSpec,
+            final Collection<String> partitionPaths) {
+        final List<PartitionData> partitionDataList = new ArrayList<>(partitionPaths.size());
+        final List<String[]> dhTableUpdateStringList = new ArrayList<>(partitionPaths.size());
+        final int numPartitioningFields = partitionSpec.fields().size();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        for (final String partitionPath : partitionPaths) {
+            final String[] dhTableUpdateString = new String[numPartitioningFields];
+            try {
+                final String[] partitions = partitionPath.split("/", -1);
+                if (partitions.length != numPartitioningFields) {
+                    throw new IllegalArgumentException("Expecting " + numPartitioningFields + " number of fields, " +
+                            "found " + partitions.length);
+                }
+                final PartitionData partitionData = new PartitionData(partitionSpec.partitionType());
+                for (int colIdx = 0; colIdx < partitions.length; colIdx += 1) {
+                    final String[] parts = partitions[colIdx].split("=", 2);
+                    if (parts.length != 2) {
+                        throw new IllegalArgumentException("Expecting key=value format, found " + partitions[colIdx]);
+                    }
+                    final PartitionField field = partitionSpec.fields().get(colIdx);
+                    if (!field.name().equals(parts[0])) {
+                        throw new IllegalArgumentException("Expecting field name " + field.name() + " at idx " +
+                                colIdx + ", found " + parts[0]);
+                    }
+                    final Type type = partitionData.getType(colIdx);
+                    dhTableUpdateString[colIdx] = getTableUpdateString(field.name(), type, parts[1], queryScope);
+                    partitionData.set(colIdx, Conversions.fromPartitionString(partitionData.getType(colIdx), parts[1]));
+                }
+            } catch (final Exception e) {
+                throw new IllegalArgumentException("Failed to parse partition path: " + partitionPath + " using" +
+                        " partition spec " + partitionSpec, e);
+            }
+            dhTableUpdateStringList.add(dhTableUpdateString);
+            partitionDataList.add(DataFiles.data(partitionSpec, partitionPath));
+        }
+        return new Pair<>(partitionDataList, dhTableUpdateStringList);
+    }
+
+    /**
+     * This method would convert a partitioning column info to a string which can be used in
+     * {@link io.deephaven.engine.table.Table#updateView(Collection) Table#updateView} method. For example, if the
+     * partitioning column of name "partitioningColumnName" if of type {@link Types.TimestampType} and the value is
+     * "2021-01-01T00:00:00Z", then this method would:
+     * <ul>
+     * <li>Add a new parameter to the query scope with a random name and value as {@link Instant} parsed from the string
+     * "2021-01-01T00:00:00Z"</li>
+     * <li>Return the string "partitioningColumnName = randomName"</li>
+     * </ul>
+     *
+     * @param colName The name of the partitioning column
+     * @param colType The type of the partitioning column
+     * @param value The value of the partitioning column
+     * @param queryScope The query scope to add the parameter to
+     */
+    private static String getTableUpdateString(
+            @NotNull final String colName,
+            @NotNull final Type colType,
+            @NotNull final String value,
+            @NotNull final QueryScope queryScope) {
+        // Randomly generated name to be added to the query scope for each value to avoid repeated casts
+        // TODO(deephaven-core#6418): Find a better way to handle these table updates instead of using query scope
+        final String paramName = generateRandomAlphabetString(VARIABLE_NAME_LENGTH);
+        final Type.TypeID typeId = colType.typeId();
+        if (typeId == Type.TypeID.BOOLEAN) {
+            queryScope.putParam(paramName, Boolean.parseBoolean(value));
+        } else if (typeId == Type.TypeID.DOUBLE) {
+            queryScope.putParam(paramName, Double.parseDouble(value));
+        } else if (typeId == Type.TypeID.FLOAT) {
+            queryScope.putParam(paramName, Float.parseFloat(value));
+        } else if (typeId == Type.TypeID.INTEGER) {
+            queryScope.putParam(paramName, Integer.parseInt(value));
+        } else if (typeId == Type.TypeID.LONG) {
+            queryScope.putParam(paramName, Long.parseLong(value));
+        } else if (typeId == Type.TypeID.STRING) {
+            queryScope.putParam(paramName, value);
+        } else if (typeId == Type.TypeID.TIMESTAMP) {
+            final Types.TimestampType timestampType = (Types.TimestampType) colType;
+            if (timestampType == Types.TimestampType.withZone()) {
+                queryScope.putParam(paramName, Instant.parse(value));
+            } else {
+                queryScope.putParam(paramName, LocalDateTime.parse(value));
+            }
+        } else if (typeId == Type.TypeID.DATE) {
+            queryScope.putParam(paramName, LocalDate.parse(value));
+        } else if (typeId == Type.TypeID.TIME) {
+            queryScope.putParam(paramName, LocalTime.parse(value));
+        } else {
+            // TODO (deephaven-core#6327) Add support for more types like ZonedDateTime, Big Decimals
+            throw new TableDataException("Unsupported partitioning column type " + typeId.name());
+        }
+        return colName + " = " + paramName;
+    }
+
+    /**
+     * Generate a random string of length {@code length} using just alphabets.
+     */
+    private static String generateRandomAlphabetString(final int length) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        final Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            final int index = random.nextInt(CHARACTERS.length());
+            stringBuilder.append(CHARACTERS.charAt(index));
+        }
+        return stringBuilder.toString();
+    }
+
     @NotNull
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
@@ -272,6 +401,9 @@ public class IcebergTableWriter {
                     partitionDataList.size(), "partitionDataList.size()");
             Require.eq(dhTables.size(), "dhTables.size()",
                     dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
+        } else {
+            Require.eqZero(partitionDataList.size(), "partitionDataList.size()");
+            Require.eqZero(dhTableUpdateStrings.size(), "dhTableUpdateStrings.size()");
         }
 
         // Build the parquet instructions

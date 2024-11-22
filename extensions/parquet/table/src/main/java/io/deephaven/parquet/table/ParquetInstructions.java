@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -203,8 +202,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     /**
      * @return A callback to be executed when on completing each parquet data file write (excluding the index and
-     *         metadata files). This callback gets invoked by the writing thread in a linear fashion. The consumer is
-     *         responsible for thread safety.
+     *         metadata files). This callback gets invoked by the writing thread in a linear fashion.
      */
     public abstract Optional<OnWriteCompleted> onWriteCompleted();
 
@@ -711,7 +709,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
         private OnWriteCompleted onWriteCompleted;
-        private TIntObjectHashMap<String> usedFieldIdToColumn;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder

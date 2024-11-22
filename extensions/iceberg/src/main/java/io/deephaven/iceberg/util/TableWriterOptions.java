@@ -34,9 +34,9 @@ public abstract class TableWriterOptions {
      * {@link #fieldIdToColumnName()} to map Deephaven columns from {@link #tableDefinition()} to Iceberg columns. If
      * {@link #fieldIdToColumnName()} is not provided, the mapping is done by column name.
      * <p>
-     * Users can specify how to extract the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
+     * Users can specify how to extract the schema in multiple ways (by schema ID, snapshot ID, etc.).
      * <p>
-     * If not provided, we use the current schema from the table.
+     * Defaults to {@link SchemaProvider#current()}, which means use the current schema from the table.
      */
     @Value.Default
     public SchemaProvider schemaProvider() {

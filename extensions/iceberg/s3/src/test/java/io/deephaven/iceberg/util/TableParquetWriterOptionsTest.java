@@ -25,7 +25,7 @@ class TableParquetWriterOptionsTest {
     @Test
     void defaults() {
         final TableParquetWriterOptions instructions = instructions().build();
-        assertThat(instructions.dataInstructions().isEmpty()).isTrue();
+        assertThat(instructions.dataInstructions()).isEmpty();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);

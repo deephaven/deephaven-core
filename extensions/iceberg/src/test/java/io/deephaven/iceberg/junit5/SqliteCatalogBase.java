@@ -399,6 +399,16 @@ public abstract class SqliteCatalogBase {
             assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
+        try {
+            final IcebergTableWriter badWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.ofDouble("doubleCol")))
+                    .build());
+            failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
+        } catch (IllegalArgumentException e) {
+            // Exception expected because "doubleCol" is not present in the table
+            assertThat(e).hasMessageContaining("Column doubleCol not found in the schema");
+        }
+
         // Make sure existing good data is not deleted
         assertThat(catalogAdapter.listNamespaces()).contains(myNamespace);
         assertThat(catalogAdapter.listTables(myNamespace)).containsExactly(tableIdentifier);

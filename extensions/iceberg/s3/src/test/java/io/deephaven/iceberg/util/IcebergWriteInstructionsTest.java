@@ -8,7 +8,7 @@ import io.deephaven.engine.util.TableTools;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class IcebergWriteInstructionsTest {
 
@@ -20,9 +20,9 @@ class IcebergWriteInstructionsTest {
                 .addTables(table1)
                 .addTables(table2)
                 .build();
-        assertThat(instructions.tables().size()).isEqualTo(2);
-        assertThat(instructions.tables().contains(table1)).isTrue();
-        assertThat(instructions.tables().contains(table2)).isTrue();
+        assertThat(instructions.tables()).hasSize(2);
+        assertThat(instructions.tables()).contains(table1);
+        assertThat(instructions.tables()).contains(table2);
     }
 
     @Test
@@ -44,8 +44,8 @@ class IcebergWriteInstructionsTest {
                 .addTables(table1, table2)
                 .addPartitionPaths(pp1, pp2)
                 .build();
-        assertThat(instructions.partitionPaths().size()).isEqualTo(2);
-        assertThat(instructions.partitionPaths().contains(pp1)).isTrue();
-        assertThat(instructions.partitionPaths().contains(pp2)).isTrue();
+        assertThat(instructions.partitionPaths()).hasSize(2);
+        assertThat(instructions.partitionPaths()).contains(pp1);
+        assertThat(instructions.partitionPaths()).contains(pp2);
     }
 }
