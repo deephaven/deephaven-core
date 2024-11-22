@@ -79,11 +79,10 @@ public class IcebergTableWriter {
     private final TableDefinition tableDefinition;
 
     /**
-     * The column definitions for non-partitioning columns. All tables written by this writer are expected to have these
-     * columns. The partitioning column values will be provided separately by the user via
-     * {@link IcebergWriteInstructions}.
+     * The table definition consisting of non-partitioning columns from {@link #tableDefinition}. All tables written by
+     * this writer are expected to have a compatible definition with this.
      */
-    private final List<ColumnDefinition<?>> nonPartitioningColumns;
+    private final TableDefinition nonPartitioningTableDefinition;
 
     /**
      * The schema to use when in conjunction with the {@link #fieldIdToColumnName} to map Deephaven columns from
@@ -116,7 +115,7 @@ public class IcebergTableWriter {
         this.tableSpec = table.spec();
 
         this.tableDefinition = tableWriterOptions.tableDefinition();
-        this.nonPartitioningColumns = nonPartitioningColumnDefinitions(tableDefinition);
+        this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
         verifyRequiredFields(table.schema(), tableDefinition);
         verifyPartitioningColumns(tableSpec, tableDefinition);
 
@@ -148,15 +147,15 @@ public class IcebergTableWriter {
      * Return a {@link TableDefinition} which contains only the non-partitioning columns from the provided table
      * definition.
      */
-    private static List<ColumnDefinition<?>> nonPartitioningColumnDefinitions(
+    private static TableDefinition nonPartitioningTableDefinition(
             @NotNull final TableDefinition tableDefinition) {
-        final List<ColumnDefinition<?>> nonPartitioningColumns = new ArrayList<>();
+        final Collection<ColumnDefinition<?>> nonPartitioningColumns = new ArrayList<>();
         for (final ColumnDefinition<?> columnDefinition : tableDefinition.getColumns()) {
             if (!columnDefinition.isPartitioning()) {
                 nonPartitioningColumns.add(columnDefinition);
             }
         }
-        return nonPartitioningColumns;
+        return TableDefinition.of(nonPartitioningColumns);
     }
 
     /**
@@ -274,7 +273,7 @@ public class IcebergTableWriter {
      * @param writeInstructions The instructions for customizations while writing.
      */
     public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        verifyTableDefinition(writeInstructions.tables(), nonPartitioningColumns);
+        verifyCompatible(writeInstructions.tables(), nonPartitioningTableDefinition);
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(tableSpec, partitionPaths);
         final List<PartitionData> partitionData;
@@ -292,18 +291,13 @@ public class IcebergTableWriter {
     }
 
     /**
-     * Verify that all the tables have the same column definitions definition as expected.
+     * Verify that all the tables are compatible with the provided table definition.
      */
-    private static void verifyTableDefinition(
+    private static void verifyCompatible(
             @NotNull final Iterable<Table> tables,
-            @NotNull final List<ColumnDefinition<?>> expectedColumnDefinitions) {
+            @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
-            final List<ColumnDefinition<?>> actualColumnDefinitions = table.getDefinition().getColumns();
-            if (!actualColumnDefinitions.equals(expectedColumnDefinitions)) {
-                throw new IllegalArgumentException("Table definition mismatch, all tables written by this writer " +
-                        "are expected to have columns with definition: " + expectedColumnDefinitions +
-                        ", found: " + actualColumnDefinitions);
-            }
+            expectedDefinition.checkMutualCompatibility(table.getDefinition());
         }
     }
 

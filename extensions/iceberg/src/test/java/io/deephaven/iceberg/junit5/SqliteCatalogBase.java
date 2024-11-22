@@ -278,7 +278,7 @@ public abstract class SqliteCatalogBase {
                     .addTables(appendTable)
                     .build());
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
-        } catch (IllegalArgumentException e) {
+        } catch (TableDefinition.IncompatibleTableDefinitionException e) {
             // Table definition mismatch between table writer and append table
             assertThat(e).hasMessageContaining("Table definition");
         }
