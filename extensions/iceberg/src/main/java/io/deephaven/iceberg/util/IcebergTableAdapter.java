@@ -27,7 +27,6 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.iceberg.DataFile;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -251,13 +250,13 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergBaseInstructions}, or {@code null}
-     * if no {@link IcebergBaseInstructions#snapshot() snapshot} or {@link IcebergBaseInstructions#snapshotId()
+     * Retrieves the appropriate {@link Snapshot} based on the provided {@link IcebergReadInstructions}, or {@code null}
+     * if no {@link IcebergReadInstructions#snapshot() snapshot} or {@link IcebergReadInstructions#snapshotId()
      * snapshotId} is provided.
      */
     @InternalUseOnly
     @Nullable
-    public Snapshot getSnapshot(@NotNull final IcebergBaseInstructions readInstructions) {
+    public Snapshot getSnapshot(@NotNull final IcebergReadInstructions readInstructions) {
         if (readInstructions.snapshot().isPresent()) {
             return readInstructions.snapshot().get();
         } else if (readInstructions.snapshotId().isPresent()) {
@@ -574,57 +573,17 @@ public class IcebergTableAdapter {
         return tableDef;
     }
 
-
     /**
      * Create a new {@link IcebergTableWriter} for this Iceberg table using the provided {@link TableWriterOptions}.
      * <p>
      * This method will perform schema validation to ensure that the provided
      * {@link TableWriterOptions#tableDefinition()} is compatible with the Iceberg table schema. All further writes
-     * performed by the returned writer will not be validated against the table's schema, and thus would be faster.
-     * <p>
-     * Creating an {@link IcebergTableWriter} is the recommended approach if users want to write to the same iceberg
-     * table multiple times.
+     * performed by the returned writer will not be validated against the table's schema, and thus will be faster.
      *
      * @param tableWriterOptions The options to configure the table writer.
      * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
     public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
         return new IcebergTableWriter(tableWriterOptions, this);
-    }
-
-    /**
-     * Append the provided Deephaven {@link IcebergWriteInstructions#tables()} as new partitions to the existing Iceberg
-     * table in a single snapshot. This will not change the schema of the existing table.
-     * <p>
-     * This method will create a new {@link IcebergTableWriter} with the provided
-     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
-     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
-     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
-     *
-     * @param writeInstructions The instructions for customizations while writing.
-     */
-    public void append(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
-        final IcebergTableWriter newWriter =
-                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        newWriter.append(writeInstructions);
-    }
-
-    /**
-     * Writes data from Deephaven tables to an Iceberg table without creating a new snapshot. This method returns a list
-     * of data files that were written. Users can use this list to create a transaction/snapshot if needed.
-     * <p>
-     * This method will create a new {@link IcebergTableWriter} with the provided
-     * {@link IcebergWriteInstructions#tableDefinition()} and will use that writer to write the data to the table.
-     * Therefore, this method is not recommended if users want to write to the table multiple times. Instead, users
-     * should create a single {@link IcebergTableWriter} and use it to write multiple times.
-     *
-     * @param writeInstructions The instructions for customizations while writing.
-     */
-    public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
-        final TableDefinition userDefinition = writeInstructions.tableDefinitionOrFirst();
-        final IcebergTableWriter newWriter =
-                new IcebergTableWriter(TableWriterOptions.builder().tableDefinition(userDefinition).build(), this);
-        return newWriter.writeDataFiles(writeInstructions);
     }
 }

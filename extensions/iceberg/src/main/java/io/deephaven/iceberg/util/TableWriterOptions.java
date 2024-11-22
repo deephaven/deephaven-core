@@ -3,7 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.Schema;
 import org.immutables.value.Value;
@@ -12,10 +11,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-@Value.Immutable
-@BuildableStyle
 public abstract class TableWriterOptions {
 
     /**
@@ -24,6 +22,12 @@ public abstract class TableWriterOptions {
      * values.
      */
     public abstract TableDefinition tableDefinition();
+
+    /**
+     * The data instructions to use for reading/writing the Iceberg data files (might be S3Instructions or other cloud
+     * provider-specific instructions).
+     */
+    public abstract Optional<Object> dataInstructions();
 
     /**
      * Used to extract a {@link Schema} from a table. That schema will be used in conjunction with the
@@ -57,20 +61,18 @@ public abstract class TableWriterOptions {
         return reversedMap;
     }
 
-    public static Builder builder() {
-        return ImmutableTableWriterOptions.builder();
-    }
+    // @formatter:off
+    interface Builder<INSTRUCTIONS_BUILDER extends TableWriterOptions.Builder<INSTRUCTIONS_BUILDER>> {
+        // @formatter:on
+        INSTRUCTIONS_BUILDER tableDefinition(TableDefinition tableDefinition);
 
-    public interface Builder {
-        Builder tableDefinition(TableDefinition tableDefinition);
+        INSTRUCTIONS_BUILDER dataInstructions(Object s3Instructions);
 
-        Builder schemaProvider(SchemaProvider schemaProvider);
+        INSTRUCTIONS_BUILDER schemaProvider(SchemaProvider schemaProvider);
 
-        Builder putFieldIdToColumnName(int value, String key);
+        INSTRUCTIONS_BUILDER putFieldIdToColumnName(int value, String key);
 
-        Builder putAllFieldIdToColumnName(Map<Integer, ? extends String> entries);
-
-        TableWriterOptions build();
+        INSTRUCTIONS_BUILDER putAllFieldIdToColumnName(Map<Integer, ? extends String> entries);
     }
 
     /**

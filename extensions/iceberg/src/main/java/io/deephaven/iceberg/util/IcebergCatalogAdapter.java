@@ -266,6 +266,23 @@ public class IcebergCatalogAdapter {
      * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
      * partition spec for the table.
      *
+     * @param tableIdentifier The identifier string of the new table.
+     * @param definition The {@link TableDefinition} of the new table.
+     * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.
+     * @throws AlreadyExistsException if the table already exists
+     */
+    public IcebergTableAdapter createTable(
+            @NotNull final String tableIdentifier,
+            @NotNull final TableDefinition definition) {
+        return createTable(TableIdentifier.parse(tableIdentifier), definition);
+    }
+
+    /**
+     * Create a new Iceberg table in the catalog with the given table identifier and definition.
+     * <p>
+     * All columns of type {@link ColumnDefinition.ColumnType#Partitioning partitioning} will be used to create the
+     * partition spec for the table.
+     *
      * @param tableIdentifier The identifier of the new table.
      * @param definition The {@link TableDefinition} of the new table.
      * @return The {@link IcebergTableAdapter table adapter} for the new Iceberg table.

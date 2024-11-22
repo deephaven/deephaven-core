@@ -16,9 +16,9 @@ from deephaven.jcompat import j_hashmap
 
 _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergReadInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergReadInstructions")
-_JIcebergParquetWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergParquetWriteInstructions")
+_JIcebergWriteInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergWriteInstructions")
 _JSchemaProvider = jpy.get_type("io.deephaven.iceberg.util.SchemaProvider")
-_JTableWriterOptions = jpy.get_type("io.deephaven.iceberg.util.TableWriterOptions")
+_JTableParquetWriterOptions = jpy.get_type("io.deephaven.iceberg.util.TableParquetWriterOptions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
 _JIcebergTableWriter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
@@ -38,7 +38,7 @@ _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
 
 class IcebergUpdateMode(JObjectWrapper):
     """
-    This class specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes are:
+    IcebergUpdateMode specifies the update mode for an Iceberg table to be loaded into Deephaven. The modes are:
 
     - :py:func:`static() <IcebergUpdateMode.static>`: The table is loaded once and does not change
     - :py:func:`manual_refresh() <IcebergUpdateMode.manual_refresh>`: The table can be manually refreshed by the user.
@@ -85,8 +85,9 @@ class IcebergUpdateMode(JObjectWrapper):
 
 class IcebergReadInstructions(JObjectWrapper):
     """
-    This class specifies the instructions for reading an Iceberg table into Deephaven. These include column rename
-    instructions and table definitions, as well as special data instructions for loading data files from the cloud.
+    IcebergReadInstructions specifies the instructions for reading an Iceberg table into Deephaven. These include column
+    rename instructions and table definitions, as well as special data instructions for loading data files from the
+    cloud.
     """
 
     j_object_type = _JIcebergReadInstructions
@@ -144,23 +145,17 @@ class IcebergReadInstructions(JObjectWrapper):
         return self._j_object
 
 
-class IcebergParquetWriteInstructions(JObjectWrapper):
+class IcebergWriteInstructions(JObjectWrapper):
     """
-    This class specifies the instructions for writing Iceberg tables as Parquet data files. These include column rename
-    instructions, table definitions, special data instructions for loading data files from the cloud, etc.
+    :class:`.IcebergWriteInstructions` provides instructions intended for writing deephaven tables as partitions to Iceberg
+    tables.
     """
 
-    j_object_type = _JIcebergParquetWriteInstructions
+    j_object_type = _JIcebergWriteInstructions
 
     def __init__(self,
                  tables: Union[Table, Sequence[Table]],
-                 partition_paths: Optional[Union[str, Sequence[str]]] = None,
-                 compression_codec_name: Optional[str] = None,
-                 maximum_dictionary_keys: Optional[int] = None,
-                 maximum_dictionary_size: Optional[int] = None,
-                 target_page_size: Optional[int] = None,
-                 table_definition: Optional[TableDefinitionLike] = None,
-                 data_instructions: Optional[s3.S3Instructions] = None):
+                 partition_paths: Optional[Union[str, Sequence[str]]] = None):
         """
         Initializes the instructions using the provided parameters.
 
@@ -172,25 +167,8 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                 If writing to a partitioned iceberg table, users must provide partition path for each table in tables
                 argument in the same order.
                 Else when writing to a non-partitioned table, users should not provide any partition paths.
-                By default, the deephaven tables will be written to the root data directory of the iceberg table.
-            compression_codec_name (Optional[str]): The compression codec to use. Allowed values include "UNCOMPRESSED",
-                "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
-            maximum_dictionary_keys (Optional[int]): the maximum number of unique keys the writer should add to a
-                dictionary page before switching to non-dictionary encoding, never evaluated for non-String columns,
-                defaults to 2^20 (1,048,576)
-            maximum_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary
-                before switching to non-dictionary encoding, never evaluated for non-String columns, defaults to
-                2^20 (1,048,576)
-            target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to
-                2^20 bytes (1 MiB)
-            table_definition (Optional[TableDefinitionLike]): the TableDefinition to use when writing Iceberg data
-                files, instead of the one implied by the table being written itself. This definition can be used to skip
-                some columns or add additional columns with null values.
-                When passing this value to an IcebergTableWriter, this table definition should either:
-                - Not be provided, in which case the definition will be derived from the writer instance, or
-                - Match the writer's table definition if it is provided.
-                By default, the table definition is inferred from the deephaven tables being written, and all tables
-                must have the same definition.
+                Defaults to `None`, which means the deephaven tables will be written to the root data directory of the
+                iceberg table.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -212,24 +190,6 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
                     for partition_path in partition_paths:
                         builder.addPartitionPaths(partition_path)
 
-            if compression_codec_name:
-                builder.compressionCodecName(compression_codec_name)
-
-            if maximum_dictionary_keys:
-                builder.maximumDictionaryKeys(maximum_dictionary_keys)
-
-            if maximum_dictionary_size:
-                builder.maximumDictionarySize(maximum_dictionary_size)
-
-            if target_page_size:
-                builder.targetPageSize(target_page_size)
-
-            if table_definition:
-                builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
-
-            if data_instructions:
-                builder.dataInstructions(data_instructions.j_object)
-
             self._j_object = builder.build()
 
         except Exception as e:
@@ -242,9 +202,11 @@ class IcebergParquetWriteInstructions(JObjectWrapper):
 
 class SchemaProvider(JObjectWrapper):
     """
-    Used for extracting the schema from a table.
-    Instances of this class are used for configuring IcebergTableWriter.
+    Used for extracting the schema from an Iceberg table. Users can specify multiple ways to do so, for example, by
+    schema ID, snapshot ID, current schema, etc. This can be useful for passing a schema when writing to an Iceberg
+    table.
     """
+
     j_object_type = _JSchemaProvider
 
     def __init__(self, _j_object: jpy.JType):
@@ -284,7 +246,7 @@ class SchemaProvider(JObjectWrapper):
         return cls(_JSchemaProvider.fromSchemaId(schema_id))
 
     @classmethod
-    def from_snapshot_d(cls, snapshot_id: int) -> 'SchemaProvider':
+    def from_snapshot_id(cls, snapshot_id: int) -> 'SchemaProvider':
         """
         Used for extracting the schema from the table using the specified snapshot id.
 
@@ -307,17 +269,23 @@ class SchemaProvider(JObjectWrapper):
         return cls(_JSchemaProvider.fromCurrentSnapshot())
 
 
-class TableWriterOptions(JObjectWrapper):
+class TableParquetWriterOptions(JObjectWrapper):
     """
-    This class provides specialized instructions for configuring IcebergTableWriter objects.
+    :class:`.TableParquetWriterOptions` provides specialized instructions for configuring :class:`.IcebergTableWriter`
+    instances.
     """
 
-    j_object_type = _JTableWriterOptions
+    j_object_type = _JTableParquetWriterOptions
 
     def __init__(self,
                  table_definition: TableDefinitionLike,
                  schema_provider: Optional[SchemaProvider] = None,
-                 field_id_to_column_name: Optional[Dict[int, str]] = None):
+                 field_id_to_column_name: Optional[Dict[int, str]] = None,
+                 compression_codec_name: Optional[str] = None,
+                 maximum_dictionary_keys: Optional[int] = None,
+                 maximum_dictionary_size: Optional[int] = None,
+                 target_page_size: Optional[int] = None,
+                 data_instructions: Optional[s3.S3Instructions] = None):
         """
         Initializes the instructions using the provided parameters.
 
@@ -329,11 +297,21 @@ class TableWriterOptions(JObjectWrapper):
                 be used in conjunction with the field_id_to_column_name to map Deephaven columns from table_definition
                 to Iceberg columns.
                 Users can specify how to extract the schema in multiple ways (by ID, snapshot ID, initial schema, etc.).
-                By default, we use the current schema from the table.
+                Defaults to `None`, which means use the current schema from the table.
             field_id_to_column_name: Optional[Dict[int, str]]: A one-to-one map from Iceberg field IDs from the
                 schema_spec to Deephaven column names from the table_definition.
-                By default, we assume this dictionary is empty, and we will map Iceberg columns to Deephaven columns
-                using column names.
+                Defaults to `None`, which means map Iceberg columns to Deephaven columns using column names.
+            compression_codec_name (Optional[str]): The compression codec to use for writing the parquet file. Allowed
+                values include "UNCOMPRESSED", "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. Defaults to
+                `None`, which means use "SNAPPY".
+            maximum_dictionary_keys (Optional[int]): the maximum number of unique keys the Parquet writer should add to
+                a dictionary page before switching to non-dictionary encoding, never used for non-String columns.
+                Defaults to `None`, which means use 2^20 (1,048,576)
+            maximum_dictionary_size (Optional[int]): the maximum number of bytes the Parquet writer should add to the
+                dictionary before switching to non-dictionary encoding, never used for non-String columns. Defaults to
+                `None`, which means use 2^20 (1,048,576)
+            target_page_size (Optional[int]): the target Parquet file page size in bytes, if not specified. Defaults to
+                `None`, which means use 2^20 bytes (1 MiB)
 
         Raises:
             DHError: If unable to build the object.
@@ -350,6 +328,21 @@ class TableWriterOptions(JObjectWrapper):
             if field_id_to_column_name:
                 for field_id, column_name in field_id_to_column_name.items():
                     builder.putFieldIdToColumnName(field_id, column_name)
+
+            if compression_codec_name:
+                builder.compressionCodecName(compression_codec_name)
+
+            if maximum_dictionary_keys:
+                builder.maximumDictionaryKeys(maximum_dictionary_keys)
+
+            if maximum_dictionary_size:
+                builder.maximumDictionarySize(maximum_dictionary_size)
+
+            if target_page_size:
+                builder.targetPageSize(target_page_size)
+
+            if data_instructions:
+                builder.dataInstructions(data_instructions.j_object)
 
             self._j_object = builder.build()
 
@@ -402,23 +395,26 @@ class IcebergTable(Table):
 
 class IcebergTableWriter(JObjectWrapper):
     """
-    This class is responsible for writing Deephaven tables to an Iceberg table. Each instance of this class is
-    associated with a single IcebergTableAdapter and can be used to write multiple Deephaven tables to this Iceberg
-    table.
+    :class:`.IcebergTableWriter` is responsible for writing Deephaven tables to an Iceberg table. Each
+    :class:`.IcebergTableWriter` instance associated with a single IcebergTableAdapter and can be used to write multiple
+    Deephaven tables to this Iceberg table.
     """
     j_object_type = _JIcebergTableWriter or type(None)
 
     def __init__(self, j_object: _JIcebergTableWriter):
         self.j_table_writer = j_object
 
-    def append(self, instructions: IcebergParquetWriteInstructions):
+    def append(self, instructions: IcebergWriteInstructions):
         """
-        Append the provided Deephaven tables from the write instructions as new partitions to the existing Iceberg
-        table in a single snapshot. This method will not perform any compatibility checks between the existing schema and
-        the provided Deephaven tables.
+        Append the provided Deephaven tables as new partitions to the existing Iceberg table in a single snapshot.
+        Users can provide the tables using the :attr:`.IcebergWriteInstructions.tables` parameter and optionally provide the
+        partition paths where each table will be written using the :attr:`.IcebergWriteInstructions.partition_paths`
+        parameter.
+        This method will not perform any compatibility checks between the existing schema and the provided Deephaven
+        tables. All such checks happen at the time of creation of the :class:`.IcebergTableWriter` instance.
 
         Args:
-            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
+            instructions (IcebergWriteInstructions): the customization instructions for write.
         """
         self.j_object.append(instructions.j_object)
 
@@ -429,7 +425,7 @@ class IcebergTableWriter(JObjectWrapper):
 
 class IcebergTableAdapter(JObjectWrapper):
     """
-    This class provides an interface for interacting with Iceberg tables. It allows the user to list snapshots,
+    IcebergTableAdapter provides an interface for interacting with Iceberg tables. It allows the user to list snapshots,
     retrieve table definitions and reading Iceberg tables into Deephaven tables.
     """
     j_object_type = _JIcebergTableAdapter or type(None)
@@ -488,15 +484,12 @@ class IcebergTableAdapter(JObjectWrapper):
             return IcebergTable(self.j_object.table(instructions.j_object))
         return IcebergTable(self.j_object.table())
 
-    def table_writer(self, writer_options: TableWriterOptions):
+    def table_writer(self, writer_options: TableParquetWriterOptions) -> IcebergTableWriter:
         """
-        Create a new IcebergTableWriter for this Iceberg table using the provided TableWriterOptions.
+        Create a new :class:`.IcebergTableWriter` for this Iceberg table using the provided writer options.
         This method will perform schema validation to ensure that the provided table definition from the writer options
         is compatible with the Iceberg table schema. All further writes performed by the returned writer will not be
-        validated against the table's schema, and thus would be faster.
-
-        Creating a table writer is the recommended approach if users want to write to the same iceberg table multiple
-        times.
+        validated against the table's schema, and thus will be faster.
 
         Args:
             writer_options: The options to configure the table writer.
@@ -506,21 +499,6 @@ class IcebergTableAdapter(JObjectWrapper):
         """
         return IcebergTableWriter(self.j_object.tableWriter(writer_options.j_object))
 
-    def append(self, instructions: IcebergParquetWriteInstructions):
-        """
-        Append the provided Deephaven tables from the write instructions as new partitions to the existing Iceberg
-        table in a single snapshot. This will not change the schema of the existing table.
-
-        This method will create a new IcebergTableWriter with the provided table definition from the write instructions,
-        and use that writer to write the data to the table. Therefore, this method is not recommended if users want to
-        write to the iceberg table multiple times. Instead, users should create a single IcebergTableWriter and use it
-        to append multiple times.
-
-        Args:
-            instructions (IcebergParquetWriteInstructions): the customization instructions for write.
-        """
-        self.j_object.append(instructions.j_object)
-
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table_adapter
@@ -528,8 +506,8 @@ class IcebergTableAdapter(JObjectWrapper):
 
 class IcebergCatalogAdapter(JObjectWrapper):
     """
-    This class provides an interface for interacting with Iceberg catalogs. It allows listing namespaces, tables and
-    snapshots, as well as reading Iceberg tables into Deephaven tables.
+    IcebergCatalogAdapter provides an interface for interacting with Iceberg catalogs. It allows listing namespaces,
+    tables and snapshots, as well as reading Iceberg tables into Deephaven tables.
     """
     j_object_type = _JIcebergCatalogAdapter or type(None)
 

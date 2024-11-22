@@ -4,9 +4,7 @@
 package io.deephaven.iceberg.util;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.junit.jupiter.api.Test;
 
@@ -15,28 +13,36 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-class IcebergParquetWriteInstructionsTest {
+class TableParquetWriterOptionsTest {
 
     /**
-     * Create a new IcebergParquetWriteInstructions builder with an empty table.
+     * Create a new TableParquetWriterOptions builder with an empty table definition.
      */
-    private static IcebergParquetWriteInstructions.Builder instructions() {
-        return IcebergParquetWriteInstructions.builder().addTables(TableTools.emptyTable(0));
+    private static TableParquetWriterOptions.Builder instructions() {
+        return TableParquetWriterOptions.builder().tableDefinition(TableDefinition.of());
     }
 
     @Test
     void defaults() {
-        final IcebergParquetWriteInstructions instructions = instructions().build();
-        assertThat(instructions.tableDefinition().isEmpty()).isTrue();
+        final TableParquetWriterOptions instructions = instructions().build();
         assertThat(instructions.dataInstructions().isEmpty()).isTrue();
         assertThat(instructions.compressionCodecName()).isEqualTo("SNAPPY");
         assertThat(instructions.maximumDictionaryKeys()).isEqualTo(1048576);
         assertThat(instructions.maximumDictionarySize()).isEqualTo(1048576);
         assertThat(instructions.targetPageSize()).isEqualTo(65536);
-        assertThat(instructions.tables().isEmpty()).isFalse();
-        assertThat(instructions.partitionPaths().isEmpty()).isTrue();
-        assertThat(instructions.snapshot()).isEmpty();
-        assertThat(instructions.snapshotId()).isEmpty();
+    }
+
+    @Test
+    void testSetTableDefinition() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        assertThat(TableParquetWriterOptions.builder()
+                .tableDefinition(definition)
+                .build()
+                .tableDefinition())
+                .isEqualTo(definition);
     }
 
     @Test
@@ -114,7 +120,7 @@ class IcebergParquetWriteInstructionsTest {
 
     @Test
     void toParquetInstructionTest() {
-        final IcebergParquetWriteInstructions writeInstructions = instructions()
+        final TableParquetWriterOptions writeInstructions = instructions()
                 .compressionCodecName("GZIP")
                 .maximumDictionaryKeys(100)
                 .maximumDictionarySize(200)
@@ -137,50 +143,5 @@ class IcebergParquetWriteInstructionsTest {
         assertThat(parquetInstructions.getFieldId("field3")).hasValue(3);
         assertThat(parquetInstructions.onWriteCompleted()).isEmpty();
         assertThat(parquetInstructions.getTableDefinition()).hasValue(definition);
-    }
-
-    @Test
-    void testSetSnapshotID() {
-        final IcebergParquetWriteInstructions instructions = instructions()
-                .snapshotId(12345)
-                .build();
-        assertThat(instructions.snapshotId().getAsLong()).isEqualTo(12345);
-    }
-
-    @Test
-    void testSetDhTables() {
-        final Table table1 = TableTools.emptyTable(3);
-        final Table table2 = TableTools.emptyTable(4);
-        final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                .addTables(table1)
-                .addTables(table2)
-                .build();
-        assertThat(instructions.tables().size()).isEqualTo(2);
-        assertThat(instructions.tables().contains(table1)).isTrue();
-        assertThat(instructions.tables().contains(table2)).isTrue();
-    }
-
-    @Test
-    void testSetPartitionPaths() {
-        final Table table1 = TableTools.emptyTable(3);
-        final String pp1 = "P1C=1/PC2=2";
-        final Table table2 = TableTools.emptyTable(4);
-        final String pp2 = "P1C=2/PC2=3";
-        try {
-            final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                    .addPartitionPaths(pp1, pp2)
-                    .build();
-            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
-        } catch (final IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("Partition path must be provided for each table");
-        }
-
-        final IcebergParquetWriteInstructions instructions = IcebergParquetWriteInstructions.builder()
-                .addTables(table1, table2)
-                .addPartitionPaths(pp1, pp2)
-                .build();
-        assertThat(instructions.partitionPaths().size()).isEqualTo(2);
-        assertThat(instructions.partitionPaths().contains(pp1)).isTrue();
-        assertThat(instructions.partitionPaths().contains(pp2)).isTrue();
     }
 }

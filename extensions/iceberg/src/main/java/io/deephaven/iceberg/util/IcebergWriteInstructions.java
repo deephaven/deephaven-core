@@ -3,20 +3,26 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import org.immutables.value.Value;
+import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 
 /**
- * This class provides instructions intended for writing Iceberg tables. The default values documented in this class may
- * change in the future. As such, callers may wish to explicitly set the values.
+ * This class provides instructions intended for writing deephaven tables as partitions to Iceberg tables.
  */
-public abstract class IcebergWriteInstructions implements IcebergBaseInstructions {
+@Immutable
+@BuildableStyle
+public abstract class IcebergWriteInstructions {
+
+    public static Builder builder() {
+        return ImmutableIcebergWriteInstructions.builder();
+    }
+
     /**
-     * The Deephaven tables to be written. All tables should have the same definition, else a {@link #tableDefinition()
-     * table definition} should be provided.
+     * The Deephaven tables to be written.
      */
     public abstract List<Table> tables();
 
@@ -29,56 +35,28 @@ public abstract class IcebergWriteInstructions implements IcebergBaseInstruction
      */
     public abstract List<String> partitionPaths();
 
-    /**
-     * Returns {@link #tableDefinition()} if present, else the definition of the first table in {@link #tables()}.
-     */
-    final TableDefinition tableDefinitionOrFirst() {
-        return tableDefinition().orElse(tables().get(0).getDefinition());
-    }
-
     // @formatter:off
-    interface Builder<INSTRUCTIONS_BUILDER extends IcebergWriteInstructions.Builder<INSTRUCTIONS_BUILDER>>
-                extends IcebergBaseInstructions.Builder<INSTRUCTIONS_BUILDER> {
+    public interface Builder {
     // @formatter:on
-        INSTRUCTIONS_BUILDER addTables(Table element);
+        Builder addTables(Table element);
 
-        INSTRUCTIONS_BUILDER addTables(Table... elements);
+        Builder addTables(Table... elements);
 
-        INSTRUCTIONS_BUILDER addAllTables(Iterable<? extends Table> elements);
+        Builder addAllTables(Iterable<? extends Table> elements);
 
-        INSTRUCTIONS_BUILDER addPartitionPaths(String element);
+        Builder addPartitionPaths(String element);
 
-        INSTRUCTIONS_BUILDER addPartitionPaths(String... elements);
+        Builder addPartitionPaths(String... elements);
 
-        INSTRUCTIONS_BUILDER addAllPartitionPaths(Iterable<String> elements);
+        Builder addAllPartitionPaths(Iterable<String> elements);
+
+        IcebergWriteInstructions build();
     }
-
 
     @Value.Check
-    final void validateTables() {
-        countCheckTables();
-        verifySameDefinition();
-    }
-
     final void countCheckTables() {
         if (tables().isEmpty()) {
             throw new IllegalArgumentException("At least one table must be provided");
-        }
-    }
-
-    final void verifySameDefinition() {
-        if (tableDefinition().isEmpty()) {
-            // Verify that all tables have the same definition
-            final List<Table> tables = tables();
-            final int numTables = tables.size();
-            final TableDefinition firstDefinition = tables.get(0).getDefinition();
-            for (int idx = 1; idx < numTables; idx++) {
-                if (!firstDefinition.equals(tables.get(idx).getDefinition())) {
-                    throw new IllegalArgumentException(
-                            "All Deephaven tables must have the same definition, else table definition should be " +
-                                    "provided when writing multiple tables with different definitions");
-                }
-            }
         }
     }
 

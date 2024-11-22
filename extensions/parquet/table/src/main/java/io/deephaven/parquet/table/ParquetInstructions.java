@@ -203,7 +203,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     /**
      * @return A callback to be executed when on completing each parquet data file write (excluding the index and
-     *         metadata files).
+     *         metadata files). This callback gets invoked by the writing thread in a linear fashion. The consumer is
+     *         responsible for thread safety.
      */
     public abstract Optional<OnWriteCompleted> onWriteCompleted();
 

@@ -49,6 +49,11 @@ import static io.deephaven.iceberg.base.IcebergUtils.verifyRequiredFields;
 public class IcebergTableWriter {
 
     /**
+     * The options used to configure the behavior of this writer instance.
+     */
+    private final TableParquetWriterOptions tableWriterOptions;
+
+    /**
      * The Iceberg table which will be written to by this instance.
      */
     private final org.apache.iceberg.Table table;
@@ -84,8 +89,10 @@ public class IcebergTableWriter {
      */
     private final OutputFileFactory outputFileFactory;
 
-
-    IcebergTableWriter(final TableWriterOptions tableWriterOptions, final IcebergTableAdapter tableAdapter) {
+    IcebergTableWriter(
+            final TableWriterOptions tableWriterOptions,
+            final IcebergTableAdapter tableAdapter) {
+        this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
         this.table = tableAdapter.icebergTable();
 
         if (table instanceof HasTableOperations) {
@@ -109,6 +116,17 @@ public class IcebergTableWriter {
         outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
                 .format(FileFormat.PARQUET)
                 .build();
+    }
+
+    private static TableParquetWriterOptions verifyWriterOptions(
+            @NotNull final TableWriterOptions tableWriterOptions) {
+        // We ony support writing to Parquet files
+        if (!(tableWriterOptions instanceof TableParquetWriterOptions)) {
+            throw new IllegalArgumentException(
+                    "Unsupported options of class " + tableWriterOptions.getClass() + " for" +
+                            " writing Iceberg table, expected: " + TableParquetWriterOptions.class);
+        }
+        return (TableParquetWriterOptions) tableWriterOptions;
     }
 
     /**
@@ -218,20 +236,9 @@ public class IcebergTableWriter {
      * transaction/snapshot if needed. This method will not perform any compatibility checks between the existing schema
      * and the provided Deephaven tables.
      *
-     * @param instructions The instructions for customizations while writing.
+     * @param writeInstructions The instructions for customizations while writing.
      */
-    public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions instructions) {
-        final IcebergParquetWriteInstructions writeInstructions = verifyInstructions(instructions);
-        // Verify that the table definition matches the Iceberg table writer
-        if (writeInstructions.tableDefinition().isPresent() &&
-                !writeInstructions.tableDefinition().get().equals(tableDefinition)) {
-            throw new IllegalArgumentException(
-                    "Failed to write data to Iceberg table. The provided table definition does not match the " +
-                            "table definition of the Iceberg table writer. Table definition provided : " +
-                            writeInstructions.tableDefinition().get() + ", table definition of the Iceberg " +
-                            "table writer : " + tableDefinition);
-        }
-
+    public List<DataFile> writeDataFiles(@NotNull final IcebergWriteInstructions writeInstructions) {
         final List<String> partitionPaths = writeInstructions.partitionPaths();
         verifyPartitionPaths(table, partitionPaths);
         final Pair<List<PartitionData>, List<String[]>> ret = partitionDataFromPaths(table.spec(), partitionPaths);
@@ -240,16 +247,6 @@ public class IcebergTableWriter {
         final List<CompletedParquetWrite> parquetFileInfo =
                 writeParquet(partitionData, dhTableUpdateStrings, writeInstructions);
         return dataFilesFromParquet(parquetFileInfo, partitionData);
-    }
-
-    static IcebergParquetWriteInstructions verifyInstructions(
-            @NotNull final IcebergWriteInstructions instructions) {
-        // We ony support writing to Parquet files
-        if (!(instructions instanceof IcebergParquetWriteInstructions)) {
-            throw new IllegalArgumentException("Unsupported instructions of class " + instructions.getClass() + " for" +
-                    " writing Iceberg table, expected: " + IcebergParquetWriteInstructions.class);
-        }
-        return (IcebergParquetWriteInstructions) instructions;
     }
 
     private static void verifyPartitionPaths(
@@ -267,7 +264,7 @@ public class IcebergTableWriter {
     private List<CompletedParquetWrite> writeParquet(
             @NotNull final List<PartitionData> partitionDataList,
             @NotNull final List<String[]> dhTableUpdateStrings,
-            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
+            @NotNull final IcebergWriteInstructions writeInstructions) {
         final List<Table> dhTables = writeInstructions.tables();
         final boolean isPartitioned = table.spec().isPartitioned();
         if (isPartitioned) {
@@ -280,7 +277,7 @@ public class IcebergTableWriter {
         // Build the parquet instructions
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
-        final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(
+        final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
                 onWriteCompleted, tableDefinition, fieldIdToColumnName);
 
         // Write the data to parquet files
