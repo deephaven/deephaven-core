@@ -375,6 +375,15 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                                 + System.identityHashCode(MergedListener.this) + ": queuedNotificationStep="
                                 + lastEnqueuedStep + ", step=" + currentStep);
                     }
+                    synchronized (MergedListener.this) {
+                        if (notificationStep == lastEnqueuedStep) {
+                            // noinspection ConstantConditions
+                            throw Assert.statementNeverExecuted("Multiple notifications in the same step: listener="
+                                    + System.identityHashCode(MergedListener.this) + ", queuedNotificationStep="
+                                    + lastEnqueuedStep);
+                        }
+                        notificationStep = lastEnqueuedStep;
+                    }
                     // Retain a reference during update processing to prevent interference from concurrent destroys
                     if (!tryRetainReference()) {
                         // This listener is no longer live, there's no point to doing any work for this notification
@@ -418,15 +427,6 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 entry.onUpdateStart(added, removed, modified, shifted);
             }
             try {
-                synchronized (MergedListener.this) {
-                    if (notificationStep == lastEnqueuedStep) {
-                        // noinspection ConstantConditions
-                        throw Assert.statementNeverExecuted("Multiple notifications in the same step: listener="
-                                + System.identityHashCode(MergedListener.this) + ", queuedNotificationStep="
-                                + lastEnqueuedStep);
-                    }
-                    notificationStep = lastEnqueuedStep;
-                }
                 process();
                 getUpdateGraph().logDependencies()
                         .append("MergedListener has completed execution ")
