@@ -60,7 +60,7 @@ public class GrpcWebServletResponse extends HttpServletResponseWrapper {
     public synchronized GrpcWebOutputStream getOutputStream() throws IOException {
         if (outputStream == null) {
             // Provide our own output stream instance, so we can control/monitor the write listener
-            outputStream = new GrpcWebOutputStream(super.getOutputStream());
+            outputStream = new GrpcWebOutputStream(super.getOutputStream(), this);
         }
         return outputStream;
     }
