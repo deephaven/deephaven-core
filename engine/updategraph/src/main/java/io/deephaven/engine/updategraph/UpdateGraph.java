@@ -6,6 +6,7 @@ package io.deephaven.engine.updategraph;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.log.LogEntry;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.function.ThrowingSupplier;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
@@ -244,4 +245,24 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     }
 
     // endregion refresh control
+
+    /**
+     * Run {@code task} immediately if this UpdateGraph is currently idle, else schedule {@code task} to run at a later
+     * time when it has become idle.
+     *
+     * @param task The task to run when idle
+     */
+    @FinalDefault
+    default void runWhenIdle(@NotNull final Runnable task) {
+        if (clock().currentState() == LogicalClock.State.Idle) {
+            task.run();
+        } else {
+            addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    task.run();
+                }
+            });
+        }
+    }
 }
