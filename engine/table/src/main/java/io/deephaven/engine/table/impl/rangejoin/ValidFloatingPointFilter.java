@@ -10,6 +10,7 @@ import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -20,10 +21,12 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.LongConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -106,6 +109,20 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
                 }
             }
         }
+
+        @Override
+        public void filter(
+                @NotNull final DoubleChunk<? extends Values> values,
+                @NotNull final RowSequence rows,
+                @NotNull LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final double value = values.get(index.getAndIncrement());
+                if (!Double.isNaN(value) && value != NULL_DOUBLE) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     private static final class FloatFilter implements ChunkFilter.FloatChunkFilter {
@@ -127,6 +144,20 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
                     acceptedRowKeys.add(rowKeys.get(vi));
                 }
             }
+        }
+
+        @Override
+        public void filter(
+                @NotNull final FloatChunk<? extends Values> values,
+                @NotNull final RowSequence rows,
+                @NotNull LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final float value = values.get(index.getAndIncrement());
+                if (!Float.isNaN(value) && value != NULL_FLOAT) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 

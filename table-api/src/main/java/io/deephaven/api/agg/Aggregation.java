@@ -225,6 +225,26 @@ public interface Aggregation {
     }
 
     /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhere(String resultColumn, String... filters) {
+        return CountWhere.and(resultColumn, filters);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhereOneOf(String resultColumn, String... filters) {
+        return CountWhere.or(resultColumn, filters);
+    }
+
+    /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecCountDistinct count distinct} aggregation for the supplied
      * column name pairs. This will not count {@code null} values from the input column(s).
      *
@@ -757,6 +777,13 @@ public interface Aggregation {
          * @param count The count aggregation
          */
         void visit(Count count);
+
+        /**
+         * Visit a {@link CountWhere count aggregation}.
+         *
+         * @param countWhere The count aggregation
+         */
+        void visit(CountWhere countWhere);
 
         /**
          * Visit a {@link FirstRowKey first row key aggregation}.

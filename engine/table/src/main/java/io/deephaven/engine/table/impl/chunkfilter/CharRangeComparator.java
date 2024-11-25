@@ -3,10 +3,14 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.mutable.MutableInt;
+
+import java.util.function.LongConsumer;
 
 public class CharRangeComparator {
     private CharRangeComparator() {} // static use only
@@ -39,6 +43,16 @@ public class CharRangeComparator {
                 }
             }
         }
+
+        public void filter(CharChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final char value = values.get(index.getAndIncrement());
+                if (CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
@@ -55,6 +69,16 @@ public class CharRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        public void filter(CharChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final char value = values.get(index.getAndIncrement());
+                if (CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 
@@ -73,6 +97,16 @@ public class CharRangeComparator {
                 }
             }
         }
+
+        public void filter(CharChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final char value = values.get(index.getAndIncrement());
+                if (CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
@@ -89,6 +123,16 @@ public class CharRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        public void filter(CharChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final char value = values.get(index.getAndIncrement());
+                if (CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 

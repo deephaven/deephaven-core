@@ -12,10 +12,12 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 
+import java.util.function.LongConsumer;
+
 public interface ChunkFilter {
     /**
      * Filter a chunk of values, setting parallel values in results to "true" or "false".
-     *
+     * <p>
      * The results chunk must have capacity at least as large as values.size(); and the result size will be set to
      * values.size() on return.
      * 
@@ -25,6 +27,16 @@ public interface ChunkFilter {
     void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
             WritableLongChunk<OrderedRowKeys> results);
 
+    /**
+     * Filter a chunk of values, reading keys from an iterator and writing keys to a consumer.
+     *
+     * @param values the values to filter
+     * @param rows a {@link RowSequence} that provides the keys for the values, must be exactly the length of the values
+     *        in {@code values}
+     * @param consumer a consumer that will be called with the keys that pass the filter
+     */
+    void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
     interface CharChunkFilter extends ChunkFilter {
         void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results);
@@ -32,6 +44,12 @@ public interface ChunkFilter {
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asCharChunk(), keys, results);
+        }
+
+        void filter(CharChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asCharChunk(), rows, consumer);
         }
     }
 
@@ -43,6 +61,12 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asByteChunk(), keys, results);
         }
+
+        void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asByteChunk(), rows, consumer);
+        }
     }
 
     interface ShortChunkFilter extends ChunkFilter {
@@ -52,6 +76,12 @@ public interface ChunkFilter {
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asShortChunk(), keys, results);
+        }
+
+        void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asShortChunk(), rows, consumer);
         }
     }
 
@@ -63,6 +93,12 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asIntChunk(), keys, results);
         }
+
+        void filter(IntChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asIntChunk(), rows, consumer);
+        }
     }
 
     interface LongChunkFilter extends ChunkFilter {
@@ -72,6 +108,12 @@ public interface ChunkFilter {
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asLongChunk(), keys, results);
+        }
+
+        void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asLongChunk(), rows, consumer);
         }
     }
 
@@ -83,6 +125,12 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asFloatChunk(), keys, results);
         }
+
+        void filter(FloatChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asFloatChunk(), rows, consumer);
+        }
     }
 
     interface DoubleChunkFilter extends ChunkFilter {
@@ -92,6 +140,12 @@ public interface ChunkFilter {
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asDoubleChunk(), keys, results);
+        }
+
+        void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asDoubleChunk(), rows, consumer);
         }
     }
 
@@ -103,19 +157,46 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asObjectChunk(), keys, results);
         }
+
+        void filter(ObjectChunk<T, ? extends Values> values, RowSequence rows, LongConsumer consumer);
+
+        default void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            filter(values.asObjectChunk(), rows, consumer);
+        }
     }
 
     /**
      * A filter that always returns false.
      */
-    ChunkFilter FALSE_FILTER_INSTANCE = (values, keys, results) -> results.setSize(0);
+    ChunkFilter FALSE_FILTER_INSTANCE = new ChunkFilter() {
+        @Override
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                io.deephaven.chunk.WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+        }
+
+        @Override
+        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            // No work to perform
+        }
+    };
+
 
     /**
      * A filter that always returns true.
      */
-    ChunkFilter TRUE_FILTER_INSTANCE = (values, keys, results) -> {
-        results.setSize(values.size());
-        results.copyFromChunk(keys, 0, 0, keys.size());
+    ChunkFilter TRUE_FILTER_INSTANCE = new ChunkFilter() {
+        @Override
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(values.size());
+            results.copyFromChunk(keys, 0, 0, keys.size());
+        }
+
+        @Override
+        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            rows.forAllRowKeys(consumer);
+        }
     };
 
     /**
@@ -154,7 +235,6 @@ public interface ChunkFilter {
         long lastInterruptCheck = System.currentTimeMillis();
 
         try (final ColumnSource.GetContext getContext = columnSource.makeGetContext(contextSize);
-                final WritableLongChunk<OrderedRowKeys> longChunk = WritableLongChunk.makeWritableChunk(contextSize);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
             while (rsIt.hasMore()) {
                 if (filteredChunks++ == chunksBetweenChecks) {
@@ -172,17 +252,13 @@ public interface ChunkFilter {
                     filteredChunks = 0;
                 }
                 final RowSequence okChunk = rsIt.getNextRowSequenceWithLength(contextSize);
-                final LongChunk<OrderedRowKeys> keyChunk = okChunk.asRowKeyChunk();
-
                 final Chunk<? extends Values> dataChunk;
                 if (usePrev) {
                     dataChunk = columnSource.getPrevChunk(getContext, okChunk);
                 } else {
                     dataChunk = columnSource.getChunk(getContext, okChunk);
                 }
-                chunkFilter.filter(dataChunk, keyChunk, longChunk);
-
-                builder.appendOrderedRowKeysChunk(longChunk);
+                chunkFilter.filter(dataChunk, okChunk, builder::appendKey);
             }
         }
         return builder.build();

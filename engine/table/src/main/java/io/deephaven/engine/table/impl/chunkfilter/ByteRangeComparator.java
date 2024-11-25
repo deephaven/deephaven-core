@@ -7,10 +7,14 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.mutable.MutableInt;
+
+import java.util.function.LongConsumer;
 
 public class ByteRangeComparator {
     private ByteRangeComparator() {} // static use only
@@ -43,6 +47,16 @@ public class ByteRangeComparator {
                 }
             }
         }
+
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final byte value = values.get(index.getAndIncrement());
+                if (ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     static class ByteByteInclusiveExclusiveFilter extends ByteByteFilter {
@@ -59,6 +73,16 @@ public class ByteRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final byte value = values.get(index.getAndIncrement());
+                if (ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 
@@ -77,6 +101,16 @@ public class ByteRangeComparator {
                 }
             }
         }
+
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final byte value = values.get(index.getAndIncrement());
+                if (ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     static class ByteByteExclusiveExclusiveFilter extends ByteByteFilter {
@@ -93,6 +127,16 @@ public class ByteRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final byte value = values.get(index.getAndIncrement());
+                if (ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper)) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 

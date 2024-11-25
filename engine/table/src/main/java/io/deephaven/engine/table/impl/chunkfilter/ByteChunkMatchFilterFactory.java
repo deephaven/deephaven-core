@@ -8,16 +8,20 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TByteHashSet;
+import io.deephaven.util.mutable.MutableInt;
+
+import java.util.function.LongConsumer;
 
 /**
  * Creates chunk filters for byte values.
- *
+ * <p>
  * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
  * equality check.
- *
+ * <p>
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ByteChunkMatchFilterFactory {
@@ -66,6 +70,16 @@ public class ByteChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                if (values.get(index.getAndIncrement()) == value) {
+                    consumer.accept(key);
+                }
+            });
+        }
     }
 
     private static class InverseSingleValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
@@ -84,6 +98,16 @@ public class ByteChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                if (values.get(index.getAndIncrement()) != value) {
+                    consumer.accept(key);
+                }
+            });
         }
     }
 
@@ -107,6 +131,17 @@ public class ByteChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (checkValue == value1 || checkValue == value2) {
+                    consumer.accept(key);
+                }
+            });
+        }
     }
 
     private static class InverseTwoValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
@@ -128,6 +163,17 @@ public class ByteChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (!(checkValue == value1 || checkValue == value2)) {
+                    consumer.accept(key);
+                }
+            });
         }
     }
 
@@ -153,6 +199,17 @@ public class ByteChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
+                    consumer.accept(key);
+                }
+            });
+        }
     }
 
     private static class InverseThreeValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
@@ -177,6 +234,17 @@ public class ByteChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
+                    consumer.accept(key);
+                }
+            });
+        }
     }
 
     private static class MultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
@@ -197,6 +265,17 @@ public class ByteChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (this.values.contains(checkValue)) {
+                    consumer.accept(key);
+                }
+            });
+        }
     }
 
     private static class InverseMultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
@@ -216,6 +295,17 @@ public class ByteChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ByteChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys((final long key) -> {
+                final byte checkValue = values.get(index.getAndIncrement());
+                if (!this.values.contains(checkValue)) {
+                    consumer.accept(key);
+                }
+            });
         }
     }
 }

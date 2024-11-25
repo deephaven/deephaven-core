@@ -91,7 +91,9 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -107,13 +109,7 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -694,6 +690,46 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            final WhereFilter[] whereFilters = WhereFilter.fromInternal(countWhere.filter());
+            final Set<String> inputColumnNameSet = new HashSet<>();
+            // Verify all the columns in the where filters are present in the table
+            for (final WhereFilter whereFilter : whereFilters) {
+                whereFilter.init(table.getDefinition());
+                // Asset the filter is well-behaved in this use case
+                if (whereFilter.isRefreshing()) {
+                    throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
+                }
+                if (whereFilter instanceof ConditionFilter) {
+                    final ConditionFilter conditionFilter = (ConditionFilter) whereFilter;
+                    if (conditionFilter.hasVirtualRowVariables()) {
+                        throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
+                    }
+                }
+                inputColumnNameSet.addAll(whereFilter.getColumns());
+            }
+
+            // TODO: support multiple columns in the where clause by introducing simple recording operators
+            // to capture chunk data for additional columns
+            if (inputColumnNameSet.size() > 1) {
+                throw new UnsupportedOperationException(
+                        "AggCountWhere does not currently support multiple columns in the where clause");
+            }
+
+            if (inputColumnNameSet.isEmpty()) {
+                // No sources are needed, interesting but allowed.
+                addNoInputOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, null, null));
+            } else {
+                final String inputColumnName = inputColumnNameSet.iterator().next();
+                final ColumnSource<?> inputSource = table.getColumnSource(inputColumnName);
+                addOperator(
+                        new CountWhereOperator(countWhere.column().name(), whereFilters, inputColumnName, inputSource),
+                        inputSource,
+                        inputColumnName);
+            }
+        }
+
+        @Override
         public void visit(@NotNull final FirstRowKey firstRowKey) {
             addFirstOrLastOperators(true, firstRowKey.column().name());
         }
@@ -1005,6 +1041,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addNoInputOperator(new CountAggregationOperator(countWhere.column().name()));
+        }
+
+        @Override
         public void visit(@NotNull final NullColumns nullColumns) {
             transformers.add(new NullColumnAggregationTransformer(nullColumns.resultColumns()));
         }
@@ -1145,6 +1186,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             final String resultName = count.column().name();
+            final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            final String resultName = countWhere.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
             addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
         }

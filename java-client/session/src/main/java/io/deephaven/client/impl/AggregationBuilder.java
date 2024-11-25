@@ -4,15 +4,8 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregations;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.FirstRowKey;
-import io.deephaven.api.agg.Formula;
-import io.deephaven.api.agg.LastRowKey;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.Pair;
-import io.deephaven.api.agg.Partition;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
@@ -23,6 +16,7 @@ import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
 import io.deephaven.proto.backplane.grpc.Selectable;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -77,6 +71,13 @@ class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
     public void visit(Count count) {
         out = singletonList(of(Builder::setCount, AggregationCount.newBuilder()
                 .setColumnName(count.column().name())));
+    }
+
+    @Override
+    public void visit(CountWhere countWhere) {
+        out = Collections.EMPTY_LIST;
+        // out = singletonList(of(Builder::setCount, AggregationCount.newBuilder()
+        // .setColumnName(count.column().name())));
     }
 
     @Override

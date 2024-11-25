@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -18,6 +19,7 @@ import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.util.function.LongConsumer;
 
 public class InstantRangeFilter extends LongRangeFilter {
 
@@ -103,6 +105,21 @@ public class InstantRangeFilter extends LongRangeFilter {
                 }
                 writableLongChunk.setSize(values.size());
                 longFilter.filter(writableLongChunk, keys, results);
+            }
+        }
+
+        @Override
+        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            try (final WritableLongChunk<Values> writableLongChunk =
+                    WritableLongChunk.makeWritableChunk(values.size())) {
+
+                final ObjectChunk<Instant, ? extends Values> objectValues = values.asObjectChunk();
+                for (int ii = 0; ii < values.size(); ++ii) {
+                    final Instant instant = objectValues.get(ii);
+                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(instant));
+                }
+                writableLongChunk.setSize(values.size());
+                longFilter.filter(writableLongChunk, rows, consumer);
             }
         }
     }

@@ -4,12 +4,15 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.function.LongConsumer;
 
 public class ObjectChunkMatchFilterFactory {
     private ObjectChunkMatchFilterFactory() {} // static use only
@@ -57,6 +60,16 @@ public class ObjectChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                if (Objects.equals(values.get(index.getAndIncrement()), value)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     private static class InverseSingleValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
@@ -75,6 +88,16 @@ public class ObjectChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                if (!Objects.equals(values.get(index.getAndIncrement()), value)) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 
@@ -98,6 +121,17 @@ public class ObjectChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final Object checkValue = values.get(index.getAndIncrement());
+                if (Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     private static class InverseTwoValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
@@ -120,6 +154,17 @@ public class ObjectChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final Object checkValue = values.get(index.getAndIncrement());
+                if (!(Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2))) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     private static class ThreeValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
@@ -139,13 +184,28 @@ public class ObjectChunkMatchFilterFactory {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
-                if (Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)
+                if (Objects.equals(checkValue, value1)
+                        || Objects.equals(checkValue, value2)
                         || Objects.equals(checkValue, value3)) {
                     results.add(keys.get(ii));
                 }
             }
         }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final Object checkValue = values.get(index.getAndIncrement());
+                if (Objects.equals(checkValue, value1)
+                        || Objects.equals(checkValue, value2)
+                        || Objects.equals(checkValue, value3)) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
+
     private static class InverseThreeValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
         private final Object value1;
         private final Object value2;
@@ -163,11 +223,25 @@ public class ObjectChunkMatchFilterFactory {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
-                if (!(Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)
+                if (!(Objects.equals(checkValue, value1)
+                        || Objects.equals(checkValue, value2)
                         || Objects.equals(checkValue, value3))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                final Object checkValue = values.get(index.getAndIncrement());
+                if (!(Objects.equals(checkValue, value1)
+                        || Objects.equals(checkValue, value2)
+                        || Objects.equals(checkValue, value3))) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 
@@ -188,6 +262,16 @@ public class ObjectChunkMatchFilterFactory {
                 }
             }
         }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                if (this.values.contains(values.get(index.getAndIncrement()))) {
+                    consumer.accept(row);
+                }
+            });
+        }
     }
 
     private static class InverseMultiValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
@@ -206,6 +290,16 @@ public class ObjectChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public void filter(ObjectChunk<Object, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
+            final MutableInt index = new MutableInt(0);
+            rows.forAllRowKeys(row -> {
+                if (!this.values.contains(values.get(index.getAndIncrement()))) {
+                    consumer.accept(row);
+                }
+            });
         }
     }
 }

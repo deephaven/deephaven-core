@@ -168,7 +168,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             return;
         }
         if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
-            // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
+            // note that constant offset array access does not use i/ii or end up in usedColumnArrays
             boolean isUnsafe = (usesI || usesII) && !sourceTable.isAppendOnly() && !sourceTable.isBlink();
             isUnsafe |= usesK && !sourceTable.isAddOnly() && !sourceTable.isBlink();
             isUnsafe |= !usedColumnArrays.isEmpty() && !sourceTable.isBlink();
@@ -309,6 +309,15 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
      */
     public boolean hasConstantArrayAccess() {
         return getFormulaShiftColPair() != null;
+    }
+
+    /**
+     * Returns true if this filters uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * <p>
+     * This filter must already be initialized before calling this method.
+     */
+    public boolean hasVirtualRowVariables() {
+        return usesI || usesII || usesK;
     }
 
     /**

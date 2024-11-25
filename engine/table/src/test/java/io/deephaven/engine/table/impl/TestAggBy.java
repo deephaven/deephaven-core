@@ -119,7 +119,19 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(0, sums.get(0));
         assertEquals(22 + 4, sums.get(1));
 
-        Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
+        Table doubleCounted = table.aggBy(
+                List.of(
+                        AggCount("Count1"),
+                        AggCount("Count2"),
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhereOneOf("filter3", "B >= 5", "B == 3"),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false")
+                // Multi-column filtering not currently supported
+                // AggCountWhere("and2", "B >= 5", "C == 1"),
+                // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
+                ), "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
@@ -129,6 +141,21 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "Count2");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(4L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(4L, counts.get(0));
+        assertEquals(3L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -192,7 +219,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new IntGenerator(10, 100),
+                        new CharGenerator('a', 'Z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
