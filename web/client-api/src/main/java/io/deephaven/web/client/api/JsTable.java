@@ -452,7 +452,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsProperty
     public double getSize() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
-        if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
+        if (subscription != null && subscription.hasValidSize()) {
             // only ask the viewport for the size if it is alive and ticking
             return subscription.size();
         }
@@ -705,7 +705,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : state().getColumns();
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
-        if (activeSubscription != null && activeSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
+        if (activeSubscription != null && !activeSubscription.isClosed()) {
             // hasn't finished, lets reuse it
             activeSubscription.setInternalViewport(firstRow, lastRow, columnsCopy, updateIntervalMs, isReverseViewport);
             return activeSubscription;
@@ -1583,8 +1583,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 if (!isClosed() && was != null && was != state()) {
                     // if we held a subscription
                     TableViewportSubscription existingSubscription = subscriptions.remove(was.getHandle());
-                    if (existingSubscription != null
-                            && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
+                    if (existingSubscription != null && !existingSubscription.isClosed()) {
                         JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
                         // something external retained it)
@@ -1715,7 +1714,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         this.size = s;
 
         TableViewportSubscription subscription = subscriptions.get(getHandle());
-        if (changed && (subscription == null || subscription.getStatus() == TableViewportSubscription.Status.DONE)) {
+        if (changed && (subscription == null || !subscription.hasValidSize())) {
             // If the size changed, and we have no subscription active, fire. Otherwise, we want to let the
             // subscription itself manage this, so that the size changes are synchronized with data changes,
             // and consumers won't be confused by the table size not matching data.
