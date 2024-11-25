@@ -237,12 +237,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
-            // TODO: can user supply collector?
             final Field structField = field.getChildren().get(0);
             final Field keyField = structField.getChildren().get(0);
             final Field valueField = structField.getChildren().get(1);
-
-            // TODO NATE NOCOMMIT: implement
+            final BarrageTypeInfo keyTypeInfo = new BarrageTypeInfo(,, keyField);
+            final BarrageTypeInfo valueTypeInfo = new BarrageTypeInfo(,, valueField);
+            final ChunkReader<WritableChunk<Values>> keyReader = newReader(keyTypeInfo, options);
+            final ChunkReader<WritableChunk<Values>> valueReader = newReader(valueTypeInfo, options);
+            return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
         }
 
         if (typeId == ArrowType.ArrowTypeID.Struct) {
