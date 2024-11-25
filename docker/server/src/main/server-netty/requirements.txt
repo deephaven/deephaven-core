@@ -1,5 +1,5 @@
-adbc-driver-manager==1.2.0
-adbc-driver-postgresql==1.2.0
+adbc-driver-manager==1.3.0
+adbc-driver-postgresql==1.3.0
 connectorx==0.4.0; platform.machine == 'x86_64'
 deephaven-plugin==0.6.0
 docstring_parser==0.16
