@@ -1477,8 +1477,7 @@ public class ProtobufDescriptorParserTest {
         final RepeatedWithOptional msg = RepeatedWithOptional.newBuilder()
                 .setY(1)
                 .addN(
-                        RepeatedWithOptional.N.newBuilder().build()
-                )
+                        RepeatedWithOptional.N.newBuilder().build())
                 .build();
 
         checkKey(
@@ -1487,7 +1486,7 @@ public class ProtobufDescriptorParserTest {
                 Type.stringType().arrayType().arrayType(),
                 new HashMap<>() {
                     {
-                        put(msg, new String[][]{null});
+                        put(msg, new String[][] {null});
                     }
                 });
     }
@@ -1497,8 +1496,7 @@ public class ProtobufDescriptorParserTest {
         final RepeatedWithoutOptional msg = RepeatedWithoutOptional.newBuilder()
                 .setY(1)
                 .addN(
-                        RepeatedWithoutOptional.N.newBuilder().build()
-                )
+                        RepeatedWithoutOptional.N.newBuilder().build())
                 .build();
 
         checkKey(
@@ -1507,7 +1505,7 @@ public class ProtobufDescriptorParserTest {
                 Type.stringType().arrayType().arrayType(),
                 new HashMap<>() {
                     {
-                        put(msg, new String[][]{null});
+                        put(msg, new String[][] {null});
                     }
                 });
     }
