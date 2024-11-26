@@ -55,6 +55,13 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         // in the output definition, so we can ignore duplicates.
         final MutableInt icebergIndex = new MutableInt(0);
         final Map<String, Integer> availablePartitioningColumns = partitionSpec.fields().stream()
+                .peek(partitionField -> {
+                    // TODO (deephaven-core#6438): Add support to handle non-identity transforms
+                    if (!partitionField.transform().isIdentity()) {
+                        throw new TableDataException("Partition field " + partitionField.name() + " has a " +
+                                "non-identity transform: " + partitionField.transform() + ", which is not supported");
+                    }
+                })
                 .map(PartitionField::name)
                 .map(name -> instructions.columnRenames().getOrDefault(name, name))
                 .collect(Collectors.toMap(
@@ -93,6 +100,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             final Object colValue;
             final Object valueFromPartitionData = partitionData.get(colData.index);
             if (valueFromPartitionData != null) {
+                // TODO (deephaven-core#6438): Assuming identity transform here
                 colValue = IdentityPartitionConverters.convertConstant(
                         partitionData.getType(colData.index), valueFromPartitionData);
                 if (!colData.type.isAssignableFrom(colValue.getClass())) {
