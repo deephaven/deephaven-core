@@ -32,7 +32,6 @@ import io.deephaven.function.ToPrimitiveFunction;
 import io.deephaven.function.ToShortFunction;
 import io.deephaven.function.TypedFunction;
 import io.deephaven.function.TypedFunction.Visitor;
-import io.deephaven.util.QueryConstants;
 
 import java.lang.reflect.Array;
 import java.util.HashMap;
@@ -362,40 +361,46 @@ class ProtobufDescriptorParserImpl {
                 }
             }
 
+            private <T> ToObjectFunction<Message, T> maybeBypass(ToObjectFunction<Message, T> f) {
+                // Ideally, we could be very targetted in our application of null checks; in a lot of contexts, our
+                // implementation could know it will never be called with a null message to produce an array.
+                return BypassOnNull.of(f);
+            }
+
             private ToObjectFunction<Message, char[]> mapChars(ToCharFunction<Object> f) {
-                return ToObjectFunction.of(m -> toChars(m, fd, f), Type.charType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toChars(m, fd, f), Type.charType().arrayType()));
             }
 
             private ToObjectFunction<Message, byte[]> mapBytes(ToByteFunction<Object> f) {
-                return ToObjectFunction.of(m -> toBytes(m, fd, f), Type.byteType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toBytes(m, fd, f), Type.byteType().arrayType()));
             }
 
             private ToObjectFunction<Message, short[]> mapShorts(ToShortFunction<Object> f) {
-                return ToObjectFunction.of(m -> toShorts(m, fd, f), Type.shortType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toShorts(m, fd, f), Type.shortType().arrayType()));
             }
 
             private ToObjectFunction<Message, int[]> mapInts(ToIntFunction<Object> f) {
-                return ToObjectFunction.of(m -> toInts(m, fd, f), Type.intType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toInts(m, fd, f), Type.intType().arrayType()));
             }
 
             private ToObjectFunction<Message, long[]> mapLongs(ToLongFunction<Object> f) {
-                return ToObjectFunction.of(m -> toLongs(m, fd, f), Type.longType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toLongs(m, fd, f), Type.longType().arrayType()));
             }
 
             private ToObjectFunction<Message, float[]> mapFloats(ToFloatFunction<Object> f) {
-                return ToObjectFunction.of(m -> toFloats(m, fd, f), Type.floatType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toFloats(m, fd, f), Type.floatType().arrayType()));
             }
 
             private ToObjectFunction<Message, double[]> mapDoubles(ToDoubleFunction<Object> f) {
-                return ToObjectFunction.of(m -> toDoubles(m, fd, f), Type.doubleType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toDoubles(m, fd, f), Type.doubleType().arrayType()));
             }
 
             private ToObjectFunction<Message, boolean[]> mapBooleans(ToBooleanFunction<Object> f) {
-                return ToObjectFunction.of(m -> toBooleans(m, fd, f), Type.booleanType().arrayType());
+                return maybeBypass(ToObjectFunction.of(m -> toBooleans(m, fd, f), Type.booleanType().arrayType()));
             }
 
             private <T> ToObjectFunction<Message, T[]> mapGenerics(ToObjectFunction<Object, T> f) {
-                return ToObjectFunction.of(message -> toArray(message, fd, f), f.returnType().arrayType());
+                return maybeBypass(ToObjectFunction.of(message -> toArray(message, fd, f), f.returnType().arrayType()));
             }
 
             private class ToRepeatedType implements
