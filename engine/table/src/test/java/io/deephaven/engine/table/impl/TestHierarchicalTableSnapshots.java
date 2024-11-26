@@ -108,21 +108,19 @@ public class TestHierarchicalTableSnapshots {
             assertThat(snapshotFuture.isDone()).isFalse();
             updateGraph.flushOneNotificationForUnitTests();
         }
-        // We may need to deliver 1 additional notification, in case the concurrent snapshot is waiting for a
-        // WaitNotification on the rollup root to fire. We should not assert that the future isn't done, however, since
-        // a race might prevent that notification from being needed.
-        int extraNotificationsFlushed = 0;
-        while (!snapshotFuture.isDone() && updateGraph.flushOneNotificationForUnitTests()) {
-            ++extraNotificationsFlushed;
-        }
-        assertThat(extraNotificationsFlushed).isLessThanOrEqualTo(1);
+        /* @formatter off:
+         * The snapshot thread will be racing to see that the rollup root is satisfied.
+         * There are 2 scenarios:
+         * 1. Snapshot sees that the input is satisfied or waits for it successfully before the cycle is complete, thus
+         *    allowing it to complete concurrently.
+         * 2. Snapshot fails to wait for structural satisfaction before the cycle finishes, and has to re-try, which
+         *    is guaranteed to succeed against the idle cycle.
+         * We cannot control which of these outcomes happens without instrumenting the snapshot to let us gate progress
+         * through its structural satisfaction checks.
+         * @formatter:on */
+        updateGraph.completeCycleForUnitTests();
 
-        final Table updatedSnapshot;
-        try {
-            updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
-        } finally {
-            updateGraph.completeCycleForUnitTests();
-        }
+        final Table updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
         final Table updatedExpected = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 3),
                 booleanCol(rollupTable.getRowExpandedColumn().name(), true, true, null),
@@ -178,21 +176,19 @@ public class TestHierarchicalTableSnapshots {
             assertThat(snapshotFuture.isDone()).isFalse();
             updateGraph.flushOneNotificationForUnitTests();
         }
-        // We may need to deliver 2 additional notifications, in case the concurrent snapshot is waiting for a
-        // WaitNotification on the tree or lookup to fire. We should not assert that the future isn't done, however,
-        // since a race might prevent those notifications from being needed.
-        int extraNotificationsFlushed = 0;
-        while (!snapshotFuture.isDone() && updateGraph.flushOneNotificationForUnitTests()) {
-            ++extraNotificationsFlushed;
-        }
-        assertThat(extraNotificationsFlushed).isLessThanOrEqualTo(2);
+        /* @formatter off:
+         * The snapshot thread will be racing to see that the tree and sourceRowLookup are satisfied.
+         * There are 2 scenarios:
+         * 1. Snapshot sees that any combination of the two inputs are satisfied, and waits for any unsatisfied input(s)
+         *    successfully before the cycle is complete, thus allowing it to complete concurrently.
+         * 2. Snapshot fails to wait for structural satisfaction before the cycle finishes, and has to re-try, which
+         *    is guaranteed to succeed against the idle cycle.
+         * We cannot control which of these outcomes happens without instrumenting the snapshot to let us gate progress
+         * through its structural satisfaction checks.
+         * @formatter:on */
+        updateGraph.completeCycleForUnitTests();
 
-        final Table updatedSnapshot;
-        try {
-            updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
-        } finally {
-            updateGraph.completeCycleForUnitTests();
-        }
+        final Table updatedSnapshot = snapshotFuture.get(30, TimeUnit.SECONDS);
         final Table updatedExpected = newTable(
                 intCol(treeTable.getRowDepthColumn().name(), 1, 2, 3, 4),
                 booleanCol(treeTable.getRowExpandedColumn().name(), true, true, true, null),

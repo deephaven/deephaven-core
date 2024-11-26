@@ -10,7 +10,7 @@ from typing import List, Union, Any, Optional
 import numpy as np
 
 from pydeephaven._utils import to_list
-from pydeephaven.proto import table_pb2
+from deephaven_core.proto import table_pb2
 
 _GrpcSelectable = table_pb2.Selectable
 _GrpcAggregation = table_pb2.Aggregation

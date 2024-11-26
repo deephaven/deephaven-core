@@ -5,16 +5,16 @@ const path = require('path');
 const aliases = {};
 for (const proto of ['application', 'config', 'console', 'hierarchicaltable', 'inputtable', 'object', 'partitionedtable', 'session', 'storage', 'table', 'ticket']) {
     // Allows a reference to the real proto files, to be made from the shim
-    aliases[`real/${proto}_pb`] =  `${__dirname}/build/js-src/deephaven/proto/${proto}_pb`;
+    aliases[`real/${proto}_pb`] =  `${__dirname}/build/js-src/deephaven_core/proto/${proto}_pb`;
 
     const shimPath = `${__dirname}/src/shim/${proto}_pb`;
     // Three aliases which would normally point at the real proto file, now directed to the shim:
     // * First, an unsuffixed, relative reference from any service files
-    aliases[`../../deephaven/proto/${proto}_pb`] = shimPath;
+    aliases[`../../deephaven_core/proto/${proto}_pb`] = shimPath;
     // * Next, a ".js"-suffixed, relative reference from other proto files (see https://github.com/protocolbuffers/protobuf-javascript/issues/40)
-    aliases[`../../deephaven/proto/${proto}_pb.js`] = shimPath;
+    aliases[`../../deephaven_core/proto/${proto}_pb.js`] = shimPath;
     // * Last, an absolute reference from the index.js
-    aliases[`deephaven/proto/${proto}_pb`] = shimPath;
+    aliases[`deephaven_core/proto/${proto}_pb`] = shimPath;
 }
 for (const proto of ['Flight', 'BrowserFlight']) {
     // Allows a reference to the real proto files, to be made from the shim

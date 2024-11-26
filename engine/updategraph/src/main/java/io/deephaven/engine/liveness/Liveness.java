@@ -97,8 +97,8 @@ public final class Liveness {
     /**
      * <p>
      * Determine whether a cached object should be reused, w.r.t. liveness. Null inputs are never safe for reuse. If the
-     * object is a {@link LivenessReferent} and not a non-refreshing {@link DynamicNode}, this method will return the
-     * result of trying to manage object with the top of the current thread's {@link LivenessScopeStack}.
+     * object is a {@link LivenessReferent} and is a refreshing {@link DynamicNode}, this method will return the result
+     * of trying to manage object with the top of the current thread's {@link LivenessScopeStack}.
      *
      * @param object The object
      * @return True if the object did not need management, or if it was successfully managed, false otherwise

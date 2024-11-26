@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/session.proto
+// source: deephaven_core/proto/session.proto
 
 package session
 
@@ -453,5 +453,5 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "deephaven/proto/session.proto",
+	Metadata: "deephaven_core/proto/session.proto",
 }

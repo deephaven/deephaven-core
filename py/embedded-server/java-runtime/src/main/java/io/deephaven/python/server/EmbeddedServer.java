@@ -21,6 +21,7 @@ import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
 import io.deephaven.server.console.python.PythonGlobalScopeModule;
+import io.deephaven.server.flightsql.FlightSqlModule;
 import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyConfig.Builder;
@@ -73,6 +74,7 @@ public class EmbeddedServer {
             HealthCheckModule.class,
             PythonPluginsRegistration.Module.class,
             JettyServerModule.class,
+            FlightSqlModule.class,
             HealthCheckModule.class,
             PythonConsoleSessionModule.class,
             GroovyConsoleSessionModule.class,

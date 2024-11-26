@@ -9,7 +9,7 @@ import pyarrow as pa
 
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.agg import Aggregation
-from pydeephaven.proto import table_pb2, table_pb2_grpc
+from deephaven_core.proto import table_pb2, table_pb2_grpc
 from pydeephaven.updateby import UpdateByOperation
 
 

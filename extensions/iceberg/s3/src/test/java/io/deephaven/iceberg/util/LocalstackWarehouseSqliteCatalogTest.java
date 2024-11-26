@@ -9,17 +9,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import java.time.Duration;
+
 @Tag("testcontainers")
-public final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
+final class LocalstackWarehouseSqliteCatalogTest extends S3WarehouseSqliteCatalogBase {
     @BeforeAll
-    public static void initContainer() {
+    static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }
 
     @Override
     public S3Instructions s3Instructions() {
-        return LocalStack.s3Instructions(S3Instructions.builder()).build();
+        return LocalStack.s3Instructions(S3Instructions.builder()
+                .readTimeout(Duration.ofSeconds(10))).build();
     }
 
     @Override

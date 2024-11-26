@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.25.3
-// source: deephaven/proto/table.proto
+// source: deephaven_core/proto/table.proto
 
 package table
 
@@ -2021,5 +2021,5 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "deephaven/proto/table.proto",
+	Metadata: "deephaven_core/proto/table.proto",
 }

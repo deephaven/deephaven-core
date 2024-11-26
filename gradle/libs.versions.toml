@@ -9,7 +9,7 @@ boringssl = "2.0.61.Final"
 calcite = "1.38.0"
 classgraph = "4.8.177"
 commons-compress = "1.27.1"
-commons-io = "2.17.0"
+commons-io = "2.18.0"
 commons-lang3 = "3.17.0"
 commons-math3 = "3.6.1"
 commons-text = "1.12.0"
@@ -87,7 +87,7 @@ h2database = "2.3.232"
 jmock = "2.13.1"
 junit = "5.11.3"
 junit4 = "4.13.2"
-testcontainers = "1.20.3"
+testcontainers = "1.20.4"
 jmh = "1.37"
 spockframework = "2.3-groovy-3.0"
 
@@ -98,6 +98,8 @@ arrow-compression = { module = "org.apache.arrow:arrow-compression", version.ref
 arrow-format = { module = "org.apache.arrow:arrow-format", version.ref = "arrow" }
 arrow-vector = { module = "org.apache.arrow:arrow-vector", version.ref = "arrow" }
 arrow-flight-core = { module = "org.apache.arrow:flight-core", version.ref = "arrow" }
+arrow-flight-sql = { module = "org.apache.arrow:flight-sql", version.ref = "arrow" }
+arrow-flight-sql-jdbc = { module = "org.apache.arrow:flight-sql-jdbc-driver", version.ref = "arrow" }
 
 autoservice = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }
 autoservice-compiler = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }

@@ -4,7 +4,7 @@
 from typing import Any, Dict
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import config_pb2, config_pb2_grpc
+from deephaven_core.proto import config_pb2, config_pb2_grpc
 
 
 class ConfigService:
