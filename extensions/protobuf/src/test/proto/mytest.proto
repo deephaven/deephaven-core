@@ -131,26 +131,19 @@ message RepeatedObject {
   repeated XYZ xyz = 1;
 }
 
-message RepeatedWithoutOptional {
-  message N {
-    message NN {
-      repeated string s = 1;
-    }
-    NN nn = 1;
+message NestedArrays {
+  message A {
+    B b = 1;
   }
-  int32 y = 1;
-  repeated N n = 2;
-}
+  message B {
+    repeated string c = 1;
+  }
 
-message RepeatedWithOptional {
-  message N {
-    message NN {
-      repeated string s = 1;
-    }
-    optional NN nn = 1;
-  }
-  int32 y = 1;
-  repeated N n = 2;
+  A a_direct = 1;
+  repeated A a_repeated = 2;
+
+  B b_direct = 3;
+  repeated B b_repeated = 4;
 }
 
 message MultiRepeated {

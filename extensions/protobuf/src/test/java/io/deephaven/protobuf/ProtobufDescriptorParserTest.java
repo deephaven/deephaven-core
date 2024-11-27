@@ -45,6 +45,7 @@ import io.deephaven.protobuf.test.ByteWrapper;
 import io.deephaven.protobuf.test.ByteWrapperRepeated;
 import io.deephaven.protobuf.test.FieldMaskWrapper;
 import io.deephaven.protobuf.test.MultiRepeated;
+import io.deephaven.protobuf.test.NestedArrays;
 import io.deephaven.protobuf.test.NestedByteWrapper;
 import io.deephaven.protobuf.test.NestedRepeatedTimestamps;
 import io.deephaven.protobuf.test.NestedRepeatedTimestamps.Timestamps;
@@ -54,8 +55,6 @@ import io.deephaven.protobuf.test.RepeatedDuration;
 import io.deephaven.protobuf.test.RepeatedMessage;
 import io.deephaven.protobuf.test.RepeatedMessage.Person;
 import io.deephaven.protobuf.test.RepeatedTimestamp;
-import io.deephaven.protobuf.test.RepeatedWithOptional;
-import io.deephaven.protobuf.test.RepeatedWithoutOptional;
 import io.deephaven.protobuf.test.RepeatedWrappers;
 import io.deephaven.protobuf.test.TheWrappers;
 import io.deephaven.protobuf.test.TwoTs;
@@ -1473,41 +1472,106 @@ public class ProtobufDescriptorParserTest {
     }
 
     @Test
-    void repeatedWithOptional() {
-        final RepeatedWithOptional msg = RepeatedWithOptional.newBuilder()
-                .setY(1)
-                .addN(
-                        RepeatedWithOptional.N.newBuilder().build()
-                )
-                .build();
-
+    void nestedArraysADirect() {
         checkKey(
-                RepeatedWithOptional.getDescriptor(),
-                List.of("n", "nn", "s"),
-                Type.stringType().arrayType().arrayType(),
+                NestedArrays.getDescriptor(),
+                List.of("a_direct", "b", "c"),
+                Type.stringType().arrayType(),
                 new HashMap<>() {
                     {
-                        put(msg, new String[][]{null});
+                        put(NestedArrays.getDefaultInstance(), null);
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.getDefaultInstance())
+                                .build(), null);
+
+                        // c is only non-null when b has been explicitly set
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.getDefaultInstance())
+                                        .build())
+                                .build(), new String[0]);
+
+                        put(NestedArrays.newBuilder()
+                                .setADirect(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.newBuilder()
+                                                .addC("Foo")
+                                                .addC("Bar")
+                                                .build())
+                                        .build())
+                                .build(), new String[] {"Foo", "Bar"});
                     }
                 });
     }
 
     @Test
-    void repeatedWithoutOptional() {
-        final RepeatedWithoutOptional msg = RepeatedWithoutOptional.newBuilder()
-                .setY(1)
-                .addN(
-                        RepeatedWithoutOptional.N.newBuilder().build()
-                )
-                .build();
-
+    void nestedArraysARepeated() {
         checkKey(
-                RepeatedWithoutOptional.getDescriptor(),
-                List.of("n", "nn", "s"),
+                NestedArrays.getDescriptor(),
+                List.of("a_repeated", "b", "c"),
                 Type.stringType().arrayType().arrayType(),
                 new HashMap<>() {
                     {
-                        put(msg, new String[][]{null});
+                        put(NestedArrays.getDefaultInstance(), new String[0][]);
+                        put(NestedArrays.newBuilder()
+                                .addARepeated(NestedArrays.A.getDefaultInstance())
+                                .addARepeated(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.getDefaultInstance())
+                                        .build())
+                                .addARepeated(NestedArrays.A.newBuilder()
+                                        .setB(NestedArrays.B.newBuilder()
+                                                .addC("Foo")
+                                                .addC("Bar")
+                                                .build())
+                                        .build())
+                                .build(), new String[][] {null, new String[0], new String[] {"Foo", "Bar"}});
+                    }
+                });
+    }
+
+    @Test
+    void nestedArraysBDirect() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("b_direct", "c"),
+                Type.stringType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), null);
+
+                        put(NestedArrays.newBuilder()
+                                .setBDirect(NestedArrays.B.getDefaultInstance())
+                                .build(), new String[0]);
+
+                        put(NestedArrays.newBuilder()
+                                .setBDirect(NestedArrays.B.newBuilder()
+                                        .addC("Foo")
+                                        .addC("Bar")
+                                        .build())
+                                .build(), new String[] {"Foo", "Bar"});
+                    }
+                });
+    }
+
+    @Test
+    void nestedArraysBRepeated() {
+        checkKey(
+                NestedArrays.getDescriptor(),
+                List.of("b_repeated", "c"),
+                Type.stringType().arrayType().arrayType(),
+                new HashMap<>() {
+                    {
+                        put(NestedArrays.getDefaultInstance(), new String[0][]);
+
+                        put(NestedArrays.newBuilder()
+                                .addBRepeated(NestedArrays.B.getDefaultInstance())
+                                .addBRepeated(NestedArrays.B.newBuilder()
+                                        .addC("Foo")
+                                        .addC("Bar")
+                                        .build())
+
+                                .build(), new String[][] {new String[0], new String[] {"Foo", "Bar"}});
                     }
                 });
     }
