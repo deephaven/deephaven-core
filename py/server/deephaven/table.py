@@ -678,7 +678,77 @@ class TableOperations(Generic[T]):
             with auto_locking_ctx(self, trigger_table):
                 return self.__class__(self.j_object.snapshotWhen(trigger_table.j_object, options))
         except Exception as e:
-            raise DHError(e, f"snapshot_when operation on the PartitionedTableProxy{self.__class__.__name__} failed.") from e
+            raise DHError(e, f"snapshot_when operation on the {self.__class__.__name__} failed.") from e
+
+    def sort(self: T, order_by: Union[str, Sequence[str]],
+             order: Union[SortDirection, Sequence[SortDirection]] = None) -> T:
+        """ When called on a :class:`Table`, the sort method creates a new table where the rows are ordered based on
+        values in a specified set of columns.
+
+        When called on a :class:`PartitionedTableProxy`, the sort method applies the sort operation to all constituent
+        tables of the underlying partitioned table, and produces a new :class:`PartitionedTableProxy` with the result
+        tables as the constituents of its underlying partitioned table.
+
+        Applies the :meth:`~Table.sort` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
+
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
+                each sort column, default is None, meaning ascending order for all the sort columns.
+
+        Returns:
+            a new :class:`Table` or :class:`PartitionedTableProxy`
+
+        Raises:
+            DHError
+        """
+        try:
+            if not order:
+                order = (SortDirection.ASCENDING,) * len(order_by)
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+
+            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
+            j_sc_list = j_array_list(sort_columns)
+            with auto_locking_ctx(self):
+                return self.__class__(self.j_object.sort(j_sc_list))
+        except Exception as e:
+            raise DHError(e, f"sort operation on the {self.__class__.__name__} failed.") from e
+
+    def sort_descending(self: T,  order_by: Union[str, Sequence[str]]) -> T:
+        """ When called on a :class:`Table`, the sort_descending method creates a new table where rows in a table are
+        sorted in descending order based on the order_by column(s).
+
+        When called on a :class:`PartitionedTableProxy`, the sort_descending method applies the sort_descending operation
+        to all constituent tables of the underlying partitioned table, and produces a new :class:`PartitionedTableProxy`
+        with the result tables as the constituents of its underlying partitioned table.
+
+
+        Applies the :meth:`~Table.sort_descending` table operation to all constituent tables of the underlying
+        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
+        underlying partitioned table.
+
+        Args:
+            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
+
+        Returns:
+            a new :class:`Table` or :class:`PartitionedTableProxy`
+
+        Raises:
+            DHError
+        """
+        try:
+            order_by = to_sequence(order_by)
+            with auto_locking_ctx(self):
+                return self.__class__(self.j_object.sortDescending(*order_by))
+        except Exception as e:
+            raise DHError(e, f"sort_descending operation on the {self.__class__.__name__} failed.") from e
 
 
 class Table(JObjectWrapper, TableOperations["Table"]):
@@ -1339,57 +1409,6 @@ class Table(JObjectWrapper, TableOperations["Table"]):
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
-    def sort_descending(self, order_by: Union[str, Sequence[str]]) -> Table:
-        """The sort_descending method creates a new table where rows in a table are sorted in descending order based on
-        the order_by column(s).
-
-        Args:
-            order_by (Union[str, Sequence[str]], optional): the column name(s)
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            order_by = to_sequence(order_by)
-            return Table(j_table=self.j_table.sortDescending(*order_by))
-        except Exception as e:
-            raise DHError(e, "table sort_descending operation failed.") from e
-
-    def sort(self, order_by: Union[str, Sequence[str]],
-             order: Union[SortDirection, Sequence[SortDirection]] = None) -> Table:
-        """The sort method creates a new table where the rows are ordered based on values in a specified set of columns.
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
-                each sort column, default is None, meaning ascending order for all the sort columns.
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-
-        try:
-            order_by = to_sequence(order_by)
-            if not order:
-                order = (SortDirection.ASCENDING,) * len(order_by)
-            else:
-                order = to_sequence(order)
-                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
-                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
-                if len(order_by) != len(order):
-                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
-
-            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-            j_sc_list = j_array_list(sort_columns)
-            return Table(j_table=self.j_table.sort(j_sc_list))
-        except Exception as e:
-            raise DHError(e, "table sort operation failed.") from e
 
     # endregion
 
@@ -2886,63 +2905,6 @@ class PartitionedTableProxy(JObjectWrapper, TableOperations["PartitionedTablePro
         self.require_matching_keys = self.j_pt_proxy.requiresMatchingKeys()
         self.sanity_check_joins = self.j_pt_proxy.sanityChecksJoins()
         self.target = PartitionedTable(j_partitioned_table=self.j_pt_proxy.target())
-
-
-
-    def sort(self, order_by: Union[str, Sequence[str]],
-             order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.sort` table operation to all constituent tables of the underlying partitioned
-        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
-        partitioned table.
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-            order (Union[SortDirection, Sequence[SortDirection], optional): the corresponding sort directions for
-                each sort column, default is None, meaning ascending order for all the sort columns.
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            if not order:
-                order = (SortDirection.ASCENDING,) * len(order_by)
-            else:
-                order = to_sequence(order)
-                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
-                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
-                if len(order_by) != len(order):
-                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
-
-            sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-            j_sc_list = j_array_list(sort_columns)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sort(j_sc_list))
-        except Exception as e:
-            raise DHError(e, "sort operation on the PartitionedTableProxy failed.") from e
-
-    def sort_descending(self, order_by: Union[str, Sequence[str]]) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.sort_descending` table operation to all constituent tables of the underlying
-        partitioned table, and produces a new PartitionedTableProxy with the result tables as the constituents of its
-        underlying partitioned table.
-
-        Args:
-            order_by (Union[str, Sequence[str]]): the column(s) to be sorted on
-
-        Returns:
-            a new PartitionedTableProxy
-
-        Raises:
-            DHError
-        """
-        try:
-            order_by = to_sequence(order_by)
-            with auto_locking_ctx(self):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.sortDescending(*order_by))
-        except Exception as e:
-            raise DHError(e, "sort_descending operation on the PartitionedTableProxy failed.") from e
 
     def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.where` table operation to all constituent tables of the underlying partitioned
