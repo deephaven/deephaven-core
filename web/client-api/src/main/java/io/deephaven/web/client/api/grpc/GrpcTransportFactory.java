@@ -1,28 +1,43 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.grpc;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportFactory;
-import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 
 /**
  * Factory for creating gRPC transports.
  */
-@JsFunction
+@TsInterface
+@JsType(namespace = "dh.grpc")
 public interface GrpcTransportFactory {
     /**
      * Create a new transport instance.
+     * 
      * @param options options for creating the transport
-     * @return a transport to use for gRPC communication
+     * @return a transport instance to use for gRPC communication
      */
     GrpcTransport create(GrpcTransportOptions options);
 
     /**
+     * Return true to signal that created transports may have {@link GrpcTransport#sendMessage(Uint8Array)} called on it
+     * more than once before {@link GrpcTransport#finishSend()} should be called.
+     * 
+     * @return true to signal that the implementation can stream multiple messages, false otherwise indicating that
+     *         Open/Next gRPC calls should be used
+     */
+    boolean supportsClientStreaming();
+
+    /**
      * Adapt this factory to the transport factory used by the gRPC-web library.
      */
-    @JsOverlay
+    @JsIgnore
     default TransportFactory adapt() {
         return options -> {
             GrpcTransport impl = create(GrpcTransportOptions.from(options));

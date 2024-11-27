@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.grpc;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
@@ -48,7 +51,8 @@ public class GrpcTransportOptions {
     public boolean debug;
 
     /**
-     * Callback for when headers and status are received. The headers are a map of header names to values, and the status is the HTTP status code. If the connection could not be made, the status should be 0.
+     * Callback for when headers and status are received. The headers are a map of header names to values, and the
+     * status is the HTTP status code. If the connection could not be made, the status should be 0.
      */
     public OnHeadersCallback onHeaders;
 
@@ -58,9 +62,16 @@ public class GrpcTransportOptions {
     public OnChunkCallback onChunk;
 
     /**
-     * Callback for when the stream ends, with an error instance if it can be provided. Note that the present implementation does not consume errors, even if provided.
+     * Callback for when the stream ends, with an error instance if it can be provided. Note that the present
+     * implementation does not consume errors, even if provided.
      */
     public OnEndCallback onEnd;
+
+    /**
+     * Internal copy of options, to be used for fallback.
+     */
+    @JsIgnore
+    public TransportOptions originalOptions;
 
     /**
      * Convert a {@link TransportOptions} instance to a {@link GrpcTransportOptions} instance.

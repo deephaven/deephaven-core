@@ -29,20 +29,12 @@ public class ConnectOptions {
 
     /**
      * Set this to true to force the use of websockets when connecting to the deephaven instance, false to force the use
-     * of {@code fetch}.
+     * of {@code fetch}. Ignored if {@link #transportFactory} is set.
      * <p>
      * Defaults to null, indicating that the server URL should be checked to see if we connect with fetch or websockets.
      */
     @JsNullable
     public Boolean useWebsockets;
-
-    // TODO (deephaven-core#6214) provide our own grpc-web library that can replace fetch
-    // /**
-    // * Optional fetch implementation to use instead of the global {@code fetch()} call, allowing callers to provide a
-    // * polyfill rather than add a new global.
-    // */
-    // @JsNullable
-    // public Function fetch;
 
     /**
      * The transport factory to use for creating gRPC streams. If specified, the JS API will ignore
