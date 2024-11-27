@@ -45,7 +45,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
         }
 
         @Override
-        public boolean supportsClientStreaming() {
+        public boolean getSupportsClientStreaming() {
             return true;
         }
     }

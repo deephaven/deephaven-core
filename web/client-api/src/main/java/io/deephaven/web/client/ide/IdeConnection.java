@@ -77,7 +77,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
                     }
 
                     @Override
-                    public boolean supportsClientStreaming() {
+                    public boolean getSupportsClientStreaming() {
                         return false;
                     }
                 };

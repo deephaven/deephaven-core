@@ -9,6 +9,7 @@ import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportFactory;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**
@@ -32,7 +33,8 @@ public interface GrpcTransportFactory {
      * @return true to signal that the implementation can stream multiple messages, false otherwise indicating that
      *         Open/Next gRPC calls should be used
      */
-    boolean supportsClientStreaming();
+    @JsProperty
+    boolean getSupportsClientStreaming();
 
     /**
      * Adapt this factory to the transport factory used by the gRPC-web library.
