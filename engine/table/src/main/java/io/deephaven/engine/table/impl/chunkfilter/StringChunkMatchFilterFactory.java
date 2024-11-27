@@ -3,16 +3,12 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.util.mutable.MutableInt;
-
-import java.util.function.LongConsumer;
 
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
@@ -82,17 +78,6 @@ class StringChunkMatchFilterFactory {
                 }
             }
         }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (value.equalsIgnoreCase(checkString)) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class InverseSingleValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
@@ -113,17 +98,6 @@ class StringChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (!value.equalsIgnoreCase(checkString)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -148,17 +122,6 @@ class StringChunkMatchFilterFactory {
                 }
             }
         }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class InverseTwoValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
@@ -182,17 +145,6 @@ class StringChunkMatchFilterFactory {
                 }
             }
         }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString))) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class ThreeValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
@@ -213,25 +165,11 @@ class StringChunkMatchFilterFactory {
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
                 final String checkString = stringChunk.get(ii);
-                if (value1.equalsIgnoreCase(checkString)
-                        || value2.equalsIgnoreCase(checkString)
+                if (value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
                         || value3.equalsIgnoreCase(checkString)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (value1.equalsIgnoreCase(checkString)
-                        || value2.equalsIgnoreCase(checkString)
-                        || value3.equalsIgnoreCase(checkString)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -253,25 +191,11 @@ class StringChunkMatchFilterFactory {
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
                 final String checkString = stringChunk.get(ii);
-                if (!(value1.equalsIgnoreCase(checkString)
-                        || value2.equalsIgnoreCase(checkString)
+                if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
                         || value3.equalsIgnoreCase(checkString))) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (!(value1.equalsIgnoreCase(checkString)
-                        || value2.equalsIgnoreCase(checkString)
-                        || value3.equalsIgnoreCase(checkString))) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -297,17 +221,6 @@ class StringChunkMatchFilterFactory {
                 }
             }
         }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (this.values.containsKey(checkString)) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class InverseMultiValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
@@ -331,17 +244,6 @@ class StringChunkMatchFilterFactory {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final String checkString = values.get(index.getAndIncrement());
-                if (!this.values.containsKey(checkString)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 }

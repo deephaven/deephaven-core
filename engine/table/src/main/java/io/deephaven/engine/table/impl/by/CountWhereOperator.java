@@ -8,12 +8,16 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
@@ -22,6 +26,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -32,12 +37,54 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
     private final String resultName;
     final LongArraySource resultColumnSource;
     final WhereFilter[] whereFilters;
+    final ExposesChunkFilter[] chunkWhereFilters;
 
     /**
      * A table constructed from chunk sources, will be populated with incoming chunk data and used to evaluate filters.
      */
     final Table chunkSourceTable;
     final ChunkColumnSource<?> chunkColumnSource;
+
+    static class CountWhereBucketedContext implements BucketedContext {
+        WritableLongChunk<OrderedRowKeys> startingKeyChunk;
+        WritableLongChunk<OrderedRowKeys> workingKeyChunk;
+        WritableIntChunk<Values> countChunk;
+
+        public CountWhereBucketedContext(int size) {
+            workingKeyChunk = WritableLongChunk.makeWritableChunk(size);
+            startingKeyChunk = WritableLongChunk.makeWritableChunk(size);
+            for (int ii = 0; ii < size; ++ii) {
+                startingKeyChunk.set(ii, ii);
+            }
+            countChunk = WritableIntChunk.makeWritableChunk(size);
+        }
+
+        @Override
+        public void close() {
+            workingKeyChunk.close();
+            startingKeyChunk.close();
+            countChunk.close();
+        }
+    }
+
+    static class CountWhereSingletonContext implements SingletonContext {
+        WritableLongChunk<OrderedRowKeys> startingKeyChunk;
+        WritableLongChunk<OrderedRowKeys> workingKeyChunk;
+
+        public CountWhereSingletonContext(int size) {
+            workingKeyChunk = WritableLongChunk.makeWritableChunk(size);
+            startingKeyChunk = WritableLongChunk.makeWritableChunk(size);
+            for (int ii = 0; ii < size; ++ii) {
+                startingKeyChunk.set(ii, ii);
+            }
+        }
+
+        @Override
+        public void close() {
+            workingKeyChunk.close();
+            startingKeyChunk.close();
+        }
+    }
 
     /**
      * Construct a count aggregation operator that tests individual data values.
@@ -51,7 +98,15 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             @Nullable final ColumnSource<?> inputSource) {
         this.resultName = resultName;
         this.resultColumnSource = new LongArraySource();
-        this.whereFilters = whereFilters;
+
+        this.whereFilters = Arrays.stream(whereFilters)
+                .filter(filter -> !(filter instanceof ExposesChunkFilter))
+                .toArray(WhereFilter[]::new);
+
+        this.chunkWhereFilters = Arrays.stream(whereFilters)
+                .filter(ExposesChunkFilter.class::isInstance)
+                .map(ExposesChunkFilter.class::cast)
+                .toArray(ExposesChunkFilter[]::new);
 
         if (inputColumnName == null || inputSource == null) {
             chunkColumnSource = null;
@@ -89,6 +144,94 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         }
     }
 
+
+    /**
+     * Given the data chunk and multiple destinations, count the number of rows that pass the filters and store into the
+     * count chunk.
+     */
+    private void doCountMultiple(
+            Chunk<? extends Values> values,
+            IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
+            CountWhereBucketedContext ctx) {
+        if (chunkColumnSource != null) {
+            // Clear the chunk sources and add the new sliced chunk
+            chunkColumnSource.clear();
+            // TODO: Can this cast ever fail? Investigate.
+            chunkColumnSource.addChunk((WritableChunk<? extends Values>) values);
+        }
+        final int chunkSize = destinations.size();
+
+
+        // NOTE: we don't need to modify the table RowSet since we are supplying the filters directly
+        try (final RowSet fullRowSet = RowSetFactory.flat(chunkSize)) {
+            // Apply the filters successively to the chunk source table
+            RowSet result = RowSetFactory.flat(chunkSize);
+            for (WhereFilter whereFilter : whereFilters) {
+                result = whereFilter.filter(result, fullRowSet, chunkSourceTable, false);
+            }
+            try (final RowSet ignored = result;
+                    final RowSequence.Iterator it = result.getRowSequenceIterator()) {
+                for (int ii = 0; ii < startPositions.size(); ii++) {
+                    final int startIndex = startPositions.get(ii);
+                    final int lastIndex = startIndex + length.get(ii);
+
+                    // Count how many rows passed the filter for this destination
+                    final int count = (int) it.advanceAndGetPositionDistance(lastIndex);
+                    ctx.countChunk.set(ii, count);
+                }
+            }
+        }
+    }
+
+    private int doCountSingle(
+            Chunk<? extends Values> values,
+            int chunkSize,
+            CountWhereSingletonContext ctx) {
+        if (chunkColumnSource != null) {
+            // Clear the chunk sources and add the new sliced chunk
+            chunkColumnSource.clear();
+            // TODO: Can this cast ever fail? Investigate.
+            chunkColumnSource.addChunk((WritableChunk<? extends Values>) values);
+        }
+
+        // NOTE: we don't need to modify the table RowSet since we are supplying the filters directly
+        try (final RowSet fullRowSet = RowSetFactory.flat(chunkSize)) {
+            if (chunkWhereFilters.length > 0 && whereFilters.length > 0) {
+                // These are cheap and fast, run them first to reduce the number of rows we need to process
+                ctx.startingKeyChunk.setSize(chunkSize);
+                chunkWhereFilters[0].chunkFilter().filter(values, ctx.startingKeyChunk, ctx.workingKeyChunk);
+                for (int ii = 1; ii < chunkWhereFilters.length; ii++) {
+                    chunkWhereFilters[ii].chunkFilter().filter(values, ctx.workingKeyChunk, ctx.workingKeyChunk);
+                }
+                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                builder.appendOrderedRowKeysChunk(ctx.workingKeyChunk);
+                RowSet result = builder.build();
+                for (WhereFilter whereFilter : whereFilters) {
+                    result = whereFilter.filter(result, fullRowSet, chunkSourceTable, false);
+                }
+                return ctx.workingKeyChunk.size();
+            } else if (chunkWhereFilters.length > 0) {
+                ctx.startingKeyChunk.setSize(chunkSize);
+                chunkWhereFilters[0].chunkFilter().filter(values, ctx.startingKeyChunk, ctx.workingKeyChunk);
+                for (int ii = 1; ii < chunkWhereFilters.length; ii++) {
+                    chunkWhereFilters[ii].chunkFilter().filter(values, ctx.workingKeyChunk, ctx.workingKeyChunk);
+                }
+                return ctx.workingKeyChunk.size();
+            } else {
+                RowSet result = RowSetFactory.flat(chunkSize);
+                for (WhereFilter whereFilter : whereFilters) {
+                    result = whereFilter.filter(result, fullRowSet, chunkSourceTable, false);
+                }
+
+                try (final RowSet ignored = result) {
+                    return result.intSize();
+                }
+            }
+        }
+    }
+
     @Override
     public void addChunk(
             BucketedContext context,
@@ -98,10 +241,19 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             IntChunk<ChunkPositions> startPositions,
             IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
+
+        final CountWhereBucketedContext ctx = (CountWhereBucketedContext) context;
+
+        // Do the counting work and store the results in the count chunk
+        doCountMultiple(values, destinations, startPositions, length, ctx);
+
+        // Update the result column source with the counts
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
+            final int count = ctx.countChunk.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(values, destination, startPosition, length.get(ii)));
+            resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), count));
+            stateModified.set(ii, count > 0);
         }
     }
 
@@ -111,20 +263,12 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             int chunkSize,
             Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        return addChunk(values, destination, 0, values == null ? 0 : values.size());
-    }
 
-    private boolean addChunk(
-            Chunk<? extends Values> values,
-            long destination,
-            int chunkStart,
-            int chunkSize) {
-        final int count = doCount(chunkStart, chunkSize, values);
-        if (count > 0) {
-            resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), count));
-            return true;
-        }
-        return false;
+        final CountWhereSingletonContext ctx = (CountWhereSingletonContext) context;
+
+        final int count = doCountSingle(values, chunkSize, ctx);
+        resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), count));
+        return count > 0;
     }
 
     @Override
@@ -230,4 +374,13 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         resultColumnSource.startTrackingPrevValues();
     }
 
+    @Override
+    public BucketedContext makeBucketedContext(int size) {
+        return new CountWhereBucketedContext(size);
+    }
+
+    @Override
+    public SingletonContext makeSingletonContext(int size) {
+        return new CountWhereSingletonContext(size);
+    }
 }

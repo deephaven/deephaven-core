@@ -7,14 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.mutable.MutableInt;
-
-import java.util.function.LongConsumer;
 
 public class DoubleRangeComparator {
     private DoubleRangeComparator() {} // static use only
@@ -30,8 +26,6 @@ public class DoubleRangeComparator {
 
         abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results);
-
-        abstract public void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
     }
 
     static class DoubleDoubleInclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -39,7 +33,6 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -49,17 +42,6 @@ public class DoubleRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final double value = values.get(index.getAndIncrement());
-                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -68,7 +50,6 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -78,17 +59,6 @@ public class DoubleRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final double value = values.get(index.getAndIncrement());
-                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -97,7 +67,6 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -107,17 +76,6 @@ public class DoubleRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final double value = values.get(index.getAndIncrement());
-                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -126,7 +84,6 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -136,17 +93,6 @@ public class DoubleRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(DoubleChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final double value = values.get(index.getAndIncrement());
-                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 

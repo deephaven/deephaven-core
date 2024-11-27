@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -16,10 +15,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.LongConsumer;
 
 public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
@@ -106,19 +102,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 }
             }
         }
-
-        @Override
-        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final MutableInt index = new MutableInt(0);
-
-            rows.forAllRowKeys(row -> {
-                final Comparable<?> value = objectChunk.get(index.getAndIncrement());
-                if (ObjectComparisons.geq(value, pivot)) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class LeqComparableChunkFilter implements ChunkFilter {
@@ -140,19 +123,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final MutableInt index = new MutableInt(0);
-
-            rows.forAllRowKeys(row -> {
-                final Comparable<?> value = objectChunk.get(index.getAndIncrement());
-                if (ObjectComparisons.leq(value, pivot)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -176,19 +146,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 }
             }
         }
-
-        @Override
-        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final MutableInt index = new MutableInt(0);
-
-            rows.forAllRowKeys(row -> {
-                final Comparable<?> value = objectChunk.get(index.getAndIncrement());
-                if (ObjectComparisons.gt(value, pivot)) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private static class LtComparableChunkFilter implements ChunkFilter {
@@ -210,19 +167,6 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final MutableInt index = new MutableInt(0);
-
-            rows.forAllRowKeys(row -> {
-                final Comparable<?> value = objectChunk.get(index.getAndIncrement());
-                if (ObjectComparisons.lt(value, pivot)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 

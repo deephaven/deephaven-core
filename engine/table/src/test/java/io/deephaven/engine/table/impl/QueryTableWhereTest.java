@@ -14,7 +14,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -58,7 +57,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntUnaryOperator;
-import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -883,22 +881,6 @@ public abstract class QueryTableWhereTest {
                 while (System.nanoTime() < end);
             }
             actualFilter.filter(values, keys, results);
-        }
-
-        @Override
-        public void filter(Chunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long start = System.nanoTime();
-                final long end = start + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < end);
-            }
-            actualFilter.filter(values, rows, consumer);
         }
 
         void reset() {

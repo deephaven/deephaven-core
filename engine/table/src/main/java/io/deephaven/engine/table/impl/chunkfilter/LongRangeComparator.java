@@ -3,14 +3,10 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.mutable.MutableInt;
-
-import java.util.function.LongConsumer;
 
 public class LongRangeComparator {
     private LongRangeComparator() {} // static use only
@@ -26,8 +22,6 @@ public class LongRangeComparator {
 
         abstract public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results);
-
-        abstract public void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer);
     }
 
     static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
@@ -35,7 +29,6 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -45,17 +38,6 @@ public class LongRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final long value = values.get(index.getAndIncrement());
-                if (LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -64,7 +46,6 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -74,17 +55,6 @@ public class LongRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final long value = values.get(index.getAndIncrement());
-                if (LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -93,7 +63,6 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -103,17 +72,6 @@ public class LongRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final long value = values.get(index.getAndIncrement());
-                if (LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -122,7 +80,6 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        @Override
         public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
@@ -132,17 +89,6 @@ public class LongRangeComparator {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(LongChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final long value = values.get(index.getAndIncrement());
-                if (LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 

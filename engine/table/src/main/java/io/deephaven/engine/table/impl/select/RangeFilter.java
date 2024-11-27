@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -35,7 +36,7 @@ import java.util.List;
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
  */
-public class RangeFilter extends WhereFilterImpl {
+public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     private String columnName;
     private String value;
@@ -262,6 +263,12 @@ public class RangeFilter extends WhereFilterImpl {
         }
 
         filter.init(tableDefinition, compilationProcessor);
+    }
+
+    @Override
+    public ChunkFilter chunkFilter() {
+        Assert.eqTrue(filter instanceof ExposesChunkFilter, "filter instanceof ExposesChunkFilter");
+        return ((ExposesChunkFilter) filter).chunkFilter();
     }
 
     private static LongRangeFilter makeInstantRangeFilter(String columnName, Condition condition, long value) {

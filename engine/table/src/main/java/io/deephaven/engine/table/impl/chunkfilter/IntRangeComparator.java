@@ -7,14 +7,10 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.mutable.MutableInt;
-
-import java.util.function.LongConsumer;
 
 public class IntRangeComparator {
     private IntRangeComparator() {} // static use only
@@ -39,23 +35,14 @@ public class IntRangeComparator {
 
         public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final int value = values.get(ii);
                 if (IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        public void filter(IntChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final int value = values.get(index.getAndIncrement());
-                if (IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -66,23 +53,14 @@ public class IntRangeComparator {
 
         public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final int value = values.get(ii);
                 if (IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        public void filter(IntChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final int value = values.get(index.getAndIncrement());
-                if (IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -93,23 +71,14 @@ public class IntRangeComparator {
 
         public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final int value = values.get(ii);
                 if (IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        public void filter(IntChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final int value = values.get(index.getAndIncrement());
-                if (IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -120,23 +89,14 @@ public class IntRangeComparator {
 
         public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final int value = values.get(ii);
                 if (IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        public void filter(IntChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                final int value = values.get(index.getAndIncrement());
-                if (IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper)) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 

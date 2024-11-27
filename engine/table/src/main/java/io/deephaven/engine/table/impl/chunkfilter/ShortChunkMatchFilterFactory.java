@@ -8,20 +8,16 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TShortHashSet;
-import io.deephaven.util.mutable.MutableInt;
-
-import java.util.function.LongConsumer;
 
 /**
  * Creates chunk filters for short values.
- * <p>
+ *
  * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
  * equality check.
- * <p>
+ *
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ShortChunkMatchFilterFactory {
@@ -63,22 +59,13 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 if (values.get(ii) == value) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                if (values.get(index.getAndIncrement()) == value) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -92,22 +79,13 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 if (values.get(ii) != value) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                if (values.get(index.getAndIncrement()) != value) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -123,24 +101,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (checkValue == value1 || checkValue == value2) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (checkValue == value1 || checkValue == value2) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -156,24 +124,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (!(checkValue == value1 || checkValue == value2)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (!(checkValue == value1 || checkValue == value2)) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -191,24 +149,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -226,24 +174,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -257,24 +195,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (this.values.contains(checkValue)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (this.values.contains(checkValue)) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 
@@ -288,24 +216,14 @@ public class ShortChunkMatchFilterFactory {
         @Override
         public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
+            final int count = keys.size();
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < count; ++ii) {
                 final short checkValue = values.get(ii);
                 if (!this.values.contains(checkValue)) {
                     results.add(keys.get(ii));
                 }
             }
-        }
-
-        @Override
-        public void filter(ShortChunk<? extends Values> values, RowSequence rows, LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys((final long key) -> {
-                final short checkValue = values.get(index.getAndIncrement());
-                if (!this.values.contains(checkValue)) {
-                    consumer.accept(key);
-                }
-            });
         }
     }
 }

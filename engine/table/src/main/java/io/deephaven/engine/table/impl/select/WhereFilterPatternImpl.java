@@ -9,7 +9,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -19,12 +18,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.LongConsumer;
 
 final class WhereFilterPatternImpl extends WhereFilterImpl {
 
@@ -182,19 +179,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 }
             }
         }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (matches(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private class MatchesPatternInverted implements ObjectChunkFilter<CharSequence> {
@@ -209,19 +193,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                     results.add(keys.get(ix));
                 }
             }
-        }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (matchesPatternInverted(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -238,19 +209,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 }
             }
         }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (find(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private class FindPatternInverted implements ObjectChunkFilter<CharSequence> {
@@ -265,19 +223,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                     results.add(keys.get(ix));
                 }
             }
-        }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (findPatternInverted(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -294,19 +239,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 }
             }
         }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (!matches(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private class NotMatchesPatternInverted implements ObjectChunkFilter<CharSequence> {
@@ -321,19 +253,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                     results.add(keys.get(ix));
                 }
             }
-        }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (!matchesPatternInverted(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 
@@ -350,19 +269,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 }
             }
         }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (!find(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
-        }
     }
 
     private class NotFindPatternInverted implements ObjectChunkFilter<CharSequence> {
@@ -377,19 +283,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                     results.add(keys.get(ix));
                 }
             }
-        }
-
-        @Override
-        public void filter(
-                ObjectChunk<CharSequence, ? extends Values> values,
-                RowSequence rows,
-                LongConsumer consumer) {
-            final MutableInt index = new MutableInt(0);
-            rows.forAllRowKeys(row -> {
-                if (!findPatternInverted(values.get(index.getAndIncrement()))) {
-                    consumer.accept(row);
-                }
-            });
         }
     }
 }
