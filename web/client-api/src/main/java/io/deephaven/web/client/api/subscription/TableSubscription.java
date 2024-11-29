@@ -60,4 +60,12 @@ public final class TableSubscription extends AbstractTableSubscription {
     public JsArray<Column> getColumns() {
         return super.getColumns();
     }
+
+    /**
+     * Close the subscription. Need to redefine here so this is exposed to JS.
+     */
+    @Override
+    public void close() {
+        super.close();
+    }
 }
