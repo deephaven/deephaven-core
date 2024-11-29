@@ -217,6 +217,10 @@ public interface Table extends
      * Set this attribute to enable collection of barrage performance stats.
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
+    /**
+     * Set this to control the schema used for barrage serialization.
+     */
+    String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key

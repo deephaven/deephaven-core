@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage;
 
+import io.deephaven.chunk.ChunkType;
 import org.apache.arrow.flatbuf.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,5 +52,9 @@ public class BarrageTypeInfo {
 
     public Field arrowField() {
         return arrowField;
+    }
+
+    public ChunkType chunkType() {
+        return ChunkType.fromElementType(type);
     }
 }

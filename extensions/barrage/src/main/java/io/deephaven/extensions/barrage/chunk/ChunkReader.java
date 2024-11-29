@@ -22,6 +22,24 @@ import java.util.PrimitiveIterator;
 public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
 
     /**
+     * Supports creation of {@link ChunkReader} instances to use when processing a flight stream. JVM implementations
+     * for client and server should probably use {@link DefaultChunkReaderFactory#INSTANCE}.
+     */
+    interface Factory {
+
+        /**
+         * Returns a {@link ChunkReader} for the specified arguments.
+         *
+         * @param typeInfo the type of data to read into a chunk
+         * @param options options for reading the stream
+         * @return a ChunkReader based on the given options, factory, and type to read
+         */
+        <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+                @NotNull BarrageTypeInfo typeInfo,
+                @NotNull BarrageOptions options);
+    }
+
+    /**
      * Reads the given DataInput to extract the next Arrow buffer as a Deephaven Chunk.
      *
      * @param fieldNodeIter iterator to read fields from the stream
@@ -57,22 +75,4 @@ public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
             @Nullable WritableChunk<Values> outChunk,
             int outOffset,
             int totalRows) throws IOException;
-
-    /**
-     * Supports creation of {@link ChunkReader} instances to use when processing a flight stream. JVM implementations
-     * for client and server should probably use {@link DefaultChunkReaderFactory#INSTANCE}.
-     */
-    interface Factory {
-
-        /**
-         * Returns a {@link ChunkReader} for the specified arguments.
-         *
-         * @param typeInfo the type of data to read into a chunk
-         * @param options options for reading the stream
-         * @return a ChunkReader based on the given options, factory, and type to read
-         */
-        <T extends WritableChunk<Values>> ChunkReader<T> newReader(
-                @NotNull BarrageTypeInfo typeInfo,
-                @NotNull BarrageOptions options);
-    }
 }

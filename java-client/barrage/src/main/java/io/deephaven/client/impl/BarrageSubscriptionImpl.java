@@ -239,7 +239,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         boolean isFullSubscription = viewport == null;
         final BarrageTable localResultTable = BarrageTable.make(
-                executorService, schema.tableDef, schema.attributes, isFullSubscription, checkForCompletion);
+                executorService, schema, isFullSubscription, checkForCompletion);
         resultTable = localResultTable;
 
         // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`

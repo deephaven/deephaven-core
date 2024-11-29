@@ -8,5 +8,7 @@
         <exclude name="vector/*" />
         <exclude name="DefaultChunkReaderFactory.java" />
         <exclude name="DefaultChunkWriterFactory.java" />
+        <exclude name="MapChunkReader.java" />
+        <exclude name="MapChunkWriter.java" />
     </source>
 </module>

@@ -425,21 +425,20 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      *
      *
      * @param executorService an executor service used to flush stats
-     * @param tableDefinition the table definition
-     * @param attributes Key-Value pairs of attributes to forward to the QueryTable's metadata
+     * @param schema the table schema
      * @param isFullSubscription whether this table is a full subscription
+     * @param vpCallback a callback for viewport changes
      *
      * @return a properly initialized {@link BarrageTable}
      */
     @InternalUseOnly
     public static BarrageTable make(
             @Nullable final ScheduledExecutorService executorService,
-            final TableDefinition tableDefinition,
-            final Map<String, Object> attributes,
+            @NotNull final BarrageUtil.ConvertedArrowSchema schema,
             final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
         final UpdateGraph ug = ExecutionContext.getContext().getUpdateGraph();
-        return make(ug, ug, executorService, tableDefinition, attributes, isFullSubscription, vpCallback);
+        return make(ug, ug, executorService, schema, isFullSubscription, vpCallback);
     }
 
     @VisibleForTesting
@@ -447,24 +446,23 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final UpdateSourceRegistrar registrar,
             final NotificationQueue queue,
             @Nullable final ScheduledExecutorService executor,
-            final TableDefinition tableDefinition,
-            final Map<String, Object> attributes,
+            @NotNull final BarrageUtil.ConvertedArrowSchema schema,
             final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
-        final List<ColumnDefinition<?>> columns = tableDefinition.getColumns();
+        final List<ColumnDefinition<?>> columns = schema.tableDef.getColumns();
         final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
 
         final BarrageTable table;
 
         final Predicate<String> getAttribute = attr -> {
-            final Object value = attributes.getOrDefault(attr, false);
+            final Object value = schema.attributes.getOrDefault(attr, false);
             return value instanceof Boolean && (Boolean) value;
         };
 
         if (getAttribute.test(Table.BLINK_TABLE_ATTRIBUTE)) {
             final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
             table = new BarrageBlinkTable(
-                    registrar, queue, executor, finalColumns, writableSources, attributes, vpCallback);
+                    registrar, queue, executor, finalColumns, writableSources, schema.attributes, vpCallback);
         } else {
             final WritableRowRedirection rowRedirection;
             final boolean isFlat = getAttribute.test(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT);
@@ -477,8 +475,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                     makeColumns(columns, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
-                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, attributes, isFlat,
-                    isFullSubscription, vpCallback);
+                    registrar, queue, executor, finalColumns, writableSources, rowRedirection, schema.attributes,
+                    isFlat, isFullSubscription, vpCallback);
         }
 
         return table;

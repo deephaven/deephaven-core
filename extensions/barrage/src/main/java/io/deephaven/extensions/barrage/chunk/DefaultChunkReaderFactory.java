@@ -21,6 +21,7 @@ import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
@@ -238,20 +239,19 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
             final Field structField = field.getChildren().get(0);
-            final Field keyField = structField.getChildren().get(0);
-            final Field valueField = structField.getChildren().get(1);
-            final BarrageTypeInfo keyTypeInfo = new BarrageTypeInfo(,, keyField);
-            final BarrageTypeInfo valueTypeInfo = new BarrageTypeInfo(,, valueField);
+            final BarrageTypeInfo keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
+            final BarrageTypeInfo valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
+
             final ChunkReader<WritableChunk<Values>> keyReader = newReader(keyTypeInfo, options);
             final ChunkReader<WritableChunk<Values>> valueReader = newReader(valueTypeInfo, options);
+
+            // noinspection unchecked
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
         }
 
-        if (typeId == ArrowType.ArrowTypeID.Struct) {
-            // TODO: expose transformer API of Map<String, Chunk<Values>> -> T
-            // TODO: maybe defaults to Map<String, Object>
-            // TODO NATE NOCOMMIT: implement
-        }
+        // TODO: if (typeId == ArrowType.ArrowTypeID.Struct) {
+        // expose transformer API of Map<String, Chunk<Values>> -> T
+        // maybe defaults to Map<String, Object>
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             // TODO: defaults to Object

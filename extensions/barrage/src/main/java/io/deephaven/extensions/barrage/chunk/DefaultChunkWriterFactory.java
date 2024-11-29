@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
@@ -23,6 +22,7 @@ import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.Float16;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -145,7 +145,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
-        final Field field = Field.convertField(typeInfo.arrowField());
+            final Field field = Field.convertField(typeInfo.arrowField());
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = DefaultChunkReaderFactory.SPECIAL_TYPES.contains(typeId);
@@ -197,13 +197,15 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.List
+                || typeId == ArrowType.ArrowTypeID.ListView
                 || typeId == ArrowType.ArrowTypeID.FixedSizeList) {
 
-            // TODO (deephaven/deephaven-core#5947): Add SPARSE branch for ListView
             int fixedSizeLength = 0;
             final ListChunkReader.Mode mode;
             if (typeId == ArrowType.ArrowTypeID.List) {
                 mode = ListChunkReader.Mode.DENSE;
+            } else if (typeId == ArrowType.ArrowTypeID.ListView) {
+                mode = ListChunkReader.Mode.SPARSE;
             } else {
                 mode = ListChunkReader.Mode.FIXED;
                 fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
@@ -246,18 +248,21 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
-            // TODO: can user supply collector?
+            // TODO: should we allow the user to supply the collector?
             final Field structField = field.getChildren().get(0);
-            final Field keyField = structField.getChildren().get(0);
-            final Field valueField = structField.getChildren().get(1);
+            final BarrageTypeInfo keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
+            final BarrageTypeInfo valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
 
-            // TODO NATE NOCOMMIT: implement
+            final ChunkWriter<Chunk<Values>> keyWriter = newWriter(keyTypeInfo);
+            final ChunkWriter<Chunk<Values>> valueWriter = newWriter(valueTypeInfo);
+
+            // noinspection unchecked
+            return (ChunkWriter<T>) new MapChunkWriter<>(
+                    keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType());
         }
 
-        if (typeId == ArrowType.ArrowTypeID.Struct) {
-            // TODO: expose transformer API of Map<String, Chunk<Values>> -> T
-            // TODO NATE NOCOMMIT: implement
-        }
+        // TODO: if (typeId == ArrowType.ArrowTypeID.Struct) {
+        //  expose transformer API of Map<String, Chunk<Values>> -> T
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();

@@ -432,12 +432,40 @@ public class BarrageUtil {
             if (Vector.class.isAssignableFrom(dataType)) {
                 return arrowFieldForVectorType(name, dataType, componentType, metadata);
             }
-            return arrowFieldFor(name, dataType, componentType, metadata);
+            return arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
         });
     }
 
     public static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
         metadata.put(ATTR_DH_PREFIX + key, value);
+    }
+
+    public static BarrageTypeInfo getDefaultType(@NotNull final Field field) {
+
+        Class<?> explicitClass = null;
+        final String explicitClassName = field.getMetadata().get(ATTR_DH_PREFIX + ATTR_TYPE_TAG);
+        if (explicitClassName != null) {
+            try {
+                explicitClass = ClassUtil.lookupClass(explicitClassName);
+            } catch (final ClassNotFoundException e) {
+                throw new UncheckedDeephavenException("Could not load class from schema", e);
+            }
+        }
+
+        final String explicitComponentTypeName = field.getMetadata().get(ATTR_DH_PREFIX + ATTR_COMPONENT_TYPE_TAG);
+        Class<?> columnComponentType = null;
+        if (explicitComponentTypeName != null) {
+            try {
+                columnComponentType = ClassUtil.lookupClass(explicitComponentTypeName);
+            } catch (final ClassNotFoundException e) {
+                throw new UncheckedDeephavenException("Could not load class from schema", e);
+            }
+        }
+
+        final Class<?> columnType = getDefaultType(field.getType(), explicitClass);
+
+        return new BarrageTypeInfo(columnType, columnComponentType,
+                flatbufFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata()));
     }
 
     private static Class<?> getDefaultType(
@@ -746,14 +774,15 @@ public class BarrageUtil {
             final String name,
             final Class<?> type,
             final Class<?> componentType,
-            final Map<String, String> metadata) {
+            final Map<String, String> metadata,
+            final boolean columnAsList) {
         List<Field> children = Collections.emptyList();
 
-        final FieldType fieldType = arrowFieldTypeFor(type, metadata);
+        final FieldType fieldType = arrowFieldTypeFor(type, metadata, columnAsList);
         if (fieldType.getType().isComplex()) {
             if (type.isArray() || Vector.class.isAssignableFrom(type)) {
                 children = Collections.singletonList(arrowFieldFor(
-                        "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+                        "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
             } else {
                 throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
             }
@@ -777,17 +806,22 @@ public class BarrageUtil {
             final Class<?> type,
             final Class<?> componentType,
             final Map<String, String> metadata) {
-        final Field field = arrowFieldFor(name, type, componentType, metadata);
+        final Field field = arrowFieldFor(name, type, componentType, metadata, false);
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         builder.finish(field.getField(builder));
         return org.apache.arrow.flatbuf.Field.getRootAsField(builder.dataBuffer());
     }
 
-    private static FieldType arrowFieldTypeFor(final Class<?> type, final Map<String, String> metadata) {
-        return new FieldType(true, arrowTypeFor(type), null, metadata);
+    private static FieldType arrowFieldTypeFor(
+            final Class<?> type,
+            final Map<String, String> metadata,
+            final boolean columnAsList) {
+        return new FieldType(true, arrowTypeFor(type, columnAsList), null, metadata);
     }
 
-    private static ArrowType arrowTypeFor(Class<?> type) {
+    private static ArrowType arrowTypeFor(
+            Class<?> type,
+            final boolean columnAsList) {
         if (TypeUtils.isBoxedType(type)) {
             type = TypeUtils.getUnboxedType(type);
         }
@@ -811,7 +845,7 @@ public class BarrageUtil {
                 return Types.MinorType.FLOAT8.getType();
             case Object:
                 if (type.isArray()) {
-                    if (type.getComponentType() == byte.class) {
+                    if (type.getComponentType() == byte.class && !columnAsList) {
                         return Types.MinorType.VARBINARY.getType();
                     }
                     return Types.MinorType.LIST.getType();
@@ -848,7 +882,7 @@ public class BarrageUtil {
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
         final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
         final List<Field> children = Collections.singletonList(arrowFieldFor(
-                "", componentType, componentType.getComponentType(), Collections.emptyMap()));
+                "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
 
         return new Field(name, fieldType, children);
     }

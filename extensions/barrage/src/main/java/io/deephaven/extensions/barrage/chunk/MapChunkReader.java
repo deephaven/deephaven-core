@@ -1,12 +1,17 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
+import com.google.common.collect.ImmutableMap;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,21 +44,25 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
             final int totalRows) throws IOException {
         final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBufferLength = bufferInfoIter.nextLong();
+        final long offsetsBufferLength = bufferInfoIter.nextLong();
 
         if (nodeInfo.numElements == 0) {
-            is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBufferLength));
+            is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
+                    validityBufferLength + offsetsBufferLength));
             try (final WritableChunk<Values> ignored =
-                         keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
-                 final WritableChunk<Values> ignored2 =
-                         valueReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
+                    final WritableChunk<Values> ignored2 =
+                            valueReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
             }
         }
 
         final WritableObjectChunk<T, Values> chunk;
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        final int numOffsets = nodeInfo.numElements;
-        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        final int numOffsets = nodeInfo.numElements + 1;
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
+                final WritableIntChunk<ChunkPositions> offsets = WritableIntChunk.makeWritableChunk(numOffsets)) {
+
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityLongs, validityBufferLength / 8); ++jj) {
@@ -68,32 +77,51 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
                 isValid.set(jj, -1); // -1 is bit-wise representation of all ones
             }
 
-            try (final WritableChunk<Values> keys =
-                         keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
-                 final WritableChunk<Values> values =
-                         valueReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+            // Read offsets:
+            final long offBufRead = (long) numOffsets * Integer.BYTES;
+            if (offsetsBufferLength < offBufRead) {
+                throw new IllegalStateException(
+                        "map offset buffer is too short for the expected number of elements");
+            }
+            for (int ii = 0; ii < numOffsets; ++ii) {
+                offsets.set(ii, is.readInt());
+            }
+            if (offBufRead < offsetsBufferLength) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength - offBufRead));
+            }
+
+            try (final WritableChunk<Values> keysPrim =
+                    keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
+                    final WritableChunk<Values> valuesPrim =
+                            valueReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
+                    final ChunkBoxer.BoxerKernel keyBoxer =
+                            ChunkBoxer.getBoxer(keysPrim.getChunkType(), keysPrim.size());
+                    final ChunkBoxer.BoxerKernel valueBoxer =
+                            ChunkBoxer.getBoxer(valuesPrim.getChunkType(), valuesPrim.size())) {
+                final ObjectChunk<Object, ? extends Values> keys = keyBoxer.box(keysPrim).asObjectChunk();
+                final ObjectChunk<Object, ? extends Values> values = valueBoxer.box(valuesPrim).asObjectChunk();
+
                 chunk = castOrCreateChunk(
                         outChunk,
-                        Math.max(totalRows, keys.size()),
+                        Math.max(totalRows, nodeInfo.numElements),
                         WritableObjectChunk::makeWritableChunk,
                         WritableChunk::asWritableObjectChunk);
 
                 long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements;) {
+                for (int ii = 0; ii < nodeInfo.numElements; nextValid >>= 1, ++ii) {
                     if ((ii % 64) == 0) {
                         nextValid = ~isValid.get(ii / 64);
                     }
                     if ((nextValid & 0x1) == 0x1) {
                         chunk.set(outOffset + ii, null);
                     } else {
-                        chunk.set(outOffset + ii, )
+                        final ImmutableMap.Builder<Object, Object> mapBuilder = ImmutableMap.builder();
+                        for (jj = offsets.get(ii); jj < offsets.get(ii + 1); ++jj) {
+                            mapBuilder.put(keys.get(jj), values.get(jj));
+                        }
+                        // noinspection unchecked
+                        chunk.set(outOffset + ii, (T) mapBuilder.build());
                     }
-                    final int numToSkip = Math.min(
-                            Long.numberOfTrailingZeros(nextValid & (~0x1)),
-                            64 - (ii % 64));
-
-                    nextValid >>= numToSkip;
-                    ii += numToSkip;
                 }
             }
         }

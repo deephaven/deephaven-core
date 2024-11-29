@@ -181,9 +181,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (sourceTable.isFlat()) {
                 attributes.put(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT, true);
             }
-            this.barrageTable = BarrageTable.make(updateSourceCombiner,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), attributes, viewport == null, null);
+            final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(BarrageUtil.toSchema(
+                    barrageMessageProducer.getTableDefinition(), attributes, sourceTable.isFlat()));
+            this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
+                    null, schema, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
