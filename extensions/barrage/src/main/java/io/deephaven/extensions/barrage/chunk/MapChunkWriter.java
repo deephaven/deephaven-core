@@ -68,7 +68,7 @@ public class MapChunkWriter<T>
             offsets = WritableIntChunk.makeWritableChunk(numOffsets);
             offsets.add(0);
             for (int ii = 0; ii < chunk.size(); ++ii) {
-                numInnerElements += ((Map<?, ?>)chunk.get(ii)).size();
+                numInnerElements += ((Map<?, ?>) chunk.get(ii)).size();
                 offsets.add(numInnerElements);
             }
 
@@ -79,7 +79,7 @@ public class MapChunkWriter<T>
                     WritableObjectChunk.makeWritableChunk(numInnerElements);
             valueObjChunk.setSize(0);
             for (int ii = 0; ii < chunk.size(); ++ii) {
-                ((Map<?, ?>)chunk.get(ii)).forEach((key, value) -> {
+                ((Map<?, ?>) chunk.get(ii)).forEach((key, value) -> {
                     keyObjChunk.add(key);
                     valueObjChunk.add(value);
                 });
@@ -92,8 +92,8 @@ public class MapChunkWriter<T>
             } else {
                 // note that we do not close the unboxer since we steal the inner chunk and pass to key context
                 // noinspection unchecked
-                keyChunk = (WritableChunk<Values>)
-                        ChunkUnboxer.getUnboxer(keyWriterChunkType, keyObjChunk.capacity()).unbox(keyObjChunk);
+                keyChunk = (WritableChunk<Values>) ChunkUnboxer.getUnboxer(keyWriterChunkType, keyObjChunk.capacity())
+                        .unbox(keyObjChunk);
                 keyObjChunk.close();
             }
             keyContext = keyWriter.makeContext(keyChunk, 0);
@@ -105,8 +105,8 @@ public class MapChunkWriter<T>
             } else {
                 // note that we do not close the unboxer since we steal the inner chunk and pass to value context
                 // noinspection unchecked
-                valueChunk = (WritableChunk<Values>)
-                        ChunkUnboxer.getUnboxer(valueWriterChunkType, valueObjChunk.capacity()).unbox(valueObjChunk);
+                valueChunk = (WritableChunk<Values>) ChunkUnboxer
+                        .getUnboxer(valueWriterChunkType, valueObjChunk.capacity()).unbox(valueObjChunk);
                 valueObjChunk.close();
             }
             valueContext = valueWriter.makeContext(valueChunk, 0);

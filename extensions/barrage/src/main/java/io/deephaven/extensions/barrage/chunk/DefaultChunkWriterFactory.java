@@ -145,7 +145,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
-            final Field field = Field.convertField(typeInfo.arrowField());
+        final Field field = Field.convertField(typeInfo.arrowField());
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = DefaultChunkReaderFactory.SPECIAL_TYPES.contains(typeId);
@@ -262,7 +262,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         // TODO: if (typeId == ArrowType.ArrowTypeID.Struct) {
-        //  expose transformer API of Map<String, Chunk<Values>> -> T
+        // expose transformer API of Map<String, Chunk<Values>> -> T
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();

@@ -140,6 +140,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
             @NotNull final BarrageTypeInfo typeInfo,
             @NotNull final BarrageOptions options) {
+        return newReader(typeInfo, options, true);
+    }
+
+    public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+            @NotNull final BarrageTypeInfo typeInfo,
+            @NotNull final BarrageOptions options,
+            final boolean isTopLevel) {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
@@ -217,6 +224,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         componentType,
                         componentType.getComponentType(),
                         typeInfo.arrowField().children(0));
+            } else if (isTopLevel && options.columnsAsList()) {
+                final BarrageTypeInfo realTypeInfo = new BarrageTypeInfo(
+                        typeInfo.type(),
+                        typeInfo.componentType(),
+                        typeInfo.arrowField().children(0));
+                final ChunkReader<WritableChunk<Values>> componentReader = newReader(realTypeInfo, options, false);
+                // noinspection unchecked
+                return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
             } else {
                 throw new UnsupportedOperationException(String.format(
                         "No known ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
@@ -231,7 +246,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             } else {
                 kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
             }
-            final ChunkReader<WritableChunk<Values>> componentReader = newReader(componentTypeInfo, options);
+            final ChunkReader<WritableChunk<Values>> componentReader = newReader(componentTypeInfo, options, false);
 
             // noinspection unchecked
             return (ChunkReader<T>) new ListChunkReader<>(mode, fixedSizeLength, kernel, componentReader);
@@ -242,8 +257,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final BarrageTypeInfo keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
             final BarrageTypeInfo valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
 
-            final ChunkReader<WritableChunk<Values>> keyReader = newReader(keyTypeInfo, options);
-            final ChunkReader<WritableChunk<Values>> valueReader = newReader(valueTypeInfo, options);
+            final ChunkReader<WritableChunk<Values>> keyReader = newReader(keyTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> valueReader = newReader(valueTypeInfo, options, false);
 
             // noinspection unchecked
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);

@@ -11,6 +11,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -155,7 +156,12 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             chunk.setSize(0);
                             msg.addColumnData[ci].data.add(chunk);
                         }
-                        numAddRowsTotal = msg.rowsIncluded.size();
+                        if (options.columnsAsList() && msg.addColumnData.length == 0) {
+                            // there will be no more incoming record batches if there are no columns
+                            numAddRowsTotal = 0;
+                        } else {
+                            numAddRowsTotal = msg.rowsIncluded.size();
+                        }
 
                         // if this message is a snapshot response (vs. subscription) then mod columns may be empty
                         numModRowsTotal = 0;
@@ -259,13 +265,22 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             }
 
                             // fill the chunk with data and assign back into the array
-                            acd.data.set(lastChunkIndex,
-                                    readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk,
-                                            chunk.size(), (int) batch.length()));
-                            chunk.setSize(chunk.size() + (int) batch.length());
+                            final WritableChunk<Values> values = readers.get(ci).readChunk(
+                                    fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(), (int) batch.length());
+                            acd.data.set(lastChunkIndex, values);
+                            if (!options.columnsAsList()) {
+                                chunk.setSize(chunk.size() + (int) batch.length());
+                            }
                         }
-                        numAddRowsRead += batch.length();
+
+                        if (options.columnsAsList() && msg.addColumnData.length > 0) {
+                            final List<Chunk<Values>> chunks = msg.addColumnData[0].data;
+                            numAddRowsRead += chunks.get(chunks.size() - 1).size();
+                        } else {
+                            numAddRowsRead += batch.length();
+                        }
                     } else {
+                        int maxModRows = 0;
                         for (int ci = 0; ci < msg.modColumnData.length; ++ci) {
                             final BarrageMessage.ModColumnData mcd = msg.modColumnData[ci];
 
@@ -278,6 +293,7 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
 
                             final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
                                     Math.min(remaining, batch.length()));
+                            maxModRows = Math.max(numRowsToRead, maxModRows);
                             if (numRowsToRead > chunk.capacity() - chunk.size()) {
                                 // reading the rows from this batch will overflow the existing chunk; create a new one
                                 final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
@@ -294,7 +310,7 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                                             chunk.size(), numRowsToRead));
                             chunk.setSize(chunk.size() + numRowsToRead);
                         }
-                        numModRowsRead += batch.length();
+                        numModRowsRead += maxModRows;
                     }
                 }
             }

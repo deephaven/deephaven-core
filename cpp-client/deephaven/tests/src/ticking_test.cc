@@ -240,7 +240,6 @@ private:
 };
 
 TEST_CASE("Ticking Table: all the data is eventually present", "[ticking]") {
-  if (true) return;
   const int64_t target = 10;
   auto client = TableMakerForTests::CreateClient();
   auto tm = client.GetManager();
