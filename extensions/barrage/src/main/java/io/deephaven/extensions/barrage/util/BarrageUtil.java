@@ -18,6 +18,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -30,6 +31,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageOptions;
@@ -965,9 +967,16 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
-                        PeriodicUpdateGraph updateGraph = table.getUpdateGraph().cast();
+                        final long targetCycleDurationMillis;
+                        final UpdateGraph updateGraph = table.getUpdateGraph();
+                        if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
+                            targetCycleDurationMillis = PeriodicUpdateGraph.DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+                        } else {
+                            targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
+                                    .getTargetCycleDurationMillis();
+                        }
                         long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * updateGraph.getTargetCycleDurationMillis()
+                                * targetCycleDurationMillis
                                 * 1000000);
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);

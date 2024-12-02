@@ -60,7 +60,6 @@ import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetDbSchemas;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetExportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetImportedKeys;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetPrimaryKeys;
-import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetSqlInfo;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTableTypes;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetTables;
 import org.apache.arrow.flight.sql.impl.FlightSql.CommandGetXdbcTypeInfo;
@@ -641,11 +640,21 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
     }
 
     @Test
-    public void getSqlInfo() {
-        getSchemaUnimplemented(() -> flightSqlClient.getSqlInfoSchema(), CommandGetSqlInfo.getDescriptor());
-        commandUnimplemented(() -> flightSqlClient.getSqlInfo(), CommandGetSqlInfo.getDescriptor());
-        misbehave(CommandGetSqlInfo.getDefaultInstance(), CommandGetSqlInfo.getDescriptor());
-        unpackable(CommandGetSqlInfo.getDescriptor(), CommandGetSqlInfo.class);
+    public void getSqlInfo() throws Exception {
+        final SchemaResult schemaResult = flightSqlClient.getSqlInfoSchema();
+        final FlightInfo info = flightSqlClient.getSqlInfo();
+        try (final FlightStream stream = flightSqlClient.getStream(endpoint(info).getTicket())) {
+            assertThat(schemaResult.getSchema()).isEqualTo(stream.getSchema());
+
+            int numRows = 0;
+            int flightCount = 0;
+            while (stream.next()) {
+                ++flightCount;
+                numRows += stream.getRoot().getRowCount();
+            }
+            assertThat(flightCount).isEqualTo(1);
+            assertThat(numRows).isEqualTo(8);
+        }
     }
 
     @Test

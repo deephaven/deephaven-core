@@ -30,6 +30,7 @@ import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_EXPORTED_KEYS_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_IMPORTED_KEYS_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_PRIMARY_KEYS_TYPE_URL;
+import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_SQL_INFO_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLES_TYPE_URL;
 import static io.deephaven.server.flightsql.FlightSqlSharedConstants.COMMAND_GET_TABLE_TYPES_TYPE_URL;
 
@@ -113,6 +114,8 @@ final class FlightSqlTicketHelper {
                 return visitor.visit(unpack(ticket, CommandGetImportedKeys.class, logId));
             case COMMAND_GET_EXPORTED_KEYS_TYPE_URL:
                 return visitor.visit(unpack(ticket, CommandGetExportedKeys.class, logId));
+            case COMMAND_GET_SQL_INFO_TYPE_URL:
+                return visitor.visit(unpack(ticket, CommandGetSqlInfo.class, logId));
         }
         throw invalidTicket(logId);
     }

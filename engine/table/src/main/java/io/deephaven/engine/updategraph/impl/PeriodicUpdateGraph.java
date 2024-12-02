@@ -100,6 +100,9 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
     public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
             "PeriodicUpdateGraph.targetCycleDurationMillis";
+    public static final int DEFAULT_TARGET_CYCLE_DURATION_MILLIS =
+            Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
     private final ThreadInitializationFactory threadInitializationFactory;
@@ -1166,8 +1169,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     public static final class Builder {
         private final boolean allowUnitTestMode =
                 Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
-        private long targetCycleDurationMillis =
-                Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+        private long targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
         private long minimumCycleDurationToLogNanos = DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS;
 
         private String name;
