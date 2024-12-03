@@ -37,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
@@ -388,6 +389,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             perLevelSharedContexts.clear();
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected void destroy() {
             super.destroy();
@@ -1008,11 +1010,14 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         getDefaultExpansionNodeKeys().forEach((final Object nodeKey) -> accumulateKeyTableDirective(
                 nodeKey, Expand, directivesByNodeKey, orderedDirectives));
 
-        try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
-            final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
-            final ColumnIterator<?> nodeKeyIter = ChunkedColumnIterator.make(nodeKeySource, rowsToExtract);
-            final ByteColumnIterator actionIter =
-                    actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract);
+        final RowSequence rowsToExtract = usePrev
+                ? keyTable.getRowSet().prev()
+                : keyTable.getRowSet();
+        // @formatter:off
+        try (final ColumnIterator<?> nodeKeyIter = ChunkedColumnIterator.make(nodeKeySource, rowsToExtract);
+             final ByteColumnIterator actionIter =
+                        actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract)) {
+            // @formatter:on
             // If no action source is supplied, we default to "Expand"
             final Supplier<VisitAction> nextAction = actionIter == null
                     ? () -> Expand
@@ -1235,11 +1240,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     numChildDirectives = 0;
                 }
 
-                final RowSet prevRows = snapshotState.usePrev ? forExpansion.getRowSet().copyPrev() : null;
-                final RowSet rowsToVisit = prevRows != null ? prevRows : forExpansion.getRowSet();
+                final RowSet rowsToVisit = snapshotState.usePrev
+                        ? forExpansion.getRowSet().prev()
+                        : forExpansion.getRowSet();
                 // @formatter:off
-                try (final SafeCloseable ignored = prevRows;
-                     final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
+                try (final RowSequence.Iterator rowsToVisitIter = rowsToVisit.getRowSequenceIterator();
                      final NodeFillContext filler = filling
                              ? new NodeFillContext(snapshotState, nodeTableState, rowsToVisit.size())
                              : null;
@@ -1273,7 +1278,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                                 // We're at the start of a contracted range; we need to consume the contracted range
                                 // and expand the first row after if there is one.
                                 final long lastContractedPositionInRange = contractedRowPositionsIter.currentRangeEnd();
-                                final long rangeSize = lastContractedPositionInRange - nextContractedPosition + 1;
+                                final int rangeSize = Math.toIntExact(
+                                        lastContractedPositionInRange - nextContractedPosition + 1);
                                 cdi += rangeSize;
                                 nextChildDirective = cdi < numChildDirectives ? childDirectives.get(cdi) : null;
                                 if (rowsToVisit.size() > lastContractedPositionInRange + 1) {

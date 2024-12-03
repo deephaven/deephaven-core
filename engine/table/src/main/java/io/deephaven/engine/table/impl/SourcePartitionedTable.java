@@ -174,11 +174,20 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 tableLocationProvider.refresh();
 
                 final Collection<TableLocation> locations = new ArrayList<>();
-                tableLocationProvider.getTableLocationKeys(
-                        tlk -> locations.add(tableLocationProvider.getTableLocation(tlk.get())),
-                        locationKeyMatcher);
-                try (final RowSet added = sortAndAddLocations(locations.stream())) {
-                    resultRows.insert(added);
+                try {
+                    retainReference();
+                    tableLocationProvider.getTableLocationKeys(
+                            (final LiveSupplier<ImmutableTableLocationKey> lstlk) -> {
+                                final TableLocation tableLocation = tableLocationProvider.getTableLocation(lstlk.get());
+                                manage(tableLocation);
+                                locations.add(tableLocation);
+                            },
+                            locationKeyMatcher);
+                    try (final RowSet added = sortAndAddLocations(locations.stream())) {
+                        resultRows.insert(added);
+                    }
+                } finally {
+                    dropReference();
                 }
             }
 
@@ -204,7 +213,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 resultLocationTables.ensureCapacity(constituentRowKey + 1);
                 resultLocationTables.set(constituentRowKey, constituentTable);
 
-                result.manage(constituentTable);
+                if (result.isRefreshing()) {
+                    result.manage(constituentTable);
+                }
             });
             return initialLastRowKey == lastInsertedRowKey.get()
                     ? RowSetFactory.empty()

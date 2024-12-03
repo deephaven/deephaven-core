@@ -451,6 +451,10 @@ public class RangeSet {
         return sortedRanges.size();
     }
 
+    public boolean isFlat() {
+        return sortedRanges.isEmpty() || sortedRanges.size() == 1 && getFirstRow() == 0;
+    }
+
     /**
      * The total count of items contained in this collection. In some cases this can be expensive to compute, and
      * generally should not be needed except for debugging purposes, or preallocating space (i.e., do not call this
@@ -543,6 +547,31 @@ public class RangeSet {
         }
         target = sortedRanges.get(index);
         return range.getFirst() <= target.getLast() && range.getLast() >= target.getFirst();
+    }
+
+    public long find(long key) {
+        long cnt = 0;
+        Iterator<Range> seenIterator = rangeIterator();
+
+        while (seenIterator.hasNext()) {
+            Range current = seenIterator.next();
+
+            if (key < current.getFirst()) {
+                // can't match at all, starts too early
+                return -cnt - 1;
+            }
+
+            if (key > current.getLast()) {
+                // doesn't start until after the current range, so keep moving forward
+                cnt += current.size();
+                continue;
+            }
+            if (key <= current.getLast()) {
+                // this is a match
+                return cnt + key - current.getFirst();
+            }
+        }
+        return -cnt - 1;
     }
 
     @Override

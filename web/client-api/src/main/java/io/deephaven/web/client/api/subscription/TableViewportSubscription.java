@@ -11,7 +11,6 @@ import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
@@ -110,7 +109,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     public TableViewportSubscription(ClientTableState state, WorkerConnection connection, JsTable existingTable) {
-        super(state, connection);
+        super(SubscriptionType.VIEWPORT_SUBSCRIPTION, state, connection);
         this.original = existingTable;
 
         initialState = existingTable.state();
@@ -339,13 +338,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         BarrageSnapshotOptions options = BarrageSnapshotOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
-                .columnConversionMode(ColumnConversionMode.Stringify)
                 .useDeephavenNulls(true)
                 .build();
 
-        WebBarrageSubscription snapshot =
-                WebBarrageSubscription.subscribe(state(), (serverViewport1, serverColumns, serverReverseViewport) -> {
-                }, (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+        WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                SubscriptionType.SNAPSHOT, state(),
+                (serverViewport1, serverColumns, serverReverseViewport) -> {
+                },
+                (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
                 });
 
         WebBarrageStreamReader reader = new WebBarrageStreamReader();

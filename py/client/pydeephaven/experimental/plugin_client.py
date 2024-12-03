@@ -9,8 +9,8 @@ import threading
 from queue import SimpleQueue
 from typing import Any, List, Union, Tuple
 
-from pydeephaven.proto import object_pb2
-from pydeephaven.proto import ticket_pb2
+from deephaven_core.proto import object_pb2
+from deephaven_core.proto import ticket_pb2
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
 from pydeephaven.ticket import ExportTicket, ServerObject

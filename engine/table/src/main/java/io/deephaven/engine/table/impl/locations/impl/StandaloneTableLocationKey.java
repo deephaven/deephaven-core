@@ -48,7 +48,7 @@ public final class StandaloneTableLocationKey implements ImmutableTableLocationK
         if (other instanceof StandaloneTableLocationKey) {
             return 0;
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        return ImmutableTableLocationKey.super.compareTo(other);
     }
 
     @Override

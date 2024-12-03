@@ -280,7 +280,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param rowSet The {@link WritableRowSet} to shift
      * @return {@code rowSet}
      */
-    public boolean apply(final WritableRowSet rowSet) {
+    public WritableRowSet apply(final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -315,7 +315,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             rowSet.remove(remove);
             rowSet.insert(insert);
 
-            return remove.isNonempty() || insert.isNonempty();
+            return rowSet;
         }
     }
 

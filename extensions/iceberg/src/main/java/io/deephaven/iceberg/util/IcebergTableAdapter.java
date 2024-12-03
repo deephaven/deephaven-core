@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.base.IcebergUtils.SpecAndSchema;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.*;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
@@ -30,6 +31,7 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -37,9 +39,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.deephaven.iceberg.base.IcebergUtils.convertToDHType;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -53,17 +56,34 @@ public class IcebergTableAdapter {
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
 
+    private final Catalog catalog;
     private final org.apache.iceberg.Table table;
     private final TableIdentifier tableIdentifier;
     private final DataInstructionsProviderLoader dataInstructionsProviderLoader;
 
     public IcebergTableAdapter(
+            final Catalog catalog,
             final TableIdentifier tableIdentifier,
             final org.apache.iceberg.Table table,
             final DataInstructionsProviderLoader dataInstructionsProviderLoader) {
+        this.catalog = catalog;
         this.table = table;
         this.tableIdentifier = tableIdentifier;
         this.dataInstructionsProviderLoader = dataInstructionsProviderLoader;
+    }
+
+    /**
+     * {@link Catalog} used to access this table.
+     */
+    public Catalog catalog() {
+        return catalog;
+    }
+
+    /**
+     * Get the Iceberg {@link TableIdentifier table identifier}.
+     */
+    public TableIdentifier tableIdentifier() {
+        return tableIdentifier;
     }
 
     /**
@@ -246,24 +266,6 @@ public class IcebergTableAdapter {
                                     "table " + tableIdentifier));
         }
         return null;
-    }
-
-    /**
-     * Used to hold return value for {@link #getSpecAndSchema(IcebergReadInstructions)}.
-     */
-    private static final class SpecAndSchema {
-        private final Schema schema;
-        private final PartitionSpec partitionSpec;
-        private final IcebergReadInstructions readInstructions;
-
-        private SpecAndSchema(
-                @NotNull final Schema schema,
-                @NotNull final PartitionSpec partitionSpec,
-                @NotNull final IcebergReadInstructions readInstructions) {
-            this.schema = schema;
-            this.partitionSpec = partitionSpec;
-            this.readInstructions = readInstructions;
-        }
     }
 
     /**
@@ -534,7 +536,7 @@ public class IcebergTableAdapter {
                 continue;
             }
             final Type type = field.type();
-            final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
+            final io.deephaven.qst.type.Type<?> qstType = convertToDHType(type);
             final ColumnDefinition<?> column;
             if (partitionNames.contains(name)) {
                 column = ColumnDefinition.of(name, qstType).withPartitioning();
@@ -572,46 +574,16 @@ public class IcebergTableAdapter {
     }
 
     /**
-     * Convert an Iceberg data type to a Deephaven type.
+     * Create a new {@link IcebergTableWriter} for this Iceberg table using the provided {@link TableWriterOptions}.
+     * <p>
+     * This method will perform schema validation to ensure that the provided
+     * {@link TableWriterOptions#tableDefinition()} is compatible with the Iceberg table schema. All further writes
+     * performed by the returned writer will not be validated against the table's schema, and thus will be faster.
      *
-     * @param icebergType The Iceberg data type to be converted.
-     * @return The converted Deephaven type.
+     * @param tableWriterOptions The options to configure the table writer.
+     * @return A new instance of {@link IcebergTableWriter} configured with the provided options.
      */
-    static io.deephaven.qst.type.Type<?> convertPrimitiveType(@NotNull final Type icebergType) {
-        final Type.TypeID typeId = icebergType.typeId();
-        switch (typeId) {
-            case BOOLEAN:
-                return io.deephaven.qst.type.Type.booleanType().boxedType();
-            case DOUBLE:
-                return io.deephaven.qst.type.Type.doubleType();
-            case FLOAT:
-                return io.deephaven.qst.type.Type.floatType();
-            case INTEGER:
-                return io.deephaven.qst.type.Type.intType();
-            case LONG:
-                return io.deephaven.qst.type.Type.longType();
-            case STRING:
-                return io.deephaven.qst.type.Type.stringType();
-            case TIMESTAMP:
-                final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
-                return timestampType.shouldAdjustToUTC()
-                        ? io.deephaven.qst.type.Type.find(Instant.class)
-                        : io.deephaven.qst.type.Type.find(LocalDateTime.class);
-            case DATE:
-                return io.deephaven.qst.type.Type.find(java.time.LocalDate.class);
-            case TIME:
-                return io.deephaven.qst.type.Type.find(java.time.LocalTime.class);
-            case DECIMAL:
-                return io.deephaven.qst.type.Type.find(java.math.BigDecimal.class);
-            case FIXED: // Fall through
-            case BINARY:
-                return io.deephaven.qst.type.Type.find(byte[].class);
-            case UUID: // Fall through
-            case STRUCT: // Fall through
-            case LIST: // Fall through
-            case MAP: // Fall through
-            default:
-                throw new TableDataException("Unsupported iceberg column type " + typeId.name());
-        }
+    public IcebergTableWriter tableWriter(final TableWriterOptions tableWriterOptions) {
+        return new IcebergTableWriter(tableWriterOptions, this);
     }
 }

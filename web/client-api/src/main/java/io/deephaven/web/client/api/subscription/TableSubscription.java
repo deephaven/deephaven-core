@@ -31,7 +31,7 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     @JsIgnore
     public TableSubscription(JsArray<Column> columns, JsTable existingTable, Double updateIntervalMs) {
-        super(existingTable.state(), existingTable.getConnection());
+        super(SubscriptionType.FULL_SUBSCRIPTION, existingTable.state(), existingTable.getConnection());
         this.columns = columns;
         this.updateIntervalMs = updateIntervalMs;
     }

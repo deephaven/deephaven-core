@@ -8,7 +8,7 @@
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/ticking/ticking.h"
-#include "deephaven/proto/ticket.pb.h"
+#include "deephaven_core/proto/ticket.pb.h"
 
 namespace deephaven::client::subscription {
 class SubscriptionThread {

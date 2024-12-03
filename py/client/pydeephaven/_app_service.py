@@ -4,7 +4,7 @@
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import application_pb2_grpc, application_pb2
+from deephaven_core.proto import application_pb2_grpc, application_pb2
 
 
 class AppService:

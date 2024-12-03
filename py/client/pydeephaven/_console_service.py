@@ -4,7 +4,7 @@
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import console_pb2_grpc, console_pb2
+from deephaven_core.proto import console_pb2_grpc, console_pb2
 from pydeephaven.table import Table
 
 

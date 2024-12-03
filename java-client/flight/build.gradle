@@ -10,7 +10,6 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
 
     api libs.arrow.flight.core
-    implementation libs.arrow.flight.grpc
     api libs.arrow.vector
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler

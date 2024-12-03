@@ -105,12 +105,12 @@ public class TreeTableFilter {
     /**
      * The row identifier source from {@link #source}.
      */
-    private final ColumnSource idSource;
+    private final ColumnSource<?> idSource;
 
     /**
      * The parent identifier source from {@link #source}.
      */
-    private final ColumnSource parentIdSource;
+    private final ColumnSource<?> parentIdSource;
 
     /**
      * The eventual listener that maintains {@link #result}.
@@ -177,16 +177,15 @@ public class TreeTableFilter {
     }
 
     private void doInitialFilter(@Nullable final OperationSnapshotControl snapshotControl, final boolean usePrev) {
-        try (final RowSet sourcePrevRows = usePrev ? source.getRowSet().copyPrev() : null) {
-            final RowSet sourceRows = usePrev ? sourcePrevRows : source.getRowSet();
+        final RowSet sourceRows = usePrev
+                ? source.getRowSet().prev()
+                : source.getRowSet();
+        matchedSourceRows = filterValues(usePrev, sourceRows, sourceRows);
+        parentIdToChildRows = new HashMap<>(matchedSourceRows.intSize("parentReferences"));
+        ancestorSourceRows = computeParents(usePrev, matchedSourceRows);
+        resultRows = matchedSourceRows.union(ancestorSourceRows).toTracking();
 
-            matchedSourceRows = filterValues(usePrev, sourceRows, sourceRows);
-            parentIdToChildRows = new HashMap<>(matchedSourceRows.intSize("parentReferences"));
-            ancestorSourceRows = computeParents(usePrev, matchedSourceRows);
-            resultRows = matchedSourceRows.union(ancestorSourceRows).toTracking();
-
-            validateState(usePrev, sourceRows);
-        }
+        validateState(usePrev, sourceRows);
 
         result = source.getSubTable(resultRows);
         if (snapshotControl != null) {
@@ -262,6 +261,7 @@ public class TreeTableFilter {
                             });
                         }
                     }
+                    // noinspection resource
                     childRowsToProcess = newParentKeys.build();
                 }
             }

@@ -70,5 +70,10 @@ public class AggregationTest {
         public void visit(Partition partition) {
             ++count;
         }
+
+        @Override
+        public void visit(Formula formula) {
+            ++count;
+        }
     }
 }

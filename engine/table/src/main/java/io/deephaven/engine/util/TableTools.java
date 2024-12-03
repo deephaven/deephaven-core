@@ -32,6 +32,7 @@ import io.deephaven.io.util.NullOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -67,13 +68,13 @@ public class TableTools {
         };
     }
 
-    private static <T, K, U> Collector<T, ?, Map<K, U>> toLinkedMap(
+    private static <T, K, U> Collector<T, ?, LinkedHashMap<K, U>> toLinkedMap(
             Function<? super T, ? extends K> keyMapper,
             Function<? super T, ? extends U> valueMapper) {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
     }
 
-    private static final Collector<ColumnHolder<?>, ?, Map<String, ColumnSource<?>>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR =
+    private static final Collector<ColumnHolder<?>, ?, LinkedHashMap<String, ColumnSource<?>>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR =
             toLinkedMap(ColumnHolder::getName, ColumnHolder::getColumnSource);
 
     /////////// Utilities To Display Tables /////////////////
@@ -752,22 +753,24 @@ public class TableTools {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(rowSet.toTracking(), columns) {
-            {
-                setFlat();
-            }
-        };
+        QueryTable queryTable = new QueryTable(rowSet.toTracking(), columns);
+        queryTable.setFlat();
+        return queryTable;
     }
 
     public static Table newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {
+        return newTable(definition, null, columnHolders);
+    }
+
+    public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
+            ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
-        WritableRowSet rowSet = getRowSet(columnHolders);
-        Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
-        return new QueryTable(definition, rowSet.toTracking(), columns) {
-            {
-                setFlat();
-            }
-        };
+        final WritableRowSet rowSet = getRowSet(columnHolders);
+        final LinkedHashMap<String, ColumnSource<?>> columns =
+                Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        final QueryTable queryTable = new QueryTable(definition, rowSet.toTracking(), columns, null, attributes);
+        queryTable.setFlat();
+        return queryTable;
     }
 
     /**

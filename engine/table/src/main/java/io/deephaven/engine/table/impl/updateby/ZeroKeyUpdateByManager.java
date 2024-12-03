@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
@@ -14,6 +13,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,7 +70,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
 
             // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
-                    timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true));
+                    timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true),
+                    ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -88,7 +89,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
                     timestampColumnName, control, (oe, se) -> {
                         throw new IllegalStateException("Update failure from static zero key updateBy");
-                    });
+                    }, ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
             sourceListener = null;

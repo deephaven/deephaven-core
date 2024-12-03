@@ -174,7 +174,7 @@ public class ArrowToTableConverter {
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
+        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, true, null);
         resultTable.setFlat();
 
         ChunkType[] columnChunkTypes = result.computeWireChunkTypes();

@@ -9,6 +9,8 @@ import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 /**
  * Provides a mapping between Python refcount and Deephaven's liveness mechanism, allowing liveness scopes to manage the
  * single <a href='https://docs.python.org/3/glossary.html#term-strong-reference'>strong reference</a> that the PyObject
@@ -33,6 +35,7 @@ public final class LivePyObjectWrapper extends ReferenceCountedLivenessReferent 
         LivenessScopeStack.peek().manage(this);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

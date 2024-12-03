@@ -59,7 +59,7 @@ public class UpdateByOperatorFactory {
     private final MatchPair[] groupByColumns;
     @NotNull
     private final UpdateByControl control;
-    private Map<String, ColumnDefinition<?>> vectorColumnNameMap;
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     public UpdateByOperatorFactory(
             @NotNull final TableDefinition tableDef,
@@ -1437,7 +1437,6 @@ public class UpdateByOperatorFactory {
         private UpdateByOperator makeRollingFormulaMultiColumnOperator(
                 @NotNull final TableDefinition tableDef,
                 @NotNull final RollingFormulaSpec rs) {
-
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
@@ -1446,21 +1445,24 @@ public class UpdateByOperatorFactory {
             // Create the colum
             final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(rs.formula()));
 
-            // Get or create a column definition map where the definitions are vectors of the original column types.
-            if (vectorColumnNameMap == null) {
-                vectorColumnNameMap = new HashMap<>();
-                columnDefinitionMap.forEach((key, value) -> {
-                    final ColumnDefinition<?> columnDef = ColumnDefinition.fromGenericType(
-                            key,
-                            VectorFactory.forElementType(value.getDataType()).vectorType(),
-                            value.getDataType());
-                    vectorColumnNameMap.put(key, columnDef);
-                });
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the group_by columns).
+            final Set<String> groupByColumnSet =
+                    Arrays.stream(groupByColumns).map(MatchPair::rightColumn).collect(Collectors.toSet());
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = tableDef.getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
             }
 
-            // Get the input column names and data types from the formula.
-            final String[] inputColumnNames =
-                    selectColumn.initDef(vectorColumnNameMap, compilationProcessor).toArray(String[]::new);
+            // Get the input column names from the formula and provide them to the rolling formula operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
             if (!selectColumn.getColumnArrays().isEmpty()) {
                 throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
                         + selectColumn.getColumnArrays() + ")");
@@ -1468,20 +1470,33 @@ public class UpdateByOperatorFactory {
             if (selectColumn.hasVirtualRowVariables()) {
                 throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
             }
-            final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
-            final Class<?>[] inputVectorTypes = new Class[inputColumnNames.length];
 
-            for (int i = 0; i < inputColumnNames.length; i++) {
-                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputColumnNames[i]);
-                inputColumnTypes[i] = columnDef.getDataType();
-                inputVectorTypes[i] = vectorColumnNameMap.get(inputColumnNames[i]).getDataType();
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            final Class<?>[] inputKeyColumnTypes = new Class[inputKeyColumns.length];
+            final Class<?>[] inputKeyComponentTypes = new Class[inputKeyColumns.length];
+            for (int i = 0; i < inputKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputKeyColumns[i]);
+                inputKeyColumnTypes[i] = columnDef.getDataType();
+                inputKeyComponentTypes[i] = columnDef.getComponentType();
+            }
+
+            final Class<?>[] inputNonKeyColumnTypes = new Class[inputNonKeyColumns.length];
+            final Class<?>[] inputNonKeyVectorTypes = new Class[inputNonKeyColumns.length];
+            for (int i = 0; i < inputNonKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputNonKeyColumns[i]);
+                inputNonKeyColumnTypes[i] = columnDef.getDataType();
+                inputNonKeyVectorTypes[i] = vectorColumnDefinitions.get(inputNonKeyColumns[i]).getDataType();
             }
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = inputColumnNames;
+                affectingColumns = inputNonKeyColumns;
             } else {
-                affectingColumns = ArrayUtils.add(inputColumnNames, rs.revWindowScale().timestampCol());
+                affectingColumns = ArrayUtils.add(inputNonKeyColumns, rs.revWindowScale().timestampCol());
             }
 
             // Create a new column pair with the same name for the left and right columns
@@ -1494,9 +1509,12 @@ public class UpdateByOperatorFactory {
                     prevWindowScaleUnits,
                     fwdWindowScaleUnits,
                     selectColumn,
-                    inputColumnNames,
-                    inputColumnTypes,
-                    inputVectorTypes);
+                    inputKeyColumns,
+                    inputKeyColumnTypes,
+                    inputKeyComponentTypes,
+                    inputNonKeyColumns,
+                    inputNonKeyColumnTypes,
+                    inputNonKeyVectorTypes);
         }
     }
 }

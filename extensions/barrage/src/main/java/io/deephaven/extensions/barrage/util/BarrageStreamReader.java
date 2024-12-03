@@ -51,7 +51,7 @@ public class BarrageStreamReader implements StreamReader {
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     private static final int MAX_CHUNK_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
 
-    private final LongConsumer deserializeTmConsumer;
+    private volatile LongConsumer deserializeTmConsumer;
 
     private long numAddRowsRead = 0;
     private long numAddRowsTotal = 0;
@@ -63,7 +63,16 @@ public class BarrageStreamReader implements StreamReader {
     private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReadingFactory.INSTANCE;
     private final List<ChunkReader> readers = new ArrayList<>();
 
+    public BarrageStreamReader() {
+        this(tm -> {
+        });
+    }
+
     public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
+        this.deserializeTmConsumer = deserializeTmConsumer;
+    }
+
+    public void setDeserializeTmConsumer(final LongConsumer deserializeTmConsumer) {
         this.deserializeTmConsumer = deserializeTmConsumer;
     }
 
@@ -124,9 +133,11 @@ public class BarrageStreamReader implements StreamReader {
 
                         msg.firstSeq = metadata.firstSeq();
                         msg.lastSeq = metadata.lastSeq();
+                        msg.tableSize = metadata.tableSize();
                         msg.rowsAdded = extractIndex(metadata.addedRowsAsByteBuffer());
                         msg.rowsRemoved = extractIndex(metadata.removedRowsAsByteBuffer());
-                        msg.shifted = extractIndexShiftData(metadata.shiftDataAsByteBuffer());
+                        final ByteBuffer shiftData = metadata.shiftDataAsByteBuffer();
+                        msg.shifted = shiftData != null ? extractIndexShiftData(shiftData) : RowSetShiftData.EMPTY;
 
                         final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
                         msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.copy();

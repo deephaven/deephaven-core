@@ -16,6 +16,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 
 /**
@@ -90,8 +91,10 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
         return source.satisfied(step);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
+        super.destroy();
         source.removeUpdateListener(this);
         if (retain) {
             RETENTION_CACHE.forget(this);

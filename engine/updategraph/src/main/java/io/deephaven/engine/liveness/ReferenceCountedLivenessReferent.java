@@ -6,6 +6,7 @@ package io.deephaven.engine.liveness;
 import io.deephaven.util.Utils;
 import io.deephaven.util.referencecounting.ReferenceCounted;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.WeakReference;
 
 /**
@@ -44,6 +45,7 @@ public class ReferenceCountedLivenessReferent extends ReferenceCounted implement
      * <p>
      * This is intended to only ever be used as a side effect of decreasing the reference count to 0.
      */
+    @OverridingMethodsMustInvokeSuper
     protected void destroy() {}
 
     @Override

@@ -46,7 +46,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             final URI uri = uri("empty.txt");
             final ByteBuffer buffer = ByteBuffer.allocate(1);
             try (
-                    final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                    final SeekableChannelsProvider providerImpl = providerImpl();
                     final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                     final SeekableChannelContext context = provider.makeContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
@@ -56,7 +56,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         {
             final URI uri = uri("hello/world.txt");
             try (
-                    final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                    final SeekableChannelsProvider providerImpl = providerImpl();
                     final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                     final SeekableChannelContext context = provider.makeContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
@@ -78,7 +78,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final URI uri = uri("32MiB.bin");
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         try (
-                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                 final SeekableChannelContext context = provider.makeContext();
                 final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
@@ -97,7 +97,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
         final String content = "Hello, world!";
         final byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         try (
-                final SeekableChannelsProvider providerImpl = providerImpl(uri);
+                final SeekableChannelsProvider providerImpl = providerImpl();
                 final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                 final CompletableOutputStream outputStream = provider.getOutputStream(uri, 0)) {
             final int numBytes = 36 * 1024 * 1024; // 36 Mib -> Three 10-MiB parts + One 6-MiB part

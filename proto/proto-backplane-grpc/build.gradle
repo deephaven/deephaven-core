@@ -99,7 +99,7 @@ sourceSets {
       srcDir(generateProtobuf).include("**/*.java")
     }
     resources {
-      srcDir 'src/main/proto/deephaven/proto'
+      srcDir 'src/main/proto'
     }
   }
 }

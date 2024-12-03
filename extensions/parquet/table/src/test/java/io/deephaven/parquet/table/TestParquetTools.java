@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.common.io.BaseEncoding;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
@@ -13,22 +14,39 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.Types;
+import org.assertj.core.api.Assertions;
 import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -579,5 +597,603 @@ public class TestParquetTools {
         assertEquals(1698672050703000000L,
                 DateTimeUtils.epochNanos((Instant) withNullsAndMissingOffsets.getColumnSource("CREATE_DATE").get(0)));
         assertTableEquals(withNullsAndMissingOffsets, clean);
+    }
+
+    @Test
+    public void testWriteParquetFieldIds() throws NoSuchAlgorithmException, IOException {
+        final int BAZ_ID = 111;
+        final int ZAP_ID = 112;
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
+        final String BAZ_PARQUET_NAME = "Some Random Parquet Column Name";
+        final String ZAP_PARQUET_NAME = "ABCDEFG";
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<?> zapCol = ColumnDefinition.of(ZAP, Type.stringType().arrayType());
+        final TableDefinition td = TableDefinition.of(bazCol, zapCol);
+        final Table expected = newTable(td,
+                longCol(BAZ, 99, 101),
+                new ColumnHolder<>(ZAP, String[].class, String.class, false, new String[] {"Foo", "Bar"},
+                        new String[] {"Hello"}));
+        final File file = new File(testRoot, "testWriteParquetFieldIds.parquet");
+        {
+            final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .addColumnNameMapping(BAZ_PARQUET_NAME, BAZ)
+                    .addColumnNameMapping(ZAP_PARQUET_NAME, ZAP)
+                    .build();
+            ParquetTools.writeTable(expected, file.getPath(), writeInstructions);
+        }
+
+        {
+            final MessageType expectedSchema = Types.buildMessage()
+                    .optional(PrimitiveType.PrimitiveTypeName.INT64)
+                    .id(BAZ_ID)
+                    .named(BAZ_PARQUET_NAME)
+                    .optionalList()
+                    .id(ZAP_ID)
+                    .optionalElement(PrimitiveType.PrimitiveTypeName.BINARY)
+                    .as(LogicalTypeAnnotation.stringType())
+                    .named(ZAP_PARQUET_NAME)
+                    .named(MappedSchema.SCHEMA_NAME);
+            final MessageType actualSchema = readSchema(file);
+            assertEquals(expectedSchema, actualSchema);
+        }
+
+        //
+        // This is somewhat fragile, but has been manually verified to contain the field_ids that we expect.
+        // We may want to consider more explicit tests that verify our writing logic is consistent, as it would be good
+        // to know whenever serialization changes in any way.
+        assertEquals("2ea68b0ddaeb432e9c2721f15460b6c42449a479c1960e836f6ebe3b14f33dc1", sha256sum(file.toPath()));
+
+        // TODO(deephaven-core#6128): Allow Parquet column access by field_id
+        // This test is a bit circular; but assuming we trust our reading code, we should have relative confidence that
+        // we are writing it down correctly if we can read it correctly.
+        // {
+        // final ParquetInstructions readInstructions = ParquetInstructions.builder()
+        // .setFieldId(BAZ, BAZ_ID)
+        // .setFieldId(ZAP, ZAP_ID)
+        // .build();
+        // {
+        // final Table actual = ParquetTools.readTable(file.getPath(), readInstructions);
+        // assertEquals(td, actual.getDefinition());
+        // assertTableEquals(expected, actual);
+        // }
+        // {
+        // final Table actual = ParquetTools.readTable(file.getPath(), readInstructions.withTableDefinition(td));
+        // assertEquals(td, actual.getDefinition());
+        // assertTableEquals(expected, actual);
+        // }
+        // }
+    }
+
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * field_id = b"PARQUET:field_id"
+     * fields = [
+     *     pa.field(
+     *         "e0cf7927-45dc-4dfc-b4ef-36bf4b6ae463", pa.int64(), metadata={field_id: b"0"}
+     *     ),
+     *     pa.field(
+     *         "53f0de5a-e06f-476e-b82a-a3f9294fcd05", pa.string(), metadata={field_id: b"1"}
+     *     ),
+     * ]
+     * table = pa.table([[99, 101], ["Foo", "Bar"]], schema=pa.schema(fields))
+     * pq.write_table(table, "ReferenceSimpleParquetFieldIds.parquet")
+     * </pre>
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
+    @Test
+    public void testParquetFieldIds() {
+        final String file = TestParquetTools.class.getResource("/ReferenceSimpleParquetFieldIds.parquet").getFile();
+
+        // No instructions; will sanitize the names. Both columns get the "-" removed and the second column gets the
+        // "column_" prefix added because it starts with a digit.
+        {
+            final TableDefinition expectedInferredTD = TableDefinition.of(
+                    ColumnDefinition.ofLong("e0cf792745dc4dfcb4ef36bf4b6ae463"),
+                    ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
+            final Table table = ParquetTools.readTable(file);
+            assertEquals(expectedInferredTD, table.getDefinition());
+            assertTableEquals(newTable(expectedInferredTD,
+                    longCol("e0cf792745dc4dfcb4ef36bf4b6ae463", 99, 101),
+                    stringCol("column_53f0de5ae06f476eb82aa3f9294fcd05", "Foo", "Bar")), table);
+        }
+
+        final int BAZ_ID = 0;
+        final int ZAP_ID = 1;
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(BAZ, BAZ_ID)
+                .setFieldId(ZAP, ZAP_ID)
+                .build();
+
+        final TableDefinition td = TableDefinition.of(bazCol, zapCol);
+
+        // It's enough to just provide the mapping based on field_id
+        {
+            final Table table = ParquetTools.readTable(file, instructions);
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
+        }
+
+        // But, the user can still provide a TableDefinition
+        {
+            final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(td));
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
+        }
+
+        // The user can provide the full mapping, but still a more limited definition
+        {
+            final TableDefinition justIdTD = TableDefinition.of(bazCol);
+            final Table table = ParquetTools.readTable(file, instructions.withTableDefinition(justIdTD));
+            assertEquals(justIdTD, table.getDefinition());
+            assertTableEquals(newTable(justIdTD,
+                    longCol(BAZ, 99, 101)), table);
+        }
+
+        // If only a partial id mapping is provided, only that will be "properly" mapped
+        {
+            final TableDefinition partialTD = TableDefinition.of(
+                    ColumnDefinition.ofLong(BAZ),
+                    ColumnDefinition.ofString("column_53f0de5ae06f476eb82aa3f9294fcd05"));
+            final ParquetInstructions partialInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .build();
+            final Table table = ParquetTools.readTable(file, partialInstructions);
+            assertEquals(partialTD, table.getDefinition());
+        }
+
+        // There are no errors if a field ID is configured but not found; it won't be inferred.
+        {
+            final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .setFieldId("Fake", 99)
+                    .build());
+            assertEquals(td, table.getDefinition());
+            assertTableEquals(newTable(td,
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar")), table);
+        }
+
+        // If it's explicitly asked for, like other columns, it will return an appropriate null value
+        {
+            final TableDefinition tdWithFake =
+                    TableDefinition.of(bazCol, zapCol, ColumnDefinition.ofShort("Fake"));
+            final Table table = ParquetTools.readTable(file, ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .setFieldId("Fake", 99)
+                    .build()
+                    .withTableDefinition(tdWithFake));
+            assertEquals(tdWithFake, table.getDefinition());
+            assertTableEquals(newTable(tdWithFake,
+                    longCol(BAZ, 99, 101),
+                    stringCol(ZAP, "Foo", "Bar"),
+                    shortCol("Fake", QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)), table);
+        }
+
+        // You can even re-use IDs to get the same physical column out multiple times
+        {
+            final String BAZ_DUPE = "BazDupe";
+            final TableDefinition dupeTd =
+                    TableDefinition.of(bazCol, zapCol, ColumnDefinition.ofLong(BAZ_DUPE));
+            final ParquetInstructions dupeInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .setFieldId(ZAP, ZAP_ID)
+                    .setFieldId(BAZ_DUPE, BAZ_ID)
+                    .build();
+            {
+                final Table table = ParquetTools.readTable(file, dupeInstructions.withTableDefinition(dupeTd));
+                assertEquals(dupeTd, table.getDefinition());
+                assertTableEquals(newTable(dupeTd,
+                        longCol(BAZ, 99, 101),
+                        stringCol(ZAP, "Foo", "Bar"),
+                        longCol(BAZ_DUPE, 99, 101)), table);
+            }
+
+            // In the case where we have dupe field IDs and don't provide an explicit definition, we are preferring to
+            // fail during the inference step
+            {
+                try {
+                    ParquetTools.readTable(file, dupeInstructions);
+                    Assertions.failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+                } catch (IllegalArgumentException e) {
+                    Assertions.assertThat(e).hasMessageContaining("Non-unique Field ID mapping provided");
+                }
+            }
+        }
+
+        // If both a field id and parquet column name mapping is provided, they need to map to the same parquet column.
+        {
+            final TableDefinition bazTd = TableDefinition.of(bazCol);
+            final ParquetInstructions inconsistent = ParquetInstructions.builder()
+                    .setFieldId(BAZ, BAZ_ID)
+                    .addColumnNameMapping("53f0de5a-e06f-476e-b82a-a3f9294fcd05", BAZ)
+                    .build();
+            // In the case where we are inferring the TableDefinition from parquet schema, the inconsistency will be
+            // noticed up front
+            try {
+                ParquetTools.readTable(file, inconsistent);
+                Assertions.failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                Assertions.assertThat(e)
+                        .hasMessageContaining("Supplied ColumnDefinitions include duplicate names [Baz]");
+            }
+            // In the case where we provide a TableDefinition, the inconsistency will be noticed when reading the
+            // data
+            try {
+                // Need to force read of data
+                ParquetTools.readTable(file, inconsistent.withTableDefinition(bazTd)).select();
+                Assertions.failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                Assertions.assertThat(e).getRootCause().hasMessageContaining(
+                        "For columnName=Baz, providing an explicit parquet column name path ([53f0de5a-e06f-476e-b82a-a3f9294fcd05]) and field id (0) mapping, but they are resolving to different columns, byFieldId=[colIx=0, pathKey=[e0cf7927-45dc-4dfc-b4ef-36bf4b6ae463], fieldId=0], byPath=[colIx=1, pathKey=[53f0de5a-e06f-476e-b82a-a3f9294fcd05], fieldId=1]");
+            }
+        }
+    }
+
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import uuid
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     *
+     * def write_to(path: str):
+     *     field_id = b"PARQUET:field_id"
+     *     fields = [
+     *         pa.field(str(uuid.uuid4()), pa.int64(), metadata={field_id: b"42"}),
+     *         pa.field(str(uuid.uuid4()), pa.string(), metadata={field_id: b"43"}),
+     *     ]
+     *     table = pa.table([[] for _ in fields], schema=pa.schema(fields))
+     *     pq.write_table(table, path)
+     *
+     *
+     * write_to("/ReferencePartitionedFieldIds/Partition=0/table.parquet")
+     * write_to("/ReferencePartitionedFieldIds/Partition=1/table.parquet")
+     * </pre>
+     *
+     * It mimics the case of a higher-level schema management where the physical column names may be random.
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
+    @Test
+    public void testPartitionedParquetFieldIds() {
+        final String file = TestParquetTools.class.getResource("/ReferencePartitionedFieldIds").getFile();
+
+        final int BAZ_ID = 42;
+        final int ZAP_ID = 43;
+        final String BAZ = "Baz";
+        final String ZAP = "Zap";
+        final String PARTITION = "Partition";
+        final ColumnDefinition<Integer> partitionColumn = ColumnDefinition.ofInt(PARTITION).withPartitioning();
+        final ColumnDefinition<Long> bazCol = ColumnDefinition.ofLong(BAZ);
+        final ColumnDefinition<String> zapCol = ColumnDefinition.ofString(ZAP);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(BAZ, BAZ_ID)
+                .setFieldId(ZAP, ZAP_ID)
+                .build();
+
+        final TableDefinition expectedTd = TableDefinition.of(partitionColumn, bazCol, zapCol);
+
+        final Table expected = newTable(expectedTd,
+                intCol(PARTITION, 0, 0, 1, 1),
+                longCol(BAZ, 99, 101, 99, 101),
+                stringCol(ZAP, "Foo", "Bar", "Foo", "Bar"));
+
+        {
+            final Table actual = ParquetTools.readTable(file, instructions);
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        {
+            final Table actual = ParquetTools.readTable(file, instructions.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+    }
+
+    /**
+     * This data was generated via the script:
+     *
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * field_id = b"PARQUET:field_id"
+     * schema = pa.schema(
+     *     [pa.field("some random name", pa.list_(pa.int32()), metadata={field_id: b"999"})]
+     * )
+     * data = [pa.array([[1, 2, 3], None, [], [42]], type=pa.list_(pa.int32()))]
+     * table = pa.Table.from_arrays(data, schema=schema)
+     * pq.write_table(table, "ReferenceListParquetFieldIds.parquet")
+     * </pre>
+     *
+     * @see <a href="https://arrow.apache.org/docs/cpp/parquet.html#parquet-field-id">Arrow Parquet field_id</a>
+     */
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
+    @Test
+    public void testParquetFieldIdsWithListType() {
+        final String file = TestParquetTools.class.getResource("/ReferenceListParquetFieldIds.parquet").getFile();
+        final String FOO = "Foo";
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.of(FOO, Type.intType().arrayType()));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FOO, 999)
+                .build();
+        final Table expected = TableTools.newTable(td, new ColumnHolder<>(FOO, int[].class, int.class, false,
+                new int[] {1, 2, 3},
+                null,
+                new int[0],
+                new int[] {42}));
+        {
+            final Table actual = ParquetTools.readTable(file, instructions);
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+        {
+            final Table actual = ParquetTools.readTable(file, instructions.withTableDefinition(td));
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+    }
+
+    /**
+     * This is meant to test a "common" renaming scenario. Originally, a schema might be written down with a column
+     * named "Name" where semantically, this was really a first name. Later, the schema might be "corrected" to label
+     * this column as "FirstName". Both standalone, and in combination with the newer file, we should be able to read it
+     * with the latest schema.
+     */
+    @Ignore("TODO(deephaven-core#6128): Allow Parquet column access by field_id")
+    @Test
+    public void testRenamingResolveViaFieldId() {
+        final File f1 = new File(testRoot, "testRenamingResolveViaFieldId.00.parquet");
+        final File f2 = new File(testRoot, "testRenamingResolveViaFieldId.01.parquet");
+
+        final int FIRST_NAME_ID = 15;
+        {
+            final String NAME = "Name";
+            final Table t1 = newTable(TableDefinition.of(ColumnDefinition.ofString(NAME)),
+                    stringCol(NAME, "Shivam", "Ryan"));
+            ParquetTools.writeTable(t1, f1.getPath(), ParquetInstructions.builder()
+                    .setFieldId(NAME, FIRST_NAME_ID)
+                    .build());
+        }
+
+        final int LAST_NAME_ID = 16;
+        final String FIRST_NAME = "FirstName";
+        final String LAST_NAME = "LastName";
+        final TableDefinition td = TableDefinition.of(
+                ColumnDefinition.ofString(FIRST_NAME),
+                ColumnDefinition.ofString(LAST_NAME));
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FIRST_NAME, FIRST_NAME_ID)
+                .setFieldId(LAST_NAME, LAST_NAME_ID)
+                .build();
+        {
+            final Table t = newTable(td,
+                    stringCol(FIRST_NAME, "Pete", "Colin"),
+                    stringCol(LAST_NAME, "Goddard", "Alworth"));
+            ParquetTools.writeTable(t, f2.getPath(), instructions);
+        }
+
+        // If we read first file without an explicit definition, we should only get the column from the file
+        {
+            final TableDefinition expectedTd = TableDefinition.of(ColumnDefinition.ofString(FIRST_NAME));
+            final Table expected = newTable(expectedTd, stringCol(FIRST_NAME, "Shivam", "Ryan"));
+            final Table actual = ParquetTools.readTable(f1.getPath(), instructions);
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        // If we read first file with an explicit definition, the new column should return nulls
+        {
+            final Table expected = newTable(td,
+                    stringCol(FIRST_NAME, "Shivam", "Ryan"),
+                    stringCol(LAST_NAME, null, null));
+            final Table actual = ParquetTools.readTable(f1.getPath(), instructions.withTableDefinition(td));
+            assertEquals(td, actual.getDefinition());
+            assertTableEquals(expected, actual);
+        }
+
+        // We should be able to read both (flat partitioning) with the latest schema
+        {
+            final Table expected = newTable(td,
+                    stringCol(FIRST_NAME, "Shivam", "Ryan", "Pete", "Colin"),
+                    stringCol(LAST_NAME, null, null, "Goddard", "Alworth"));
+            {
+                final Table actual = ParquetTools.readTable(testRoot, instructions);
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
+            {
+                final Table actual = ParquetTools.readTable(testRoot, instructions.withTableDefinition(td));
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
+        }
+    }
+
+
+    @Test
+    public void parquetWithNonUniqueFieldIds() {
+        final File f = new File(testRoot, "parquetWithNonUniqueFieldIds.parquet");
+        final String FOO = "Foo";
+        final String BAR = "Bar";
+        final int fieldId = 31337;
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setFieldId(FOO, fieldId)
+                .setFieldId(BAR, fieldId)
+                .build();
+        final TableDefinition td = TableDefinition.of(ColumnDefinition.ofInt(FOO), ColumnDefinition.ofString(BAR));
+        final Table expected = newTable(td,
+                intCol(FOO, 44, 45),
+                stringCol(BAR, "Zip", "Zap"));
+        {
+            ParquetTools.writeTable(expected, f.getPath(), instructions);
+        }
+
+        {
+            final String BAZ = "Baz";
+            final ParquetInstructions bazInstructions = ParquetInstructions.builder()
+                    .setFieldId(BAZ, fieldId)
+                    .build();
+
+            // fieldId _won't_ be used to actually create a Baz column since the underlying file has multiple. In this
+            // case, we just infer the physical parquet column names.
+            {
+
+                final Table actual = ParquetTools.readTable(f.getPath(), bazInstructions);
+                assertEquals(td, actual.getDefinition());
+                assertTableEquals(expected, actual);
+            }
+
+            // If the user explicitly asks for a definition with a mapping to a non-unique field id, they will get back
+            // the column of default (null) values.
+            {
+                final TableDefinition bazTd = TableDefinition.of(ColumnDefinition.ofInt(BAZ));
+                final Table bazTable = newTable(bazTd, intCol(BAZ, QueryConstants.NULL_INT, QueryConstants.NULL_INT));
+                final Table actual = ParquetTools.readTable(f.getPath(), bazInstructions.withTableDefinition(bazTd));
+                assertEquals(bazTd, actual.getDefinition());
+                assertTableEquals(bazTable, actual);
+            }
+        }
+    }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * fields = [
+     *     pa.field("Foo", pa.int64()),
+     *     pa.field(
+     *         "MyStruct",
+     *         pa.struct(
+     *             [
+     *                 pa.field("Zip", pa.int16()),
+     *                 pa.field("Zap", pa.int32()),
+     *             ]
+     *         ),
+     *     ),
+     *     pa.field("Bar", pa.string()),
+     * ]
+     *
+     * table = pa.table([[] for _ in fields], schema=pa.schema(fields))
+     * pq.write_table(table, "NestedStruct1.parquet", compression="none")
+     * </pre>
+     */
+    @Test
+    public void nestedMessageEmpty() {
+        final String file = TestParquetTools.class.getResource("/NestedStruct1.parquet").getFile();
+        final TableDefinition expectedTd =
+                TableDefinition.of(ColumnDefinition.ofLong("Foo"), ColumnDefinition.ofString("Bar"));
+        final Table table = TableTools.newTable(expectedTd, longCol("Foo"), stringCol("Bar"));
+        // If we use an explicit definition, we can skip over MyStruct and read Foo, Bar
+        {
+            final Table actual =
+                    ParquetTools.readTable(file, ParquetInstructions.EMPTY.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(table, actual);
+        }
+
+        // If we try to infer, we currently throw an error.
+        // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+        try {
+            ParquetTools.readTable(file);
+            Assertions.failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            Assertions.assertThat(e)
+                    .hasMessageContaining("Encountered unsupported multi-column field MyStruct");
+        }
+    }
+
+    /**
+     * <pre>
+     * import pyarrow as pa
+     * import pyarrow.parquet as pq
+     *
+     * fields = [
+     *     pa.field("Foo", pa.int64()),
+     *     pa.field(
+     *         "MyStruct",
+     *         pa.struct(
+     *             [
+     *                 pa.field("Zip", pa.int16()),
+     *                 pa.field("Zap", pa.int32()),
+     *             ]
+     *         ),
+     *     ),
+     *     pa.field("Bar", pa.string()),
+     * ]
+     *
+     * table = pa.table([[None] for _ in fields], schema=pa.schema(fields))
+     * pq.write_table(table, "NestedStruct2.parquet", compression="none")
+     * </pre>
+     */
+    @Test
+    public void nestedMessage1Row() {
+        final String file = TestParquetTools.class.getResource("/NestedStruct2.parquet").getFile();
+        final TableDefinition expectedTd =
+                TableDefinition.of(ColumnDefinition.ofLong("Foo"), ColumnDefinition.ofString("Bar"));
+        final Table table = TableTools.newTable(expectedTd, longCol("Foo", QueryConstants.NULL_LONG),
+                stringCol("Bar", (String) null));
+        // If we use an explicit definition, we can skip over MyStruct and read Foo, Bar
+        {
+            final Table actual =
+                    ParquetTools.readTable(file, ParquetInstructions.EMPTY.withTableDefinition(expectedTd));
+            assertEquals(expectedTd, actual.getDefinition());
+            assertTableEquals(table, actual);
+        }
+
+        // If we try to infer, we currently throw an error.
+        // TODO(deephaven-core#871): Parquet: Support repetition level >1 and multi-column fields
+        try {
+            ParquetTools.readTable(file);
+            Assertions.failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            Assertions.assertThat(e)
+                    .hasMessageContaining("Encountered unsupported multi-column field MyStruct");
+        }
+    }
+
+    private static String sha256sum(Path path) throws NoSuchAlgorithmException, IOException {
+        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        final DigestOutputStream out = new DigestOutputStream(OutputStream.nullOutputStream(), digest);
+        Files.copy(path, out);
+        return BaseEncoding.base16().lowerCase().encode(digest.digest());
+    }
+
+    private static MessageType readSchema(File file) {
+        final URI uri = FileUtils.convertToURI(file, false);
+        try (final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(FileUtils.FILE_URI_SCHEME, null)) {
+            final ParquetTableLocationKey locationKey = new ParquetTableLocationKey(uri, 0, null, channelsProvider);
+            // TODO: which is more appropriate?
+            // locationKey.getFileReader().getSchema();
+            // locationKey.getMetadata().getFileMetaData().getSchema();
+            return locationKey.getFileReader().getSchema();
+        }
     }
 }

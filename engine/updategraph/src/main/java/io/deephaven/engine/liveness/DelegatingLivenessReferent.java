@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.liveness;
 
+import io.deephaven.util.annotations.ReferentialIntegrity;
+
 import java.lang.ref.WeakReference;
 
 /**
@@ -32,6 +34,13 @@ public interface DelegatingLivenessReferent extends LivenessReferent {
     @Override
     default WeakReference<? extends LivenessReferent> getWeakReference() {
         // Must return a WeakReference to the DelegatingLivenessReferent, not the underlying LivenessReferent
-        return new WeakReference<>(this);
+        return new WeakReference<>(this) {
+            /**
+             * Hold this reference to ensure that any cleanup that requires the strong reachability of our underlying
+             * LivenessReferent's WeakReference happens.
+             */
+            @ReferentialIntegrity
+            private final WeakReference<? extends LivenessReferent> delegate = asLivenessReferent().getWeakReference();
+        };
     }
 }

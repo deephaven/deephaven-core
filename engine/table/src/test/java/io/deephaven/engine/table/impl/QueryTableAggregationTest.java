@@ -198,13 +198,26 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticGroupedByWithChunks() {
-        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5", "C=ii");
 
         DataIndexer.getOrCreateDataIndex(input1, "A");
         DataIndexer.getOrCreateDataIndex(input1, "B");
+        DataIndexer.getOrCreateDataIndex(input1, "A", "B");
 
         individualStaticByTest(input1, null, "A");
         individualStaticByTest(input1, null, "B");
+        individualStaticByTest(input1, null, "A", "B");
+
+        // Test scenario where the key columns have different order than in the index
+        individualStaticByTest(input1, null, "B", "A");
+
+        // Test scenarios where the key columns have different names than in the index
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "D");
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "E");
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "D", "E");
+
+        // Test scenario where the key columns have different names and order than in the index
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "E", "D");
     }
 
     @Test

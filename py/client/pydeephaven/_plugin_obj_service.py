@@ -5,7 +5,7 @@ import io
 from typing import Any
 
 from pydeephaven.dherror import DHError
-from pydeephaven.proto import object_pb2_grpc
+from deephaven_core.proto import object_pb2_grpc
 from pydeephaven.experimental.plugin_client import PluginRequestStream
 
 

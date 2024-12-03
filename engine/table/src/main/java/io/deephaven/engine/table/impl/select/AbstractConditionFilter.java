@@ -311,6 +311,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return getFormulaShiftColPair() != null;
     }
 
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return usesI || usesII || usesK;
+    }
+
     /**
      * @return a Pair object, consisting of formula string and shift to column MatchPairs, if the filter formula or
      *         expression has Array Access that conforms to "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;". If

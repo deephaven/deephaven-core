@@ -714,16 +714,16 @@ public class QueryTableAjTest {
 
                         System.out.println("Seed=" + seed + ", nodeSize=" + nodeSize + ", leftSize=" + leftSize
                                 + ", rightSize=" + rightSize);
-                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                             testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, false, false);
                         }
-                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                             testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, true, false);
                         }
-                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                             testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, false, true);
                         }
-                        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
                             testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize, true, true);
                         }
                     }
@@ -766,7 +766,8 @@ public class QueryTableAjTest {
                                         + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
                                         + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
                                         + joinIncrement);
-                                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                                try (final SafeCloseable ignored =
+                                        LivenessScopeStack.open(new LivenessScope(true), true)) {
                                     testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize,
                                             joinIncrement, int.class);
                                 }
@@ -824,7 +825,8 @@ public class QueryTableAjTest {
                                         + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
                                         + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
                                         + joinIncrement);
-                                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                                try (final SafeCloseable ignored =
+                                        LivenessScopeStack.open(new LivenessScope(true), true)) {
                                     testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize,
                                             joinIncrement, char.class);
                                 }
@@ -876,7 +878,8 @@ public class QueryTableAjTest {
                                         + joinIncrement);
                                 final int fRightNodeSize = rightNodeSize;
                                 final int fLeftNodeSize = leftNodeSize;
-                                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                                try (final SafeCloseable ignored =
+                                        LivenessScopeStack.open(new LivenessScope(true), true)) {
                                     testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize,
                                             rightSize, joinIncrement, true, true, false, false, true, false,
                                             new JoinControl() {
@@ -987,7 +990,8 @@ public class QueryTableAjTest {
                                         + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
                                         + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
                                         + joinIncrement);
-                                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                                try (final SafeCloseable ignored =
+                                        LivenessScopeStack.open(new LivenessScope(true), true)) {
                                     testAjRandomBothIncrementalIndexed(seed, leftNodeSize, rightNodeSize, leftSize,
                                             rightSize,
                                             joinIncrement, int.class);
@@ -1233,7 +1237,7 @@ public class QueryTableAjTest {
                 Stream.of(oldStyle(r)))
                 .toArray(MatchPair[]::new);
 
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final Table refreshingResult = AsOfJoinHelper.asOfJoin(control, leftTable,
                     reverse ? ((QueryTable) rightTable.reverse()) : rightTable, oldStyleMatches,
                     MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
@@ -1589,51 +1593,49 @@ public class QueryTableAjTest {
 
     @Test
     public void testIds6898() {
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final JoinIncrement joinIncrement = base.leftRightStep;
-            final int seed = 0;
-            final Random random = new Random(seed);
-            final int maxSteps = 5;
+        final JoinIncrement joinIncrement = base.leftRightStep;
+        final int seed = 0;
+        final Random random = new Random(seed);
+        final int maxSteps = 5;
 
-            final ColumnInfo<?, ?>[] leftColumnInfo;
-            final int leftSize = 32000;
-            final int rightSize = 32000;
-            final QueryTable leftTable = getTable(true, 100000, random,
-                    leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                            new StringGenerator(leftSize),
-                            new IntGenerator(0, 100000),
-                            new IntGenerator(10_000_000, 10_010_000)));
-            final ColumnInfo<?, ?>[] rightColumnInfo;
-            final QueryTable rightTable = getTable(true, 100000, random,
-                    rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                            new StringGenerator(leftSize),
-                            new SortedIntGenerator(0, 100000),
-                            new IntGenerator(20_000_000, 20_010_000)));
+        final ColumnInfo<?, ?>[] leftColumnInfo;
+        final int leftSize = 32000;
+        final int rightSize = 32000;
+        final QueryTable leftTable = getTable(true, 100000, random,
+                leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new StringGenerator(leftSize),
+                        new IntGenerator(0, 100000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+        final ColumnInfo<?, ?>[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 100000, random,
+                rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new StringGenerator(leftSize),
+                        new SortedIntGenerator(0, 100000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
-            final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                    new EvalNugget() {
-                        @Override
-                        protected Table e() {
-                            return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL,
-                                    (QueryTable) leftTable.sort("LeftStamp"), rightTable,
-                                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
-                                    MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
-                        }
-                    },
-            };
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL,
+                                (QueryTable) leftTable.sort("LeftStamp"), rightTable,
+                                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
+                    }
+                },
+        };
 
-            for (int step = 0; step < maxSteps; step++) {
-                System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
-                        + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
-                if (RefreshingTableTestCase.printTableUpdates) {
-                    System.out.println("Left Table:" + leftTable.size());
-                    TableTools.showWithRowSet(leftTable, 100);
-                    System.out.println("Right Table:" + rightTable.size());
-                    TableTools.showWithRowSet(rightTable, 100);
-                }
-                joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
-                        random);
+        for (int step = 0; step < maxSteps; step++) {
+            System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+                    + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Left Table:" + leftTable.size());
+                TableTools.showWithRowSet(leftTable, 100);
+                System.out.println("Right Table:" + rightTable.size());
+                TableTools.showWithRowSet(rightTable, 100);
             }
+            joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
+                    random);
         }
     }
 
@@ -1642,37 +1644,35 @@ public class QueryTableAjTest {
      */
     @Test
     public void testDHC3080() {
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final int seed = 0;
-            final Random random = new Random(seed);
+        final int seed = 0;
+        final Random random = new Random(seed);
 
-            final int leftSize = 32000;
+        final int leftSize = 32000;
 
-            // fairly small LHS will speed up detection of the error but will not affect correctness
-            final QueryTable leftTable = getTable(true, 1000, random,
-                    initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                            new StringGenerator(leftSize),
-                            new IntGenerator(0, 100000),
-                            new IntGenerator(10_000_000, 10_010_000)));
+        // fairly small LHS will speed up detection of the error but will not affect correctness
+        final QueryTable leftTable = getTable(true, 1000, random,
+                initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new StringGenerator(leftSize),
+                        new IntGenerator(0, 100000),
+                        new IntGenerator(10_000_000, 10_010_000)));
 
-            // need RHS with unique bucket count > rehash threshold of 4096
-            final QueryTable rightTable = getTable(true, 32000, random,
-                    initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                            new StringGenerator(leftSize),
-                            new SortedIntGenerator(0, 100000),
-                            new IntGenerator(20_000_000, 20_010_000)));
+        // need RHS with unique bucket count > rehash threshold of 4096
+        final QueryTable rightTable = getTable(true, 32000, random,
+                initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new StringGenerator(leftSize),
+                        new SortedIntGenerator(0, 100000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
-            final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
-                    (QueryTable) rightTable.reverse(),
-                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
-                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+        final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                (QueryTable) rightTable.reverse(),
+                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
-            // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
-            // because static will experience the same error when performing `rehashInternalFull()`
-            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
-                    rightTable.partitionBy("Bucket"),
-                    true, true);
-        }
+        // force compare results of the bucketed output, we cannot compare static to incremental as in other tests
+        // because static will experience the same error when performing `rehashInternalFull()`
+        checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                rightTable.partitionBy("Bucket"),
+                true, true);
     }
 
     /**
@@ -1682,45 +1682,43 @@ public class QueryTableAjTest {
      */
     @Test
     public void testDHC4700() {
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final int seed = 0;
-            final Random random = new Random(seed);
+        final int seed = 0;
+        final Random random = new Random(seed);
 
-            final ColumnInfo<?, ?>[] leftColumnInfo;
-            final ColumnInfo<?, ?>[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
 
-            // Small initial tables.
-            final int leftSize = 2;
-            final int rightSize = 2;
-            final QueryTable leftTable = getTable(true, leftSize, random,
-                    leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
-                            new StringGenerator(100_000),
-                            new IntGenerator(0, 100_000),
-                            new IntGenerator(10_000_000, 10_010_000)));
-            final QueryTable rightTable = getTable(true, rightSize, random,
-                    rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
-                            new StringGenerator(100_000),
-                            new SortedIntGenerator(0, 100_000),
-                            new IntGenerator(20_000_000, 20_010_000)));
+        // Small initial tables.
+        final int leftSize = 2;
+        final int rightSize = 2;
+        final QueryTable leftTable = getTable(true, leftSize, random,
+                leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new StringGenerator(100_000),
+                        new IntGenerator(0, 100_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+        final QueryTable rightTable = getTable(true, rightSize, random,
+                rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new StringGenerator(100_000),
+                        new SortedIntGenerator(0, 100_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
 
-            final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
-                    (QueryTable) rightTable.reverse(),
-                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
-                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+        final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                (QueryTable) rightTable.reverse(),
+                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            updateGraph.runWithinUnitTestCycle(() -> {
-                // Large updates to force a partial rehash.
-                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
-                        random, leftTable, leftColumnInfo);
-                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
-                        random, rightTable, rightColumnInfo);
-            });
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Large updates to force a partial rehash.
+            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
+                    random, leftTable, leftColumnInfo);
+            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 100_000,
+                    random, rightTable, rightColumnInfo);
+        });
 
-            // Compare results of the bucketed output.
-            checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
-                    rightTable.partitionBy("Bucket"),
-                    true, true);
-        }
+        // Compare results of the bucketed output.
+        checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
+                rightTable.partitionBy("Bucket"),
+                true, true);
     }
 }
