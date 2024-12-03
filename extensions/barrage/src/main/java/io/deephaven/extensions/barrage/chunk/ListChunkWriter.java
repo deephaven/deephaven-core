@@ -176,7 +176,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
 
                 // validity
                 final int numElements = subset.intSize(DEBUG_NAME);
-                size = sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)) : 0;
+                size = sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0;
 
                 // offsets
                 if (mode != ListChunkReader.Mode.FIXED) {

@@ -66,7 +66,10 @@ public class MapChunkWriter<T>
             int numInnerElements = 0;
             int numOffsets = chunk.size() + 1;
             offsets = WritableIntChunk.makeWritableChunk(numOffsets);
-            offsets.add(0);
+            offsets.setSize(0);
+            if (chunk.size() !=  0) {
+                offsets.add(0);
+            }
             for (int ii = 0; ii < chunk.size(); ++ii) {
                 numInnerElements += ((Map<?, ?>) chunk.get(ii)).size();
                 offsets.add(numInnerElements);
@@ -171,7 +174,14 @@ public class MapChunkWriter<T>
 
         @Override
         public void visitFieldNodes(final FieldNodeListener listener) {
+            // map type has a logical node
             listener.noteLogicalFieldNode(subset.intSize(DEBUG_NAME), nullCount());
+            // inner type also has a logical node
+            if (myOffsets == null) {
+                listener.noteLogicalFieldNode(context.offsets.size(), nullCount());
+            } else {
+                listener.noteLogicalFieldNode(myOffsets.size(), nullCount());
+            }
             keyColumn.visitFieldNodes(listener);
             valueColumn.visitFieldNodes(listener);
         }
@@ -212,7 +222,7 @@ public class MapChunkWriter<T>
 
                 // validity
                 final int numElements = subset.intSize(DEBUG_NAME);
-                size = sendValidityBuffer() ? getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)) : 0;
+                size = sendValidityBuffer() ? getValidityMapSerializationSizeFor(numElements) : 0;
 
                 // offsets
                 long numOffsetBytes = Integer.BYTES * ((long) numElements);

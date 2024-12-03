@@ -498,8 +498,7 @@ public class BarrageUtil {
         }
 
         if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
-            return new BarrageTypeInfo<>(Map.class, null,
-                    arrowFieldFor(field.getName(), Map.class, null, field.getMetadata(), false));
+            return new BarrageTypeInfo<>(Map.class, null, field);
         }
 
         final Class<?> columnType = getDefaultType(field, explicitClass);

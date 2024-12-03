@@ -276,20 +276,23 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();
 
-            final List<ChunkWriter<Chunk<Values>>> childWriters = field.getChildren().stream()
-                    .map(child -> newWriterPojo(BarrageUtil.getDefaultType(child)))
+            final List<BarrageTypeInfo<Field>> childTypeInfo = field.getChildren().stream()
+                    .map(BarrageUtil::getDefaultType)
+                    .collect(Collectors.toList());
+            final List<Class<?>> childClassMatcher = childTypeInfo.stream()
+                    .map(BarrageTypeInfo::type)
+                    .map(TypeUtils::getBoxedType)
+                    .collect(Collectors.toList());
+            final List<ChunkWriter<Chunk<Values>>> childWriters = childTypeInfo.stream()
+                    .map(this::newWriterPojo)
+                    .collect(Collectors.toList());
+            final List<ChunkType> childChunkTypes = childTypeInfo.stream()
+                    .map(BarrageTypeInfo::chunkType)
                     .collect(Collectors.toList());
 
-            switch (unionType.getMode()) {
-                case Sparse:
-                    // TODO NATE NOCOMMIT: implement
-                    break;
-                case Dense:
-                    // TODO NATE NOCOMMIT: implement
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unexpected union mode: " + unionType.getMode());
-            }
+            // noinspection unchecked
+            return (ChunkWriter<T>) new UnionChunkWriter<>(unionType.getMode(), childClassMatcher, childWriters,
+                    childChunkTypes);
         }
 
         throw new UnsupportedOperationException(String.format(

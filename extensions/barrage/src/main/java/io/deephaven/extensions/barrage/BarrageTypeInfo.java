@@ -54,6 +54,9 @@ public class BarrageTypeInfo<FIELD_TYPE> {
     }
 
     public ChunkType chunkType() {
+        if (type == boolean.class || type == Boolean.class) {
+            return ChunkType.Byte;
+        }
         return ChunkType.fromElementType(type);
     }
 }
