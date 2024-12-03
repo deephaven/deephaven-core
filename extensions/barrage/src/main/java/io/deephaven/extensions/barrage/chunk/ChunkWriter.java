@@ -13,6 +13,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.util.referencecounting.ReferenceCounted;
+import org.apache.arrow.flatbuf.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +34,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
          * @return a ChunkWriter based on the given options, factory, and type to write
          */
         <T extends Chunk<Values>> ChunkWriter<T> newWriter(
-                @NotNull BarrageTypeInfo typeInfo);
+                @NotNull BarrageTypeInfo<Field> typeInfo);
     }
 
     /**

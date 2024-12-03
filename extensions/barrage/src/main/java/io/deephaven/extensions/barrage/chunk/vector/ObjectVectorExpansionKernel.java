@@ -31,6 +31,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<ObjectVector<T>, A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -44,7 +45,11 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final ObjectVector<?> row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.size();
+            long rowLen = row == null ? 0 : row.size();
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -62,8 +67,13 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
                 continue;
             }
             try (final CloseableIterator<?> iter = row.iterator()) {
-                // noinspection unchecked
-                iter.forEachRemaining(v -> result.add((T) v));
+                if (fixedSizeLength > 0) {
+                    // noinspection unchecked
+                    iter.stream().limit(fixedSizeLength).forEach(v -> result.add((T) v));
+                } else {
+                    // noinspection unchecked
+                    iter.forEachRemaining(v -> result.add((T) v));
+                }
             }
         }
         if (offsetsDest != null) {

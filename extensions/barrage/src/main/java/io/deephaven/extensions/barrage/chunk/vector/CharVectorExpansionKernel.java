@@ -30,6 +30,7 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVect
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<CharVector, A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -43,7 +44,11 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVect
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final CharVector row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.size();
+            long rowLen = row == null ? 0 : row.size();
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableCharChunk<A> result = WritableCharChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -62,7 +67,11 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVect
             }
             final CharConsumer consumer = result::add;
             try (final CloseablePrimitiveIteratorOfChar iter = row.iterator()) {
-                iter.forEachRemaining(consumer);
+                if (fixedSizeLength > 0) {
+                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
+                } else {
+                    iter.forEachRemaining(consumer);
+                }
             }
         }
         if (offsetsDest != null) {

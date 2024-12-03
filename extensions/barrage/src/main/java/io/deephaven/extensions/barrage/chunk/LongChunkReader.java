@@ -10,9 +10,11 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.BarrageOptions;import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

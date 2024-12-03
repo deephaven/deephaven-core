@@ -19,6 +19,7 @@ import io.deephaven.engine.sql.Sql;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -1395,7 +1396,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 ColumnDefinition.ofInt("info_name"),
                 ColumnDefinition.of("value", Type.ofCustom(Object.class)));
 
-        private static final Map<String, Object> ATTRIBUTES = Map.of();
+        private static final Map<String, Object> ATTRIBUTES = Map.of(
+                Table.BARRAGE_SCHEMA_ATTRIBUTE, FlightSqlProducer.Schemas.GET_SQL_INFO_SCHEMA);
 
         private static final ByteString SCHEMA_BYTES =
                 BarrageUtil.schemaBytesFromTableDefinition(DEFINITION, ATTRIBUTES, true);

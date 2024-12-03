@@ -35,6 +35,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<LongVector, A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -48,7 +49,11 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final LongVector row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.size();
+            long rowLen = row == null ? 0 : row.size();
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableLongChunk<A> result = WritableLongChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -67,7 +72,11 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
             }
             final LongConsumer consumer = result::add;
             try (final CloseablePrimitiveIteratorOfLong iter = row.iterator()) {
-                iter.forEachRemaining(consumer);
+                if (fixedSizeLength > 0) {
+                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
+                } else {
+                    iter.forEachRemaining(consumer);
+                }
             }
         }
         if (offsetsDest != null) {

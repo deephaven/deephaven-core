@@ -27,6 +27,7 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<T[], A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -40,7 +41,11 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final T[] row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.length;
+            int rowLen = row == null ? 0 : row.length;
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -57,8 +62,12 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
             if (row == null) {
                 continue;
             }
-            result.copyFromArray(row, 0, lenWritten, row.length);
-            lenWritten += row.length;
+            int rowLen = row.length;
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            result.copyFromArray(row, 0, lenWritten, rowLen);
+            lenWritten += rowLen;
         }
         if (offsetsDest != null) {
             offsetsDest.set(typedSource.size(), lenWritten);

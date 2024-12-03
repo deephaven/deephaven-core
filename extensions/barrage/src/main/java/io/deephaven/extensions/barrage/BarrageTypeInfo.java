@@ -4,14 +4,13 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.chunk.ChunkType;
-import org.apache.arrow.flatbuf.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Describes type info used by factory implementations when creating a ChunkReader.
  */
-public class BarrageTypeInfo {
+public class BarrageTypeInfo<FIELD_TYPE> {
     /**
      * Factory method to create a TypeInfo instance.
      *
@@ -20,22 +19,22 @@ public class BarrageTypeInfo {
      * @param arrowField the Arrow type to be read into the chunk
      * @return a TypeInfo instance
      */
-    public static BarrageTypeInfo make(
+    public static <FIELD_TYPE> BarrageTypeInfo<FIELD_TYPE> make(
             @NotNull final Class<?> type,
             @Nullable final Class<?> componentType,
-            @NotNull final Field arrowField) {
-        return new BarrageTypeInfo(type, componentType, arrowField);
+            @NotNull final FIELD_TYPE arrowField) {
+        return new BarrageTypeInfo<>(type, componentType, arrowField);
     }
 
     private final Class<?> type;
     @Nullable
     private final Class<?> componentType;
-    private final Field arrowField;
+    private final FIELD_TYPE arrowField;
 
     public BarrageTypeInfo(
             @NotNull final Class<?> type,
             @Nullable final Class<?> componentType,
-            @NotNull final Field arrowField) {
+            @NotNull final FIELD_TYPE arrowField) {
         this.type = type;
         this.componentType = componentType;
         this.arrowField = arrowField;
@@ -50,7 +49,7 @@ public class BarrageTypeInfo {
         return componentType;
     }
 
-    public Field arrowField() {
+    public FIELD_TYPE arrowField() {
         return arrowField;
     }
 

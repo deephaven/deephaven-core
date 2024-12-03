@@ -73,7 +73,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
     protected interface ChunkReaderFactory {
         ChunkReader<? extends WritableChunk<Values>> make(
                 final ArrowType arrowType,
-                final BarrageTypeInfo typeInfo,
+                final BarrageTypeInfo<Field> typeInfo,
                 final BarrageOptions options);
     }
 
@@ -133,24 +133,27 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.Interval, Period.class, DefaultChunkReaderFactory::intervalToPeriod);
         register(ArrowType.ArrowTypeID.Interval, PeriodDuration.class,
                 DefaultChunkReaderFactory::intervalToPeriodDuration);
-        // TODO NATE NOCOMMIT: Test each of Arrow's timezone formats in Instant -> ZonedDateTime
     }
 
     @Override
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
-            @NotNull final BarrageTypeInfo typeInfo,
+            @NotNull final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo,
             @NotNull final BarrageOptions options) {
-        return newReader(typeInfo, options, true);
+        final BarrageTypeInfo<Field> fieldTypeInfo = new BarrageTypeInfo<>(
+                typeInfo.type(),
+                typeInfo.componentType(),
+                Field.convertField(typeInfo.arrowField()));
+        return newReaderPojo(fieldTypeInfo, options, true);
     }
 
-    public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
-            @NotNull final BarrageTypeInfo typeInfo,
+    public <T extends WritableChunk<Values>> ChunkReader<T> newReaderPojo(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options,
             final boolean isTopLevel) {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
 
-        final Field field = Field.convertField(typeInfo.arrowField());
+        final Field field = typeInfo.arrowField();
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = SPECIAL_TYPES.contains(typeId);
@@ -208,28 +211,28 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
             }
 
-            final BarrageTypeInfo componentTypeInfo;
+            final BarrageTypeInfo<Field> componentTypeInfo;
             final boolean useVectorKernels = Vector.class.isAssignableFrom(typeInfo.type());
             if (useVectorKernels) {
                 final Class<?> componentType =
                         VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
-                componentTypeInfo = new BarrageTypeInfo(
+                componentTypeInfo = new BarrageTypeInfo<>(
                         componentType,
                         componentType.getComponentType(),
-                        typeInfo.arrowField().children(0));
+                        typeInfo.arrowField().getChildren().get(0));
             } else if (typeInfo.type().isArray()) {
                 final Class<?> componentType = typeInfo.componentType();
                 // noinspection DataFlowIssue
-                componentTypeInfo = new BarrageTypeInfo(
+                componentTypeInfo = new BarrageTypeInfo<>(
                         componentType,
                         componentType.getComponentType(),
-                        typeInfo.arrowField().children(0));
+                        typeInfo.arrowField().getChildren().get(0));
             } else if (isTopLevel && options.columnsAsList()) {
-                final BarrageTypeInfo realTypeInfo = new BarrageTypeInfo(
+                final BarrageTypeInfo<Field> realTypeInfo = new BarrageTypeInfo<>(
                         typeInfo.type(),
                         typeInfo.componentType(),
-                        typeInfo.arrowField().children(0));
-                final ChunkReader<WritableChunk<Values>> componentReader = newReader(realTypeInfo, options, false);
+                        typeInfo.arrowField().getChildren().get(0));
+                final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(realTypeInfo, options, false);
                 // noinspection unchecked
                 return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
             } else {
@@ -246,7 +249,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             } else {
                 kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
             }
-            final ChunkReader<WritableChunk<Values>> componentReader = newReader(componentTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> componentReader = newReaderPojo(componentTypeInfo, options, false);
 
             // noinspection unchecked
             return (ChunkReader<T>) new ListChunkReader<>(mode, fixedSizeLength, kernel, componentReader);
@@ -254,11 +257,11 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
             final Field structField = field.getChildren().get(0);
-            final BarrageTypeInfo keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
-            final BarrageTypeInfo valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
+            final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
+            final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
 
-            final ChunkReader<WritableChunk<Values>> keyReader = newReader(keyTypeInfo, options, false);
-            final ChunkReader<WritableChunk<Values>> valueReader = newReader(valueTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> keyReader = newReaderPojo(keyTypeInfo, options, false);
+            final ChunkReader<WritableChunk<Values>> valueReader = newReaderPojo(valueTypeInfo, options, false);
 
             // noinspection unchecked
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
@@ -357,7 +360,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableLongChunk<Values>> timestampToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final long factor = factorForTimeUnit(((ArrowType.Timestamp) arrowType).getUnit());
         return factor == 1
@@ -368,7 +371,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<Instant, Values>> timestampToInstant(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final long factor = factorForTimeUnit(((ArrowType.Timestamp) arrowType).getUnit());
         return new FixedWidthChunkReader<>(Long.BYTES, true, options, io -> {
@@ -382,7 +385,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<ZonedDateTime, Values>> timestampToZonedDateTime(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Timestamp tsType = (ArrowType.Timestamp) arrowType;
         final String timezone = tsType.getTimezone();
@@ -399,7 +402,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<LocalDateTime, Values>> timestampToLocalDateTime(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Timestamp tsType = (ArrowType.Timestamp) arrowType;
         final ZoneId tz = DateTimeUtils.parseTimeZone(tsType.getTimezone());
@@ -416,14 +419,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<String, Values>> utf8ToString(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>((buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
     }
 
     private static ChunkReader<WritableLongChunk<Values>> durationToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
         return factor == 1
@@ -434,7 +437,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<Duration, Values>> durationToDuration(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
         return transformToObject(new LongChunkReader(options), (chunk, ii) -> {
@@ -445,21 +448,21 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableFloatChunk<Values>> floatingPointToFloat(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new FloatChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options);
     }
 
     private static ChunkReader<WritableDoubleChunk<Values>> floatingPointToDouble(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new DoubleChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options);
     }
 
     private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> floatingPointToBigDecimal(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return transformToObject(
                 new DoubleChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options),
@@ -471,21 +474,21 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<byte[], Values>> binaryToByteArray(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>((buf, off, len) -> Arrays.copyOfRange(buf, off, off + len));
     }
 
     private static ChunkReader<WritableObjectChunk<BigInteger, Values>> binaryToBigInt(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>(BigInteger::new);
     }
 
     private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> binaryToBigDecimal(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>((final byte[] buf, final int offset, final int length) -> {
             // read the int scale value as little endian, arrow's endianness.
@@ -500,14 +503,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<Schema, Values>> binaryToSchema(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>(ArrowIpcUtil::deserialize);
     }
 
     private static ChunkReader<WritableLongChunk<Values>> timeToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // See timeToLocalTime's comment for more information on wire format.
         final ArrowType.Time timeType = (ArrowType.Time) arrowType;
@@ -533,7 +536,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<LocalTime, Values>> timeToLocalTime(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         /*
          * Time is either a 32-bit or 64-bit signed integer type representing an elapsed time since midnight, stored in
@@ -574,7 +577,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableByteChunk<Values>> decimalToByte(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return ByteChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
@@ -582,7 +585,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableCharChunk<Values>> decimalToChar(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return CharChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
@@ -590,7 +593,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableShortChunk<Values>> decimalToShort(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return ShortChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
@@ -598,7 +601,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableIntChunk<Values>> decimalToInt(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return IntChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
@@ -606,7 +609,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableLongChunk<Values>> decimalToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return LongChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
@@ -614,7 +617,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<BigInteger, Values>> decimalToBigInteger(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // note this mapping is particularly useful if scale == 0
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
@@ -643,7 +646,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableFloatChunk<Values>> decimalToFloat(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return FloatChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.floatCast(chunk.get(ii)));
@@ -651,7 +654,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableDoubleChunk<Values>> decimalToDouble(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return DoubleChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
                 (chunk, ii) -> QueryLanguageFunctionUtils.doubleCast(chunk.get(ii)));
@@ -659,7 +662,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> decimalToBigDecimal(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Decimal decimalType = (ArrowType.Decimal) arrowType;
         final int byteWidth = decimalType.getBitWidth() / 8;
@@ -687,7 +690,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableByteChunk<Values>> intToByte(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -715,7 +718,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableShortChunk<Values>> intToShort(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -744,7 +747,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableIntChunk<Values>> intToInt(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -772,7 +775,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableLongChunk<Values>> intToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -800,7 +803,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<BigInteger, Values>> intToBigInt(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -826,7 +829,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableFloatChunk<Values>> intToFloat(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -876,7 +879,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableDoubleChunk<Values>> intToDouble(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -926,7 +929,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> intToBigDecimal(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -954,7 +957,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableCharChunk<Values>> intToChar(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
@@ -987,14 +990,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableByteChunk<Values>> boolToBoolean(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new BooleanChunkReader();
     }
 
     private static ChunkReader<WritableObjectChunk<byte[], Values>> fixedSizeBinaryToByteArray(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.FixedSizeBinary fixedSizeBinary = (ArrowType.FixedSizeBinary) arrowType;
         final int elementWidth = fixedSizeBinary.getByteWidth();
@@ -1007,7 +1010,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableIntChunk<Values>> dateToInt(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // see dateToLocalDate's comment for more information on wire format
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
@@ -1027,7 +1030,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableLongChunk<Values>> dateToLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // see dateToLocalDate's comment for more information on wire format
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
@@ -1048,7 +1051,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<LocalDate, Values>> dateToLocalDate(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         /*
          * Date is either a 32-bit or 64-bit signed integer type representing an elapsed time since UNIX epoch
@@ -1082,7 +1085,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableLongChunk<Values>> intervalToDurationLong(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // See intervalToPeriod's comment for more information on wire format.
 
@@ -1111,7 +1114,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<Duration, Values>> intervalToDuration(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // See intervalToPeriod's comment for more information on wire format.
 
@@ -1136,7 +1139,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<Period, Values>> intervalToPeriod(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         /*
          * A "calendar" interval which models types that don't necessarily have a precise duration without the context
@@ -1189,7 +1192,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
     private static ChunkReader<WritableObjectChunk<PeriodDuration, Values>> intervalToPeriodDuration(
             final ArrowType arrowType,
-            final BarrageTypeInfo typeInfo,
+            final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         // See intervalToPeriod's comment for more information on wire format.
 

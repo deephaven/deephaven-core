@@ -34,6 +34,7 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel<FloatVe
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<FloatVector, A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -47,7 +48,11 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel<FloatVe
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final FloatVector row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.size();
+            long rowLen = row == null ? 0 : row.size();
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableFloatChunk<A> result = WritableFloatChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -66,7 +71,11 @@ public class FloatVectorExpansionKernel implements VectorExpansionKernel<FloatVe
             }
             final FloatConsumer consumer = result::add;
             try (final CloseablePrimitiveIteratorOfFloat iter = row.iterator()) {
-                iter.forEachRemaining(consumer);
+                if (fixedSizeLength > 0) {
+                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
+                } else {
+                    iter.forEachRemaining(consumer);
+                }
             }
         }
         if (offsetsDest != null) {

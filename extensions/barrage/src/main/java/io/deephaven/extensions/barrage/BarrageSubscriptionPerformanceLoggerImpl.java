@@ -28,7 +28,7 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
                 ExecutionContext.getContext().getUpdateGraph(),
                 BarrageSubscriptionPerformanceLoggerImpl.class.getName(),
                 Map.of(
-                        BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
+                        Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
                         BarrageSubscriptionPerformanceLogger.getDefaultTableName()));
         blink = adapter.table();
     }

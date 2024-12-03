@@ -35,6 +35,7 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel<Double
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<DoubleVector, A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -48,7 +49,11 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel<Double
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final DoubleVector row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.size();
+            long rowLen = row == null ? 0 : row.size();
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableDoubleChunk<A> result = WritableDoubleChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -67,7 +72,11 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel<Double
             }
             final DoubleConsumer consumer = result::add;
             try (final CloseablePrimitiveIteratorOfDouble iter = row.iterator()) {
-                iter.forEachRemaining(consumer);
+                if (fixedSizeLength > 0) {
+                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
+                } else {
+                    iter.forEachRemaining(consumer);
+                }
             }
         }
         if (offsetsDest != null) {

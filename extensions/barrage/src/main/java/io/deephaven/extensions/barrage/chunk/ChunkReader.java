@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.util.annotations.FinalDefault;
+import org.apache.arrow.flatbuf.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
          * @return a ChunkReader based on the given options, factory, and type to read
          */
         <T extends WritableChunk<Values>> ChunkReader<T> newReader(
-                @NotNull BarrageTypeInfo typeInfo,
+                @NotNull BarrageTypeInfo<Field> typeInfo,
                 @NotNull BarrageOptions options);
     }
 

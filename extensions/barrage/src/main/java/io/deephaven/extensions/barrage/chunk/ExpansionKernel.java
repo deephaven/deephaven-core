@@ -32,17 +32,9 @@ public interface ExpansionKernel<T> {
      *        {@code source.get(i).length}
      * @return an unrolled/flattened chunk of T
      */
-    default <A extends Any> WritableChunk<A> expand(
-            @NotNull ObjectChunk<T, A> source,
-            int fixedSizeLength,
-            @Nullable WritableIntChunk<ChunkPositions> offsetDest) {
-        // TODO NATE NOCOMMII: implement fixed size list length restrictions!
-        return expand(source, offsetDest);
-    }
-
-    // TODO NATE NOCOMMIT: THIS METHOD DOES NOT GET TO STAY
     <A extends Any> WritableChunk<A> expand(
             @NotNull ObjectChunk<T, A> source,
+            int fixedSizeLength,
             @Nullable WritableIntChunk<ChunkPositions> offsetDest);
 
     /**

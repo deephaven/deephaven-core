@@ -82,6 +82,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -351,14 +352,9 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
-        // Find the format columns
-        final Set<String> formatColumns = new HashSet<>();
-        columnDefinitions.stream().map(ColumnDefinition::getName)
-                .filter(ColumnFormatting::isFormattingColumn)
-                .forEach(formatColumns::add);
 
         // Find columns that are sortable
-        Set<String> sortableColumns;
+        final Set<String> sortableColumns;
         if (attributes.containsKey(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE)) {
             final String[] restrictedSortColumns =
                     attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
@@ -372,8 +368,12 @@ public class BarrageUtil {
                     .collect(Collectors.toSet());
         }
 
-        // Build metadata for columns and add the fields
-        return columnDefinitions.stream().map((final ColumnDefinition<?> column) -> {
+        final Schema targetSchema;
+        final Set<String> formatColumns = new HashSet<>();
+        final Map<String, Field> fieldMap = new LinkedHashMap<>();
+
+        final Function<ColumnDefinition<?>, Field> fieldFor = (final ColumnDefinition<?> column) -> {
+            final Field field = fieldMap.get(column.getName());
             final String name = column.getName();
             Class<?> dataType = column.getDataType();
             Class<?> componentType = column.getComponentType();
@@ -431,18 +431,51 @@ public class BarrageUtil {
                 dataType = Array.newInstance(dataType, 0).getClass();
             }
 
+            if (field != null) {
+                final FieldType origType = field.getFieldType();
+                // user defined metadata should override the default metadata
+                metadata.putAll(field.getMetadata());
+                final FieldType newType =
+                        new FieldType(origType.isNullable(), origType.getType(), origType.getDictionary(),
+                                origType.getMetadata());
+                return new Field(field.getName(), newType, field.getChildren());
+            }
+
             if (Vector.class.isAssignableFrom(dataType)) {
                 return arrowFieldForVectorType(name, dataType, componentType, metadata);
             }
             return arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
-        });
+        };
+
+        if (attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
+
+            fieldMap.keySet().stream()
+                    .filter(ColumnFormatting::isFormattingColumn)
+                    .forEach(formatColumns::add);
+
+            final Map<String, ColumnDefinition<?>> columnDefinitionMap = new LinkedHashMap<>();
+            columnDefinitions.stream().filter(column -> fieldMap.containsKey(column.getName()))
+                    .forEach(column -> columnDefinitionMap.put(column.getName(), column));
+
+            return fieldMap.keySet().stream().map(columnDefinitionMap::get).map(fieldFor);
+        }
+
+        // Find the format columns
+        columnDefinitions.stream().map(ColumnDefinition::getName)
+                .filter(ColumnFormatting::isFormattingColumn)
+                .forEach(formatColumns::add);
+
+        // Build metadata for columns and add the fields
+        return columnDefinitions.stream().map(fieldFor);
     }
 
     public static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
-    public static BarrageTypeInfo getDefaultType(@NotNull final Field field) {
+    public static BarrageTypeInfo<Field> getDefaultType(@NotNull final Field field) {
 
         Class<?> explicitClass = null;
         final String explicitClassName = field.getMetadata().get(ATTR_DH_PREFIX + ATTR_TYPE_TAG);
@@ -464,19 +497,27 @@ public class BarrageUtil {
             }
         }
 
-        final Class<?> columnType = getDefaultType(field.getType(), explicitClass);
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
+            return new BarrageTypeInfo<>(Map.class, null,
+                    arrowFieldFor(field.getName(), Map.class, null, field.getMetadata(), false));
+        }
 
-        return new BarrageTypeInfo(columnType, columnComponentType,
-                flatbufFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata()));
+        final Class<?> columnType = getDefaultType(field, explicitClass);
+        if (columnComponentType == null && columnType.isArray()) {
+            columnComponentType = columnType.getComponentType();
+        }
+
+        return new BarrageTypeInfo<>(columnType, columnComponentType,
+                arrowFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata(), false));
     }
 
     private static Class<?> getDefaultType(
-            final ArrowType arrowType,
+            final Field arrowField,
             final Class<?> explicitType) {
-        final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
-        switch (arrowType.getTypeID()) {
+        final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field";
+        switch (arrowField.getType().getTypeID()) {
             case Int:
-                final ArrowType.Int intType = (ArrowType.Int) arrowType;
+                final ArrowType.Int intType = (ArrowType.Int) arrowField.getType();
                 if (intType.getIsSigned()) {
                     // SIGNED
                     switch (intType.getBitWidth()) {
@@ -509,7 +550,7 @@ public class BarrageUtil {
             case Duration:
                 return long.class;
             case Timestamp:
-                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
+                final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowField.getType();
                 final String tz = timestampType.getTimezone();
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if ((tz == null || "UTC".equals(tz))) {
@@ -522,7 +563,7 @@ public class BarrageUtil {
                         " of timestampType(Timezone=" + tz +
                         ", Unit=" + timestampUnit.toString() + ")");
             case FloatingPoint:
-                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowType;
+                final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowField.getType();
                 switch (floatingPointType.getPrecision()) {
                     case SINGLE:
                         return float.class;
@@ -539,8 +580,12 @@ public class BarrageUtil {
                 if (explicitType != null) {
                     return explicitType;
                 }
+                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                    final Class<?> childType = getDefaultType(arrowField.getChildren().get(0), null);
+                    return Array.newInstance(childType, 0).getClass();
+                }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of type " + arrowType.getTypeID().toString());
+                        " of type " + arrowField.getType().getTypeID().toString());
         }
     }
 
@@ -595,7 +640,7 @@ public class BarrageUtil {
             final List<ColumnDefinition<?>> columns = tableDef.getColumns();
             for (int ii = 0; ii < tableDef.numColumns(); ++ii) {
                 final ColumnDefinition<?> columnDefinition = ReinterpretUtils.maybeConvertToPrimitive(columns.get(ii));
-                final BarrageTypeInfo typeInfo = BarrageTypeInfo.make(
+                final BarrageTypeInfo<org.apache.arrow.flatbuf.Field> typeInfo = BarrageTypeInfo.make(
                         columnDefinition.getDataType(), columnDefinition.getComponentType(), schema.fields(ii));
                 readers[ii] = chunkReaderFactory.newReader(typeInfo, barrageOptions);
             }
@@ -616,8 +661,7 @@ public class BarrageUtil {
             final org.apache.arrow.flatbuf.Schema schema) {
         return convertArrowSchema(
                 schema.fieldsLength(),
-                i -> schema.fields(i).name(),
-                i -> ArrowType.getTypeForField(schema.fields(i)),
+                i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
                     if (field.dictionary() != null) {
@@ -640,8 +684,7 @@ public class BarrageUtil {
     public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
         return convertArrowSchema(
                 schema.getFields().size(),
-                i -> schema.getFields().get(i).getName(),
-                i -> schema.getFields().get(i).getType(),
+                i -> schema.getFields().get(i),
                 i -> visitor -> {
                     schema.getFields().get(i).getMetadata().forEach(visitor);
                 },
@@ -650,15 +693,15 @@ public class BarrageUtil {
 
     private static ConvertedArrowSchema convertArrowSchema(
             final int numColumns,
-            final IntFunction<String> getName,
-            final IntFunction<ArrowType> getArrowType,
+            final IntFunction<Field> getField,
             final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
             final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
         final ConvertedArrowSchema result = new ConvertedArrowSchema();
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
-            final String origName = getName.apply(i);
+            final Field field = getField.apply(i);
+            final String origName = field.getName();
             final String name = NameValidator.legalizeColumnName(origName);
             final MutableObject<Class<?>> type = new MutableObject<>();
             final MutableObject<Class<?>> componentType = new MutableObject<>();
@@ -680,7 +723,7 @@ public class BarrageUtil {
             });
 
             // this has side effects such as type validation; must call even if dest type is well known
-            Class<?> defaultType = getDefaultType(getArrowType.apply(i), type.getValue());
+            Class<?> defaultType = getDefaultType(field, type.getValue());
 
             if (type.getValue() == null) {
                 type.setValue(defaultType);
@@ -902,12 +945,27 @@ public class BarrageUtil {
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
+        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+            fieldFor = new HashMap<>();
+            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            // noinspection DataFlowIssue
+            targetSchema.getFields().forEach(f -> {
+                final FlatBufferBuilder fbb = new FlatBufferBuilder();
+                final int offset = f.getField(fbb);
+                fbb.finish(offset);
+                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+            });
+        } else {
+            fieldFor = null;
+        }
+
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        flatbufFieldFor(cd, Map.of()))))
+                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
 
         final long columnCount =

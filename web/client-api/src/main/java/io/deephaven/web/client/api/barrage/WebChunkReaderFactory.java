@@ -38,6 +38,7 @@ import io.deephaven.web.client.api.LocalTimeWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
+import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
 import org.apache.arrow.flatbuf.Precision;
@@ -66,7 +67,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
-            @NotNull final BarrageTypeInfo typeInfo,
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options) {
         switch (typeInfo.arrowField().typeType()) {
             case Type.Int: {
@@ -265,7 +266,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                     outChunk, outOffset, totalRows);
                 }
 
-                final BarrageTypeInfo componentTypeInfo = new BarrageTypeInfo(
+                // noinspection DataFlowIssue
+                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
                         typeInfo.componentType(),
                         typeInfo.componentType().getComponentType(),
                         typeInfo.arrowField().children(0));

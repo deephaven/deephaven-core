@@ -26,6 +26,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
     @Override
     public <A extends Any> WritableChunk<A> expand(
             @NotNull final ObjectChunk<Boolean[], A> source,
+            final int fixedSizeLength,
             @Nullable final WritableIntChunk<ChunkPositions> offsetsDest) {
         if (source.size() == 0) {
             if (offsetsDest != null) {
@@ -39,7 +40,11 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final Boolean[] row = typedSource.get(ii);
-            totalSize += row == null ? 0 : row.length;
+            int rowLen = row == null ? 0 : row.length;
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            totalSize += rowLen;
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
@@ -56,11 +61,15 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
             if (row == null) {
                 continue;
             }
-            for (int j = 0; j < row.length; ++j) {
+            int rowLen = row.length;
+            if (fixedSizeLength > 0) {
+                rowLen = Math.min(rowLen, fixedSizeLength);
+            }
+            for (int j = 0; j < rowLen; ++j) {
                 final byte value = BooleanUtils.booleanAsByte(row[j]);
                 result.set(lenWritten + j, value);
             }
-            lenWritten += row.length;
+            lenWritten += rowLen;
         }
         if (offsetsDest != null) {
             offsetsDest.set(typedSource.size(), lenWritten);
