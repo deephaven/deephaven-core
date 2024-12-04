@@ -6,6 +6,7 @@ package io.deephaven.iceberg.junit5;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTools;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInfo;
 
@@ -17,7 +18,13 @@ import java.util.Map;
  * served via local file IO.
  */
 @Tag("security-manager-allow")
-public final class FileWarehouseSqliteCatalogTest extends SqliteCatalogBase {
+final class FileWarehouseSqliteCatalogTest extends SqliteCatalogBase {
+
+    @Override
+    @Nullable
+    public Object dataInstructions() {
+        return null;
+    }
 
     @Override
     protected IcebergCatalogAdapter catalogAdapter(TestInfo testInfo, Path rootDir, Map<String, String> properties) {

@@ -185,7 +185,7 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character>
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         totalSize = 0;
         data.forEach(SafeCloseable::close);
         data.clear();

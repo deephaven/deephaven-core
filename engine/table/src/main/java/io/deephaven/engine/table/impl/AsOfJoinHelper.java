@@ -1340,8 +1340,10 @@ public class AsOfJoinHelper {
                     @Override
                     protected void destroy() {
                         super.destroy();
-                        leftStampKeys.close();
-                        leftStampValues.close();
+                        getUpdateGraph().runWhenIdle(() -> {
+                            leftStampKeys.close();
+                            leftStampValues.close();
+                        });
                     }
                 });
 
@@ -1522,8 +1524,10 @@ public class AsOfJoinHelper {
                                 @Override
                                 protected void destroy() {
                                     super.destroy();
-                                    compactedRightStampKeys.close();
-                                    compactedRightStampValues.close();
+                                    getUpdateGraph().runWhenIdle(() -> {
+                                        compactedRightStampKeys.close();
+                                        compactedRightStampValues.close();
+                                    });
                                 }
                             });
 

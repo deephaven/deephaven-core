@@ -2623,6 +2623,40 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
     }
 
+    @Test
+    public void testOnWriteCallback() {
+        // Write a few tables to disk and check the sizes and number of rows in the files
+        final Table table1 = TableTools.emptyTable(100_000).update(
+                "someIntColumn = i * 200",
+                "someLongColumn = ii * 500");
+        final File dest1 = new File(rootFile, "table1.parquet");
+        final Table table2 = TableTools.emptyTable(2000).update(
+                "someIntColumn = i",
+                "someLongColumn = ii");
+        final File dest2 = new File(rootFile, "table2.parquet");
+
+        final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>();
+        final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setOnWriteCompleted(onWriteCompleted)
+                .build();
+        ParquetTools.writeTables(new Table[] {table1, table2},
+                new String[] {dest1.getPath(), dest2.getPath()}, writeInstructions);
+
+        assertEquals(2, parquetFilesWritten.size());
+        // Check the destination URIs
+        assertEquals(dest1.toURI(), parquetFilesWritten.get(0).destination());
+        assertEquals(dest2.toURI(), parquetFilesWritten.get(1).destination());
+
+        // Check the number of rows
+        assertEquals(100_000, parquetFilesWritten.get(0).numRows());
+        assertEquals(2000, parquetFilesWritten.get(1).numRows());
+
+        // Check the size of the files
+        assertEquals(dest1.length(), parquetFilesWritten.get(0).numBytes());
+        assertEquals(dest2.length(), parquetFilesWritten.get(1).numBytes());
+    }
+
     // Following is used for testing both writing APIs for parquet tables
     private interface TestParquetTableWriter {
         void writeTable(final Table table, final File destFile);
