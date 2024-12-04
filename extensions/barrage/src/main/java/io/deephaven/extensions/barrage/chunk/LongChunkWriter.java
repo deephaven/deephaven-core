@@ -24,8 +24,15 @@ import java.util.function.Supplier;
 
 public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "LongChunkWriter";
-    public static final LongChunkWriter<LongChunk<Values>> IDENTITY_INSTANCE = new LongChunkWriter<>(
-            LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get);
+    private static final LongChunkWriter<LongChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
+            LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get, false);
+    private static final LongChunkWriter<LongChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
+            LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get, true);
+
+
+    public static LongChunkWriter<LongChunk<Values>> getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
 
     @FunctionalInterface
     public interface ToLongTransformFunction<SourceChunkType extends Chunk<Values>> {
@@ -37,8 +44,9 @@ public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
     public LongChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToLongTransformFunction<SOURCE_CHUNK_TYPE> transform) {
-        super(isRowNullProvider, emptyChunkSupplier, Long.BYTES, true);
+            @Nullable final ToLongTransformFunction<SOURCE_CHUNK_TYPE> transform,
+            final boolean fieldNullable) {
+        super(isRowNullProvider, emptyChunkSupplier, Long.BYTES, true, fieldNullable);
         this.transform = transform;
     }
 

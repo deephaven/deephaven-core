@@ -24,8 +24,15 @@ import java.util.function.Supplier;
 
 public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ByteChunkWriter";
-    public static final ByteChunkWriter<ByteChunk<Values>> IDENTITY_INSTANCE = new ByteChunkWriter<>(
-            ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get);
+    private static final ByteChunkWriter<ByteChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
+            ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get, false);
+    private static final ByteChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
+            ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get, true);
+
+
+    public static ByteChunkWriter<ByteChunk<Values>> getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
 
     @FunctionalInterface
     public interface ToByteTransformFunction<SourceChunkType extends Chunk<Values>> {
@@ -37,8 +44,9 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
     public ByteChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToByteTransformFunction<SOURCE_CHUNK_TYPE> transform) {
-        super(isRowNullProvider, emptyChunkSupplier, Byte.BYTES, true);
+            @Nullable final ToByteTransformFunction<SOURCE_CHUNK_TYPE> transform,
+            final boolean fieldNullable) {
+        super(isRowNullProvider, emptyChunkSupplier, Byte.BYTES, true, fieldNullable);
         this.transform = transform;
     }
 

@@ -33,8 +33,9 @@ public class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> exte
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
             final boolean dhNullable,
+            final boolean fieldNullable,
             final Appender<SOURCE_CHUNK_TYPE> appendItem) {
-        super(isRowNullProvider, emptyChunkSupplier, elementSize, dhNullable);
+        super(isRowNullProvider, emptyChunkSupplier, elementSize, dhNullable, fieldNullable);
         this.appendItem = appendItem;
     }
 

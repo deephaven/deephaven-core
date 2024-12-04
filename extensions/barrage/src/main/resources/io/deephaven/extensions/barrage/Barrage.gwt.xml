@@ -10,5 +10,6 @@
         <exclude name="DefaultChunkWriterFactory.java" />
         <exclude name="MapChunkReader.java" />
         <exclude name="MapChunkWriter.java" />
+        <exclude name="UnionChunkWriter.java" />
     </source>
 </module>

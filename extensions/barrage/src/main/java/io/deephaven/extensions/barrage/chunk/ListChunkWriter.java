@@ -33,8 +33,9 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
             final ListChunkReader.Mode mode,
             final int fixedSizeLength,
             final ExpansionKernel<ListType> kernel,
-            final ChunkWriter<ComponentChunkType> componentWriter) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false);
+            final ChunkWriter<ComponentChunkType> componentWriter,
+            final boolean fieldNullable) {
+        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.mode = mode;
         this.fixedSizeLength = fixedSizeLength;
         this.kernel = kernel;

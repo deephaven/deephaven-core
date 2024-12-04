@@ -33,16 +33,20 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
     protected final int elementSize;
     /** whether we can use the wire value as a deephaven null for clients that support dh nulls */
     protected final boolean dhNullable;
+    /** whether the field is nullable */
+    protected final boolean fieldNullable;
 
     BaseChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
-            final boolean dhNullable) {
+            final boolean dhNullable,
+            final boolean fieldNullable) {
         this.isRowNullProvider = isRowNullProvider;
         this.emptyChunkSupplier = emptyChunkSupplier;
         this.elementSize = elementSize;
         this.dhNullable = dhNullable;
+        this.fieldNullable = fieldNullable;
     }
 
     @Override
@@ -127,12 +131,12 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
          * the consumer understands which value is the assigned NULL.
          */
         protected boolean sendValidityBuffer() {
-            return nullCount() != 0;
+            return !fieldNullable || nullCount() != 0;
         }
 
         @Override
         public int nullCount() {
-            return nullCount;
+            return fieldNullable ? nullCount : 0;
         }
 
         protected long writeValidityBuffer(final DataOutput dos) {

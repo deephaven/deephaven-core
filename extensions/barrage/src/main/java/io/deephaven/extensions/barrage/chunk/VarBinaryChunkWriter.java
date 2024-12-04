@@ -33,8 +33,9 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
     private final Appender<T> appendItem;
 
     public VarBinaryChunkWriter(
+            final boolean fieldNullable,
             final Appender<T> appendItem) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false);
+        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.appendItem = appendItem;
     }
 

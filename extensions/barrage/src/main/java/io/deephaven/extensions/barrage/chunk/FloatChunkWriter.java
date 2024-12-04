@@ -24,8 +24,15 @@ import java.util.function.Supplier;
 
 public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FloatChunkWriter";
-    public static final FloatChunkWriter<FloatChunk<Values>> IDENTITY_INSTANCE = new FloatChunkWriter<>(
-            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get);
+    private static final FloatChunkWriter<FloatChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new FloatChunkWriter<>(
+            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get, false);
+    private static final FloatChunkWriter<FloatChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new FloatChunkWriter<>(
+            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get, true);
+
+
+    public static FloatChunkWriter<FloatChunk<Values>> getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
 
     @FunctionalInterface
     public interface ToFloatTransformFunction<SourceChunkType extends Chunk<Values>> {
@@ -37,8 +44,9 @@ public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
     public FloatChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToFloatTransformFunction<SOURCE_CHUNK_TYPE> transform) {
-        super(isRowNullProvider, emptyChunkSupplier, Float.BYTES, true);
+            @Nullable final ToFloatTransformFunction<SOURCE_CHUNK_TYPE> transform,
+            final boolean fieldNullable) {
+        super(isRowNullProvider, emptyChunkSupplier, Float.BYTES, true, fieldNullable);
         this.transform = transform;
     }
 

@@ -38,8 +38,9 @@ public class MapChunkWriter<T>
             final ChunkWriter<Chunk<Values>> keyWriter,
             final ChunkWriter<Chunk<Values>> valueWriter,
             final ChunkType keyWriterChunkType,
-            final ChunkType valueWriterChunkType) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false);
+            final ChunkType valueWriterChunkType,
+            final boolean fieldNullable) {
+        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.keyWriter = keyWriter;
         this.valueWriter = valueWriter;
         this.keyWriterChunkType = keyWriterChunkType;
@@ -67,7 +68,7 @@ public class MapChunkWriter<T>
             int numOffsets = chunk.size() + 1;
             offsets = WritableIntChunk.makeWritableChunk(numOffsets);
             offsets.setSize(0);
-            if (chunk.size() !=  0) {
+            if (chunk.size() != 0) {
                 offsets.add(0);
             }
             for (int ii = 0; ii < chunk.size(); ++ii) {
@@ -199,6 +200,9 @@ public class MapChunkWriter<T>
                 numOffsetBytes += Integer.BYTES;
             }
             listener.noteLogicalBuffer(padBufferSize(numOffsetBytes));
+
+            // a validity buffer for the inner struct ??
+            listener.noteLogicalBuffer(0);
 
             // payload
             keyColumn.visitBuffers(listener);

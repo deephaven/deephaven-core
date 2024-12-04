@@ -24,8 +24,15 @@ import java.util.function.Supplier;
 
 public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ShortChunkWriter";
-    public static final ShortChunkWriter<ShortChunk<Values>> IDENTITY_INSTANCE = new ShortChunkWriter<>(
-            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get);
+    private static final ShortChunkWriter<ShortChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
+            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, false);
+    private static final ShortChunkWriter<ShortChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
+            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, true);
+
+
+    public static ShortChunkWriter<ShortChunk<Values>> getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
 
     @FunctionalInterface
     public interface ToShortTransformFunction<SourceChunkType extends Chunk<Values>> {
@@ -37,8 +44,9 @@ public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
     public ShortChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToShortTransformFunction<SOURCE_CHUNK_TYPE> transform) {
-        super(isRowNullProvider, emptyChunkSupplier, Short.BYTES, true);
+            @Nullable final ToShortTransformFunction<SOURCE_CHUNK_TYPE> transform,
+            final boolean fieldNullable) {
+        super(isRowNullProvider, emptyChunkSupplier, Short.BYTES, true, fieldNullable);
         this.transform = transform;
     }
 

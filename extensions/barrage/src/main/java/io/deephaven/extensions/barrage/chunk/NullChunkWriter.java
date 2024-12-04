@@ -17,7 +17,7 @@ public class NullChunkWriter<SourceChunkType extends Chunk<Values>> extends Base
     public static final NullChunkWriter<Chunk<Values>> INSTANCE = new NullChunkWriter<>();
 
     public NullChunkWriter() {
-        super((chunk, idx) -> true, () -> null, 0, true);
+        super((chunk, idx) -> true, () -> null, 0, true, true);
     }
 
     @Override

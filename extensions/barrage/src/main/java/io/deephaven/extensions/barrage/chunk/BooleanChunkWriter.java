@@ -20,10 +20,15 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
     private static final String DEBUG_NAME = "BooleanChunkWriter";
-    public static final BooleanChunkWriter INSTANCE = new BooleanChunkWriter();
+    private static final BooleanChunkWriter NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(true);
+    private static final BooleanChunkWriter NON_NULLABLE_IDENTITY_INSTANCE = new BooleanChunkWriter(false);
 
-    public BooleanChunkWriter() {
-        super(ByteChunk::isNull, ByteChunk::getEmptyChunk, 0, false);
+    public static BooleanChunkWriter getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
+
+    private BooleanChunkWriter(final boolean isNullable) {
+        super(ByteChunk::isNull, ByteChunk::getEmptyChunk, 0, false, isNullable);
     }
 
     @Override

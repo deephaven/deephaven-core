@@ -24,8 +24,15 @@ import java.util.function.Supplier;
 
 public class IntChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "IntChunkWriter";
-    public static final IntChunkWriter<IntChunk<Values>> IDENTITY_INSTANCE = new IntChunkWriter<>(
-            IntChunk::isNull, IntChunk::getEmptyChunk, IntChunk::get);
+    private static final IntChunkWriter<IntChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new IntChunkWriter<>(
+            IntChunk::isNull, IntChunk::getEmptyChunk, IntChunk::get, false);
+    private static final IntChunkWriter<IntChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new IntChunkWriter<>(
+            IntChunk::isNull, IntChunk::getEmptyChunk, IntChunk::get, true);
+
+
+    public static IntChunkWriter<IntChunk<Values>> getIdentity(boolean isNullable) {
+        return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
+    }
 
     @FunctionalInterface
     public interface ToIntTransformFunction<SourceChunkType extends Chunk<Values>> {
@@ -37,8 +44,9 @@ public class IntChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Bas
     public IntChunkWriter(
             @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToIntTransformFunction<SOURCE_CHUNK_TYPE> transform) {
-        super(isRowNullProvider, emptyChunkSupplier, Integer.BYTES, true);
+            @Nullable final ToIntTransformFunction<SOURCE_CHUNK_TYPE> transform,
+            final boolean fieldNullable) {
+        super(isRowNullProvider, emptyChunkSupplier, Integer.BYTES, true, fieldNullable);
         this.transform = transform;
     }
 
