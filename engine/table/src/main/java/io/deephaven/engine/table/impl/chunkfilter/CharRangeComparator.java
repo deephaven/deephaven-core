@@ -19,9 +19,6 @@ public class CharRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
@@ -29,12 +26,25 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup per
+         * filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This is a
+         * performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -46,12 +56,20 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -63,12 +81,20 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -80,12 +106,20 @@ public class CharRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

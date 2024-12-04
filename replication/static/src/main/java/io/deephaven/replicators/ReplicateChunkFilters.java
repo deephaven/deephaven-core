@@ -17,6 +17,8 @@ public class ReplicateChunkFilters {
         charToInteger(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java",
                 Collections.emptyMap());
+        charToLong(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
 
         charToShortAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");

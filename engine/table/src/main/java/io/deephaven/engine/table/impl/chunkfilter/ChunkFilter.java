@@ -26,83 +26,35 @@ public interface ChunkFilter {
             WritableLongChunk<OrderedRowKeys> results);
 
     interface CharChunkFilter extends ChunkFilter {
-        void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asCharChunk(), keys, results);
-        }
+        boolean matches(char value);
     }
 
     interface ByteChunkFilter extends ChunkFilter {
-        void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asByteChunk(), keys, results);
-        }
+        boolean matches(byte value);
     }
 
     interface ShortChunkFilter extends ChunkFilter {
-        void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asShortChunk(), keys, results);
-        }
+        boolean matches(short value);
     }
 
     interface IntChunkFilter extends ChunkFilter {
-        void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asIntChunk(), keys, results);
-        }
+        boolean matches(int value);
     }
 
     interface LongChunkFilter extends ChunkFilter {
-        void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asLongChunk(), keys, results);
-        }
+        boolean matches(long value);
     }
 
     interface FloatChunkFilter extends ChunkFilter {
-        void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asFloatChunk(), keys, results);
-        }
+        boolean matches(float value);
     }
 
     interface DoubleChunkFilter extends ChunkFilter {
-        void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asDoubleChunk(), keys, results);
-        }
+        boolean matches(double value);
     }
 
     interface ObjectChunkFilter<T> extends ChunkFilter {
-        void filter(ObjectChunk<T, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asObjectChunk(), keys, results);
-        }
+        boolean matches(T value);
     }
 
     /**

@@ -53,11 +53,24 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value == this.value;
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup per
+         * filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This is a
+         * performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) == value) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -72,11 +85,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value != this.value;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) != value) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -93,12 +114,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value == value1 || value == value2;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -115,12 +143,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value != value1 && value != value2;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -139,12 +174,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value == value1 || value == value2 || value == value3;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -163,12 +205,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return value != value1 && value != value2 && value != value3;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -183,12 +232,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return values.contains(value);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (this.values.contains(checkValue)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -203,12 +259,19 @@ public class CharChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(char value) {
+            return !values.contains(value);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final char checkValue = values.get(ii);
-                if (!this.values.contains(checkValue)) {
+                if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

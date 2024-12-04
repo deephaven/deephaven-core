@@ -23,9 +23,6 @@ public class ByteRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class ByteByteInclusiveInclusiveFilter extends ByteByteFilter {
@@ -33,12 +30,25 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup
+         * per filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This
+         * is a performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.geq(value, lower) && ByteComparisons.leq(value, upper)) {
+                if (matches(byteChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -50,12 +60,20 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.geq(value, lower) && ByteComparisons.lt(value, upper)) {
+                if (matches(byteChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -67,12 +85,20 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.gt(value, lower) && ByteComparisons.leq(value, upper)) {
+                if (matches(byteChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -84,12 +110,20 @@ public class ByteRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(byte value) {
+            return ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final byte value = values.get(ii);
-                if (ByteComparisons.gt(value, lower) && ByteComparisons.lt(value, upper)) {
+                if (matches(byteChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

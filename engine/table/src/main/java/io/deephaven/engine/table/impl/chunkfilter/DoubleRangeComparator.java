@@ -23,9 +23,6 @@ public class DoubleRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class DoubleDoubleInclusiveInclusiveFilter extends DoubleDoubleFilter {
@@ -33,12 +30,25 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(double value) {
+            return DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup
+         * per filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This
+         * is a performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final double value = values.get(ii);
-                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.leq(value, upper)) {
+                if (matches(doubleChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -50,12 +60,20 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(double value) {
+            return DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final double value = values.get(ii);
-                if (DoubleComparisons.geq(value, lower) && DoubleComparisons.lt(value, upper)) {
+                if (matches(doubleChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -67,12 +85,20 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(double value) {
+            return DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final double value = values.get(ii);
-                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.leq(value, upper)) {
+                if (matches(doubleChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -84,12 +110,20 @@ public class DoubleRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(double value) {
+            return DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final double value = values.get(ii);
-                if (DoubleComparisons.gt(value, lower) && DoubleComparisons.lt(value, upper)) {
+                if (matches(doubleChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
