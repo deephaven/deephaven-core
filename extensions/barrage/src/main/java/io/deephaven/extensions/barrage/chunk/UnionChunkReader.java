@@ -29,6 +29,7 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
     public enum Mode {
         Dense, Sparse
     }
+
     public static Mode mode(UnionMode mode) {
         return mode == UnionMode.Dense ? Mode.Dense : Mode.Sparse;
     }
@@ -80,6 +81,35 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                         : WritableIntChunk.makeWritableChunk(numRows);
                 final SafeCloseableList closeableList = new SafeCloseableList()) {
 
+            // Read columns of interest:
+            final long coiBufRead = (long) numRows * Byte.BYTES;
+            if (coiBufferLength < coiBufRead) {
+                throw new IllegalStateException(
+                        "column of interest buffer is too short for the expected number of elements");
+            }
+            for (int ii = 0; ii < numRows; ++ii) {
+                columnsOfInterest.set(ii, is.readByte());
+            }
+            if (coiBufRead < coiBufferLength) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, coiBufferLength - coiBufRead));
+            }
+
+
+            // Read offsets:
+            if (offsets != null) {
+                final long offBufRead = (long) numRows * Integer.BYTES;
+                if (offsetsBufferLength < offBufRead) {
+                    throw new IllegalStateException(
+                            "union offset buffer is too short for the expected number of elements");
+                }
+                for (int ii = 0; ii < numRows; ++ii) {
+                    offsets.set(ii, is.readInt());
+                }
+                if (offBufRead < offsetsBufferLength) {
+                    is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength - offBufRead));
+                }
+            }
+
             // noinspection unchecked
             final ObjectChunk<T, Values>[] chunks = new ObjectChunk[readers.size()];
 
@@ -103,17 +133,18 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                 result.setSize(numRows);
             }
 
-            for (int ii = 0; ii < result.size(); ++ii) {
+            for (int ii = 0; ii < columnsOfInterest.size(); ++ii) {
                 final byte coi = columnsOfInterest.get(ii);
                 final int offset;
-                if (mode == Mode.Dense) {
+                if (offsets != null) {
                     offset = offsets.get(ii);
                 } else {
                     offset = ii;
                 }
 
-                result.set(ii, chunks[coi].get(offset));
+                result.set(outOffset + ii, chunks[coi].get(offset));
             }
+            result.setSize(outOffset + columnsOfInterest.size());
 
             return result;
         }

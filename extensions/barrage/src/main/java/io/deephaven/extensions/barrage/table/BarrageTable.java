@@ -35,6 +35,8 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -449,8 +451,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             @NotNull final BarrageUtil.ConvertedArrowSchema schema,
             final boolean isFullSubscription,
             @Nullable final ViewportChangedCallback vpCallback) {
-        final List<ColumnDefinition<?>> columns = schema.tableDef.getColumns();
-        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.size()];
+        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[schema.tableDef.numColumns()];
 
         final BarrageTable table;
 
@@ -460,7 +461,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         };
 
         if (getAttribute.test(Table.BLINK_TABLE_ATTRIBUTE)) {
-            final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
+            final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(schema, writableSources);
             table = new BarrageBlinkTable(
                     registrar, queue, executor, finalColumns, writableSources, schema.attributes, vpCallback);
         } else {
@@ -473,7 +474,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             }
 
             final LinkedHashMap<String, ColumnSource<?>> finalColumns =
-                    makeColumns(columns, writableSources, rowRedirection);
+                    makeColumns(schema, writableSources, rowRedirection);
             table = new BarrageRedirectedTable(
                     registrar, queue, executor, finalColumns, writableSources, rowRedirection, schema.attributes,
                     isFlat, isFullSubscription, vpCallback);
@@ -489,16 +490,16 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
-            final List<ColumnDefinition<?>> columns,
+            final BarrageUtil.ConvertedArrowSchema schema,
             final WritableColumnSource<?>[] writableSources,
             final WritableRowRedirection emptyRowRedirection) {
-        final int numColumns = columns.size();
+        final int numColumns = schema.tableDef.numColumns();
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
         for (int ii = 0; ii < numColumns; ii++) {
-            final ColumnDefinition<?> column = columns.get(ii);
+            final ColumnDefinition<?> column = schema.tableDef.getColumns().get(ii);
             if (column.getDataType() == ZonedDateTime.class) {
-                // TODO NATE NOCOMMIT: we need to get the timestamp up in here
-                writableSources[ii] = new ZonedDateTimeArraySource(ZoneId.systemDefault());
+                writableSources[ii] = new ZonedDateTimeArraySource(inferZoneId(schema, column));
+
             } else {
                 writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
                         0, column.getDataType(), column.getComponentType());
@@ -514,15 +515,14 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
-            final List<ColumnDefinition<?>> columns,
+            final BarrageUtil.ConvertedArrowSchema schema,
             final WritableColumnSource<?>[] writableSources) {
-        final int numColumns = columns.size();
+        final int numColumns = schema.tableDef.numColumns();
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>(numColumns);
         for (int ii = 0; ii < numColumns; ii++) {
-            final ColumnDefinition<?> column = columns.get(ii);
+            final ColumnDefinition<?> column = schema.tableDef.getColumns().get(ii);
             if (column.getDataType() == ZonedDateTime.class) {
-                // TODO NATE NOCOMMIT: we need to get the timestamp up in here
-                writableSources[ii] = new ZonedDateTimeArraySource(ZoneId.systemDefault());
+                writableSources[ii] = new ZonedDateTimeArraySource(inferZoneId(schema, column));
             } else {
                 writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
                         0, column.getDataType(), column.getComponentType());
@@ -531,6 +531,20 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         return finalColumns;
+    }
+
+    private static ZoneId inferZoneId(
+            @NotNull final BarrageUtil.ConvertedArrowSchema schema,
+            @NotNull final ColumnDefinition<?> column) {
+        ZoneId bestZone = ZoneId.systemDefault();
+        try {
+            final Field field = schema.arrowSchema.findField(column.getName());
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
+                bestZone = ZoneId.of(((ArrowType.Timestamp) field.getType()).getTimezone());
+            }
+        } catch (Exception ignore) {
+        }
+        return bestZone;
     }
 
     protected void saveForDebugging(final BarrageMessage snapshotOrDelta) {

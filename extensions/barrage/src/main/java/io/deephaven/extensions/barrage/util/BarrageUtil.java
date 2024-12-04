@@ -592,10 +592,16 @@ public class BarrageUtil {
     }
 
     public static class ConvertedArrowSchema {
-        public TableDefinition tableDef;
-        public Map<String, Object> attributes;
+        public final TableDefinition tableDef;
+        public final Schema arrowSchema;
+        public final Map<String, Object> attributes = new HashMap<>();
 
-        public ConvertedArrowSchema() {}
+        private ConvertedArrowSchema(
+                @NotNull final TableDefinition tableDef,
+                @NotNull final Schema arrowSchema) {
+            this.tableDef = tableDef;
+            this.arrowSchema = arrowSchema;
+        }
 
         public ChunkType[] computeWireChunkTypes() {
             return tableDef.getColumnStream()
@@ -662,6 +668,7 @@ public class BarrageUtil {
     public static ConvertedArrowSchema convertArrowSchema(
             final org.apache.arrow.flatbuf.Schema schema) {
         return convertArrowSchema(
+                Schema.convertSchema(schema),
                 schema.fieldsLength(),
                 i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
@@ -685,6 +692,7 @@ public class BarrageUtil {
 
     public static ConvertedArrowSchema convertArrowSchema(final Schema schema) {
         return convertArrowSchema(
+                schema,
                 schema.getFields().size(),
                 i -> schema.getFields().get(i),
                 i -> visitor -> {
@@ -694,11 +702,11 @@ public class BarrageUtil {
     }
 
     private static ConvertedArrowSchema convertArrowSchema(
+            final Schema schema,
             final int numColumns,
             final IntFunction<Field> getField,
             final IntFunction<Consumer<BiConsumer<String, String>>> columnMetadataVisitor,
             final Consumer<BiConsumer<String, String>> tableMetadataVisitor) {
-        final ConvertedArrowSchema result = new ConvertedArrowSchema();
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
@@ -739,9 +747,7 @@ public class BarrageUtil {
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
-        result.tableDef = TableDefinition.of(columns);
-
-        result.attributes = new HashMap<>();
+        final ConvertedArrowSchema result = new ConvertedArrowSchema(TableDefinition.of(columns), schema);
 
         final HashMap<String, String> attributeTypeMap = new HashMap<>();
         tableMetadataVisitor.accept((key, value) -> {

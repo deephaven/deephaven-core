@@ -225,9 +225,9 @@ public class WebBarrageMessageReader {
                 }
 
                 // fill the chunk with data and assign back into the array
-                acd.data.set(lastChunkIndex,
-                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
-                                (int) batch.length()));
+                chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
+                        (int) batch.length());
+                acd.data.set(lastChunkIndex, chunk);
                 chunk.setSize(chunk.size() + (int) batch.length());
             }
             numAddRowsRead += batch.length();

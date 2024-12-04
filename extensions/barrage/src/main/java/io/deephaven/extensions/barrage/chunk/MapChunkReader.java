@@ -43,12 +43,14 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
             final int outOffset,
             final int totalRows) throws IOException {
         final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final ChunkWriter.FieldNodeInfo innerInfo = fieldNodeIter.next();
         final long validityBufferLength = bufferInfoIter.nextLong();
         final long offsetsBufferLength = bufferInfoIter.nextLong();
+        final long structValiadityBufferLength = bufferInfoIter.nextLong();
 
         if (nodeInfo.numElements == 0) {
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
-                    validityBufferLength + offsetsBufferLength));
+                    validityBufferLength + offsetsBufferLength + structValiadityBufferLength));
             try (final WritableChunk<Values> ignored =
                     keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
                     final WritableChunk<Values> ignored2 =
@@ -88,6 +90,11 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
             }
             if (offBufRead < offsetsBufferLength) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength - offBufRead));
+            }
+
+            // it doesn't make sense to have a struct validity buffer for a map
+            if (structValiadityBufferLength > 0) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, structValiadityBufferLength));
             }
 
             try (final WritableChunk<Values> keysPrim =

@@ -84,6 +84,7 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
                     long value = inner.get(ii);
                     chunk.set(outOffset + ii, transform.apply(value));
                 }
+                chunk.setSize(outOffset + inner.size());
 
                 return chunk;
             }

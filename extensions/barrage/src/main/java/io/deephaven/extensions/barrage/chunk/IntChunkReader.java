@@ -84,6 +84,7 @@ public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
                     int value = inner.get(ii);
                     chunk.set(outOffset + ii, transform.apply(value));
                 }
+                chunk.setSize(outOffset + inner.size());
 
                 return chunk;
             }
