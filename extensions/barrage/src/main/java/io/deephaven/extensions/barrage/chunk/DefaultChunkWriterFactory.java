@@ -293,8 +293,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     .map(BarrageTypeInfo::chunkType)
                     .collect(Collectors.toList());
 
-            UnionChunkWriter.Mode mode = unionType.getMode() == UnionMode.Sparse ? UnionChunkWriter.Mode.Sparse
-                    : UnionChunkWriter.Mode.Dense;
+            UnionChunkReader.Mode mode = unionType.getMode() == UnionMode.Sparse ? UnionChunkReader.Mode.Sparse
+                    : UnionChunkReader.Mode.Dense;
             // noinspection unchecked
             return (ChunkWriter<T>) new UnionChunkWriter<>(mode, childClassMatcher, childWriters,
                     childChunkTypes);

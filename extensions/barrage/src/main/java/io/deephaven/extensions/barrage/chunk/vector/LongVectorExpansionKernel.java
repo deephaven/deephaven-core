@@ -27,10 +27,14 @@ import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.stream.Stream;
+
 import static io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVector> {
     public final static LongVectorExpansionKernel INSTANCE = new LongVectorExpansionKernel();
+
+    private static final String DEBUG_NAME = "LongVectorExpansionKernel";
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
@@ -49,14 +53,16 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final LongVector row = typedSource.get(ii);
-            long rowLen = row == null ? 0 : row.size();
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            long rowLen;
+            if (fixedSizeLength != 0) {
+                rowLen = Math.abs(fixedSizeLength);
+            } else {
+                rowLen = row == null ? 0 : row.size();
             }
             totalSize += rowLen;
         }
         final WritableLongChunk<A> result = WritableLongChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
         result.setSize(0);
 
         if (offsetsDest != null) {
@@ -67,15 +73,31 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
             if (offsetsDest != null) {
                 offsetsDest.set(ii, result.size());
             }
-            if (row == null) {
-                continue;
+            if (row != null) {
+                final LongConsumer consumer = result::add;
+                try (final CloseablePrimitiveIteratorOfLong iter = row.iterator()) {
+                    Stream<Long> stream = iter.stream();
+                    if (fixedSizeLength > 0) {
+                        // limit length to fixedSizeLength
+                        stream = iter.stream().limit(fixedSizeLength);
+                    } else if (fixedSizeLength < 0) {
+                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
+                        if (numToSkip > 0) {
+                            // read from the end of the array when fixedSizeLength is negative
+                            stream = stream.skip(numToSkip);
+                        }
+                    }
+                    // copy the row into the result
+                    stream.forEach(consumer::accept);
+                }
             }
-            final LongConsumer consumer = result::add;
-            try (final CloseablePrimitiveIteratorOfLong iter = row.iterator()) {
-                if (fixedSizeLength > 0) {
-                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
-                } else {
-                    iter.forEachRemaining(consumer);
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - (row == null ? 0 : row.size())));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(result.size(), toNull);
+                    result.setSize(result.size() + toNull);
                 }
             }
         }

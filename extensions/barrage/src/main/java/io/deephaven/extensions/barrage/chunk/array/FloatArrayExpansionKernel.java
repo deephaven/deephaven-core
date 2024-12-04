@@ -23,8 +23,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class FloatArrayExpansionKernel implements ArrayExpansionKernel<float[]> {
-    private final static float[] ZERO_LEN_ARRAY = new float[0];
-    public final static FloatArrayExpansionKernel INSTANCE = new FloatArrayExpansionKernel();
+    public static final FloatArrayExpansionKernel INSTANCE = new FloatArrayExpansionKernel();
+
+    private static final String DEBUG_NAME = "FloatArrayExpansionKernel";
+    private static final float[] ZERO_LEN_ARRAY = new float[0];
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
@@ -40,15 +42,17 @@ public class FloatArrayExpansionKernel implements ArrayExpansionKernel<float[]> 
 
         long totalSize = 0;
         for (int ii = 0; ii < source.size(); ++ii) {
-            final float[] row = source.get(ii);
-            int rowLen = row == null ? 0 : row.length;
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            final int rowLen;
+            if (fixedSizeLength != 0) {
+                rowLen = Math.abs(fixedSizeLength);
+            } else {
+                final float[] row = source.get(ii);
+                rowLen = row == null ? 0 : row.length;
             }
             totalSize += rowLen;
         }
         final WritableFloatChunk<A> result = WritableFloatChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
 
         int lenWritten = 0;
         if (offsetsDest != null) {
@@ -59,15 +63,32 @@ public class FloatArrayExpansionKernel implements ArrayExpansionKernel<float[]> 
             if (offsetsDest != null) {
                 offsetsDest.set(ii, lenWritten);
             }
-            if (row == null) {
-                continue;
+            int written = 0;
+            if (row != null) {
+                int offset = 0;
+                if (fixedSizeLength != 0) {
+                    // limit length to fixedSizeLength
+                    written = Math.min(row.length, Math.abs(fixedSizeLength));
+                    if (fixedSizeLength < 0 && written < row.length) {
+                        // read from the end of the array when fixedSizeLength is negative
+                        offset = row.length - written;
+                    }
+                } else {
+                    written = row.length;
+                }
+                // copy the row into the result
+                result.copyFromArray(row, offset, lenWritten, written);
             }
-            int rowLen = row.length;
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - written));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(lenWritten + written, toNull);
+                    written += toNull;
+                }
             }
-            result.copyFromArray(row, 0, lenWritten, rowLen);
-            lenWritten += rowLen;
+            lenWritten += written;
         }
         if (offsetsDest != null) {
             offsetsDest.set(source.size(), lenWritten);

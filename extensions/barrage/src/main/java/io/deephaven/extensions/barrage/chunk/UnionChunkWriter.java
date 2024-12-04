@@ -26,19 +26,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>> {
-    public enum Mode {
-        Dense, Sparse
-    }
-
     private static final String DEBUG_NAME = "UnionChunkWriter";
 
-    private final Mode mode;
+    private final UnionChunkReader.Mode mode;
     private final List<Class<?>> classMatchers;
     private final List<ChunkWriter<Chunk<Values>>> writers;
     private final List<ChunkType> writerChunkTypes;
 
     public UnionChunkWriter(
-            final Mode mode,
+            final UnionChunkReader.Mode mode,
             final List<Class<?>> classMatchers,
             final List<ChunkWriter<Chunk<Values>>> writers,
             final List<ChunkType> writerChunkTypes) {
@@ -48,7 +44,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         this.writers = writers;
         this.writerChunkTypes = writerChunkTypes;
         // the specification doesn't allow the union column to have more than signed byte number of types
-        Assert.leq(classMatchers.size(), "classMatchers.size()", 127);
+        Assert.leq(classMatchers.size(), "classMatchers.size()", Byte.MAX_VALUE, "Byte.MAX_VALUE");
     }
 
     @Override
@@ -88,7 +84,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             super(context, mySubset, options);
             final int numColumns = classMatchers.size();
             final ObjectChunk<T, Values> chunk = context.getChunk();
-            if (mode == Mode.Sparse) {
+            if (mode == UnionChunkReader.Mode.Sparse) {
                 columnOffset = null;
             } else {
                 // noinspection resource
@@ -104,7 +100,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 // noinspection resource
                 innerChunks[ii] = WritableObjectChunk.makeWritableChunk(chunk.size());
 
-                if (mode == Mode.Sparse) {
+                if (mode == UnionChunkReader.Mode.Sparse) {
                     innerChunks[ii].fillWithNullValue(0, chunk.size());
                 } else {
                     innerChunks[ii].setSize(0);
@@ -115,7 +111,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 int jj;
                 for (jj = 0; jj < classMatchers.size(); ++jj) {
                     if (value.getClass().isAssignableFrom(classMatchers.get(jj))) {
-                        if (mode == Mode.Sparse) {
+                        if (mode == UnionChunkReader.Mode.Sparse) {
                             columnOfInterest.set(ii, (byte) jj);
                             innerChunks[jj].set(ii, value);
                         } else {
@@ -156,6 +152,10 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 try (ChunkWriter.Context<Chunk<Values>> innerContext = writer.makeContext(kernel != null
                         ? (Chunk<Values>) kernel.unbox(innerChunk)
                         : innerChunk, 0)) {
+                    if (kernel != null) {
+                        // while we did steal the kernel's chunk after unboxing, now no one owns the original chunk
+                        innerChunk.close();
+                    }
 
                     innerColumns[ii] = writer.getInputStream(innerContext, null, options);
                 }

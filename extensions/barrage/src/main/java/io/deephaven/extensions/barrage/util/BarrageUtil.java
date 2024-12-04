@@ -583,6 +583,9 @@ public class BarrageUtil {
                     final Class<?> childType = getDefaultType(arrowField.getChildren().get(0), null);
                     return Array.newInstance(childType, 0).getClass();
                 }
+                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.Union) {
+                    return Object.class;
+                }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of type " + arrowField.getType().getTypeID().toString());
         }

@@ -1,0 +1,121 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.extensions.barrage.chunk;
+
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.apache.arrow.vector.types.UnionMode;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.DataInput;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.PrimitiveIterator;
+
+public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
+    public enum Mode {
+        Dense, Sparse
+    }
+    public static Mode mode(UnionMode mode) {
+        return mode == UnionMode.Dense ? Mode.Dense : Mode.Sparse;
+    }
+
+    private static final String DEBUG_NAME = "UnionChunkReader";
+
+    private final Mode mode;
+    private final List<ChunkReader<WritableChunk<Values>>> readers;
+
+    public UnionChunkReader(
+            final Mode mode,
+            final List<ChunkReader<WritableChunk<Values>>> readers) {
+        this.mode = mode;
+        this.readers = readers;
+        // the specification doesn't allow the union column to have more than signed byte number of types
+        Assert.leq(readers.size(), "readers.size()", Byte.MAX_VALUE, "Byte.MAX_VALUE");
+    }
+
+    @Override
+    public WritableObjectChunk<T, Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        // column of interest buffer
+        final long coiBufferLength = bufferInfoIter.nextLong();
+        // if Dense we also have an offset buffer
+        final long offsetsBufferLength = mode == Mode.Dense ? bufferInfoIter.nextLong() : 0;
+
+        int numRows = nodeInfo.numElements;
+        if (numRows == 0) {
+            is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, coiBufferLength + offsetsBufferLength));
+            for (final ChunkReader<WritableChunk<Values>> reader : readers) {
+                // noinspection EmptyTryBlock
+                try (final SafeCloseable ignored = reader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    // do nothing; we need each reader to consume fieldNodeIter and bufferInfoIter
+                }
+            }
+            return WritableObjectChunk.makeWritableChunk(numRows);
+        }
+
+        try (final WritableByteChunk<ChunkPositions> columnsOfInterest =
+                WritableByteChunk.makeWritableChunk(numRows);
+                final WritableIntChunk<ChunkPositions> offsets = mode == Mode.Sparse
+                        ? null
+                        : WritableIntChunk.makeWritableChunk(numRows);
+                final SafeCloseableList closeableList = new SafeCloseableList()) {
+
+            // noinspection unchecked
+            final ObjectChunk<T, Values>[] chunks = new ObjectChunk[readers.size()];
+
+            for (int ii = 0; ii < readers.size(); ++ii) {
+                final WritableChunk<Values> chunk =
+                        readers.get(ii).readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
+                closeableList.add(chunk);
+
+                final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(chunk.getChunkType(), chunk.size());
+                closeableList.add(boxer);
+
+                // noinspection unchecked
+                chunks[ii] = (ObjectChunk<T, Values>) boxer.box(chunk);
+            }
+
+            final WritableObjectChunk<T, Values> result;
+            if (outChunk != null) {
+                result = outChunk.asWritableObjectChunk();
+            } else {
+                result = WritableObjectChunk.makeWritableChunk(numRows);
+                result.setSize(numRows);
+            }
+
+            for (int ii = 0; ii < result.size(); ++ii) {
+                final byte coi = columnsOfInterest.get(ii);
+                final int offset;
+                if (mode == Mode.Dense) {
+                    offset = offsets.get(ii);
+                } else {
+                    offset = ii;
+                }
+
+                result.set(ii, chunks[coi].get(offset));
+            }
+
+            return result;
+        }
+    }
+}

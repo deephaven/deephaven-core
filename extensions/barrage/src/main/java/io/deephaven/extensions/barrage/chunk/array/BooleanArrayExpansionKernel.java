@@ -20,8 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class BooleanArrayExpansionKernel implements ArrayExpansionKernel<boolean[]> {
-    private final static boolean[] ZERO_LEN_ARRAY = new boolean[0];
-    public final static BooleanArrayExpansionKernel INSTANCE = new BooleanArrayExpansionKernel();
+    public static final BooleanArrayExpansionKernel INSTANCE = new BooleanArrayExpansionKernel();
+
+    private static final String DEBUG_NAME = "BooleanArrayExpansionKernel";
+    private static final boolean[] ZERO_LEN_ARRAY = new boolean[0];
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
@@ -39,15 +41,17 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel<boolean
 
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
-            final boolean[] row = typedSource.get(ii);
-            int rowLen = row == null ? 0 : row.length;
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            int rowLen;
+            if (fixedSizeLength != 0) {
+                rowLen = Math.abs(fixedSizeLength);
+            } else {
+                final boolean[] row = typedSource.get(ii);
+                rowLen = row == null ? 0 : row.length;
             }
             totalSize += rowLen;
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
 
         int lenWritten = 0;
         if (offsetsDest != null) {
@@ -58,18 +62,36 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel<boolean
             if (offsetsDest != null) {
                 offsetsDest.set(ii, lenWritten);
             }
-            if (row == null) {
-                continue;
+            int written = 0;
+            if (row != null) {
+                int offset = 0;
+                if (fixedSizeLength != 0) {
+                    // limit length to fixedSizeLength
+                    written = Math.min(row.length, Math.abs(fixedSizeLength));
+                    if (fixedSizeLength < 0 && written < row.length) {
+                        // read from the end of the array when fixedSizeLength is negative
+                        offset = row.length - written;
+                    }
+                } else {
+                    written = row.length;
+                }
+
+                // copy the row into the result
+                for (int j = 0; j < written; ++j) {
+                    final byte value = row[j] ? BooleanUtils.TRUE_BOOLEAN_AS_BYTE : BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+                    result.set(lenWritten + j, value);
+                }
             }
-            int rowLen = row.length;
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - written));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(lenWritten + written, toNull);
+                    written += toNull;
+                }
             }
-            for (int j = 0; j < rowLen; ++j) {
-                final byte value = row[j] ? BooleanUtils.TRUE_BOOLEAN_AS_BYTE : BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
-                result.set(lenWritten + j, value);
-            }
-            lenWritten += rowLen;
+            lenWritten += written;
         }
         if (offsetsDest != null) {
             offsetsDest.set(typedSource.size(), lenWritten);

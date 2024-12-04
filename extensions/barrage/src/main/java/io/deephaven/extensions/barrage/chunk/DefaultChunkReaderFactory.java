@@ -46,8 +46,10 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -272,18 +274,12 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         // maybe defaults to Map<String, Object>
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
-            // TODO: defaults to Object
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();
-            switch (unionType.getMode()) {
-                case Sparse:
-                    // TODO NATE NOCOMMIT: implement
-                    break;
-                case Dense:
-                    // TODO NATE NOCOMMIT: implement
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unexpected union mode: " + unionType.getMode());
-            }
+            final List<ChunkReader<WritableChunk<Values>>> innerReaders = new ArrayList<>();
+
+            // noinspection unchecked
+            return (ChunkReader<T>) new UnionChunkReader<T>(
+                    UnionChunkReader.mode(unionType.getMode()), innerReaders);
         }
 
         throw new UnsupportedOperationException(String.format(

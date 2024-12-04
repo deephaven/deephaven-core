@@ -22,10 +22,14 @@ import io.deephaven.vector.CharVectorDirect;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.stream.Stream;
+
 import static io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVector> {
     public final static CharVectorExpansionKernel INSTANCE = new CharVectorExpansionKernel();
+
+    private static final String DEBUG_NAME = "CharVectorExpansionKernel";
 
     @Override
     public <A extends Any> WritableChunk<A> expand(
@@ -44,14 +48,16 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVect
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final CharVector row = typedSource.get(ii);
-            long rowLen = row == null ? 0 : row.size();
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            long rowLen;
+            if (fixedSizeLength != 0) {
+                rowLen = Math.abs(fixedSizeLength);
+            } else {
+                rowLen = row == null ? 0 : row.size();
             }
             totalSize += rowLen;
         }
         final WritableCharChunk<A> result = WritableCharChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
         result.setSize(0);
 
         if (offsetsDest != null) {
@@ -62,15 +68,31 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel<CharVect
             if (offsetsDest != null) {
                 offsetsDest.set(ii, result.size());
             }
-            if (row == null) {
-                continue;
+            if (row != null) {
+                final CharConsumer consumer = result::add;
+                try (final CloseablePrimitiveIteratorOfChar iter = row.iterator()) {
+                    Stream<Character> stream = iter.stream();
+                    if (fixedSizeLength > 0) {
+                        // limit length to fixedSizeLength
+                        stream = iter.stream().limit(fixedSizeLength);
+                    } else if (fixedSizeLength < 0) {
+                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
+                        if (numToSkip > 0) {
+                            // read from the end of the array when fixedSizeLength is negative
+                            stream = stream.skip(numToSkip);
+                        }
+                    }
+                    // copy the row into the result
+                    stream.forEach(consumer::accept);
+                }
             }
-            final CharConsumer consumer = result::add;
-            try (final CloseablePrimitiveIteratorOfChar iter = row.iterator()) {
-                if (fixedSizeLength > 0) {
-                    iter.stream().limit(fixedSizeLength).forEach(consumer::accept);
-                } else {
-                    iter.forEachRemaining(consumer);
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - (row == null ? 0 : row.size())));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(result.size(), toNull);
+                    result.setSize(result.size() + toNull);
                 }
             }
         }

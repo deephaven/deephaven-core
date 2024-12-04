@@ -20,8 +20,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.util.stream.Stream;
 
 public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<ObjectVector<T>> {
+    private static final String DEBUG_NAME = "ObjectVectorExpansionKernel";
+
     private final Class<T> componentType;
 
     public ObjectVectorExpansionKernel(final Class<T> componentType) {
@@ -45,14 +48,16 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
         long totalSize = 0;
         for (int ii = 0; ii < typedSource.size(); ++ii) {
             final ObjectVector<?> row = typedSource.get(ii);
-            long rowLen = row == null ? 0 : row.size();
-            if (fixedSizeLength > 0) {
-                rowLen = Math.min(rowLen, fixedSizeLength);
+            long rowLen;
+            if (fixedSizeLength != 0) {
+                rowLen = Math.abs(fixedSizeLength);
+            } else {
+                rowLen = row == null ? 0 : row.size();
             }
             totalSize += rowLen;
         }
         final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
-                LongSizedDataStructure.intSize("ExpansionKernel", totalSize));
+                LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
         result.setSize(0);
 
         if (offsetsDest != null) {
@@ -63,16 +68,32 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             if (offsetsDest != null) {
                 offsetsDest.set(ii, result.size());
             }
-            if (row == null) {
-                continue;
+            if (row != null) {
+                try (final CloseableIterator<?> iter = row.iterator()) {
+                    Stream<?> stream = iter.stream();
+                    if (fixedSizeLength > 0) {
+                        // limit length to fixedSizeLength
+                        stream = stream.limit(fixedSizeLength);
+                    } else if (fixedSizeLength < 0) {
+                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
+                        if (numToSkip > 0) {
+                            // read from the end of the array when fixedSizeLength is negative
+                            stream = stream.skip(numToSkip);
+                        }
+                    }
+
+                    // copy the row into the result
+                    // noinspection unchecked
+                    stream.forEach(v -> result.add((T) v));
+                }
             }
-            try (final CloseableIterator<?> iter = row.iterator()) {
-                if (fixedSizeLength > 0) {
-                    // noinspection unchecked
-                    iter.stream().limit(fixedSizeLength).forEach(v -> result.add((T) v));
-                } else {
-                    // noinspection unchecked
-                    iter.forEachRemaining(v -> result.add((T) v));
+            if (fixedSizeLength != 0) {
+                final int toNull = LongSizedDataStructure.intSize(
+                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - (row == null ? 0 : row.size())));
+                if (toNull > 0) {
+                    // fill the rest of the row with nulls
+                    result.fillWithNullValue(result.size(), toNull);
+                    result.setSize(result.size() + toNull);
                 }
             }
         }
