@@ -99,6 +99,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -644,11 +645,16 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private Table executeSqlQuery(SessionState session, String sql) {
         // See SQLTODO(catalog-reader-implementation)
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final QueryScope queryScope = executionContext.getQueryScope();
         // noinspection unchecked,rawtypes
         final Map<String, Table> queryScopeTables =
                 (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
+        // Note: we only technically need the lock if any of the source tables are refreshing, but that requires some
+        // deeper introspection. We will play it safe and take the shared lock regardless.
+        final Lock sharedLock = executionContext.getUpdateGraph().sharedLock();
+        sharedLock.lock();
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
         // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
@@ -659,6 +665,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 table.retainReference();
             }
             return table;
+        } finally {
+            sharedLock.unlock();
         }
     }
 
