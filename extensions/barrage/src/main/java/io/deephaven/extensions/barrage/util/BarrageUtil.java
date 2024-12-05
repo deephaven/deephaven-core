@@ -436,8 +436,7 @@ public class BarrageUtil {
                 // user defined metadata should override the default metadata
                 metadata.putAll(field.getMetadata());
                 final FieldType newType =
-                        new FieldType(origType.isNullable(), origType.getType(), origType.getDictionary(),
-                                origType.getMetadata());
+                        new FieldType(origType.isNullable(), origType.getType(), origType.getDictionary(), metadata);
                 return new Field(field.getName(), newType, field.getChildren());
             }
 
