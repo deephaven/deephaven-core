@@ -58,6 +58,8 @@ public class GrpcWebServletRequest extends HttpServletRequestWrapper {
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
             throws IllegalStateException {
         AsyncContext delegate = super.startAsync(servletRequest, servletResponse);
+        // Note that this anonymous class has no purpose while our workaround for
+        // https://github.com/deephaven/deephaven-core/issues/6400 is in place.
         return new DelegatingAsyncContext(delegate) {
             private void safelyComplete() {
                 try {
