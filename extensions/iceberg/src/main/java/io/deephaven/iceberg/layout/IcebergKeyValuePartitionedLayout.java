@@ -13,6 +13,7 @@ import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
+import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
@@ -54,6 +55,13 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         // in the output definition, so we can ignore duplicates.
         final MutableInt icebergIndex = new MutableInt(0);
         final Map<String, Integer> availablePartitioningColumns = partitionSpec.fields().stream()
+                .peek(partitionField -> {
+                    // TODO (deephaven-core#6438): Add support to handle non-identity transforms
+                    if (!partitionField.transform().isIdentity()) {
+                        throw new TableDataException("Partition field " + partitionField.name() + " has a " +
+                                "non-identity transform: " + partitionField.transform() + ", which is not supported");
+                    }
+                })
                 .map(PartitionField::name)
                 .map(name -> instructions.columnRenames().getOrDefault(name, name))
                 .collect(Collectors.toMap(
@@ -89,11 +97,19 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         final PartitionData partitionData = (PartitionData) dataFile.partition();
         for (final ColumnData colData : outputPartitioningColumns) {
             final String colName = colData.name;
-            final Object colValue = partitionData.get(colData.index);
-            if (colValue != null && !colData.type.isAssignableFrom(colValue.getClass())) {
-                throw new TableDataException("Partitioning column " + colName
-                        + " has type " + colValue.getClass().getName()
-                        + " but expected " + colData.type.getName());
+            final Object colValue;
+            final Object valueFromPartitionData = partitionData.get(colData.index);
+            if (valueFromPartitionData != null) {
+                // TODO (deephaven-core#6438): Assuming identity transform here
+                colValue = IdentityPartitionConverters.convertConstant(
+                        partitionData.getType(colData.index), valueFromPartitionData);
+                if (!colData.type.isAssignableFrom(colValue.getClass())) {
+                    throw new TableDataException("Partitioning column " + colName
+                            + " has type " + colValue.getClass().getName()
+                            + " but expected " + colData.type.getName());
+                }
+            } else {
+                colValue = null;
             }
             partitions.put(colName, (Comparable<?>) colValue);
         }

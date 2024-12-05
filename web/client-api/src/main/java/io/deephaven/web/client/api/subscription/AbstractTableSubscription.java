@@ -29,6 +29,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.fu.JsRunnable;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
@@ -51,6 +52,7 @@ import java.util.BitSet;
  * exposed to api consumers, rather than wrapping in a Table type, as it handles the barrage stream and provides events
  * that client code can listen to.
  */
+@TsIgnore
 public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
      * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
@@ -554,6 +556,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
      * Stops the subscription on the server.
      */
+    @JsMethod
     public void close() {
         state.unretain(this);
         if (doExchange != null) {
