@@ -49,6 +49,11 @@ class AggAllByExcludeFormattingColumns implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecCountValues countValues) {
+        drop();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         drop();
     }
