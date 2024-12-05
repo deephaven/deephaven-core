@@ -460,6 +460,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             return value instanceof Boolean && (Boolean) value;
         };
 
+        schema.attributes.put(Table.BARRAGE_SCHEMA_ATTRIBUTE, schema.arrowSchema);
         if (getAttribute.test(Table.BLINK_TABLE_ATTRIBUTE)) {
             final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(schema, writableSources);
             table = new BarrageBlinkTable(

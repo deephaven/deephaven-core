@@ -63,6 +63,7 @@ public class TransformingChunkReader<InputChunkType extends WritableChunk<Values
             for (int ii = 0; ii < wireValues.size(); ++ii) {
                 transformFunction.apply(wireValues, chunk, ii, outOffset + ii);
             }
+            chunk.setSize(outOffset + wireValues.size());
             return chunk;
         }
     }

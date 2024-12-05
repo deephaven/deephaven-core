@@ -25,6 +25,7 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
@@ -275,7 +276,17 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();
-            final List<ChunkReader<WritableChunk<Values>>> innerReaders = new ArrayList<>();
+            final List<ChunkReader<? extends WritableChunk<Values>>> innerReaders = new ArrayList<>();
+
+            for (int ii = 0; ii < field.getChildren().size(); ++ii) {
+                final Field childField = field.getChildren().get(ii);
+                final BarrageTypeInfo<Field> childTypeInfo = BarrageUtil.getDefaultType(childField);
+                ChunkReader<? extends WritableChunk<Values>> childReader = newReaderPojo(childTypeInfo, options, false);
+                if (childField.getType().getTypeID() == ArrowType.ArrowTypeID.Bool) {
+                    childReader = ((BooleanChunkReader) childReader).transform(BooleanUtils::byteAsBoolean);
+                }
+                innerReaders.add(childReader);
+            }
 
             // noinspection unchecked
             return (ChunkReader<T>) new UnionChunkReader<T>(

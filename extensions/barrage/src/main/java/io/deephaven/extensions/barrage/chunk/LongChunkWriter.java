@@ -25,9 +25,9 @@ import java.util.function.Supplier;
 public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "LongChunkWriter";
     private static final LongChunkWriter<LongChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
-            LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get, false);
-    private static final LongChunkWriter<LongChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
             LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get, true);
+    private static final LongChunkWriter<LongChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new LongChunkWriter<>(
+            LongChunk::isNull, LongChunk::getEmptyChunk, LongChunk::get, false);
 
 
     public static LongChunkWriter<LongChunk<Values>> getIdentity(boolean isNullable) {

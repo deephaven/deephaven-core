@@ -3,9 +3,11 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -16,6 +18,7 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
+import java.util.function.Function;
 
 import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.getNumLongsForBitPackOfSize;
 
@@ -37,6 +40,32 @@ public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values
 
     public BooleanChunkReader(ByteConversion conversion) {
         this.conversion = conversion;
+    }
+
+    public <T> ChunkReader<WritableObjectChunk<T, Values>> transform(Function<Byte, T> transform) {
+        return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
+            try (final WritableByteChunk<Values> inner = BooleanChunkReader.this.readChunk(
+                    fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+
+                final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                        outChunk,
+                        Math.max(totalRows, inner.size()),
+                        WritableObjectChunk::makeWritableChunk,
+                        WritableChunk::asWritableObjectChunk);
+
+                if (outChunk == null) {
+                    // if we're not given an output chunk then we better be writing at the front of the new one
+                    Assert.eqZero(outOffset, "outOffset");
+                }
+
+                for (int ii = 0; ii < inner.size(); ++ii) {
+                    byte value = inner.get(ii);
+                    chunk.set(outOffset + ii, transform.apply(value));
+                }
+
+                return chunk;
+            }
+        };
     }
 
     @Override
@@ -98,7 +127,6 @@ public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values
 
         return chunk;
     }
-
 
     private static void useValidityBuffer(
             final ByteConversion conversion,

@@ -84,7 +84,6 @@ public class ShortChunkReader extends BaseChunkReader<WritableShortChunk<Values>
                     short value = inner.get(ii);
                     chunk.set(outOffset + ii, transform.apply(value));
                 }
-                chunk.setSize(outOffset + inner.size());
 
                 return chunk;
             }

@@ -124,14 +124,17 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         }
 
         /**
-         * There are two cases we don't send a validity buffer: - the simplest case is following the arrow flight spec,
-         * which says that if there are no nulls present, the buffer is optional. - Our implementation of nullCount()
-         * for primitive types will return zero if the useDeephavenNulls flag is set, so the buffer will also be omitted
-         * in that case. The client's marshaller does not need to be aware of deephaven nulls but in this mode we assume
-         * the consumer understands which value is the assigned NULL.
+         * @formatter:off
+         * There are two cases we don't send a validity buffer:
+         * - the simplest case is following the arrow flight spec, which says that if there are no nulls present, the
+         *   buffer is optional.
+         * - Our implementation of nullCount() for primitive types will return zero if the useDeephavenNulls flag is
+         *   set, so the buffer will also be omitted in that case. The client's marshaller does not need to be aware of
+         *   deephaven nulls but in this mode we assume the consumer understands which value is the assigned NULL.
+         * @formatter:on
          */
         protected boolean sendValidityBuffer() {
-            return !fieldNullable || nullCount() != 0;
+            return fieldNullable && nullCount() != 0;
         }
 
         @Override

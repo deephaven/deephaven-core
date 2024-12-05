@@ -25,9 +25,9 @@ import java.util.function.Supplier;
 public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FloatChunkWriter";
     private static final FloatChunkWriter<FloatChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new FloatChunkWriter<>(
-            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get, false);
-    private static final FloatChunkWriter<FloatChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new FloatChunkWriter<>(
             FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get, true);
+    private static final FloatChunkWriter<FloatChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new FloatChunkWriter<>(
+            FloatChunk::isNull, FloatChunk::getEmptyChunk, FloatChunk::get, false);
 
 
     public static FloatChunkWriter<FloatChunk<Values>> getIdentity(boolean isNullable) {

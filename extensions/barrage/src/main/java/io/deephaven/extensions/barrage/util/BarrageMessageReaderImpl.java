@@ -265,11 +265,12 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
                             }
 
                             // fill the chunk with data and assign back into the array
-                            chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
+                            final int origSize = chunk.size();
+                            chunk = readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, origSize,
                                     (int) batch.length());
                             acd.data.set(lastChunkIndex, chunk);
                             if (!options.columnsAsList()) {
-                                chunk.setSize(chunk.size() + (int) batch.length());
+                                chunk.setSize(origSize + (int) batch.length());
                             }
                         }
 

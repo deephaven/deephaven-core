@@ -25,9 +25,9 @@ import java.util.function.Supplier;
 public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ByteChunkWriter";
     private static final ByteChunkWriter<ByteChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
-            ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get, false);
-    private static final ByteChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
             ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get, true);
+    private static final ByteChunkWriter<ByteChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ByteChunkWriter<>(
+            ByteChunk::isNull, ByteChunk::getEmptyChunk, ByteChunk::get, false);
 
 
     public static ByteChunkWriter<ByteChunk<Values>> getIdentity(boolean isNullable) {

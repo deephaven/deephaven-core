@@ -37,11 +37,11 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
     private static final String DEBUG_NAME = "UnionChunkReader";
 
     private final Mode mode;
-    private final List<ChunkReader<WritableChunk<Values>>> readers;
+    private final List<ChunkReader<? extends WritableChunk<Values>>> readers;
 
     public UnionChunkReader(
             final Mode mode,
-            final List<ChunkReader<WritableChunk<Values>>> readers) {
+            final List<ChunkReader<? extends WritableChunk<Values>>> readers) {
         this.mode = mode;
         this.readers = readers;
         // the specification doesn't allow the union column to have more than signed byte number of types
@@ -65,7 +65,7 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
         int numRows = nodeInfo.numElements;
         if (numRows == 0) {
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, coiBufferLength + offsetsBufferLength));
-            for (final ChunkReader<WritableChunk<Values>> reader : readers) {
+            for (final ChunkReader<? extends WritableChunk<Values>> reader : readers) {
                 // noinspection EmptyTryBlock
                 try (final SafeCloseable ignored = reader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                     // do nothing; we need each reader to consume fieldNodeIter and bufferInfoIter

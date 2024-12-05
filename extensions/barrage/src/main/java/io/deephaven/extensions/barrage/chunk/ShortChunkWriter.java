@@ -25,9 +25,9 @@ import java.util.function.Supplier;
 public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ShortChunkWriter";
     private static final ShortChunkWriter<ShortChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
-            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, false);
-    private static final ShortChunkWriter<ShortChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
             ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, true);
+    private static final ShortChunkWriter<ShortChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
+            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, false);
 
 
     public static ShortChunkWriter<ShortChunk<Values>> getIdentity(boolean isNullable) {

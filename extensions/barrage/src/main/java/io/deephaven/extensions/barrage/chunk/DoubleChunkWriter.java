@@ -25,9 +25,9 @@ import java.util.function.Supplier;
 public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "DoubleChunkWriter";
     private static final DoubleChunkWriter<DoubleChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new DoubleChunkWriter<>(
-            DoubleChunk::isNull, DoubleChunk::getEmptyChunk, DoubleChunk::get, false);
-    private static final DoubleChunkWriter<DoubleChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new DoubleChunkWriter<>(
             DoubleChunk::isNull, DoubleChunk::getEmptyChunk, DoubleChunk::get, true);
+    private static final DoubleChunkWriter<DoubleChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new DoubleChunkWriter<>(
+            DoubleChunk::isNull, DoubleChunk::getEmptyChunk, DoubleChunk::get, false);
 
 
     public static DoubleChunkWriter<DoubleChunk<Values>> getIdentity(boolean isNullable) {
