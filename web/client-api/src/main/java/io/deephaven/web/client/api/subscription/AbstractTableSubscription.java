@@ -61,7 +61,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      */
     public static final String EVENT_UPDATED = "updated";
 
-    public enum Status {
+    protected enum Status {
         /** Waiting for some prerequisite before we can use it for the first time. */
         STARTING,
         /** Successfully created, not waiting for any messages to be accurate. */
@@ -139,10 +139,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 JsRunnable.doNothing());
     }
 
-    public Status getStatus() {
-        return status;
-    }
-
     protected static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns,
             @Nullable RangeSet viewport,
             BarrageSubscriptionOptions options, boolean isReverseViewport) {
@@ -170,7 +166,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected void sendBarrageSubscriptionRequest(RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
             boolean isReverseViewport) {
-        if (status == Status.DONE) {
+        if (isClosed()) {
             if (failMsg == null) {
                 throw new IllegalStateException("Can't change subscription, already closed");
             } else {
@@ -214,15 +210,39 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return connection;
     }
 
+    /**
+     * True if the subscription is in the ACTIVE state, meaning that the server and client are in sync with the state of
+     * the subscription.
+     */
     protected boolean isSubscriptionReady() {
         return status == Status.ACTIVE;
     }
 
+    /**
+     * Returns true if the subscription is closed and cannot be used again, false if it is actively listening for more
+     * data.
+     */
+    public boolean isClosed() {
+        return status == Status.DONE;
+    }
+
+    /**
+     * Returns true if the subscription is in a state where it can be used to read data, false if still waiting for the
+     * server to send the first snapshot or if the subscription has been closed.
+     * 
+     * @return true if the {@link #size()} method will return data based on the subscription, false if some other source
+     *         of the table's size will be used.
+     */
+    public boolean hasValidSize() {
+        return status == Status.ACTIVE || status == Status.PENDING_UPDATE;
+    }
+
+
     public double size() {
-        if (status == Status.ACTIVE) {
+        if (hasValidSize()) {
             return barrageSubscription.getCurrentSize();
         }
-        if (status == Status.DONE) {
+        if (isClosed()) {
             throw new IllegalStateException("Can't read size when already closed");
         }
         return state.getSize();
@@ -505,7 +525,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     protected void onStreamEnd(ResponseStreamWrapper.Status status) {
-        if (this.status == Status.DONE) {
+        if (isClosed()) {
             return;
         }
         if (status.isTransportError()) {
