@@ -81,12 +81,7 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::TimestampType &type) final {
-    if (type.unit() != arrow::TimeUnit::NANO) {
-      auto message = fmt::format("Expected TimestampType with nano units, got {}",
-          type.ToString());
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-    }
+  arrow::Status Visit(const arrow::TimestampType &/*type*/) final {
     type_id_ = ElementTypeId::kTimestamp;
     return arrow::Status::OK();
   }
@@ -96,12 +91,7 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::Time64Type &type) final {
-    if (type.unit() != arrow::TimeUnit::NANO) {
-      auto message = fmt::format("Expected Time64Type with nano units, got {}",
-          type.ToString());
-      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
-    }
+  arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
     type_id_ = ElementTypeId::kLocalTime;
     return arrow::Status::OK();
   }

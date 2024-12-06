@@ -19,6 +19,9 @@
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/client/utility/internal_types.h"
+#include "deephaven/client/utility/misc_types.h"
+#include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/third_party/fmt/format.h"
 
@@ -353,6 +356,38 @@ struct TypeConverterTraits<std::optional<T>> {
   }
   static std::string_view GetDeephavenTypeName() {
     return TypeConverterTraits<T>::GetDeephavenTypeName();
+  }
+};
+
+template<arrow::TimeUnit::type UNIT>
+struct TypeConverterTraits<deephaven::client::utility::internal::InternalDateTime<UNIT>> {
+  static std::shared_ptr<arrow::DataType> GetDataType() {
+    return arrow::timestamp(UNIT, "UTC");
+  }
+  static arrow::TimestampBuilder GetBuilder() {
+    return arrow::TimestampBuilder(GetDataType(), arrow::default_memory_pool());
+  }
+  static int64_t Reinterpret(const deephaven::client::utility::internal::InternalDateTime<UNIT> &o) {
+    return o.value_;
+  }
+  static std::string_view GetDeephavenTypeName() {
+    return "java.time.ZonedDateTime";
+  }
+};
+
+template<arrow::TimeUnit::type UNIT>
+struct TypeConverterTraits<deephaven::client::utility::internal::InternalLocalTime<UNIT>> {
+  static std::shared_ptr<arrow::DataType> GetDataType() {
+    return arrow::time64(UNIT);
+  }
+  static arrow::Time64Builder GetBuilder() {
+    return arrow::Time64Builder(GetDataType(), arrow::default_memory_pool());
+  }
+  static int64_t Reinterpret(const deephaven::client::utility::internal::InternalLocalTime<UNIT> &o) {
+    return o.value_;
+  }
+  static std::string_view GetDeephavenTypeName() {
+    return "java.time.LocalTime";
   }
 };
 
