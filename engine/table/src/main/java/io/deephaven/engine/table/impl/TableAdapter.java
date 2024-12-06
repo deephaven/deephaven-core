@@ -357,7 +357,7 @@ public interface TableAdapter extends TableDefaults {
 
     @SuppressWarnings("RedundantThrows")
     @Override
-    default boolean awaitUpdate(long timeout) throws InterruptedException {
+    default boolean awaitUpdate(long timeoutMillis) throws InterruptedException {
         return throwUnsupported();
     }
 
