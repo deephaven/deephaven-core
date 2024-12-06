@@ -33,6 +33,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.util.ByteHelper;
+import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
@@ -644,15 +645,39 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private Table executeSqlQuery(SessionState session, String sql) {
         // See SQLTODO(catalog-reader-implementation)
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        // noinspection unchecked,rawtypes
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final QueryScope queryScope = executionContext.getQueryScope();
         final Map<String, Table> queryScopeTables =
-                (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
+                queryScope.toMap(o -> queryScopeAuthorizedTableMapper(queryScope, o), (n, t) -> t != null);
         final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
+
+        // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole operation
+        // if any of the TicketTable sources are refreshing.
+        boolean hasRefreshingSource = false;
+        for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
+            // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom functions,
+            // where we could conceivable have it produce EmptyTable, TimeTable, etc).
+            if (!(node instanceof TicketTable)) {
+                continue;
+            }
+            // We know that all TicketTables currently produced by Flight SQL will be global scope tickets
+            final Table sourceTable = scopeTicketResolver
+                    .<Table>resolve(session, ByteBuffer.wrap(((TicketTable) node).ticket()), "table")
+                    .get();
+            if (sourceTable.isRefreshing()) {
+                hasRefreshingSource = true;
+                break;
+            }
+        }
+
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
         // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        try (
+                final SafeCloseable ignored = LivenessScopeStack.open();
+                final SafeCloseable ignored1 = hasRefreshingSource
+                        ? executionContext.getUpdateGraph().sharedLock().lockCloseable()
+                        : null) {
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
             if (table.isRefreshing()) {
@@ -660,6 +685,22 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             }
             return table;
         }
+    }
+
+    private Table queryScopeTableMapper(QueryScope queryScope, Object object) {
+        if (object == null) {
+            return null;
+        }
+        object = queryScope.unwrapObject(object);
+        if (!(object instanceof Table)) {
+            return null;
+        }
+        return (Table) object;
+    }
+
+    private Table queryScopeAuthorizedTableMapper(QueryScope queryScope, Object object) {
+        final Table table = queryScopeTableMapper(queryScope, object);
+        return table == null ? null : authorization.transform(table);
     }
 
     /**
@@ -1319,8 +1360,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes,
                 Predicate<String> tableNameFilter) {
             Objects.requireNonNull(attributes);
-            final Map<String, Table> queryScopeTables =
-                    (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
+            // Note: _not_ using queryScopeAuthorizedTable mapper; we can have a more efficient implementation when
+            // !includeSchema that only needs to check authorization.isDeniedAccess.
+            final Map<String, Table> queryScopeTables = queryScope.toMap(
+                    o -> queryScopeTableMapper(queryScope, o),
+                    (tableName, table) -> table != null && tableNameFilter.test(tableName));
             final int size = queryScopeTables.size();
             final String[] catalogNames = new String[size];
             final String[] dbSchemaNames = new String[size];
@@ -1330,9 +1374,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             int count = 0;
             for (Entry<String, Table> e : queryScopeTables.entrySet()) {
                 final String tableName = e.getKey();
-                if (!tableNameFilter.test(tableName)) {
-                    continue;
-                }
                 final Schema schema;
                 if (includeSchema) {
                     final Table table = authorization.transform(e.getValue());
