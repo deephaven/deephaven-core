@@ -264,18 +264,17 @@ public class TestQueryCompiler {
 
     @Test
     public void testMultiCompileWithFailure() throws ExecutionException, InterruptedException {
-        final String goodProgram = String.join(
-                "\n",
+        final String goodProgram = String.join("\n",
                 "public class GoodTest {",
                 "   public static void main (String [] args) {",
                 "   }",
                 "}");
-        final String badProgram = String.join(
-                "\n",
-                "public class BadTest {",
-                "   public static void main (String [] args) {",
-                "   }",
-                "}}");
+        final String badProgram = String.join("\n",
+                "public class Formula {",
+                "    public Formula() {",
+                "        S.badCall(0);",
+                "    }",
+                "}");
 
         QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
                 QueryCompilerRequest.builder()
@@ -299,15 +298,53 @@ public class TestQueryCompiler {
                         CompletionStageFuture.make(),
                 };
 
-        try {
-            ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
-            // noinspection DataFlowIssue
-            throw Assert.statementNeverExecuted();
-        } catch (Exception ignored) {
-        }
+        ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
 
         Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
         Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
         Assert.neqNull(resolvers[1].getFuture().get(), "resolvers[1].getFuture().get()");
+    }
+
+    @Test
+    public void testMultiCompileWithFailureSecond() throws ExecutionException, InterruptedException {
+        final String badProgram = String.join("\n",
+                "public class Formula {",
+                "    public Formula() {",
+                "        S.badCall(0);",
+                "    }",
+                "}");
+        final String goodProgram = String.join("\n",
+                "public class Formula {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("Formula")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+                QueryCompilerRequest.builder()
+                        .description("Test Bad Compile")
+                        .className("Formula")
+                        .classBody(badProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                        CompletionStageFuture.make(),
+                };
+
+        ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
+
+        Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.neqNull(resolvers[0].getFuture().get(), "resolvers[1].getFuture().get()");
     }
 }

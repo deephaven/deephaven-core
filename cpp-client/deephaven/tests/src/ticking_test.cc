@@ -14,6 +14,8 @@ using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DateTime;
+using deephaven::dhcore::LocalDate;
+using deephaven::dhcore::LocalTime;
 using deephaven::dhcore::chunk::ChunkMaker;
 using deephaven::dhcore::chunk::BooleanChunk;
 using deephaven::dhcore::chunk::DateTimeChunk;
@@ -188,6 +190,8 @@ public:
     auto bools = MakeReservedVector<std::optional<bool>>(target_);
     auto strings = MakeReservedVector<std::optional<std::string>>(target_);
     auto date_times = MakeReservedVector<std::optional<DateTime>>(target_);
+    auto local_dates = MakeReservedVector<std::optional<LocalDate>>(target_);
+    auto local_times = MakeReservedVector<std::optional<LocalTime>>(target_);
 
     auto date_time_start = DateTime::Parse("2001-03-01T12:34:56Z");
 
@@ -202,6 +206,8 @@ public:
       bools.emplace_back((i % 2) == 0);
       strings.emplace_back(fmt::format("hello {}", i));
       date_times.emplace_back(DateTime::FromNanos(date_time_start.Nanos() + i));
+      local_dates.emplace_back(LocalDate::Of(2001, 3, i + 1));
+      local_times.emplace_back(LocalTime::Of(12, 34, 46 + i));
     }
 
     if (target_ == 0) {
@@ -220,6 +226,8 @@ public:
     bools[t2] = {};
     strings[t2] = {};
     date_times[t2] = {};
+    local_dates[t2] = {};
+    local_times[t2] = {};
 
     CompareColumn(*current, "Chars", chars);
     CompareColumn(*current, "Bytes", int8s);
@@ -231,6 +239,8 @@ public:
     CompareColumn(*current, "Bools", bools);
     CompareColumn(*current, "Strings", strings);
     CompareColumn(*current, "DateTimes", date_times);
+    CompareColumn(*current, "LocalDates", local_dates);
+    CompareColumn(*current, "LocalTimes", local_times);
 
     NotifyDone();
   }
@@ -255,7 +265,9 @@ TEST_CASE("Ticking Table: all the data is eventually present", "[ticking]") {
           "Doubles = II == 5 ? null : (double)II",
           "Bools = II == 5 ? null : ((II % 2) == 0)",
           "Strings = II == 5 ? null : (`hello ` + II)",
-          "DateTimes = II == 5 ? null : ('2001-03-01T12:34:56Z' + II)"
+          "DateTimes = II == 5 ? null : ('2001-03-01T12:34:56Z' + II)",
+          "LocalDates = ii == 5 ? null : '2001-03-01' + ((int)II * 'P1D')",
+          "LocalTimes = ii == 5 ? null : '12:34:46'.plus((int)II * 'PT1S')"
       })
       .LastBy("II")
       .Sort(SortPair::Ascending("II"));

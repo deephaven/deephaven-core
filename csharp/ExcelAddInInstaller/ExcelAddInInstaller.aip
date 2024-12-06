@@ -8,6 +8,9 @@
     <ROW Property="AI_ThemeStyle" Value="aero" MultiBuildValue="DefaultBuild:style6blue" MsiKey="AI_ThemeStyle"/>
     <ROW Property="ALLUSERS" Value="1" MultiBuildValue="DefaultBuild:"/>
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
+    <ROW Property="ARPPRODUCTICON" Value="Icon.exe" Type="8"/>
+    <ROW Property="BannerBitmap" Value="banner.jpg" MultiBuildValue="DefaultBuild:Banner.jpg" Type="1" MsiKey="BannerBitmap"/>
+    <ROW Property="DialogBitmap" Value="dialog.jpg" MultiBuildValue="DefaultBuild:Dialog.jpg" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Deephaven Data Labs LLC"/>
     <ROW Property="ProductCode" Value="1033:{5C1E1B63-CC23-4F4D-8564-A843AA5D7413} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
@@ -140,6 +143,8 @@
     <ROW Action="AI_VerifyPrereq" Description="Verifying prerequisites" DescriptionLocId="ActionText.Description.AI_VerifyPrereq" Template="[1] was not installed correctly." TemplateLocId="ActionText.Template.AI_VerifyPrereq"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
+    <ROW Name="Banner.jpg" SourcePath="resources\Banner.jpg"/>
+    <ROW Name="Dialog.jpg" SourcePath="resources\Dialog.jpg"/>
     <ROW Name="DotNetMethodCaller.dll" SourcePath="&lt;AI_CUSTACTS&gt;DotNetMethodCaller.dll"/>
     <ROW Name="DotNetMethodCaller.dll_1" SourcePath="&lt;AI_CUSTACTS64&gt;DotNetMethodCaller.dll"/>
     <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
@@ -262,6 +267,9 @@
     <ROW Feature_="A0BFC224E0E9125ADE0B2DBF343" Component_="A0BFC224E0E9125ADE0B2DBF343"/>
     <ROW Feature_="MainFeature" Component_="zlib1.dll"/>
     <ROW Feature_="MainFeature" Component_="zstd.dll"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
+    <ROW Name="Icon.exe" SourcePath="resources\Icon.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
     <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="210"/>
