@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.grpc;
 import elemental2.core.ArrayBuffer;
 import elemental2.core.DataView;
 import elemental2.core.Int8Array;
-import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CloseEvent;
@@ -68,9 +67,9 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     public static class HeaderFrame implements QueuedEntry {
         private final String path;
-        private final JsPropertyMap<JsArray<String>> metadata;
+        private final JsPropertyMap<HeaderValueUnion> metadata;
 
-        public HeaderFrame(String path, JsPropertyMap<JsArray<String>> metadata) {
+        public HeaderFrame(String path, JsPropertyMap<HeaderValueUnion> metadata) {
             this.path = path;
             this.metadata = metadata;
         }
@@ -79,9 +78,14 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
         public void send(WebSocket webSocket, int streamId) {
             final Uint8Array headerBytes;
             final StringBuilder str = new StringBuilder();
-            metadata.set("grpc-websockets-path", JsArray.of(path));
+            metadata.set("grpc-websockets-path", HeaderValueUnion.of(path));
             metadata.forEach((key) -> {
-                str.append(key).append(": ").append(metadata.get(key).join(", ")).append("\r\n");
+                HeaderValueUnion value = metadata.get(key);
+                if (value.isArray()) {
+                    str.append(key).append(": ").append(value.asArray().join(", ")).append("\r\n");
+                } else {
+                    str.append(key).append(": ").append(value.asString()).append("\r\n");
+                }
             });
             headerBytes = encodeASCII(str.toString());
             Int8Array payload = new Int8Array(headerBytes.byteLength + 4);
@@ -237,7 +241,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
     }
 
     @Override
-    public void start(JsPropertyMap<JsArray<String>> metadata) {
+    public void start(JsPropertyMap<HeaderValueUnion> metadata) {
         if (alternativeTransport.isAvailable()) {
             alternativeTransport.get().start(new BrowserHeaders(metadata));
             return;

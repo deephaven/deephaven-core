@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.grpc;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
-import elemental2.core.JsArray;
 import elemental2.core.JsError;
 import elemental2.core.Uint8Array;
 import elemental2.dom.URL;
@@ -13,6 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Tra
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -25,7 +25,7 @@ public class GrpcTransportOptions {
     @JsFunction
     @FunctionalInterface
     public interface OnHeadersCallback {
-        void onHeaders(JsPropertyMap<JsArray<String>> headers, int status);
+        void onHeaders(JsPropertyMap<HeaderValueUnion> headers, int status);
     }
 
     @JsFunction
@@ -37,7 +37,7 @@ public class GrpcTransportOptions {
     @JsFunction
     @FunctionalInterface
     public interface OnEndCallback {
-        void onEnd(@JsNullable JsError error);
+        void onEnd(@JsOptional @JsNullable JsError error);
     }
 
     /**

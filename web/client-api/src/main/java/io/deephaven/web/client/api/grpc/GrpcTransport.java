@@ -4,12 +4,10 @@
 package io.deephaven.web.client.api.grpc;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
-import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Transport;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -25,7 +23,7 @@ public interface GrpcTransport {
      * 
      * @param metadata the headers to send the server when opening the connection
      */
-    void start(JsPropertyMap<JsArray<String>> metadata);
+    void start(JsPropertyMap<HeaderValueUnion> metadata);
 
     /**
      * Sends a message to the server.
@@ -53,7 +51,7 @@ public interface GrpcTransport {
     static GrpcTransport from(Transport tsTransport) {
         return new GrpcTransport() {
             @Override
-            public void start(JsPropertyMap<JsArray<String>> metadata) {
+            public void start(JsPropertyMap<HeaderValueUnion> metadata) {
                 tsTransport.start(new BrowserHeaders(metadata));
             }
 

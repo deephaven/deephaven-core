@@ -11,6 +11,7 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Tra
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Factory for creating gRPC transports.
@@ -61,7 +62,7 @@ public interface GrpcTransportFactory {
 
                 @Override
                 public void start(BrowserHeaders metadata) {
-                    impl.start(metadata.headersMap);
+                    impl.start(Js.cast(metadata.headersMap));
                 }
             };
         };
