@@ -359,7 +359,7 @@ public class MultiplexedWebsocketTransport implements GrpcTransport {
             closed = false;
         }
         if (streamId == this.streamId) {
-            options.onChunk.onChunk(new Uint8Array(messageEvent.data, 4), false);
+            options.onChunk.onChunk(new Uint8Array(messageEvent.data, 4));
             if (closed) {
                 options.onEnd.onEnd(null);
                 removeHandlers();

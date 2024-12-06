@@ -31,7 +31,7 @@ public class GrpcTransportOptions {
     @JsFunction
     @FunctionalInterface
     public interface OnChunkCallback {
-        void onChunk(Uint8Array chunk, boolean finished);
+        void onChunk(Uint8Array chunk);
     }
 
     @JsFunction
@@ -82,7 +82,10 @@ public class GrpcTransportOptions {
         impl.url = new URL(options.getUrl());
         impl.debug = options.isDebug();
         impl.onHeaders = (headers, status) -> options.getOnHeaders().onInvoke(new BrowserHeaders(headers), status);
-        impl.onChunk = options.getOnChunk()::onInvoke;
+        impl.onChunk = p0 -> {
+            // "false" because the underlying implementation doesn't rely on this anyway.
+            options.getOnChunk().onInvoke(p0, false);
+        };
         impl.onEnd = options.getOnEnd()::onInvoke;
         return impl;
     }
