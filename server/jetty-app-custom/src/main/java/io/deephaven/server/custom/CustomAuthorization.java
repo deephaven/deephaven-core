@@ -5,8 +5,6 @@ package io.deephaven.server.custom;
 
 import io.deephaven.auth.codegen.impl.InputTableServiceContextualAuthWiring;
 import io.deephaven.server.auth.AllowAllAuthorizationProvider;
-import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.auth.CommunityAuthorizationProvider;
 
 import javax.inject.Inject;
 
