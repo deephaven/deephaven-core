@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRangeComparator and run "./gradlew replicateChunkFilters" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.LongComparisons;
@@ -19,9 +23,6 @@ public class LongRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
@@ -29,12 +30,25 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup
+         * per filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This
+         * is a performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.geq(value, lower) && LongComparisons.leq(value, upper)) {
+                if (matches(longChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -46,12 +60,20 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.geq(value, lower) && LongComparisons.lt(value, upper)) {
+                if (matches(longChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -63,12 +85,20 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.gt(value, lower) && LongComparisons.leq(value, upper)) {
+                if (matches(longChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -80,12 +110,20 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(long value) {
+            return LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final long value = values.get(ii);
-                if (LongComparisons.gt(value, lower) && LongComparisons.lt(value, upper)) {
+                if (matches(longChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

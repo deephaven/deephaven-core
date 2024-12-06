@@ -5,10 +5,7 @@ package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.FloatChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -93,16 +90,21 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         private DoubleFilter() {}
 
         @Override
+        public boolean matches(final double value) {
+            return !Double.isNaN(value) && value != NULL_DOUBLE;
+        }
+
+
+        @Override
         public void filter(
-                @NotNull final DoubleChunk<? extends Values> values,
-                @NotNull final LongChunk<OrderedRowKeys> rowKeys,
-                @NotNull final WritableLongChunk<OrderedRowKeys> acceptedRowKeys) {
-            final int size = values.size();
-            acceptedRowKeys.setSize(0);
-            for (int vi = 0; vi < size; ++vi) {
-                final double value = values.get(vi);
-                if (!Double.isNaN(value) && value != NULL_DOUBLE) {
-                    acceptedRowKeys.add(rowKeys.get(vi));
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            results.setSize(0);
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
                 }
             }
         }
@@ -115,19 +117,25 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         private FloatFilter() {}
 
         @Override
+        public boolean matches(final float value) {
+            return !Float.isNaN(value) && value != NULL_FLOAT;
+        }
+
+
+        @Override
         public void filter(
-                @NotNull final FloatChunk<? extends Values> values,
-                @NotNull final LongChunk<OrderedRowKeys> rowKeys,
-                @NotNull final WritableLongChunk<OrderedRowKeys> acceptedRowKeys) {
-            final int size = values.size();
-            acceptedRowKeys.setSize(0);
-            for (int vi = 0; vi < size; ++vi) {
-                final float value = values.get(vi);
-                if (!Float.isNaN(value) && value != NULL_FLOAT) {
-                    acceptedRowKeys.add(rowKeys.get(vi));
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            results.setSize(0);
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(floatChunk.get(ii))) {
+                    results.add(keys.get(ii));
                 }
             }
         }
+
     }
 
     @Override

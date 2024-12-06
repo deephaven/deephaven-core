@@ -57,12 +57,24 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value == this.value;
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup
+         * per filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This
+         * is a performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                if (values.get(ii) == value) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -77,12 +89,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value != this.value;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                if (values.get(ii) != value) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -99,13 +118,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value == value1 || value == value2;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -122,13 +147,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value != value1 && value != value2;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -147,13 +178,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value == value1 || value == value2 || value == value3;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -172,13 +209,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return value != value1 && value != value2 && value != value3;
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -193,13 +236,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return values.contains(value);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (this.values.contains(checkValue)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -214,13 +263,19 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        public boolean matches(int value) {
+            return !values.contains(value);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final int checkValue = values.get(ii);
-                if (!this.values.contains(checkValue)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(intChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

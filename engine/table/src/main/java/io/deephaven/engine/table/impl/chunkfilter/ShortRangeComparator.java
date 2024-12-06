@@ -23,9 +23,6 @@ public class ShortRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
@@ -33,13 +30,25 @@ public class ShortRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup
+         * per filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This
+         * is a performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(shortChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -51,13 +60,20 @@ public class ShortRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(shortChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -69,13 +85,20 @@ public class ShortRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(shortChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -87,13 +110,20 @@ public class ShortRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final int count = keys.size();
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
             results.setSize(0);
-            for (int ii = 0; ii < count; ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper)) {
+            for (int ii = 0; ii < values.size(); ++ii) {
+                if (matches(shortChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }

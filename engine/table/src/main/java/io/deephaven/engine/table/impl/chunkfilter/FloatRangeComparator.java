@@ -19,9 +19,6 @@ public class FloatRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class FloatDoubleInclusiveInclusiveFilter extends FloatFloatFilter {
@@ -29,12 +26,25 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper);
+        }
+
+        /*
+         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup per
+         * filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This is a
+         * performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.geq(value, lower) && FloatComparisons.leq(value, upper)) {
+                if (matches(floatChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -46,12 +56,20 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.geq(value, lower) && FloatComparisons.lt(value, upper)) {
+                if (matches(floatChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -63,12 +81,20 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.gt(value, lower) && FloatComparisons.leq(value, upper)) {
+                if (matches(floatChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
@@ -80,12 +106,20 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        @Override
+        public boolean matches(float value) {
+            return FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
-                final float value = values.get(ii);
-                if (FloatComparisons.gt(value, lower) && FloatComparisons.lt(value, upper)) {
+                if (matches(floatChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
