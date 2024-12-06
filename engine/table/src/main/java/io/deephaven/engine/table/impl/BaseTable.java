@@ -360,6 +360,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten, // add flatten for now because web flattens all views
                 CopyAttributeOperation.Preview));
 
+        tempMap.put(BARRAGE_SCHEMA_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Filter));
+
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 

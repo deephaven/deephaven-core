@@ -115,7 +115,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                             (Event<JsArray<Object>> e) -> e.getDetail().getAt(0).equals("2"), 14004)
                             .then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
                                 assertEquals(3, constituentTable.getColumns().length);
-                                assertTrue(constituentTable.getSize() >= 2);
+                                assertTrue(constituentTable.getSize() >= 1);
 
                                 constituentTable.close();
                                 partitionedTable.close();

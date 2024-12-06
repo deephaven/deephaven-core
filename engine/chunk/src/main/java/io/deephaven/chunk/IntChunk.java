@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.chunk;
 
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.attributes.Any;
 
@@ -76,6 +77,12 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     public final int get(int index) {
         return data[offset + index];
     }
+
+    // region isNull
+    public final boolean isNull(int index) {
+        return data[offset + index] == QueryConstants.NULL_INT;
+    }
+    // endregion isNull
 
     @Override
     public IntChunk<ATTR> slice(int offset, int capacity) {
