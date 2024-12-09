@@ -69,7 +69,7 @@ setup(
         'numba; python_version < "3.13"',
     ],
     extras_require={
-        "autocomplete": ["jedi==0.19.1"],
+        "autocomplete": ["jedi==0.19.1", "docstring_parser>=0.16"],
     },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
