@@ -170,7 +170,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected abstract void sendFirstSubscriptionRequest();
 
-    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
+    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
+            Double updateIntervalMs,
             boolean isReverseViewport) {
         if (isClosed()) {
             if (failMsg == null) {
