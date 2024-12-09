@@ -21,6 +21,8 @@ public class ReplicateOperators {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedCountOperator.java");
         charToAllButBooleanAndFloats(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
         charToAllButBooleanAndFloats(TASK,

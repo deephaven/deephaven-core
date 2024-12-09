@@ -10,7 +10,10 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, formula
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, \
+    formula, count_non_null, count_null, count_neg, count_pos, count_zero, count_nan, count_inf, count_finite, \
+    count_non_zero, count_non_negative, count_non_positive
+
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -254,6 +257,17 @@ class TableTestCase(BaseTestCase):
                 formula(formula="f_min=min(a)"),
                 formula(formula="f_sum=sum(a) + sum(b)"),
                 formula(formula="f_sum_3col=sum(a) + sum(b) + max(c)"),
+                count_non_null(cols=["aggCountNonNull=b"]),
+                count_null(cols=["aggCountNull=c"]),
+                count_neg(cols=["aggCountNeg=d"]),
+                count_pos(cols=["aggCountPos=b"]),
+                count_zero(cols=["aggCountZero=c"]),
+                count_nan(cols=["aggCountNaN=d"]),
+                count_inf(cols=["aggCountInf=b"]),
+                count_finite(cols=["aggCountFinite=c"]),
+                count_non_zero(cols=["aggCountNonZero=d"]),
+                count_non_negative(cols=["aggCountNonNeg=b"]),
+                count_non_positive(cols=["aggCountNonPos=c"]),
                 ]
 
         result_table = test_table.agg_by(aggs=aggs, by=["a"])
@@ -277,6 +291,8 @@ class TableTestCase(BaseTestCase):
                 avg(),
                 pct(percentile=0.5),
                 weighted_avg(wcol="d"),
+                count_null(), # works for all types
+                count_non_null(), # works for all types
                 ]
         for agg in aggs:
             with self.subTest(agg):
@@ -288,6 +304,12 @@ class TableTestCase(BaseTestCase):
                 avg(cols=["AvgB = b", "AvgD = d"]),
                 pct(percentile=0.5, cols=["PctC = c"]),
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
+                count_neg("aggCountNeg=d"),
+                count_pos("aggCountPos=b"),
+                count_zero("aggCountZero=c"),
+                count_nan("aggCountNaN=d"),
+                count_inf("aggCountInf=b"),
+                count_finite("aggCountFinite=c"),
                 ]
 
         for agg in aggs:

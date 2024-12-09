@@ -5,30 +5,8 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.*;
-import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecAbsSum;
-import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
-import io.deephaven.api.agg.spec.AggSpecAvg;
-import io.deephaven.api.agg.spec.AggSpecCountDistinct;
-import io.deephaven.api.agg.spec.AggSpecDistinct;
-import io.deephaven.api.agg.spec.AggSpecFirst;
-import io.deephaven.api.agg.spec.AggSpecFormula;
-import io.deephaven.api.agg.spec.AggSpecFreeze;
-import io.deephaven.api.agg.spec.AggSpecGroup;
-import io.deephaven.api.agg.spec.AggSpecLast;
-import io.deephaven.api.agg.spec.AggSpecMax;
-import io.deephaven.api.agg.spec.AggSpecMedian;
-import io.deephaven.api.agg.spec.AggSpecMin;
-import io.deephaven.api.agg.spec.AggSpecPercentile;
-import io.deephaven.api.agg.spec.AggSpecSortedFirst;
-import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecStd;
-import io.deephaven.api.agg.spec.AggSpecSum;
-import io.deephaven.api.agg.spec.AggSpecTDigest;
-import io.deephaven.api.agg.spec.AggSpecUnique;
-import io.deephaven.api.agg.spec.AggSpecVar;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.agg.spec.*;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
@@ -780,6 +758,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final AggSpecCountValues countValues) {
+            addBasicOperators((t, n) -> makeCountOperator(t, n, countValues.countType()));
+        }
+
+        @Override
         public void visit(@NotNull final AggSpecCountDistinct countDistinct) {
             addBasicOperators((t, n) -> makeCountDistinctOperator(t, n, countDistinct.countNulls(), false, false));
         }
@@ -1001,6 +984,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final Count count) {
+            // No input needed, counting rows not values
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
         }
 
@@ -1034,6 +1018,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
             addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecCountValues countValues) {
+            addBasicOperators((t, n) -> makeCountOperator(t, n, countValues.countType()));
         }
 
         @Override
@@ -1184,6 +1173,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
             reaggregateAvgOperator();
+        }
+
+        @Override
+        public void visit(@NotNull final AggSpecCountValues countValues) {
+            reaggregateAsSum();
         }
 
         @Override
@@ -1548,6 +1542,38 @@ public class AggregationProcessor implements AggregationContextFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Operator Construction Helpers (e.g. to multiplex on input/output data type)
     // -----------------------------------------------------------------------------------------------------------------
+
+    private static IterativeChunkedAggregationOperator makeCountOperator(
+            @NotNull final Class<?> type,
+            @NotNull final String name,
+            final AggCountType countType) {
+        if (countType == AggCountType.ALL) {
+            // Type is irrelevant for CountAggregationOperator, use the optimized version.
+            return new CountAggregationOperator(name);
+        }
+        if (type == Byte.class || type == byte.class) {
+            return new ByteChunkedCountOperator(name, countType);
+        } else if (type == Character.class || type == char.class) {
+            return new CharChunkedCountOperator(name, countType);
+        } else if (type == Double.class || type == double.class) {
+            return new DoubleChunkedCountOperator(name, countType);
+        } else if (type == Float.class || type == float.class) {
+            return new FloatChunkedCountOperator(name, countType);
+        } else if (type == Integer.class || type == int.class) {
+            return new IntChunkedCountOperator(name, countType);
+        } else if (type == Long.class || type == long.class) {
+            return new LongChunkedCountOperator(name, countType);
+        } else if (type == Short.class || type == short.class) {
+            return new ShortChunkedCountOperator(name, countType);
+        } else if (type == BigInteger.class) {
+            return new BigIntegerChunkedCountOperator(name, countType);
+        } else if (type == BigDecimal.class) {
+            return new BigDecimalChunkedCountOperator(name, countType);
+        } else if (type == Instant.class) {
+            return new LongChunkedCountOperator(name, countType);
+        }
+        return new ObjectChunkedCountOperator(name, countType);
+    }
 
     private static IterativeChunkedAggregationOperator makeSumOperator(
             @NotNull final Class<?> type,

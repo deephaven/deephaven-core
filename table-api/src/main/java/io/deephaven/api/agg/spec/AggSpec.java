@@ -8,6 +8,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.Pair;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;
@@ -45,6 +46,10 @@ public interface AggSpec {
      */
     static AggSpecAvg avg() {
         return AggSpecAvg.of();
+    }
+
+    static AggSpecCountValues countValues(AggCountType aggCountType) {
+        return AggSpecCountValues.of(aggCountType);
     }
 
     static AggSpecCountDistinct countDistinct() {
@@ -265,6 +270,7 @@ public interface AggSpec {
         visitor.visit((AggSpecAbsSum) null);
         visitor.visit((AggSpecApproximatePercentile) null);
         visitor.visit((AggSpecAvg) null);
+        visitor.visit((AggSpecCountValues) null);
         visitor.visit((AggSpecCountDistinct) null);
         visitor.visit((AggSpecDistinct) null);
         visitor.visit((AggSpecFirst) null);
@@ -338,6 +344,8 @@ public interface AggSpec {
         void visit(AggSpecApproximatePercentile approxPct);
 
         void visit(AggSpecAvg avg);
+
+        void visit(AggSpecCountValues countValues);
 
         void visit(AggSpecCountDistinct countDistinct);
 

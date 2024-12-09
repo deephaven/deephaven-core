@@ -8,17 +8,15 @@ import com.google.protobuf.Message;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.*;
 import io.deephaven.api.agg.spec.AggSpec.Visitor;
-import io.deephaven.api.agg.spec.AggSpecSortedFirst;
-import io.deephaven.api.agg.spec.AggSpecSortedLast;
-import io.deephaven.api.agg.spec.AggSpecWAvg;
-import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountDistinct;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountValues;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecDistinct;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFirst;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
@@ -140,6 +138,44 @@ class AggSpecAdapter {
         return percentile.hasCompression()
                 ? AggSpec.approximatePercentile(percentile.getPercentile(), percentile.getCompression())
                 : AggSpec.approximatePercentile(percentile.getPercentile());
+    }
+
+    private static io.deephaven.api.agg.util.AggCountType adapt(
+            io.deephaven.proto.backplane.grpc.AggCountType countType) {
+        switch (countType) {
+            case COUNT_TYPE_NOT_SPECIFIED: // AggCount defaults to COUNT_ALL
+            case COUNT_ALL:
+                return io.deephaven.api.agg.util.AggCountType.ALL;
+            case COUNT_NON_NULL:
+                return io.deephaven.api.agg.util.AggCountType.NON_NULL;
+            case COUNT_NULL:
+                return io.deephaven.api.agg.util.AggCountType.NULL;
+            case COUNT_NEGATIVE:
+                return io.deephaven.api.agg.util.AggCountType.NEGATIVE;
+            case COUNT_POSITIVE:
+                return io.deephaven.api.agg.util.AggCountType.POSITIVE;
+            case COUNT_ZERO:
+                return io.deephaven.api.agg.util.AggCountType.ZERO;
+            case COUNT_NAN:
+                return io.deephaven.api.agg.util.AggCountType.NAN;
+            case COUNT_INFINITE:
+                return io.deephaven.api.agg.util.AggCountType.INFINITE;
+            case COUNT_FINITE:
+                return AggCountType.FINITE;
+            case COUNT_NON_ZERO:
+                return AggCountType.NON_ZERO;
+            case COUNT_NON_NEGATIVE:
+                return AggCountType.NON_NEGATIVE;
+            case COUNT_NON_POSITIVE:
+                return AggCountType.NON_POSITIVE;
+            default:
+                throw new IllegalArgumentException("Unsupported AggSpecCountValues.AggCountType - " + countType);
+        }
+    }
+
+    private static io.deephaven.api.agg.spec.AggSpecCountValues adapt(
+            io.deephaven.proto.backplane.grpc.AggSpec.AggSpecCountValues countValues) {
+        return AggSpec.countValues(adapt(countValues.getCountType()));
     }
 
     private static io.deephaven.api.agg.spec.AggSpecCountDistinct adapt(AggSpecCountDistinct countDistinct) {
@@ -308,6 +344,16 @@ class AggSpecAdapter {
                     io.deephaven.api.agg.spec.AggSpecAvg.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggSpec::avg);
+        }
+
+        @Override
+        public void visit(io.deephaven.api.agg.spec.AggSpecCountValues countValues) {
+            add(
+                    TypeCase.COUNT_VALUES,
+                    AggSpecCountValues.class,
+                    io.deephaven.api.agg.spec.AggSpecCountValues.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggSpecAdapter::adapt);
         }
 
         @Override
