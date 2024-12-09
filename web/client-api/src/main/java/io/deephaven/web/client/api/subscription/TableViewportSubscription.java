@@ -248,6 +248,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
+        // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
             this.firstRow = firstRow;
             this.lastRow = lastRow;
