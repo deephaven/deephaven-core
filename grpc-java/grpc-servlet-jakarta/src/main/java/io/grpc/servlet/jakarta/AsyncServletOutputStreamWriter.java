@@ -121,9 +121,15 @@ final class AsyncServletOutputStreamWriter {
             transportState.runOnTransportThread(
                     () -> {
                         transportState.complete();
-                        asyncContext.complete();
+                        // asyncContext.complete();
                         log.fine("call completed");
                     });
+            // Jetty specific fix: When AsyncContext.complete() is called, Jetty sends a RST_STREAM with
+            // "cancel" error to the client, while other containers send "no error" in this case. Calling
+            // close() instead on the output stream still sends the RST_STREAM, but with "no error". Note
+            // that this does the opposite in at least Tomcat, so we're not going to upstream this change.
+            // See https://github.com/deephaven/deephaven-core/issues/6400
+            outputStream.close();
         };
         this.isReady = () -> outputStream.isReady();
     }

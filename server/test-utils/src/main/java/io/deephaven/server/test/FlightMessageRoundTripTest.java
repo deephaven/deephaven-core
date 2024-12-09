@@ -1311,7 +1311,7 @@ public abstract class FlightMessageRoundTripTest {
             final int numRows = 1;
             listWriter.startList();
             listWriter.endList();
-            listWriter.setValueCount(numRows);
+            listWriter.setValueCount(0);
 
             root.setRowCount(numRows);
 
