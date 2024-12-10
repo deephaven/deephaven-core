@@ -651,42 +651,55 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         // See SQLTODO(catalog-reader-implementation)
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final QueryScope queryScope = executionContext.getQueryScope();
-        final Map<String, Table> queryScopeTables =
-                queryScope.toMap(o -> queryScopeAuthorizedTableMapper(queryScope, o), (n, t) -> t != null);
-        final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TableCreatorScopeTickets::ticketTable, null);
-        final TableCreator<Table> tableCreator =
-                new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, queryScopeTables);
 
-        // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole operation
-        // if any of the TicketTable sources are refreshing.
-        final List<Table> refreshingTables = new ArrayList<>();
-        for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
-            // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom functions,
-            // where we could conceivable have it produce EmptyTable, TimeTable, etc).
-            if (!(node instanceof TicketTable)) {
-                continue;
-            }
-            final Table sourceTable = tableCreator.of((TicketTable) node);
-            if (sourceTable.isRefreshing()) {
-                refreshingTables.add(sourceTable);
-            }
-        }
+        // We aren't managing the liveness of Tables that come verbatim (authorization un-transformed) from the query
+        // scope. In the case where they either are already not live, or become not live by the time the operation logic
+        // is executed, an appropriate exception will be thrown. While this is a liveness race, it isn't technically
+        // much different than a liveness race possible via ScopeTicketResolver.resolve.
+        //
+        // The proper way to do this would be to re-model the table execution logic of GrpcTableOperation (gRPC) into a
+        // QST form, whereby table dependencies are presented as properly-scoped, liveness-managed Exports for the
+        // duration of the operation.
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Map<String, Table> queryScopeTables =
+                    queryScope.toMap(o -> queryScopeAuthorizedTableMapper(queryScope, o), (n, t) -> t != null);
+            final TableSpec tableSpec =
+                    Sql.parseSql(sql, queryScopeTables, TableCreatorScopeTickets::ticketTable, null);
+            final TableCreator<Table> tableCreator =
+                    new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, queryScopeTables);
 
-        final UpdateGraph updateGraph = refreshingTables.isEmpty()
-                ? null
-                : NotificationQueue.Dependency.getUpdateGraph(null, refreshingTables.toArray(new Table[0]));
-
-        // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
-        // io.deephaven.auth.ServiceAuthWiring
-        // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
-        try (
-                final SafeCloseable ignored = LivenessScopeStack.open();
-                final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
-            final Table table = tableSpec.logic().create(tableCreator);
-            if (table.isRefreshing()) {
-                table.retainReference();
+            // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole
+            // operation
+            // if any of the TicketTable sources are refreshing.
+            final List<Table> refreshingTables = new ArrayList<>();
+            for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
+                // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom
+                // functions,
+                // where we could conceivable have it produce EmptyTable, TimeTable, etc).
+                if (!(node instanceof TicketTable)) {
+                    continue;
+                }
+                final Table sourceTable = tableCreator.of((TicketTable) node);
+                if (sourceTable.isRefreshing()) {
+                    refreshingTables.add(sourceTable);
+                }
             }
-            return table;
+
+            final UpdateGraph updateGraph = refreshingTables.isEmpty()
+                    ? null
+                    : NotificationQueue.Dependency.getUpdateGraph(null, refreshingTables.toArray(new Table[0]));
+
+            // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
+            // io.deephaven.auth.ServiceAuthWiring
+            // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization
+            // logic
+            try (final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
+                final Table table = tableSpec.logic().create(tableCreator);
+                if (table.isRefreshing()) {
+                    table.retainReference();
+                }
+                return table;
+            }
         }
     }
 
@@ -703,7 +716,17 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private Table queryScopeAuthorizedTableMapper(QueryScope queryScope, Object object) {
         final Table table = queryScopeTableMapper(queryScope, object);
-        return table == null ? null : authorization.transform(table);
+        if (table == null) {
+            return null;
+        }
+        Table transform = authorization.transform(table);
+        if (transform != table) {
+
+        }
+
+
+
+        return table == null ? null : transform;
     }
 
     /**
