@@ -54,7 +54,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
         final AtomicInteger icebergIndex = new AtomicInteger(0);
-        // TODO (deephaven-core#6438): Add better support for handling non-identity transforms
+        // TODO (DH-18160): Improve support for handling non-identity transforms
         identityPartitioningColumns = partitionSpec.fields().stream()
                 .filter(partitionField -> partitionField.transform().isIdentity())
                 .map(PartitionField::name)
