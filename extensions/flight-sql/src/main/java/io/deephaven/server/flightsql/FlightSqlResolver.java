@@ -35,6 +35,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.util.ByteHelper;
+import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -646,13 +647,15 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         void release();
     }
 
-    private Table executeSqlQuery(SessionState session, String sql) {
+    private Table executeSqlQuery(String sql) {
         // See SQLTODO(catalog-reader-implementation)
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final QueryScope queryScope = executionContext.getQueryScope();
         final Map<String, Table> queryScopeTables =
                 queryScope.toMap(o -> queryScopeAuthorizedTableMapper(queryScope, o), (n, t) -> t != null);
-        final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
+        final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TableCreatorScopeTickets::ticketTable, null);
+        final TableCreator<Table> tableCreator =
+                new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, queryScopeTables);
 
         // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole operation
         // if any of the TicketTable sources are refreshing.
@@ -663,11 +666,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             if (!(node instanceof TicketTable)) {
                 continue;
             }
-            // We know that all TicketTables currently produced by Flight SQL will be global scope tickets
-            final byte[] ticket = ((TicketTable) node).ticket();
-            // Skip over "s/" prefix.
-            final String variableName = new String(ticket, 2, ticket.length - 2);
-            final Table sourceTable = Objects.requireNonNull(queryScopeTables.get(variableName));
+            final Table sourceTable = tableCreator.of((TicketTable) node);
             if (sourceTable.isRefreshing()) {
                 refreshingTables.add(sourceTable);
             }
@@ -683,8 +682,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         try (
                 final SafeCloseable ignored = LivenessScopeStack.open();
                 final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
-            final Table table = tableSpec.logic()
-                    .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
+            final Table table = tableSpec.logic().create(tableCreator);
             if (table.isRefreshing()) {
                 table.retainReference();
             }
@@ -887,7 +885,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         protected void executeSql(String sql) {
             try {
-                table = executeSqlQuery(session, sql);
+                table = executeSqlQuery(sql);
             } catch (SqlParseException e) {
                 throw error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
             } catch (UnsupportedSqlOperation e) {
