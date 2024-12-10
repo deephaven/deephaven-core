@@ -11,13 +11,13 @@ import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
 import org.apache.iceberg.data.IdentityPartitionConverters;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -25,19 +25,19 @@ import java.util.stream.Collectors;
  * a {@link Snapshot}
  */
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
-    private static class ColumnData {
+    private static class IdentityPartitioningColData {
         final String name;
         final Class<?> type;
-        final int index;
+        final int index; // position in the partition spec
 
-        public ColumnData(String name, Class<?> type, int index) {
+        private IdentityPartitioningColData(String name, Class<?> type, int index) {
             this.name = name;
             this.type = type;
             this.index = index;
         }
     }
 
-    private final List<ColumnData> outputPartitioningColumns;
+    private final List<IdentityPartitioningColData> identityPartitioningColumns;
 
     /**
      * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
@@ -53,32 +53,23 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
-        final MutableInt icebergIndex = new MutableInt(0);
-        final Map<String, Integer> availablePartitioningColumns = partitionSpec.fields().stream()
-                .peek(partitionField -> {
-                    // TODO (deephaven-core#6438): Add support to handle non-identity transforms
-                    if (!partitionField.transform().isIdentity()) {
-                        throw new TableDataException("Partition field " + partitionField.name() + " has a " +
-                                "non-identity transform: " + partitionField.transform() + ", which is not supported");
-                    }
-                })
+        final AtomicInteger icebergIndex = new AtomicInteger(0);
+        // TODO (deephaven-core#6438): Add better support for handling non-identity transforms
+        identityPartitioningColumns = partitionSpec.fields().stream()
+                .filter(partitionField -> partitionField.transform().isIdentity())
                 .map(PartitionField::name)
-                .map(name -> instructions.columnRenames().getOrDefault(name, name))
-                .collect(Collectors.toMap(
-                        name -> name,
-                        name -> icebergIndex.getAndIncrement(),
-                        (v1, v2) -> v1,
-                        LinkedHashMap::new));
-
-        outputPartitioningColumns = tableDef.getColumnStream()
-                .map((final ColumnDefinition<?> columnDef) -> {
-                    final Integer index = availablePartitioningColumns.get(columnDef.getName());
-                    if (index == null) {
-                        return null;
+                .map(icebergColName -> {
+                    final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
+                    final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+                    if (tableDef.getColumn(dhColName) == null) {
+                        throw new TableDataException("Partitioning column " + dhColName + " not found in table " +
+                                "definition but corresponding identity partitioning column " + icebergColName + " is " +
+                                "present in the partition spec, table definition: " + tableDef + ", partition spec: " +
+                                partitionSpec);
                     }
-                    return new ColumnData(columnDef.getName(), TypeUtils.getBoxedType(columnDef.getDataType()), index);
+                    return new IdentityPartitioningColData(dhColName, TypeUtils.getBoxedType(columnDef.getDataType()),
+                            icebergIndex.getAndIncrement());
                 })
-                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -95,12 +86,11 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
 
         final PartitionData partitionData = (PartitionData) dataFile.partition();
-        for (final ColumnData colData : outputPartitioningColumns) {
+        for (final IdentityPartitioningColData colData : identityPartitioningColumns) {
             final String colName = colData.name;
             final Object colValue;
             final Object valueFromPartitionData = partitionData.get(colData.index);
             if (valueFromPartitionData != null) {
-                // TODO (deephaven-core#6438): Assuming identity transform here
                 colValue = IdentityPartitionConverters.convertConstant(
                         partitionData.getType(colData.index), valueFromPartitionData);
                 if (!colData.type.isAssignableFrom(colValue.getClass())) {
