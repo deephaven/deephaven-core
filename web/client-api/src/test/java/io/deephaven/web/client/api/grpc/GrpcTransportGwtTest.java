@@ -79,6 +79,7 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
             return;
         }
         setupDhInternal().then(ignore -> {
+            delayTestFinish(7101);
             ConnectOptions connectOptions = new ConnectOptions();
             connectOptions.transportFactory = makeFetchTransportFactory();
                     CoreClient coreClient = new CoreClient(localServer, connectOptions);
@@ -89,19 +90,29 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
 
     /**
      * Dummy transport that just sends a single message and receives a single message. Doesn't actually talk to
-     * the server, headers are empty, and the message is always 5 byte proto payload "no data".
+     * the server, headers are empty, and the message is always 5 byte proto payload "no data", followed by
+     * trailers signifying success.
      */
     private native GrpcTransportFactory makeDummyTransportFactory() /*-{
         return {
             create: function(options) {
                 return {
                     start: function(metadata) {
-                        // no-op
+                        // empty headers
                         $wnd.setTimeout(function() {options.onHeaders({}, 200);}, 0);
                     },
                     sendMessage: function(msgBytes) {
-                        // no-op
-                        $wnd.setTimeout(function() {options.onChunk(new Uint8Array(5));}, 0);
+                        // empty payload
+                        var empty = new $wnd.Uint8Array(5);
+                        var successTrailers = new $wnd.Uint8Array(5);
+                        successTrailers[0] = 128;
+                        new TextEncoding('utf-8').encodeInto('grpc-status:1', successTrailers.subarray(1));
+
+                        $wnd.setTimeout(function() {
+                            options.onChunk(empty);
+                            debugger;
+                            options.onChunk(successTrailers);
+                        }, 0);
                     },
                     finishSend: function() {
                         // no-op
@@ -115,13 +126,15 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
         };
     }-*/;
 
-//    public void testDummyGrpcTransport() {
-//        setupDhInternal().then(ignore -> {
-//            ConnectOptions connectOptions = new ConnectOptions();
-//            connectOptions.transportFactory = makeDummyTransportFactory();
-//            CoreClient coreClient = new CoreClient(localServer, connectOptions);
-//            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
-//                    .then(ignore2 -> Promise.resolve(coreClient));
-//        }).then(this::finish).catch_(this::report);
-//    }
+    public void ignore_testDummyGrpcTransport() {
+        setupDhInternal().then(ignore -> {
+            delayTestFinish(7102);
+            ConnectOptions connectOptions = new ConnectOptions();
+            connectOptions.transportFactory = makeDummyTransportFactory();
+            connectOptions.debug = true;
+            CoreClient coreClient = new CoreClient(localServer, connectOptions);
+            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                    .then(ignore2 -> Promise.resolve(coreClient));
+        }).then(this::finish).catch_(this::report);
+    }
 }
