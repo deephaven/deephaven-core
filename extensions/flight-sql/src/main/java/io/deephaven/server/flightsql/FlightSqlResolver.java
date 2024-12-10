@@ -669,13 +669,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                     new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, queryScopeTables);
 
             // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole
-            // operation
-            // if any of the TicketTable sources are refreshing.
+            // operation if any of the TicketTable sources are refreshing.
             final List<Table> refreshingTables = new ArrayList<>();
             for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
                 // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom
-                // functions,
-                // where we could conceivable have it produce EmptyTable, TimeTable, etc).
+                // functions, where we could conceivable have it produce EmptyTable, TimeTable, etc).
                 if (!(node instanceof TicketTable)) {
                     continue;
                 }
