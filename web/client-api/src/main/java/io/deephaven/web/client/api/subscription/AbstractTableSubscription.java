@@ -64,6 +64,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected enum Status {
         /** Waiting for some prerequisite before we can use it for the first time. */
         STARTING,
+        /** All prerequisites are met, waiting for the first snapshot to be returned. */
+        SUBSCRIPTION_REQUESTED,
         /** Successfully created, not waiting for any messages to be accurate. */
         ACTIVE,
         /** Waiting for an update to return from being active to being active again. */
@@ -117,7 +119,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             WebBarrageSubscription.ViewportChangedHandler viewportChangedHandler = this::onViewportChange;
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
-            status = Status.ACTIVE;
+            status = Status.SUBSCRIPTION_REQUESTED;
+
+            // In order to create the subscription, we need to already have the table resolved, so we know if it
+            // is a blink table or not. In turn, we can't be prepared to handle any messages from the server until
+            // we know this, so we can't race messages with this design.
             this.barrageSubscription = WebBarrageSubscription.subscribe(
                     subscriptionType, state, viewportChangedHandler, dataChangedHandler);
 
@@ -164,7 +170,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected abstract void sendFirstSubscriptionRequest();
 
-    protected void sendBarrageSubscriptionRequest(RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
+    protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport, JsArray<Column> columns,
+            Double updateIntervalMs,
             boolean isReverseViewport) {
         if (isClosed()) {
             if (failMsg == null) {
@@ -173,7 +180,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 throw new IllegalStateException("Can't change subscription, already failed: " + failMsg);
             }
         }
-        status = Status.PENDING_UPDATE;
+        if (status == Status.ACTIVE) {
+            status = Status.PENDING_UPDATE;
+        }
         this.columns = columns;
         this.viewportRowSet = viewport;
         this.columnBitSet = makeColumnBitset(columns);
