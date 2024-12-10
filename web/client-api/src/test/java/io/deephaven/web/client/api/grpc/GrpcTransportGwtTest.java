@@ -8,7 +8,7 @@ import jsinterop.base.JsPropertyMap;
 
 /**
  * Simple test to verify we can produce custom transports in JS. Only works with https, which means it can only
- * be run manually at this time or it will triviall succeed.
+ * be run manually at this time, or it will trivially succeed.
  */
 public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
     @Override
@@ -24,7 +24,6 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
             create: function(options) {
                 function pump(reader, res) {
                     reader.read().then(function(result) {
-                    debugger;
                         if (result.done) {
                             options.onEnd();
                         } else {
@@ -32,7 +31,6 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
                             pump(reader, res);
                         }
                     })['catch'](function(e) {
-                    debugger;
                         options.onEnd(e);
                     });
                 }
@@ -57,7 +55,6 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
                             }
                             return response;
                         })['catch'](function(e) {
-                        debugger;
                             options.onEnd(e);
                         });
                     },
@@ -104,14 +101,17 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
                     sendMessage: function(msgBytes) {
                         // empty payload
                         var empty = new $wnd.Uint8Array(5);
-                        var successTrailers = new $wnd.Uint8Array(5);
+                        // successful trailer payload
+                        var trailersString = 'grpc-status:0';
+                        var successTrailers = new $wnd.Uint8Array(5 + trailersString.length);
                         successTrailers[0] = 128;
-                        new TextEncoding('utf-8').encodeInto('grpc-status:1', successTrailers.subarray(1));
-
+                        successTrailers[4] = trailersString.length;
+                        new $wnd.TextEncoder('utf-8').encodeInto(trailersString, successTrailers.subarray(5));
                         $wnd.setTimeout(function() {
+                            // delay a bit, then send the empty messages and end the stream
                             options.onChunk(empty);
-                            debugger;
                             options.onChunk(successTrailers);
+                            options.onEnd();
                         }, 0);
                     },
                     finishSend: function() {
@@ -126,7 +126,7 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
         };
     }-*/;
 
-    public void ignore_testDummyGrpcTransport() {
+    public void testDummyGrpcTransport() {
         setupDhInternal().then(ignore -> {
             delayTestFinish(7102);
             ConnectOptions connectOptions = new ConnectOptions();
