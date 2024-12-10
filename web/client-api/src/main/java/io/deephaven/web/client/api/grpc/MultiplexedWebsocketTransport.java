@@ -17,10 +17,10 @@ import elemental2.dom.WebSocket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.TransportOptions;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,10 +32,22 @@ import java.util.Map;
  * equal, this transport should be preferred to the default grpc-websockets transport, and in turn the fetch based
  * transport is usually superior to this.
  */
-public class MultiplexedWebsocketTransport implements Transport {
+public class MultiplexedWebsocketTransport implements GrpcTransport {
 
     public static final String MULTIPLEX_PROTOCOL = "grpc-websockets-multiplex";
     public static final String SOCKET_PER_STREAM_PROTOCOL = "grpc-websockets";
+
+    public static class Factory implements GrpcTransportFactory {
+        @Override
+        public GrpcTransport create(GrpcTransportOptions options) {
+            return new MultiplexedWebsocketTransport(options);
+        }
+
+        @Override
+        public boolean getSupportsClientStreaming() {
+            return true;
+        }
+    }
 
     private static Uint8Array encodeASCII(String str) {
         Uint8Array encoded = new Uint8Array(str.length());
@@ -55,9 +67,9 @@ public class MultiplexedWebsocketTransport implements Transport {
 
     public static class HeaderFrame implements QueuedEntry {
         private final String path;
-        private final BrowserHeaders metadata;
+        private final JsPropertyMap<HeaderValueUnion> metadata;
 
-        public HeaderFrame(String path, BrowserHeaders metadata) {
+        public HeaderFrame(String path, JsPropertyMap<HeaderValueUnion> metadata) {
             this.path = path;
             this.metadata = metadata;
         }
@@ -66,9 +78,14 @@ public class MultiplexedWebsocketTransport implements Transport {
         public void send(WebSocket webSocket, int streamId) {
             final Uint8Array headerBytes;
             final StringBuilder str = new StringBuilder();
-            metadata.append("grpc-websockets-path", path);
-            metadata.forEach((key, value) -> {
-                str.append(key).append(": ").append(value.join(", ")).append("\r\n");
+            metadata.set("grpc-websockets-path", HeaderValueUnion.of(path));
+            metadata.forEach((key) -> {
+                HeaderValueUnion value = metadata.get(key);
+                if (value.isArray()) {
+                    str.append(key).append(": ").append(value.asArray().join(", ")).append("\r\n");
+                } else {
+                    str.append(key).append(": ").append(value.asString()).append("\r\n");
+                }
             });
             headerBytes = encodeASCII(str.toString());
             Int8Array payload = new Int8Array(headerBytes.byteLength + 4);
@@ -79,7 +96,7 @@ public class MultiplexedWebsocketTransport implements Transport {
 
         @Override
         public void sendFallback(Transport transport) {
-            transport.start(metadata);
+            transport.start(new BrowserHeaders(metadata));
         }
     }
 
@@ -201,16 +218,16 @@ public class MultiplexedWebsocketTransport implements Transport {
     private ActiveTransport transport;
     private final int streamId = nextStreamId++;
     private final List<QueuedEntry> sendQueue = new ArrayList<>();
-    private final TransportOptions options;
+    private final GrpcTransportOptions options;
     private final String path;
 
     private final JsLazy<Transport> alternativeTransport;
 
     private JsRunnable cleanup = JsRunnable.doNothing();
 
-    public MultiplexedWebsocketTransport(TransportOptions options, JsRunnable avoidMultiplexCallback) {
+    public MultiplexedWebsocketTransport(GrpcTransportOptions options) {
         this.options = options;
-        String url = options.getUrl();
+        String url = options.url.toString();
         URL urlWrapper = new URL(url);
         // preserve the path to send as metadata, but still talk to the server with that path
         path = urlWrapper.pathname.substring(1);
@@ -220,16 +237,13 @@ public class MultiplexedWebsocketTransport implements Transport {
         transport = ActiveTransport.get(url);
 
         // prepare a fallback
-        alternativeTransport = new JsLazy<>(() -> {
-            avoidMultiplexCallback.run();
-            return Grpc.WebsocketTransport.onInvoke().onInvoke(options);
-        });
+        alternativeTransport = new JsLazy<>(() -> Grpc.WebsocketTransport.onInvoke().onInvoke(options.originalOptions));
     }
 
     @Override
-    public void start(BrowserHeaders metadata) {
+    public void start(JsPropertyMap<HeaderValueUnion> metadata) {
         if (alternativeTransport.isAvailable()) {
-            alternativeTransport.get().start(metadata);
+            alternativeTransport.get().start(new BrowserHeaders(metadata));
             return;
         }
         this.transport.retain();
@@ -325,7 +339,7 @@ public class MultiplexedWebsocketTransport implements Transport {
             return;
         }
         // each grpc transport will handle this as an error
-        options.getOnEnd().onInvoke(new JsError("Unexpectedly closed " + Js.<CloseEvent>uncheckedCast(event).reason));
+        options.onEnd.onEnd(new JsError("Unexpectedly closed " + Js.<CloseEvent>uncheckedCast(event).reason));
         removeHandlers();
     }
 
@@ -345,9 +359,9 @@ public class MultiplexedWebsocketTransport implements Transport {
             closed = false;
         }
         if (streamId == this.streamId) {
-            options.getOnChunk().onInvoke(new Uint8Array(messageEvent.data, 4), false);
+            options.onChunk.onChunk(new Uint8Array(messageEvent.data, 4));
             if (closed) {
-                options.getOnEnd().onInvoke(null);
+                options.onEnd.onEnd(null);
                 removeHandlers();
             }
         }

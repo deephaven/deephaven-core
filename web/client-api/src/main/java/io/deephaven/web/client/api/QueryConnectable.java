@@ -7,11 +7,9 @@ import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.web.client.api.event.HasEventHandling;
-import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -246,12 +244,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     public abstract void notifyServerShutdown(TerminationNotificationResponse success);
 
-    public boolean useWebsockets() {
-        Boolean useWebsockets = getOptions().useWebsockets;
-        if (useWebsockets == null) {
-            useWebsockets = getServerUrl().startsWith("http:");
-        }
-        return useWebsockets;
+    public boolean supportsClientStreaming() {
+        return getOptions().transportFactory.getSupportsClientStreaming();
     }
 
     public <T> T createClient(BiFunction<String, Object, T> constructor) {
@@ -261,12 +255,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public RpcOptions makeRpcOptions() {
         RpcOptions options = RpcOptions.create();
         options.setDebug(getOptions().debug);
-        if (useWebsockets()) {
-            // Replace with our custom websocket impl, with fallback to the built-in one
-            options.setTransport(o -> new MultiplexedWebsocketTransport(o, () -> {
-                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
-            }));
-        }
+        options.setTransport(getOptions().transportFactory.adapt());
         return options;
     }
 }

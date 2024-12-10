@@ -986,7 +986,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(info.useWebsockets(), this::metadata, config::newTicketInt);
+        return new BiDiStream.Factory<>(info.supportsClientStreaming(), this::metadata, config::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
