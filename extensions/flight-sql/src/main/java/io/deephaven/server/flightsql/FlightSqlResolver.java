@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -93,6 +95,7 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -653,7 +656,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole operation
         // if any of the TicketTable sources are refreshing.
-        boolean hasRefreshingSource = false;
+        final List<Table> refreshingTables = new ArrayList<>();
         for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
             // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom functions,
             // where we could conceivable have it produce EmptyTable, TimeTable, etc).
@@ -665,19 +668,20 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                     .<Table>resolve(session, ByteBuffer.wrap(((TicketTable) node).ticket()), "table")
                     .get();
             if (sourceTable.isRefreshing()) {
-                hasRefreshingSource = true;
-                break;
+                refreshingTables.add(sourceTable);
             }
         }
+
+        final UpdateGraph updateGraph = refreshingTables.isEmpty()
+                ? null
+                : NotificationQueue.Dependency.getUpdateGraph(null, refreshingTables.toArray(new Table[0]));
 
         // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
         // io.deephaven.auth.ServiceAuthWiring
         // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
         try (
                 final SafeCloseable ignored = LivenessScopeStack.open();
-                final SafeCloseable ignored1 = hasRefreshingSource
-                        ? executionContext.getUpdateGraph().sharedLock().lockCloseable()
-                        : null) {
+                final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
             final Table table = tableSpec.logic()
                     .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
             if (table.isRefreshing()) {
