@@ -64,9 +64,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
             final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
             if (columnDef == null) {
-                throw new TableDataException("Partitioning column " + dhColName + " not found in table definition " +
-                        "but corresponding identity partitioning column " + icebergColName + " is present in the " +
-                        "partition spec, table definition: " + tableDef + ", partition spec: " + partitionSpec);
+                // Table definition provided by the user doesn't have this column, so skip.
+                continue;
             }
             identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
                     TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
