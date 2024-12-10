@@ -17,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Iceberg {@link TableLocationKeyFinder location finder} for tables with partitions that will discover data files from
@@ -53,24 +51,27 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
-        final AtomicInteger icebergIndex = new AtomicInteger(0);
-        // TODO (DH-18160): Improve support for handling non-identity transforms
-        identityPartitioningColumns = partitionSpec.fields().stream()
-                .filter(partitionField -> partitionField.transform().isIdentity())
-                .map(PartitionField::name)
-                .map(icebergColName -> {
-                    final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
-                    final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
-                    if (tableDef.getColumn(dhColName) == null) {
-                        throw new TableDataException("Partitioning column " + dhColName + " not found in table " +
-                                "definition but corresponding identity partitioning column " + icebergColName + " is " +
-                                "present in the partition spec, table definition: " + tableDef + ", partition spec: " +
-                                partitionSpec);
-                    }
-                    return new IdentityPartitioningColData(dhColName, TypeUtils.getBoxedType(columnDef.getDataType()),
-                            icebergIndex.getAndIncrement());
-                })
-                .collect(Collectors.toList());
+        final List<PartitionField> partitionFields = partitionSpec.fields();
+        final int numPartitionFields = partitionFields.size();
+        identityPartitioningColumns = new ArrayList<>(numPartitionFields);
+        for (int fieldId = 0; fieldId < numPartitionFields; ++fieldId) {
+            final PartitionField partitionField = partitionFields.get(fieldId);
+            if (!partitionField.transform().isIdentity()) {
+                // TODO (DH-18160): Improve support for handling non-identity transforms
+                continue;
+            }
+            final String icebergColName = partitionField.name();
+            final String dhColName = instructions.columnRenames().getOrDefault(icebergColName, icebergColName);
+            final ColumnDefinition<?> columnDef = tableDef.getColumn(dhColName);
+            if (columnDef == null) {
+                throw new TableDataException("Partitioning column " + dhColName + " not found in table definition " +
+                        "but corresponding identity partitioning column " + icebergColName + " is present in the " +
+                        "partition spec, table definition: " + tableDef + ", partition spec: " + partitionSpec);
+            }
+            identityPartitioningColumns.add(new IdentityPartitioningColData(dhColName,
+                    TypeUtils.getBoxedType(columnDef.getDataType()), fieldId));
+
+        }
     }
 
     @Override
