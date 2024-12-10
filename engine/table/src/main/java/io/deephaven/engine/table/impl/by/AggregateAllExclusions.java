@@ -55,6 +55,11 @@ public final class AggregateAllExclusions implements Visitor {
     }
 
     @Override
+    public void visit(AggSpecCountValues countValues) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecCountDistinct countDistinct) {
         out = Collections.emptySet();
     }
