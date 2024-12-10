@@ -3,21 +3,26 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
+import java.util.function.Function;
 
-import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.getNumLongsForBitPackOfSize;
+import static io.deephaven.extensions.barrage.chunk.BaseChunkWriter.getNumLongsForBitPackOfSize;
 
-public class BooleanChunkReader implements ChunkReader {
+public class BooleanChunkReader extends BaseChunkReader<WritableByteChunk<Values>> {
     private static final String DEBUG_NAME = "BooleanChunkReader";
 
     @FunctionalInterface
@@ -37,11 +42,41 @@ public class BooleanChunkReader implements ChunkReader {
         this.conversion = conversion;
     }
 
+    public <T> ChunkReader<WritableObjectChunk<T, Values>> transform(Function<Byte, T> transform) {
+        return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
+            try (final WritableByteChunk<Values> inner = BooleanChunkReader.this.readChunk(
+                    fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+
+                final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                        outChunk,
+                        Math.max(totalRows, inner.size()),
+                        WritableObjectChunk::makeWritableChunk,
+                        WritableChunk::asWritableObjectChunk);
+
+                if (outChunk == null) {
+                    // if we're not given an output chunk then we better be writing at the front of the new one
+                    Assert.eqZero(outOffset, "outOffset");
+                }
+
+                for (int ii = 0; ii < inner.size(); ++ii) {
+                    byte value = inner.get(ii);
+                    chunk.set(outOffset + ii, transform.apply(value));
+                }
+
+                return chunk;
+            }
+        };
+    }
+
     @Override
-    public WritableChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
-            int totalRows) throws IOException {
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+    public WritableByteChunk<Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
@@ -93,11 +128,10 @@ public class BooleanChunkReader implements ChunkReader {
         return chunk;
     }
 
-
     private static void useValidityBuffer(
             final ByteConversion conversion,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableByteChunk<Values> chunk,
             final int offset,
             final WritableLongChunk<Values> isValid) throws IOException {

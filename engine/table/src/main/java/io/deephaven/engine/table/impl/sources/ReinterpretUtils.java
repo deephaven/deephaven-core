@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import org.jetbrains.annotations.NotNull;
@@ -213,6 +214,27 @@ public class ReinterpretUtils {
     }
 
     /**
+     * If {@code columnDefinition.getDataType()} or {@code columnDefinition.getComponentType} are something that we
+     * prefer to handle as a primitive, do the appropriate conversion.
+     *
+     * @param columnDefinition The column definition to convert
+     * @return if possible, {@code columnDefinition} converted to a primitive, otherewise {@code columnDefinition}
+     */
+    @NotNull
+    public static ColumnDefinition<?> maybeConvertToPrimitive(@NotNull final ColumnDefinition<?> columnDefinition) {
+        final Class<?> dataType = ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType());
+        Class<?> componentType = columnDefinition.getComponentType();
+        if (componentType != null) {
+            componentType = ReinterpretUtils.maybeConvertToPrimitiveDataType(componentType);
+        }
+        if (columnDefinition.getDataType() == dataType
+                && columnDefinition.getComponentType() == componentType) {
+            return columnDefinition;
+        }
+        return columnDefinition.withDataType(dataType, componentType);
+    }
+
+    /**
      * If {@code source} is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source the source to convert
@@ -265,6 +287,7 @@ public class ReinterpretUtils {
         }
         if (dataType == Instant.class) {
             // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return ChunkType.Long;
         }
         return ChunkType.fromElementType(dataType);
@@ -283,6 +306,8 @@ public class ReinterpretUtils {
             return byte.class;
         }
         if (dataType == Instant.class || dataType == ZonedDateTime.class) {
+            // Note: not all ZonedDateTime sources are convertible to long, so this doesn't match column source behavior
+            // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
             return long.class;
         }
         return dataType;
