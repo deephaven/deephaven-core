@@ -143,7 +143,10 @@ public final class ServletAdapter {
             logger.log(FINEST, "[{0}] headers: {1}", new Object[] {logId, headers});
         }
 
-        Long timeoutNanos = headers.get(TIMEOUT_KEY);
+        // Always ignore grpc-timeout at this time, as the servlet timeout isn't being reset
+        // when the output stream is closed. See https://github.com/deephaven/deephaven-core/issues/6400
+        // for more information.
+        Long timeoutNanos = null; // headers.get(TIMEOUT_KEY);
         if (timeoutNanos == null) {
             timeoutNanos = 0L;
         }
