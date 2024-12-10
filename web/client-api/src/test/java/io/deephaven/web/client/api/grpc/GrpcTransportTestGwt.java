@@ -13,7 +13,7 @@ import jsinterop.base.JsPropertyMap;
  * Simple test to verify we can produce custom transports in JS. Only works with https, which means it can only be run
  * manually at this time, or it will trivially succeed.
  */
-public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
+public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";
