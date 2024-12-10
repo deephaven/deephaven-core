@@ -664,9 +664,10 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
                 continue;
             }
             // We know that all TicketTables currently produced by Flight SQL will be global scope tickets
-            final Table sourceTable = scopeTicketResolver
-                    .<Table>resolve(session, ByteBuffer.wrap(((TicketTable) node).ticket()), "table")
-                    .get();
+            final byte[] ticket = ((TicketTable) node).ticket();
+            // Skip over "s/" prefix.
+            final String variableName = new String(ticket, 2, ticket.length - 2);
+            final Table sourceTable = Objects.requireNonNull(queryScopeTables.get(variableName));
             if (sourceTable.isRefreshing()) {
                 refreshingTables.add(sourceTable);
             }
