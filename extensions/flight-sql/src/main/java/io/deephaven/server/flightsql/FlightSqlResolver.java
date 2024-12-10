@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -33,6 +35,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.util.ByteHelper;
+import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
@@ -92,6 +96,7 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -642,24 +647,84 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         void release();
     }
 
-    private Table executeSqlQuery(SessionState session, String sql) {
+    private Table executeSqlQuery(String sql) {
         // See SQLTODO(catalog-reader-implementation)
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        // noinspection unchecked,rawtypes
-        final Map<String, Table> queryScopeTables =
-                (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
-        final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
-        // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
-        // io.deephaven.auth.ServiceAuthWiring
-        // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization logic
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final QueryScope queryScope = executionContext.getQueryScope();
+
+        // We aren't managing the liveness of Tables that come verbatim (authorization un-transformed) from the query
+        // scope. In the case where they either are already not live, or become not live by the time the operation logic
+        // is executed, an appropriate exception will be thrown. While this is a liveness race, it isn't technically
+        // much different than a liveness race possible via ScopeTicketResolver.resolve.
+        //
+        // The proper way to do this would be to re-model the table execution logic of GrpcTableOperation (gRPC) into a
+        // QST form, whereby table dependencies are presented as properly-scoped, liveness-managed Exports for the
+        // duration of the operation.
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table table = tableSpec.logic()
-                    .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, session));
-            if (table.isRefreshing()) {
-                table.retainReference();
+            final Map<String, Table> queryScopeTables =
+                    queryScope.toMap(o -> queryScopeAuthorizedTableMapper(queryScope, o), (n, t) -> t != null);
+            final TableSpec tableSpec =
+                    Sql.parseSql(sql, queryScopeTables, TableCreatorScopeTickets::ticketTable, null);
+            final TableCreator<Table> tableCreator =
+                    new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, queryScopeTables);
+
+            // We could consider doing finer-grained sharedLock in the future; right now, taking it for the whole
+            // operation if any of the TicketTable sources are refreshing.
+            final List<Table> refreshingTables = new ArrayList<>();
+            for (final TableSpec node : ParentsVisitor.reachable(List.of(tableSpec))) {
+                // Of the source tables, SQL can produce a NewTable or a TicketTable (until we introduce custom
+                // functions, where we could conceivable have it produce EmptyTable, TimeTable, etc).
+                if (!(node instanceof TicketTable)) {
+                    continue;
+                }
+                final Table sourceTable = tableCreator.of((TicketTable) node);
+                if (sourceTable.isRefreshing()) {
+                    refreshingTables.add(sourceTable);
+                }
             }
-            return table;
+
+            final UpdateGraph updateGraph = refreshingTables.isEmpty()
+                    ? null
+                    : NotificationQueue.Dependency.getUpdateGraph(null, refreshingTables.toArray(new Table[0]));
+
+            // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
+            // io.deephaven.auth.ServiceAuthWiring
+            // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization
+            // logic
+            try (final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
+                final Table table = tableSpec.logic().create(tableCreator);
+                if (table.isRefreshing()) {
+                    table.retainReference();
+                }
+                return table;
+            }
         }
+    }
+
+    private Table queryScopeTableMapper(QueryScope queryScope, Object object) {
+        if (object == null) {
+            return null;
+        }
+        object = queryScope.unwrapObject(object);
+        if (!(object instanceof Table)) {
+            return null;
+        }
+        return (Table) object;
+    }
+
+    private Table queryScopeAuthorizedTableMapper(QueryScope queryScope, Object object) {
+        final Table table = queryScopeTableMapper(queryScope, object);
+        if (table == null) {
+            return null;
+        }
+        Table transform = authorization.transform(table);
+        if (transform != table) {
+
+        }
+
+
+
+        return table == null ? null : transform;
     }
 
     /**
@@ -841,7 +906,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
         protected void executeSql(String sql) {
             try {
-                table = executeSqlQuery(session, sql);
+                table = executeSqlQuery(sql);
             } catch (SqlParseException e) {
                 throw error(Code.INVALID_ARGUMENT, "query can't be parsed", e);
             } catch (UnsupportedSqlOperation e) {
@@ -1319,8 +1384,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
         private Table getTables(boolean includeSchema, QueryScope queryScope, Map<String, Object> attributes,
                 Predicate<String> tableNameFilter) {
             Objects.requireNonNull(attributes);
-            final Map<String, Table> queryScopeTables =
-                    (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
+            // Note: _not_ using queryScopeAuthorizedTable mapper; we can have a more efficient implementation when
+            // !includeSchema that only needs to check authorization.isDeniedAccess.
+            final Map<String, Table> queryScopeTables = queryScope.toMap(
+                    o -> queryScopeTableMapper(queryScope, o),
+                    (tableName, table) -> table != null && tableNameFilter.test(tableName));
             final int size = queryScopeTables.size();
             final String[] catalogNames = new String[size];
             final String[] dbSchemaNames = new String[size];
@@ -1330,9 +1398,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             int count = 0;
             for (Entry<String, Table> e : queryScopeTables.entrySet()) {
                 final String tableName = e.getKey();
-                if (!tableNameFilter.test(tableName)) {
-                    continue;
-                }
                 final Schema schema;
                 if (includeSchema) {
                     final Table table = authorization.transform(e.getValue());

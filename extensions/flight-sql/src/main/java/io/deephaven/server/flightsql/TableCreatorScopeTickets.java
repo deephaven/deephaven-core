@@ -3,31 +3,35 @@
 //
 package io.deephaven.server.flightsql;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreatorDelegate;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.server.console.ScopeTicketResolver;
-import io.deephaven.server.session.SessionState;
 
-import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Objects;
 
 final class TableCreatorScopeTickets extends TableCreatorDelegate<Table> {
 
-    private final ScopeTicketResolver scopeTicketResolver;
-    private final SessionState session;
+    static TicketTable ticketTable(String variableName) {
+        return TicketTable.fromQueryScopeField(variableName);
+    }
 
-    TableCreatorScopeTickets(TableCreator<Table> delegate, ScopeTicketResolver scopeTicketResolver,
-            SessionState session) {
+    private final Map<String, Table> map;
+
+    TableCreatorScopeTickets(TableCreator<Table> delegate, Map<String, Table> map) {
         super(delegate);
-        this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
-        this.session = session;
+        this.map = Objects.requireNonNull(map);
     }
 
     @Override
     public Table of(TicketTable ticketTable) {
-        return scopeTicketResolver.<Table>resolve(session, ByteBuffer.wrap(ticketTable.ticket()),
-                TableCreatorScopeTickets.class.getSimpleName()).get();
+        final byte[] ticket = ticketTable.ticket();
+        Assert.gt(ticket.length, "ticket.length", 2);
+        Assert.eq(ticket[0], "ticket[0]", (byte) 's');
+        Assert.eq(ticket[1], "ticket[1]", (byte) '/');
+        final String variableName = new String(ticket, 2, ticket.length - 2);
+        return Objects.requireNonNull(map.get(variableName));
     }
 }
