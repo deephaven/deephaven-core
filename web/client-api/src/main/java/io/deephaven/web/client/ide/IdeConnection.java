@@ -73,7 +73,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
                     @Override
                     public GrpcTransport create(GrpcTransportOptions options) {
                         return GrpcTransport
-                                .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object()).onInvoke((TransportOptions) options));
+                                .from((Transport) Grpc.FetchReadableStreamTransport.onInvoke(new Object())
+                                        .onInvoke((TransportOptions) options));
                     }
 
                     @Override

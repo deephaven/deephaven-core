@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.grpc;
 
 import elemental2.promise.Promise;
@@ -7,8 +10,8 @@ import io.deephaven.web.client.api.CoreClient;
 import jsinterop.base.JsPropertyMap;
 
 /**
- * Simple test to verify we can produce custom transports in JS. Only works with https, which means it can only
- * be run manually at this time, or it will trivially succeed.
+ * Simple test to verify we can produce custom transports in JS. Only works with https, which means it can only be run
+ * manually at this time, or it will trivially succeed.
  */
 public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
     @Override
@@ -79,16 +82,16 @@ public class GrpcTransportGwtTest extends AbstractAsyncGwtTestCase {
             delayTestFinish(7101);
             ConnectOptions connectOptions = new ConnectOptions();
             connectOptions.transportFactory = makeFetchTransportFactory();
-                    CoreClient coreClient = new CoreClient(localServer, connectOptions);
+            CoreClient coreClient = new CoreClient(localServer, connectOptions);
             return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
                     .then(ignore2 -> Promise.resolve(coreClient));
         }).then(this::finish).catch_(this::report);
     }
 
     /**
-     * Dummy transport that just sends a single message and receives a single message. Doesn't actually talk to
-     * the server, headers are empty, and the message is always 5 byte proto payload "no data", followed by
-     * trailers signifying success.
+     * Dummy transport that just sends a single message and receives a single message. Doesn't actually talk to the
+     * server, headers are empty, and the message is always 5 byte proto payload "no data", followed by trailers
+     * signifying success.
      */
     private native GrpcTransportFactory makeDummyTransportFactory() /*-{
         return {
