@@ -641,7 +641,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private Table executeSqlQuery(String sql) {
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final QueryScope queryScope = executionContext.getQueryScope();
         // We aren't managing the liveness of Tables that come verbatim (authorization un-transformed) from the query
         // scope (we are ensuring that any transformed, or operation created, tables don't escape to a higher-layer's
         // liveness scope). In the case where they either are already not live, or become not live by the time the
@@ -685,7 +686,11 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
             // io.deephaven.auth.ServiceAuthWiring checks.
             // TODO(deephaven-core#6307): Declarative server-side table execution logic that preserves authorization
             // logic
-            try (final SafeCloseable ignored1 = updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
+            try (
+                    final SafeCloseable ignored0 =
+                            updateGraph == null ? null : executionContext.withUpdateGraph(updateGraph).open();
+                    final SafeCloseable ignored1 =
+                            updateGraph == null ? null : updateGraph.sharedLock().lockCloseable()) {
                 final Table table = tableSpec.logic().create(tableCreator);
                 if (table.isRefreshing()) {
                     table.retainReference();
