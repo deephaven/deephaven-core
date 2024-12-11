@@ -11,6 +11,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import dagger.Module;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -86,6 +87,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -891,6 +894,55 @@ public class FlightSqlTest extends DeephavenApiServerTestBase {
         final String type = "SomeFakeAction";
         final Action action = new Action(type, new byte[0]);
         actionNoResolver(() -> doAction(action), type);
+    }
+
+    @Test
+    public void refreshingTableTest() throws Exception {
+        // Set a start time so we can test we get out the expected number of rows
+        final Instant startTime = Instant.now().minus(Duration.ofHours(1));
+        final Table tt1 = TableTools.timeTableBuilder()
+                .startTime(startTime)
+                .period(Duration.ofSeconds(1))
+                .build()
+                .view("Timestamp1=Timestamp", "Id=ii % 11")
+                .lastBy("Id");
+        final Table tt2 = TableTools.timeTableBuilder()
+                .startTime(startTime)
+                .period(Duration.ofSeconds(5))
+                .build()
+                .view("Timestamp2=Timestamp", "Id=ii % 11")
+                .lastBy("Id");
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        queryScope.putParam("my_table_1", tt1);
+        queryScope.putParam("my_table_2", tt2);
+        try {
+            final String query = "SELECT\n" +
+                    "  my_table_1.Id,\n" +
+                    "  my_table_1.Timestamp1,\n" +
+                    "  my_table_2.Timestamp2\n" +
+                    "FROM\n" +
+                    "  my_table_1\n" +
+                    "  INNER JOIN my_table_2 ON my_table_1.Id = my_table_2.Id";
+            {
+                final FlightInfo info = flightSqlClient.execute(query);
+                consume(info, 1, 11, false);
+            }
+            {
+                final PreparedStatement prepared = flightSqlClient.prepare(query);
+                {
+                    final FlightInfo info = prepared.execute();
+                    consume(info, 1, 11, false);
+                }
+                {
+                    final FlightInfo info = prepared.execute();
+                    consume(info, 1, 11, false);
+                }
+            }
+        } finally {
+            queryScope.putParam("my_table_2", null);
+            queryScope.putParam("my_table_1", null);
+        }
+
     }
 
     private Result doAction(Action action) {
