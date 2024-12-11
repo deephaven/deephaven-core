@@ -40,7 +40,6 @@ import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.auth.AuthorizationProvider;
-import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.CommandResolver;
 import io.deephaven.server.session.SessionState;
@@ -170,10 +169,6 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @VisibleForTesting
     static final Schema DATASET_SCHEMA_SENTINEL = new Schema(List.of(Field.nullable("DO_NOT_USE", Utf8.INSTANCE)));
 
-    // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all the
-    // TicketResolvers).
-    // private final TicketRouter router;
-    private final ScopeTicketResolver scopeTicketResolver;
     private final Scheduler scheduler;
     private final Authorization authorization;
     private final KeyedObjectHashMap<ByteString, QueryBase> queries;
@@ -182,10 +177,8 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     @Inject
     public FlightSqlResolver(
             final AuthorizationProvider authProvider,
-            final ScopeTicketResolver scopeTicketResolver,
             final Scheduler scheduler) {
         this.authorization = Objects.requireNonNull(authProvider.getTicketResolverAuthorization());
-        this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.queries = new KeyedObjectHashMap<>(QUERY_KEY);
         this.preparedStatements = new KeyedObjectHashMap<>(PREPARED_STATEMENT_KEY);
@@ -648,8 +641,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
     }
 
     private Table executeSqlQuery(String sql) {
-        final ExecutionContext executionContext = ExecutionContext.getContext();
-        final QueryScope queryScope = executionContext.getQueryScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         // We aren't managing the liveness of Tables that come verbatim (authorization un-transformed) from the query
         // scope (we are ensuring that any transformed, or operation created, tables don't escape to a higher-layer's
         // liveness scope). In the case where they either are already not live, or become not live by the time the
@@ -716,17 +708,7 @@ public final class FlightSqlResolver implements ActionResolver, CommandResolver 
 
     private Table queryScopeAuthorizedTableMapper(QueryScope queryScope, Object object) {
         final Table table = queryScopeTableMapper(queryScope, object);
-        if (table == null) {
-            return null;
-        }
-        Table transform = authorization.transform(table);
-        if (transform != table) {
-
-        }
-
-
-
-        return table == null ? null : transform;
+        return table == null ? null : authorization.transform(table);
     }
 
     /**
