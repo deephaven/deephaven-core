@@ -5,9 +5,11 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 
+import java.util.Optional;
+
 public interface ExposesChunkFilter {
     /**
      * Get the chunk filter for this filter.
      */
-    ChunkFilter chunkFilter();
+    Optional<ChunkFilter> chunkFilter();
 }

@@ -50,8 +50,8 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl implements Exp
     }
 
     @Override
-    public ChunkFilter chunkFilter() {
-        return chunkFilter;
+    public Optional<ChunkFilter> chunkFilter() {
+        return Optional.of(chunkFilter);
     }
 
     public static WhereFilter makeBigDecimalRange(String columnName, String val) {

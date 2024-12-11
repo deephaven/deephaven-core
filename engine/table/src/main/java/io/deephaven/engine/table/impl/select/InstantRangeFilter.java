@@ -105,5 +105,20 @@ public class InstantRangeFilter extends LongRangeFilter {
                 longFilter.filter(writableLongChunk, keys, results);
             }
         }
+
+        @Override
+        public int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results) {
+            try (final WritableLongChunk<Values> writableLongChunk =
+                    WritableLongChunk.makeWritableChunk(values.size())) {
+
+                final ObjectChunk<Instant, ? extends Values> objectValues = values.asObjectChunk();
+                for (int ii = 0; ii < values.size(); ++ii) {
+                    final Instant instant = objectValues.get(ii);
+                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(instant));
+                }
+                writableLongChunk.setSize(values.size());
+                return longFilter.filter(writableLongChunk, results);
+            }
+        }
     }
 }

@@ -170,18 +170,43 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
             return WhereFilterPatternImpl.this.matches(value);
         }
 
+        /*
+         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
+         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
+         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
+         */
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -197,12 +222,32 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -218,12 +263,32 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -239,19 +304,39 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
     private class NotMatches implements ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
-            return !matches(value);
+            return !WhereFilterPatternImpl.this.matches(value);
         }
 
         @Override
@@ -260,19 +345,39 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
     private class NotMatchesPatternInverted implements ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
-            return !matchesPatternInverted(value);
+            return !WhereFilterPatternImpl.this.matchesPatternInverted(value);
         }
 
         @Override
@@ -281,19 +386,39 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
     private class NotFind implements ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
-            return !find(value);
+            return !WhereFilterPatternImpl.this.find(value);
         }
 
         @Override
@@ -302,19 +427,39 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
     private class NotFindPatternInverted implements ObjectChunkFilter<CharSequence> {
         @Override
         public boolean matches(CharSequence value) {
-            return !findPatternInverted(value);
+            return !WhereFilterPatternImpl.this.findPatternInverted(value);
         }
 
         @Override
@@ -323,12 +468,32 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<CharSequence, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 }

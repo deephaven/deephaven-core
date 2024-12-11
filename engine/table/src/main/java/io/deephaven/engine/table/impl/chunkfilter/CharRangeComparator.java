@@ -32,9 +32,9 @@ public class CharRangeComparator {
         }
 
         /*
-         * NOTE: this method is identically repeated for every class below. This is to allow a single virtual lookup per
-         * filtered chunk, rather than making virtual calls to matches() for every value in the chunk. This is a
-         * performance optimization that helps at least on JVM <= 21. It may not be always necessary on newer JVMs.
+         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
+         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
+         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
          */
         @Override
         public void filter(
@@ -42,12 +42,32 @@ public class CharRangeComparator {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -67,12 +87,32 @@ public class CharRangeComparator {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -92,12 +132,32 @@ public class CharRangeComparator {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -117,12 +177,32 @@ public class CharRangeComparator {
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(charChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 

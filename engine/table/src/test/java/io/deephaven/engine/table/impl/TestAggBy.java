@@ -157,6 +157,32 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(0L, counts.get(0));
         assertEquals(0L, counts.get(1));
 
+
+        doubleCounted = table.aggBy(
+                List.of(
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhereOneOf("filter3", "B >= 5", "B == 3"),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false")
+                // Multi-column filtering not currently supported
+                // AggCountWhere("and2", "B >= 5", "C == 1"),
+                // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
+                ));
+        show(doubleCounted);
+        assertEquals(1, doubleCounted.size());
+
+        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(7L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(10L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
         // It would be nice to do a min and a max as well,
@@ -219,7 +245,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new CharGenerator('a', 'Z'),
+                        new CharGenerator('A', 'z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),

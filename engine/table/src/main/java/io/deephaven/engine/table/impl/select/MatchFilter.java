@@ -310,11 +310,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     private ChunkFilter chunkFilter;
 
     @Override
-    public ChunkFilter chunkFilter() {
+    public Optional<ChunkFilter> chunkFilter() {
         if (chunkFilter == null) {
             chunkFilter = ChunkMatchFilterFactory.getChunkFilter(columnType, caseInsensitive, invertMatch, values);
         }
-        return chunkFilter;
+        return Optional.of(chunkFilter);
     }
 
     @Override

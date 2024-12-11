@@ -82,7 +82,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 + (lowerInclusive ? "=" : "") + pivot + ")";
     }
 
-    private static class GeqComparableChunkFilter implements ChunkFilter {
+    private static class GeqComparableChunkFilter implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private GeqComparableChunkFilter(Comparable<?> pivot) {
@@ -90,21 +90,51 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.geq(value, pivot);
+        }
+
+        /*
+         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
+         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
+         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (ObjectComparisons.geq(value, pivot)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
+        }
     }
 
-    private static class LeqComparableChunkFilter implements ChunkFilter {
+    private static class LeqComparableChunkFilter implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private LeqComparableChunkFilter(Comparable<?> pivot) {
@@ -112,21 +142,46 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.leq(value, pivot);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (ObjectComparisons.leq(value, pivot)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
+        }
     }
 
-    private static class GtComparableChunkFilter implements ChunkFilter {
+    private static class GtComparableChunkFilter implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private GtComparableChunkFilter(Comparable<?> pivot) {
@@ -134,21 +189,46 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.gt(value, pivot);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (ObjectComparisons.gt(value, pivot)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
+        }
     }
 
-    private static class LtComparableChunkFilter implements ChunkFilter {
+    private static class LtComparableChunkFilter implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private LtComparableChunkFilter(Comparable<?> pivot) {
@@ -156,17 +236,42 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.lt(value, pivot);
+        }
+
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (ObjectComparisons.lt(value, pivot)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 

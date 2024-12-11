@@ -91,7 +91,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
                 (upperInclusive ? "]" : ")") + ")";
     }
 
-    private static class InclusiveInclusiveComparableChunkFilter implements ChunkFilter {
+    private static class InclusiveInclusiveComparableChunkFilter
+            implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -101,29 +102,52 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) >= 0;
+        }
+
+        /*
+         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
+         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
+         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
+         */
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (meetsLowerBound(value) && meetsUpperBound(value)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
 
-        boolean meetsLowerBound(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) <= 0;
-        }
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
-        boolean meetsUpperBound(Comparable<?> value) {
-            return ObjectComparisons.compare(upper, value) >= 0;
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
-    private static class InclusiveExclusiveComparableChunkFilter implements ChunkFilter {
+    private static class InclusiveExclusiveComparableChunkFilter
+            implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -132,31 +156,48 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
+        @Override
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) > 0;
+        }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (meetsLowerBound(value) && meetsUpperBound(value)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
 
-        boolean meetsLowerBound(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) <= 0;
-        }
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
-        boolean meetsUpperBound(Comparable<?> value) {
-            return ObjectComparisons.compare(upper, value) > 0;
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
-    private static class ExclusiveInclusiveComparableChunkFilter implements ChunkFilter {
+    private static class ExclusiveInclusiveComparableChunkFilter
+            implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -165,31 +206,48 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
+        @Override
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) >= 0;
+        }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (meetsLowerBound(value) && meetsUpperBound(value)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
 
-        boolean meetsLowerBound(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) < 0;
-        }
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
-        boolean meetsUpperBound(Comparable<?> value) {
-            return ObjectComparisons.compare(upper, value) >= 0;
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
-    private static class ExclusiveExclusiveComparableChunkFilter implements ChunkFilter {
+    private static class ExclusiveExclusiveComparableChunkFilter
+            implements ChunkFilter.ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -198,27 +256,43 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
+        @Override
+        public boolean matches(Comparable<?> value) {
+            return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) > 0;
+        }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Comparable<?> value = objectChunk.get(ii);
-                if (meetsLowerBound(value) && meetsUpperBound(value)) {
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
 
-        boolean meetsLowerBound(Comparable<?> value) {
-            return ObjectComparisons.compare(lower, value) < 0;
-        }
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
 
-        boolean meetsUpperBound(Comparable<?> value) {
-            return ObjectComparisons.compare(upper, value) > 0;
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 

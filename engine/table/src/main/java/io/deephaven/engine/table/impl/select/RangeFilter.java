@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A filter for comparable types (including Instant) for {@link Condition} values: <br>
@@ -266,7 +267,7 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
     }
 
     @Override
-    public ChunkFilter chunkFilter() {
+    public Optional<ChunkFilter> chunkFilter() {
         Assert.eqTrue(filter instanceof ExposesChunkFilter, "filter instanceof ExposesChunkFilter");
         return ((ExposesChunkFilter) filter).chunkFilter();
     }

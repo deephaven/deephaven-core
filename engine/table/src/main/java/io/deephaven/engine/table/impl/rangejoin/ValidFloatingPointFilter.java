@@ -94,19 +94,43 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
             return !Double.isNaN(value) && value != NULL_DOUBLE;
         }
 
-
+        /*
+         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
+         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
+         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
+         */
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(doubleChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
         }
     }
 
@@ -121,21 +145,39 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
             return !Float.isNaN(value) && value != NULL_FLOAT;
         }
 
-
         @Override
         public void filter(
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
             final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = floatChunk.size();
+
             results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
+            for (int ii = 0; ii < len; ++ii) {
                 if (matches(floatChunk.get(ii))) {
                     results.add(keys.get(ii));
                 }
             }
         }
 
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = floatChunk.size();
+
+            int count = 0;
+            // ideally branchless implementation
+            for (int ii = 0; ii < len; ++ii) {
+                boolean result = results.get(ii);
+                boolean newResult = result & matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                count += result == newResult ? 0 : 1;
+            }
+            return count;
+        }
     }
 
     @Override
