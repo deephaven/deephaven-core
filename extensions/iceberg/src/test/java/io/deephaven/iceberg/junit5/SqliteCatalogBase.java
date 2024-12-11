@@ -754,14 +754,7 @@ public abstract class SqliteCatalogBase {
                 "DoublePC = (double) 4.0",
                 "LocalDatePC = LocalDate.parse(`2023-10-01`)")
                 .moveColumns(7, "data");
-
-        // TODO (deephaven-core#6419) Dropping the local data column since it is not supported on the read side.
-        // Remove this when the issue is fixed.
-        final TableDefinition tableDefinitionWithoutLocalDate = fromIceberg.dropColumns("LocalDatePC").getDefinition();
-        final Table fromIcebergWithoutLocalDate = tableAdapter.table(IcebergReadInstructions.builder()
-                .tableDefinition(tableDefinitionWithoutLocalDate)
-                .build());
-        assertTableEquals(expected.dropColumns("LocalDatePC"), fromIcebergWithoutLocalDate);
+        assertTableEquals(expected, fromIceberg);
     }
 
     @Test
