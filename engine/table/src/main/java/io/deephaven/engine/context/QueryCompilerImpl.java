@@ -1004,7 +1004,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }
         });
 
-        return wantRetry;
+        return wantRetry && !toRetry.isEmpty();
     }
 
     /**
