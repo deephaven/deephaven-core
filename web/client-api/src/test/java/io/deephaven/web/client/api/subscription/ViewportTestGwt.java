@@ -93,6 +93,35 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testChangePendingViewport() {
+        connect(tables)
+                .then(table("staticTable"))
+                .then(table -> {
+                    delayTestFinish(5001);
+
+                    table.setViewport(0, 25, null);
+                    assertEquals(100.0, table.getSize());
+                    return Promise.resolve(table);
+                })
+                .then(table -> {
+                    assertEquals(100.0, table.getSize());
+                    table.setViewport(5, 30, null);
+                    assertEquals(100.0, table.getSize());
+                    return assertUpdateReceived(table, viewport -> {
+                        assertEquals(100.0, table.getSize());
+
+                        assertEquals(5d, viewport.getOffset());
+                        assertEquals(26, viewport.getRows().length);
+                    }, 2500);
+                })
+                .then(table -> {
+                    assertEquals(100.0, table.getSize());
+                    table.close();
+                    return null;
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     // TODO: https://deephaven.atlassian.net/browse/DH-11196
     public void ignore_testViewportOnGrowingTable() {
         connect(tables)

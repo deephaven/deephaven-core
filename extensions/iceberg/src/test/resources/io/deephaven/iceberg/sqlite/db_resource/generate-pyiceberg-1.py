@@ -1,3 +1,7 @@
+'''
+See TESTING.md for how to run this script.
+'''
+
 from pyiceberg.schema import Schema
 from pyiceberg.types import NestedField, StringType, DoubleType
 from pyiceberg.catalog.sql import SqlCatalog
