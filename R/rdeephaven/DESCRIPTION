@@ -1,7 +1,7 @@
 Package: rdeephaven
 Type: Package
 Title: R Client for Deephaven Core
-Version: 0.37.1
+Version: 0.37.2
 Date: 2023-05-12
 Author: Deephaven Data Labs
 Maintainer: Alex Peters <alexpeters@deephaven.io>
