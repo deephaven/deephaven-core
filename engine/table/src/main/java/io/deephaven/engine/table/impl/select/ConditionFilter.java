@@ -638,9 +638,10 @@ public class ConditionFilter extends AbstractConditionFilter {
                     .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
                     .append(".get(__my_i__);\n");
         }
-        indenter.indent(classBody, "final boolean __newResult = __result & (" + result.getConvertedExpression() + ");\n" +
-                "__results.set(__my_i__, __newResult);\n" +
-                "__count += __result == __newResult ? 0 : 1;");
+        indenter.indent(classBody,
+                "final boolean __newResult = __result & (" + result.getConvertedExpression() + ");\n" +
+                        "__results.set(__my_i__, __newResult);\n" +
+                        "__count += __result == __newResult ? 0 : 1;");
 
         indenter.decreaseLevel();
         indenter.indent(classBody,
