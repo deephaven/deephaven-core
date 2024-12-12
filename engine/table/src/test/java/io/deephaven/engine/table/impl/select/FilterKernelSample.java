@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.chunkattributes.*;
 import java.lang.*;
 import java.util.*;
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -14,6 +15,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -101,5 +103,22 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
             }
         }
         return __context.resultChunk;
+    }
+
+    @Override
+    public int filter(Context __context, Chunk[] __inputChunks, int __chunkSize, WritableBooleanChunk<Values> __results) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __result = __results.get(__my_i__);
+            final short v1 =  (short)__columnChunk0.get(__my_i__);
+            final double v2 =  (double)__columnChunk1.get(__my_i__);
+            final boolean __newResult = __result & ("foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3));
+            __results.set(__my_i__, __newResult);
+            __count += __result == __newResult ? 0 : 1;
+        }
+        return __count;
     }
 }

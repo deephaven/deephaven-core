@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.chunkattributes.*;
 import java.lang.*;
 import java.util.*;
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -14,6 +15,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -99,5 +101,18 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
             }
         }
         return __context.resultChunk;
+    }
+
+    @Override
+    public int filter(Context __context, Chunk[] __inputChunks, int __chunkSize, WritableBooleanChunk<Values> __results) {
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __result = __results.get(__my_i__);
+            final boolean __newResult = __result & (eq(v1_.size(), v2_.size()));
+            __results.set(__my_i__, __newResult);
+            __count += __result == __newResult ? 0 : 1;
+        }
+        return __count;
     }
 }

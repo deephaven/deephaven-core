@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.select.python;
 
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
@@ -58,5 +60,27 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             }
         }
         return context.resultChunk;
+    }
+
+    @Override
+    public int filter(Context context, Chunk[] inputChunks, int chunkSize, WritableBooleanChunk<Values> results) {
+        FillContextPython fillContextPython = context.getKernelContext();
+        fillContextPython.resolveColumnChunks(inputChunks, chunkSize);
+
+        final boolean[] pyResults = function
+                .call(boolean[].class, CALL_METHOD, fillContextPython.getChunkedArgTypes(),
+                        fillContextPython.getChunkedArgs());
+        if (chunkSize > pyResults.length) {
+            throw new IllegalStateException(
+                    "FilterKernelPythonChunkedFunction returned results are not the proper size");
+        }
+        int count = 0;
+        for (int i = 0; i < chunkSize; ++i) {
+            boolean result = results.get(i);
+            boolean newResult = result & pyResults[i];
+            results.set(i, newResult);
+            count += result == newResult ? 0 : 1;
+        }
+        return count;
     }
 }

@@ -4,9 +4,14 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -262,7 +267,29 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return filter.filter(selection, fullSet, table, usePrev, formula, params);
     }
 
-    protected abstract Filter getFilter(Table table, RowSet fullSet)
+    // /**
+    // * Filter a chunk of values, setting parallel values in results to {@code false} when the filter result is
+    // * {@code false}. The filter is not evaluated for values that are already {@code false} in the results chunk.
+    // * <p>
+    // * To use this method effectively, the results chunk should be initialized to {@code true} before the first call.
+    // * Successive calls will have the effect of AND'ing the filter results with the existing results.
+    // *
+    // * @param values the values to filter
+    // * @param results a boolean chunk containing the result of the filter
+    // *
+    // * @return the number of values that were set to {@code false} during this call.
+    // */
+    // public int filter(Chunk<? extends Values>[] values, WritableBooleanChunk<Values> results) {
+    // final Filter filter;
+    // try {
+    // filter = getFilter(table, fullSet);
+    // } catch (Exception e) {
+    // throw new RuntimeException("Failed to instantiate filter class", e);
+    // }
+    // return filter.filter(selection, fullSet, table, usePrev, formula, params);
+    // }
+
+    public abstract Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
     /**
@@ -343,6 +370,31 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 boolean usePrev,
                 String formula,
                 QueryScopeParam<?>... params);
+
+        /**
+         * Create a new context for this filter, must be closed after use.
+         */
+        ConditionFilter.FilterKernel.Context getContext(int chunkSize);
+
+        /**
+         * Filter a chunk of values and copy the matching row keys to the returned chunk.
+         */
+        LongChunk<OrderedRowKeys> filter(
+                ConditionFilter.FilterKernel.Context context,
+                LongChunk<OrderedRowKeys> inputKeys,
+                Chunk<? extends Values>[] valueChunks);
+
+        /**
+         * Filter a chunk of values, setting parallel values in results to {@code false} when the filter result is
+         * {@code false}. The filter is not evaluated for values that are already {@code false} in the results chunk.
+         *
+         * @return the number of values that were set to {@code false} during this call.
+         */
+        int filter(
+                ConditionFilter.FilterKernel.Context context,
+                Chunk<? extends Values>[] valueChunks,
+                int chunkSize,
+                WritableBooleanChunk<Values> results);
     }
 
     static String truncateLongFormula(String formula) {

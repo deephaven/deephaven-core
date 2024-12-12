@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.select.python;
 
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
@@ -47,5 +49,24 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
             }
         }
         return context.resultChunk;
+    }
+
+    @Override
+    public int filter(Context context, Chunk[] inputChunks, int chunkSize, WritableBooleanChunk<Values> results) {
+        final Class<?>[] paramTypes = ArgumentsSingular.buildParamTypes(inputChunks);
+        context.resultChunk.setSize(0);
+        int count = 0;
+        for (int i = 0; i < chunkSize; ++i) {
+            boolean result = results.get(i);
+            // Save the cost of the call if the result is already false
+            if (!result) {
+                continue;
+            }
+            final Object[] params = ArgumentsSingular.buildArguments(inputChunks, i);
+            boolean newResult = function.call(boolean.class, CALL_METHOD, paramTypes, params);
+            results.set(i, newResult);
+            count += result == newResult ? 0 : 1;
+        }
+        return count;
     }
 }

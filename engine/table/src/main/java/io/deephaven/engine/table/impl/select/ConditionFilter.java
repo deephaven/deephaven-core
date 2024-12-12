@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.context.QueryCompilerRequest;
@@ -115,6 +116,8 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<OrderedRowKeys> indices,
                 Chunk... inputChunks);
+
+        int filter(CONTEXT context, Chunk[] inputChunks, int chunkSize, WritableBooleanChunk<Values> results);
     }
 
 
@@ -375,6 +378,28 @@ public class ConditionFilter extends AbstractConditionFilter {
                 return resultBuilder.build();
             }
         }
+
+        @Override
+        public FilterKernel.Context getContext(int chunkSize) {
+            return filterKernel.getContext(chunkSize);
+        }
+
+        @Override
+        public LongChunk<OrderedRowKeys> filter(
+                final FilterKernel.Context context,
+                final LongChunk<OrderedRowKeys> inputKeys,
+                final Chunk<? extends Values>[] valueChunks) {
+            return filterKernel.filter(context, inputKeys, valueChunks);
+        }
+
+        @Override
+        public int filter(
+                final FilterKernel.Context context,
+                final Chunk<? extends Values>[] valueChunks,
+                final int chunkSize,
+                final WritableBooleanChunk<Values> results) {
+            return filterKernel.filter(context, valueChunks, chunkSize, results);
+        }
     }
 
     private static String toTitleCase(String input) {
@@ -581,12 +606,58 @@ public class ConditionFilter extends AbstractConditionFilter {
                         "        }\n" +
                         "        return __context.resultChunk;\n" +
                         "    }\n" +
-                        "}");
+                        "\n");
+        indenter.decreaseLevel();
+        indenter.decreaseLevel();
+
+        indenter.indent(classBody, "@Override\n" +
+                "public int filter(Context __context, Chunk[] __inputChunks, int __chunkSize, WritableBooleanChunk<Values> __results) {\n");
+        indenter.increaseLevel();
+        for (int i = 0; i < usedInputs.size(); i++) {
+            final Class<?> columnType = usedInputs.get(i).second;
+            final String chunkType;
+            if (columnType.isPrimitive() && columnType != boolean.class) {
+                chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
+            } else {
+                // TODO: Reinterpret Boolean and Instant to byte and long
+                chunkType = "ObjectChunk";
+            }
+            classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)
+                    .append(" = __inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
+        }
+        indenter.indent(classBody, "__results.setSize(__chunkSize);\n" +
+                "int __count = 0;\n" +
+                "for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {\n");
+        indenter.increaseLevel();
+        indenter.indent(classBody, "final boolean __result = __results.get(__my_i__);\n");
+        for (int i = 0; i < usedInputs.size(); i++) {
+            final Pair<String, Class<?>> usedInput = usedInputs.get(i);
+            final Class<?> columnType = usedInput.second;
+            final String canonicalName = columnType.getCanonicalName();
+            classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first)
+                    .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
+                    .append(".get(__my_i__);\n");
+        }
+        indenter.indent(classBody, "final boolean __newResult = __result & (" + result.getConvertedExpression() + ");\n" +
+                "__results.set(__my_i__, __newResult);\n" +
+                "__count += __result == __newResult ? 0 : 1;");
+
+        indenter.decreaseLevel();
+        indenter.indent(classBody,
+                "}\n" +
+                        "return __count;\n");
+
+        indenter.decreaseLevel();
+        indenter.indent(classBody,
+                "}\n");
+
+        classBody.append(
+                "}");
         return classBody;
     }
 
     @Override
-    protected Filter getFilter(Table table, RowSet fullSet)
+    public Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {
             try {

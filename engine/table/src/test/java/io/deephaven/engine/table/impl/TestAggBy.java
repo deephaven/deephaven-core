@@ -127,7 +127,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggCountWhere("filter2", "B >= 5", "B != 8"),
                         AggCountWhereOneOf("filter3", "B >= 5", "B == 3"),
                         AggCountWhere("filter4", "true"),
-                        AggCountWhere("filter5", "false")
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0")
                 // Multi-column filtering not currently supported
                 // AggCountWhere("and2", "B >= 5", "C == 1"),
                 // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
@@ -156,6 +157,9 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "filter5");
         assertEquals(0L, counts.get(0));
         assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
 
 
         doubleCounted = table.aggBy(
@@ -164,7 +168,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                         AggCountWhere("filter2", "B >= 5", "B != 8"),
                         AggCountWhereOneOf("filter3", "B >= 5", "B == 3"),
                         AggCountWhere("filter4", "true"),
-                        AggCountWhere("filter5", "false")
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0")
                 // Multi-column filtering not currently supported
                 // AggCountWhere("and2", "B >= 5", "C == 1"),
                 // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
@@ -182,6 +187,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(10L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "filter5");
         assertEquals(0L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(5L, counts.get(0));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
