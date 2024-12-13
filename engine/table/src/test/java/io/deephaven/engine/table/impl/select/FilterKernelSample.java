@@ -37,6 +37,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.time.DateTimeUtils;
@@ -104,20 +105,59 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
         }
         return __context.resultChunk;
     }
-
+    
     @Override
-    public int filter(Context __context, Chunk[] __inputChunks, int __chunkSize, WritableBooleanChunk<Values> __results) {
+    public int filter(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final short v1 =  (short)__columnChunk0.get(__my_i__);
+            final double v2 =  (double)__columnChunk1.get(__my_i__);
+            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
+            __results.set(__my_i__, __newResult);
+            __count += __newResult ? 1 : 0;
+        }
+        return __count;
+    }
+    
+    @Override
+    public int filterAnd(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
         final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
         final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
         __results.setSize(__chunkSize);
         int __count = 0;
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
             final boolean __result = __results.get(__my_i__);
+            if (!__result) {
+                continue; // already false, no need to compute
+            }
             final short v1 =  (short)__columnChunk0.get(__my_i__);
             final double v2 =  (double)__columnChunk1.get(__my_i__);
-            final boolean __newResult = __result & ("foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3));
+            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
             __results.set(__my_i__, __newResult);
-            __count += __result == __newResult ? 0 : 1;
+            __count += __newResult ? 0 : 1;
+        }
+        return __count;
+    }
+    
+    @Override
+    public int filterOr(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
+        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
+        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
+        __results.setSize(__chunkSize);
+        int __count = 0;
+        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
+            final boolean __result = __results.get(__my_i__);
+            if (__result) {
+                continue; // already true, no need to compute
+            }
+            final short v1 =  (short)__columnChunk0.get(__my_i__);
+            final double v2 =  (double)__columnChunk1.get(__my_i__);
+            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
+            __results.set(__my_i__, __newResult);
+            __count += __newResult ? 1 : 0;
         }
         return __count;
     }

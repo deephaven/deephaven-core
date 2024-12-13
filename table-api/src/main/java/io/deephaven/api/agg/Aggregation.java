@@ -17,6 +17,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;
@@ -225,23 +226,25 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filters}.
      *
      * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation
      */
     static CountWhere AggCountWhere(String resultColumn, String... filters) {
-        return CountWhere.and(resultColumn, filters);
+        return CountWhere.of(resultColumn, filters);
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name.
+     * Create a {@link io.deephaven.api.agg.Count count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filter}.
      *
      * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation
      */
-    static CountWhere AggCountWhereOneOf(String resultColumn, String... filters) {
-        return CountWhere.or(resultColumn, filters);
+    static CountWhere AggCountWhere(String resultColumn, Filter filter) {
+        return CountWhere.of(resultColumn, filter);
     }
 
     /**

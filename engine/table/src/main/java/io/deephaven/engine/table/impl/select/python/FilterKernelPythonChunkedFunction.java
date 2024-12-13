@@ -63,7 +63,11 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
     }
 
     @Override
-    public int filter(Context context, Chunk[] inputChunks, int chunkSize, WritableBooleanChunk<Values> results) {
+    public int filter(
+            final Context context,
+            final Chunk[] inputChunks,
+            final int chunkSize,
+            final WritableBooleanChunk<Values> results) {
         FillContextPython fillContextPython = context.getKernelContext();
         fillContextPython.resolveColumnChunks(inputChunks, chunkSize);
 
@@ -74,10 +78,64 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");
         }
+        // Count the number of true values
+        int count = 0;
+        for (int i = 0; i < chunkSize; ++i) {
+            boolean newResult = pyResults[i];
+            results.set(i, newResult);
+            count += newResult ? 1 : 0;
+        }
+        return count;
+    }
+
+    @Override
+    public int filterAnd(
+            final Context context,
+            final Chunk[] inputChunks,
+            final int chunkSize,
+            final WritableBooleanChunk<Values> results) {
+        FillContextPython fillContextPython = context.getKernelContext();
+        fillContextPython.resolveColumnChunks(inputChunks, chunkSize);
+
+        final boolean[] pyResults = function
+                .call(boolean[].class, CALL_METHOD, fillContextPython.getChunkedArgTypes(),
+                        fillContextPython.getChunkedArgs());
+        if (chunkSize > pyResults.length) {
+            throw new IllegalStateException(
+                    "FilterKernelPythonChunkedFunction returned results are not the proper size");
+        }
+        // Count values that changed from true to false
         int count = 0;
         for (int i = 0; i < chunkSize; ++i) {
             boolean result = results.get(i);
             boolean newResult = result & pyResults[i];
+            results.set(i, newResult);
+            count += result == newResult ? 0 : 1;
+        }
+        return count;
+    }
+
+    @Override
+    public int filterOr(
+            final Context context,
+            final Chunk[] inputChunks,
+            final int chunkSize,
+            final WritableBooleanChunk<Values> results) {
+        FillContextPython fillContextPython = context.getKernelContext();
+        fillContextPython.resolveColumnChunks(inputChunks, chunkSize);
+
+        final boolean[] pyResults = function
+                .call(boolean[].class, CALL_METHOD, fillContextPython.getChunkedArgTypes(),
+                        fillContextPython.getChunkedArgs());
+        if (chunkSize > pyResults.length) {
+            throw new IllegalStateException(
+                    "FilterKernelPythonChunkedFunction returned results are not the proper size");
+        }
+        // Count values that changed from false to true
+        int count = 0;
+        for (int i = 0; i < chunkSize; ++i) {
+            boolean result = results.get(i);
+            boolean newResult = result | pyResults[i];
             results.set(i, newResult);
             count += result == newResult ? 0 : 1;
         }

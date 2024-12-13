@@ -107,7 +107,9 @@ public class InstantRangeFilter extends LongRangeFilter {
         }
 
         @Override
-        public int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results) {
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
             try (final WritableLongChunk<Values> writableLongChunk =
                     WritableLongChunk.makeWritableChunk(values.size())) {
 
@@ -118,6 +120,40 @@ public class InstantRangeFilter extends LongRangeFilter {
                 }
                 writableLongChunk.setSize(values.size());
                 return longFilter.filter(writableLongChunk, results);
+            }
+        }
+
+        @Override
+        public int filterAnd(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            try (final WritableLongChunk<Values> writableLongChunk =
+                    WritableLongChunk.makeWritableChunk(values.size())) {
+
+                final ObjectChunk<Instant, ? extends Values> objectValues = values.asObjectChunk();
+                for (int ii = 0; ii < values.size(); ++ii) {
+                    final Instant instant = objectValues.get(ii);
+                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(instant));
+                }
+                writableLongChunk.setSize(values.size());
+                return longFilter.filterAnd(writableLongChunk, results);
+            }
+        }
+
+        @Override
+        public int filterOr(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            try (final WritableLongChunk<Values> writableLongChunk =
+                    WritableLongChunk.makeWritableChunk(values.size())) {
+
+                final ObjectChunk<Instant, ? extends Values> objectValues = values.asObjectChunk();
+                for (int ii = 0; ii < values.size(); ++ii) {
+                    final Instant instant = objectValues.get(ii);
+                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(instant));
+                }
+                writableLongChunk.setSize(values.size());
+                return longFilter.filterOr(writableLongChunk, results);
             }
         }
     }

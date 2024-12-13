@@ -901,6 +901,42 @@ public abstract class QueryTableWhereTest {
             return actualFilter.filter(values, results);
         }
 
+        @Override
+        public int filterAnd(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filterAnd(values, results);
+        }
+
+        @Override
+        public int filterOr(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filterOr(values, results);
+        }
+
         void reset() {
             invokes = invokedValues = 0;
         }

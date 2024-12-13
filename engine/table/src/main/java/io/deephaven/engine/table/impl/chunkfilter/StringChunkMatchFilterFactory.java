@@ -66,8 +66,7 @@ class StringChunkMatchFilterFactory {
             this.value = value;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return this.value.equalsIgnoreCase(value);
         }
 
@@ -93,19 +92,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -118,8 +148,7 @@ class StringChunkMatchFilterFactory {
             this.value = value;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return !this.value.equalsIgnoreCase(value);
         }
 
@@ -140,19 +169,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -167,8 +227,7 @@ class StringChunkMatchFilterFactory {
             this.value2 = value2;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value);
         }
 
@@ -189,19 +248,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -216,8 +306,7 @@ class StringChunkMatchFilterFactory {
             this.value2 = value2;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value);
         }
 
@@ -238,19 +327,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -267,8 +387,7 @@ class StringChunkMatchFilterFactory {
             this.value3 = value3;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value) || value3.equalsIgnoreCase(value);
         }
 
@@ -289,19 +408,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -318,8 +468,7 @@ class StringChunkMatchFilterFactory {
             this.value3 = value3;
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value)
                     && !value3.equalsIgnoreCase(value);
         }
@@ -341,19 +490,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -369,8 +549,7 @@ class StringChunkMatchFilterFactory {
             }
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return this.values.containsKey(value);
         }
 
@@ -391,19 +570,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -419,8 +629,7 @@ class StringChunkMatchFilterFactory {
             }
         }
 
-        @Override
-        public boolean matches(String value) {
+        private boolean matches(String value) {
             return !this.values.containsKey(value);
         }
 
@@ -441,19 +650,50 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<String, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<String, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }

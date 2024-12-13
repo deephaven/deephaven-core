@@ -101,8 +101,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
-        @Override
-        public boolean matches(Comparable<?> value) {
+        private boolean matches(Comparable<?> value) {
+
             return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) >= 0;
         }
 
@@ -128,19 +128,50 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -156,8 +187,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
-        @Override
-        public boolean matches(Comparable<?> value) {
+        private boolean matches(Comparable<?> value) {
+
             return ObjectComparisons.compare(lower, value) <= 0 && ObjectComparisons.compare(upper, value) > 0;
         }
 
@@ -178,19 +209,50 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -206,8 +268,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
-        @Override
-        public boolean matches(Comparable<?> value) {
+        private boolean matches(Comparable<?> value) {
+
             return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) >= 0;
         }
 
@@ -228,19 +290,50 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }
@@ -256,8 +349,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
             this.upper = upper;
         }
 
-        @Override
-        public boolean matches(Comparable<?> value) {
+        private boolean matches(Comparable<?> value) {
+
             return ObjectComparisons.compare(lower, value) < 0 && ObjectComparisons.compare(upper, value) > 0;
         }
 
@@ -278,19 +371,50 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         }
 
         @Override
-        public int filter(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
-            final int len = objectChunk.size();
-
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
             int count = 0;
-            // ideally branchless implementation
             for (int ii = 0; ii < len; ++ii) {
-                boolean result = results.get(ii);
-                boolean newResult = result & matches(objectChunk.get(ii));
+                final boolean newResult = matches(typedChunk.get(ii));
                 results.set(ii, newResult);
-                count += result == newResult ? 0 : 1;
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    continue; // already false, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 0 : 1;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> typedChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    continue; // already true, no need to compute
+                }
+                boolean newResult = matches(typedChunk.get(ii));
+                results.set(ii, newResult);
+                count += newResult ? 1 : 0;
             }
             return count;
         }

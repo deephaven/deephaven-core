@@ -26,73 +26,67 @@ public interface ChunkFilter {
             WritableLongChunk<OrderedRowKeys> results);
 
     /**
-     * Filter a chunk of values, setting parallel values in results to {@code false} when the filter result is
-     * {@code false}. The filter is not evaluated for values that are already {@code false} in the results chunk.
+     * Filter a chunk of values, setting parallel values in {@code results} to the output of the filter.
+     * 
+     * @param values the values to filter
+     * @param results a boolean chunk containing the result of the filter
+     *
+     * @return the number of values that were set to {@code true} during this call.
+     */
+    int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
+
+    /**
+     * Filter a chunk of values, setting parallel values in {@code results} to {@code false} when the filter result is
+     * {@code false}. The filter will not be evaluated for values that are currently {@code false} in the results chunk.
      * <p>
-     * To use this method effectively, the results chunk should be initialized to {@code true} before the first call.
-     * Successive calls will have the effect of AND'ing the filter results with the existing results.
+     * To use this method effectively, the results chunk should be initialized by a call to
+     * {@link #filter(Chunk, WritableBooleanChunk)} or by setting all values {@code true} before the first call.
+     * Successive calls will have the effect of AND'ing this filter results with existing results.
      *
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that were set to {@code false} during this call.
+     * @return the number of values that were updated from {@code true} to {@code false} during this call.
      */
-    int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
+    int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
+
+    /**
+     * Filter a chunk of values, setting parallel values in {@code results} to {@code true} when the filter result is
+     * {@code true}. The filter will not be evaluated for values that are currently {@code true} in the results chunk.
+     * <p>
+     * To use this method effectively, the results chunk should be initialized by a call to
+     * {@link #filter(Chunk, WritableBooleanChunk)} or by setting all values {@code false} before the first call.
+     * Successive calls will have the effect of OR'ing this filter results with existing results.`
+     *
+     * @param values the values to filter
+     * @param results a boolean chunk containing the result of the filter
+     *
+     * @return the number of values that were updated from {@code false} to {@code true} during this call.
+     */
+    int filterOr(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
     interface CharChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(char value);
     }
 
     interface ByteChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(byte value);
     }
 
     interface ShortChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(short value);
     }
 
     interface IntChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(int value);
     }
 
     interface LongChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(long value);
     }
 
     interface FloatChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(float value);
     }
 
     interface DoubleChunkFilter extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(double value);
     }
 
     interface ObjectChunkFilter<T> extends ChunkFilter {
-        /**
-         * Test if a value matches the filter.
-         */
-        boolean matches(T value);
     }
 
     /**
@@ -106,18 +100,29 @@ public interface ChunkFilter {
         }
 
         @Override
-        public int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results) {
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
             final int len = values.size();
+            results.fillWithValue(0, len, false);
+            return 0;
+        }
 
-            // need to count the values we changed to false
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            // Count the values that changed from true to false
             int count = 0;
             for (int ii = 0; ii < len; ++ii) {
-                if (results.get(ii)) {
-                    results.set(ii, false);
-                    count++;
-                }
+                final boolean result = results.get(ii);
+                results.set(ii, false);
+                count += result ? 1 : 0;
             }
             return count;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            // No values were set to true
+            return 0;
         }
     };
 
@@ -133,9 +138,29 @@ public interface ChunkFilter {
         }
 
         @Override
-        public int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results) {
-            results.fillWithValue(0, values.size(), true);
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            results.fillWithValue(0, len, true);
+            return len;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            // No values were set to false
             return 0;
+        }
+
+        @Override
+        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            // Count the values that changed from false to true
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                results.set(ii, true);
+                count += result ? 0 : 1;
+            }
+            return count;
         }
     };
 

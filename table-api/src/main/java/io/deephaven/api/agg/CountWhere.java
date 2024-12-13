@@ -19,19 +19,15 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class CountWhere implements Aggregation {
 
-    public static CountWhere and(String name, String... filters) {
-        return and(ColumnName.of(name), Filter.and(Filter.from(filters)));
+    public static CountWhere of(String name, String... filters) {
+        return of(ColumnName.of(name), Filter.and(Filter.from(filters)));
     }
 
-    public static CountWhere and(ColumnName name, Filter filter) {
-        return ImmutableCountWhere.of(name, filter);
+    public static CountWhere of(String name, Filter filter) {
+        return of(ColumnName.of(name), filter);
     }
 
-    public static CountWhere or(String name, String... filters) {
-        return or(ColumnName.of(name), Filter.or(Filter.from(filters)));
-    }
-
-    public static CountWhere or(ColumnName name, Filter filter) {
+    public static CountWhere of(ColumnName name, Filter filter) {
         return ImmutableCountWhere.of(name, filter);
     }
 
