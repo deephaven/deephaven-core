@@ -24,13 +24,13 @@ import java.util.PrimitiveIterator;
 public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>> {
     private static final String DEBUG_NAME = "FloatChunkReader";
 
-    public interface ToFloatTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        float get(WireChunkType wireValues, int wireOffset);
+    public interface ToFloatTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        float get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableFloatChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableFloatChunk<Values>> transformTo(
             final T wireReader,
-            final ToFloatTransformFunction<WireChunkType> wireTransform) {
+            final ToFloatTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableFloatChunk::makeWritableChunk,

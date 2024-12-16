@@ -231,7 +231,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    private static void longIdentityValidator(WritableChunk<Values> utO, WritableChunk<Values> utC, RowSequence subset, int offset) {
+    private static void longIdentityValidator(WritableChunk<Values> utO, WritableChunk<Values> utC, RowSequence subset,
+            int offset) {
         final WritableLongChunk<Values> original = utO.asWritableLongChunk();
         final WritableLongChunk<Values> computed = utC.asWritableLongChunk();
         if (subset == null) {

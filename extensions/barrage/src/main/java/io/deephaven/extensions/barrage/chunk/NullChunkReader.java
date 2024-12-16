@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-public class NullChunkReader<ReadChunkType extends WritableChunk<Values>> extends BaseChunkReader<ReadChunkType> {
+public class NullChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>> extends BaseChunkReader<READ_CHUNK_TYPE> {
 
     private final ChunkType resultType;
 
@@ -23,7 +23,7 @@ public class NullChunkReader<ReadChunkType extends WritableChunk<Values>> extend
     }
 
     @Override
-    public ReadChunkType readChunk(
+    public READ_CHUNK_TYPE readChunk(
             @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
             @NotNull final DataInput is,
@@ -42,6 +42,6 @@ public class NullChunkReader<ReadChunkType extends WritableChunk<Values>> extend
         chunk.fillWithNullValue(0, nodeInfo.numElements);
 
         // noinspection unchecked
-        return (ReadChunkType) chunk;
+        return (READ_CHUNK_TYPE) chunk;
     }
 }

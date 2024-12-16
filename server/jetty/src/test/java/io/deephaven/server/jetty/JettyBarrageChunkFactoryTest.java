@@ -7,7 +7,6 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.client.impl.BearerHandler;
@@ -24,7 +23,6 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -51,6 +49,7 @@ import io.deephaven.server.test.FlightMessageRoundTripTest;
 import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -72,9 +71,12 @@ import org.apache.arrow.flight.Ticket;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.SmallIntVector;
+import org.apache.arrow.vector.TinyIntVector;
+import org.apache.arrow.vector.UInt1Vector;
+import org.apache.arrow.vector.UInt2Vector;
 import org.apache.arrow.vector.VectorSchemaRoot;
-import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -98,21 +100,22 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class JettyBarrageChunkFactoryTest {
     private static final String COLUMN_NAME = "test_col";
+    private static final int NUM_ROWS = 1000;
+    private static final int RANDOM_SEED = 42;
 
     @Module
     public interface JettyTestConfig {
@@ -318,7 +321,7 @@ public class JettyBarrageChunkFactoryTest {
 
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
-                                                                   CallOptions callOptions, Channel next) {
+                CallOptions callOptions, Channel next) {
             return next.newCall(method, callOptions.withCallCredentials(callCredentials));
         }
     }
@@ -374,122 +377,344 @@ public class JettyBarrageChunkFactoryTest {
         }
     };
 
-    private void fullyReadStream(Ticket ticket, boolean expectError) {
-        try (final FlightStream stream = flightClient.getStream(ticket)) {
-            // noinspection StatementWithEmptyBody
-            while (stream.next());
-            if (expectError) {
-                fail("expected error");
-            }
-        } catch (Exception ignored) {
-        }
+    private Schema createSchema(boolean nullable, ArrowType arrowType, Class<?> dhType) {
+        return createSchema(nullable, arrowType, dhType, null);
     }
 
-    private Schema createSchema(final ArrowType arrowType, final Class<?> dhType) {
-        return createSchema(arrowType, dhType, null);
-    }
-
-    private Schema createSchema(final ArrowType arrowType, final Class<?> dhType, final Class<?> dhComponentType) {
+    private Schema createSchema(
+            final boolean nullable,
+            final ArrowType arrowType,
+            final Class<?> dhType,
+            final Class<?> dhComponentType) {
         final Map<String, String> attrs = new HashMap<>();
         attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG, dhType.getCanonicalName());
         if (dhComponentType != null) {
             attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG,
                     dhComponentType.getCanonicalName());
         }
-        final FieldType fieldType = new FieldType(true, arrowType, null, attrs);
+        final FieldType fieldType = new FieldType(nullable, arrowType, null, attrs);
         return new Schema(Collections.singletonList(
                 new Field(COLUMN_NAME, fieldType, null)));
     }
 
     @Test
     public void testInt8() throws Exception {
-        final int numRows = 16;
-        final Consumer<VectorSchemaRoot> setupData = source -> {
-            IntVector vector = (IntVector) source.getFieldVectors().get(0);
-            for (int ii = 0; ii < numRows; ++ii) {
-                if (ii % 2 == 0) {
-                    vector.setNull(ii);
-                } else {
-                    vector.set(ii, (byte) (ii - 8));
-                }
+        class Test extends RoundTripTest<TinyIntVector> {
+            Test(Class<?> dhType) {
+                super(dhType);
             }
-            source.setRowCount(numRows);
-        };
-        final BiConsumer<VectorSchemaRoot, VectorSchemaRoot> validator = (source, dest) -> {
-            IntVector sVector = (IntVector) source.getVector(0);
-            IntVector dVector = (IntVector) dest.getVector(0);
-            for (int ii = 0; ii < numRows; ii++) {
-                if (ii % 2 == 0) {
-                    assertTrue(dVector.isNull(ii));
-                } else {
-                    assertEquals(sVector.get(ii), dVector.get(ii));
-                }
-            }
-        };
-        final Consumer<Class<?>> runForDhType = dhType -> {
-            Schema schema = createSchema(Types.MinorType.INT.getType(), dhType);
-            testRoundTrip(dhType, null, schema, setupData, validator);
-        };
 
-        runForDhType.accept(byte.class);
-//        runForDhType.accept(char.class);
-        runForDhType.accept(short.class);
-        runForDhType.accept(int.class);
-        runForDhType.accept(long.class);
-        runForDhType.accept(float.class);
-        runForDhType.accept(double.class);
-        runForDhType.accept(BigInteger.class);
-        runForDhType.accept(BigDecimal.class);
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                return createSchema(isNullable, new ArrowType.Int(8, true), dhType);
+            }
+
+            @Override
+            public int initializeRoot(@NotNull TinyIntVector source) {
+                int start = setAll(source::set,
+                        QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, (byte) -1, (byte) 0, (byte) 1);
+                for (int ii = start; ii < NUM_ROWS; ++ii) {
+                    byte value = (byte) rnd.nextInt();
+                    source.set(ii, value);
+                    if (value == QueryConstants.NULL_BYTE) {
+                        --ii;
+                    }
+                }
+                return NUM_ROWS;
+            }
+
+            @Override
+            public void validate(@NotNull TinyIntVector source, @NotNull TinyIntVector dest) {
+                for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                    if (source.isNull(ii)) {
+                        assertTrue(dest.isNull(ii));
+                    } else if (dhType == char.class && source.get(ii) == -1) {
+                        // this is going to be coerced to null if nullable or else NULL_BYTE if non-nullable
+                        assertTrue(dest.isNull(ii) || dest.get(ii) == QueryConstants.NULL_BYTE);
+                    } else {
+                        assertEquals(source.get(ii), dest.get(ii));
+                    }
+                }
+            }
+        }
+
+        new Test(byte.class).doTest();
+        new Test(char.class).doTest();
+        new Test(short.class).doTest();
+        new Test(int.class).doTest();
+        new Test(long.class).doTest();
+        new Test(float.class).doTest();
+        new Test(double.class).doTest();
+        new Test(BigInteger.class).doTest();
+        new Test(BigDecimal.class).doTest();
     }
 
-    private void testRoundTrip(
-            @NotNull final Class<?> dhType,
-            @Nullable final Class<?> componentType,
-            @NotNull final Schema schema,
-            @NotNull final Consumer<VectorSchemaRoot> setupData,
-            @NotNull final BiConsumer<VectorSchemaRoot, VectorSchemaRoot> validator) {
-        try (VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator)) {
-            source.allocateNew();
-            setupData.accept(source);
+    @Test
+    public void testUint8() throws Exception {
+        class Test extends RoundTripTest<UInt1Vector> {
+            Test(Class<?> dhType) {
+                super(dhType);
+            }
 
-            int flightDescriptorTicketValue = nextTicket++;
-            FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-            FlightClient.ClientStreamListener putStream = flightClient.startPut(descriptor, source, new AsyncPutListener());
-            putStream.putNext();
-            putStream.completed();
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                return createSchema(isNullable, new ArrowType.Int(8, false), dhType);
+            }
 
-            // get the table that was uploaded, and confirm it matches what we originally sent
-            CompletableFuture<Table> tableFuture = new CompletableFuture<>();
-            SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
-            currentSession.nonExport()
-                    .onErrorHandler(exception -> tableFuture.cancel(true))
-                    .require(tableExport)
-                    .submit(() -> tableFuture.complete(tableExport.get()));
+            @Override
+            public int initializeRoot(@NotNull UInt1Vector source) {
+                int start = setAll(source::set,
+                        QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, (byte) -1, (byte) 0, (byte) 1);
+                for (int ii = start; ii < NUM_ROWS; ++ii) {
+                    byte value = (byte) rnd.nextInt();
+                    source.set(ii, value);
+                    if (value == QueryConstants.NULL_BYTE) {
+                        --ii;
+                    }
+                }
+                return NUM_ROWS;
+            }
 
-            // block until we're done, so we can get the table and see what is inside
-            putStream.getResult();
-            Table uploadedTable = tableFuture.get();
-            assertEquals(source.getRowCount(), uploadedTable.size());
-            assertEquals(1, uploadedTable.getColumnSourceMap().size());
-            ColumnSource<Object> columnSource = uploadedTable.getColumnSource(COLUMN_NAME);
-            assertNotNull(columnSource);
-            assertEquals(columnSource.getType(), dhType);
-            assertEquals(columnSource.getComponentType(), componentType);
+            @Override
+            public void validate(@NotNull UInt1Vector source, @NotNull UInt1Vector dest) {
+                for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                    if (source.isNull(ii)) {
+                        assertTrue(dest.isNull(ii));
+                    } else if (dhType == char.class && source.get(ii) == -1) {
+                        // this is going to be coerced to null if nullable or else NULL_BYTE if non-nullable
+                        assertTrue(dest.isNull(ii) || dest.get(ii) == QueryConstants.NULL_BYTE);
+                    } else {
+                        assertEquals(source.get(ii), dest.get(ii));
+                    }
+                }
+            }
+        }
 
-            try (FlightStream stream = flightClient.getStream(flightTicketFor(flightDescriptorTicketValue))) {
-                VectorSchemaRoot dest = stream.getRoot();
+        new Test(byte.class).doTest();
+        new Test(char.class).doTest();
+        new Test(short.class).doTest();
+        new Test(int.class).doTest();
+        new Test(long.class).doTest();
+        new Test(float.class).doTest();
+        new Test(double.class).doTest();
+        new Test(BigInteger.class).doTest();
+        new Test(BigDecimal.class).doTest();
+    }
 
-                int numPayloads = 0;
-                while (stream.next()) {
-                    assertEquals(source.getRowCount(), dest.getRowCount());
-                    validator.accept(source, dest);
-                    ++numPayloads;
+    @Test
+    public void testInt16() throws Exception {
+        class Test extends RoundTripTest<SmallIntVector> {
+            Test(Class<?> dhType) {
+                super(dhType);
+            }
+
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                return createSchema(isNullable, new ArrowType.Int(16, true), dhType);
+            }
+
+            @Override
+            public int initializeRoot(@NotNull SmallIntVector source) {
+                int start = setAll(source::set,
+                        QueryConstants.MIN_SHORT, QueryConstants.MAX_SHORT, (short) -1, (short) 0, (short) 1);
+                for (int ii = start; ii < NUM_ROWS; ++ii) {
+                    short value = (short) rnd.nextInt();
+                    source.set(ii, value);
+                    if (value == QueryConstants.NULL_SHORT) {
+                        --ii;
+                    }
+                }
+                return NUM_ROWS;
+            }
+
+            @Override
+            public void validate(@NotNull SmallIntVector source, @NotNull SmallIntVector dest) {
+                for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                    if (source.isNull(ii)) {
+                        assertTrue(dest.isNull(ii));
+                    } else if (dhType == byte.class) {
+                        byte asByte = (byte) source.get(ii);
+                        if (asByte == QueryConstants.NULL_BYTE) {
+                            assertTrue(dest.isNull(ii) || dest.get(ii) == QueryConstants.NULL_SHORT);
+                        } else {
+                            assertEquals(asByte, dest.get(ii));
+                        }
+                    } else if (dhType == char.class && source.get(ii) == -1) {
+                        // this is going to be coerced to null if nullable or else NULL_BYTE if non-nullable
+                        assertTrue(dest.isNull(ii) || dest.get(ii) == QueryConstants.NULL_SHORT);
+                    } else {
+                        assertEquals(source.get(ii), dest.get(ii));
+                    }
+                }
+            }
+        }
+
+        new Test(byte.class).doTest();
+        new Test(char.class).doTest();
+        new Test(short.class).doTest();
+        new Test(int.class).doTest();
+        new Test(long.class).doTest();
+        new Test(float.class).doTest();
+        new Test(double.class).doTest();
+        new Test(BigInteger.class).doTest();
+        new Test(BigDecimal.class).doTest();
+    }
+
+    @Test
+    public void testUint16() throws Exception {
+        class Test extends RoundTripTest<UInt2Vector> {
+            Test(Class<?> dhType) {
+                super(dhType);
+            }
+
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                return createSchema(isNullable, new ArrowType.Int(16, false), dhType);
+            }
+
+            @Override
+            public int initializeRoot(@NotNull UInt2Vector source) {
+                int start = setAll(source::set,
+                        (char) 6784,
+                    QueryConstants.MIN_CHAR, QueryConstants.MAX_CHAR, (char) 1);
+                for (int ii = start; ii < NUM_ROWS; ++ii) {
+                    char value = (char) rnd.nextInt();
+                    source.set(ii, value);
+                    if (value == QueryConstants.NULL_CHAR) {
+                        --ii;
+                    }
+                }
+                return NUM_ROWS;
+            }
+
+            @Override
+            public void validate(@NotNull UInt2Vector source, @NotNull UInt2Vector dest) {
+                for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                    if (source.isNull(ii)) {
+                        assertTrue(dest.isNull(ii));
+                    } else if (dhType == byte.class) {
+                        byte asByte = (byte) source.get(ii);
+                        if (asByte == QueryConstants.NULL_BYTE || asByte == -1) {
+                            assertTrue(dest.isNull(ii) || dest.get(ii) == QueryConstants.NULL_CHAR);
+                        } else {
+                            assertEquals((char) asByte, dest.get(ii));
+                        }
+                    } else {
+                        assertEquals(source.get(ii), dest.get(ii));
+                    }
+                }
+            }
+        }
+
+        new Test(byte.class).doTest();
+        new Test(char.class).doTest();
+        new Test(short.class).doTest();
+        new Test(int.class).doTest();
+        new Test(long.class).doTest();
+        new Test(float.class).doTest();
+        new Test(double.class).doTest();
+        new Test(BigInteger.class).doTest();
+        new Test(BigDecimal.class).doTest();
+    }
+
+    // For list tests: test both head and tail via FixedSizeList limits
+
+    private static <T> int setAll(BiConsumer<Integer, T> setter, T... values) {
+        for (int ii = 0; ii < values.length; ++ii) {
+            setter.accept(ii, values[ii]);
+        }
+        return values.length;
+    }
+
+    protected enum NullMode { ALL, NONE, SOME, NOT_NULLABLE }
+    private abstract class RoundTripTest<T extends FieldVector> {
+        protected final Random rnd = new Random(RANDOM_SEED);
+        protected Class<?> dhType;
+        protected Class<?> componentType;
+
+        public RoundTripTest(@NotNull final Class<?> dhType) {
+            this(dhType, null);
+        }
+
+        public RoundTripTest(@NotNull final Class<?> dhType, @Nullable final Class<?> componentType) {
+            this.dhType = dhType;
+            this.componentType = componentType;
+        }
+
+        public abstract Schema newSchema(boolean isNullable);
+        public abstract int initializeRoot(@NotNull final T source);
+        public abstract void validate(@NotNull final T source, @NotNull final T dest);
+
+        public void doTest() throws Exception {
+            doTest(NullMode.NOT_NULLABLE);
+            doTest(NullMode.NONE);
+            doTest(NullMode.SOME);
+            doTest(NullMode.ALL);
+        }
+
+        public void doTest(final NullMode nullMode) throws Exception {
+            final Schema schema = newSchema(nullMode != NullMode.NOT_NULLABLE);
+            try (VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator)) {
+                source.allocateNew();
+                // noinspection unchecked
+                int numRows = initializeRoot((T) source.getFieldVectors().get(0));
+                source.setRowCount(numRows);
+
+                if (nullMode == NullMode.ALL) {
+                    for (FieldVector vector : source.getFieldVectors()) {
+                        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                            vector.setNull(ii);
+                        }
+                    }
+                } else if (nullMode == NullMode.SOME) {
+                    for (FieldVector vector : source.getFieldVectors()) {
+                        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                            if (rnd.nextBoolean()) {
+                                vector.setNull(ii);
+                            }
+                        }
+                    }
                 }
 
-                assertEquals(1, numPayloads);
+                int flightDescriptorTicketValue = nextTicket++;
+                FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+                FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+
+                // get the table that was uploaded, and confirm it matches what we originally sent
+                CompletableFuture<Table> tableFuture = new CompletableFuture<>();
+                SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
+                currentSession.nonExport()
+                        .onErrorHandler(exception -> tableFuture.cancel(true))
+                        .require(tableExport)
+                        .submit(() -> tableFuture.complete(tableExport.get()));
+
+                // block until we're done, so we can get the table and see what is inside
+                putStream.getResult();
+                Table uploadedTable = tableFuture.get();
+                assertEquals(source.getRowCount(), uploadedTable.size());
+                assertEquals(1, uploadedTable.getColumnSourceMap().size());
+                ColumnSource<Object> columnSource = uploadedTable.getColumnSource(COLUMN_NAME);
+                assertNotNull(columnSource);
+                assertEquals(columnSource.getType(), dhType);
+                assertEquals(columnSource.getComponentType(), componentType);
+
+                try (FlightStream stream = flightClient.getStream(flightTicketFor(flightDescriptorTicketValue))) {
+                    VectorSchemaRoot dest = stream.getRoot();
+
+                    int numPayloads = 0;
+                    while (stream.next()) {
+                        assertEquals(source.getRowCount(), dest.getRowCount());
+                        // noinspection unchecked
+                        validate((T) source.getFieldVectors().get(0), (T) dest.getFieldVectors().get(0));
+                        ++numPayloads;
+                    }
+
+                    assertEquals(1, numPayloads);
+                }
             }
-        } catch (Exception err) {
-            throw new UncheckedDeephavenException("round trip test failure", err);
         }
     }
 

@@ -648,6 +648,9 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             }
 
             BigInteger unscaledValue = new BigInteger(value);
+            if (scale == 0) {
+                return unscaledValue;
+            }
             return unscaledValue.divide(BigInteger.TEN.pow(scale));
         });
     }
@@ -702,17 +705,22 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final BarrageOptions options) {
         final ArrowType.Int intType = (ArrowType.Int) arrowType;
         final int bitWidth = intType.getBitWidth();
+        final boolean unsigned = !intType.getIsSigned();
 
         switch (bitWidth) {
             case 8:
-                // note unsigned mappings to byte will overflow byte; but user has asked for this
+                // note unsigned mappings to byte will overflow; but user has asked for this
                 return new ByteChunkReader(options);
             case 16:
-                // note shorts may overflow byte; but user has asked for this
+                if (unsigned) {
+                    // note shorts may overflow; but user has asked for this
+                    return ByteChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+                }
                 return ByteChunkReader.transformTo(new ShortChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 32:
-                // note ints may overflow byte; but user has asked for this
+                // note ints may overflow; but user has asked for this
                 return ByteChunkReader.transformTo(new IntChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
             case 64:
@@ -735,17 +743,19 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         switch (bitWidth) {
             case 8:
                 return ShortChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned,
-                                Byte.BYTES, QueryLanguageFunctionUtils.shortCast(chunk.get(ii))));
+                        (chunk, ii) -> maskIfOverflow(unsigned, QueryLanguageFunctionUtils.shortCast(chunk.get(ii))));
             case 16:
-                // note unsigned mappings to short will overflow short; but user has asked for this
+                if (unsigned) {
+                    return ShortChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                }
                 return new ShortChunkReader(options);
             case 32:
-                // note ints may overflow short; but user has asked for this
+                // note ints may overflow; but user has asked for this
                 return ShortChunkReader.transformTo(new IntChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             case 64:
-                // note longs may overflow short; but user has asked for this
+                // note longs may overflow; but user has asked for this
                 return ShortChunkReader.transformTo(new LongChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
             default:
@@ -767,6 +777,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         (chunk, ii) -> maskIfOverflow(unsigned, Byte.BYTES,
                                 QueryLanguageFunctionUtils.intCast(chunk.get(ii))));
             case 16:
+                if (unsigned) {
+                    return IntChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
+                }
                 return IntChunkReader.transformTo(new ShortChunkReader(options), (chunk, ii) -> maskIfOverflow(unsigned,
                         Short.BYTES, QueryLanguageFunctionUtils.intCast(chunk.get(ii))));
             case 32:
@@ -795,6 +809,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         (chunk, ii) -> maskIfOverflow(unsigned, Byte.BYTES,
                                 QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
             case 16:
+                if (unsigned) {
+                    return LongChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
+                }
                 return LongChunkReader.transformTo(new ShortChunkReader(options),
                         (chunk, ii) -> maskIfOverflow(unsigned,
                                 Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
@@ -822,6 +840,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return transformToObject(new ByteChunkReader(options), (chunk, ii) -> toBigInt(maskIfOverflow(
                         unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
             case 16:
+                if (unsigned) {
+                    return transformToObject(new CharChunkReader(options),
+                            (chunk, ii) -> toBigInt(QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
+                }
                 return transformToObject(new ShortChunkReader(options), (chunk, ii) -> toBigInt(maskIfOverflow(
                         unsigned, Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
             case 32:
@@ -848,6 +870,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return FloatChunkReader.transformTo(new ByteChunkReader(options),
                         (chunk, ii) -> floatCast(Byte.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
             case 16:
+                if (!signed) {
+                    return FloatChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> floatCast(Character.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
+                }
                 return FloatChunkReader.transformTo(new ShortChunkReader(options),
                         (chunk, ii) -> floatCast(Short.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
             case 32:
@@ -898,6 +924,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return DoubleChunkReader.transformTo(new ByteChunkReader(options),
                         (chunk, ii) -> doubleCast(Byte.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
             case 16:
+                if (!signed) {
+                    return DoubleChunkReader.transformTo(new CharChunkReader(options),
+                            (chunk, ii) -> doubleCast(Character.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
+                }
                 return DoubleChunkReader.transformTo(new ShortChunkReader(options),
                         (chunk, ii) -> doubleCast(Short.BYTES, signed, chunk.isNull(ii), chunk.get(ii)));
             case 32:
@@ -948,6 +978,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return transformToObject(new ByteChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
                         unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
             case 16:
+                if (unsigned) {
+                    return transformToObject(new CharChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
+                            unsigned, Character.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                }
                 return transformToObject(new ShortChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
                         unsigned, Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
             case 32:
@@ -983,11 +1017,11 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                             (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
                 }
             case 32:
-                // note unsigned mappings to char will overflow short; but user has asked for this
+                // note int mappings to char will overflow; but user has asked for this
                 return CharChunkReader.transformTo(new IntChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
             case 64:
-                // note unsigned mappings to short will overflow short; but user has asked for this
+                // note long mappings to short will overflow; but user has asked for this
                 return CharChunkReader.transformTo(new LongChunkReader(options),
                         (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
             default:
@@ -1248,16 +1282,17 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
      * <p>
      * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
      * values.
+     * <p>
+     * Note that short can only be sign extended from byte so we don't need to consider other numByte configurations.
      *
      * @param unsigned Whether the value should be treated as unsigned.
-     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
      * @param value The input value to potentially mask.
      * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
      */
     @SuppressWarnings("SameParameterValue")
-    private static short maskIfOverflow(final boolean unsigned, final int numBytes, short value) {
+    private static short maskIfOverflow(final boolean unsigned, short value) {
         if (unsigned && value != QueryConstants.NULL_SHORT) {
-            value &= (short) ((1L << (numBytes * 8)) - 1);
+            value &= (short) ((1L << 8) - 1);
         }
         return value;
     }
@@ -1332,13 +1367,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return value;
     }
 
-    private interface ToObjectTransformFunction<T, WireChunkType extends WritableChunk<Values>> {
-        T get(WireChunkType wireValues, int wireOffset);
+    private interface ToObjectTransformFunction<T, WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        T get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    private static <T, WireChunkType extends WritableChunk<Values>, CR extends ChunkReader<WireChunkType>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(
+    private static <T, WIRE_CHUNK_TYPE extends WritableChunk<Values>, CR extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(
             final CR wireReader,
-            final ToObjectTransformFunction<T, WireChunkType> wireTransform) {
+            final ToObjectTransformFunction<T, WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableObjectChunk::makeWritableChunk,

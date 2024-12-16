@@ -28,13 +28,13 @@ import java.util.PrimitiveIterator;
 public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Values>> {
     private static final String DEBUG_NAME = "DoubleChunkReader";
 
-    public interface ToDoubleTransformFunction<WireChunkType extends WritableChunk<Values>> {
-        double get(WireChunkType wireValues, int wireOffset);
+    public interface ToDoubleTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        double get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
     }
 
-    public static <WireChunkType extends WritableChunk<Values>, T extends ChunkReader<WireChunkType>> ChunkReader<WritableDoubleChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableDoubleChunk<Values>> transformTo(
             final T wireReader,
-            final ToDoubleTransformFunction<WireChunkType> wireTransform) {
+            final ToDoubleTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableDoubleChunk::makeWritableChunk,

@@ -23,9 +23,9 @@ import java.util.PrimitiveIterator;
  * data, supporting various data types and logical structures. This interface is part of the Deephaven Barrage
  * extensions for handling streamed data ingestion.
  *
- * @param <ReadChunkType> The type of chunk being read, extending {@link WritableChunk} with {@link Values}.
+ * @param <READ_CHUNK_TYPE> The type of chunk being read, extending {@link WritableChunk} with {@link Values}.
  */
-public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
+public interface ChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>> {
 
     /**
      * Supports creation of {@link ChunkReader} instances to use when processing a flight stream. JVM implementations
@@ -55,7 +55,7 @@ public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
      * @throws IOException if an error occurred while reading the stream
      */
     @FinalDefault
-    default ReadChunkType readChunk(
+    default READ_CHUNK_TYPE readChunk(
             @NotNull Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             @NotNull PrimitiveIterator.OfLong bufferInfoIter,
             @NotNull DataInput is) throws IOException {
@@ -74,7 +74,7 @@ public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
      * @return a Chunk containing the data from the stream
      * @throws IOException if an error occurred while reading the stream
      */
-    ReadChunkType readChunk(
+    READ_CHUNK_TYPE readChunk(
             @NotNull Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             @NotNull PrimitiveIterator.OfLong bufferInfoIter,
             @NotNull DataInput is,

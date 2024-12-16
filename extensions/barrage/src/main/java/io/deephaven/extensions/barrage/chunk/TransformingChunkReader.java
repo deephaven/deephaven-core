@@ -19,26 +19,26 @@ import java.util.function.IntFunction;
 /**
  * A {@link ChunkReader} that reads a chunk of wire values and transforms them into a different chunk type.
  * 
- * @param <InputChunkType> the input chunk type
- * @param <OutputChunkType> the output chunk type
+ * @param <INPUT_CHUNK_TYPE> the input chunk type
+ * @param <OUTPUT_CHUNK_TYPE> the output chunk type
  */
-public class TransformingChunkReader<InputChunkType extends WritableChunk<Values>, OutputChunkType extends WritableChunk<Values>>
-        extends BaseChunkReader<OutputChunkType> {
+public class TransformingChunkReader<INPUT_CHUNK_TYPE extends WritableChunk<Values>, OUTPUT_CHUNK_TYPE extends WritableChunk<Values>>
+        extends BaseChunkReader<OUTPUT_CHUNK_TYPE> {
 
-    public interface TransformFunction<InputChunkType extends WritableChunk<Values>, OutputChunkType extends WritableChunk<Values>> {
-        void apply(InputChunkType wireValues, OutputChunkType outChunk, int wireOffset, int outOffset);
+    public interface TransformFunction<INPUT_CHUNK_TYPE extends WritableChunk<Values>, OUTPUT_CHUNK_TYPE extends WritableChunk<Values>> {
+        void apply(INPUT_CHUNK_TYPE wireValues, OUTPUT_CHUNK_TYPE outChunk, int wireOffset, int outOffset);
     }
 
-    private final ChunkReader<InputChunkType> wireChunkReader;
-    private final IntFunction<OutputChunkType> chunkFactory;
-    private final Function<WritableChunk<Values>, OutputChunkType> castFunction;
-    private final TransformFunction<InputChunkType, OutputChunkType> transformFunction;
+    private final ChunkReader<INPUT_CHUNK_TYPE> wireChunkReader;
+    private final IntFunction<OUTPUT_CHUNK_TYPE> chunkFactory;
+    private final Function<WritableChunk<Values>, OUTPUT_CHUNK_TYPE> castFunction;
+    private final TransformFunction<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformFunction;
 
     public TransformingChunkReader(
-            @NotNull final ChunkReader<InputChunkType> wireChunkReader,
-            final IntFunction<OutputChunkType> chunkFactory,
-            final Function<WritableChunk<Values>, OutputChunkType> castFunction,
-            final TransformFunction<InputChunkType, OutputChunkType> transformFunction) {
+            @NotNull final ChunkReader<INPUT_CHUNK_TYPE> wireChunkReader,
+            final IntFunction<OUTPUT_CHUNK_TYPE> chunkFactory,
+            final Function<WritableChunk<Values>, OUTPUT_CHUNK_TYPE> castFunction,
+            final TransformFunction<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformFunction) {
         this.wireChunkReader = wireChunkReader;
         this.chunkFactory = chunkFactory;
         this.castFunction = castFunction;
@@ -46,15 +46,15 @@ public class TransformingChunkReader<InputChunkType extends WritableChunk<Values
     }
 
     @Override
-    public OutputChunkType readChunk(
+    public OUTPUT_CHUNK_TYPE readChunk(
             @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
             @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
             @NotNull final DataInput is,
             @Nullable final WritableChunk<Values> outChunk,
             final int outOffset,
             final int totalRows) throws IOException {
-        try (final InputChunkType wireValues = wireChunkReader.readChunk(fieldNodeIter, bufferInfoIter, is)) {
-            final OutputChunkType chunk = castOrCreateChunk(
+        try (final INPUT_CHUNK_TYPE wireValues = wireChunkReader.readChunk(fieldNodeIter, bufferInfoIter, is)) {
+            final OUTPUT_CHUNK_TYPE chunk = castOrCreateChunk(
                     outChunk, Math.max(totalRows, wireValues.size()), chunkFactory, castFunction);
             if (outChunk == null) {
                 // if we're not given an output chunk then we better be writing at the front of the new one

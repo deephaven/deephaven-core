@@ -15,6 +15,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -806,6 +807,15 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             case 8:
                 return ByteChunkWriter.getIdentity(typeInfo.arrowField().isNullable());
             case 16:
+                if (!intType.getIsSigned()) {
+                    return new CharChunkWriter<>((ByteChunk<Values> source) -> {
+                        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(source.size());
+                        for (int ii = 0; ii < source.size(); ++ii) {
+                            chunk.set(ii, QueryLanguageFunctionUtils.charCast(source.get(ii)));
+                        }
+                        return chunk;
+                    }, ByteChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+                }
                 return new ShortChunkWriter<>((ByteChunk<Values> source) -> {
                     final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
@@ -849,6 +859,15 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     return chunk;
                 }, ShortChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
             case 16:
+                if (!intType.getIsSigned()) {
+                    return new CharChunkWriter<>((ShortChunk<Values> source) -> {
+                        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(source.size());
+                        for (int ii = 0; ii < source.size(); ++ii) {
+                            chunk.set(ii, QueryLanguageFunctionUtils.charCast(source.get(ii)));
+                        }
+                        return chunk;
+                    }, ShortChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+                }
                 return ShortChunkWriter.getIdentity(typeInfo.arrowField().isNullable());
             case 32:
                 return new IntChunkWriter<>((ShortChunk<Values> source) -> {
