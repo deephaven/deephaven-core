@@ -12,12 +12,14 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +42,7 @@ public class MapChunkWriter<T>
             final ChunkType keyWriterChunkType,
             final ChunkType valueWriterChunkType,
             final boolean fieldNullable) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
+        super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.keyWriter = keyWriter;
         this.valueWriter = valueWriter;
         this.keyWriterChunkType = keyWriterChunkType;
@@ -54,10 +56,33 @@ public class MapChunkWriter<T>
         return new Context(chunk, rowOffset);
     }
 
-    public final class Context extends ChunkWriter.Context<ObjectChunk<T, Values>> {
+    @Override
+    protected int computeNullCount(
+            @NotNull final BaseChunkWriter.Context context,
+            @NotNull final RowSequence subset) {
+        final MutableInt nullCount = new MutableInt(0);
+        subset.forAllRowKeys(row -> {
+            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+                nullCount.increment();
+            }
+        });
+        return nullCount.get();
+    }
+
+    @Override
+    protected void writeValidityBufferInternal(
+            @NotNull final BaseChunkWriter.Context context,
+            @NotNull final RowSequence subset,
+            @NotNull final SerContext serContext) {
+        subset.forAllRowKeys(row -> {
+            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
+        });
+    }
+
+    public final class Context extends ChunkWriter.Context {
         private final WritableIntChunk<ChunkPositions> offsets;
-        private final ChunkWriter.Context<Chunk<Values>> keyContext;
-        private final ChunkWriter.Context<Chunk<Values>> valueContext;
+        private final ChunkWriter.Context keyContext;
+        private final ChunkWriter.Context valueContext;
 
         public Context(
                 @NotNull final ObjectChunk<T, Values> chunk,
@@ -127,9 +152,10 @@ public class MapChunkWriter<T>
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final ChunkWriter.Context<ObjectChunk<T, Values>> context,
+            @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        // noinspection unchecked
         return new MapChunkInputStream((Context) context, subset, options);
     }
 
@@ -246,11 +272,11 @@ public class MapChunkWriter<T>
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
-            read = true;
+            hasBeenRead = true;
             long bytesWritten = 0;
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
             // write the validity array with LSB indexing

@@ -16,7 +16,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.*;
@@ -1116,7 +1115,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1171,7 +1169,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1225,7 +1222,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1272,12 +1268,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+
+            final UnionListWriter listWriter = outerVector.getWriter();
             listWriter.writeNull();
-            listWriter.setValueCount(numRows);
+
             root.setRowCount(numRows);
 
             stream.putNext();
@@ -1305,13 +1301,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             listWriter.startList();
             listWriter.endList();
-            listWriter.setValueCount(0);
 
             root.setRowCount(numRows);
 
@@ -1342,15 +1337,15 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             // We want to recreate this structure:
             // new double[][] { null, new double[] {}, new double[] { 42.42f, 43.43f } }
 
             listWriter.startList();
-            BaseWriter.ListWriter innerListWriter = listWriter.list();
+            final BaseWriter.ListWriter innerListWriter = listWriter.list();
 
             // null inner list
             innerListWriter.writeNull();
@@ -1366,7 +1361,6 @@ public abstract class FlightMessageRoundTripTest {
             innerListWriter.endList();
 
             listWriter.endList();
-            listWriter.setValueCount(numRows);
             root.setRowCount(numRows);
 
             stream.putNext();

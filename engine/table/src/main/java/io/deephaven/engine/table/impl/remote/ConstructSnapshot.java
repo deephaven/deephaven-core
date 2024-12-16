@@ -1411,12 +1411,7 @@ public class ConstructSnapshot {
             final ExecutionContext executionContext,
             @NotNull final BarrageMessage snapshot) {
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
-        final CompletableFuture<Void> waitForParallelSnapshot = new CompletableFuture<>() {
-            @Override
-            public boolean completeExceptionally(Throwable ex) {
-                return super.completeExceptionally(ex);
-            }
-        };
+        final CompletableFuture<Void> waitForParallelSnapshot = new CompletableFuture<>();
         jobScheduler.iterateParallel(
                 executionContext,
                 logOutput -> logOutput.append("snapshotColumnsParallel"),

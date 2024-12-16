@@ -4,9 +4,9 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -18,38 +18,35 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-public class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
+public abstract class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
+        extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FixedWidthChunkWriter";
 
-    @FunctionalInterface
-    public interface Appender<SourceChunkType extends Chunk<Values>> {
-        void append(@NotNull DataOutput os, @NotNull SourceChunkType sourceValues, int offset) throws IOException;
-    }
-
-    private final Appender<SOURCE_CHUNK_TYPE> appendItem;
-
     public FixedWidthChunkWriter(
-            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
             final boolean dhNullable,
-            final boolean fieldNullable,
-            final Appender<SOURCE_CHUNK_TYPE> appendItem) {
-        super(isRowNullProvider, emptyChunkSupplier, elementSize, dhNullable, fieldNullable);
-        this.appendItem = appendItem;
+            final boolean fieldNullable) {
+        super(transformer, emptyChunkSupplier, elementSize, dhNullable, fieldNullable);
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
+            @NotNull final Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
         return new FixedWidthChunkInputStream(context, subset, options);
     }
 
-    private class FixedWidthChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
+    protected abstract void writePayload(
+            @NotNull final Context context,
+            @NotNull final DataOutput dos,
+            @NotNull final RowSequence subset);
+
+    private class FixedWidthChunkInputStream extends BaseChunkInputStream<Context> {
         private FixedWidthChunkInputStream(
-                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
+                @NotNull final Context context,
                 @Nullable final RowSet subset,
                 @NotNull final BarrageOptions options) {
             super(context, subset, options);
@@ -71,12 +68,12 @@ public class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> exte
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
             long bytesWritten = 0;
-            read = true;
+            hasBeenRead = true;
             final DataOutput dos = new LittleEndianDataOutputStream(outputStream);
 
             // write the validity buffer
@@ -86,14 +83,7 @@ public class FixedWidthChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> exte
             LongSizedDataStructure.intSize(DEBUG_NAME, subset.lastRowKey());
 
             // write the payload buffer
-            subset.forAllRowKeys(rowKey -> {
-                try {
-                    appendItem.append(dos, context.getChunk(), (int) rowKey);
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
-                }
-            });
+            writePayload(context, dos, subset);
 
             bytesWritten += elementSize * subset.size();
             bytesWritten += writePadBuffer(dos, bytesWritten);

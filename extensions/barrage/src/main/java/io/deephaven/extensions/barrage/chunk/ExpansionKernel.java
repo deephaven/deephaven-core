@@ -16,21 +16,41 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * The {@code ExpansionKernel} interface provides methods for transforming chunks containing complex or nested data
+ * structures into flattened representations, and vice versa. This enables efficient handling of columnar data in
+ * scenarios involving arrays, or {@link io.deephaven.vector.Vector vectors}, particularly within the Deephaven Barrage
+ * extensions for Flight/Barrage streams.
+ * <p>
+ * An {@code ExpansionKernel} supports two primary operations:
+ * <ul>
+ * <li><b>Expansion:</b> Converts nested or multi-element data into a flattened form, along with metadata (e.g., row
+ * offsets) describing the original structure.</li>
+ * <li><b>Contraction:</b> Reconstructs the original nested data structure from a flattened representation and
+ * associated metadata.</li>
+ * </ul>
+ *
+ * @param <T> The type of data being processed by this kernel.
+ */
 public interface ExpansionKernel<T> {
 
     /**
-     * This expands the source from a {@code V} per element to a flat {@code T} per element. The kernel records the
-     * number of consecutive elements that belong to a row in {@code offsetDest}. The returned chunk is owned by the
-     * caller.
+     * Expands a chunk of nested or multi-element data ({@code T[]} or {@code Vector<T>}) into a flattened chunk of
+     * elements ({@code T}), along with metadata describing the structure of the original data.
      * <p>
-     * If a non-zero {@code fixedSizeLength} is provided, then each row will be truncated or null-appended as
-     * appropriate to match the fixed size.
+     * The expansion involves unrolling arrays, or {@link io.deephaven.vector.Vector vectors}, or other multi-element
+     * types into a single contiguous chunk. The number of elements belonging to each original row is recorded in
+     * {@code offsetDest}, which allows reconstructing the original structure when needed.
+     * <p>
+     * If a non-zero {@code fixedSizeLength} is provided, each row will be truncated or padded with nulls to match the
+     * fixed size. A negative {@code fixedSizeLength} will pick elements from the end of the array/vector.
      *
-     * @param source the source chunk of V to expand
-     * @param fixedSizeLength the length of each array, which is fixed for all rows
-     * @param offsetDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
-     *        {@code source.get(i).length}
-     * @return an unrolled/flattened chunk of T
+     * @param source The source chunk containing nested or multi-element data to expand.
+     * @param fixedSizeLength The fixed size for each row, or 0 for variable-length rows. A negative value will pick
+     *        elements from the end.
+     * @param offsetDest The destination {@link WritableIntChunk} to store row offsets, or {@code null} if not needed.
+     * @param <A> The attribute type of the source chunk.
+     * @return A flattened {@link WritableChunk} containing the expanded elements.
      */
     <A extends Any> WritableChunk<A> expand(
             @NotNull ObjectChunk<T, A> source,
@@ -38,23 +58,28 @@ public interface ExpansionKernel<T> {
             @Nullable WritableIntChunk<ChunkPositions> offsetDest);
 
     /**
-     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a {@code Chunk<V>}.
-     * The returned chunk is owned by the caller.
+     * Contracts a flattened chunk of elements ({@code T}) back into a chunk of nested or multi-element data
+     * ({@code T[]} or {@code Vector<T>}), using provided metadata (e.g., row offsets or lengths) to reconstruct the
+     * original structure.
      * <p>
-     * The method of determining the length of each row is determined by whether {@code offsets} and {@code lengths} are
-     * {@code null} or not. If offsets is {@code null}, then the length of each row is assumed to be
-     * {@code sizePerElement}. If {@code lengths} is {@code null}, then the length of each row is determined by adjacent
-     * elements in {@code offsets}. If both are non-{@code null}, then the length of each row is determined by
-     * {@code lengths}.
+     * The contraction process supports multiple configurations:
+     * <ul>
+     * <li>If {@code offsets} is {@code null}, each row is assumed to have a fixed size defined by
+     * {@code sizePerElement}.</li>
+     * <li>If {@code lengths} is {@code null}, each row's size is determined by differences between adjacent elements in
+     * {@code offsets}.</li>
+     * <li>If both {@code offsets} and {@code lengths} are provided, {@code lengths} determines the row sizes.</li>
+     * </ul>
      *
-     * @param source the source chunk of T to contract
-     * @param sizePerElement the length of each array, which is fixed for all rows
-     * @param offsets the source IntChunk to determine the start location of each row
-     * @param lengths the source IntChunk to determine the length of each row
-     * @param outChunk the returned chunk from an earlier record batch
-     * @param outOffset the offset to start writing into {@code outChunk}
-     * @param totalRows the total known rows for this column; if known (else 0)
-     * @return a result chunk of {@code V}
+     * @param source The source chunk containing flattened data to contract.
+     * @param sizePerElement The fixed size for each row, or 0 for variable-length rows.
+     * @param offsets An {@link IntChunk} describing row start positions, or {@code null}.
+     * @param lengths An {@link IntChunk} describing row lengths, or {@code null}.
+     * @param outChunk A reusable {@link WritableChunk} to store the contracted result, or {@code null}.
+     * @param outOffset The starting position for writing into {@code outChunk}.
+     * @param totalRows The total number of rows, or 0 if unknown.
+     * @param <A> The attribute type of the source chunk.
+     * @return A {@link WritableObjectChunk} containing the reconstructed nested or multi-element data.
      */
     <A extends Any> WritableObjectChunk<T, A> contract(
             @NotNull Chunk<A> source,
@@ -66,17 +91,20 @@ public interface ExpansionKernel<T> {
             int totalRows);
 
     /**
-     * This computes the length of a given index depending on whether this is an Arrow FixedSizeList, List, or ListView.
+     * Computes the length of a row at the specified index, based on provided metadata (offsets and lengths).
      * <p>
-     * If {@code offsets} is {@code null}, then the length of each row is assumed to be {@code sizePerOffset}. If
-     * {@code lengths} is {@code null}, then the length of each row is determined by adjacent elements in
-     * {@code offsets}. If both are non-{@code null}, then the length of each row is determined by {@code lengths}.
+     * The size computation follows these rules:
+     * <ul>
+     * <li>If {@code offsets} is {@code null}, each row is assumed to have a fixed size of {@code sizePerOffset}.</li>
+     * <li>If {@code lengths} is {@code null}, the size is calculated from adjacent elements in {@code offsets}.</li>
+     * <li>If both {@code offsets} and {@code lengths} are provided, {@code lengths} determines the row size.</li>
+     * </ul>
      *
-     * @param ii the index to compute the size for
-     * @param sizePerOffset the size of each offset when fixed
-     * @param offsets the source IntChunk to determine the start location of each row
-     * @param lengths the source IntChunk to determine the length of each row
-     * @return the length of the given index
+     * @param ii The row index for which to compute the size.
+     * @param sizePerOffset The fixed size for each row, if applicable.
+     * @param offsets An {@link IntChunk} describing row start positions, or {@code null}.
+     * @param lengths An {@link IntChunk} describing row lengths, or {@code null}.
+     * @return The size of the row at the specified index.
      */
     @FinalDefault
     default int computeSize(

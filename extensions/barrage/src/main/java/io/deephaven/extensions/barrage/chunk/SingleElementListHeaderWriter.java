@@ -12,7 +12,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * This helper class is used to generate only the header of an arrow list that contains a single element.
+ * The {@code SingleElementListHeaderWriter} is a specialized {@link DrainableColumn} implementation that writes the
+ * header for singleton list-wrapped columns in Apache Arrow record batches.
+ * <p>
+ * This writer ensures compatibility with Apache Arrow's format by providing the necessary metadata and offsets for a
+ * single-element list, while omitting unnecessary buffers such as validity buffers. It is designed to write the header
+ * information for a column where all rows are represented as a singleton list, with no null values.
+ *
+ * @see SingleElementListHeaderReader
  */
 public class SingleElementListHeaderWriter extends DrainableColumn {
 

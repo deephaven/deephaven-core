@@ -134,7 +134,7 @@ public class BarrageUtil {
     /**
      * The Apache Arrow metadata prefix for Deephaven attributes.
      */
-    private static final String ATTR_DH_PREFIX = "deephaven:";
+    public static final String ATTR_DH_PREFIX = "deephaven:";
 
     /**
      * The deephaven metadata tag to indicate an attribute.
@@ -149,12 +149,12 @@ public class BarrageUtil {
     /**
      * The deephaven metadata tag to indicate the deephaven column type.
      */
-    private static final String ATTR_TYPE_TAG = "type";
+    public static final String ATTR_TYPE_TAG = "type";
 
     /**
      * The deephaven metadata tag to indicate the deephaven column component type.
      */
-    private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+    public static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
 
     private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
             Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
@@ -970,7 +970,7 @@ public class BarrageUtil {
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getDataType(),
                         cd.getComponentType(),
                         fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
@@ -1035,7 +1035,7 @@ public class BarrageUtil {
                         final long targetCycleDurationMillis;
                         final UpdateGraph updateGraph = table.getUpdateGraph();
                         if (updateGraph == null || updateGraph instanceof PoisonedUpdateGraph) {
-                            targetCycleDurationMillis = PeriodicUpdateGraph.DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
+                            targetCycleDurationMillis = PeriodicUpdateGraph.getDefaultTargetCycleDurationMillis();
                         } else {
                             targetCycleDurationMillis = updateGraph.<PeriodicUpdateGraph>cast()
                                     .getTargetCycleDurationMillis();
@@ -1082,7 +1082,7 @@ public class BarrageUtil {
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
+                        cd.getDataType(),
                         cd.getComponentType(),
                         flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);

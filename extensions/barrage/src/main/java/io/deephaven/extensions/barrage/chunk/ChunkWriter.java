@@ -19,6 +19,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
+/**
+ * The {@code ChunkWriter} interface provides a mechanism for writing chunks of data into a structured format suitable
+ * for transmission in Apache Arrow's columnar format. It enables efficient handling of chunked data, including support
+ * for various data types and logical structures. This interface is part of the Deephaven Barrage extensions for
+ * efficient data streaming and processing.
+ *
+ * @param <SOURCE_CHUNK_TYPE> The type of chunk of source data, extending {@link Chunk} with {@link Values}.
+ */
 public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
 
     /**
@@ -44,7 +52,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
      * @param rowOffset the offset into the logical message potentially spread over multiple chunks
      * @return a context for the given chunk
      */
-    Context<SOURCE_CHUNK_TYPE> makeContext(
+    Context makeContext(
             @NotNull SOURCE_CHUNK_TYPE chunk,
             long rowOffset);
 
@@ -57,7 +65,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
     DrainableColumn getInputStream(
-            @NotNull Context<SOURCE_CHUNK_TYPE> context,
+            @NotNull Context context,
             @Nullable RowSet subset,
             @NotNull BarrageOptions options) throws IOException;
 
@@ -70,8 +78,8 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
     DrainableColumn getEmptyInputStream(
             @NotNull BarrageOptions options) throws IOException;
 
-    class Context<T extends Chunk<Values>> extends ReferenceCounted implements SafeCloseable {
-        private final T chunk;
+    class Context extends ReferenceCounted implements SafeCloseable {
+        private final Chunk<Values> chunk;
         private final long rowOffset;
 
         /**
@@ -80,7 +88,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
          * @param chunk the chunk of data to be written
          * @param rowOffset the offset into the logical message potentially spread over multiple chunks
          */
-        public Context(final T chunk, final long rowOffset) {
+        public Context(final Chunk<Values> chunk, final long rowOffset) {
             super(1);
             this.chunk = chunk;
             this.rowOffset = rowOffset;
@@ -89,7 +97,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
         /**
          * @return the chunk wrapped by this wrapper
          */
-        T getChunk() {
+        Chunk<Values> getChunk() {
             return chunk;
         }
 
@@ -122,7 +130,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
         @Override
         protected void onReferenceCountAtZero() {
             if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
+                ((PoolableChunk<?>) chunk).close();
             }
         }
     }
@@ -154,7 +162,7 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
 
     abstract class DrainableColumn extends DefensiveDrainable {
         /**
-         * Append the field nde to the flatbuffer payload via the supplied listener.
+         * Append the field node to the flatbuffer payload via the supplied listener.
          * 
          * @param listener the listener to notify for each logical field node in this payload
          */

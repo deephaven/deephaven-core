@@ -107,7 +107,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
     @Override
     public <A extends Any> WritableObjectChunk<ObjectVector<T>, A> contract(
             @NotNull final Chunk<A> source,
-            final int sizePerElement,
+            int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
@@ -120,6 +120,7 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

@@ -18,7 +18,12 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 /**
- * Consumes Flight/Barrage streams and transforms them into WritableChunks.
+ * The {@code ChunkReader} interface provides a mechanism for consuming Flight/Barrage streams and transforming them
+ * into {@link WritableChunk} instances for further processing. It facilitates efficient deserialization of columnar
+ * data, supporting various data types and logical structures. This interface is part of the Deephaven Barrage
+ * extensions for handling streamed data ingestion.
+ *
+ * @param <ReadChunkType> The type of chunk being read, extending {@link WritableChunk} with {@link Values}.
  */
 public interface ChunkReader<ReadChunkType extends WritableChunk<Values>> {
 

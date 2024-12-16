@@ -901,7 +901,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         }
     }
 
-    private static int findWriterForOffset(final ChunkWriter.Context<?>[] chunks, final long offset) {
+    private static int findWriterForOffset(final ChunkWriter.Context[] chunks, final long offset) {
         // fast path for smaller updates
         if (chunks.length <= 1) {
             return 0;
@@ -949,7 +949,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             endPos = Long.MAX_VALUE;
         }
         if (addColumnData[0].chunks().length != 0) {
-            final ChunkWriter.Context<?> writer = addColumnData[0].chunks()[chunkIdx];
+            final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
             endPos = Math.min(endPos, writer.getLastRowOffset());
             shift = -writer.getRowOffset();
         }
@@ -981,9 +981,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     // Add the drainable last as it is allowed to immediately close a row set the visitors need
                     addStream.accept(drainableColumn);
                 } else {
-                    final ChunkWriter.Context<Chunk<Values>> chunk = chunkListWriter.chunks()[chunkIdx];
+                    final ChunkWriter.Context context = chunkListWriter.chunks()[chunkIdx];
                     final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.writer().getInputStream(
-                            chunk,
+                            context,
                             shift == 0 ? myAddedOffsets : adjustedOffsets,
                             view.options());
                     drainableColumn.visitFieldNodes(fieldNodeListener);
@@ -1008,8 +1008,8 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         // adjust the batch size if we would cross a chunk boundary
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnWriter mcd = modColumnData[ii];
-            final ChunkWriter.Context<?>[] chunks = mcd.chunkListWriter.chunks();
-            if (chunks.length == 0) {
+            final ChunkWriter.Context[] contexts = mcd.chunkListWriter.chunks();
+            if (contexts.length == 0) {
                 continue;
             }
 
@@ -1017,9 +1017,9 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             // if all mods are being sent, then offsets yield an identity mapping
             final long startPos = modOffsets != null ? modOffsets.get(startRange) : startRange;
             if (startPos != RowSet.NULL_ROW_KEY) {
-                final int chunkIdx = findWriterForOffset(chunks, startPos);
-                if (chunkIdx < chunks.length - 1) {
-                    maxLength = Math.min(maxLength, chunks[chunkIdx].getLastRowOffset() + 1 - startPos);
+                final int chunkIdx = findWriterForOffset(contexts, startPos);
+                if (chunkIdx < contexts.length - 1) {
+                    maxLength = Math.min(maxLength, contexts[chunkIdx].getLastRowOffset() + 1 - startPos);
                 }
                 columnChunkIdx[ii] = chunkIdx;
             }
@@ -1029,7 +1029,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         long numRows = 0;
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnWriter mcd = modColumnData[ii];
-            final ChunkWriter.Context<Chunk<Values>> chunk = mcd.chunkListWriter.chunks().length == 0
+            final ChunkWriter.Context context = mcd.chunkListWriter.chunks().length == 0
                     ? null
                     : mcd.chunkListWriter.chunks()[columnChunkIdx[ii]];
 
@@ -1046,8 +1046,8 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 // if all mods are being sent, then offsets yield an identity mapping
                 startPos = startRange;
                 endPos = startRange + maxLength - 1;
-                if (chunk != null) {
-                    endPos = Math.min(endPos, chunk.getLastRowOffset());
+                if (context != null) {
+                    endPos = Math.min(endPos, context.getLastRowOffset());
                 }
             }
 
@@ -1065,7 +1065,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             numRows = Math.max(numRows, myModOffsets.size());
 
             try {
-                final int numElements = chunk == null ? 0 : myModOffsets.intSize("BarrageStreamWriterImpl");
+                final int numElements = context == null ? 0 : myModOffsets.intSize("BarrageStreamWriterImpl");
                 if (view.options().columnsAsList()) {
                     // if we are sending columns as a list, we need to add the list buffers before each column
                     final SingleElementListHeaderWriter listHeader =
@@ -1084,11 +1084,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     // Add the drainable last as it is allowed to immediately close a row set the visitors need
                     addStream.accept(drainableColumn);
                 } else {
-                    final long shift = -chunk.getRowOffset();
+                    final long shift = -context.getRowOffset();
                     // normalize to the chunk offsets
                     try (final WritableRowSet adjustedOffsets = shift == 0 ? null : myModOffsets.shift(shift)) {
                         final ChunkWriter.DrainableColumn drainableColumn = mcd.chunkListWriter.writer().getInputStream(
-                                chunk, shift == 0 ? myModOffsets : adjustedOffsets, view.options());
+                                context, shift == 0 ? myModOffsets : adjustedOffsets, view.options());
                         drainableColumn.visitFieldNodes(fieldNodeListener);
                         drainableColumn.visitBuffers(bufferListener);
                         // Add the drainable last as it is allowed to immediately close a row set the visitors need

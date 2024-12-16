@@ -43,14 +43,16 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
             final int outOffset,
             final int totalRows) throws IOException {
         final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final ChunkWriter.FieldNodeInfo innerInfo = fieldNodeIter.next();
+        // an arrow map is represented as a List<Struct<Pair<Key, Value>>>; the struct is superfluous, but we must
+        // consume the field node anyway
+        final ChunkWriter.FieldNodeInfo structInfo = fieldNodeIter.next();
         final long validityBufferLength = bufferInfoIter.nextLong();
         final long offsetsBufferLength = bufferInfoIter.nextLong();
-        final long structValiadityBufferLength = bufferInfoIter.nextLong();
+        final long structValidityBufferLength = bufferInfoIter.nextLong();
 
         if (nodeInfo.numElements == 0) {
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
-                    validityBufferLength + offsetsBufferLength + structValiadityBufferLength));
+                    validityBufferLength + offsetsBufferLength + structValidityBufferLength));
             try (final WritableChunk<Values> ignored =
                     keyReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0);
                     final WritableChunk<Values> ignored2 =
@@ -65,19 +67,7 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
                 final WritableIntChunk<ChunkPositions> offsets = WritableIntChunk.makeWritableChunk(numOffsets)) {
 
-            // Read validity buffer:
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBufferLength / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBufferLength) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBufferLength - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
+            readValidityBuffer(is, numValidityLongs, validityBufferLength, isValid, DEBUG_NAME);
 
             // Read offsets:
             final long offBufRead = (long) numOffsets * Integer.BYTES;
@@ -93,8 +83,8 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
             }
 
             // it doesn't make sense to have a struct validity buffer for a map
-            if (structValiadityBufferLength > 0) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, structValiadityBufferLength));
+            if (structValidityBufferLength > 0) {
+                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, structValidityBufferLength));
             }
 
             try (final WritableChunk<Values> keysPrim =
@@ -123,7 +113,7 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
                         chunk.set(outOffset + ii, null);
                     } else {
                         final ImmutableMap.Builder<Object, Object> mapBuilder = ImmutableMap.builder();
-                        for (jj = offsets.get(ii); jj < offsets.get(ii + 1); ++jj) {
+                        for (int jj = offsets.get(ii); jj < offsets.get(ii + 1); ++jj) {
                             mapBuilder.put(keys.get(jj), values.get(jj));
                         }
                         // noinspection unchecked
@@ -135,4 +125,5 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
 
         return chunk;
     }
+
 }

@@ -100,7 +100,7 @@ public class DoubleArrayExpansionKernel implements ArrayExpansionKernel<double[]
     @Override
     public <A extends Any> WritableObjectChunk<double[], A> contract(
             @NotNull final Chunk<A> source,
-            final int sizePerElement,
+            int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
@@ -116,6 +116,7 @@ public class DoubleArrayExpansionKernel implements ArrayExpansionKernel<double[]
             return chunk;
         }
 
+        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

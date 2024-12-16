@@ -125,6 +125,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.Int, BigDecimal.class, DefaultChunkReaderFactory::intToBigDecimal);
         register(ArrowType.ArrowTypeID.Bool, boolean.class, DefaultChunkReaderFactory::boolToBoolean);
         register(ArrowType.ArrowTypeID.Bool, Boolean.class, DefaultChunkReaderFactory::boolToBoolean);
+        // note that we hold boolean's in ByteChunks, so it's identical logic to read boolean as bytes.
         register(ArrowType.ArrowTypeID.Bool, byte.class, DefaultChunkReaderFactory::boolToBoolean);
         register(ArrowType.ArrowTypeID.FixedSizeBinary, byte[].class,
                 DefaultChunkReaderFactory::fixedSizeBinaryToByteArray);
@@ -206,9 +207,9 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             int fixedSizeLength = 0;
             final ListChunkReader.Mode mode;
             if (typeId == ArrowType.ArrowTypeID.List) {
-                mode = ListChunkReader.Mode.DENSE;
+                mode = ListChunkReader.Mode.VARIABLE;
             } else if (typeId == ArrowType.ArrowTypeID.ListView) {
-                mode = ListChunkReader.Mode.SPARSE;
+                mode = ListChunkReader.Mode.VIEW;
             } else {
                 mode = ListChunkReader.Mode.FIXED;
                 fixedSizeLength = ((ArrowType.FixedSizeList) field.getType()).getListSize();
@@ -647,7 +648,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             }
 
             BigInteger unscaledValue = new BigInteger(value);
-            return unscaledValue.divide(BigInteger.ONE.pow(scale));
+            return unscaledValue.divide(BigInteger.TEN.pow(scale));
         });
     }
 
@@ -973,8 +974,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         switch (bitWidth) {
             case 8:
                 return CharChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned, Byte.BYTES,
-                                QueryLanguageFunctionUtils.charCast(chunk.get(ii))));
+                        (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
             case 16:
                 if (unsigned) {
                     return new CharChunkReader(options);
@@ -1238,36 +1238,92 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return value == QueryConstants.NULL_LONG ? null : BigDecimal.valueOf(value);
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private static char maskIfOverflow(final boolean unsigned, final int numBytes, char value) {
-        if (unsigned && value != QueryConstants.NULL_CHAR) {
-            value &= (char) ((1L << (numBytes * 8)) - 1);
-        }
-        return value;
-    }
-
+    /**
+     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
+     * represented with the specified number of bytes.
+     * <p>
+     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
+     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
+     * representation.
+     * <p>
+     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
+     * values.
+     *
+     * @param unsigned Whether the value should be treated as unsigned.
+     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
+     * @param value The input value to potentially mask.
+     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
+     */
     @SuppressWarnings("SameParameterValue")
     private static short maskIfOverflow(final boolean unsigned, final int numBytes, short value) {
-        if (unsigned && value != QueryConstants.NULL_SHORT && value < 0) {
+        if (unsigned && value != QueryConstants.NULL_SHORT) {
             value &= (short) ((1L << (numBytes * 8)) - 1);
         }
         return value;
     }
 
+    /**
+     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
+     * represented with the specified number of bytes.
+     * <p>
+     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
+     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
+     * representation.
+     * <p>
+     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
+     * values.
+     *
+     * @param unsigned Whether the value should be treated as unsigned.
+     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
+     * @param value The input value to potentially mask.
+     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
+     */
     private static int maskIfOverflow(final boolean unsigned, final int numBytes, int value) {
-        if (unsigned && value != QueryConstants.NULL_INT && value < 0) {
+        if (unsigned && value != QueryConstants.NULL_INT) {
             value &= (int) ((1L << (numBytes * 8)) - 1);
         }
         return value;
     }
 
+    /**
+     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
+     * represented with the specified number of bytes.
+     * <p>
+     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
+     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
+     * representation.
+     * <p>
+     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
+     * values.
+     *
+     * @param unsigned Whether the value should be treated as unsigned.
+     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
+     * @param value The input value to potentially mask.
+     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
+     */
     private static long maskIfOverflow(final boolean unsigned, final int numBytes, long value) {
-        if (unsigned && value != QueryConstants.NULL_LONG && value < 0) {
+        if (unsigned && value != QueryConstants.NULL_LONG) {
             value &= ((1L << (numBytes * 8)) - 1);
         }
         return value;
     }
 
+    /**
+     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
+     * represented with the specified number of bytes.
+     * <p>
+     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
+     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
+     * representation.
+     * <p>
+     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
+     * values.
+     *
+     * @param unsigned Whether the value should be treated as unsigned.
+     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
+     * @param value The input value to potentially mask.
+     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
+     */
     @SuppressWarnings("SameParameterValue")
     private static BigInteger maskIfOverflow(final boolean unsigned, final int numBytes, final BigInteger value) {
         if (unsigned && value != null && value.compareTo(BigInteger.ZERO) < 0) {

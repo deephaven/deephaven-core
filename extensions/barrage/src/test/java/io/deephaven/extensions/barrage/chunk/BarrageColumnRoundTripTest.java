@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -226,21 +227,23 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 for (int i = 0; i < chunk.size(); ++i) {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
                 }
-            }, (utO, utC, subset, offset) -> {
-                final WritableLongChunk<Values> original = utO.asWritableLongChunk();
-                final WritableLongChunk<Values> computed = utC.asWritableLongChunk();
-                if (subset == null) {
-                    for (int i = 0; i < original.size(); ++i) {
-                        Assert.equals(original.get(i), "original.get(i)",
-                                computed.get(offset + i), "computed.get(i)");
-                    }
-                } else {
-                    final MutableInt off = new MutableInt();
-                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
-                            computed.get(offset + off.getAndIncrement()),
-                            "computed.get(offset + off.getAndIncrement())"));
-                }
-            });
+            }, BarrageColumnRoundTripTest::longIdentityValidator);
+        }
+    }
+
+    private static void longIdentityValidator(WritableChunk<Values> utO, WritableChunk<Values> utC, RowSequence subset, int offset) {
+        final WritableLongChunk<Values> original = utO.asWritableLongChunk();
+        final WritableLongChunk<Values> computed = utC.asWritableLongChunk();
+        if (subset == null) {
+            for (int i = 0; i < original.size(); ++i) {
+                Assert.equals(original.get(i), "original.get(i)",
+                        computed.get(offset + i), "computed.get(i)");
+            }
+        } else {
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                    computed.get(offset + off.getAndIncrement()),
+                    "computed.get(offset + off.getAndIncrement())"));
         }
     }
 
@@ -300,11 +303,11 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, Instant.class, (utO) -> {
-                final WritableObjectChunk<Instant, Values> chunk = utO.asWritableObjectChunk();
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
-                    chunk.set(i, i % 7 == 0 ? null : Instant.ofEpochSecond(0, random.nextLong()));
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : random.nextLong());
                 }
-            }, new ObjectIdentityValidator<>());
+            }, BarrageColumnRoundTripTest::longIdentityValidator);
         }
     }
 
@@ -659,10 +662,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static <T> void testRoundTripSerialization(
-            final BarrageSubscriptionOptions options, final Class<T> type,
-            final Consumer<WritableChunk<Values>> initData, final Validator validator) throws IOException {
+            final BarrageSubscriptionOptions options,
+            Class<T> type,
+            final Consumer<WritableChunk<Values>> initData,
+            final Validator validator) throws IOException {
         final int NUM_ROWS = 8;
         final ChunkType chunkType;
+        // noinspection unchecked
+        type = (Class<T>) ReinterpretUtils.maybeConvertToPrimitiveDataType(type);
         if (type == Boolean.class || type == boolean.class) {
             chunkType = ChunkType.Byte;
         } else {
@@ -691,7 +698,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         final ChunkWriter<Chunk<Values>> writer = DefaultChunkWriterFactory.INSTANCE
                 .newWriter(BarrageTypeInfo.make(type, type.getComponentType(), field));
         try (SafeCloseable ignored = srcData;
-                final ChunkWriter.Context<Chunk<Values>> context = writer.makeContext(data, 0)) {
+                final ChunkWriter.Context context = writer.makeContext(data, 0)) {
             // full sub logic
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkWriter.DrainableColumn column = writer.getInputStream(context, null, options)) {
@@ -712,8 +719,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), bufferNodes.build().iterator(), dis, null, 0, 0)) {
-                    Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
-                    validator.assertExpected(data, rtData, null, 0);
+                    Assert.eq(srcData.size(), "srcData.size()", rtData.size(), "rtData.size()");
+                    validator.assertExpected(srcData, rtData, null, 0);
                 }
             }
 
@@ -739,7 +746,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             // swiss cheese subset
             final Random random = new Random(0);
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            for (int i = 0; i < data.size(); ++i) {
+            for (int i = 0; i < srcData.size(); ++i) {
                 if (random.nextBoolean()) {
                     builder.appendKey(i);
                 }
@@ -760,7 +767,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), bufferNodes.build().iterator(), dis, null, 0, 0)) {
                     Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
-                    validator.assertExpected(data, rtData, subset, 0);
+                    validator.assertExpected(srcData, rtData, subset, 0);
                 }
             }
 
@@ -782,16 +789,17 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                 try (final WritableChunk<Values> rtData = readChunk(options, readType, readType.getComponentType(),
                         field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, null, 0,
-                        data.size() * 2)) {
+                        srcData.size() * 2)) {
                     // second message
                     dis = new LittleEndianDataInputStream(
                             new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                     final WritableChunk<Values> rtData2 = readChunk(options, readType, readType.getComponentType(),
-                            field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, rtData, data.size(),
-                            data.size() * 2);
+                            field, fieldNodes.iterator(), Arrays.stream(buffers).iterator(), dis, rtData,
+                            srcData.size(),
+                            srcData.size() * 2);
                     Assert.eq(rtData, "rtData", rtData2, "rtData2");
-                    validator.assertExpected(data, rtData, null, 0);
-                    validator.assertExpected(data, rtData, null, data.size());
+                    validator.assertExpected(srcData, rtData, null, 0);
+                    validator.assertExpected(srcData, rtData, null, srcData.size());
                 }
             }
         }

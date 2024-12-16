@@ -9,6 +9,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -35,15 +36,16 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
     public VarBinaryChunkWriter(
             final boolean fieldNullable,
             final Appender<T> appendItem) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
+        super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.appendItem = appendItem;
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final ChunkWriter.Context<ObjectChunk<T, Values>> context,
+            @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        // noinspection unchecked
         return new ObjectChunkInputStream((Context) context, subset, options);
     }
 
@@ -54,7 +56,28 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
         return new Context(chunk, rowOffset);
     }
 
-    public final class Context extends ChunkWriter.Context<ObjectChunk<T, Values>> {
+    @Override
+    protected int computeNullCount(
+            @NotNull final ChunkWriter.Context context,
+            @NotNull final RowSequence subset) {
+        final MutableInt nullCount = new MutableInt(0);
+        subset.forAllRowKeys(row -> {
+            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+                nullCount.increment();
+            }
+        });
+        return nullCount.get();
+    }
+
+    @Override
+    protected void writeValidityBufferInternal(ChunkWriter.@NotNull Context context, @NotNull RowSequence subset,
+            @NotNull SerContext serContext) {
+        subset.forAllRowKeys(row -> {
+            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
+        });
+    }
+
+    public final class Context extends ChunkWriter.Context {
         private final ByteStorage byteStorage;
 
         public Context(
@@ -156,11 +179,11 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
-            read = true;
+            hasBeenRead = true;
             final MutableLong bytesWritten = new MutableLong();
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
 

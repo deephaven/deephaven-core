@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +15,21 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+/**
+ * The {@code SingleElementListHeaderReader} is a specialized {@link BaseChunkReader} used to handle singleton
+ * list-wrapped columns in Apache Arrow record batches. This implementation ensures compatibility with Apache Arrow's
+ * requirement that top-level column vectors must have the same number of rows, even when some columns in a record batch
+ * contain varying numbers of modified rows.
+ * <p>
+ * This reader works by skipping the validity and offset buffers for the singleton list and delegating the reading of
+ * the underlying data to a {@link ChunkReader} for the wrapped component type. This approach ensures that Arrow
+ * payloads remain compatible with official Arrow implementations while supporting Deephaven's semantics for record
+ * batches with varying column modifications.
+ * <p>
+ * This is used only when {@link BarrageOptions#columnsAsList()} is enabled.
+ *
+ * @param <READ_CHUNK_TYPE> The type of chunk being read, extending {@link WritableChunk} with {@link Values}.
+ */
 public class SingleElementListHeaderReader<READ_CHUNK_TYPE extends WritableChunk<Values>>
         extends BaseChunkReader<READ_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "SingleElementListHeaderReader";

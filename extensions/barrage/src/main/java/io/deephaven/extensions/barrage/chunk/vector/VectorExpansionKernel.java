@@ -15,6 +15,15 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
 
+/**
+ * The {@code VectorExpansionKernel} interface provides a mechanism for expanding chunks containing {@link Vector}
+ * elements into a pair of {@code LongChunk} and {@code Chunk<T>}, enabling efficient handling of vector-typed columnar
+ * data. This interface is part of the Deephaven Barrage extensions for processing structured data in Flight/Barrage
+ * streams.
+ *
+ * <p>
+ * A {@code VectorExpansionKernel}
+ */
 public interface VectorExpansionKernel<T extends Vector<T>> extends ExpansionKernel<T> {
 
     static Class<?> getComponentType(final Class<?> type, final Class<?> componentType) {

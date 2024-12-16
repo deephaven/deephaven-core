@@ -12,5 +12,6 @@
         <exclude name="MapChunkWriter.java" />
         <exclude name="UnionChunkWriter.java" />
         <exclude name="UnionChunkReader.java" />
+        <exclude name="BigDecimalChunkWriter.java" />
     </source>
 </module>

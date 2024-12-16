@@ -361,7 +361,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Preview));
 
         tempMap.put(BARRAGE_SCHEMA_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Filter));
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.LastBy,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Sort));
 
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }

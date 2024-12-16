@@ -96,7 +96,7 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel<char[]> {
     @Override
     public <A extends Any> WritableObjectChunk<char[], A> contract(
             @NotNull final Chunk<A> source,
-            final int sizePerElement,
+            int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
@@ -112,6 +112,7 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel<char[]> {
             return chunk;
         }
 
+        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

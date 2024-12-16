@@ -8,13 +8,18 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,42 +30,64 @@ import java.util.function.Supplier;
 public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ShortChunkWriter";
     private static final ShortChunkWriter<ShortChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
-            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, true);
+            null, ShortChunk::getEmptyChunk, true);
     private static final ShortChunkWriter<ShortChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new ShortChunkWriter<>(
-            ShortChunk::isNull, ShortChunk::getEmptyChunk, ShortChunk::get, false);
-
+            null, ShortChunk::getEmptyChunk, false);
 
     public static ShortChunkWriter<ShortChunk<Values>> getIdentity(boolean isNullable) {
         return isNullable ? NULLABLE_IDENTITY_INSTANCE : NON_NULLABLE_IDENTITY_INSTANCE;
     }
 
-    @FunctionalInterface
-    public interface ToShortTransformFunction<SourceChunkType extends Chunk<Values>> {
-        short get(SourceChunkType sourceValues, int offset);
+    public static WritableShortChunk<Values> chunkUnboxer(
+            @NotNull final ObjectChunk<Short, Values> sourceValues) {
+        final WritableShortChunk<Values> output = WritableShortChunk.makeWritableChunk(sourceValues.size());
+        for (int ii = 0; ii < sourceValues.size(); ++ii) {
+            output.set(ii, TypeUtils.unbox(sourceValues.get(ii)));
+        }
+        return output;
     }
 
-    private final ToShortTransformFunction<SOURCE_CHUNK_TYPE> transform;
-
     public ShortChunkWriter(
-            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
-            @Nullable final ToShortTransformFunction<SOURCE_CHUNK_TYPE> transform,
             final boolean fieldNullable) {
-        super(isRowNullProvider, emptyChunkSupplier, Short.BYTES, true, fieldNullable);
-        this.transform = transform;
+        super(transformer, emptyChunkSupplier, Short.BYTES, true, fieldNullable);
     }
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final Context<SOURCE_CHUNK_TYPE> context,
+            @NotNull final Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
         return new ShortChunkInputStream(context, subset, options);
     }
 
-    private class ShortChunkInputStream extends BaseChunkInputStream<Context<SOURCE_CHUNK_TYPE>> {
+    @Override
+    protected int computeNullCount(
+            @NotNull final Context context,
+            @NotNull final RowSequence subset) {
+        final MutableInt nullCount = new MutableInt(0);
+        subset.forAllRowKeys(row -> {
+            if (context.getChunk().asShortChunk().isNull((int) row)) {
+                nullCount.increment();
+            }
+        });
+        return nullCount.get();
+    }
+
+    @Override
+    protected void writeValidityBufferInternal(
+            @NotNull final Context context,
+            @NotNull final RowSequence subset,
+            @NotNull final SerContext serContext) {
+        subset.forAllRowKeys(row -> {
+            serContext.setNextIsNull(context.getChunk().asShortChunk().isNull((int) row));
+        });
+    }
+
+    private class ShortChunkInputStream extends BaseChunkInputStream<Context> {
         private ShortChunkInputStream(
-                @NotNull final Context<SOURCE_CHUNK_TYPE> context,
+                @NotNull final Context context,
                 @Nullable final RowSet subset,
                 @NotNull final BarrageOptions options) {
             super(context, subset, options);
@@ -81,12 +108,12 @@ public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
             long bytesWritten = 0;
-            read = true;
+            hasBeenRead = true;
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
 
             // write the validity buffer
@@ -95,7 +122,7 @@ public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
             // write the payload buffer
             subset.forAllRowKeys(row -> {
                 try {
-                    dos.writeShort(transform.get(context.getChunk(), (int) row));
+                    dos.writeShort(context.getChunk().asShortChunk().get((int) row));
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException(
                             "Unexpected exception while draining data to OutputStream: ", e);

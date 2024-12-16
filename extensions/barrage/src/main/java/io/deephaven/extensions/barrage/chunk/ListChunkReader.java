@@ -21,7 +21,7 @@ import java.util.PrimitiveIterator;
 
 public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
     public enum Mode {
-        FIXED, DENSE, SPARSE
+        FIXED, VARIABLE, VIEW
     }
 
     private static final String DEBUG_NAME = "ListChunkReader";
@@ -55,7 +55,7 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
         // have an offsets buffer if not every element is the same length
         final long offsetsBufferLength = mode == Mode.FIXED ? 0 : bufferInfoIter.nextLong();
         // have a lengths buffer if ListView instead of List
-        final long lengthsBufferLength = mode != Mode.SPARSE ? 0 : bufferInfoIter.nextLong();
+        final long lengthsBufferLength = mode != Mode.VIEW ? 0 : bufferInfoIter.nextLong();
 
         if (nodeInfo.numElements == 0) {
             is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME,
@@ -68,28 +68,16 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
 
         final WritableObjectChunk<T, Values> chunk;
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        final int numOffsets = nodeInfo.numElements + (mode == Mode.DENSE ? 1 : 0);
+        final int numOffsets = nodeInfo.numElements + (mode == Mode.VARIABLE ? 1 : 0);
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
                 final WritableIntChunk<ChunkPositions> offsets = mode == Mode.FIXED
                         ? null
                         : WritableIntChunk.makeWritableChunk(numOffsets);
-                final WritableIntChunk<ChunkLengths> lengths = mode != Mode.SPARSE
+                final WritableIntChunk<ChunkLengths> lengths = mode != Mode.VIEW
                         ? null
                         : WritableIntChunk.makeWritableChunk(nodeInfo.numElements)) {
 
-            // Read validity buffer:
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBufferLength / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBufferLength) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBufferLength - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
+            readValidityBuffer(is, numValidityLongs, validityBufferLength, isValid, DEBUG_NAME);
 
             // Read offsets:
             if (offsets != null) {
@@ -125,6 +113,7 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
                     componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 // noinspection unchecked
                 chunk = (WritableObjectChunk<T, Values>) kernel.contract(inner, fixedSizeLength, offsets, lengths,
+
                         outChunk, outOffset, totalRows);
 
                 long nextValid = 0;

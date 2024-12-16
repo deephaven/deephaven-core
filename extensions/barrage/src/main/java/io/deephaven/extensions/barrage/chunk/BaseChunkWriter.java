@@ -6,10 +6,12 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,28 +23,29 @@ import java.util.function.Supplier;
 public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         implements ChunkWriter<SOURCE_CHUNK_TYPE> {
     @FunctionalInterface
-    public interface IsRowNullProvider<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
-        boolean isRowNull(SOURCE_CHUNK_TYPE chunk, int idx);
+    public interface ChunkTransformer<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
+        Chunk<Values> transform(SOURCE_CHUNK_TYPE values);
     }
 
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
 
-    protected final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider;
-    protected final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier;
+    private final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer;
+    private final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier;
+    /** the size of each element in bytes if fixed */
     protected final int elementSize;
     /** whether we can use the wire value as a deephaven null for clients that support dh nulls */
     protected final boolean dhNullable;
     /** whether the field is nullable */
-    protected final boolean fieldNullable;
+    private final boolean fieldNullable;
 
     BaseChunkWriter(
-            @NotNull final IsRowNullProvider<SOURCE_CHUNK_TYPE> isRowNullProvider,
+            @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
             @NotNull final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier,
             final int elementSize,
             final boolean dhNullable,
             final boolean fieldNullable) {
-        this.isRowNullProvider = isRowNullProvider;
+        this.transformer = transformer;
         this.emptyChunkSupplier = emptyChunkSupplier;
         this.elementSize = elementSize;
         this.dhNullable = dhNullable;
@@ -51,25 +54,55 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
 
     @Override
     public final DrainableColumn getEmptyInputStream(final @NotNull BarrageOptions options) throws IOException {
-        try (Context<SOURCE_CHUNK_TYPE> context = makeContext(emptyChunkSupplier.get(), 0)) {
+        try (Context context = makeContext(emptyChunkSupplier.get(), 0)) {
             return getInputStream(context, null, options);
         }
     }
 
     @Override
-    public Context<SOURCE_CHUNK_TYPE> makeContext(
-            @NotNull final SOURCE_CHUNK_TYPE chunk,
-            final long rowOffset) {
-        return new Context<>(chunk, rowOffset);
+    public Context makeContext(@NotNull SOURCE_CHUNK_TYPE chunk, long rowOffset) {
+        if (transformer == null) {
+            return new Context(chunk, rowOffset);
+        }
+        try {
+            return new Context(transformer.transform(chunk), rowOffset);
+        } finally {
+            if (chunk instanceof PoolableChunk) {
+                ((PoolableChunk<?>) chunk).close();
+            }
+        }
     }
 
-    abstract class BaseChunkInputStream<CONTEXT_TYPE extends Context<SOURCE_CHUNK_TYPE>> extends DrainableColumn {
+    /**
+     * Compute the number of nulls in the subset.
+     *
+     * @param context the context for the chunk
+     * @param subset the subset of rows to consider
+     * @return the number of nulls in the subset
+     */
+    protected abstract int computeNullCount(
+            @NotNull Context context,
+            @NotNull RowSequence subset);
+
+    /**
+     * Update the validity buffer for the subset.
+     *
+     * @param context the context for the chunk
+     * @param subset the subset of rows to consider
+     * @param serContext the serialization context
+     */
+    protected abstract void writeValidityBufferInternal(
+            @NotNull Context context,
+            @NotNull RowSequence subset,
+            @NotNull SerContext serContext);
+
+    abstract class BaseChunkInputStream<CONTEXT_TYPE extends Context> extends DrainableColumn {
         protected final CONTEXT_TYPE context;
         protected final RowSequence subset;
         protected final BarrageOptions options;
 
-        protected boolean read = false;
-        private int nullCount;
+        protected boolean hasBeenRead = false;
+        private final int nullCount;
 
         BaseChunkInputStream(
                 @NotNull final CONTEXT_TYPE context,
@@ -93,11 +126,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             if (dhNullable && options.useDeephavenNulls()) {
                 nullCount = 0;
             } else {
-                this.subset.forAllRowKeys(row -> {
-                    if (isRowNullProvider.isRowNull(context.getChunk(), (int) row)) {
-                        ++nullCount;
-                    }
-                });
+                nullCount = computeNullCount(context, this.subset);
             }
         }
 
@@ -120,7 +149,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         public int available() throws IOException {
             final int rawSize = getRawSize();
             final int rawMod8 = rawSize & REMAINDER_MOD_8_MASK;
-            return (read ? 0 : rawSize + (rawMod8 > 0 ? 8 - rawMod8 : 0));
+            return (hasBeenRead ? 0 : rawSize + (rawMod8 > 0 ? 8 - rawMod8 : 0));
         }
 
         /**
@@ -147,27 +176,8 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 return 0;
             }
 
-            final SerContext serContext = new SerContext();
-            final Runnable flush = () -> {
-                try {
-                    dos.writeLong(serContext.accumulator);
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
-                }
-                serContext.accumulator = 0;
-                serContext.count = 0;
-            };
-            subset.forAllRowKeys(row -> {
-                if (!isRowNullProvider.isRowNull(context.getChunk(), (int) row)) {
-                    serContext.accumulator |= 1L << serContext.count;
-                }
-                if (++serContext.count == 64) {
-                    flush.run();
-                }
-            });
-            if (serContext.count > 0) {
-                flush.run();
+            try (final SerContext serContext = new SerContext(dos)) {
+                writeValidityBufferInternal(context, subset, serContext);
             }
 
             return getValidityMapSerializationSizeFor(subset.intSize());
@@ -223,8 +233,43 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         return ((numElements + 63) / 64);
     }
 
-    protected static final class SerContext {
-        long accumulator = 0;
-        long count = 0;
+    protected static final class SerContext implements SafeCloseable {
+        private final DataOutput dos;
+
+        private long accumulator = 0;
+        private long count = 0;
+
+        public SerContext(@NotNull final DataOutput dos) {
+            this.dos = dos;
+        }
+
+        public void setNextIsNull(boolean isNull) {
+            if (!isNull) {
+                accumulator |= 1L << count;
+            }
+            if (++count == 64) {
+                flush();
+            }
+        }
+
+        private void flush() {
+            if (count == 0) {
+                return;
+            }
+
+            try {
+                dos.writeLong(accumulator);
+            } catch (final IOException e) {
+                throw new UncheckedDeephavenException(
+                        "Unexpected exception while draining data to OutputStream: ", e);
+            }
+            accumulator = 0;
+            count = 0;
+        }
+
+        @Override
+        public void close() {
+            flush();
+        }
     }
 }

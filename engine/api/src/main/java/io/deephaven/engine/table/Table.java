@@ -218,7 +218,7 @@ public interface Table extends
      */
     String BARRAGE_PERFORMANCE_KEY_ATTRIBUTE = "BarragePerformanceTableKey";
     /**
-     * Set this to control the schema used for barrage serialization.
+     * Set an Apache Arrow POJO Schema to this attribute to control the column encoding used for barrage serialization.
      */
     String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
 

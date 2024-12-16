@@ -79,7 +79,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
                     Stream<Long> stream = iter.stream();
                     if (fixedSizeLength > 0) {
                         // limit length to fixedSizeLength
-                        stream = iter.stream().limit(fixedSizeLength);
+                        stream = stream.limit(fixedSizeLength);
                     } else if (fixedSizeLength < 0) {
                         final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
                         if (numToSkip > 0) {
@@ -111,7 +111,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
     @Override
     public <A extends Any> WritableObjectChunk<LongVector, A> contract(
             @NotNull final Chunk<A> source,
-            final int sizePerElement,
+            int sizePerElement,
             @Nullable final IntChunk<ChunkPositions> offsets,
             @Nullable final IntChunk<ChunkLengths> lengths,
             @Nullable final WritableChunk<A> outChunk,
@@ -124,6 +124,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
             return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

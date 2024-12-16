@@ -9,33 +9,35 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
-        extends BaseChunkWriter<ObjectChunk<ListType, Values>> {
+public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Values>>
+        extends BaseChunkWriter<ObjectChunk<LIST_TYPE, Values>> {
     private static final String DEBUG_NAME = "ListChunkWriter";
 
     private final ListChunkReader.Mode mode;
     private final int fixedSizeLength;
-    private final ExpansionKernel<ListType> kernel;
-    private final ChunkWriter<ComponentChunkType> componentWriter;
+    private final ExpansionKernel<LIST_TYPE> kernel;
+    private final ChunkWriter<COMPONENT_CHUNK_TYPE> componentWriter;
 
     public ListChunkWriter(
             final ListChunkReader.Mode mode,
             final int fixedSizeLength,
-            final ExpansionKernel<ListType> kernel,
-            final ChunkWriter<ComponentChunkType> componentWriter,
+            final ExpansionKernel<LIST_TYPE> kernel,
+            final ChunkWriter<COMPONENT_CHUNK_TYPE> componentWriter,
             final boolean fieldNullable) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
+        super(null, ObjectChunk::getEmptyChunk, 0, false, fieldNullable);
         this.mode = mode;
         this.fixedSizeLength = fixedSizeLength;
         this.kernel = kernel;
@@ -43,31 +45,54 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
     }
 
     @Override
+    protected int computeNullCount(
+            @NotNull final ChunkWriter.Context context,
+            @NotNull final RowSequence subset) {
+        final MutableInt nullCount = new MutableInt(0);
+        subset.forAllRowKeys(row -> {
+            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+                nullCount.increment();
+            }
+        });
+        return nullCount.get();
+    }
+
+    @Override
+    protected void writeValidityBufferInternal(
+            @NotNull final ChunkWriter.Context context,
+            @NotNull final RowSequence subset,
+            @NotNull final SerContext serContext) {
+        subset.forAllRowKeys(row -> {
+            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
+        });
+    }
+
+    @Override
     public Context makeContext(
-            @NotNull final ObjectChunk<ListType, Values> chunk,
+            @NotNull final ObjectChunk<LIST_TYPE, Values> chunk,
             final long rowOffset) {
         return new Context(chunk, rowOffset);
     }
 
-    public final class Context extends ChunkWriter.Context<ObjectChunk<ListType, Values>> {
+    public final class Context extends ChunkWriter.Context {
         private final WritableIntChunk<ChunkPositions> offsets;
-        private final ChunkWriter.Context<ComponentChunkType> innerContext;
+        private final ChunkWriter.Context innerContext;
 
         public Context(
-                @NotNull final ObjectChunk<ListType, Values> chunk,
+                @NotNull final ObjectChunk<LIST_TYPE, Values> chunk,
                 final long rowOffset) {
             super(chunk, rowOffset);
 
             if (mode == ListChunkReader.Mode.FIXED) {
                 offsets = null;
             } else {
-                int numOffsets = chunk.size() + (mode == ListChunkReader.Mode.DENSE ? 1 : 0);
+                int numOffsets = chunk.size() + (mode == ListChunkReader.Mode.VARIABLE ? 1 : 0);
                 offsets = WritableIntChunk.makeWritableChunk(numOffsets);
             }
 
             // noinspection unchecked
             innerContext = componentWriter.makeContext(
-                    (ComponentChunkType) kernel.expand(chunk, fixedSizeLength, offsets), 0);
+                    (COMPONENT_CHUNK_TYPE) kernel.expand(chunk, fixedSizeLength, offsets), 0);
         }
 
         @Override
@@ -80,9 +105,10 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final ChunkWriter.Context<ObjectChunk<ListType, Values>> context,
+            @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        // noinspection unchecked
         return new ListChunkInputStream((Context) context, subset, options);
     }
 
@@ -144,7 +170,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
             // offsets
             if (mode != ListChunkReader.Mode.FIXED) {
                 long numOffsetBytes = Integer.BYTES * ((long) numElements);
-                if (numElements > 0 && mode == ListChunkReader.Mode.DENSE) {
+                if (numElements > 0 && mode == ListChunkReader.Mode.VARIABLE) {
                     // we need an extra offset for the end of the last element
                     numOffsetBytes += Integer.BYTES;
                 }
@@ -152,7 +178,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
             }
 
             // lengths
-            if (mode == ListChunkReader.Mode.SPARSE) {
+            if (mode == ListChunkReader.Mode.VIEW) {
                 long numLengthsBytes = Integer.BYTES * ((long) numElements);
                 listener.noteLogicalBuffer(padBufferSize(numLengthsBytes));
             }
@@ -182,7 +208,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
                 // offsets
                 if (mode != ListChunkReader.Mode.FIXED) {
                     long numOffsetBytes = Integer.BYTES * ((long) numElements);
-                    if (numElements > 0 && mode == ListChunkReader.Mode.DENSE) {
+                    if (numElements > 0 && mode == ListChunkReader.Mode.VARIABLE) {
                         // we need an extra offset for the end of the last element
                         numOffsetBytes += Integer.BYTES;
                     }
@@ -190,7 +216,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
                 }
 
                 // lengths
-                if (mode == ListChunkReader.Mode.SPARSE) {
+                if (mode == ListChunkReader.Mode.VIEW) {
                     long numLengthsBytes = Integer.BYTES * ((long) numElements);
                     size += padBufferSize(numLengthsBytes);
                 }
@@ -204,18 +230,18 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
-            read = true;
+            hasBeenRead = true;
             long bytesWritten = 0;
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
             // write the validity array with LSB indexing
             bytesWritten += writeValidityBuffer(dos);
 
             // write offsets array
-            if (mode == ListChunkReader.Mode.DENSE) {
+            if (mode == ListChunkReader.Mode.VARIABLE) {
                 // write down only offset (+1) buffer
                 final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
                 for (int i = 0; i < offsetsToUse.size(); ++i) {
@@ -223,7 +249,7 @@ public class ListChunkWriter<ListType, ComponentChunkType extends Chunk<Values>>
                 }
                 bytesWritten += ((long) offsetsToUse.size()) * Integer.BYTES;
                 bytesWritten += writePadBuffer(dos, bytesWritten);
-            } else if (mode == ListChunkReader.Mode.SPARSE) {
+            } else if (mode == ListChunkReader.Mode.VIEW) {
                 // write down offset buffer
                 final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
 

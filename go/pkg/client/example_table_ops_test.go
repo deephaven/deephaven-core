@@ -34,7 +34,7 @@ func Example_tableOps() {
 
 	fmt.Println(queryResult)
 
-	// Output:
+       // Output:
     // Data Before:
     // record:
     //   schema:
@@ -47,7 +47,7 @@ func Example_tableOps() {
     //   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
     //   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
     //
-    // New data:
+    // Data After:
     // record:
     //   schema:
     //   fields: 3
@@ -57,28 +57,39 @@ func Example_tableOps() {
     //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "float"]
     //     - Volume: type=int32, nullable
     //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
-    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:unsent.attribute.BarrageSchema": ""]
+    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute_type.SortedColumns": "java.lang.String", "deephaven:unsent.attribute.BarrageSchema": ""]
     //   rows: 5
-    //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
-    //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
-    //   col[2][Volume]: [87000 138000 138000000 19000 48300]
-    //
+    //   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
+    //   col[1][Close]: [38.7 53.8 88.5 453 544.9]
+    //   col[2][Volume]: [138000 87000 6060842 138000000 48300]
+    // want:
+    // Data Before:
     // record:
     //   schema:
-    //   fields: 4
+    //   fields: 3
+    //     - Ticker: type=utf8, nullable
+    //     - Close: type=float32, nullable
+    //     - Volume: type=int32, nullable
+    //   rows: 7
+    //   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
+    //   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
+    //   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
+    //
+    // Data After:
+    // record:
+    //   schema:
+    //   fields: 3
     //     - Ticker: type=utf8, nullable
     //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
     //     - Close: type=float32, nullable
     //        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "float"]
     //     - Volume: type=int32, nullable
     //         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
-    //     - Magnitude: type=int32, nullable
-    //            metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isSortable": "true", "deephaven:isStyle": "false", "deephaven:type": "int"]
+    //   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute_type.SortedColumns": "java.lang.String"]
     //   rows: 5
-    //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
-    //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
-    //   col[2][Volume]: [87000 138000 138000000 19000 48300]
-    //   col[3][Magnitude]: [10000 100000 100000000 10000 10000]
+    //   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
+    //   col[1][Close]: [38.7 53.8 88.5 453 544.9]
+    //   col[2][Volume]: [138000 87000 6060842 138000000 48300]
 }
 
 // This function demonstrates how to use immediate table operations.

@@ -275,7 +275,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 final ExpansionKernel<?> kernel =
                         ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
                 final ChunkReader<?> componentReader = newReader(componentTypeInfo, options);
-                return (ChunkReader<T>) new ListChunkReader<>(ListChunkReader.Mode.DENSE, 0, kernel, componentReader);
+                return (ChunkReader<T>) new ListChunkReader<>(ListChunkReader.Mode.VARIABLE, 0, kernel,
+                        componentReader);
             }
             default:
                 throw new IllegalArgumentException("Unsupported type: " + Type.name(typeInfo.arrowField().typeType()));

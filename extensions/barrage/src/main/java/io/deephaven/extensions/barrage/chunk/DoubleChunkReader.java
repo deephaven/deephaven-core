@@ -78,19 +78,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBuffer) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
-            // consumed entire validity buffer by here
+            readValidityBuffer(is, numValidityLongs, validityBuffer, isValid, DEBUG_NAME);
 
             final long payloadRead = (long) nodeInfo.numElements * Double.BYTES;
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");

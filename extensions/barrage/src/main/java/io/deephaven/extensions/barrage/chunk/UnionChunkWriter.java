@@ -12,11 +12,15 @@ import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +42,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             final List<Class<?>> classMatchers,
             final List<ChunkWriter<Chunk<Values>>> writers,
             final List<ChunkType> writerChunkTypes) {
-        super(ObjectChunk::isNull, ObjectChunk::getEmptyChunk, 0, false, false);
+        super(null, ObjectChunk::getEmptyChunk, 0, false, false);
         this.mode = mode;
         this.classMatchers = classMatchers;
         this.writers = writers;
@@ -54,7 +58,30 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         return new Context(chunk, rowOffset);
     }
 
-    public final class Context extends ChunkWriter.Context<ObjectChunk<T, Values>> {
+    @Override
+    protected int computeNullCount(
+            @NotNull final ChunkWriter.Context context,
+            @NotNull final RowSequence subset) {
+        final MutableInt nullCount = new MutableInt(0);
+        subset.forAllRowKeys(row -> {
+            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+                nullCount.increment();
+            }
+        });
+        return nullCount.get();
+    }
+
+    @Override
+    protected void writeValidityBufferInternal(
+            @NotNull final ChunkWriter.Context context,
+            @NotNull final RowSequence subset,
+            @NotNull final SerContext serContext) {
+        subset.forAllRowKeys(row -> {
+            serContext.setNextIsNull(context.getChunk().asCharChunk().isNull((int) row));
+        });
+    }
+
+    public final class Context extends ChunkWriter.Context {
         public Context(
                 @NotNull final ObjectChunk<T, Values> chunk,
                 final long rowOffset) {
@@ -64,9 +91,10 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
 
     @Override
     public DrainableColumn getInputStream(
-            @NotNull final ChunkWriter.Context<ObjectChunk<T, Values>> context,
+            @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        // noinspection unchecked
         return new UnionChunkInputStream((Context) context, subset, options);
     }
 
@@ -83,7 +111,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 @NotNull final BarrageOptions options) throws IOException {
             super(context, mySubset, options);
             final int numColumns = classMatchers.size();
-            final ObjectChunk<T, Values> chunk = context.getChunk();
+            final ObjectChunk<T, Values> chunk = context.getChunk().asObjectChunk();
             if (mode == UnionChunkReader.Mode.Sparse) {
                 columnOffset = null;
             } else {
@@ -95,15 +123,16 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             // noinspection resource
             columnOfInterest = WritableByteChunk.makeWritableChunk(chunk.size());
             // noinspection unchecked
-            final WritableObjectChunk<Object, Values>[] innerChunks = new WritableObjectChunk[numColumns];
+            final SizedChunk<Values>[] innerChunks = new SizedChunk[numColumns];
             for (int ii = 0; ii < numColumns; ++ii) {
                 // noinspection resource
-                innerChunks[ii] = WritableObjectChunk.makeWritableChunk(chunk.size());
+                innerChunks[ii] = new SizedChunk<>(ChunkType.Object);
 
                 if (mode == UnionChunkReader.Mode.Sparse) {
-                    innerChunks[ii].fillWithNullValue(0, chunk.size());
+                    innerChunks[ii].ensureCapacity(chunk.size());
+                    innerChunks[ii].get().fillWithNullValue(0, chunk.size());
                 } else {
-                    innerChunks[ii].setSize(0);
+                    innerChunks[ii].ensureCapacity(0);
                 }
             }
             for (int ii = 0; ii < chunk.size(); ++ii) {
@@ -113,11 +142,16 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                     if (value.getClass().isAssignableFrom(classMatchers.get(jj))) {
                         if (mode == UnionChunkReader.Mode.Sparse) {
                             columnOfInterest.set(ii, (byte) jj);
-                            innerChunks[jj].set(ii, value);
+                            innerChunks[jj].get().asWritableObjectChunk().set(ii, value);
                         } else {
                             columnOfInterest.set(ii, (byte) jj);
-                            columnOffset.set(ii, innerChunks[jj].size());
-                            innerChunks[jj].add(value);
+                            int size = innerChunks[jj].get().size();
+                            columnOffset.set(ii, size);
+                            if (innerChunks[jj].get().capacity() <= size) {
+                                int newSize = Math.max(16, size * 2);
+                                innerChunks[jj].ensureCapacityPreserve(newSize);
+                            }
+                            innerChunks[jj].get().asWritableObjectChunk().add(value);
                         }
                         break;
                     }
@@ -134,7 +168,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             for (int ii = 0; ii < numColumns; ++ii) {
                 final ChunkType chunkType = writerChunkTypes.get(ii);
                 final ChunkWriter<Chunk<Values>> writer = writers.get(ii);
-                final WritableObjectChunk<Object, Values> innerChunk = innerChunks[ii];
+                final WritableObjectChunk<Object, Values> innerChunk = innerChunks[ii].get().asWritableObjectChunk();
 
                 if (classMatchers.get(ii) == Boolean.class) {
                     // do a quick conversion to byte since the boolean unboxer expects bytes
@@ -149,7 +183,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                         : ChunkUnboxer.getUnboxer(chunkType, innerChunk.size());
 
                 // noinspection unchecked
-                try (ChunkWriter.Context<Chunk<Values>> innerContext = writer.makeContext(kernel != null
+                try (ChunkWriter.Context innerContext = writer.makeContext(kernel != null
                         ? (Chunk<Values>) kernel.unbox(innerChunk)
                         : innerChunk, 0)) {
                     if (kernel != null) {
@@ -211,11 +245,11 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
-            if (read || subset.isEmpty()) {
+            if (hasBeenRead || subset.isEmpty()) {
                 return 0;
             }
 
-            read = true;
+            hasBeenRead = true;
             long bytesWritten = 0;
             final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
             // must write out the column of interest

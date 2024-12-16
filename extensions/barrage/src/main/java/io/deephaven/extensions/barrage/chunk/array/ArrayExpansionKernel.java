@@ -6,9 +6,28 @@ package io.deephaven.extensions.barrage.chunk.array;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 
+/**
+ * The {@code ArrayExpansionKernel} interface provides a mechanism for expanding chunks containing arrays into a pair of
+ * {@code LongChunk} and {@code Chunk<T>}, enabling efficient handling of array-typed columnar data. This interface is
+ * part of the Deephaven Barrage extensions for processing structured data in Flight/Barrage streams.
+ * <p>
+ * An {@code ArrayExpansionKernel} is specialized for handling array-like data, where each element in the source chunk
+ * may itself be an array. The kernel performs the transformation to a flattened format, suitable for further processing
+ * or serialization.
+ *
+ * @param <T> The type of elements within the array being expanded.
+ */
 public interface ArrayExpansionKernel<T> extends ExpansionKernel<T> {
     /**
-     * @return a kernel that expands a {@code Chunk<T[]>} to pair of {@code LongChunk, Chunk<T>}
+     * Creates an {@code ArrayExpansionKernel} for the specified {@link ChunkType} and component type.
+     * <p>
+     * The implementation is chosen based on the provided {@code chunkType} and {@code componentType}, with specialized
+     * kernels for primitive types and boxed types, including {@code boolean} handling for packed bit representations.
+     *
+     * @param chunkType The {@link ChunkType} representing the type of data in the chunk.
+     * @param componentType The class of the component type within the array.
+     * @param <T> The type of elements within the array being expanded.
+     * @return An {@code ArrayExpansionKernel} capable of expanding chunks of the specified type.
      */
     @SuppressWarnings("unchecked")
     static <T> ArrayExpansionKernel<T> makeExpansionKernel(final ChunkType chunkType, final Class<?> componentType) {
