@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.event;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
 /**
@@ -31,7 +30,6 @@ public class Event<T> {
     }
 
     @JsProperty
-    @JsNullable
     public T getDetail() {
         return detail;
     }

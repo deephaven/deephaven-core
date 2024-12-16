@@ -10,6 +10,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -255,7 +256,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public RpcOptions makeRpcOptions() {
         RpcOptions options = RpcOptions.create();
         options.setDebug(getOptions().debug);
-        options.setTransport(getOptions().transportFactory.adapt());
+        options.setTransport(GrpcTransportFactory.adapt(getOptions().transportFactory));
         return options;
     }
 }
