@@ -91,7 +91,6 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -692,41 +691,51 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final CountWhere countWhere) {
             final WhereFilter[] whereFilters = WhereFilter.fromInternal(countWhere.filter());
-            final Set<String> inputColumnNameSet = new HashSet<>();
-            // Verify all the columns in the where filters are present in the table
+
+            final Map<String, RecordingInternalOperator> inputColumnRecorderMap = new HashMap<>();
+            final List<RecordingInternalOperator> recorderList = new ArrayList<>();
+            final List<RecordingInternalOperator[]> filterRecorderList = new ArrayList<>();
+
+            // Verify all the columns in the where filters are present in the table and valid for use.
             for (final WhereFilter whereFilter : whereFilters) {
                 whereFilter.init(table.getDefinition());
-                // Asset the filter is well-behaved in this use case
                 if (whereFilter.isRefreshing()) {
                     throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
                 }
-                if (whereFilter instanceof ConditionFilter) {
-                    final ConditionFilter conditionFilter = (ConditionFilter) whereFilter;
-                    if (conditionFilter.hasVirtualRowVariables()) {
-                        throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
-                    }
+
+                // Compute which recording operators this filter will use.
+                final List<String> inputColumnNames = whereFilter.getColumns();
+                final int inputColumnCount = whereFilter.getColumns().size();
+                final RecordingInternalOperator[] recorders = new RecordingInternalOperator[inputColumnCount];
+                for (int ii = 0; ii < inputColumnCount; ++ii) {
+                    final String inputColumnName = inputColumnNames.get(ii);
+                    final RecordingInternalOperator recorder =
+                            inputColumnRecorderMap.computeIfAbsent(inputColumnName, k -> {
+                                // Create a recording operator for the column and add it to the list of operators.
+                                final ColumnSource<?> inputSource = table.getColumnSource(inputColumnName);
+                                final RecordingInternalOperator newRecorder =
+                                        new RecordingInternalOperator(inputColumnName, inputSource);
+                                recorderList.add(newRecorder);
+                                return newRecorder;
+                            });
+                    recorders[ii] = recorder;
                 }
-                inputColumnNameSet.addAll(whereFilter.getColumns());
+                filterRecorderList.add(recorders);
             }
 
-            // TODO: support multiple columns in the where clause by introducing simple recording operators
-            // to capture chunk data for additional columns
-            if (inputColumnNameSet.size() > 1) {
-                throw new UnsupportedOperationException(
-                        "AggCountWhere does not currently support multiple columns in the where clause");
-            }
+            final RecordingInternalOperator[] recorders = recorderList.toArray(RecordingInternalOperator[]::new);
+            final RecordingInternalOperator[][] filterRecorders =
+                    filterRecorderList.toArray(RecordingInternalOperator[][]::new);
+            final String[] inputColumnNames =
+                    inputColumnRecorderMap.keySet().toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY);
 
-            if (inputColumnNameSet.isEmpty()) {
-                // No sources are needed, interesting but allowed.
-                addNoInputOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, null, null));
-            } else {
-                final String inputColumnName = inputColumnNameSet.iterator().next();
-                final ColumnSource<?> inputSource = table.getColumnSource(inputColumnName);
-                addOperator(
-                        new CountWhereOperator(countWhere.column().name(), whereFilters, inputColumnName, inputSource),
-                        inputSource,
-                        inputColumnName);
+            // Add the recording operators, making them dependent on all input columns so they all are populated if any
+            // are modified
+            for (final RecordingInternalOperator recorder : recorders) {
+                addOperator(recorder, recorder.getInputColumnSource(), inputColumnNames);
             }
+            addOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, recorders, filterRecorders),
+                    null, inputColumnNames);
         }
 
         @Override

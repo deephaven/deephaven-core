@@ -134,12 +134,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 Filter.or(Filter.from("false", "B % 2 == 0")))),
                         AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
                         AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
-                                Filter.and(Filter.from("B <= 10", "B >= 5"))))
-
-                // Multi-column filtering not currently supported
-                // AggCountWhere("and2", "B >= 5", "C == 1"),
-                // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
-                ), "A");
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0")),
+                "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
@@ -176,6 +175,12 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "filter9");
         assertEquals(4L, counts.get(0));
         assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
+        assertEquals(0L, counts.get(1));
 
         doubleCounted = table.aggBy(
                 List.of(
@@ -189,12 +194,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 Filter.or(Filter.from("false", "B % 2 == 0")))),
                         AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
                         AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
-                                Filter.and(Filter.from("B <= 10", "B >= 5"))))
-
-                // Multi-column filtering not currently supported
-                // AggCountWhere("and2", "B >= 5", "C == 1"),
-                // AggCountWhereOneOf("or2", "B >= 5", "C == 1"),
-                ));
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0")));
         show(doubleCounted);
         assertEquals(1, doubleCounted.size());
 
@@ -216,6 +219,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(1L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "filter9");
         assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -364,9 +371,16 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggCountWhere("filter4", "true"),
                                 AggCountWhere("filter5", "false"),
                                 AggCountWhere("filter6", "intCol % 2 == 0"),
-                                AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")), Filter.or(Filter.from("false", "intCol % 2 == 0")))),
+                                AggCountWhere("filter7",
+                                        Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")),
+                                                Filter.or(Filter.from("false", "intCol % 2 == 0")))),
                                 AggCountWhere("filter8", "intCol % 2 == 0", "intCol % 3 == 0"),
-                                AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("intCol > 0")), Filter.and(Filter.from("intCol <= 10", "intCol >= 5"))))),
+                                AggCountWhere("filter9",
+                                        Filter.and(Filter.and(Filter.from("intCol > 0")),
+                                                Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
+                                // Multiple input columns
+                                AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0")),
                                 "Sym").sort("Sym");
                     }
                 },
@@ -374,15 +388,22 @@ public class TestAggBy extends RefreshingTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.aggBy(List.of(
-                                        AggCountWhere("filter1", "intCol >= 50"),
-                                        AggCountWhere("filter2", "intCol >= 50", "intCol != 80"),
-                                        AggCountWhere("filter3", Filter.or(Filter.from("intCol >= 50", "intCol == 3"))),
-                                        AggCountWhere("filter4", "true"),
-                                        AggCountWhere("filter5", "false"),
-                                        AggCountWhere("filter6", "intCol % 2 == 0"),
-                                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")), Filter.or(Filter.from("false", "intCol % 2 == 0")))),
-                                        AggCountWhere("filter8", "intCol % 2 == 0", "intCol % 3 == 0"),
-                                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("intCol > 0")), Filter.and(Filter.from("intCol <= 10", "intCol >= 5"))))));
+                                AggCountWhere("filter1", "intCol >= 50"),
+                                AggCountWhere("filter2", "intCol >= 50", "intCol != 80"),
+                                AggCountWhere("filter3", Filter.or(Filter.from("intCol >= 50", "intCol == 3"))),
+                                AggCountWhere("filter4", "true"),
+                                AggCountWhere("filter5", "false"),
+                                AggCountWhere("filter6", "intCol % 2 == 0"),
+                                AggCountWhere("filter7",
+                                        Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")),
+                                                Filter.or(Filter.from("false", "intCol % 2 == 0")))),
+                                AggCountWhere("filter8", "intCol % 2 == 0", "intCol % 3 == 0"),
+                                AggCountWhere("filter9",
+                                        Filter.and(Filter.and(Filter.from("intCol > 0")),
+                                                Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
+                                // Multiple input columns
+                                AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0")));
                     }
                 },
                 new QueryTableTest.TableComparator(
