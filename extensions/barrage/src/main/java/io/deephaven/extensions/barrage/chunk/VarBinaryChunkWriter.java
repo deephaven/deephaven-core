@@ -61,8 +61,9 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+            if (objectChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -72,9 +73,8 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
     @Override
     protected void writeValidityBufferInternal(ChunkWriter.@NotNull Context context, @NotNull RowSequence subset,
             @NotNull SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
-        });
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {

@@ -61,8 +61,9 @@ public class MapChunkWriter<T>
             @NotNull final BaseChunkWriter.Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+            if (objectChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -74,9 +75,8 @@ public class MapChunkWriter<T>
             @NotNull final BaseChunkWriter.Context context,
             @NotNull final RowSequence subset,
             @NotNull final SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
-        });
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {

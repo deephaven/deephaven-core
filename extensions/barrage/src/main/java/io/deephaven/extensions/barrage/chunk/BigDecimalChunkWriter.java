@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.mutable.MutableInt;
@@ -42,8 +43,9 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             @NotNull final Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+            if (objectChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -55,9 +57,8 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             @NotNull final Context context,
             @NotNull final RowSequence subset,
             @NotNull final SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asObjectChunk().isNull((int) row));
-        });
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     @Override
@@ -73,9 +74,10 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 .subtract(BigInteger.ONE)
                 .negate();
 
+        final ObjectChunk<BigDecimal, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(rowKey -> {
             try {
-                BigDecimal value = context.getChunk().<BigDecimal>asObjectChunk().get((int) rowKey);
+                BigDecimal value = objectChunk.get((int) rowKey);
 
                 if (value.scale() != scale) {
                     value = value.setScale(decimalType.getScale(), RoundingMode.HALF_UP);

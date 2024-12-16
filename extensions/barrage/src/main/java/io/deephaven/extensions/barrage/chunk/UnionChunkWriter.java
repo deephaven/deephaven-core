@@ -63,8 +63,9 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asObjectChunk().isNull((int) row)) {
+            if (objectChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -76,9 +77,8 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
             @NotNull final SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asCharChunk().isNull((int) row));
-        });
+        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {
@@ -123,17 +123,20 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             // noinspection resource
             columnOfInterest = WritableByteChunk.makeWritableChunk(chunk.size());
             // noinspection unchecked
-            final SizedChunk<Values>[] innerChunks = new SizedChunk[numColumns];
+            final SizedChunk<Values>[] innerSizedChunks = new SizedChunk[numColumns];
+            // noinspection unchecked
+            final WritableObjectChunk<Object, Values>[] innerChunks = new WritableObjectChunk[numColumns];
             for (int ii = 0; ii < numColumns; ++ii) {
                 // noinspection resource
-                innerChunks[ii] = new SizedChunk<>(ChunkType.Object);
+                innerSizedChunks[ii] = new SizedChunk<>(ChunkType.Object);
 
                 if (mode == UnionChunkReader.Mode.Sparse) {
-                    innerChunks[ii].ensureCapacity(chunk.size());
-                    innerChunks[ii].get().fillWithNullValue(0, chunk.size());
+                    innerSizedChunks[ii].ensureCapacity(chunk.size());
+                    innerSizedChunks[ii].get().fillWithNullValue(0, chunk.size());
                 } else {
-                    innerChunks[ii].ensureCapacity(0);
+                    innerSizedChunks[ii].ensureCapacity(0);
                 }
+                innerChunks[ii] = innerSizedChunks[ii].get().asWritableObjectChunk();
             }
             for (int ii = 0; ii < chunk.size(); ++ii) {
                 final Object value = chunk.get(ii);
@@ -142,16 +145,17 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                     if (value.getClass().isAssignableFrom(classMatchers.get(jj))) {
                         if (mode == UnionChunkReader.Mode.Sparse) {
                             columnOfInterest.set(ii, (byte) jj);
-                            innerChunks[jj].get().asWritableObjectChunk().set(ii, value);
+                            innerChunks[jj].set(ii, value);
                         } else {
                             columnOfInterest.set(ii, (byte) jj);
-                            int size = innerChunks[jj].get().size();
+                            int size = innerChunks[jj].size();
                             columnOffset.set(ii, size);
-                            if (innerChunks[jj].get().capacity() <= size) {
+                            if (innerChunks[jj].capacity() <= size) {
                                 int newSize = Math.max(16, size * 2);
-                                innerChunks[jj].ensureCapacityPreserve(newSize);
+                                innerSizedChunks[jj].ensureCapacityPreserve(newSize);
+                                innerChunks[jj] = innerSizedChunks[jj].get().asWritableObjectChunk();
                             }
-                            innerChunks[jj].get().asWritableObjectChunk().add(value);
+                            innerChunks[jj].add(value);
                         }
                         break;
                     }
@@ -168,7 +172,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             for (int ii = 0; ii < numColumns; ++ii) {
                 final ChunkType chunkType = writerChunkTypes.get(ii);
                 final ChunkWriter<Chunk<Values>> writer = writers.get(ii);
-                final WritableObjectChunk<Object, Values> innerChunk = innerChunks[ii].get().asWritableObjectChunk();
+                final WritableObjectChunk<Object, Values> innerChunk = innerChunks[ii];
 
                 if (classMatchers.get(ii) == Boolean.class) {
                     // do a quick conversion to byte since the boolean unboxer expects bytes

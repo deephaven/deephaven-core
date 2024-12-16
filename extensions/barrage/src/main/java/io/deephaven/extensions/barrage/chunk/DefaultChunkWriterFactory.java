@@ -1157,8 +1157,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     @NotNull final Context context,
                     @NotNull final DataOutput dos,
                     @NotNull final RowSequence subset) {
+                final ObjectChunk<byte[], Values> objectChunk = context.getChunk().asObjectChunk();
                 subset.forAllRowKeys(row -> {
-                    final byte[] data = context.getChunk().<byte[]>asObjectChunk().get((int) row);
+                    final byte[] data = objectChunk.get((int) row);
                     if (data.length != elementWidth) {
                         throw new IllegalArgumentException(String.format(
                                 "Expected fixed size binary of %d bytes, but got %d bytes when serializing %s",
@@ -1235,8 +1236,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             @NotNull final Context context,
                             @NotNull final DataOutput dos,
                             @NotNull final RowSequence subset) {
+                        final ObjectChunk<Duration, Values> objectChunk = context.getChunk().asObjectChunk();
                         subset.forAllRowKeys(row -> {
-                            final Duration value = context.getChunk().<Duration>asObjectChunk().get((int) row);
+                            final Duration value = objectChunk.get((int) row);
                             try {
                                 if (value == null) {
                                     dos.writeInt(0);
@@ -1304,8 +1306,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             @NotNull final Context context,
                             @NotNull final DataOutput dos,
                             @NotNull final RowSequence subset) {
+                        final ObjectChunk<Period, Values> objectChunk = context.getChunk().asObjectChunk();
                         subset.forAllRowKeys(row -> {
-                            final Period value = context.getChunk().<Period>asObjectChunk().get((int) row);
+                            final Period value = objectChunk.get((int) row);
                             try {
                                 if (value == null) {
                                     dos.writeInt(0);
@@ -1331,8 +1334,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             @NotNull final Context context,
                             @NotNull final DataOutput dos,
                             @NotNull final RowSequence subset) {
+                        final ObjectChunk<Period, Values> objectChunk = context.getChunk().asObjectChunk();
                         subset.forAllRowKeys(row -> {
-                            final Period value = context.getChunk().<Period>asObjectChunk().get((int) row);
+                            final Period value = objectChunk.get((int) row);
                             try {
                                 if (value == null) {
                                     dos.writeInt(0);
@@ -1381,9 +1385,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             @NotNull final Context context,
                             @NotNull final DataOutput dos,
                             @NotNull final RowSequence subset) {
+                        final ObjectChunk<PeriodDuration, Values> objectChunk = context.getChunk().asObjectChunk();
                         subset.forAllRowKeys(row -> {
                             final PeriodDuration value =
-                                    context.getChunk().<PeriodDuration>asObjectChunk().get((int) row);
+                                    objectChunk.get((int) row);
                             try {
                                 if (value == null) {
                                     dos.writeInt(0);
@@ -1409,9 +1414,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                             @NotNull final Context context,
                             @NotNull final DataOutput dos,
                             @NotNull final RowSequence subset) {
+                        final ObjectChunk<PeriodDuration, Values> objectChunk = context.getChunk().asObjectChunk();
                         subset.forAllRowKeys(row -> {
-                            final PeriodDuration value =
-                                    context.getChunk().<PeriodDuration>asObjectChunk().get((int) row);
+                            final PeriodDuration value = objectChunk.get((int) row);
                             try {
                                 if (value == null) {
                                     dos.writeInt(0);

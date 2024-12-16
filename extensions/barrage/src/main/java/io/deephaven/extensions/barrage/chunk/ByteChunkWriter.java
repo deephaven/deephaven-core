@@ -67,8 +67,9 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             @NotNull final Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asByteChunk().isNull((int) row)) {
+            if (byteChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -80,9 +81,8 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             @NotNull final Context context,
             @NotNull final RowSequence subset,
             @NotNull final SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asByteChunk().isNull((int) row));
-        });
+        final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(byteChunk.isNull((int) row)));
     }
 
     private class ByteChunkInputStream extends BaseChunkInputStream<Context> {
@@ -120,9 +120,10 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer
+            final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
             subset.forAllRowKeys(row -> {
                 try {
-                    dos.writeByte(context.getChunk().asByteChunk().get((int) row));
+                    dos.writeByte(byteChunk.get((int) row));
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException(
                             "Unexpected exception while draining data to OutputStream: ", e);

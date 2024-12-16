@@ -575,8 +575,7 @@ public class JettyBarrageChunkFactoryTest {
             @Override
             public int initializeRoot(@NotNull UInt2Vector source) {
                 int start = setAll(source::set,
-                        (char) 6784,
-                    QueryConstants.MIN_CHAR, QueryConstants.MAX_CHAR, (char) 1);
+                        QueryConstants.MIN_CHAR, QueryConstants.MAX_CHAR, (char) 1);
                 for (int ii = start; ii < NUM_ROWS; ++ii) {
                     char value = (char) rnd.nextInt();
                     source.set(ii, value);
@@ -626,7 +625,9 @@ public class JettyBarrageChunkFactoryTest {
         return values.length;
     }
 
-    protected enum NullMode { ALL, NONE, SOME, NOT_NULLABLE }
+    protected enum NullMode {
+        ALL, NONE, SOME, NOT_NULLABLE
+    }
     private abstract class RoundTripTest<T extends FieldVector> {
         protected final Random rnd = new Random(RANDOM_SEED);
         protected Class<?> dhType;
@@ -642,7 +643,9 @@ public class JettyBarrageChunkFactoryTest {
         }
 
         public abstract Schema newSchema(boolean isNullable);
+
         public abstract int initializeRoot(@NotNull final T source);
+
         public abstract void validate(@NotNull final T source, @NotNull final T dest);
 
         public void doTest() throws Exception {

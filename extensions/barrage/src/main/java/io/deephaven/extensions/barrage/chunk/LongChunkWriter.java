@@ -67,8 +67,9 @@ public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             @NotNull final Context context,
             @NotNull final RowSequence subset) {
         final MutableInt nullCount = new MutableInt(0);
+        final LongChunk<Values> longChunk = context.getChunk().asLongChunk();
         subset.forAllRowKeys(row -> {
-            if (context.getChunk().asLongChunk().isNull((int) row)) {
+            if (longChunk.isNull((int) row)) {
                 nullCount.increment();
             }
         });
@@ -80,9 +81,8 @@ public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             @NotNull final Context context,
             @NotNull final RowSequence subset,
             @NotNull final SerContext serContext) {
-        subset.forAllRowKeys(row -> {
-            serContext.setNextIsNull(context.getChunk().asLongChunk().isNull((int) row));
-        });
+        final LongChunk<Values> longChunk = context.getChunk().asLongChunk();
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(longChunk.isNull((int) row)));
     }
 
     private class LongChunkInputStream extends BaseChunkInputStream<Context> {
@@ -120,9 +120,10 @@ public class LongChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer
+            final LongChunk<Values> longChunk = context.getChunk().asLongChunk();
             subset.forAllRowKeys(row -> {
                 try {
-                    dos.writeLong(context.getChunk().asLongChunk().get((int) row));
+                    dos.writeLong(longChunk.get((int) row));
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException(
                             "Unexpected exception while draining data to OutputStream: ", e);
