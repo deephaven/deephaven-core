@@ -114,8 +114,10 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
                 }
             }
             resultsChunk = WritableBooleanChunk.makeWritableChunk(size);
+            //noinspection unchecked
             filterChunks = new Chunk[filters.length][];
             for (int ii = 0; ii < filters.length; ii++) {
+                //noinspection unchecked
                 filterChunks[ii] = new Chunk[filters[ii].recorders.length];
             }
         }
@@ -193,9 +195,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         for (int fi = 0; fi < filters.length; fi++) {
             final WhereFilter filter = filters[fi];
             final CountWhereOperator.CountFilter countFilter;
-            if (forcedWhereFilter) {
-                countFilter = new CountWhereOperator.CountFilter(filter, filterRecorders[fi]);
-            } else if (filter instanceof ConditionFilter) {
+            if (!forcedWhereFilter && filter instanceof ConditionFilter) {
                 final ConditionFilter conditionFilter = (ConditionFilter) filter;
                 if (conditionFilter.hasVirtualRowVariables()) {
                     throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
@@ -207,16 +207,14 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
                 } catch (final Exception e) {
                     throw new IllegalArgumentException("Error creating condition filter in CountWhereOperator", e);
                 }
-            } else if (filter instanceof ExposesChunkFilter) {
+            } else if (!forcedWhereFilter && filter instanceof ExposesChunkFilter
+                    && ((ExposesChunkFilter) filter).chunkFilter().isPresent()) {
                 final Optional<ChunkFilter> chunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
-                if (chunkFilter.isPresent()) {
-                    countFilter = new CountWhereOperator.CountFilter(chunkFilter.get(), filterRecorders[fi]);
-                } else {
-                    countFilter = new CountWhereOperator.CountFilter(filter, filterRecorders[fi]);
-                    forcedWhereFilter = true;
-                }
+                countFilter = new CountWhereOperator.CountFilter(chunkFilter.get(), filterRecorders[fi]);
             } else {
-                countFilter = new CountWhereOperator.CountFilter(filter, filterRecorders[fi]);
+                try (final SafeCloseable ignored = filter.beginOperation(chunkSourceTable)) {
+                    countFilter = new CountWhereOperator.CountFilter(filter, filterRecorders[fi]);
+                }
                 forcedWhereFilter = true;
             }
             filterList.add(countFilter);

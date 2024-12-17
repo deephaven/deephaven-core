@@ -20,6 +20,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -334,6 +336,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 new SetGenerator<>(10.1, 20.1, 30.1),
                                 new SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
 
+        // Get a static set table for use in dynamic where filters
+        final QueryTable setTable = getTable(false, size / 10, random,
+                initColumnInfos(new String[] {"intCol"},
+                        new IntGenerator(10, 100)));
+
         ExecutionContext.getContext().getQueryLibrary().importClass(TestAggBy.class);
 
         String[] groupByColumns = new String[0];
@@ -380,7 +387,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                                                 Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
                                 // Multiple input columns
                                 AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
-                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0")),
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
+                                // DynamicWhereFilter
+                                AggCountWhere("filter12", new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("intCol")))),
                                 "Sym").sort("Sym");
                     }
                 },
@@ -403,7 +412,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                                                 Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
                                 // Multiple input columns
                                 AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
-                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0")));
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
+                                // DynamicWhereFilter
+                                AggCountWhere("filter12", new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("intCol")))));
                     }
                 },
                 new QueryTableTest.TableComparator(
