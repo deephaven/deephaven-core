@@ -41,6 +41,7 @@ import org.apache.arrow.flatbuf.DateUnit;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
+import org.apache.arrow.flatbuf.List;
 import org.apache.arrow.flatbuf.Precision;
 import org.apache.arrow.flatbuf.Time;
 import org.apache.arrow.flatbuf.TimeUnit;
@@ -255,8 +256,20 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                         throw new IllegalArgumentException("Unsupported Timestamp unit: " + TimeUnit.name(t.unit()));
                 }
             }
+            case Type.FixedSizeList:
+            case Type.ListView:
             case Type.List: {
-                if (typeInfo.componentType() == byte.class) {
+                final ListChunkReader.Mode listMode;
+                if (typeInfo.arrowField().typeType() == Type.FixedSizeList) {
+                    listMode = ListChunkReader.Mode.FIXED;
+                } else if (typeInfo.arrowField().typeType() == Type.ListView) {
+                    listMode = ListChunkReader.Mode.VIEW;
+                } else {
+                    listMode = ListChunkReader.Mode.VARIABLE;
+                }
+
+                if (typeInfo.componentType() == byte.class && listMode == ListChunkReader.Mode.VARIABLE) {
+                    // special case for byte[]
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> (T) extractChunkFromInputStream(
                                     is,
@@ -275,8 +288,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 final ExpansionKernel<?> kernel =
                         ArrayExpansionKernel.makeExpansionKernel(chunkType, componentTypeInfo.type());
                 final ChunkReader<?> componentReader = newReader(componentTypeInfo, options);
-                return (ChunkReader<T>) new ListChunkReader<>(ListChunkReader.Mode.VARIABLE, 0, kernel,
-                        componentReader);
+
+                return (ChunkReader<T>) new ListChunkReader<>(listMode, 0, kernel, componentReader);
             }
             default:
                 throw new IllegalArgumentException("Unsupported type: " + Type.name(typeInfo.arrowField().typeType()));
