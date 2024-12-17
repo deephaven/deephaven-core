@@ -8,13 +8,14 @@ from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition, unique, count_distinct, distinct
+    var, formula, partition, unique, count_distinct, distinct, count_where
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff
+from deephaven.filters import Filter, and_, or_
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -43,6 +44,9 @@ class TableTestCase(BaseTestCase):
         self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
+            count_where("aggCountWhere1", "var > 100"),
+            count_where("aggCountWhere2", ["var > 100", "var < 250"]),
+            count_where("aggCountWhere3", or_(["var > 100", "var < 250"])),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
