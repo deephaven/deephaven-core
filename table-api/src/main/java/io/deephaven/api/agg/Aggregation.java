@@ -226,8 +226,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name,
-     * counting values that pass the supplied {@code filters}.
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filters}.
      *
      * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation
@@ -237,8 +237,8 @@ public interface Aggregation {
     }
 
     /**
-     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name,
-     * counting values that pass the supplied {@code filter}.
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filter}.
      *
      * @param resultColumn The {@link Count#column() output column} name
      * @return The aggregation

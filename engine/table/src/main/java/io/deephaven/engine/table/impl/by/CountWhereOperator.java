@@ -114,10 +114,10 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
                 }
             }
             resultsChunk = WritableBooleanChunk.makeWritableChunk(size);
-            //noinspection unchecked
+            // noinspection unchecked
             filterChunks = new Chunk[filters.length][];
             for (int ii = 0; ii < filters.length; ii++) {
-                //noinspection unchecked
+                // noinspection unchecked
                 filterChunks[ii] = new Chunk[filters[ii].recorders.length];
             }
         }

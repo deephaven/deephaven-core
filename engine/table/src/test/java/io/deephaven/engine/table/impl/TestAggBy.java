@@ -139,7 +139,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 Filter.and(Filter.from("B <= 10", "B >= 5")))),
                         // Multiple input columns
                         AggCountWhere("filter10", "B >= 5", "C == 1"),
-                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0")),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1")),
                 "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
@@ -183,6 +184,9 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "filter11");
         assertEquals(4L, counts.get(0));
         assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
 
         doubleCounted = table.aggBy(
                 List.of(
@@ -199,7 +203,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 Filter.and(Filter.from("B <= 10", "B >= 5")))),
                         // Multiple input columns
                         AggCountWhere("filter10", "B >= 5", "C == 1"),
-                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0")));
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1")));
         show(doubleCounted);
         assertEquals(1, doubleCounted.size());
 
@@ -225,6 +230,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(6L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "filter11");
         assertEquals(4L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(6L, counts.get(0));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -389,7 +396,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
                                 AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
                                 // DynamicWhereFilter
-                                AggCountWhere("filter12", new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("intCol")))),
+                                AggCountWhere("filter12",
+                                        new DynamicWhereFilter(setTable, true,
+                                                MatchPairFactory.getExpressions("intCol"))),
+                                AggCountWhere("filter13", "doubleCol >= 5", "doubleColNulls >= 1")),
                                 "Sym").sort("Sym");
                     }
                 },
@@ -414,7 +424,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
                                 AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
                                 // DynamicWhereFilter
-                                AggCountWhere("filter12", new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("intCol")))));
+                                AggCountWhere("filter12",
+                                        new DynamicWhereFilter(setTable, true,
+                                                MatchPairFactory.getExpressions("intCol"))),
+                                AggCountWhere("filter13", "doubleCol >= 5", "doubleColNulls >= 1")));
                     }
                 },
                 new QueryTableTest.TableComparator(
