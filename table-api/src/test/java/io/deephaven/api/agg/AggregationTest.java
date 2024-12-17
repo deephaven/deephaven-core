@@ -57,6 +57,11 @@ public class AggregationTest {
         }
 
         @Override
+        public void visit(CountWhere countWhere) {
+            ++count;
+        }
+
+        @Override
         public void visit(FirstRowKey firstRowKey) {
             ++count;
         }

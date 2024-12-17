@@ -733,6 +733,7 @@ public interface Aggregation {
         visitor.visit((ColumnAggregation) null);
         visitor.visit((ColumnAggregations) null);
         visitor.visit((Count) null);
+        visitor.visit((CountWhere) null);
         visitor.visit((FirstRowKey) null);
         visitor.visit((LastRowKey) null);
         visitor.visit((Partition) null);

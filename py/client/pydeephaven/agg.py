@@ -16,6 +16,7 @@ _GrpcSelectable = table_pb2.Selectable
 _GrpcAggregation = table_pb2.Aggregation
 _GrpcAggregationColumns = _GrpcAggregation.AggregationColumns
 _GrpcAggregationCount = _GrpcAggregation.AggregationCount
+_GrpcAggregationCountWhere = _GrpcAggregation.AggregationCountWhere
 _GrpcAggregationFormula = _GrpcAggregation.AggregationFormula
 _GrpcAggregationPartition = _GrpcAggregation.AggregationPartition
 _GrpcAggSpec = table_pb2.AggSpec
@@ -51,6 +52,17 @@ class _AggregationCount(Aggregation):
         agg_count = _GrpcAggregationCount(column_name=self.col)
         return _GrpcAggregation(count=agg_count)
 
+
+@dataclass
+class _AggregationCountWhere(Aggregation):
+    col: str
+    filters: Union[str, List[str]]
+
+    def make_grpc_message(self) -> _GrpcAggregation:
+        agg_count_where = _GrpcAggregationCountWhere(column_name=self.col, filters=to_list(self.filters))
+        return _GrpcAggregation(count_where=agg_count_where)
+
+
 @dataclass
 class _AggregationFormula(Aggregation):
     selectable: _GrpcSelectable
@@ -58,6 +70,7 @@ class _AggregationFormula(Aggregation):
     def make_grpc_message(self) -> _GrpcAggregation:
         agg_formula = _GrpcAggregationFormula(selectable=self.selectable)
         return _GrpcAggregation(formula=agg_formula)
+
 
 @dataclass
 class _AggregationPartition(Aggregation):
@@ -135,6 +148,18 @@ def count_(col: str) -> Aggregation:
         an aggregation
     """
     return _AggregationCount(col=col)
+
+
+def count_where(col: str, filters: Union[str, List[str]]) -> Aggregation:
+    """Creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
+
+    Args:
+        col (str): the column to hold the counts of each distinct group
+
+    Returns:
+        an aggregation
+    """
+    return _AggregationCountWhere(col=col, filters=to_list(filters))
 
 
 def partition(col: str, include_by_columns: bool = True) -> Aggregation:

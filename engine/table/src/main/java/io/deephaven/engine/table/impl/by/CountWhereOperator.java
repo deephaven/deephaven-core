@@ -28,7 +28,7 @@ import static io.deephaven.engine.util.TableTools.emptyTable;
 
 /**
  * Implements a counting operator that counts the number of rows that pass a set of filters. Chunk data is accessed
- * through {@link RecordingInternalOperator recorder> instances.
+ * through {@link RecordingInternalOperator recorder} instances.
  */
 
 public class CountWhereOperator implements IterativeChunkedAggregationOperator {

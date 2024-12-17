@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, formula
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, count_where, partition, median, unique, count_distinct, distinct, formula
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -247,6 +247,10 @@ class TableTestCase(BaseTestCase):
                 pct(percentile=0.5, cols=["PctC = c"]),
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
                 count_(col="ca"),
+                count_where(col="count_where1", filters="a > 5"),
+                count_where("agg_count_where_1", "a > 100"),
+                count_where("agg_count_where_2", ["a > 100", "b < 250"]),
+                count_where("agg_count_where_3", "a <= 100 || b >= 250"),
                 partition(col="aggPartition"),
                 formula(formula="min(x)", formula_param="x", cols=["min_a=a", "min_b=b"]),
                 formula(formula="avg(x)", formula_param="x", cols=["avg_c=c", "avg_d=d"]),

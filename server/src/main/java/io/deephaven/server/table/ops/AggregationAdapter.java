@@ -86,7 +86,7 @@ public class AggregationAdapter {
     }
 
     public static CountWhere adapt(AggregationCountWhere count) {
-        return Aggregation.AggCountWhere(count.getColumnName());
+        return Aggregation.AggCountWhere(count.getColumnName(), count.getFiltersList().toArray(String[]::new));
     }
 
     public static Formula adapt(AggregationFormula formula) {
@@ -180,7 +180,7 @@ public class AggregationAdapter {
 
         public void visit(CountWhere countWhere) {
             add(
-                    TypeCase.COUNT,
+                    TypeCase.COUNT_WHERE,
                     AggregationCountWhere.class,
                     CountWhere.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,

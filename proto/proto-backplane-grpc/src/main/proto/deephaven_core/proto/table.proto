@@ -1059,7 +1059,7 @@ message Aggregation {
     // The output column name
     string column_name = 1;
 
-    repeated Condition filters = 2;
+    repeated string filters = 2;
   }
 
   message AggregationRowKey {
