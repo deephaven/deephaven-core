@@ -67,7 +67,7 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
 
     @Override
     public void visit(CountWhere countWhere) {
-        out.put(countWhere.column().name(), "countWhere");
+        out.put(countWhere.column().name(), "countWhere " + Strings.of(countWhere.filter()));
     }
 
     @Override

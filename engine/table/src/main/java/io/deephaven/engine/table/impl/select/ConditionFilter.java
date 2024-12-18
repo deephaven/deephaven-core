@@ -641,6 +641,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
+                "// count every true value\n" +
                 "__count += __newResult ? 1 : 0;\n");
         indenter.decreaseLevel();
         indenter.indent(classBody, "" +
@@ -666,13 +667,16 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __result = __results.get(__my_i__);\n" +
                 "if (!__result) {\n" +
-                "    continue; // already false, no need to compute\n" +
+                "    // already false, no need to compute or increment the count\n" +
+                "    continue;\n" +
                 "}");
         insertChunkValues(classBody, indenter);
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
-                "__count += __newResult ? 0 : 1;\n");
+                "__results.set(__my_i__, __newResult);\n" +
+                "// increment the count if the new result is TRUE\n" +
+                "__count += __newResult ? 1 : 0;\n");
 
         indenter.decreaseLevel();
         indenter.indent(classBody, "" +
@@ -698,12 +702,15 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __result = __results.get(__my_i__);\n" +
                 "if (__result) {\n" +
-                "    continue; // already true, no need to compute\n" +
+                "    // already true, no need to compute, but must increment the count\n" +
+                "    __count++;\n" +
+                "    continue;\n" +
                 "}");
         insertChunkValues(classBody, indenter);
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
+                "// increment the count if the new result is TRUE\n" +
                 "__count += __newResult ? 1 : 0;\n");
 
         indenter.decreaseLevel();
@@ -750,6 +757,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
+    @NotNull
     public Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {

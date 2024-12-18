@@ -3,9 +3,6 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TCharHashSet;
 
 /**
@@ -45,166 +42,33 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class SingleValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value;
 
         private SingleValueCharChunkFilter(char value) {
             this.value = value;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value == this.value;
-        }
-
-        /*
-         * The following functions are identical and repeated for each of the filter types. This is to aid the JVM in
-         * correctly inlining the matches() function. The goal is to have a single virtual call per chunk rather than
-         * once per value. This improves performance on JVM <= 21, but may be unnecessary on newer JVMs.
-         */
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = typedChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(typedChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class InverseSingleValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class InverseSingleValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value;
 
         private InverseSingleValueCharChunkFilter(char value) {
             this.value = value;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value != this.value;
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class TwoValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class TwoValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value1;
         private final char value2;
 
@@ -213,77 +77,13 @@ public class CharChunkMatchFilterFactory {
             this.value2 = value2;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value == value1 || value == value2;
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class InverseTwoValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class InverseTwoValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value1;
         private final char value2;
 
@@ -292,77 +92,13 @@ public class CharChunkMatchFilterFactory {
             this.value2 = value2;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value != value1 && value != value2;
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class ThreeValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class ThreeValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value1;
         private final char value2;
         private final char value3;
@@ -373,77 +109,13 @@ public class CharChunkMatchFilterFactory {
             this.value3 = value3;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value == value1 || value == value2 || value == value3;
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class InverseThreeValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class InverseThreeValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final char value1;
         private final char value2;
         private final char value3;
@@ -454,227 +126,35 @@ public class CharChunkMatchFilterFactory {
             this.value3 = value3;
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return value != value1 && value != value2 && value != value3;
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class MultiValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class MultiValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final TCharHashSet values;
 
         private MultiValueCharChunkFilter(char... values) {
             this.values = new TCharHashSet(values);
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return this.values.contains(value);
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 
-    private static class InverseMultiValueCharChunkFilter implements ChunkFilter.CharChunkFilter {
+    private final static class InverseMultiValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
         private final TCharHashSet values;
 
         private InverseMultiValueCharChunkFilter(char... values) {
             this.values = new TCharHashSet(values);
         }
 
-        private boolean matches(char value) {
+        @Override
+        public boolean matches(char value) {
             return !this.values.contains(value);
-        }
-
-        @Override
-        public void filter(
-                final Chunk<? extends Values> values,
-                final LongChunk<OrderedRowKeys> keys,
-                final WritableLongChunk<OrderedRowKeys> results) {
-            final CharChunk<? extends Values> charChunk = values.asCharChunk();
-            final int len = charChunk.size();
-
-            results.setSize(0);
-            for (int ii = 0; ii < len; ++ii) {
-                if (matches(charChunk.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
-        }
-
-        @Override
-        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from true to false
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (!result) {
-                    continue; // already false, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 0 : 1;
-            }
-            return count;
-        }
-
-        @Override
-        public int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final CharChunk<? extends Values> typedChunk = values.asCharChunk();
-            final int len = values.size();
-            int count = 0;
-            // Count the values that changed from false to true
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                if (result) {
-                    continue; // already true, no need to compute
-                }
-                boolean newResult = matches(typedChunk.get(ii));
-                results.set(ii, newResult);
-                count += newResult ? 1 : 0;
-            }
-            return count;
         }
     }
 }

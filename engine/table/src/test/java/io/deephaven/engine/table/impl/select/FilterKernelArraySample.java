@@ -37,7 +37,6 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.time.DateTimeUtils;
@@ -111,6 +110,7 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
             final boolean __newResult = eq(v1_.size(), v2_.size());
             __results.set(__my_i__, __newResult);
+            // count every true value
             __count += __newResult ? 1 : 0;
         }
         return __count;
@@ -123,11 +123,14 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
             final boolean __result = __results.get(__my_i__);
             if (!__result) {
-                continue; // already false, no need to compute
+                // already false, no need to compute or increment the count
+                continue;
             }
             final boolean __newResult = eq(v1_.size(), v2_.size());
             __results.set(__my_i__, __newResult);
-            __count += __newResult ? 0 : 1;
+            __results.set(__my_i__, __newResult);
+            // increment the count if the new result is TRUE
+            __count += __newResult ? 1 : 0;
         }
         return __count;
     }
@@ -139,10 +142,13 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
         for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
             final boolean __result = __results.get(__my_i__);
             if (__result) {
-                continue; // already true, no need to compute
+                // already true, no need to compute, but must increment the count
+                __count++;
+                continue;
             }
             final boolean __newResult = eq(v1_.size(), v2_.size());
             __results.set(__my_i__, __newResult);
+            // increment the count if the new result is TRUE
             __count += __newResult ? 1 : 0;
         }
         return __count;

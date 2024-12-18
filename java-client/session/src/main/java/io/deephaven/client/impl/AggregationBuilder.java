@@ -6,9 +6,11 @@ package io.deephaven.client.impl;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.Pair;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
+import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCountWhere;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
@@ -16,7 +18,6 @@ import io.deephaven.proto.backplane.grpc.Aggregation.Builder;
 import io.deephaven.proto.backplane.grpc.Selectable;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -75,9 +76,12 @@ class AggregationBuilder implements io.deephaven.api.agg.Aggregation.Visitor {
 
     @Override
     public void visit(CountWhere countWhere) {
-        out = Collections.EMPTY_LIST;
-        // out = singletonList(of(Builder::setCount, AggregationCount.newBuilder()
-        // .setColumnName(count.column().name())));
+        final Collection<String> filters = Filter.extractAnds(countWhere.filter()).stream()
+                .map(Strings::of)
+                .collect(Collectors.toList());
+        out = singletonList(of(Builder::setCountWhere, AggregationCountWhere.newBuilder()
+                .setColumnName(countWhere.column().name())
+                .addAllFilters(filters)));
     }
 
     @Override

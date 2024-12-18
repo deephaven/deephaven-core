@@ -31,62 +31,638 @@ public interface ChunkFilter {
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that were set to {@code true} during this call.
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
      */
     int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
     /**
      * Filter a chunk of values, setting parallel values in {@code results} to {@code false} when the filter result is
-     * {@code false}. The filter will not be evaluated for values that are currently {@code false} in the results chunk.
+     * {@code false}. The filter will not be evaluated for values that are already {@code false} in the results chunk.
      * <p>
      * To use this method effectively, the results chunk should be initialized by a call to
      * {@link #filter(Chunk, WritableBooleanChunk)} or by setting all values {@code true} before the first call.
-     * Successive calls will have the effect of AND'ing this filter results with existing results.
+     * Successive calls will have the effect of AND'ing the filter results with existing results.
      *
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that were updated from {@code true} to {@code false} during this call.
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
      */
     int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
     /**
      * Filter a chunk of values, setting parallel values in {@code results} to {@code true} when the filter result is
-     * {@code true}. The filter will not be evaluated for values that are currently {@code true} in the results chunk.
+     * {@code true}. The filter will not be evaluated for values that are already {@code true} in the results chunk.
      * <p>
      * To use this method effectively, the results chunk should be initialized by a call to
      * {@link #filter(Chunk, WritableBooleanChunk)} or by setting all values {@code false} before the first call.
-     * Successive calls will have the effect of OR'ing this filter results with existing results.`
+     * Successive calls will have the effect of {@code OR}'ing the filter results with existing results.`
      *
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that were updated from {@code false} to {@code true} during this call.
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
      */
     int filterOr(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
-    interface CharChunkFilter extends ChunkFilter {
+    abstract class CharChunkFilter implements ChunkFilter {
+        public abstract boolean matches(char value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = charChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(charChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final CharChunk<? extends Values> charChunk = values.asCharChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(charChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface ByteChunkFilter extends ChunkFilter {
+    abstract class ByteChunkFilter implements ChunkFilter {
+        public abstract boolean matches(byte value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
+            final int len = byteChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(byteChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(byteChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(byteChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ByteChunk<? extends Values> byteChunk = values.asByteChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(byteChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface ShortChunkFilter extends ChunkFilter {
+    abstract class ShortChunkFilter implements ChunkFilter {
+        public abstract boolean matches(short value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = shortChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(shortChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ShortChunk<? extends Values> shortChunk = values.asShortChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(shortChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface IntChunkFilter extends ChunkFilter {
+    abstract class IntChunkFilter implements ChunkFilter {
+        public abstract boolean matches(int value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
+            final int len = intChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(intChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(intChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(intChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final IntChunk<? extends Values> intChunk = values.asIntChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(intChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface LongChunkFilter extends ChunkFilter {
+    abstract class LongChunkFilter implements ChunkFilter {
+        public abstract boolean matches(long value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
+            final int len = longChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(longChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(longChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(longChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final LongChunk<? extends Values> longChunk = values.asLongChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(longChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface FloatChunkFilter extends ChunkFilter {
+    abstract class FloatChunkFilter implements ChunkFilter {
+        public abstract boolean matches(float value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = floatChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(floatChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface DoubleChunkFilter extends ChunkFilter {
+    abstract class DoubleChunkFilter implements ChunkFilter {
+        public abstract boolean matches(double value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
-    interface ObjectChunkFilter<T> extends ChunkFilter {
+    abstract class ObjectChunkFilter<T> implements ChunkFilter {
+        public abstract boolean matches(T value);
+
+        @Override
+        public final void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final ObjectChunk<T, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = objectChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(objectChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public final int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<T, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<T, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from true to false
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public final int filterOr(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final ObjectChunk<T, ? extends Values> objectChunk = values.asObjectChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that changed from false to true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (result) {
+                    // already true, no need to compute, but must increment the count
+                    count++;
+                    continue;
+                }
+                boolean newResult = matches(objectChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
     /**

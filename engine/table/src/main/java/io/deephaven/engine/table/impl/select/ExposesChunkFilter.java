@@ -9,7 +9,9 @@ import java.util.Optional;
 
 public interface ExposesChunkFilter {
     /**
-     * Get the chunk filter for this filter.
+     * Retrieve the underlying chunk filter for this filter if available.
+     *
+     * @return If available, returns the underlying chunk filter. Otherwise returns {@link Optional#empty()}.
      */
     Optional<ChunkFilter> chunkFilter();
 }

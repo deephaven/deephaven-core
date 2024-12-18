@@ -267,28 +267,18 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return filter.filter(selection, fullSet, table, usePrev, formula, params);
     }
 
-    // /**
-    // * Filter a chunk of values, setting parallel values in results to {@code false} when the filter result is
-    // * {@code false}. The filter is not evaluated for values that are already {@code false} in the results chunk.
-    // * <p>
-    // * To use this method effectively, the results chunk should be initialized to {@code true} before the first call.
-    // * Successive calls will have the effect of AND'ing the filter results with the existing results.
-    // *
-    // * @param values the values to filter
-    // * @param results a boolean chunk containing the result of the filter
-    // *
-    // * @return the number of values that were set to {@code false} during this call.
-    // */
-    // public int filter(Chunk<? extends Values>[] values, WritableBooleanChunk<Values> results) {
-    // final Filter filter;
-    // try {
-    // filter = getFilter(table, fullSet);
-    // } catch (Exception e) {
-    // throw new RuntimeException("Failed to instantiate filter class", e);
-    // }
-    // return filter.filter(selection, fullSet, table, usePrev, formula, params);
-    // }
-
+    /**
+     * Retrieve the current {@link Filter filter} for this condition filter or create a new one initialized to the
+     * provided table and row set. With a {@link ConditionFilter.FilterKernel.Context context} from
+     * {@link Filter#getContext(int)}, this filter can be used for directly filtering chunked data.
+     *
+     * @param table the table to filter, or a table with a compatible schema
+     * @param fullSet the full set of rows currently in the table, used to populate the virtual row variables such as
+     *        {@code i}, {@code ii}, and {@code k}
+     *
+     * @return the initialized filter
+     */
+    @NotNull
     public abstract Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
@@ -387,7 +377,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         /**
          * Filter a chunk of values, setting parallel values in {@code results} to the output of the filter.
          *
-         * @return the number of values that were set to {@code true} during this call.
+         * @return the number of values are {@code true} in {@code results} after the filter is applied.
          */
         int filter(
                 ConditionFilter.FilterKernel.Context context,
@@ -405,7 +395,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
          * values to {@code true} before the first call. Successive calls will have the effect of AND'ing this filter
          * results with existing results.
          *
-         * @return the number of values that were updated from {@code true} to {@code false} during this call.
+         * @return the number of values are {@code true} in {@code results} after the filter is applied.
          */
         int filterAnd(
                 ConditionFilter.FilterKernel.Context context,
@@ -423,7 +413,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
          * values to {@code false} before the first call. Successive calls will have the effect of OR'ing this filter
          * results with existing results.`
          *
-         * @return the number of values that were updated from {@code false} to {@code true} during this call.
+         * @return the number of values are {@code true} in {@code results} after the filter is applied.
          */
         int filterOr(
                 ConditionFilter.FilterKernel.Context context,

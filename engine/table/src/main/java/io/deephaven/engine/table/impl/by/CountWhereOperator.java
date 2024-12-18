@@ -279,8 +279,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
                     count = filter.chunkFilter.filter(valueChunks[0], ctx.resultsChunk);
                     initialized = true;
                 } else {
-                    // Decrement the count by the number of false values written
-                    count -= filter.chunkFilter.filterAnd(valueChunks[0], ctx.resultsChunk);
+                    count = filter.chunkFilter.filterAnd(valueChunks[0], ctx.resultsChunk);
                 }
                 continue;
             } else if (filter.conditionFilter != null) {
@@ -289,8 +288,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
                             chunkSize, ctx.resultsChunk);
                     initialized = true;
                 } else {
-                    // Decrement the count by the number of false values written
-                    count -= filter.conditionFilter.filterAnd(conditionalFilterContext, valueChunks,
+                    count = filter.conditionFilter.filterAnd(conditionalFilterContext, valueChunks,
                             chunkSize, ctx.resultsChunk);
                 }
                 continue;
@@ -327,11 +325,13 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
      * Using current data, update the provided context to contain the chunks from the recording operators and update the
      * chunk source table if needed.
      */
-    private void updateChunkSources(final BaseContext ctx) {
+    private void updateChunkSources(final BaseContext ctx, final boolean usePrev) {
         if (updateChunkSourceTable) {
             for (int ii = 0; ii < chunkColumnSources.length; ii++) {
                 chunkColumnSources[ii].clear();
-                final Chunk<? extends Values> chunk = recorders[ii].getValueChunk();
+                final Chunk<? extends Values> chunk = usePrev
+                        ? recorders[ii].getPrevValueChunk()
+                        : recorders[ii].getValueChunk();
                 // ChunkColumnSource releases the chunks it acquires, so give it a copy.
                 final WritableChunk<? extends Values> tmpValues =
                         (WritableChunk<? extends Values>) chunk.slice(0, chunk.size());
@@ -342,31 +342,10 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
         // Grab the filter input chunks from the recorders
         for (int fi = 0; fi < filters.length; fi++) {
             for (int ri = 0; ri < filters[fi].recorders.length; ri++) {
-                ctx.filterChunks[fi][ri] = filters[fi].recorders[ri].getValueChunk();
-            }
-        }
-    }
-
-    /**
-     * Using previous data, update the provided context to contain the chunks from the recording operators and update
-     * the chunk source table if needed.
-     */
-    private void updateChunkSourcesPrev(final BaseContext ctx) {
-        if (updateChunkSourceTable) {
-            for (int ii = 0; ii < chunkColumnSources.length; ii++) {
-                chunkColumnSources[ii].clear();
-                final Chunk<? extends Values> chunk = recorders[ii].getPrevValueChunk();
-                // ChunkColumnSource releases the chunks it acquires, so give it a copy.
-                final WritableChunk<? extends Values> tmpValues =
-                        (WritableChunk<? extends Values>) chunk.slice(0, chunk.size());
-                chunkColumnSources[ii].addChunk(tmpValues);
-            }
-        }
-
-        // Grab the filter input chunks from the recorders
-        for (int fi = 0; fi < filters.length; fi++) {
-            for (int ri = 0; ri < filters[fi].recorders.length; ri++) {
-                ctx.filterChunks[fi][ri] = filters[fi].recorders[ri].getPrevValueChunk();
+                final Chunk<? extends Values> chunk = usePrev
+                        ? filters[fi].recorders[ri].getPrevValueChunk()
+                        : filters[fi].recorders[ri].getValueChunk();
+                ctx.filterChunks[fi][ri] = chunk;
             }
         }
     }
@@ -383,11 +362,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final WritableIntChunk<Values> destCountChunk,
             final boolean usePrev) {
 
-        if (usePrev) {
-            updateChunkSourcesPrev(ctx);
-        } else {
-            updateChunkSources(ctx);
-        }
+        updateChunkSources(ctx, usePrev);
 
         applyFilters(ctx, chunkSize, true);
 
@@ -406,11 +381,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final CountWhereSingletonContext ctx,
             final int chunkSize,
             final boolean usePrev) {
-        if (usePrev) {
-            updateChunkSourcesPrev(ctx);
-        } else {
-            updateChunkSources(ctx);
-        }
+        updateChunkSources(ctx, usePrev);
 
         return applyFilters(ctx, chunkSize, false);
     }
@@ -438,7 +409,7 @@ public class CountWhereOperator implements IterativeChunkedAggregationOperator {
             final int count = ctx.countChunk.get(ii);
             final long destination = destinations.get(startPosition);
             resultColumnSource.set(destination, plusLong(resultColumnSource.getUnsafe(destination), count));
-            stateModified.set(ii, count > 0);
+            stateModified.set(ii, true);
         }
     }
 
