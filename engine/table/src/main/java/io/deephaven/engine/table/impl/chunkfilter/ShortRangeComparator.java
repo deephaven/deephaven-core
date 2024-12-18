@@ -12,7 +12,7 @@ import io.deephaven.util.compare.ShortComparisons;
 public class ShortRangeComparator {
     private ShortRangeComparator() {} // static use only
 
-    private abstract static class ShortShortFilter extends ChunkFilter.ShortChunkFilter {
+    private abstract static class ShortShortFilter extends ShortChunkFilter {
         final short lower;
         final short upper;
 
@@ -66,7 +66,7 @@ public class ShortRangeComparator {
         }
     }
 
-    public static ChunkFilter.ShortChunkFilter makeShortFilter(short lower, short upper, boolean lowerInclusive,
+    public static ShortChunkFilter makeShortFilter(short lower, short upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

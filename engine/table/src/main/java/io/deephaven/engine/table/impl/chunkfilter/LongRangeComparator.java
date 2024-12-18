@@ -12,7 +12,7 @@ import io.deephaven.util.compare.LongComparisons;
 public class LongRangeComparator {
     private LongRangeComparator() {} // static use only
 
-    private abstract static class LongLongFilter extends ChunkFilter.LongChunkFilter {
+    private abstract static class LongLongFilter extends LongChunkFilter {
         final long lower;
         final long upper;
 
@@ -66,7 +66,7 @@ public class LongRangeComparator {
         }
     }
 
-    public static ChunkFilter.LongChunkFilter makeLongFilter(long lower, long upper, boolean lowerInclusive,
+    public static LongChunkFilter makeLongFilter(long lower, long upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

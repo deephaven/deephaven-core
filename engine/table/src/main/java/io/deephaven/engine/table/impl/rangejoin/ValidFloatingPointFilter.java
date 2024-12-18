@@ -12,6 +12,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +82,7 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter);
     }
 
-    private static final class DoubleFilter extends ChunkFilter.DoubleChunkFilter {
+    private static final class DoubleFilter extends DoubleChunkFilter {
 
         private static final DoubleFilter INSTANCE = new DoubleFilter();
 
@@ -92,7 +94,7 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         }
     }
 
-    private static final class FloatFilter extends ChunkFilter.FloatChunkFilter {
+    private static final class FloatFilter extends FloatChunkFilter {
 
         private static final FloatFilter INSTANCE = new FloatFilter();
 

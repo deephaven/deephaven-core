@@ -113,8 +113,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         CONTEXT getContext(int maxChunkSize);
 
-        LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<OrderedRowKeys> indices,
-                Chunk... inputChunks);
+        LongChunk<OrderedRowKeys> filter(CONTEXT context, LongChunk<OrderedRowKeys> indices, Chunk... inputChunks);
 
         int filter(
                 CONTEXT context,
@@ -123,12 +122,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                 WritableBooleanChunk<Values> results);
 
         int filterAnd(
-                CONTEXT context,
-                Chunk[] inputChunks,
-                int chunkSize,
-                WritableBooleanChunk<Values> results);
-
-        int filterOr(
                 CONTEXT context,
                 Chunk[] inputChunks,
                 int chunkSize,
@@ -424,15 +417,6 @@ public class ConditionFilter extends AbstractConditionFilter {
                 final WritableBooleanChunk<Values> results) {
             return filterKernel.filterAnd(context, valueChunks, chunkSize, results);
         }
-
-        @Override
-        public int filterOr(
-                final FilterKernel.Context context,
-                final Chunk<? extends Values>[] valueChunks,
-                final int chunkSize,
-                final WritableBooleanChunk<Values> results) {
-            return filterKernel.filterOr(context, valueChunks, chunkSize, results);
-        }
     }
 
     private static String toTitleCase(String input) {
@@ -674,41 +658,6 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
-                "__results.set(__my_i__, __newResult);\n" +
-                "// increment the count if the new result is TRUE\n" +
-                "__count += __newResult ? 1 : 0;\n");
-
-        indenter.decreaseLevel();
-        indenter.indent(classBody, "" +
-                "}\n" +
-                "return __count;");
-        indenter.decreaseLevel();
-        indenter.indent(classBody, "" +
-                "}\n\n");
-
-        //////////////////////////////////
-
-        indenter.indent(classBody, "\n" +
-                "@Override\n" +
-                "public int filterOr(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {\n");
-        indenter.increaseLevel();
-        insertChunks(classBody, indenter);
-
-        indenter.indent(classBody, "" +
-                "__results.setSize(__chunkSize);\n" +
-                "int __count = 0;\n" +
-                "for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {\n");
-        indenter.increaseLevel();
-        indenter.indent(classBody, "" +
-                "final boolean __result = __results.get(__my_i__);\n" +
-                "if (__result) {\n" +
-                "    // already true, no need to compute, but must increment the count\n" +
-                "    __count++;\n" +
-                "    continue;\n" +
-                "}");
-        insertChunkValues(classBody, indenter);
-        indenter.indent(classBody, "" +
-                "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
                 "// increment the count if the new result is TRUE\n" +
                 "__count += __newResult ? 1 : 0;\n");

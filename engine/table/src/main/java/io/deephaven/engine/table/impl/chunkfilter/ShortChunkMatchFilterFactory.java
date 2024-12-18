@@ -20,7 +20,7 @@ import gnu.trove.set.hash.TShortHashSet;
 public class ShortChunkMatchFilterFactory {
     private ShortChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
+    public static ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueShortChunkFilter(values[0]);
@@ -46,7 +46,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class SingleValueShortChunkFilter extends ShortChunkFilter {
         private final short value;
 
         private SingleValueShortChunkFilter(short value) {
@@ -59,7 +59,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class InverseSingleValueShortChunkFilter extends ShortChunkFilter {
         private final short value;
 
         private InverseSingleValueShortChunkFilter(short value) {
@@ -72,7 +72,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class TwoValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
 
@@ -87,7 +87,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class InverseTwoValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
 
@@ -102,7 +102,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class ThreeValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
         private final short value3;
@@ -119,7 +119,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class InverseThreeValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
         private final short value3;
@@ -136,7 +136,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class MultiValueShortChunkFilter extends ShortChunkFilter {
         private final TShortHashSet values;
 
         private MultiValueShortChunkFilter(short... values) {
@@ -149,7 +149,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueShortChunkFilter extends ChunkFilter.ShortChunkFilter {
+    private final static class InverseMultiValueShortChunkFilter extends ShortChunkFilter {
         private final TShortHashSet values;
 
         private InverseMultiValueShortChunkFilter(short... values) {

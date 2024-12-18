@@ -8,7 +8,7 @@ import io.deephaven.util.compare.CharComparisons;
 public class CharRangeComparator {
     private CharRangeComparator() {} // static use only
 
-    private abstract static class CharCharFilter extends ChunkFilter.CharChunkFilter {
+    private abstract static class CharCharFilter extends CharChunkFilter {
         final char lower;
         final char upper;
 
@@ -62,7 +62,7 @@ public class CharRangeComparator {
         }
     }
 
-    public static ChunkFilter.CharChunkFilter makeCharFilter(char lower, char upper, boolean lowerInclusive,
+    public static CharChunkFilter makeCharFilter(char lower, char upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

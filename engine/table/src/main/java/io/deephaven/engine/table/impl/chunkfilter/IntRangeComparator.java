@@ -12,7 +12,7 @@ import io.deephaven.util.compare.IntComparisons;
 public class IntRangeComparator {
     private IntRangeComparator() {} // static use only
 
-    private abstract static class IntIntFilter extends ChunkFilter.IntChunkFilter {
+    private abstract static class IntIntFilter extends IntChunkFilter {
         final int lower;
         final int upper;
 
@@ -66,7 +66,7 @@ public class IntRangeComparator {
         }
     }
 
-    public static ChunkFilter.IntChunkFilter makeIntFilter(int lower, int upper, boolean lowerInclusive,
+    public static IntChunkFilter makeIntFilter(int lower, int upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

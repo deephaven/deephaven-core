@@ -20,7 +20,7 @@ import gnu.trove.set.hash.TByteHashSet;
 public class ByteChunkMatchFilterFactory {
     private ByteChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
+    public static ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueByteChunkFilter(values[0]);
@@ -46,7 +46,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class SingleValueByteChunkFilter extends ByteChunkFilter {
         private final byte value;
 
         private SingleValueByteChunkFilter(byte value) {
@@ -59,7 +59,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class InverseSingleValueByteChunkFilter extends ByteChunkFilter {
         private final byte value;
 
         private InverseSingleValueByteChunkFilter(byte value) {
@@ -72,7 +72,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class TwoValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
 
@@ -87,7 +87,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class InverseTwoValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
 
@@ -102,7 +102,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class ThreeValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
         private final byte value3;
@@ -119,7 +119,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class InverseThreeValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
         private final byte value3;
@@ -136,7 +136,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class MultiValueByteChunkFilter extends ByteChunkFilter {
         private final TByteHashSet values;
 
         private MultiValueByteChunkFilter(byte... values) {
@@ -149,7 +149,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueByteChunkFilter extends ChunkFilter.ByteChunkFilter {
+    private final static class InverseMultiValueByteChunkFilter extends ByteChunkFilter {
         private final TByteHashSet values;
 
         private InverseMultiValueByteChunkFilter(byte... values) {

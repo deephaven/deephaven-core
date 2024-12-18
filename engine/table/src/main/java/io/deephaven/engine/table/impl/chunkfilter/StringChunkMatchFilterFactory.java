@@ -30,7 +30,7 @@ class StringChunkMatchFilterFactory {
     private StringChunkMatchFilterFactory() {} // static use only
 
     @SuppressWarnings("rawtypes")
-    static ChunkFilter.ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
+    static ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
         if (invert) {
             if (values.length == 1) {
                 return new InverseSingleValueStringChunkFilter((String) values[0]);
@@ -57,7 +57,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private final static class SingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private SingleValueStringChunkFilter(String value) {
@@ -70,7 +70,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseSingleValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseSingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private InverseSingleValueStringChunkFilter(String value) {
@@ -83,7 +83,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class TwoValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class TwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -98,7 +98,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseTwoValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseTwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -113,7 +113,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class ThreeValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class ThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -130,7 +130,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseThreeValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -148,7 +148,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class MultiValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private MultiValueStringChunkFilter(Object... values) {
@@ -164,7 +164,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseMultiValueStringChunkFilter extends ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private InverseMultiValueStringChunkFilter(Object... values) {

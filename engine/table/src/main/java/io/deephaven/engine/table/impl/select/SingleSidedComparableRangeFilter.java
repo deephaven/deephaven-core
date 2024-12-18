@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -79,7 +80,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
                 + (lowerInclusive ? "=" : "") + pivot + ")";
     }
 
-    private static class GeqComparableChunkFilter extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+    private static class GeqComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private GeqComparableChunkFilter(Comparable<?> pivot) {
@@ -92,7 +93,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    private static class LeqComparableChunkFilter extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+    private static class LeqComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private LeqComparableChunkFilter(Comparable<?> pivot) {
@@ -105,7 +106,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    private static class GtComparableChunkFilter extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+    private static class GtComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private GtComparableChunkFilter(Comparable<?> pivot) {
@@ -118,7 +119,7 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    private static class LtComparableChunkFilter extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+    private static class LtComparableChunkFilter extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> pivot;
 
         private LtComparableChunkFilter(Comparable<?> pivot) {

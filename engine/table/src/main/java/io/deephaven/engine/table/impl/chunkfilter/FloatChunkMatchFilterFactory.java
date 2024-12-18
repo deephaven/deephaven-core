@@ -20,7 +20,7 @@ import gnu.trove.set.hash.TFloatHashSet;
 public class FloatChunkMatchFilterFactory {
     private FloatChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.FloatChunkFilter makeFilter(boolean invertMatch, float... values) {
+    public static FloatChunkFilter makeFilter(boolean invertMatch, float... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueFloatChunkFilter(values[0]);
@@ -46,7 +46,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class SingleValueFloatChunkFilter extends FloatChunkFilter {
         private final float value;
 
         private SingleValueFloatChunkFilter(float value) {
@@ -59,7 +59,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class InverseSingleValueFloatChunkFilter extends FloatChunkFilter {
         private final float value;
 
         private InverseSingleValueFloatChunkFilter(float value) {
@@ -72,7 +72,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class TwoValueFloatChunkFilter extends FloatChunkFilter {
         private final float value1;
         private final float value2;
 
@@ -87,7 +87,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class InverseTwoValueFloatChunkFilter extends FloatChunkFilter {
         private final float value1;
         private final float value2;
 
@@ -102,7 +102,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class ThreeValueFloatChunkFilter extends FloatChunkFilter {
         private final float value1;
         private final float value2;
         private final float value3;
@@ -119,7 +119,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class InverseThreeValueFloatChunkFilter extends FloatChunkFilter {
         private final float value1;
         private final float value2;
         private final float value3;
@@ -136,7 +136,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class MultiValueFloatChunkFilter extends FloatChunkFilter {
         private final TFloatHashSet values;
 
         private MultiValueFloatChunkFilter(float... values) {
@@ -149,7 +149,7 @@ public class FloatChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueFloatChunkFilter extends ChunkFilter.FloatChunkFilter {
+    private final static class InverseMultiValueFloatChunkFilter extends FloatChunkFilter {
         private final TFloatHashSet values;
 
         private InverseMultiValueFloatChunkFilter(float... values) {

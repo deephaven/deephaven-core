@@ -206,7 +206,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                 startInstant.plusNanos(90 * 1_000_000) // 1970-01-01T00:00:00.090Z
         };
         ColumnHolder<?> eHolder = instantCol("E", instantData);
-        Table table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder);
+        ColumnHolder<?> fHolder = stringCol("F", "A", "B", "C", "D", "E", "A", "B", "C", "D", "E");
+
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder, fHolder);
         show(table);
         assertEquals(10, table.size());
         assertEquals(2, table.groupBy("A").size());
@@ -230,7 +232,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                         // Boolean column test
                         AggCountWhere("filter13", "D == true"),
                         // Instant column test
-                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'")),
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'"),
+                        // String column test
+                        AggCountWhere("filter15", "F != 'A'", "F != 'B'")),
                 "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
@@ -277,6 +281,9 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "filter14");
         assertEquals(4L, counts.get(0));
         assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter15");
+        assertEquals(3L, counts.get(0));
+        assertEquals(3L, counts.get(1));
 
         doubleCounted = table.aggBy(
                 List.of(
@@ -298,7 +305,9 @@ public class TestAggBy extends RefreshingTableTestCase {
                         // Boolean column test
                         AggCountWhere("filter13", "D == true"),
                         // Instant column test
-                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'")));
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'"),
+                        // String column test
+                        AggCountWhere("filter15", "F != 'A'", "F != 'B'")));
         show(doubleCounted);
         assertEquals(1, doubleCounted.size());
 
@@ -329,6 +338,8 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "filter13");
         assertEquals(5L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "filter14");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter15");
         assertEquals(6L, counts.get(0));
     }
 

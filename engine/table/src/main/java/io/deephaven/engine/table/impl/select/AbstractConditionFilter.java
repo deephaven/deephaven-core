@@ -402,24 +402,6 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 Chunk<? extends Values>[] valueChunks,
                 int chunkSize,
                 WritableBooleanChunk<Values> results);
-
-        /**
-         * Filter a chunk of values, setting parallel values in {@code results} to {@code true} when the filter result
-         * is {@code true}. The filter will not be evaluated for values that are currently {@code true} in the results
-         * chunk.
-         * <p>
-         * To use this method effectively, the results chunk should be initialized by a call to
-         * {@link #filter(ConditionFilter.FilterKernel.Context, Chunk[], int, WritableBooleanChunk)} or by setting all
-         * values to {@code false} before the first call. Successive calls will have the effect of OR'ing this filter
-         * results with existing results.`
-         *
-         * @return the number of values are {@code true} in {@code results} after the filter is applied.
-         */
-        int filterOr(
-                ConditionFilter.FilterKernel.Context context,
-                Chunk<? extends Values>[] valueChunks,
-                int chunkSize,
-                WritableBooleanChunk<Values> results);
     }
 
     static String truncateLongFormula(String formula) {

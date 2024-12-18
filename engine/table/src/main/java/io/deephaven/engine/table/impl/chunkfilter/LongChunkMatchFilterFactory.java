@@ -20,7 +20,7 @@ import gnu.trove.set.hash.TLongHashSet;
 public class LongChunkMatchFilterFactory {
     private LongChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.LongChunkFilter makeFilter(boolean invertMatch, long... values) {
+    public static LongChunkFilter makeFilter(boolean invertMatch, long... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueLongChunkFilter(values[0]);
@@ -46,7 +46,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class SingleValueLongChunkFilter extends LongChunkFilter {
         private final long value;
 
         private SingleValueLongChunkFilter(long value) {
@@ -59,7 +59,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class InverseSingleValueLongChunkFilter extends LongChunkFilter {
         private final long value;
 
         private InverseSingleValueLongChunkFilter(long value) {
@@ -72,7 +72,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class TwoValueLongChunkFilter extends LongChunkFilter {
         private final long value1;
         private final long value2;
 
@@ -87,7 +87,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class InverseTwoValueLongChunkFilter extends LongChunkFilter {
         private final long value1;
         private final long value2;
 
@@ -102,7 +102,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class ThreeValueLongChunkFilter extends LongChunkFilter {
         private final long value1;
         private final long value2;
         private final long value3;
@@ -119,7 +119,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class InverseThreeValueLongChunkFilter extends LongChunkFilter {
         private final long value1;
         private final long value2;
         private final long value3;
@@ -136,7 +136,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class MultiValueLongChunkFilter extends LongChunkFilter {
         private final TLongHashSet values;
 
         private MultiValueLongChunkFilter(long... values) {
@@ -149,7 +149,7 @@ public class LongChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueLongChunkFilter extends ChunkFilter.LongChunkFilter {
+    private final static class InverseMultiValueLongChunkFilter extends LongChunkFilter {
         private final TLongHashSet values;
 
         private InverseMultiValueLongChunkFilter(long... values) {

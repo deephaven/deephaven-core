@@ -129,14 +129,5 @@ public class InstantRangeFilter extends LongRangeFilter {
                 return longFilter.filterAnd(convertedChunk, results);
             }
         }
-
-        @Override
-        public int filterOr(
-                final Chunk<? extends Values> values,
-                final WritableBooleanChunk<Values> results) {
-            try (final WritableLongChunk<Values> convertedChunk = convert(values)) {
-                return longFilter.filterOr(convertedChunk, results);
-            }
-        }
     }
 }

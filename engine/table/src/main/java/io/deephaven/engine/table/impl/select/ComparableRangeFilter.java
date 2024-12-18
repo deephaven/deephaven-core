@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ObjectChunkFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -89,7 +90,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     private final static class InclusiveInclusiveComparableChunkFilter
-            extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+            extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -105,7 +106,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     private final static class InclusiveExclusiveComparableChunkFilter
-            extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+            extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -121,7 +122,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     private final static class ExclusiveInclusiveComparableChunkFilter
-            extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+            extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 
@@ -137,7 +138,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     private final static class ExclusiveExclusiveComparableChunkFilter
-            extends ChunkFilter.ObjectChunkFilter<Comparable<?>> {
+            extends ObjectChunkFilter<Comparable<?>> {
         private final Comparable<?> lower;
         private final Comparable<?> upper;
 

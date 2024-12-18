@@ -8,7 +8,7 @@ import io.deephaven.util.compare.FloatComparisons;
 public class FloatRangeComparator {
     private FloatRangeComparator() {} // static use only
 
-    private abstract static class FloatFloatFilter extends ChunkFilter.FloatChunkFilter {
+    private abstract static class FloatFloatFilter extends FloatChunkFilter {
         final float lower;
         final float upper;
 
@@ -62,7 +62,7 @@ public class FloatRangeComparator {
         }
     }
 
-    public static ChunkFilter.FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive,
+    public static FloatChunkFilter makeFloatFilter(float lower, float upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

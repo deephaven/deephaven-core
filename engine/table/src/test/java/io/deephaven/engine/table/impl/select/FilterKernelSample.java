@@ -144,27 +144,4 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
         }
         return __count;
     }
-    
-    @Override
-    public int filterOr(final Context __context, final Chunk[] __inputChunks, final int __chunkSize, final WritableBooleanChunk<Values> __results) {
-        final ShortChunk __columnChunk0 = __inputChunks[0].asShortChunk();
-        final DoubleChunk __columnChunk1 = __inputChunks[1].asDoubleChunk();
-        __results.setSize(__chunkSize);
-        int __count = 0;
-        for (int __my_i__ = 0; __my_i__ < __chunkSize; __my_i__++) {
-            final boolean __result = __results.get(__my_i__);
-            if (__result) {
-                // already true, no need to compute, but must increment the count
-                __count++;
-                continue;
-            }
-            final short v1 =  (short)__columnChunk0.get(__my_i__);
-            final double v2 =  (double)__columnChunk1.get(__my_i__);
-            final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
-            __results.set(__my_i__, __newResult);
-            // increment the count if the new result is TRUE
-            __count += __newResult ? 1 : 0;
-        }
-        return __count;
-    }
 }

@@ -20,7 +20,7 @@ import gnu.trove.set.hash.TIntHashSet;
 public class IntChunkMatchFilterFactory {
     private IntChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.IntChunkFilter makeFilter(boolean invertMatch, int... values) {
+    public static IntChunkFilter makeFilter(boolean invertMatch, int... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueIntChunkFilter(values[0]);
@@ -46,7 +46,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class SingleValueIntChunkFilter extends IntChunkFilter {
         private final int value;
 
         private SingleValueIntChunkFilter(int value) {
@@ -59,7 +59,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class InverseSingleValueIntChunkFilter extends IntChunkFilter {
         private final int value;
 
         private InverseSingleValueIntChunkFilter(int value) {
@@ -72,7 +72,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class TwoValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
 
@@ -87,7 +87,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class InverseTwoValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
 
@@ -102,7 +102,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class ThreeValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
         private final int value3;
@@ -119,7 +119,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class InverseThreeValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
         private final int value3;
@@ -136,7 +136,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class MultiValueIntChunkFilter extends IntChunkFilter {
         private final TIntHashSet values;
 
         private MultiValueIntChunkFilter(int... values) {
@@ -149,7 +149,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueIntChunkFilter extends ChunkFilter.IntChunkFilter {
+    private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
         private final TIntHashSet values;
 
         private InverseMultiValueIntChunkFilter(int... values) {

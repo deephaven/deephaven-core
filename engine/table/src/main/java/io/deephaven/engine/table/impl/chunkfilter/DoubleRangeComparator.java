@@ -12,7 +12,7 @@ import io.deephaven.util.compare.DoubleComparisons;
 public class DoubleRangeComparator {
     private DoubleRangeComparator() {} // static use only
 
-    private abstract static class DoubleDoubleFilter extends ChunkFilter.DoubleChunkFilter {
+    private abstract static class DoubleDoubleFilter extends DoubleChunkFilter {
         final double lower;
         final double upper;
 
@@ -66,7 +66,7 @@ public class DoubleRangeComparator {
         }
     }
 
-    public static ChunkFilter.DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive,
+    public static DoubleChunkFilter makeDoubleFilter(double lower, double upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

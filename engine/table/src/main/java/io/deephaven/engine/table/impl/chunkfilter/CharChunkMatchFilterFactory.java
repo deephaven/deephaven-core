@@ -16,7 +16,7 @@ import gnu.trove.set.hash.TCharHashSet;
 public class CharChunkMatchFilterFactory {
     private CharChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.CharChunkFilter makeFilter(boolean invertMatch, char... values) {
+    public static CharChunkFilter makeFilter(boolean invertMatch, char... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueCharChunkFilter(values[0]);
@@ -42,7 +42,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class SingleValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class SingleValueCharChunkFilter extends CharChunkFilter {
         private final char value;
 
         private SingleValueCharChunkFilter(char value) {
@@ -55,7 +55,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseSingleValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class InverseSingleValueCharChunkFilter extends CharChunkFilter {
         private final char value;
 
         private InverseSingleValueCharChunkFilter(char value) {
@@ -68,7 +68,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class TwoValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class TwoValueCharChunkFilter extends CharChunkFilter {
         private final char value1;
         private final char value2;
 
@@ -83,7 +83,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseTwoValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class InverseTwoValueCharChunkFilter extends CharChunkFilter {
         private final char value1;
         private final char value2;
 
@@ -98,7 +98,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class ThreeValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class ThreeValueCharChunkFilter extends CharChunkFilter {
         private final char value1;
         private final char value2;
         private final char value3;
@@ -115,7 +115,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseThreeValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class InverseThreeValueCharChunkFilter extends CharChunkFilter {
         private final char value1;
         private final char value2;
         private final char value3;
@@ -132,7 +132,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class MultiValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class MultiValueCharChunkFilter extends CharChunkFilter {
         private final TCharHashSet values;
 
         private MultiValueCharChunkFilter(char... values) {
@@ -145,7 +145,7 @@ public class CharChunkMatchFilterFactory {
         }
     }
 
-    private final static class InverseMultiValueCharChunkFilter extends ChunkFilter.CharChunkFilter {
+    private final static class InverseMultiValueCharChunkFilter extends CharChunkFilter {
         private final TCharHashSet values;
 
         private InverseMultiValueCharChunkFilter(char... values) {

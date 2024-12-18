@@ -12,7 +12,7 @@ import io.deephaven.util.compare.ByteComparisons;
 public class ByteRangeComparator {
     private ByteRangeComparator() {} // static use only
 
-    private abstract static class ByteByteFilter extends ChunkFilter.ByteChunkFilter {
+    private abstract static class ByteByteFilter extends ByteChunkFilter {
         final byte lower;
         final byte upper;
 
@@ -66,7 +66,7 @@ public class ByteRangeComparator {
         }
     }
 
-    public static ChunkFilter.ByteChunkFilter makeByteFilter(byte lower, byte upper, boolean lowerInclusive,
+    public static ByteChunkFilter makeByteFilter(byte lower, byte upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
