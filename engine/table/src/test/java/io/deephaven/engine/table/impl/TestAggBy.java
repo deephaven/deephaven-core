@@ -8,11 +8,10 @@ import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.util.AggCountType;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -64,7 +63,18 @@ public class TestAggBy extends RefreshingTableTestCase {
         ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
         ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
-        Table table = TableTools.newTable(aHolder, bHolder, cHolder);
+        ColumnHolder<?> dHolder = col("D", -5, NULL_INT, -3, NULL_INT, -1, 0, 1, NULL_INT, 3, NULL_INT);
+        ColumnHolder<?> eHolder = col("E", Double.NEGATIVE_INFINITY, -4.0, NULL_DOUBLE, NULL_DOUBLE, -1.0, -0.0, 1.0,
+                Double.NaN, 3.0, Double.POSITIVE_INFINITY);
+        ColumnHolder<?> fHolder =
+                col("F", BigDecimal.valueOf(-5), null, BigDecimal.valueOf(-3), null, BigDecimal.valueOf(-1),
+                        BigDecimal.valueOf(0), BigDecimal.valueOf(1), null, BigDecimal.valueOf(3), null);
+        ColumnHolder<?> gHolder =
+                col("G", BigInteger.valueOf(-5), null, BigInteger.valueOf(-3), null, BigInteger.valueOf(-1),
+                        BigInteger.valueOf(0), BigInteger.valueOf(1), null, BigInteger.valueOf(3), null);
+        ColumnHolder<?> hHolder = col("H", "A", null, "B", null, "C", "D", "E", null, "F", null);
+
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder, fHolder, gHolder, hHolder);
         show(table);
         assertEquals(10, table.size());
         assertEquals(2, table.groupBy("A").size());
@@ -119,7 +129,23 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(0, sums.get(0));
         assertEquals(22 + 4, sums.get(1));
 
-        Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
+        Table doubleCounted = table.aggBy(
+                List.of(
+                        AggCount("Count1"),
+                        AggCount("Count2"),
+                        AggCountAll("Count3"),
+                        AggCountNonNull("nonNullD=D", "nonNullE=E", "nonNullF=F", "nonNullG=G", "nonNullH=H"),
+                        AggCountNull("nullD=D", "nullE=E", "nullF=F", "nullG=G", "nullH=H"),
+                        AggCountNegative("negD=D", "negE=E", "negF=F", "negG=G"),
+                        AggCountPositive("posD=D", "posE=E", "posF=F", "posG=G"),
+                        AggCountZero("zeroD=D", "zeroE=E", "zeroF=F", "zeroG=G"),
+                        AggCountNaN("nanD=D", "nanE=E", "nanF=F", "nanG=G"),
+                        AggCountInfinite("infD=D", "infE=E", "infF=F", "infG=G"),
+                        AggCountFinite("finiteD=D", "finiteE=E", "finiteF=F", "finiteG=G"),
+                        AggCountNonZero("nonZeroD=D", "nonZeroE=E", "nonZeroF=F", "nonZeroG=G"),
+                        AggCountNonNegative("nonNegD=D", "nonNegE=E", "nonNegF=F", "nonNegG=G"),
+                        AggCountNonPositive("nonPosD=D", "nonPosE=E", "nonPosF=F", "nonPosG=G")),
+                "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
@@ -129,6 +155,158 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "Count2");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "Count3");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNullD");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNullE");
+        assertEquals(6L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNullF");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNullG");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNullH");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nullD");
+        assertEquals(2L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nullE");
+        assertEquals(0L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nullF");
+        assertEquals(2L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nullG");
+        assertEquals(2L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nullH");
+        assertEquals(2L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "negD");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "negE");
+        assertEquals(3L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "negF");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "negG");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "posD");
+        assertEquals(1L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "posE");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "posF");
+        assertEquals(1L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "posG");
+        assertEquals(1L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "zeroD");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "zeroE");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "zeroF");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "zeroG");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nanD");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nanE");
+        assertEquals(0L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nanF");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nanG");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "infD");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "infE");
+        assertEquals(2L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "infF");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "infG");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "finiteD");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "finiteE");
+        assertEquals(4L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "finiteF");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "finiteG");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroD");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroE");
+        assertEquals(5L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroF");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonZeroG");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegD");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegE");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegF");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonNegG");
+        assertEquals(2L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        //////////////////////////////
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosD");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosE");
+        assertEquals(4L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosF");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "nonPosG");
+        assertEquals(3L, counts.get(0));
+        assertEquals(1L, counts.get(1));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -162,13 +340,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                 AggPct(0.50, true, "Pct50T_B=B", "Pct50T_C=C"),
                 AggPct(0.50, false, "Pct50F_B=B", "Pct50F_C=C"));
 
-        Double[] doubles = new Double[10];
-        final IntChunk<Values> bChunk = bHolder.getChunk().asIntChunk();
-        for (int ii = 0; ii < bChunk.size(); ++ii) {
-            doubles[ii] = 1.1 * bChunk.get(ii);
-        }
-        ColumnHolder<?> dHolder = col("D", doubles);
-        table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder);
+        table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder);
         show(table);
         Table summary = table.aggBy(summaryStatistics, "A");
         show(summary);
@@ -192,7 +364,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new IntGenerator(10, 100),
+                        new CharGenerator('a', 'z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
@@ -222,6 +394,58 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testComboByCountTypes() {
+        final Random random = new Random(0);
+        final int size = 10;
+        final ColumnInfo[] columnInfo;
+
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(
+                        new String[] {"Sym", "intCol", "shortCol", "byteCol", "longCol", "charCol",
+                                "doubleCol", "floatCol", "Instant", "BoolCol", "bigI", "bigD"},
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new ShortGenerator(),
+                        new ByteGenerator(),
+                        new LongGenerator(),
+                        new CharGenerator('a', 'z'),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new FloatGenerator(0, 10.0f),
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
+                                DateTimeUtils.parseInstant("2020-03-18T12:00:00 NY")),
+                        new BooleanGenerator(),
+                        new BigIntegerGenerator(),
+                        new BigDecimalGenerator()));
+
+        final String[] supportedColumns = new String[] {"intCol", "shortCol", "byteCol", "longCol", "charCol",
+                "doubleCol", "floatCol", "Instant", "bigI", "bigD"};
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> queryTable
+                        .aggAllBy(AggSpec.countValues(AggCountType.NON_NULL), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable
+                        .aggAllBy(AggSpec.countValues(AggCountType.NULL), "Sym").sort("Sym")),
+                // Sym and BoolCol (String and Boolean)
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNegative(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountZero(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNaN(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountInfinite(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountFinite(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonZero(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonNegative(supportedColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonPositive(supportedColumns), "Sym").sort("Sym")),
+        };
+        final int steps = 100; // 8;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep("step == " + step, size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    @Test
     public void testComboByIncremental() {
         for (int size = 10; size <= 1000; size *= 10) {
             testComboByIncremental("size-" + size, size);
@@ -239,6 +463,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 new IntGenerator(10, 100, .1),
                                 new SetGenerator<>(10.1, 20.1, 30.1),
                                 new SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
+
+        final String[] primitiveColumns = new String[] {"intCol", "intColNulls", "doubleCol", "doubleColNulls"};
 
         ExecutionContext.getContext().getQueryLibrary().importClass(TestAggBy.class);
 
@@ -267,6 +493,20 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 "Sym").sort("Sym");
                     }
                 },
+                EvalNugget.from(() -> queryTable
+                        .aggAllBy(AggSpec.countValues(AggCountType.NON_NULL), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable
+                        .aggAllBy(AggSpec.countValues(AggCountType.NULL), "Sym").sort("Sym")),
+                // Exclude Sym column from the countValues test, as it is not supported
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNegative(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountZero(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNaN(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountInfinite(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountFinite(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonZero(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountNonNegative(primitiveColumns), "Sym").sort("Sym")),
+                EvalNugget.from(() -> queryTable.aggBy(AggCountPositive(primitiveColumns), "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.groupBy("Sym").view("Sym", "MinI=min(intCol)", "MinD=min(doubleCol)").sort("Sym"),
                         "view",

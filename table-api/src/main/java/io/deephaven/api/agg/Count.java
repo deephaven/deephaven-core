@@ -18,12 +18,12 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class Count implements Aggregation {
 
-    public static Count of(ColumnName name) {
-        return ImmutableCount.of(name);
+    public static Count of(String column) {
+        return of(ColumnName.of(column));
     }
 
-    public static Count of(String x) {
-        return of(ColumnName.of(x));
+    public static Count of(ColumnName column) {
+        return ImmutableCount.of(column);
     }
 
     @Parameter
