@@ -100,6 +100,11 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
 
     public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
             "PeriodicUpdateGraph.targetCycleDurationMillis";
+
+    public static int getDefaultTargetCycleDurationMillis() {
+        return Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+    }
+
     private final long defaultTargetCycleDurationMillis;
     private volatile long targetCycleDurationMillis;
     private final ThreadInitializationFactory threadInitializationFactory;
@@ -252,7 +257,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
      * Resets the run cycle time to the default target configured via the {@link Builder} setting.
      *
      * @implNote If the {@link Builder#targetCycleDurationMillis(long)} property is not set, this value defaults to
-     *           {@link Builder#DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} which defaults to 1000ms.
+     *           {@link #DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} which defaults to 1000ms.
      */
     @SuppressWarnings("unused")
     public void resetTargetCycleDuration() {
@@ -1166,8 +1171,7 @@ public class PeriodicUpdateGraph extends BaseUpdateGraph {
     public static final class Builder {
         private final boolean allowUnitTestMode =
                 Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
-        private long targetCycleDurationMillis =
-                Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+        private long targetCycleDurationMillis = getDefaultTargetCycleDurationMillis();
         private long minimumCycleDurationToLogNanos = DEFAULT_MINIMUM_CYCLE_DURATION_TO_LOG_NANOSECONDS;
 
         private String name;
