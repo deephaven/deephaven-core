@@ -508,9 +508,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 // Indicates a very serious failure; debateable whether we should even try to send close.
                 safeClose(call, Status.INTERNAL, new Metadata(), false);
                 throw error;
-            } finally {
-                context.detach(previous);
             }
+        } finally {
+            context.detach(previous);
         }
     }
 

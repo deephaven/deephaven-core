@@ -131,6 +131,21 @@ message RepeatedObject {
   repeated XYZ xyz = 1;
 }
 
+message NestedArrays {
+  message A {
+    B b = 1;
+  }
+  message B {
+    repeated string c = 1;
+  }
+
+  A a_direct = 1;
+  repeated A a_repeated = 2;
+
+  B b_direct = 3;
+  repeated B b_repeated = 4;
+}
+
 message MultiRepeated {
   repeated RepeatedBasics my_basics = 1;
   repeated RepeatedWrappers my_wrappers = 2;

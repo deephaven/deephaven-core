@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
+import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.relative.RelativeFileIO;
@@ -26,8 +27,12 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static io.deephaven.iceberg.base.IcebergUtils.allManifestFiles;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
@@ -176,32 +181,23 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return;
         }
         final Table table = tableAdapter.icebergTable();
-        try {
-            // Retrieve the manifest files from the snapshot
-            final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
-            for (final ManifestFile manifestFile : manifestFiles) {
-                // Currently only can process manifest files with DATA content type.
-                if (manifestFile.content() != ManifestContent.DATA) {
-                    throw new TableDataException(
-                            String.format("%s:%d - only DATA manifest files are currently supported, encountered %s",
-                                    table, snapshot.snapshotId(), manifestFile.content()));
-                }
-                try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
-                    for (final DataFile dataFile : reader) {
-                        final URI fileUri = dataFileUri(table, dataFile);
-                        if (!uriScheme.equals(fileUri.getScheme())) {
-                            throw new TableDataException(String.format(
-                                    "%s:%d - multiple URI schemes are not currently supported. uriScheme=%s, fileUri=%s",
-                                    table, snapshot.snapshotId(), uriScheme, fileUri));
-                        }
-                        final IcebergTableLocationKey locationKey = keyFromDataFile(manifestFile, dataFile, fileUri);
-                        if (locationKey != null) {
-                            locationKeyObserver.accept(locationKey);
-                        }
-                    }
-                }
-            }
-        } catch (final Exception e) {
+        try (final Stream<ManifestFile> manifestFiles = allManifestFiles(table, snapshot)) {
+            manifestFiles.forEach(manifestFile -> {
+                final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io());
+                IcebergUtils.toStream(reader)
+                        .map(dataFile -> {
+                            final URI fileUri = dataFileUri(table, dataFile);
+                            if (!uriScheme.equals(fileUri.getScheme())) {
+                                throw new TableDataException(String.format(
+                                        "%s:%d - multiple URI schemes are not currently supported. uriScheme=%s, " +
+                                                "fileUri=%s",
+                                        table, snapshot.snapshotId(), uriScheme, fileUri));
+                            }
+                            return keyFromDataFile(manifestFile, dataFile, fileUri);
+                        })
+                        .forEach(locationKeyObserver);
+            });
+        } catch (final RuntimeException e) {
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
         }

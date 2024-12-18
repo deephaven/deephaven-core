@@ -328,6 +328,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return getFormulaShiftColPair() != null;
     }
 
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return usesI || usesII || usesK;
+    }
+
     /**
      * Returns true if this filters uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
      * <p>
