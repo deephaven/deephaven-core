@@ -305,7 +305,6 @@ class TableTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 test_table.agg_all_by(agg=count_(col="ca"), by=["a"])
 
-
     def test_agg_count_where_output(self):
         """
         Test and validation of the agg_count_where feature
@@ -325,7 +324,6 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(df.loc[1, "count1"], 38)
         self.assertEqual(df.loc[0, "count2"], 17)
         self.assertEqual(df.loc[1, "count2"], 17)
-
 
     def test_where_in(self):
         pa_table = csv.read_csv(self.csv_file)
