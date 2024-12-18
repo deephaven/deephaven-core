@@ -500,7 +500,7 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(result_table.size, 2)
 
         # get the table as a local pandas dataframe
-        df = result_table.to_pandas()
+        df = to_pandas(result_table)
         # assert the values meet expectations
         self.assertEqual(df.loc[0, "count1"], 37)
         self.assertEqual(df.loc[1, "count1"], 38)
