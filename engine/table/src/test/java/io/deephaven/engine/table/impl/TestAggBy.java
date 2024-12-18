@@ -125,22 +125,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         Table doubleCounted = table.aggBy(
                 List.of(
                         AggCount("Count1"),
-                        AggCount("Count2"),
-                        AggCountWhere("filter1", "B >= 5"),
-                        AggCountWhere("filter2", "B >= 5", "B != 8"),
-                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
-                        AggCountWhere("filter4", "true"),
-                        AggCountWhere("filter5", "false"),
-                        AggCountWhere("filter6", "B % 2 == 0"),
-                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
-                                Filter.or(Filter.from("false", "B % 2 == 0")))),
-                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
-                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
-                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
-                        // Multiple input columns
-                        AggCountWhere("filter10", "B >= 5", "C == 1"),
-                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
-                        AggCountWhere("filter12", "B >= 5", "C >= 1")),
+                        AggCount("Count2")),
                 "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
@@ -151,87 +136,6 @@ public class TestAggBy extends RefreshingTableTestCase {
         counts = ColumnVectors.ofLong(doubleCounted, "Count2");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
-        assertEquals(4L, counts.get(0));
-        assertEquals(2L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
-        assertEquals(4L, counts.get(0));
-        assertEquals(1L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
-        assertEquals(4L, counts.get(0));
-        assertEquals(3L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
-        assertEquals(6L, counts.get(0));
-        assertEquals(4L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
-        assertEquals(0L, counts.get(0));
-        assertEquals(0L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
-        assertEquals(3L, counts.get(0));
-        assertEquals(2L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
-        assertEquals(1L, counts.get(0));
-        assertEquals(0L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
-        assertEquals(1L, counts.get(0));
-        assertEquals(0L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
-        assertEquals(4L, counts.get(0));
-        assertEquals(2L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
-        assertEquals(4L, counts.get(0));
-        assertEquals(2L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
-        assertEquals(4L, counts.get(0));
-        assertEquals(0L, counts.get(1));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
-        assertEquals(4L, counts.get(0));
-        assertEquals(2L, counts.get(1));
-
-        doubleCounted = table.aggBy(
-                List.of(
-                        AggCountWhere("filter1", "B >= 5"),
-                        AggCountWhere("filter2", "B >= 5", "B != 8"),
-                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
-                        AggCountWhere("filter4", "true"),
-                        AggCountWhere("filter5", "false"),
-                        AggCountWhere("filter6", "B % 2 == 0"),
-                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
-                                Filter.or(Filter.from("false", "B % 2 == 0")))),
-                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
-                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
-                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
-                        // Multiple input columns
-                        AggCountWhere("filter10", "B >= 5", "C == 1"),
-                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
-                        AggCountWhere("filter12", "B >= 5", "C >= 1")));
-        show(doubleCounted);
-        assertEquals(1, doubleCounted.size());
-
-        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
-        assertEquals(6L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
-        assertEquals(5L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
-        assertEquals(7L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
-        assertEquals(10L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
-        assertEquals(0L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
-        assertEquals(5L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
-        assertEquals(1L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
-        assertEquals(1L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
-        assertEquals(6L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
-        assertEquals(6L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
-        assertEquals(4L, counts.get(0));
-        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
-        assertEquals(6L, counts.get(0));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -279,6 +183,153 @@ public class TestAggBy extends RefreshingTableTestCase {
         System.out.println("\nPercentiles (overall):");
         Table percentilesAll = table.aggBy(percentiles);
         show(percentilesAll);
+    }
+
+    @Test
+    public void testAggCountWhere() {
+        ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
+        ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        ColumnHolder<?> dHolder = booleanCol("D", true, true, true, true, true, false, false, false, false, false);
+        final Instant startInstant = Instant.parse("1970-01-01T00:00:00.000Z");
+
+        final Instant[] instantData = new Instant[] {
+                startInstant, // 1970-01-01T00:00:00.000Z
+                startInstant.plusNanos(10 * 1_000_000), // 1970-01-01T00:00:00.010Z
+                startInstant.plusNanos(20 * 1_000_000), // 1970-01-01T00:00:00.020Z
+                startInstant.plusNanos(30 * 1_000_000), // 1970-01-01T00:00:00.030Z
+                startInstant.plusNanos(40 * 1_000_000), // 1970-01-01T00:00:00.040Z
+                startInstant.plusNanos(50 * 1_000_000), // 1970-01-01T00:00:00.050Z
+                startInstant.plusNanos(60 * 1_000_000), // 1970-01-01T00:00:00.060Z
+                startInstant.plusNanos(70 * 1_000_000), // 1970-01-01T00:00:00.070Z
+                startInstant.plusNanos(80 * 1_000_000), // 1970-01-01T00:00:00.080Z
+                startInstant.plusNanos(90 * 1_000_000) // 1970-01-01T00:00:00.090Z
+        };
+        ColumnHolder<?> eHolder = instantCol("E", instantData);
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder);
+        show(table);
+        assertEquals(10, table.size());
+        assertEquals(2, table.groupBy("A").size());
+        Table doubleCounted = table.aggBy(
+                List.of(
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0"),
+                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
+                                Filter.or(Filter.from("false", "B % 2 == 0")))),
+                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
+                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1"),
+                        // Boolean column test
+                        AggCountWhere("filter13", "D == true"),
+                        // Instant column test
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'")),
+                "A");
+        show(doubleCounted);
+        assertEquals(2, doubleCounted.size());
+
+        LongVector counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(4L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(4L, counts.get(0));
+        assertEquals(3L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter13");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter14");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+
+        doubleCounted = table.aggBy(
+                List.of(
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0"),
+                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
+                                Filter.or(Filter.from("false", "B % 2 == 0")))),
+                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
+                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1"),
+                        // Boolean column test
+                        AggCountWhere("filter13", "D == true"),
+                        // Instant column test
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'")));
+        show(doubleCounted);
+        assertEquals(1, doubleCounted.size());
+
+        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(7L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(10L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
+        assertEquals(1L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
+        assertEquals(1L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter13");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter14");
+        assertEquals(6L, counts.get(0));
     }
 
     @Test

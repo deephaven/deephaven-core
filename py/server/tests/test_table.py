@@ -487,6 +487,26 @@ class TableTestCase(BaseTestCase):
             result_table = test_table.agg_by(agg, "grp_id")
             self.assertEqual(result_table.size, 2)
 
+    def test_agg_count_where_output(self):
+        """
+        Test and validation of the agg_count_where feature
+        """
+        test_table = empty_table(100).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            count_where("count1", "a >= 25"),
+            count_where("count2", "a % 3 == 0")
+        ]
+        result_table = test_table.agg_by(aggs=count_aggs, by="b")
+        self.assertEqual(result_table.size, 2)
+
+        # get the table as a local pandas dataframe
+        df = result_table.to_pandas()
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 37)
+        self.assertEqual(df.loc[1, "count1"], 38)
+        self.assertEqual(df.loc[0, "count2"], 17)
+        self.assertEqual(df.loc[1, "count2"], 17)
+
     def test_agg_by_initial_groups_preserve_empty(self):
         test_table = empty_table(10)
         test_table = test_table.update(

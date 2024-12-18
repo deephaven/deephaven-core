@@ -268,8 +268,11 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     @Override
     public Optional<ChunkFilter> chunkFilter() {
-        Assert.eqTrue(filter instanceof ExposesChunkFilter, "filter instanceof ExposesChunkFilter");
-        return ((ExposesChunkFilter) filter).chunkFilter();
+        // The underlying filter may be a ConditionFilter
+        if (filter instanceof ExposesChunkFilter) {
+            return ((ExposesChunkFilter) filter).chunkFilter();
+        }
+        return Optional.empty();
     }
 
     private static LongRangeFilter makeInstantRangeFilter(String columnName, Condition condition, long value) {

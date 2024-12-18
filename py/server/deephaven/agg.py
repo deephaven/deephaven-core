@@ -104,12 +104,12 @@ def avg(cols: Union[str, List[str]] = None) -> Aggregation:
 def count_(col: str) -> Aggregation:
     """Creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
 
-     Args:
-         col (str): the column to hold the counts of each distinct group
+    Args:
+        col (str): the column to hold the counts of each distinct group
 
-     Returns:
-         an aggregation
-     """
+    Returns:
+        an aggregation
+    """
     if not isinstance(col, str):
         raise DHError(message="count_ aggregation requires a string value for the 'col' argument.")
     return Aggregation(j_aggregation=_JAggregation.AggCount(col))
@@ -118,12 +118,12 @@ def count_where(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Fi
     """Creates a CountWhere aggregation with the supplied output column name, counting values that pass the supplied
     filters.
 
-     Args:
-         col (str): the column to hold the counts of each distinct group
+    Args:
+        col (str): the column to hold the counts of each distinct group
 
-     Returns:
-         an aggregation
-     """
+    Returns:
+        an aggregation
+    """
     if not isinstance(col, str):
         raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
     filters = to_sequence(filters)
