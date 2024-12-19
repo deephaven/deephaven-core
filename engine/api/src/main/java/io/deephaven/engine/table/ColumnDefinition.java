@@ -400,6 +400,15 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
                 : fromGenericType(name, newDataType, componentType, columnType);
     }
 
+    public <Other> ColumnDefinition<Other> withDataType(
+            @NotNull final Class<Other> newDataType,
+            @Nullable final Class<?> newComponentType) {
+        // noinspection unchecked
+        return dataType == newDataType && componentType == newComponentType
+                ? (ColumnDefinition<Other>) this
+                : fromGenericType(name, newDataType, newComponentType, columnType);
+    }
+
     public ColumnDefinition<?> withName(@NotNull final String newName) {
         return newName.equals(name) ? this : new ColumnDefinition<>(newName, dataType, componentType, columnType);
     }
