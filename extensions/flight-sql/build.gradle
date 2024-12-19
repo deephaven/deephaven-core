@@ -44,7 +44,7 @@ dependencies {
 
     // JDBC testing needs an actually server instance bound to a port because it can only connect over JDBC URIs like
     // jdbc:arrow-flight-sql://localhost:1000.
-    jdbcTestImplementation project(':server-jetty')
+    jdbcTestImplementation project(':server-jetty-11')
     jdbcTestRuntimeOnly libs.arrow.flight.sql.jdbc
 
     jdbcTestImplementation project(':server-test-utils')

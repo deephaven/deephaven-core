@@ -16,7 +16,7 @@ def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRunt
 def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
-  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+  throw new IllegalArgumentException("languageLevel must be less than or equal to compilerVersion")
 }
 if (languageLevel < 8) {
   throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")

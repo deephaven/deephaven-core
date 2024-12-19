@@ -8,8 +8,8 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.DeephavenServerTestBase.TestComponent;
 import io.deephaven.server.flightsql.JettyTestComponent.JettyTestConfig;
-import io.deephaven.server.jetty.JettyConfig;
-import io.deephaven.server.jetty.JettyServerModule;
+import io.deephaven.server.jetty11.JettyConfig;
+import io.deephaven.server.jetty11.JettyServerModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 
 import javax.inject.Singleton;
