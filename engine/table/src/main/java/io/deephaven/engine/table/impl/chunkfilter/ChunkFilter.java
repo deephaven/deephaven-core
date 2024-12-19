@@ -15,107 +15,95 @@ import io.deephaven.chunk.attributes.Values;
 public interface ChunkFilter {
     /**
      * Filter a chunk of values, setting parallel values in results to "true" or "false".
-     *
+     * <p>
      * The results chunk must have capacity at least as large as values.size(); and the result size will be set to
      * values.size() on return.
      * 
      * @param values the values to filter
-     * @param results a boolean chunk with true values for items that match the filter, and false otherwise
+     * @param results a chunk with the key values where the result of the filter is true
      */
     void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
             WritableLongChunk<OrderedRowKeys> results);
 
-    interface CharChunkFilter extends ChunkFilter {
-        void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
+    /**
+     * Filter a chunk of values, setting parallel values in {@code results} to the output of the filter.
+     * 
+     * @param values the values to filter
+     * @param results a boolean chunk containing the result of the filter
+     *
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
+     */
+    int filter(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asCharChunk(), keys, results);
-        }
-    }
-
-    interface ByteChunkFilter extends ChunkFilter {
-        void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asByteChunk(), keys, results);
-        }
-    }
-
-    interface ShortChunkFilter extends ChunkFilter {
-        void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asShortChunk(), keys, results);
-        }
-    }
-
-    interface IntChunkFilter extends ChunkFilter {
-        void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asIntChunk(), keys, results);
-        }
-    }
-
-    interface LongChunkFilter extends ChunkFilter {
-        void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asLongChunk(), keys, results);
-        }
-    }
-
-    interface FloatChunkFilter extends ChunkFilter {
-        void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asFloatChunk(), keys, results);
-        }
-    }
-
-    interface DoubleChunkFilter extends ChunkFilter {
-        void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asDoubleChunk(), keys, results);
-        }
-    }
-
-    interface ObjectChunkFilter<T> extends ChunkFilter {
-        void filter(ObjectChunk<T, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
-
-        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            filter(values.asObjectChunk(), keys, results);
-        }
-    }
+    /**
+     * Filter a chunk of values, setting parallel values in {@code results} to {@code false} when the filter result is
+     * {@code false}. The filter will not be evaluated for values that are already {@code false} in the results chunk.
+     * <p>
+     * To use this method effectively, the results chunk should be initialized by a call to
+     * {@link #filter(Chunk, WritableBooleanChunk)} or by setting all values {@code true} before the first call.
+     * Successive calls will have the effect of AND'ing the filter results with existing results.
+     *
+     * @param values the values to filter
+     * @param results a boolean chunk containing the result of the filter
+     *
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
+     */
+    int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
     /**
      * A filter that always returns false.
      */
-    ChunkFilter FALSE_FILTER_INSTANCE = (values, keys, results) -> results.setSize(0);
+    ChunkFilter FALSE_FILTER_INSTANCE = new ChunkFilter() {
+        @Override
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            results.fillWithValue(0, len, false);
+            return 0;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            // Count the values that changed from true to false
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                results.set(ii, false);
+                count += result ? 1 : 0;
+            }
+            return count;
+        }
+    };
 
     /**
      * A filter that always returns true.
      */
-    ChunkFilter TRUE_FILTER_INSTANCE = (values, keys, results) -> {
-        results.setSize(values.size());
-        results.copyFromChunk(keys, 0, 0, keys.size());
+    ChunkFilter TRUE_FILTER_INSTANCE = new ChunkFilter() {
+        @Override
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(values.size());
+            results.copyFromChunk(keys, 0, 0, keys.size());
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final int len = values.size();
+            results.fillWithValue(0, len, true);
+            return len;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            // No values were set to false
+            return 0;
+        }
     };
 
     /**

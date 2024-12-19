@@ -4,9 +4,14 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -168,7 +173,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             return;
         }
         if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
-            // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
+            // note that constant offset array access does not use i/ii or end up in usedColumnArrays
             boolean isUnsafe = (usesI || usesII) && !sourceTable.isAppendOnly() && !sourceTable.isBlink();
             isUnsafe |= usesK && !sourceTable.isAddOnly() && !sourceTable.isBlink();
             isUnsafe |= !usedColumnArrays.isEmpty() && !sourceTable.isBlink();
@@ -262,7 +267,19 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return filter.filter(selection, fullSet, table, usePrev, formula, params);
     }
 
-    protected abstract Filter getFilter(Table table, RowSet fullSet)
+    /**
+     * Retrieve the current {@link Filter filter} for this condition filter or create a new one initialized to the
+     * provided table and row set. With a {@link ConditionFilter.FilterKernel.Context context} from
+     * {@link Filter#getContext(int)}, this filter can be used for directly filtering chunked data.
+     *
+     * @param table the table to filter, or a table with a compatible schema
+     * @param fullSet the full set of rows currently in the table, used to populate the virtual row variables such as
+     *        {@code i}, {@code ii}, and {@code k}
+     *
+     * @return the initialized filter
+     */
+    @NotNull
+    public abstract Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
     /**
@@ -311,7 +328,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return getFormulaShiftColPair() != null;
     }
 
-    @Override
+    /**
+     * Returns true if this filters uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * <p>
+     * This filter must already be initialized before calling this method.
+     */
     public boolean hasVirtualRowVariables() {
         return usesI || usesII || usesK;
     }
@@ -339,6 +360,48 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 boolean usePrev,
                 String formula,
                 QueryScopeParam<?>... params);
+
+        /**
+         * Create a new context for this filter, must be closed after use.
+         */
+        ConditionFilter.FilterKernel.Context getContext(int chunkSize);
+
+        /**
+         * Filter a chunk of values and copy the matching row keys to the returned chunk.
+         */
+        LongChunk<OrderedRowKeys> filter(
+                ConditionFilter.FilterKernel.Context context,
+                LongChunk<OrderedRowKeys> inputKeys,
+                Chunk<? extends Values>[] valueChunks);
+
+        /**
+         * Filter a chunk of values, setting parallel values in {@code results} to the output of the filter.
+         *
+         * @return the number of values are {@code true} in {@code results} after the filter is applied.
+         */
+        int filter(
+                ConditionFilter.FilterKernel.Context context,
+                Chunk<? extends Values>[] valueChunks,
+                int chunkSize,
+                WritableBooleanChunk<Values> results);
+
+        /**
+         * Filter a chunk of values, setting parallel values in {@code results} to {@code false} when the filter result
+         * is {@code false}. The filter will not be evaluated for values that are currently {@code false} in the results
+         * chunk.
+         * <p>
+         * To use this method effectively, the results chunk should be initialized by a call to
+         * {@link #filter(ConditionFilter.FilterKernel.Context, Chunk[], int, WritableBooleanChunk)} or by setting all
+         * values to {@code true} before the first call. Successive calls will have the effect of AND'ing this filter
+         * results with existing results.
+         *
+         * @return the number of values are {@code true} in {@code results} after the filter is applied.
+         */
+        int filterAnd(
+                ConditionFilter.FilterKernel.Context context,
+                Chunk<? extends Values>[] valueChunks,
+                int chunkSize,
+                WritableBooleanChunk<Values> results);
     }
 
     static String truncateLongFormula(String formula) {

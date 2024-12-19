@@ -68,6 +68,11 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(@NotNull final CountWhere countWhere) {
+        hasUnsupportedAggs = true;
+    }
+
+    @Override
     public void visit(@NotNull final FirstRowKey firstRowKey) {
         hasUnsupportedAggs = true;
     }

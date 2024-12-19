@@ -12,11 +12,16 @@ public class ReplicateChunkFilters {
     private static final String TASK = "replicateChunkFilters";
 
     public static void main(String[] args) throws IOException {
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharChunkFilter.java");
+
         charToShortAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
         charToInteger(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java",
                 Collections.emptyMap());
+        charToLong(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
 
         charToShortAndByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");

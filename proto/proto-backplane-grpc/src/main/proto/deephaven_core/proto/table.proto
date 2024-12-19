@@ -1055,6 +1055,13 @@ message Aggregation {
     string column_name = 1;
   }
 
+  message AggregationCountWhere {
+    // The output column name
+    string column_name = 1;
+
+    repeated string filters = 2;
+  }
+
   message AggregationRowKey {
     string column_name = 1;
   }
@@ -1075,6 +1082,7 @@ message Aggregation {
     AggregationRowKey last_row_key = 4;
     AggregationPartition partition = 5;
     AggregationFormula formula = 6;
+    AggregationCountWhere count_where = 7;
   }
 }
 

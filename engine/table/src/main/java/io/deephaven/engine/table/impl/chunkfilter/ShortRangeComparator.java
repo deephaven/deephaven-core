@@ -8,14 +8,11 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.ShortComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class ShortRangeComparator {
     private ShortRangeComparator() {} // static use only
 
-    private abstract static class ShortShortFilter implements ChunkFilter.ShortChunkFilter {
+    private abstract static class ShortShortFilter extends ShortChunkFilter {
         final short lower;
         final short upper;
 
@@ -23,80 +20,53 @@ public class ShortRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
+    final static class ShortShortInclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.geq(value, lower) && ShortComparisons.leq(value, upper);
         }
     }
 
-    static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
+    final static class ShortShortInclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortInclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.geq(value, lower) && ShortComparisons.lt(value, upper);
         }
     }
 
-    static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
+    final static class ShortShortExclusiveInclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveInclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.gt(value, lower) && ShortComparisons.leq(value, upper);
         }
     }
 
-    static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
+    final static class ShortShortExclusiveExclusiveFilter extends ShortShortFilter {
         private ShortShortExclusiveExclusiveFilter(short lower, short upper) {
             super(lower, upper);
         }
 
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short value = values.get(ii);
-                if (ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(short value) {
+            return ShortComparisons.gt(value, lower) && ShortComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.ShortChunkFilter makeShortFilter(short lower, short upper, boolean lowerInclusive,
+    public static ShortChunkFilter makeShortFilter(short lower, short upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

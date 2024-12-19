@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -867,8 +865,10 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             if (++invokes == 1) {
                 latch.countDown();
             }
@@ -881,6 +881,42 @@ public abstract class QueryTableWhereTest {
                 while (System.nanoTime() < end);
             }
             actualFilter.filter(values, keys, results);
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filter(values, results);
+        }
+
+        @Override
+        public int filterAnd(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filterAnd(values, results);
         }
 
         void reset() {

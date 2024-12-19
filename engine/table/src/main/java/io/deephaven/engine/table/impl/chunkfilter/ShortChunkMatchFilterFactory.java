@@ -7,23 +7,20 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TShortHashSet;
 
 /**
  * Creates chunk filters for short values.
- *
+ * <p>
  * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
  * equality check.
- *
+ * <p>
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ShortChunkMatchFilterFactory {
     private ShortChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
+    public static ShortChunkFilter makeFilter(boolean invertMatch, short... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueShortChunkFilter(values[0]);
@@ -49,7 +46,7 @@ public class ShortChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class SingleValueShortChunkFilter extends ShortChunkFilter {
         private final short value;
 
         private SingleValueShortChunkFilter(short value) {
@@ -57,18 +54,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) == value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value == this.value;
         }
     }
 
-    private static class InverseSingleValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class InverseSingleValueShortChunkFilter extends ShortChunkFilter {
         private final short value;
 
         private InverseSingleValueShortChunkFilter(short value) {
@@ -76,18 +67,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) != value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value != this.value;
         }
     }
 
-    private static class TwoValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class TwoValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
 
@@ -97,19 +82,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value == value1 || value == value2;
         }
     }
 
-    private static class InverseTwoValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class InverseTwoValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
 
@@ -119,19 +97,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value != value1 && value != value2;
         }
     }
 
-    private static class ThreeValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class ThreeValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
         private final short value3;
@@ -143,19 +114,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value == value1 || value == value2 || value == value3;
         }
     }
 
-    private static class InverseThreeValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class InverseThreeValueShortChunkFilter extends ShortChunkFilter {
         private final short value1;
         private final short value2;
         private final short value3;
@@ -167,19 +131,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return value != value1 && value != value2 && value != value3;
         }
     }
 
-    private static class MultiValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class MultiValueShortChunkFilter extends ShortChunkFilter {
         private final TShortHashSet values;
 
         private MultiValueShortChunkFilter(short... values) {
@@ -187,19 +144,12 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return this.values.contains(value);
         }
     }
 
-    private static class InverseMultiValueShortChunkFilter implements ChunkFilter.ShortChunkFilter {
+    private final static class InverseMultiValueShortChunkFilter extends ShortChunkFilter {
         private final TShortHashSet values;
 
         private InverseMultiValueShortChunkFilter(short... values) {
@@ -207,15 +157,8 @@ public class ShortChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ShortChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final short checkValue = values.get(ii);
-                if (!this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(short value) {
+            return !this.values.contains(value);
         }
     }
 }

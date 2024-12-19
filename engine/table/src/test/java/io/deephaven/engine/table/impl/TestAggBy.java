@@ -9,6 +9,7 @@ import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
@@ -19,6 +20,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -119,7 +122,11 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(0, sums.get(0));
         assertEquals(22 + 4, sums.get(1));
 
-        Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
+        Table doubleCounted = table.aggBy(
+                List.of(
+                        AggCount("Count1"),
+                        AggCount("Count2")),
+                "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
@@ -179,6 +186,164 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testAggCountWhere() {
+        ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
+        ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        ColumnHolder<?> dHolder = booleanCol("D", true, true, true, true, true, false, false, false, false, false);
+        final Instant startInstant = Instant.parse("1970-01-01T00:00:00.000Z");
+
+        final Instant[] instantData = new Instant[] {
+                startInstant, // 1970-01-01T00:00:00.000Z
+                startInstant.plusNanos(10 * 1_000_000), // 1970-01-01T00:00:00.010Z
+                startInstant.plusNanos(20 * 1_000_000), // 1970-01-01T00:00:00.020Z
+                startInstant.plusNanos(30 * 1_000_000), // 1970-01-01T00:00:00.030Z
+                startInstant.plusNanos(40 * 1_000_000), // 1970-01-01T00:00:00.040Z
+                startInstant.plusNanos(50 * 1_000_000), // 1970-01-01T00:00:00.050Z
+                startInstant.plusNanos(60 * 1_000_000), // 1970-01-01T00:00:00.060Z
+                startInstant.plusNanos(70 * 1_000_000), // 1970-01-01T00:00:00.070Z
+                startInstant.plusNanos(80 * 1_000_000), // 1970-01-01T00:00:00.080Z
+                startInstant.plusNanos(90 * 1_000_000) // 1970-01-01T00:00:00.090Z
+        };
+        ColumnHolder<?> eHolder = instantCol("E", instantData);
+        ColumnHolder<?> fHolder = stringCol("F", "A", "B", "C", "D", "E", "A", "B", "C", "D", "E");
+
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder, dHolder, eHolder, fHolder);
+        show(table);
+        assertEquals(10, table.size());
+        assertEquals(2, table.groupBy("A").size());
+        Table doubleCounted = table.aggBy(
+                List.of(
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0"),
+                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
+                                Filter.or(Filter.from("false", "B % 2 == 0")))),
+                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
+                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1"),
+                        // Boolean column test
+                        AggCountWhere("filter13", "D == true"),
+                        // Instant column test
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'"),
+                        // String column test
+                        AggCountWhere("filter15", "F != 'A'", "F != 'B'")),
+                "A");
+        show(doubleCounted);
+        assertEquals(2, doubleCounted.size());
+
+        LongVector counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(4L, counts.get(0));
+        assertEquals(1L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(4L, counts.get(0));
+        assertEquals(3L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
+        assertEquals(1L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
+        assertEquals(0L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter13");
+        assertEquals(3L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter14");
+        assertEquals(4L, counts.get(0));
+        assertEquals(2L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter15");
+        assertEquals(3L, counts.get(0));
+        assertEquals(3L, counts.get(1));
+
+        doubleCounted = table.aggBy(
+                List.of(
+                        AggCountWhere("filter1", "B >= 5"),
+                        AggCountWhere("filter2", "B >= 5", "B != 8"),
+                        AggCountWhere("filter3", Filter.or(Filter.from("B >= 5", "B == 3"))),
+                        AggCountWhere("filter4", "true"),
+                        AggCountWhere("filter5", "false"),
+                        AggCountWhere("filter6", "B % 2 == 0"),
+                        AggCountWhere("filter7", Filter.and(Filter.or(Filter.from("false", "B % 3 == 0")),
+                                Filter.or(Filter.from("false", "B % 2 == 0")))),
+                        AggCountWhere("filter8", "B % 2 == 0", "B % 3 == 0"),
+                        AggCountWhere("filter9", Filter.and(Filter.and(Filter.from("B > 0")),
+                                Filter.and(Filter.from("B <= 10", "B >= 5")))),
+                        // Multiple input columns
+                        AggCountWhere("filter10", "B >= 5", "C == 1"),
+                        AggCountWhere("filter11", "B >= 5 && C == 1 && A == 0"),
+                        AggCountWhere("filter12", "B >= 5", "C >= 1"),
+                        // Boolean column test
+                        AggCountWhere("filter13", "D == true"),
+                        // Instant column test
+                        AggCountWhere("filter14", "E > '1970-01-01T00:00:00.030Z'"),
+                        // String column test
+                        AggCountWhere("filter15", "F != 'A'", "F != 'B'")));
+        show(doubleCounted);
+        assertEquals(1, doubleCounted.size());
+
+        counts = ColumnVectors.ofLong(doubleCounted, "filter1");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter2");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter3");
+        assertEquals(7L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter4");
+        assertEquals(10L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter5");
+        assertEquals(0L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter6");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter7");
+        assertEquals(1L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter8");
+        assertEquals(1L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter9");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter10");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter11");
+        assertEquals(4L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter12");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter13");
+        assertEquals(5L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter14");
+        assertEquals(6L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "filter15");
+        assertEquals(6L, counts.get(0));
+    }
+
+    @Test
     public void testComboByMinMaxTypes() {
         final Random random = new Random(0);
         final int size = 10;
@@ -192,7 +357,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new ShortGenerator(),
                         new ByteGenerator(),
                         new LongGenerator(),
-                        new IntGenerator(10, 100),
+                        new CharGenerator('A', 'z'),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
                         new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
@@ -240,6 +405,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 new SetGenerator<>(10.1, 20.1, 30.1),
                                 new SetGenerator<>(10.1, 20.1, 30.1, QueryConstants.NULL_DOUBLE)));
 
+        // Get a static set table for use in dynamic where filters
+        final QueryTable setTable = getTable(false, size / 10, random,
+                initColumnInfos(new String[] {"intCol"},
+                        new IntGenerator(10, 100)));
+
         ExecutionContext.getContext().getQueryLibrary().importClass(TestAggBy.class);
 
         String[] groupByColumns = new String[0];
@@ -265,6 +435,61 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggFormula(
                                         "f_custom_sum=sum(intColNulls) + sum(doubleCol) + min(doubleColNulls)")),
                                 "Sym").sort("Sym");
+                    }
+                },
+                // Bucketed AggCountWhere tests
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.aggBy(List.of(
+                                AggCountWhere("filter1", "intCol >= 50"),
+                                AggCountWhere("filter2", "intCol >= 50", "intCol != 80"),
+                                AggCountWhere("filter3", Filter.or(Filter.from("intCol >= 50", "intCol == 3"))),
+                                AggCountWhere("filter4", "true"),
+                                AggCountWhere("filter5", "false"),
+                                AggCountWhere("filter6", "intCol % 2 == 0"),
+                                AggCountWhere("filter7",
+                                        Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")),
+                                                Filter.or(Filter.from("false", "intCol % 2 == 0")))),
+                                AggCountWhere("filter8", "intCol % 2 == 0", "intCol % 3 == 0"),
+                                AggCountWhere("filter9",
+                                        Filter.and(Filter.and(Filter.from("intCol > 0")),
+                                                Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
+                                // Multiple input columns
+                                AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
+                                // DynamicWhereFilter
+                                AggCountWhere("filter12",
+                                        new DynamicWhereFilter(setTable, true,
+                                                MatchPairFactory.getExpressions("intCol"))),
+                                AggCountWhere("filter13", "doubleCol >= 5", "doubleColNulls >= 1")),
+                                "Sym").sort("Sym");
+                    }
+                },
+                // Zero-Key AggCountWhere tests
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.aggBy(List.of(
+                                AggCountWhere("filter1", "intCol >= 50"),
+                                AggCountWhere("filter2", "intCol >= 50", "intCol != 80"),
+                                AggCountWhere("filter3", Filter.or(Filter.from("intCol >= 50", "intCol == 3"))),
+                                AggCountWhere("filter4", "true"),
+                                AggCountWhere("filter5", "false"),
+                                AggCountWhere("filter6", "intCol % 2 == 0"),
+                                AggCountWhere("filter7",
+                                        Filter.and(Filter.or(Filter.from("false", "intCol % 3 == 0")),
+                                                Filter.or(Filter.from("false", "intCol % 2 == 0")))),
+                                AggCountWhere("filter8", "intCol % 2 == 0", "intCol % 3 == 0"),
+                                AggCountWhere("filter9",
+                                        Filter.and(Filter.and(Filter.from("intCol > 0")),
+                                                Filter.and(Filter.from("intCol <= 10", "intCol >= 5")))),
+                                // Multiple input columns
+                                AggCountWhere("filter10", "intCol >= 5", "doubleCol <= 10.0"),
+                                AggCountWhere("filter11", "intCol >= 5 && intColNulls != 3 && doubleCol <= 10.0"),
+                                // DynamicWhereFilter
+                                AggCountWhere("filter12",
+                                        new DynamicWhereFilter(setTable, true,
+                                                MatchPairFactory.getExpressions("intCol"))),
+                                AggCountWhere("filter13", "doubleCol >= 5", "doubleColNulls >= 1")));
                     }
                 },
                 new QueryTableTest.TableComparator(
