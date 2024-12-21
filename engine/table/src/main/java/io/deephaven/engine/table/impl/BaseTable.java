@@ -40,7 +40,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,13 +72,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphCondition");
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
     private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, SimpleReferenceManager> CHILD_LISTENER_REFERENCES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     BaseTable.class, SimpleReferenceManager.class, "childListenerReferences");
@@ -521,24 +523,46 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        updateGraph.exclusiveLock().doLocked(ensureCondition()::await);
+        final long startLastNotificationStep = lastNotificationStep;
+        if (isFailed) {
+            return;
+        }
+        updateGraph.exclusiveLock().doLocked(() -> {
+            while (!isFailed && startLastNotificationStep == lastNotificationStep) {
+                ensureCondition().await();
+            }
+        });
     }
 
     @Override
-    public boolean awaitUpdate(long timeoutMillis) throws InterruptedException {
-
-        final long startTime = System.nanoTime();
-        if (!updateGraph.exclusiveLock().tryLock(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            // Usually, users will already be holding the exclusive lock when calling this method. If they are not and
-            // cannot acquire the lock within the timeout, we should return false now.
-            return false;
+    public boolean awaitUpdate(final long timeoutMillis) throws InterruptedException {
+        // TODO: Think about this. Does it make sense to check notification steps from inside this method? Doesn't the
+        //       caller need to check themselves? But then we can't know when to terminate early unless they provide the
+        //       step, which is harder to use and represents an interface change. They can use a condition themselves,
+        //       though, if they have exotic requirements. I think we just need a note outside that the caller should be
+        //       holding the exclusive lock if they want this to be reliable.
+        final long startLastNotificationStep = lastNotificationStep;
+        long lastStartTime = System.nanoTime();
+        if (isFailed) {
+            return startLastNotificationStep != lastNotificationStep;
         }
-        timeoutMillis -= TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
 
+        long remainingNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        // No need to validate the input timeout: if remainingNanos <= 0, tryLock is guaranteed to not wait at all.
+        if (!updateGraph.exclusiveLock().tryLock(remainingNanos, TimeUnit.NANOSECONDS)) {
+            // Usually, users will already be holding the exclusive lock when calling this method. If they are not and
+            // cannot acquire the lock within the timeout, we should return false if no update has been observed.
+            return startLastNotificationStep != lastNotificationStep;
+        }
+        while (startLastNotificationStep == ())
+        remainingNanos -= System.nanoTime() - lastStartTime;
         try {
+            if (remainingNanos <= 0) {
+                return false;
+            }
             // Note that we must reacquire the exclusive lock before returning from await. This deadline may be
             // exceeded if the thread must wait to reacquire the lock.
-            return ensureCondition().await(timeoutMillis, TimeUnit.MILLISECONDS);
+            return ensureCondition().awaitNanos(remainingNanos);
         } finally {
             updateGraph.exclusiveLock().unlock();
         }
@@ -681,74 +705,74 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
     public final void notifyListeners(final TableUpdate update) {
-        Assert.eqFalse(isFailed, "isFailed");
-        final long currentStep = updateGraph.clock().currentStep();
-        // tables may only be updated once per cycle
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
+        try {
+            Assert.eqFalse(isFailed, "isFailed");
+            final long currentStep = updateGraph.clock().currentStep();
+            // tables may only be updated once per cycle
+            Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
 
-        Assert.eqTrue(update.valid(), "update.valid()");
-        if (update.empty()) {
+            Assert.eqTrue(update.valid(), "update.valid()");
+            if (update.empty()) {
+                return;
+            }
+
+            final boolean hasNoListeners = !hasListeners();
+            if (hasNoListeners) {
+                lastNotificationStep = currentStep;
+                maybeSignal();
+                return;
+            }
+
+            Assert.neqNull(update.added(), "added");
+            Assert.neqNull(update.removed(), "removed");
+            Assert.neqNull(update.modified(), "modified");
+            Assert.neqNull(update.shifted(), "shifted");
+
+            if (isFlat()) {
+                Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
+            }
+            if (isAppendOnly() || isAddOnly()) {
+                Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
+                Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
+                Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+            }
+            if (isAppendOnly()) {
+                Assert.assertion(getRowSet().sizePrev() == 0
+                        || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
+                        "getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
+            }
+            if (isBlink()) {
+                Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
+                Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
+                Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
+                Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+            }
+
+            // First validate that each rowSet is in a sane state.
+            if (VALIDATE_UPDATE_INDICES) {
+                update.added().validate();
+                update.removed().validate();
+                update.modified().validate();
+                update.shifted().validate();
+                Assert.eq(update.modified().isEmpty(), "update.modified.empty()", update.modifiedColumnSet().empty(),
+                        "update.modifiedColumnSet.empty()");
+            }
+
+            if (VALIDATE_UPDATE_OVERLAPS) {
+                validateUpdateOverlaps(update);
+            }
+
+            // notify children
+            synchronized (this) {
+                lastNotificationStep = currentStep;
+                maybeSignal();
+                final NotificationQueue notificationQueue = getNotificationQueue();
+                childListenerReferences.forEach(
+                        (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
+            }
+        } finally {
             update.release();
-            return;
         }
-
-        maybeSignal();
-
-        final boolean hasNoListeners = !hasListeners();
-        if (hasNoListeners) {
-            lastNotificationStep = currentStep;
-            update.release();
-            return;
-        }
-
-        Assert.neqNull(update.added(), "added");
-        Assert.neqNull(update.removed(), "removed");
-        Assert.neqNull(update.modified(), "modified");
-        Assert.neqNull(update.shifted(), "shifted");
-
-        if (isFlat()) {
-            Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
-        }
-        if (isAppendOnly() || isAddOnly()) {
-            Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
-            Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
-            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
-        }
-        if (isAppendOnly()) {
-            Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
-                    "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
-        }
-        if (isBlink()) {
-            Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
-            Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
-            Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
-            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
-        }
-
-        // First validate that each rowSet is in a sane state.
-        if (VALIDATE_UPDATE_INDICES) {
-            update.added().validate();
-            update.removed().validate();
-            update.modified().validate();
-            update.shifted().validate();
-            Assert.eq(update.modified().isEmpty(), "update.modified.empty()", update.modifiedColumnSet().empty(),
-                    "update.modifiedColumnSet.empty()");
-        }
-
-        if (VALIDATE_UPDATE_OVERLAPS) {
-            validateUpdateOverlaps(update);
-        }
-
-        // notify children
-        synchronized (this) {
-            lastNotificationStep = currentStep;
-
-            final NotificationQueue notificationQueue = getNotificationQueue();
-            childListenerReferences.forEach(
-                    (listenerRef, listener) -> notificationQueue.addNotification(listener.getNotification(update)));
-        }
-
-        update.release();
     }
 
     private void validateUpdateOverlaps(final TableUpdate update) {
@@ -852,11 +876,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 "updateGraph.clock().currentStep()");
 
         isFailed = true;
-        maybeSignal();
 
         synchronized (this) {
             lastNotificationStep = currentStep;
-
+            maybeSignal();
             final NotificationQueue notificationQueue = getNotificationQueue();
             childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
                     .addNotification(listener.getErrorNotification(e, sourceEntry)));
@@ -900,7 +923,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * Simplest appropriate legacy ShiftObliviousInstrumentedListener implementation for BaseTable and descendants. It's
      * expected that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet
      * updates through to the dependent's listeners.
-     *
+     * <p>
      * It is preferred to use {@link ListenerImpl} over {@link ShiftObliviousListenerImpl}
      */
     public static class ShiftObliviousListenerImpl extends ShiftObliviousInstrumentedListener {
@@ -1212,7 +1235,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
         final Map<String, String> sourceDescriptions = new HashMap<>(oldDescriptions);
 
-        if (selectColumns != null && selectColumns.length != 0) {
+        if (selectColumns != null) {
             for (final SelectColumn sc : selectColumns) {
                 sourceDescriptions.remove(sc.getName());
             }
