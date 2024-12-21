@@ -922,7 +922,14 @@ public interface Table extends
      * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
      * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
+     * Returns when this Table has delivered a notification (an update, or an error) since this method was invoked, or
+     * immediately if this Table has already {@link #isFailed() failed}. Implementations are not required to terminate
+     * on spurious wakeups; note, however, that this method cannot detect notifications delivered before it was invoked.
+     * <p>
+     * Callers that must not miss a notification should acquire the
+     * {@link io.deephaven.engine.updategraph.UpdateGraph#exclusiveLock() exclusive lock} of this Table's
+     * {@link #getUpdateGraph() update graph} before testing whatever condition they are waiting on, and hold it across
+     * their invocation of this method. Waiting releases the exclusive lock, and reacquires it before returning.
      *
      * @throws InterruptedException In the event this thread is interrupted
      * @see java.util.concurrent.locks.Condition#await()
@@ -936,9 +943,21 @@ public interface Table extends
      * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
      * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
+     * Returns {@code true} when this Table has delivered a notification (an update, or an error) since this method was
+     * invoked, or immediately if this Table has already {@link #isFailed() failed}. Implementations are not required to
+     * terminate on spurious wakeups; note, however, that this method cannot detect notifications delivered before it
+     * was invoked.
+     * <p>
+     * Time spent acquiring the {@link io.deephaven.engine.updategraph.UpdateGraph#exclusiveLock() exclusive lock} of
+     * this Table's {@link #getUpdateGraph() update graph} counts against {@code timeoutMillis}, but note that
+     * reacquiring the exclusive lock after waiting may cause the timeout to be exceeded.
+     * <p>
+     * Callers that must not miss a notification should acquire the exclusive lock before testing whatever condition
+     * they are waiting on, and hold it across their invocation of this method. Waiting releases the exclusive lock, and
+     * reacquires it before returning.
      *
-     * @param timeoutMillis The maximum time to wait in milliseconds.
+     * @param timeoutMillis The maximum time to wait in milliseconds. Values less than or equal to zero result in no
+     *        waiting at all.
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
      * @see java.util.concurrent.locks.Condition#await()
