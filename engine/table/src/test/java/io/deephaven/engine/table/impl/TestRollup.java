@@ -44,7 +44,6 @@ public class TestRollup extends RefreshingTableTestCase {
 
     // Companion list of columns to compare between rollup root and the zero-key equivalent
     private final String[] columnsToCompare = new String[] {
-            "intCol",
             "absSum",
             "avg",
             "count",
@@ -80,30 +79,16 @@ public class TestRollup extends RefreshingTableTestCase {
         super.setUp();
     }
 
-    private String[] dropColumnNames(final Table table, final String[] columnsToKeep) {
-        final List<String> columns = new ArrayList<>();
-        final Set<String> columnsToKeepSet = new HashSet<>(Arrays.asList(columnsToKeep));
-        for (final String column : table.getDefinition().getColumnNames()) {
-            if (!columnsToKeepSet.contains(column)) {
-                columns.add(column);
-            }
-        }
-        return columns.toArray(String[]::new);
-    }
-
     @Test
     public void testRollup() {
         final Random random = new Random(0);
         // Create the test table
         final Table testTable = createTable(false, 100_000, random);
 
-        // Create the rollup table
         final RollupTable rollupTable = testTable.rollup(aggs, false, "Sym");
-        // Extract the root table and drop columns we don't want to compare
         final Table rootTable = rollupTable.getRoot();
-        final Table actual = rootTable.dropColumns(dropColumnNames(rootTable, columnsToCompare));
 
-        // Create the expected table (zero-key equivalent of the rollup table)
+        final Table actual = rootTable.select(columnsToCompare);
         final Table expected = testTable.aggBy(aggs);
 
         // Compare the zero-key equivalent table to the rollup table root
@@ -120,21 +105,15 @@ public class TestRollup extends RefreshingTableTestCase {
     private void testRollupIncrementalInternal(final String ctxt, final int size) {
         final Random random = new Random(0);
 
-        // Create the test table
         final QueryTable testTable = createTable(true, size * 10, random);
-
-        // Create the drop cplumns list
-        final String[] dropColumns = dropColumnNames(
-                testTable.rollup(aggs, false, "Sym").getRoot(), columnsToCompare);
-
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(
                         testTable.rollup(aggs, false, "Sym")
-                                .getRoot().dropColumns(dropColumns),
+                                .getRoot().select(columnsToCompare),
                         testTable.aggBy(aggs))
         };
 
-        final int steps = 100; // 8;
+        final int steps = 100;
         for (int step = 0; step < steps; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step);
