@@ -78,7 +78,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
 
                 // copy the row into the result
                 for (int j = 0; j < written; ++j) {
-                    final byte value = BooleanUtils.booleanAsByte(row[j]);
+                    final byte value = BooleanUtils.booleanAsByte(row[offset + j]);
                     result.set(lenWritten + j, value);
                 }
             }
@@ -130,17 +130,20 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
             result.setSize(numRows);
         }
 
-        int lenRead = 0;
         for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LEN_ARRAY);
+            } else if (rowLen < 0) {
+                // note that this may occur when data sent from a native arrow client is null
+                result.set(outOffset + ii, null);
             } else {
                 final Boolean[] row = new Boolean[rowLen];
-                for (int j = 0; j < rowLen; ++j) {
-                    row[j] = BooleanUtils.byteAsBoolean(typedSource.get(lenRead + j));
+                int numSent = Math.min(rowLen, typedSource.size() - offset);
+                for (int j = 0; j < numSent; ++j) {
+                    row[j] = BooleanUtils.byteAsBoolean(typedSource.get(offset + j));
                 }
-                lenRead += rowLen;
                 result.set(outOffset + ii, row);
             }
         }

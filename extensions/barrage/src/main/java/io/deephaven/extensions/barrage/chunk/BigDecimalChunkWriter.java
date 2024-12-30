@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
@@ -68,29 +69,49 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             @NotNull final RowSequence subset) {
         final int byteWidth = decimalType.getBitWidth() / 8;
         final int scale = decimalType.getScale();
-        final byte[] nullValue = new byte[byteWidth];
-        // note that BigInteger's byte array requires one sign bit; note we negate so the BigInteger#and keeps sign
+        final byte[] zeroValue = new byte[byteWidth];
+        final byte[] minusOneValue = new byte[byteWidth];
+        Arrays.fill(minusOneValue, (byte) -1);
+
+        // reserve the leading bit for the sign
         final BigInteger truncationMask = BigInteger.ONE.shiftLeft(byteWidth * 8 - 1)
-                .subtract(BigInteger.ONE)
-                .negate();
+                .subtract(BigInteger.ONE);
 
         final ObjectChunk<BigDecimal, Values> objectChunk = context.getChunk().asObjectChunk();
         subset.forAllRowKeys(rowKey -> {
             try {
                 BigDecimal value = objectChunk.get((int) rowKey);
+                if (value == null) {
+                    dos.write(zeroValue, 0, zeroValue.length);
+                    return;
+                }
 
                 if (value.scale() != scale) {
                     value = value.setScale(decimalType.getScale(), RoundingMode.HALF_UP);
                 }
 
-                byte[] bytes = value.unscaledValue().and(truncationMask).toByteArray();
+                final BigInteger truncatedValue;
+                boolean isNegative = value.compareTo(BigDecimal.ZERO) < 0;
+                if (isNegative) {
+                    // negative values are sign extended to match truncationMask's byte length; operate on abs-value
+                    truncatedValue = value.unscaledValue().negate().and(truncationMask).negate();
+                } else {
+                    truncatedValue = value.unscaledValue().and(truncationMask);
+                }
+                byte[] bytes = truncatedValue.toByteArray();
+                // toByteArray is BigEndian, but arrow default is LE, so must swap order
+                for (int ii = 0; ii < bytes.length / 2; ++ii) {
+                    byte tmp = bytes[ii];
+                    bytes[ii] = bytes[bytes.length - 1 - ii];
+                    bytes[bytes.length - 1 - ii] = tmp;
+                }
+
                 int numZeroBytes = byteWidth - bytes.length;
                 Assert.geqZero(numZeroBytes, "numZeroBytes");
-                if (numZeroBytes > 0) {
-                    dos.write(nullValue, 0, numZeroBytes);
-                }
                 dos.write(bytes);
-
+                if (numZeroBytes > 0) {
+                    dos.write(isNegative ? minusOneValue : zeroValue, 0, numZeroBytes);
+                }
             } catch (final IOException e) {
                 throw new UncheckedDeephavenException(
                         "Unexpected exception while draining data to OutputStream: ", e);

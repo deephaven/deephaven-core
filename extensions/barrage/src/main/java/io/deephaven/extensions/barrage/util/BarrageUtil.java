@@ -836,7 +836,8 @@ public class BarrageUtil {
                 children = Collections.singletonList(arrowFieldFor(
                         "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
             } else {
-                throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
+                throw new UnsupportedOperationException(
+                        "No default mapping for Arrow complex type: " + fieldType.getType());
             }
         }
 

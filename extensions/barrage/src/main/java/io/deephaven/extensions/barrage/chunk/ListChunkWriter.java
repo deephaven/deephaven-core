@@ -98,7 +98,9 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
         @Override
         protected void onReferenceCountAtZero() {
             super.onReferenceCountAtZero();
-            offsets.close();
+            if (offsets != null) {
+                offsets.close();
+            }
             innerContext.close();
         }
     }

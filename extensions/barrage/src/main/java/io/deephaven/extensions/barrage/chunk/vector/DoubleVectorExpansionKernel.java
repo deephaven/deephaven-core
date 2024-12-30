@@ -138,15 +138,17 @@ public class DoubleVectorExpansionKernel implements VectorExpansionKernel<Double
             result.setSize(numRows);
         }
 
-        int lenRead = 0;
         for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LENGTH_VECTOR);
+            } else if (rowLen < 0) {
+                // note that this may occur when data sent from a native arrow client is null
+                result.set(outOffset + ii, null);
             } else {
                 final double[] row = new double[rowLen];
-                typedSource.copyToArray(lenRead, row, 0, rowLen);
-                lenRead += rowLen;
+                typedSource.copyToArray(offset, row, 0, rowLen);
                 result.set(outOffset + ii, new DoubleVectorDirect(row));
             }
         }

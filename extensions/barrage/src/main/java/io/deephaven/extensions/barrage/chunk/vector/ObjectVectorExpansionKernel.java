@@ -134,17 +134,19 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             result.setSize(numRows);
         }
 
-        int lenRead = 0;
         for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 // noinspection unchecked
                 result.set(outOffset + ii, (ObjectVector<T>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
+            } else if (rowLen < 0) {
+                // note that this may occur when data sent from a native arrow client is null
+                result.set(outOffset + ii, null);
             } else {
                 // noinspection unchecked
                 final T[] row = (T[]) Array.newInstance(componentType, rowLen);
-                typedSource.copyToArray(lenRead, row, 0, rowLen);
-                lenRead += rowLen;
+                typedSource.copyToArray(offset, row, 0, rowLen);
                 result.set(outOffset + ii, new ObjectVectorDirect<>(row));
             }
         }

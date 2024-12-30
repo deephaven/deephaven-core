@@ -66,6 +66,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory.maskIfOverflow;
+
 /**
  * JVM implementation of {@link ChunkWriter.Factory}, suitable for use in Java clients and servers. This default
  * implementation may not round trip flight types in a stable way, but will round trip Deephaven table definitions and
@@ -98,12 +100,17 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         register(ArrowType.ArrowTypeID.Utf8, ArrayPreview.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Utf8, DisplayWrapper.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Duration, Duration.class, DefaultChunkWriterFactory::durationFromDuration);
-        register(ArrowType.ArrowTypeID.FloatingPoint, float.class, DefaultChunkWriterFactory::floatingPointFromFloat);
-        register(ArrowType.ArrowTypeID.FloatingPoint, double.class,
-                DefaultChunkWriterFactory::floatingPointFromDouble);
-        register(ArrowType.ArrowTypeID.FloatingPoint, BigDecimal.class,
-                DefaultChunkWriterFactory::floatingPointFromBigDecimal);
+        register(ArrowType.ArrowTypeID.FloatingPoint, byte.class, DefaultChunkWriterFactory::fpFromByte);
+        register(ArrowType.ArrowTypeID.FloatingPoint, char.class, DefaultChunkWriterFactory::fpFromChar);
+        register(ArrowType.ArrowTypeID.FloatingPoint, short.class, DefaultChunkWriterFactory::fpFromShort);
+        register(ArrowType.ArrowTypeID.FloatingPoint, int.class, DefaultChunkWriterFactory::fpFromInt);
+        register(ArrowType.ArrowTypeID.FloatingPoint, long.class, DefaultChunkWriterFactory::fpFromLong);
+        register(ArrowType.ArrowTypeID.FloatingPoint, BigInteger.class, DefaultChunkWriterFactory::fpFromBigInteger);
+        register(ArrowType.ArrowTypeID.FloatingPoint, float.class, DefaultChunkWriterFactory::fpFromFloat);
+        register(ArrowType.ArrowTypeID.FloatingPoint, double.class, DefaultChunkWriterFactory::fpFromDouble);
+        register(ArrowType.ArrowTypeID.FloatingPoint, BigDecimal.class, DefaultChunkWriterFactory::fpFromBigDecimal);
         register(ArrowType.ArrowTypeID.Binary, byte[].class, DefaultChunkWriterFactory::binaryFromByteArray);
+        // TODO NATE NOCOMMIT ByteVector, ByteBuffer
         register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkWriterFactory::binaryFromBigInt);
         register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkWriterFactory::binaryFromBigDecimal);
         register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkWriterFactory::binaryFromSchema);
@@ -131,6 +138,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         register(ArrowType.ArrowTypeID.Bool, byte.class, DefaultChunkWriterFactory::boolFromBoolean);
         register(ArrowType.ArrowTypeID.FixedSizeBinary, byte[].class,
                 DefaultChunkWriterFactory::fixedSizeBinaryFromByteArray);
+        // TODO NATE NOCOMMIT ByteVector, ByteBuffer
         register(ArrowType.ArrowTypeID.Date, LocalDate.class, DefaultChunkWriterFactory::dateFromLocalDate);
         register(ArrowType.ArrowTypeID.Interval, Duration.class, DefaultChunkWriterFactory::intervalFromDuration);
         register(ArrowType.ArrowTypeID.Interval, Period.class, DefaultChunkWriterFactory::intervalFromPeriod);
@@ -444,7 +452,37 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }, ObjectChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
     }
 
-    private static ChunkWriter<FloatChunk<Values>> floatingPointFromFloat(
+    private static ChunkWriter<ByteChunk<Values>> fpFromByte(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<CharChunk<Values>> fpFromChar(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<ShortChunk<Values>> fpFromShort(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<IntChunk<Values>> fpFromInt(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<LongChunk<Values>> fpFromLong(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<ObjectChunk<BigInteger, Values>> fpFromBigInteger(
+            final BarrageTypeInfo<Field> typeInfo) {
+        throw new UnsupportedOperationException("todo");
+    }
+
+    private static ChunkWriter<FloatChunk<Values>> fpFromFloat(
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
         switch (fpType.getPrecision()) {
@@ -477,7 +515,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
     }
 
-    private static ChunkWriter<DoubleChunk<Values>> floatingPointFromDouble(
+    private static ChunkWriter<DoubleChunk<Values>> fpFromDouble(
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
         switch (fpType.getPrecision()) {
@@ -510,7 +548,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
     }
 
-    private static ChunkWriter<ObjectChunk<BigDecimal, Values>> floatingPointFromBigDecimal(
+    private static ChunkWriter<ObjectChunk<BigDecimal, Values>> fpFromBigDecimal(
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
         switch (fpType.getPrecision()) {
@@ -802,12 +840,13 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) typeInfo.arrowField().getType();
         final int bitWidth = intType.getBitWidth();
+        final boolean unsigned = !intType.getIsSigned();
 
         switch (bitWidth) {
             case 8:
                 return ByteChunkWriter.getIdentity(typeInfo.arrowField().isNullable());
             case 16:
-                if (!intType.getIsSigned()) {
+                if (unsigned) {
                     return new CharChunkWriter<>((ByteChunk<Values> source) -> {
                         final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(source.size());
                         for (int ii = 0; ii < source.size(); ++ii) {
@@ -827,7 +866,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 return new IntChunkWriter<>((ByteChunk<Values> source) -> {
                     final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
-                        chunk.set(ii, QueryLanguageFunctionUtils.intCast(source.get(ii)));
+                        chunk.set(ii, maskIfOverflow(unsigned, Byte.BYTES,
+                                QueryLanguageFunctionUtils.intCast(source.get(ii))));
                     }
                     return chunk;
                 }, ByteChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
@@ -835,7 +875,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 return new LongChunkWriter<>((ByteChunk<Values> source) -> {
                     final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
-                        chunk.set(ii, QueryLanguageFunctionUtils.longCast(source.get(ii)));
+                        chunk.set(ii, maskIfOverflow(unsigned, Byte.BYTES,
+                                QueryLanguageFunctionUtils.longCast(source.get(ii))));
                     }
                     return chunk;
                 }, ByteChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
@@ -848,6 +889,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) typeInfo.arrowField().getType();
         final int bitWidth = intType.getBitWidth();
+        final boolean unsigned = !intType.getIsSigned();
 
         switch (bitWidth) {
             case 8:
@@ -859,7 +901,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     return chunk;
                 }, ShortChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
             case 16:
-                if (!intType.getIsSigned()) {
+                if (unsigned) {
                     return new CharChunkWriter<>((ShortChunk<Values> source) -> {
                         final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(source.size());
                         for (int ii = 0; ii < source.size(); ++ii) {
@@ -873,7 +915,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 return new IntChunkWriter<>((ShortChunk<Values> source) -> {
                     final WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
-                        chunk.set(ii, QueryLanguageFunctionUtils.intCast(source.get(ii)));
+                        chunk.set(ii, maskIfOverflow(unsigned, Short.BYTES,
+                                QueryLanguageFunctionUtils.intCast(source.get(ii))));
                     }
                     return chunk;
                 }, ShortChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
@@ -881,7 +924,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 return new LongChunkWriter<>((ShortChunk<Values> source) -> {
                     final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
-                        chunk.set(ii, QueryLanguageFunctionUtils.longCast(source.get(ii)));
+                        chunk.set(ii, maskIfOverflow(unsigned, Short.BYTES,
+                                QueryLanguageFunctionUtils.longCast(source.get(ii))));
                     }
                     return chunk;
                 }, ShortChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
@@ -894,6 +938,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             final BarrageTypeInfo<Field> typeInfo) {
         final ArrowType.Int intType = (ArrowType.Int) typeInfo.arrowField().getType();
         final int bitWidth = intType.getBitWidth();
+        final boolean unsigned = !intType.getIsSigned();
 
         switch (bitWidth) {
             case 8:
@@ -905,6 +950,15 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     return chunk;
                 }, IntChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
             case 16:
+                if (unsigned) {
+                    return new CharChunkWriter<>((IntChunk<Values> source) -> {
+                        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(source.size());
+                        for (int ii = 0; ii < source.size(); ++ii) {
+                            chunk.set(ii, QueryLanguageFunctionUtils.charCast(source.get(ii)));
+                        }
+                        return chunk;
+                    }, IntChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+                }
                 return new ShortChunkWriter<>((IntChunk<Values> source) -> {
                     final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
@@ -918,7 +972,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 return new LongChunkWriter<>((IntChunk<Values> source) -> {
                     final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(source.size());
                     for (int ii = 0; ii < source.size(); ++ii) {
-                        chunk.set(ii, QueryLanguageFunctionUtils.longCast(source.get(ii)));
+                        chunk.set(ii, maskIfOverflow(unsigned, Integer.BYTES,
+                                QueryLanguageFunctionUtils.longCast(source.get(ii))));
                     }
                     return chunk;
                 }, IntChunk::getEmptyChunk, typeInfo.arrowField().isNullable());

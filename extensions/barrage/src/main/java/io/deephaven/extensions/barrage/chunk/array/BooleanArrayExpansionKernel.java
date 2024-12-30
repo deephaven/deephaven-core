@@ -130,17 +130,19 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel<boolean
             result.setSize(numRows);
         }
 
-        int lenRead = 0;
         for (int ii = 0; ii < itemsInBatch; ++ii) {
+            final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LEN_ARRAY);
+            } else if (rowLen < 0) {
+                // note that this may occur when data sent from a native arrow client is null
+                result.set(outOffset + ii, null);
             } else {
                 final boolean[] row = new boolean[rowLen];
                 for (int j = 0; j < rowLen; ++j) {
-                    row[j] = typedSource.get(lenRead + j) > 0;
+                    row[j] = typedSource.get(offset + j) > 0;
                 }
-                lenRead += rowLen;
                 result.set(outOffset + ii, row);
             }
         }
