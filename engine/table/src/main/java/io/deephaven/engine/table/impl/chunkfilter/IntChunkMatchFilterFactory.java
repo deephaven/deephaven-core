@@ -7,23 +7,20 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TIntHashSet;
 
 /**
  * Creates chunk filters for int values.
- *
+ * <p>
  * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
  * equality check.
- *
+ * <p>
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class IntChunkMatchFilterFactory {
     private IntChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.IntChunkFilter makeFilter(boolean invertMatch, int... values) {
+    public static IntChunkFilter makeFilter(boolean invertMatch, int... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueIntChunkFilter(values[0]);
@@ -49,7 +46,7 @@ public class IntChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class SingleValueIntChunkFilter extends IntChunkFilter {
         private final int value;
 
         private SingleValueIntChunkFilter(int value) {
@@ -57,18 +54,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) == value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value == this.value;
         }
     }
 
-    private static class InverseSingleValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class InverseSingleValueIntChunkFilter extends IntChunkFilter {
         private final int value;
 
         private InverseSingleValueIntChunkFilter(int value) {
@@ -76,18 +67,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) != value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value != this.value;
         }
     }
 
-    private static class TwoValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class TwoValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
 
@@ -97,19 +82,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value == value1 || value == value2;
         }
     }
 
-    private static class InverseTwoValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class InverseTwoValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
 
@@ -119,19 +97,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value != value1 && value != value2;
         }
     }
 
-    private static class ThreeValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class ThreeValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
         private final int value3;
@@ -143,19 +114,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value == value1 || value == value2 || value == value3;
         }
     }
 
-    private static class InverseThreeValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class InverseThreeValueIntChunkFilter extends IntChunkFilter {
         private final int value1;
         private final int value2;
         private final int value3;
@@ -167,19 +131,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return value != value1 && value != value2 && value != value3;
         }
     }
 
-    private static class MultiValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class MultiValueIntChunkFilter extends IntChunkFilter {
         private final TIntHashSet values;
 
         private MultiValueIntChunkFilter(int... values) {
@@ -187,19 +144,12 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return this.values.contains(value);
         }
     }
 
-    private static class InverseMultiValueIntChunkFilter implements ChunkFilter.IntChunkFilter {
+    private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
         private final TIntHashSet values;
 
         private InverseMultiValueIntChunkFilter(int... values) {
@@ -207,15 +157,8 @@ public class IntChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int checkValue = values.get(ii);
-                if (!this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(int value) {
+            return !this.values.contains(value);
         }
     }
 }

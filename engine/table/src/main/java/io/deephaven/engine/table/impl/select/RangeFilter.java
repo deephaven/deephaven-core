@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A filter for comparable types (including Instant) for {@link Condition} values: <br>
@@ -35,7 +37,7 @@ import java.util.List;
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
  */
-public class RangeFilter extends WhereFilterImpl {
+public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     private String columnName;
     private String value;
@@ -262,6 +264,15 @@ public class RangeFilter extends WhereFilterImpl {
         }
 
         filter.init(tableDefinition, compilationProcessor);
+    }
+
+    @Override
+    public Optional<ChunkFilter> chunkFilter() {
+        // The underlying filter may be a ConditionFilter
+        if (filter instanceof ExposesChunkFilter) {
+            return ((ExposesChunkFilter) filter).chunkFilter();
+        }
+        return Optional.empty();
     }
 
     private static LongRangeFilter makeInstantRangeFilter(String columnName, Condition condition, long value) {

@@ -97,6 +97,12 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(CountWhere countWhere) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(countWhere, null);
+    }
+
+    @Override
     public void visit(FirstRowKey firstRowKey) {
         visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey.column());
     }

@@ -3,12 +3,13 @@
 #
 """This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
-from typing import List, Union, Any, Optional
+from typing import List, Union, Any, Optional, Sequence
 
 import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import to_sequence
+from deephaven.filters import Filter, and_
 
 _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")
@@ -112,6 +113,22 @@ def count_(col: str) -> Aggregation:
     if not isinstance(col, str):
         raise DHError(message="count_ aggregation requires a string value for the 'col' argument.")
     return Aggregation(j_aggregation=_JAggregation.AggCount(col))
+
+def count_where(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Aggregation:
+    """Creates a CountWhere aggregation with the supplied output column name, counting values that pass the supplied
+    filters.
+
+    Args:
+        col (str): the column to hold the counts of each distinct group
+
+    Returns:
+        an aggregation
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_sequence(filters)
+
+    return Aggregation(j_aggregation=_JAggregation.AggCountWhere(col, and_(filters).j_filter))
 
 
 def partition(col: str, include_by_columns: bool = True) -> Aggregation:

@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct, formula
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, count_where, partition, median, unique, count_distinct, distinct, formula
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -247,6 +247,10 @@ class TableTestCase(BaseTestCase):
                 pct(percentile=0.5, cols=["PctC = c"]),
                 weighted_avg(wcol="d", cols=["WavGD = d"]),
                 count_(col="ca"),
+                count_where(col="count_where1", filters="a > 5"),
+                count_where("agg_count_where_1", "a > 100"),
+                count_where("agg_count_where_2", ["a > 100", "b < 250"]),
+                count_where("agg_count_where_3", "a <= 100 || b >= 250"),
                 partition(col="aggPartition"),
                 formula(formula="min(x)", formula_param="x", cols=["min_a=a", "min_b=b"]),
                 formula(formula="avg(x)", formula_param="x", cols=["avg_c=c", "avg_d=d"]),
@@ -300,6 +304,26 @@ class TableTestCase(BaseTestCase):
                 test_table.agg_all_by(agg=partition(col="aggPartition"), by=["a"])
             with self.assertRaises(DHError) as cm:
                 test_table.agg_all_by(agg=count_(col="ca"), by=["a"])
+
+    def test_agg_count_where_output(self):
+        """
+        Test and validation of the agg_count_where feature
+        """
+        test_table = self.session.empty_table(100).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            count_where("count1", "a >= 25"),
+            count_where("count2", "a % 3 == 0")
+        ]
+        result_table = test_table.agg_by(aggs=count_aggs, by="b")
+        self.assertEqual(result_table.size, 2)
+
+        # get the table as a local pandas dataframe
+        df = result_table.to_arrow().to_pandas()
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 37)
+        self.assertEqual(df.loc[1, "count1"], 38)
+        self.assertEqual(df.loc[0, "count2"], 17)
+        self.assertEqual(df.loc[1, "count2"], 17)
 
     def test_where_in(self):
         pa_table = csv.read_csv(self.csv_file)

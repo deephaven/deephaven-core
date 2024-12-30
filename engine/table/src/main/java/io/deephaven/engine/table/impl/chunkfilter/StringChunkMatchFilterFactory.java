@@ -6,9 +6,6 @@ package io.deephaven.engine.table.impl.chunkfilter;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {
@@ -32,7 +29,8 @@ class StringChunkMatchFilterFactory {
 
     private StringChunkMatchFilterFactory() {} // static use only
 
-    static ChunkFilter.ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
+    @SuppressWarnings("rawtypes")
+    static ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
         if (invert) {
             if (values.length == 1) {
                 return new InverseSingleValueStringChunkFilter((String) values[0]);
@@ -59,7 +57,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private final static class SingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private SingleValueStringChunkFilter(String value) {
@@ -67,20 +65,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (value.equalsIgnoreCase(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return this.value.equalsIgnoreCase(value);
         }
     }
 
-    private static class InverseSingleValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseSingleValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value;
 
         private InverseSingleValueStringChunkFilter(String value) {
@@ -88,20 +78,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (!value.equalsIgnoreCase(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return !this.value.equalsIgnoreCase(value);
         }
     }
 
-    private static class TwoValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class TwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -111,20 +93,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value);
         }
     }
 
-    private static class InverseTwoValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseTwoValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -134,20 +108,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value);
         }
     }
 
-    private static class ThreeValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class ThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -159,21 +125,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
-                        || value3.equalsIgnoreCase(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value) || value3.equalsIgnoreCase(value);
         }
     }
 
-    private static class InverseThreeValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseThreeValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -185,21 +142,13 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
-                        || value3.equalsIgnoreCase(checkString))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value)
+                    && !value3.equalsIgnoreCase(value);
         }
     }
 
-    private static class MultiValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private MultiValueStringChunkFilter(Object... values) {
@@ -210,20 +159,12 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (this.values.containsKey(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return this.values.containsKey(value);
         }
     }
 
-    private static class InverseMultiValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private InverseMultiValueStringChunkFilter(Object... values) {
@@ -234,16 +175,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
-            results.setSize(0);
-            for (int ii = 0; ii < stringChunk.size(); ++ii) {
-                final String checkString = stringChunk.get(ii);
-                if (!this.values.containsKey(checkString)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(String value) {
+            return !this.values.containsKey(value);
         }
     }
 }

@@ -9,6 +9,8 @@ on:
 jobs:
   linkChecker:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     if: ${{ github.repository_owner == 'deephaven' }}
     steps:
       - uses: actions/checkout@v4

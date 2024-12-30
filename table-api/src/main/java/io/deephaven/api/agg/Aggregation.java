@@ -17,6 +17,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;
@@ -222,6 +223,28 @@ public interface Aggregation {
      */
     static Count AggCount(String resultColumn) {
         return Count.of(resultColumn);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filters}.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhere(String resultColumn, String... filters) {
+        return CountWhere.of(resultColumn, filters);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filter}.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhere(String resultColumn, Filter filter) {
+        return CountWhere.of(resultColumn, filter);
     }
 
     /**
@@ -559,7 +582,7 @@ public interface Aggregation {
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecStd sample standard deviation} aggregation for the supplied
      * column name pairs.
-     *
+     * <p>
      * Sample standard deviation is computed using Bessel's correction
      * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
      * estimator of population variance.
@@ -649,7 +672,7 @@ public interface Aggregation {
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecVar sample variance} aggregation for the supplied column name
      * pairs.
-     *
+     * <p>
      * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
      * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
@@ -710,6 +733,7 @@ public interface Aggregation {
         visitor.visit((ColumnAggregation) null);
         visitor.visit((ColumnAggregations) null);
         visitor.visit((Count) null);
+        visitor.visit((CountWhere) null);
         visitor.visit((FirstRowKey) null);
         visitor.visit((LastRowKey) null);
         visitor.visit((Partition) null);
@@ -757,6 +781,13 @@ public interface Aggregation {
          * @param count The count aggregation
          */
         void visit(Count count);
+
+        /**
+         * Visit a {@link CountWhere count aggregation}.
+         *
+         * @param countWhere The count aggregation
+         */
+        void visit(CountWhere countWhere);
 
         /**
          * Visit a {@link FirstRowKey first row key aggregation}.

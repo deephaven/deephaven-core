@@ -5,19 +5,15 @@ package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.FloatChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.DoubleChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import org.jetbrains.annotations.NotNull;
@@ -86,47 +82,27 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter);
     }
 
-    private static final class DoubleFilter implements ChunkFilter.DoubleChunkFilter {
+    private static final class DoubleFilter extends DoubleChunkFilter {
 
         private static final DoubleFilter INSTANCE = new DoubleFilter();
 
         private DoubleFilter() {}
 
         @Override
-        public void filter(
-                @NotNull final DoubleChunk<? extends Values> values,
-                @NotNull final LongChunk<OrderedRowKeys> rowKeys,
-                @NotNull final WritableLongChunk<OrderedRowKeys> acceptedRowKeys) {
-            final int size = values.size();
-            acceptedRowKeys.setSize(0);
-            for (int vi = 0; vi < size; ++vi) {
-                final double value = values.get(vi);
-                if (!Double.isNaN(value) && value != NULL_DOUBLE) {
-                    acceptedRowKeys.add(rowKeys.get(vi));
-                }
-            }
+        public boolean matches(final double value) {
+            return !Double.isNaN(value) && value != NULL_DOUBLE;
         }
     }
 
-    private static final class FloatFilter implements ChunkFilter.FloatChunkFilter {
+    private static final class FloatFilter extends FloatChunkFilter {
 
         private static final FloatFilter INSTANCE = new FloatFilter();
 
         private FloatFilter() {}
 
         @Override
-        public void filter(
-                @NotNull final FloatChunk<? extends Values> values,
-                @NotNull final LongChunk<OrderedRowKeys> rowKeys,
-                @NotNull final WritableLongChunk<OrderedRowKeys> acceptedRowKeys) {
-            final int size = values.size();
-            acceptedRowKeys.setSize(0);
-            for (int vi = 0; vi < size; ++vi) {
-                final float value = values.get(vi);
-                if (!Float.isNaN(value) && value != NULL_FLOAT) {
-                    acceptedRowKeys.add(rowKeys.get(vi));
-                }
-            }
+        public boolean matches(final float value) {
+            return !Float.isNaN(value) && value != NULL_FLOAT;
         }
     }
 
