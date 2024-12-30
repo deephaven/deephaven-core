@@ -651,45 +651,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
         }
-    }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Standard Aggregations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
-     * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
-     */
-    private final class NormalConverter extends Converter {
-        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
-
-        private NormalConverter(
-                @NotNull final Table table,
-                final boolean requireStateChangeRecorder,
-                @NotNull final String... groupByColumnNames) {
-            super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
-        }
-
-        @Override
-        AggregationContext build() {
-            final AggregationContext resultContext = super.build();
-            compilationProcessor.compile();
-            return resultContext;
-        }
-
-        // -------------------------------------------------------------------------------------------------------------
-        // Aggregation.Visitor
-        // -------------------------------------------------------------------------------------------------------------
-
-        @Override
-        public void visit(@NotNull final Count count) {
-            addNoInputOperator(new CountAggregationOperator(count.column().name()));
-        }
-
-        @Override
-        public void visit(@NotNull final CountWhere countWhere) {
+        final void addCountWhereOperator(@NotNull CountWhere countWhere) {
             final WhereFilter[] whereFilters = WhereFilter.fromInternal(countWhere.filter());
 
             final Map<String, RecordingInternalOperator> inputColumnRecorderMap = new HashMap<>();
@@ -736,6 +699,47 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             addOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, recorders, filterRecorders),
                     null, inputColumnNames);
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Standard Aggregations
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
+     * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
+     */
+    private final class NormalConverter extends Converter {
+        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
+
+        private NormalConverter(
+                @NotNull final Table table,
+                final boolean requireStateChangeRecorder,
+                @NotNull final String... groupByColumnNames) {
+            super(table, requireStateChangeRecorder, groupByColumnNames);
+            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
+        }
+
+        @Override
+        AggregationContext build() {
+            final AggregationContext resultContext = super.build();
+            compilationProcessor.compile();
+            return resultContext;
+        }
+
+        // -------------------------------------------------------------------------------------------------------------
+        // Aggregation.Visitor
+        // -------------------------------------------------------------------------------------------------------------
+
+        @Override
+        public void visit(@NotNull final Count count) {
+            addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addCountWhereOperator(countWhere);
         }
 
         @Override
@@ -1051,7 +1055,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final CountWhere countWhere) {
-            addNoInputOperator(new CountAggregationOperator(countWhere.column().name()));
+            addCountWhereOperator(countWhere);
         }
 
         @Override
