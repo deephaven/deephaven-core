@@ -1085,14 +1085,15 @@ public class JettyBarrageChunkFactoryTest {
 
                             // DH will unwrap the view, so to validate the data vector we need to unwrap it as well
                             try (final ListViewVector newView =
-                                         (ListViewVector) schema.getFields().get(0).createVector(allocator)) {
+                                    (ListViewVector) schema.getFields().get(0).createVector(allocator)) {
                                 newView.setValueCount(source.getRowCount());
                                 final ListViewVector sourceArr = (ListViewVector) source.getVector(0);
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
                                         // TODO: when https://github.com/apache/arrow-java/issues/470 is fixed, use
-                                        // totalLen += sourceArr.getElementEndIndex(ii) - sourceArr.getElementStartIndex(ii);
+                                        // totalLen += sourceArr.getElementEndIndex(ii) -
+                                        // sourceArr.getElementStartIndex(ii);
                                         totalLen += sourceArr.getObject(ii).size();
                                     }
                                 }
@@ -1117,13 +1118,14 @@ public class JettyBarrageChunkFactoryTest {
                         } else {
                             // any null values will not be sent back, so we need to filter the source to match
                             try (final BaseListVector newView =
-                                         (BaseListVector) schema.getFields().get(0).createVector(allocator)) {
+                                    (BaseListVector) schema.getFields().get(0).createVector(allocator)) {
                                 newView.setValueCount(source.getRowCount());
                                 final BaseListVector sourceArr = (BaseListVector) source.getVector(0);
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
-                                        totalLen += sourceArr.getElementEndIndex(ii) - sourceArr.getElementStartIndex(ii);
+                                        totalLen +=
+                                                sourceArr.getElementEndIndex(ii) - sourceArr.getElementStartIndex(ii);
                                     }
                                 }
                                 Assert.geqZero(totalLen, "totalLen");
@@ -1360,7 +1362,7 @@ public class JettyBarrageChunkFactoryTest {
 
         @Override
         public void validate(final TestNullMode nullMode, @NotNull final BitVector source,
-                             @NotNull final BitVector dest) {
+                @NotNull final BitVector dest) {
             for (int ii = 0; ii < source.getValueCount(); ++ii) {
                 if (source.isNull(ii)) {
                     assertTrue(dest.getValueCount() <= ii || dest.isNull(ii));
