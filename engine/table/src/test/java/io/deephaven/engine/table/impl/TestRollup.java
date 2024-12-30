@@ -40,8 +40,7 @@ public class TestRollup extends RefreshingTableTestCase {
             AggUnique("unique=intCol"),
             AggVar("var=intCol"),
             AggWAvg("intCol", "wavg=intCol"),
-            AggWSum("intCol", "wsum=intCol")
-    );
+            AggWSum("intCol", "wsum=intCol"));
 
     // Companion list of columns to compare between rollup root and the zero-key equivalent
     private final String[] columnsToCompare = new String[] {
