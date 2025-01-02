@@ -13,21 +13,39 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
-public class IntChunkReader implements ChunkReader {
+public class IntChunkReader extends BaseChunkReader<WritableIntChunk<Values>> {
     private static final String DEBUG_NAME = "IntChunkReader";
-    private final StreamReaderOptions options;
+
+    @FunctionalInterface
+    public interface ToIntTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
+        int get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
+    }
+
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableIntChunk<Values>> transformTo(
+            final T wireReader,
+            final ToIntTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
+        return new TransformingChunkReader<>(
+                wireReader,
+                WritableIntChunk::makeWritableChunk,
+                WritableChunk::asWritableIntChunk,
+                (wireValues, outChunk, wireOffset, outOffset) -> outChunk.set(
+                        outOffset, wireTransform.get(wireValues, wireOffset)));
+    }
+
+    private final BarrageOptions options;
     private final IntConversion conversion;
 
     @FunctionalInterface
@@ -37,16 +55,16 @@ public class IntChunkReader implements ChunkReader {
         IntConversion IDENTITY = (int a) -> a;
     }
 
-    public IntChunkReader(StreamReaderOptions options) {
+    public IntChunkReader(BarrageOptions options) {
         this(options, IntConversion.IDENTITY);
     }
 
-    public IntChunkReader(StreamReaderOptions options, IntConversion conversion) {
+    public IntChunkReader(BarrageOptions options, IntConversion conversion) {
         this.options = options;
         this.conversion = conversion;
     }
 
-    public <T> ChunkReader transform(Function<Integer, T> transform) {
+    public <T> ChunkReader<WritableObjectChunk<T, Values>> transform(Function<Integer, T> transform) {
         return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
             try (final WritableIntChunk<Values> inner = IntChunkReader.this.readChunk(
                     fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
@@ -73,11 +91,15 @@ public class IntChunkReader implements ChunkReader {
     }
 
     @Override
-    public WritableIntChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
-            int totalRows) throws IOException {
+    public WritableIntChunk<Values> readChunk(
+            @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+            @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+            @NotNull final DataInput is,
+            @Nullable final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
 
-        final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
+        final ChunkWriter.FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
@@ -93,22 +115,7 @@ public class IntChunkReader implements ChunkReader {
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
-            if (options.useDeephavenNulls() && validityBuffer != 0) {
-                throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
-            }
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBuffer) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
-            // consumed entire validity buffer by here
+            readValidityBuffer(is, numValidityLongs, validityBuffer, isValid, DEBUG_NAME);
 
             final long payloadRead = (long) nodeInfo.numElements * Integer.BYTES;
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
@@ -128,23 +135,10 @@ public class IntChunkReader implements ChunkReader {
         return chunk;
     }
 
-    private static <T extends WritableChunk<Values>> T castOrCreateChunk(
-            final WritableChunk<Values> outChunk,
-            final int numRows,
-            final IntFunction<T> chunkFactory,
-            final Function<WritableChunk<Values>, T> castFunction) {
-        if (outChunk != null) {
-            return castFunction.apply(outChunk);
-        }
-        final T newChunk = chunkFactory.apply(numRows);
-        newChunk.setSize(numRows);
-        return newChunk;
-    }
-
     private static void useDeephavenNulls(
             final IntConversion conversion,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableIntChunk<Values> chunk,
             final int offset) throws IOException {
         if (conversion == IntConversion.IDENTITY) {
@@ -163,7 +157,7 @@ public class IntChunkReader implements ChunkReader {
     private static void useValidityBuffer(
             final IntConversion conversion,
             final DataInput is,
-            final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo,
+            final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableIntChunk<Values> chunk,
             final int offset,
             final WritableLongChunk<Values> isValid) throws IOException {

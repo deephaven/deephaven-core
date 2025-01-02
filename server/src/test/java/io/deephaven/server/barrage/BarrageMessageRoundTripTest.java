@@ -26,10 +26,10 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.BarrageStreamGenerator;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.extensions.barrage.util.BarrageStreamReader;
+import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.server.arrow.ArrowModule;
@@ -74,7 +74,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageStreamGenerator.Factory getStreamGeneratorFactory();
+        BarrageMessageWriter.Factory getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -181,9 +181,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             if (sourceTable.isFlat()) {
                 attributes.put(BarrageUtil.TABLE_ATTRIBUTE_IS_FLAT, true);
             }
-            this.barrageTable = BarrageTable.make(updateSourceCombiner,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    null, barrageMessageProducer.getTableDefinition(), attributes, viewport == null, null);
+            final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(BarrageUtil.toSchema(
+                    barrageMessageProducer.getTableDefinition(), attributes, sourceTable.isFlat()));
+            this.barrageTable = BarrageTable.make(updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
+                    null, schema, viewport == null, null);
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -192,7 +193,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final BarrageDataMarshaller marshaller = new BarrageDataMarshaller(
                     options, barrageTable.getWireChunkTypes(), barrageTable.getWireTypes(),
                     barrageTable.getWireComponentTypes(),
-                    new BarrageStreamReader(barrageTable.getDeserializationTmConsumer()));
+                    new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {
@@ -1409,7 +1410,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    public static class DummyObserver implements StreamObserver<BarrageStreamGenerator.MessageView> {
+    public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
 
         private final BarrageDataMarshaller marshaller;
@@ -1421,7 +1422,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onNext(final BarrageStreamGenerator.MessageView messageView) {
+        public void onNext(final BarrageMessageWriter.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
                     try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
