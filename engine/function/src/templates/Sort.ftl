@@ -5,7 +5,6 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
-import io.deephaven.function.comparators.NullNaNAwareComparator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
@@ -51,7 +50,7 @@ public class Sort {
      * @return sorted values.
      */
     static public <T extends Comparable<? super T>> T[] sortObj(final ObjectVector<T> values) {
-        return sortObj(values, new NullNaNAwareComparator<>());
+        return sortObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -83,7 +82,7 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortObj(final T... values) {
-        return sortObj(values, new NullNaNAwareComparator<>());
+        return sortObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -113,7 +112,7 @@ public class Sort {
      * @return sorted indices.
      */
     static public <T extends Comparable<? super T>> int[] rankObj(final ObjectVector<T> values) {
-        return rankObj(values, new NullNaNAwareComparator<>());
+        return rankObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -141,7 +140,7 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> int[] rankObj(final T... values) {
-        return rankObj(values, new NullNaNAwareComparator<>());
+        return rankObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -172,7 +171,7 @@ public class Sort {
      * @return sorted values.
      */
     static public <T extends Comparable<? super T>> T[] sortDescendingObj(final ObjectVector<T> values) {
-        return sortDescendingObj(values, new NullNaNAwareComparator<>());
+        return sortDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -198,7 +197,7 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> T[] sortDescendingObj(final T... values) {
-        return sortDescendingObj(values, new NullNaNAwareComparator<>());
+        return sortDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -229,7 +228,7 @@ public class Sort {
      * @return sorted indices.
      */
     static public <T extends Comparable<? super T>> int[] rankDescendingObj(final ObjectVector<T> values) {
-        return rankDescendingObj(values, new NullNaNAwareComparator<>());
+        return rankDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     /**
@@ -255,7 +254,7 @@ public class Sort {
      */
     @SafeVarargs
     static public <T extends Comparable<? super T>> int[] rankDescendingObj(final T... values) {
-        return rankDescendingObj(values, new NullNaNAwareComparator<>());
+        return rankDescendingObj(values, Comparator.nullsFirst(Comparator.naturalOrder()));
     }
 
     <#list primitiveTypes as pt>

@@ -9,6 +9,7 @@ import io.deephaven.vector.*;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Sort.*;
@@ -94,6 +95,41 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortedNumbers));
     }
 
+    public void testObjSortDoubles() {
+        final Comparable [] a = new Comparable[7];
+        a[0] = 7.0;
+        a[1] = Double.POSITIVE_INFINITY + Double.NEGATIVE_INFINITY;
+        a[2] = null;
+        a[3] = Double.POSITIVE_INFINITY;
+        a[4] = -Math.PI;
+        a[5] = Double.NEGATIVE_INFINITY;
+        a[6] = Math.E;
+        final ObjectVectorDirect<Comparable> values = new ObjectVectorDirect<>(a);
+        final Comparable[] res = sortObj(values);
+        assertTrue(Double.isNaN((double)res[6]));
+        assertEquals(new Comparable[]{null, Double.NEGATIVE_INFINITY, -Math.PI, Math.E, 7.0, Double.POSITIVE_INFINITY}, new ObjectVectorDirect<>(res).subVector(0, 6).toArray());
+
+        final Comparable[] resd = sortDescendingObj(values);
+        assertTrue(Double.isNaN((double)resd[0]));
+        assertEquals(new Comparable[]{Double.POSITIVE_INFINITY, 7.0, Math.E, -Math.PI, Double.NEGATIVE_INFINITY, null}, new ObjectVectorDirect<>(resd).subVector(1, 7).toArray());
+    }
+
+    public void testObjRankDoubles() {
+        final Comparable [] a = new Comparable[7];
+        a[0] = 7.0;
+        a[1] = Double.POSITIVE_INFINITY + Double.NEGATIVE_INFINITY;
+        a[2] = null;
+        a[3] = Double.POSITIVE_INFINITY;
+        a[4] = -Math.PI;
+        a[5] = Double.NEGATIVE_INFINITY;
+        a[6] = Math.E;
+        final ObjectVectorDirect<Comparable> values = new ObjectVectorDirect<>(a);
+        final int[] res = rankObj(values);
+        assertEquals(new int[]{2, 5, 4, 6, 0, 3, 1}, res);
+
+        final int[] resd = rankDescendingObj(values);
+        assertEquals(new int[]{1, 3, 0, 6, 4, 5, 2}, resd);
+    }
 
     <#list primitiveTypes as pt>
     <#if pt.valueType.isNumber >
