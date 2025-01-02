@@ -37,6 +37,7 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
+import io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
@@ -49,10 +50,13 @@ import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
 import io.deephaven.server.console.ScopeTicketResolver;
+import io.deephaven.server.grpc.UserAgentContext;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.PluginsModule;
 import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.runner.MainHelper;
+import io.deephaven.server.runner.RpcServerStateInterceptor;
+import io.deephaven.server.runner.RpcServerStateInterceptor.RpcServerState;
 import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
@@ -104,6 +108,7 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -133,6 +138,7 @@ public abstract class FlightMessageRoundTripTest {
             TestAuthModule.class,
             ObfuscatingErrorTransformerModule.class,
             PluginsModule.class,
+            RpcServerStateInterceptor.Module.class,
     })
     public static class FlightTestModule {
         @IntoSet
@@ -227,6 +233,8 @@ public abstract class FlightMessageRoundTripTest {
         TestAuthorizationProvider authorizationProvider();
 
         Registration.Callback registration();
+
+        RpcServerStateInterceptor serverStateInterceptor();
     }
 
     private LogBuffer logBuffer;
@@ -285,6 +293,7 @@ public abstract class FlightMessageRoundTripTest {
         clientChannel = ManagedChannelBuilder.forTarget("localhost:" + localPort)
                 .usePlaintext()
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
+                .userAgent(FlightMessageRoundTripTest.class.getSimpleName())
                 .build();
 
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
@@ -1399,5 +1408,21 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(arr[2][0], "arr[2][0]", 42.42);
             Assert.eq(arr[2][1], "arr[2][1]", 43.43);
         }
+    }
+
+    @Test
+    public void userAgentContext() throws InterruptedException, TimeoutException {
+        final RpcServerState state = component.serverStateInterceptor().newRpcServerState();
+        // Any RPC method will be OK
+        // noinspection ResultOfMethodCallIgnored
+        clientSession.channel()
+                .configBlocking()
+                .withInterceptors(state.clientInterceptor())
+                .getAuthenticationConstants(AuthenticationConstantsRequest.getDefaultInstance());
+        state.awaitServerInvokeFinished(Duration.ofSeconds(3));
+        final String userAgent = UserAgentContext.get(state.getCapturedContext()).orElse(null);
+        Assert.neqNull(userAgent, "userAgent");
+        final boolean userAgentStartsWith = userAgent.startsWith("FlightMessageRoundTripTest grpc-java-netty/");
+        Assert.eqTrue(userAgentStartsWith, "userAgentStartsWith");
     }
 }
