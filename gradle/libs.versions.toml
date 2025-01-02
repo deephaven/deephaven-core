@@ -1,4 +1,5 @@
 [versions]
+adbc = "0.15.0"
 airlift = "2.0.2"
 arrow = "18.0.0"
 autoservice = "1.1.1"
@@ -92,6 +93,8 @@ jmh = "1.37"
 spockframework = "2.3-groovy-3.0"
 
 [libraries]
+adbc-flight-sql = { module = "org.apache.arrow.adbc:adbc-driver-flight-sql", version.ref = "adbc" }
+
 airlift-aircompressor = { module = "io.airlift:aircompressor", version.ref = "airlift"}
 
 arrow-compression = { module = "org.apache.arrow:arrow-compression", version.ref = "arrow" }
