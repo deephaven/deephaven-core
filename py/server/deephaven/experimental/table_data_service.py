@@ -310,7 +310,7 @@ class TableDataService(JObjectWrapper):
             success_cb (jpy.JType): the success Java callback function with no arguments
             failure_cb (jpy.JType): the failure Java callback function with one argument: an exception string
         """
-        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: pa.Table):
+        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
                 location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
@@ -347,7 +347,7 @@ class TableDataService(JObjectWrapper):
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
         """
-        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: pa.Table):
+        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
