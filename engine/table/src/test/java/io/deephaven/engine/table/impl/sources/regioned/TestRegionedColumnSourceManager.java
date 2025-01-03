@@ -482,7 +482,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
 
         @Override
-        public @NotNull Table table() {
+        public @NotNull Table table(DataIndexOptions ignored) {
             return table;
         }
 

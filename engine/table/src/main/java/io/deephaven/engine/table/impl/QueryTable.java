@@ -198,11 +198,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
 
     /**
-     * If set to true, then permit where filters to use a data index, when applicable. If false, data indexes are not
-     * used even if present.
+     * If the Configuration property "QueryTable.useDataIndexForWhere" is set to true (default), then permit where
+     * filters to use a data index, when applicable. If false, data indexes are not used even if present.
      */
     public static boolean USE_DATA_INDEX_FOR_WHERE =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
+
+    /**
+     * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
+     * aggregation to use a data index, when applicable. If false, data indexes are not used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_AGGREGATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForAggregation", true);
+
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
@@ -865,8 +873,10 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String description = "aggregation(" + aggregationContextFactory + ", " + groupByColumns + ")";
+            final AggregationControl aggregationControl =
+                    USE_DATA_INDEX_FOR_AGGREGATION ? AggregationControl.DEFAULT : AggregationControl.IGNORE_INDEXING;
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
-                    () -> ChunkedOperatorAggregationHelper.aggregation(
+                    () -> ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
                             aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
         }
     }
@@ -1237,13 +1247,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         final int numFilters = filters.length;
         final BitSet priorityFilterIndexes = new BitSet(numFilters);
 
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcesor = QueryCompilerRequestProcessor.batch();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
         // initialization is safe to invoke repeatedly.
         for (final WhereFilter filter : filters) {
-            filter.init(getDefinition(), compilationProcesor);
+            filter.init(getDefinition(), compilationProcessor);
         }
-        compilationProcesor.compile();
+        compilationProcessor.compile();
 
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];

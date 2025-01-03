@@ -3,14 +3,22 @@
 //
 package io.deephaven.base.stats;
 
-public abstract class Value {
+import java.text.DecimalFormat;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-    protected long n = 0;
-    protected long last = 0;
-    protected long sum = 0;
-    protected long sum2 = 0;
-    protected long max = Long.MIN_VALUE;
-    protected long min = Long.MAX_VALUE;
+public abstract class Value {
+    private static final AtomicLongFieldUpdater<Value> N_UPDATER = AtomicLongFieldUpdater.newUpdater(Value.class, "n");
+    private static final AtomicLongFieldUpdater<Value> SUM_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(Value.class, "sum");
+    private static final AtomicLongFieldUpdater<Value> SUM2_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(Value.class, "sum2");
+
+    volatile protected long n = 0;
+    volatile protected long last = 0;
+    volatile protected long sum = 0;
+    volatile protected long sum2 = 0;
+    volatile protected long max = Long.MIN_VALUE;
+    volatile protected long min = Long.MAX_VALUE;
 
     private boolean alwaysUpdated = false;
 
@@ -52,10 +60,10 @@ public abstract class Value {
     }
 
     public void sample(long x) {
-        n++;
+        N_UPDATER.incrementAndGet(this);
+        SUM_UPDATER.addAndGet(this, x);
+        SUM2_UPDATER.addAndGet(this, x * x);
         last = x;
-        sum += x;
-        sum2 += x * x;
         if (x > max) {
             max = x;
         }
@@ -98,5 +106,24 @@ public abstract class Value {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        final DecimalFormat format = new DecimalFormat("#,###");
+        final DecimalFormat avgFormat = new DecimalFormat("#,###.###");
+
+        final double variance = n > 1 ? (sum2 - ((double) sum * sum / (double) n)) / (n - 1) : Double.NaN;
+
+        return "Value{" +
+                "n=" + format.format(n) +
+                (n > 0 ? ", sum=" + format.format(sum) +
+                        ", max=" + format.format(max) +
+                        ", min=" + format.format(min) +
+                        ", avg=" + avgFormat.format((n > 0 ? (double) sum / n : Double.NaN)) +
+                        ", std=" + avgFormat.format(Math.sqrt(variance))
+                        : "")
+                +
+                '}';
     }
 }
