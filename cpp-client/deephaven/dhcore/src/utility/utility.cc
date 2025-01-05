@@ -172,7 +172,7 @@ std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
 std::string ReadPasswordFromStdinNoEcho() {
   SetStdinEcho(false);
   std::string password;
-  std::cin >> password;
+  std::getline(std::cin, password);
   SetStdinEcho(true);
   return password;
 }
