@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -189,7 +190,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             response))
                     .submit(() -> {
                         final ScriptSession scriptSession = exportedConsole.get();
-                        final ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+
+                        final ScriptSession.Changes changes = request.getSystemic()
+                                ? SystemicObjectTracker.executeSystemically(true,
+                                        () -> scriptSession.evaluateScript(request.getCode()))
+                                : scriptSession.evaluateScript(request.getCode());
+
+
                         final ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
                         final FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()

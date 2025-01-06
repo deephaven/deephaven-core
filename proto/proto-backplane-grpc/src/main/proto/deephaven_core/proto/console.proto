@@ -100,11 +100,14 @@ message LogSubscriptionData {
     reserved 4;//if we can scope logs to a script session
     //    Ticket console_id = 4;
 }
+
 message ExecuteCommandRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
+    bool systemic=4;
 }
+
 message ExecuteCommandResponse {
     string error_message = 1;
     io.deephaven.proto.backplane.grpc.FieldsChangeUpdate changes = 2;

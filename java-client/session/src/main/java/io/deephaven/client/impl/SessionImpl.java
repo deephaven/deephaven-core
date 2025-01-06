@@ -418,20 +418,22 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
-            return executeCodeFuture(code).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+        public Changes executeCode(String code, boolean systemic)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return executeCodeFuture(code, systemic).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public Changes executeScript(Path path)
+        public Changes executeScript(Path path, boolean systemic)
                 throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            return executeScriptFuture(path).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            return executeScriptFuture(path, systemic).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public CompletableFuture<Changes> executeCodeFuture(String code) {
+        public CompletableFuture<Changes> executeCodeFuture(String code, boolean systemic) {
             final ExecuteCommandRequest request =
-                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
+                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).setSystemic(systemic)
+                            .build();
             return UnaryGrpcFuture.of(request, channel().console()::executeCommand,
                     response -> {
                         Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
@@ -443,9 +445,9 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
+        public CompletableFuture<Changes> executeScriptFuture(Path path, boolean systemic) throws IOException {
             final String code = String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
-            return executeCodeFuture(code);
+            return executeCodeFuture(code, systemic);
         }
 
         @Override
