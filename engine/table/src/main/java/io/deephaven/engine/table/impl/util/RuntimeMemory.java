@@ -152,6 +152,18 @@ public class RuntimeMemory {
             totalCollections = s.totalCollections;
             totalCollectionTimeMs = s.totalCollectionTimeMs;
         }
+
+        @Override
+        public String toString() {
+            final DecimalFormat format = new DecimalFormat("###,###");
+            return "Sample{" +
+                    "usedMemory (calculated)=" + format.format(totalMemory - freeMemory) +
+                    ", freeMemory=" + format.format(freeMemory) +
+                    ", totalMemory=" + format.format(totalMemory) +
+                    ", totalCollections=" + format.format(totalCollections) +
+                    ", totalCollectionTimeMs=" + format.format(totalCollectionTimeMs) +
+                    '}';
+        }
     }
 
     /**

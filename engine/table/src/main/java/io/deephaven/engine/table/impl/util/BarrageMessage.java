@@ -11,8 +11,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -31,26 +32,30 @@ public class BarrageMessage implements SafeCloseable {
         public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
     public static class AddColumnData {
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
     public long firstSeq = -1;
     public long lastSeq = -1;
-    public long step = -1;
+    /** The size of the table after this update. -1 if unknown. */
+    public long tableSize = -1;
 
-    public boolean isSnapshot;
+    /** The RowSet the server is now respecting for this client; only set when parsing on the client. */
     public RowSet snapshotRowSet;
+    /** Whether the server-respecting viewport is a tail; only set when parsing on the client. */
     public boolean snapshotRowSetIsReversed;
+    /** The BitSet of columns the server is now respecting for this client; only set when parsing on the client. */
     public BitSet snapshotColumns;
 
+    public boolean isSnapshot;
     public RowSet rowsAdded;
     public RowSet rowsIncluded;
     public RowSet rowsRemoved;
@@ -94,34 +99,30 @@ public class BarrageMessage implements SafeCloseable {
             rowsRemoved.close();
         }
         if (addColumnData != null) {
-            for (final BarrageMessage.AddColumnData acd : addColumnData) {
-                if (acd == null) {
-                    continue;
+            for (final AddColumnData acd : addColumnData) {
+                if (acd != null) {
+                    closeChunkData(acd.data);
                 }
-
-                for (Chunk<Values> chunk : acd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                acd.data.clear();
             }
         }
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
-                if (mcd == null) {
-                    continue;
+                if (mcd != null) {
+                    closeChunkData(mcd.data);
                 }
-
-                for (Chunk<Values> chunk : mcd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                mcd.data.clear();
             }
         }
+    }
+
+    private static void closeChunkData(final Collection<Chunk<Values>> data) {
+        if (data.isEmpty()) {
+            return;
+        }
+        for (final Chunk<Values> chunk : data) {
+            if (chunk instanceof PoolableChunk) {
+                ((PoolableChunk) chunk).close();
+            }
+        }
+        data.clear();
     }
 }

@@ -3,20 +3,13 @@
 //
 package io.deephaven.web.client.api.subscription;
 
-import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import elemental2.promise.Promise;
 import io.deephaven.web.client.api.Column;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-
-import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
@@ -31,80 +24,40 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * viewports to make it less expensive to compute for large tables.
  */
 @JsType(namespace = "dh")
-public class TableSubscription extends HasEventHandling {
+public final class TableSubscription extends AbstractTableSubscription {
 
-    /**
-     * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
-     * <b>detail</b> field of the event will contain a TableSubscriptionEventData detailing what has changed, or
-     * allowing access to the entire range of items currently in the subscribed columns.
-     */
-    public static final String EVENT_UPDATED = "updated";
+    private final JsArray<Column> columns;
+    private final Double updateIntervalMs;
 
-
-    // column defs in this subscription
-    private JsArray<Column> columns;
-    // holder for data
-    private SubscriptionTableData data;
-
-    // table created for this subscription
-    private Promise<JsTable> copy;
-
-    // copy from the initially given table so we don't need to way
     @JsIgnore
     public TableSubscription(JsArray<Column> columns, JsTable existingTable, Double updateIntervalMs) {
-
-        copy = existingTable.copy(false).then(table -> new Promise<>((resolve, reject) -> {
-            table.state().onRunning(newState -> {
-                // TODO handle updateInterval core#188
-                table.internalSubscribe(columns, this);
-
-                resolve.onInvoke(table);
-            }, table::close);
-        }));
-
+        super(SubscriptionType.FULL_SUBSCRIPTION, existingTable.state(), existingTable.getConnection());
         this.columns = columns;
-        Integer rowStyleColumn = existingTable.state().getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-                : existingTable.state().getRowFormatColumn().getIndex();
-        this.data = new SubscriptionTableData(columns, rowStyleColumn, this);
-
+        this.updateIntervalMs = updateIntervalMs;
     }
 
-    // public void changeSubscription(JsArray<Column> columns) {
-    // copy.then(t ->{
-    // t.internalSubscribe(columns, this);
-    // return Promise.resolve(t);
-    // });
-    // this.columns = columns;
-    // }
-
-
-    @JsIgnore
-    public void handleSnapshot(TableSnapshot snapshot) {
-        data.handleSnapshot(snapshot);
-    }
-
-    @JsIgnore
-    public void handleDelta(DeltaUpdates delta) {
-        data.handleDelta(delta);
+    @Override
+    protected void sendFirstSubscriptionRequest() {
+        changeSubscription(columns, updateIntervalMs);
     }
 
     /**
-     * The columns that were subscribed to when this subscription was created
+     * Updates the subscription to use the given columns and update interval.
      * 
-     * @return {@link Column}
+     * @param columns the new columns to subscribe to
+     * @param updateIntervalMs the new update interval, or null/omit to use the default of one second
      */
-    @JsProperty
-    public JsArray<Column> getColumns() {
-        return columns;
+    public void changeSubscription(JsArray<Column> columns, @JsNullable Double updateIntervalMs) {
+        if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
+            throw new IllegalArgumentException(
+                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
+        sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false);
     }
 
-    /**
-     * Stops the subscription on the server.
-     */
-    public void close() {
-        copy.then(table -> {
-            table.close();
-            return Promise.resolve(table);
-        });
+    @JsProperty
+    @Override
+    public JsArray<Column> getColumns() {
+        return super.getColumns();
     }
 }

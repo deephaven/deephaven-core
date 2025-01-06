@@ -7,6 +7,8 @@ import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.artifacts.VersionConstraint
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.compile.JavaCompile
@@ -61,6 +63,7 @@ class GwtTools {
                 generateJsInteropExports = true
                 // TODO move this down a line when we want to give clients js that is not super strict / rigged to blow
                 checkAssertions = true
+                setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
                 if (gwtDev) {
                     saveSource = true
                     extra = extras
@@ -80,16 +83,20 @@ class GwtTools {
     }
 
     static void applyDefaults(Project p, GwtExtension gwt, boolean compile = false) {
-        gwt.gwtVersion = Classpaths.GWT_VERSION
-        gwt.jettyVersion = Classpaths.JETTY_VERSION
+        def libs = p.getExtensions().getByType(VersionCatalogsExtension).named("libs")
+        def gwtVersion = libs.findVersion("gwt").map(VersionConstraint::getRequiredVersion).orElseThrow()
+        def gwtJettyVersion = libs.findVersion("gwtJetty").map(VersionConstraint::getRequiredVersion).orElseThrow()
+
+        gwt.gwtVersion = gwtVersion
+        gwt.jettyVersion = gwtJettyVersion
         p.configurations.all { Configuration c ->
             c.resolutionStrategy.dependencySubstitution { sub ->
                 sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
-                        .using(sub.module("org.gwtproject:gwt-codeserver:${Classpaths.GWT_VERSION}"))
+                        .using(sub.module("org.gwtproject:gwt-codeserver:${gwtVersion}"))
                 sub.substitute(sub.module("com.google.gwt:gwt-user"))
-                        .using(sub.module("org.gwtproject:gwt-user:${Classpaths.GWT_VERSION}"))
+                        .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
                 sub.substitute(sub.module("com.google.gwt:gwt-dev"))
-                        .using(sub.module("org.gwtproject:gwt-dev:${Classpaths.GWT_VERSION}"))
+                        .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
             }
         }
         if (compile) {

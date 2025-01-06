@@ -54,12 +54,6 @@ TEST_CASE("Sort temp Table", "[sort]") {
 
   auto sorted = temp_table.Sort(SortPair::Descending("IntValue3"), SortPair::Ascending("IntValue2"));
 
-  std::vector<std::string> import_date_data = {"2017-11-01", "2017-11-01", "2017-11-01"};
-  std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL"};
-  std::vector<double> open_data = {22.1, 26.8, 31.5};
-  std::vector<double> close_data = {23.5, 24.2, 26.7};
-  std::vector<int64_t> vol_data = {100000, 250000, 19000};
-
   std::vector<int32_t> sid0{8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
   std::vector<int32_t> sid1{4, 4, 5, 5, 6, 6, 7, 7, 0, 0, 1, 1, 2, 2, 3, 3};
   std::vector<int32_t> sid2{2, 2, 2, 2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1};

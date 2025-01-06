@@ -33,7 +33,7 @@ jobs:
           sed -i "s/^ARG CHART_VERSION=.*/ARG CHART_VERSION=$CHART_VERSION/" ./web/client-ui/Dockerfile
           sed -i "s/^ARG WIDGET_VERSION=.*/ARG WIDGET_VERSION=$WIDGET_VERSION/" ./web/client-ui/Dockerfile
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         env:
           WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
         with:

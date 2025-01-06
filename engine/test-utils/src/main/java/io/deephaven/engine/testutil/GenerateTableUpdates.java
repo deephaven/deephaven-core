@@ -4,7 +4,6 @@
 package io.deephaven.engine.testutil;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -276,7 +275,7 @@ public class GenerateTableUpdates {
                         modifiedColumns.add(ci.name);
                     }
                 }
-                update.modifiedColumnSet().setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                update.modifiedColumnSet().setAll(modifiedColumns.toArray(String[]::new));
             }
 
             update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), rowSet, random);

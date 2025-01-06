@@ -278,11 +278,6 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::PercentileBy(double percentile
   return DefaultAggregateByDescriptor(std::move(descriptor), std::move(column_specs));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleImpl::PercentileBy(double percentile,
-    std::vector<std::string> column_specs) {
-  return PercentileBy(percentile, false, std::move(column_specs));
-}
-
 std::shared_ptr<TableHandleImpl> TableHandleImpl::CountBy(std::string count_by_column,
     std::vector<std::string> column_specs) {
   ComboAggregateRequest::Aggregate descriptor;

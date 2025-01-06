@@ -44,11 +44,7 @@ public class ReplicateSortCheck {
                 simpleFixup(ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset())),
                         "initialize last", "MIN_VALUE", "MAX_VALUE");
 
-        if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
-        } else {
-            lines = ReplicateSortKernel.invertComparisons(lines);
-        }
+        lines = ReplicateSortKernel.invertComparisons(lines);
 
         FileUtils.writeLines(new File(descendingPath), lines);
     }

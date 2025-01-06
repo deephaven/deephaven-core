@@ -4,15 +4,15 @@ plugins {
 }
 
 dependencies {
-    Classpaths.inheritGrpcPlatform(project)
-    implementation 'io.grpc:grpc-core'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.core
 //    compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
-    implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+    implementation libs.jakarata.servlet.api
 
 //    compileOnly 'javax.websocket:javax.websocket-api:1.1'
-    implementation 'jakarta.websocket:jakarta.websocket-api:2.0.0'
+    implementation libs.jakarta.websocket.api
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 }
 
 spotless {

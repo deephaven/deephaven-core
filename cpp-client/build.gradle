@@ -1,5 +1,3 @@
-import io.deephaven.tools.docker.DiffTask
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -24,29 +22,6 @@ spotless {
 evaluationDependsOn Docker.registryProject('cpp-clients-multi-base')
 evaluationDependsOn Docker.registryProject('manylinux2014_x86_64')
 
-configurations {
-    cpp {}
-}
-dependencies {
-    cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
-}
-def protoSourceDir = layout.projectDirectory.dir('deephaven/dhclient/proto')
-def compare = tasks.register('compareProtobuf', DiffTask) {
-    expectedContents.set configurations.cpp
-    actualContents {
-        directory protoSourceDir
-    }
-    generateTask.set ':cpp-client:updateProtobuf'
-}
-// fail a "check" build if these are out of date
-tasks.getByName('quick').dependsOn(compare)
-
-tasks.register('updateProtobuf', Sync) {
-    finalizedBy compare
-    from configurations.cpp
-    into protoSourceDir
-}
-
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
@@ -68,10 +43,14 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
             include 'cpp-tests-to-junit.sh'
             include 'build-dependencies.sh'
             include 'deephaven/CMakeLists.txt'
+            include 'deephaven/cmake/**'
             include 'deephaven/dhcore/**'
             include 'deephaven/dhclient/**'
             include 'deephaven/examples/**'
             include 'deephaven/tests/**'
+        }
+        from("../proto/proto-backplane-grpc/src/main") {
+            include 'proto/**'
         }
     }
 
@@ -87,10 +66,12 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                         ${prefix}/log
                    """)
         copyFile('deephaven/CMakeLists.txt',  "${prefix}/src/deephaven/")
+        copyFile('deephaven/cmake/',   "${prefix}/src/deephaven/cmake/")
         copyFile('deephaven/dhcore/',  "${prefix}/src/deephaven/dhcore/")
         copyFile('deephaven/dhclient/', "${prefix}/src/deephaven/dhclient/")
         copyFile('deephaven/examples/', "${prefix}/src/deephaven/examples/")
         copyFile('deephaven/tests/', "${prefix}/src/deephaven/tests/")
+        copyFile('proto/', "${prefix}/proto/proto-backplane-grpc/src/main/proto/")
         copyFile('cpp-tests-to-junit.sh', "${prefix}/bin/dhcpp")
         copyFile('build-dependencies.sh', "/tmp")
         runCommand("PREFIX='${prefix}'; BUILD_TYPE='${build_type}'; " +

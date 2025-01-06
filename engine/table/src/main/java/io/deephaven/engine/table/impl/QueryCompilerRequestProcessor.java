@@ -4,12 +4,11 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.CompletionStageFuture;
@@ -18,43 +17,43 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public interface QueryCompilerRequestProcessor {
+public abstract class QueryCompilerRequestProcessor {
 
     /**
      * @return An immediate QueryCompilerRequestProcessor
      */
-    static QueryCompilerRequestProcessor.ImmediateProcessor immediate() {
+    public static QueryCompilerRequestProcessor.ImmediateProcessor immediate() {
         return new ImmediateProcessor();
     }
 
     /**
      * @return A batch QueryCompilerRequestProcessor
      */
-    static QueryCompilerRequestProcessor.BatchProcessor batch() {
+    public static QueryCompilerRequestProcessor.BatchProcessor batch() {
         return new BatchProcessor();
     }
 
     /**
-     * @return a CachingSupplier that supplies a snapshot of the current query scope variables
+     * @return a CachingSupplier that supplies a snapshot of current query scope variables and query library imports
      */
     @VisibleForTesting
-    static CachingSupplier<Map<String, Object>> newQueryScopeVariableSupplier() {
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        return new CachingSupplier<>(() -> Collections.unmodifiableMap(
-                queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name))));
+    public static CachingSupplier<FormulaAnalyzer.Imports> newFormulaImportsSupplier() {
+        return new CachingSupplier<>(FormulaAnalyzer.Imports::new);
     }
 
+    private final CachingSupplier<FormulaAnalyzer.Imports> formulaImportsSupplier = newFormulaImportsSupplier();
+
     /**
-     * @return a lazily cached snapshot of the current query scope variables
+     * @return a lazily cached snapshot of current query scope variables and query library imports
      */
-    Map<String, Object> getQueryScopeVariables();
+    public final FormulaAnalyzer.Imports getFormulaImports() {
+        return formulaImportsSupplier.get();
+    }
 
     /**
      * Submit a request for compilation. The QueryCompilerRequestProcessor is not required to immediately compile this
@@ -62,22 +61,14 @@ public interface QueryCompilerRequestProcessor {
      *
      * @param request the request to compile
      */
-    CompletionStageFuture<Class<?>> submit(@NotNull QueryCompilerRequest request);
+    public abstract CompletionStageFuture<Class<?>> submit(@NotNull QueryCompilerRequest request);
 
     /**
      * A QueryCompilerRequestProcessor that immediately compiles requests.
      */
-    class ImmediateProcessor implements QueryCompilerRequestProcessor {
-
-        private final CachingSupplier<Map<String, Object>> queryScopeVariableSupplier = newQueryScopeVariableSupplier();
-
+    public static class ImmediateProcessor extends QueryCompilerRequestProcessor {
         private ImmediateProcessor() {
             // force use of static factory method
-        }
-
-        @Override
-        public Map<String, Object> getQueryScopeVariables() {
-            return queryScopeVariableSupplier.get();
         }
 
         @Override
@@ -108,18 +99,12 @@ public interface QueryCompilerRequestProcessor {
      * <p>
      * The compile method must be called to actually compile the requests.
      */
-    class BatchProcessor implements QueryCompilerRequestProcessor {
+    public static class BatchProcessor extends QueryCompilerRequestProcessor {
         private final List<QueryCompilerRequest> requests = new ArrayList<>();
         private final List<CompletionStageFuture.Resolver<Class<?>>> resolvers = new ArrayList<>();
-        private final CachingSupplier<Map<String, Object>> queryScopeVariableSupplier = newQueryScopeVariableSupplier();
 
         private BatchProcessor() {
             // force use of static factory method
-        }
-
-        @Override
-        public Map<String, Object> getQueryScopeVariables() {
-            return queryScopeVariableSupplier.get();
         }
 
         @Override

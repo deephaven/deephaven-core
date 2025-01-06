@@ -18,10 +18,11 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 
 /**
- * A set of sorted shifts. To apply shifts without losing data, use {@link RowSetShiftData#apply(Callback)}. The
- * callback will be invoked with shifts in an order that will preserve data when applied immediately using memmove
- * semantics. Internally the shifts are ordered by rangeStart. The {@link RowSetShiftData.Builder} will verify that no
- * two ranges overlap before or after shifting and assert that the constructed {@code RowSetShiftData} will be valid.
+ * A set of sorted shifts. To apply shifts without losing data, use
+ * {@link RowSetShiftData#apply(RowKeyRangeShiftCallback)}. The callback will be invoked with shifts in an order that
+ * will preserve data when applied immediately using memmove semantics. Internally the shifts are ordered by rangeStart.
+ * The {@link RowSetShiftData.Builder} will verify that no two ranges overlap before or after shifting and assert that
+ * the constructed {@code RowSetShiftData} will be valid.
  */
 public final class RowSetShiftData implements Serializable, LogOutputAppendable {
 
@@ -224,18 +225,6 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      */
     public static final RowSetShiftData EMPTY = new RowSetShiftData();
 
-    @FunctionalInterface
-    public interface Callback {
-        /**
-         * Process the shift.
-         *
-         * @param beginRange start of range (inclusive)
-         * @param endRange end of range (inclusive)
-         * @param shiftDelta amount range has moved by
-         */
-        void shift(long beginRange, long endRange, long shiftDelta);
-    }
-
     /**
      * Apply all shifts in a memmove-semantics-safe ordering through the provided {@code shiftCallback}.
      * <p>
@@ -243,7 +232,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @param shiftCallback the callback that will process all shifts
      */
-    public void apply(final Callback shiftCallback) {
+    public void apply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
@@ -267,7 +256,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @param shiftCallback the callback that will process all reverse shifts
      */
-    public void unapply(final Callback shiftCallback) {
+    public void unapply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
@@ -291,7 +280,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param rowSet The {@link WritableRowSet} to shift
      * @return {@code rowSet}
      */
-    public boolean apply(final WritableRowSet rowSet) {
+    public WritableRowSet apply(final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -326,7 +315,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             rowSet.remove(remove);
             rowSet.insert(insert);
 
-            return remove.isNonempty() || insert.isNonempty();
+            return rowSet;
         }
     }
 

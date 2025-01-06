@@ -10,6 +10,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.ObjectComparisons;
 
 // region name
 public class ObjectChunkIdentityEquals implements ChunkEquals {

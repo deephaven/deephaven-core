@@ -3,15 +3,14 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.common.io.CountingOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
-import io.deephaven.parquet.base.PositionedBufferedOutputStream;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.channel.CompletableOutputStream;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -19,9 +18,9 @@ import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.OutputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 import static io.deephaven.parquet.base.ParquetUtils.getPerFileMetadataKey;
@@ -45,18 +43,17 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
      * A class to hold the parquet file and its metadata.
      */
     private static class ParquetFileMetadata {
-        final String filePath;
+        final URI uri;
         final ParquetMetadata metadata;
 
-        ParquetFileMetadata(final String filePath, final ParquetMetadata metadata) {
-            this.filePath = filePath;
+        ParquetFileMetadata(final URI uri, final ParquetMetadata metadata) {
+            this.uri = uri;
             this.metadata = metadata;
         }
     }
 
-    private final Path metadataRootDirAbsPath;
+    private final URI metadataRootDir;
     private final List<ParquetFileMetadata> parquetFileMetadataList;
-    private final SeekableChannelsProvider channelsProvider;
     private final MessageType partitioningColumnsSchema;
 
     // The following fields are used to accumulate metadata for all parquet files
@@ -76,23 +73,22 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
      * @param partitioningColumnsSchema The common schema for partitioning columns to be included in the
      *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file, can be null if there are no partitioning columns.
      */
-    ParquetMetadataFileWriterImpl(@NotNull final File metadataRootDir, @NotNull final File[] destinations,
+    ParquetMetadataFileWriterImpl(
+            @NotNull final URI metadataRootDir,
+            @NotNull final URI[] destinations,
             @Nullable final MessageType partitioningColumnsSchema) {
         if (destinations.length == 0) {
             throw new IllegalArgumentException("No destinations provided");
         }
-        this.metadataRootDirAbsPath = metadataRootDir.getAbsoluteFile().toPath();
-        final String metadataRootDirAbsPathString = metadataRootDirAbsPath.toString();
-        for (final File destination : destinations) {
-            if (!destination.getAbsolutePath().startsWith(metadataRootDirAbsPathString)) {
+        this.metadataRootDir = metadataRootDir;
+        final String metadataRootDirStr = metadataRootDir.toString();
+        for (final URI destination : destinations) {
+            if (!destination.toString().startsWith(metadataRootDirStr)) {
                 throw new UncheckedDeephavenException("All destinations must be nested under the provided metadata root"
-                        + " directory, provided destination " + destination.getAbsolutePath() + " is not under " +
-                        metadataRootDirAbsPathString);
+                        + " directory, provided destination " + destination + " is not under " + metadataRootDir);
             }
         }
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                convertToURI(metadataRootDirAbsPathString, true), null);
         this.partitioningColumnsSchema = partitioningColumnsSchema;
 
         this.mergedSchema = null;
@@ -106,28 +102,31 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     /**
      * Add parquet metadata for the provided parquet file to the combined metadata file.
      *
-     * @param parquetFilePath The parquet file destination path
+     * @param parquetFileURI The parquet file destination URI
      * @param metadata The parquet metadata
      */
-    public void addParquetFileMetadata(final String parquetFilePath, final ParquetMetadata metadata) {
-        parquetFileMetadataList.add(new ParquetFileMetadata(parquetFilePath, metadata));
+    public void addParquetFileMetadata(final URI parquetFileURI, final ParquetMetadata metadata) {
+        parquetFileMetadataList.add(new ParquetFileMetadata(parquetFileURI, metadata));
     }
 
     /**
-     * Write the accumulated metadata to the provided files and clear the metadata accumulated so far.
+     * Write the combined metadata to the provided streams and clear the metadata accumulated so far. The output streams
+     * are marked as {@link CompletableOutputStream#done()} after writing is finished.
      *
-     * @param metadataFilePath The destination path for the {@value ParquetUtils#METADATA_FILE_NAME} file
-     * @param commonMetadataFilePath The destination path for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+     * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
      */
-    public void writeMetadataFiles(final String metadataFilePath, final String commonMetadataFilePath)
-            throws IOException {
+    public void writeMetadataFiles(
+            final CompletableOutputStream metadataOutputStream,
+            final CompletableOutputStream commonMetadataOutputStream) throws IOException {
         if (parquetFileMetadataList.isEmpty()) {
             throw new UncheckedDeephavenException("No parquet files to write metadata for");
         }
         mergeMetadata();
         final ParquetMetadata metadataFooter = new ParquetMetadata(new FileMetaData(mergedSchema,
                 mergedKeyValueMetaData, mergedCreatedByString), mergedBlocks);
-        writeMetadataFile(metadataFooter, metadataFilePath);
+        writeMetadataFile(metadataFooter, metadataOutputStream);
+        metadataOutputStream.done();
 
         // Skip the blocks data and merge schema with partitioning columns' schema to write the common metadata file.
         // The ordering of arguments in method call is important because we want to keep partitioning columns in the
@@ -136,7 +135,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         final ParquetMetadata commonMetadataFooter =
                 new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
                         new ArrayList<>());
-        writeMetadataFile(commonMetadataFooter, commonMetadataFilePath);
+        writeMetadataFile(commonMetadataFooter, commonMetadataOutputStream);
+        commonMetadataOutputStream.done();
 
         // Clear the accumulated metadata
         clear();
@@ -150,7 +150,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         for (final ParquetFileMetadata parquetFileMetadata : parquetFileMetadataList) {
             final FileMetaData fileMetaData = parquetFileMetadata.metadata.getFileMetaData();
             mergedSchema = mergeSchemaInto(fileMetaData.getSchema(), mergedSchema);
-            final String relativePath = getRelativePath(parquetFileMetadata.filePath, metadataRootDirAbsPath);
+            final String relativePath = metadataRootDir.relativize(parquetFileMetadata.uri).getPath();
             mergeKeyValueMetaData(parquetFileMetadata, relativePath);
             mergeBlocksInto(parquetFileMetadata, relativePath, mergedBlocks);
             mergedCreatedBy.add(fileMetaData.getCreatedBy());
@@ -218,7 +218,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                 // Assuming the keys are unique for each file because file names are unique, verified in the constructor
                 if (mergedKeyValueMetaData.containsKey(fileKey)) {
                     throw new IllegalStateException("Could not merge metadata for file " +
-                            parquetFileMetadata.filePath + " because it has conflicting file key: " + fileKey);
+                            parquetFileMetadata.uri + " because it has conflicting file key: " + fileKey);
                 }
                 mergedKeyValueMetaData.put(fileKey, entry.getValue());
 
@@ -253,21 +253,18 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         }
     }
 
-    private static String getRelativePath(final String parquetFilePath, final Path metadataRootDirAbsPath) {
-        final Path parquetFileAbsPath = new File(parquetFilePath).getAbsoluteFile().toPath();
-        return metadataRootDirAbsPath.relativize(parquetFileAbsPath).toString();
+    private static void writeMetadataFile(final ParquetMetadata metadataFooter, final OutputStream outputStream)
+            throws IOException {
+        final CountingOutputStream countingOutputStream = new CountingOutputStream(outputStream);
+        countingOutputStream.write(MAGIC);
+        ParquetFileWriter.serializeFooter(metadataFooter, countingOutputStream);
+        countingOutputStream.flush();
     }
 
-    private void writeMetadataFile(final ParquetMetadata metadataFooter, final String outputPath) throws IOException {
-        final PositionedBufferedOutputStream metadataOutputStream =
-                new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(outputPath, false),
-                        ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE);
-        metadataOutputStream.write(MAGIC);
-        ParquetFileWriter.serializeFooter(metadataFooter, metadataOutputStream);
-        metadataOutputStream.close();
-    }
-
-    public void clear() {
+    /**
+     * Clear the list of metadata accumulated so far.
+     */
+    private void clear() {
         parquetFileMetadataList.clear();
         mergedKeyValueMetaData.clear();
         mergedBlocks.clear();

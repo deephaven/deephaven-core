@@ -105,4 +105,58 @@ std::ostream &operator<<(std::ostream &s, const DateTime &o) {
   fmt::print(s, "{:%FT%TZ}", tp);
   return s;
 }
-}  // namespace deephaven::client
+
+LocalDate LocalDate::Of(int32_t year, int32_t month, int32_t day_of_month) {
+  auto ymd = date::year_month_day(date::year(year), date::month(month), date::day(day_of_month));
+  auto as_sys_days = static_cast<date::sys_days>(ymd);
+  auto as_milliseconds = std::chrono::milliseconds(as_sys_days.time_since_epoch());
+  return LocalDate(as_milliseconds.count());
+}
+
+LocalDate::LocalDate(int64_t millis) : millis_(millis) {
+  std::chrono::milliseconds chrono_millis(millis);
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp(chrono_millis);
+
+  auto truncated = date::floor<date::days>(tp);
+  auto difference = tp - truncated;
+  if (difference.count() == 0) {
+    return;
+  }
+
+  auto message = fmt::format("{} milliseconds is not an integral number of days", millis);
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+}
+
+std::ostream &operator<<(std::ostream &s, const LocalDate &o) {
+  std::chrono::milliseconds millis(o.millis_);
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp(millis);
+  fmt::print(s, "{:%F}", tp);
+  return s;
+}
+
+LocalTime LocalTime::Of(int32_t hour, int32_t minute, int32_t second) {
+  auto ns = std::chrono::nanoseconds(0);
+  ns += std::chrono::hours(hour);
+  ns += std::chrono::minutes(minute);
+  ns += std::chrono::seconds(second);
+  return LocalTime(ns.count());
+}
+
+LocalTime::LocalTime(int64_t nanos) : nanos_(nanos) {
+  if (nanos >= 0) {
+    return;
+  }
+
+  auto message = fmt::format("nanos argument ({}) cannot be negative", nanos);
+  throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+}
+
+std::ostream &operator<<(std::ostream &s, const LocalTime &o) {
+  std::chrono::nanoseconds ns(o.nanos_);
+  // Make a time point with nanosecond precision so we can print 9 digits of fractional second
+  // precision.
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> tp(ns);
+  fmt::print(s, "{:%T}", tp);
+  return s;
+}
+}  // namespace deephaven::dhcore

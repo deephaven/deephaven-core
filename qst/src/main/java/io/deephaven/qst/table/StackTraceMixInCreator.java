@@ -8,9 +8,11 @@ import io.deephaven.qst.TableCreator;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TABLE>, TABLE>
@@ -75,6 +77,22 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
     public synchronized StackTraceMixIn<TOPS, TABLE> of(InputTable inputTable) {
         TOPS tops = toOps.of(creator.of(inputTable));
         return map.computeIfAbsent(tops, this::mixin);
+    }
+
+    @Override
+    public synchronized StackTraceMixIn<TOPS, TABLE> multiJoin(
+            List<MultiJoinInput<StackTraceMixIn<TOPS, TABLE>>> multiJoinInputs) {
+        final TABLE table = creator.multiJoin(multiJoinInputs.stream().map(this::adapt).collect(Collectors.toList()));
+        final TOPS tops = toOps.of(table);
+        return map.computeIfAbsent(tops, this::mixin);
+    }
+
+    private MultiJoinInput<TABLE> adapt(MultiJoinInput<StackTraceMixIn<TOPS, TABLE>> input) {
+        return MultiJoinInput.<TABLE>builder()
+                .table(input.table().table())
+                .addAllMatches(input.matches())
+                .addAllAdditions(input.additions())
+                .build();
     }
 
     @Override

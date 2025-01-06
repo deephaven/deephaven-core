@@ -8,7 +8,6 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import org.jetbrains.annotations.NotNull;
@@ -525,10 +524,12 @@ public abstract class MemoizedOperationKey {
     }
 
     private static final class WouldMatch extends AttributeAgnosticMemoizedOperationKey {
-        private final WouldMatchPair[] pairs;
+        private final String[] names;
+        private final WhereFilter[] filters;
 
-        private WouldMatch(WouldMatchPair[] pairs) {
-            this.pairs = pairs;
+        private WouldMatch(String[] names, WhereFilter[] filters) {
+            this.names = names;
+            this.filters = filters;
         }
 
         @Override
@@ -540,12 +541,12 @@ public abstract class MemoizedOperationKey {
                 return false;
             }
             final WouldMatch wouldMatch = (WouldMatch) other;
-            return Arrays.equals(pairs, wouldMatch.pairs);
+            return Arrays.equals(names, wouldMatch.names) && Arrays.equals(filters, wouldMatch.filters);
         }
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(pairs);
+            return Arrays.hashCode(names) ^ Arrays.hashCode(filters);
         }
 
         @Override
@@ -554,8 +555,11 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static MemoizedOperationKey wouldMatch(WouldMatchPair... pairs) {
-        return new WouldMatch(pairs);
+    public static MemoizedOperationKey wouldMatch(String[] names, WhereFilter... filters) {
+        if (Arrays.stream(filters).allMatch(WhereFilter::canMemoize)) {
+            return new WouldMatch(names, filters);
+        }
+        return null;
     }
 
     private static class CrossJoin extends AttributeAgnosticMemoizedOperationKey {

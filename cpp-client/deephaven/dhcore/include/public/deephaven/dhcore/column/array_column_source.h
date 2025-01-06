@@ -247,4 +247,6 @@ private:
 using BooleanArrayColumnSource = GenericArrayColumnSource<bool>;
 using StringArrayColumnSource = GenericArrayColumnSource<std::string>;
 using DateTimeArrayColumnSource = GenericArrayColumnSource<DateTime>;
+using LocalDateArrayColumnSource = GenericArrayColumnSource<LocalDate>;
+using LocalTimeArrayColumnSource = GenericArrayColumnSource<LocalTime>;
 }  // namespace deephaven::dhcore::column

@@ -58,12 +58,12 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 int slotValue = slotToOutputRow.getUnsafe(tableLocation);
-                if (slotValue == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(slotValue)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation);
-                        if (slotValue == EMPTY_OUTPUT_ROW) {
+                        if (isStateEmpty(slotValue)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             if (tableRedirSource.getLong(slotValue) != NO_REDIRECTION) {
@@ -122,7 +122,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             boolean found = false;
             int tableLocation = firstTableLocation;
             int slotValue;
-            while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_OUTPUT_ROW) {
+            while (!isStateEmpty(slotValue = slotToOutputRow.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                     tableRedirSource.set(slotValue, NO_REDIRECTION);
@@ -140,7 +140,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_ROW) {
+                    while (!isStateEmpty(slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                             tableRedirSource.set(slotValue, NO_REDIRECTION);
@@ -174,7 +174,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             boolean found = false;
             int tableLocation = firstTableLocation;
             int slotValue;
-            while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_OUTPUT_ROW) {
+            while (!isStateEmpty(slotValue = slotToOutputRow.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                     Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
@@ -192,7 +192,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_ROW) {
+                    while (!isStateEmpty(slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long mappedRowKey = tableRedirSource.getUnsafe(slotValue);
                             Assert.eq(rowKeyChunk.get(chunkPosition), "rowKey", mappedRowKey, "mappedRowKey");
@@ -225,7 +225,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             boolean found = false;
             int tableLocation = firstTableLocation;
             int slotValue;
-            while ((slotValue = slotToOutputRow.getUnsafe(tableLocation)) != EMPTY_OUTPUT_ROW) {
+            while (!isStateEmpty(slotValue = slotToOutputRow.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long cookie = mainModifiedTrackerCookieSource.getUnsafe(tableLocation);
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
@@ -240,7 +240,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_ROW) {
+                    while (!isStateEmpty(slotValue = alternateSlotToOutputRow.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long cookie = alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation);
                             alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.modifySlot(cookie, slotValue, tableNumber, trackerFlag));
@@ -263,15 +263,19 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
         return hash;
     }
 
+    private static boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_ROW;
+    }
+
     private boolean migrateOneLocation(int locationToMigrate) {
         final int currentStateValue = alternateSlotToOutputRow.getUnsafe(locationToMigrate);
-        if (currentStateValue == EMPTY_OUTPUT_ROW) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
         }
         final long k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (slotToOutputRow.getUnsafe(destinationTableLocation) != EMPTY_OUTPUT_ROW) {
+        while (!isStateEmpty(slotToOutputRow.getUnsafe(destinationTableLocation))) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -295,8 +299,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableLongArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableLongArraySource)super.alternateKeySources[0];
     }
@@ -310,7 +313,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++) && location < alternateTableSize);
     }
 
     @Override
@@ -327,7 +330,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
         mainModifiedTrackerCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_ROW) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final long k0 = originalKeyArray0[sourceBucket];
@@ -335,7 +338,7 @@ final class IncrementalMultiJoinHasherLong extends IncrementalMultiJoinStateMana
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket];

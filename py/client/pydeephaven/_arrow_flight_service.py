@@ -21,7 +21,7 @@ class ArrowFlightService:
         try:
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
                 raise DHError("source data must be either a pa table or RecordBatch.")
-            ticket = self.session.get_ticket()
+            ticket = self.session.next_export_ticket_number()
             dh_fields = []
             for f in data.schema:
                 dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
@@ -36,7 +36,7 @@ class ArrowFlightService:
             # it is possible that by the time the request arrives at the server that it no longer
             # knows what it is for and sends a RST_STREAM causing a failure.
             _ = reader.read()
-            flight_ticket = self.session.make_ticket(ticket)
+            flight_ticket = self.session.make_export_ticket(ticket)
             return Table(self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema)
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
@@ -44,7 +44,7 @@ class ArrowFlightService:
     def do_get_table(self, table: Table) -> pa.Table:
         """Gets a snapshot of a Table via Flight do_get."""
         try:
-            flight_ticket = paflight.Ticket(table.ticket.ticket)
+            flight_ticket = paflight.Ticket(table.ticket.bytes)
             reader = self._flight_client.do_get(
                 flight_ticket,
                 FlightCallOptions(headers=self.session.grpc_metadata))

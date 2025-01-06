@@ -3,8 +3,8 @@
  */
 #pragma once
 
-#include "deephaven/proto/table.pb.h"
-#include "deephaven/proto/table.grpc.pb.h"
+#include "deephaven_core/proto/table.pb.h"
+#include "deephaven_core/proto/table.grpc.pb.h"
 
 namespace deephaven::client::impl {
 class UpdateByOperationImpl {

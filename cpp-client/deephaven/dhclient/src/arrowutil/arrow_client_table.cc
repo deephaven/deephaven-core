@@ -168,6 +168,18 @@ struct Visitor final : public arrow::TypeVisitor {
     return arrow::Status::OK();
   }
 
+  arrow::Status Visit(const arrow::Date64Type &/*type*/) final {
+    auto arrays = DowncastChunks<arrow::Date64Array>(chunked_array_);
+    result_ = LocalDateArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
+    auto arrays = DowncastChunks<arrow::Time64Array>(chunked_array_);
+    result_ = LocalTimeArrowColumnSource::OfArrowArrayVec(std::move(arrays));
+    return arrow::Status::OK();
+  }
+
   const arrow::ChunkedArray &chunked_array_;
   std::shared_ptr<ColumnSource> result_;
 };

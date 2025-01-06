@@ -38,12 +38,8 @@ public class LongReverseSortCheck implements SortCheck {
 
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(long lhs, long rhs) {
-        return -1 * LongComparisons.compare(lhs, rhs);
+    private static boolean leq(long lhs, long rhs) {
+        return LongComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(long lhs, long rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

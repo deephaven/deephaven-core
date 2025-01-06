@@ -207,6 +207,12 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Table wouldMatch(WouldMatchPair... matchers) {
         return throwUnsupported();
     }

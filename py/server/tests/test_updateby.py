@@ -157,11 +157,19 @@ class UpdateByTestCase(BaseTestCase):
             rolling_formula_tick(formula="sum(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10),
             rolling_formula_tick(formula="avg(x)", formula_param="x", cols=["formula_a = a", "formula_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT00:00:10"),
-            rolling_formula_time(formula="avg(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT30S",
-                             fwd_time="-PT00:00:20"),
+            rolling_formula_time(formula="avg(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_formula_time(formula="sum(x)", formula_param="x", ts_col="Timestamp", cols=["formula_b = b", "formula_e = e"], rev_time="PT30S", fwd_time="-PT00:00:20"),
         ]
+
+        # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy that produce a single output column
+        cls.rolling_ops_one_output = [
+            rolling_formula_tick(formula="formula_ad=sum(a) + sum(d)", rev_ticks=10),
+            rolling_formula_tick(formula="formula_ad=avg(a) + avg(b)", rev_ticks=10, fwd_ticks=10),
+            rolling_formula_time(formula="formula_be=sum(b) + sum(e)", ts_col="Timestamp", rev_time="PT00:00:10"),
+            rolling_formula_time(formula="formula_be=avg(b) + avg(e)", ts_col="Timestamp", rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_formula_time(formula="formula_be=sum(b) + sum(b)", ts_col="Timestamp", rev_time="PT30S", fwd_time="-PT00:00:20"),
+        ]
+
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -177,7 +185,7 @@ class UpdateByTestCase(BaseTestCase):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="b")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 1 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 1 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -192,7 +200,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt_proxy = pt_proxy.update_by(op, by="e")
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 1 + len(ct.columns))
+                        self.assertEqual(len(rct.definition), 1 + len(ct.definition))
                         with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)                        
 
@@ -202,7 +210,7 @@ class UpdateByTestCase(BaseTestCase):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 2 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -225,12 +233,22 @@ class UpdateByTestCase(BaseTestCase):
                             self.assertEqual(ct.size, rct.size)
 
     def test_rolling_ops(self):
+        # Test rolling operators that produce 2 output columns
         for op in self.rolling_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="c")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 2 + len(t.definition))
+                    with update_graph.exclusive_lock(self.test_update_graph):
+                        self.assertEqual(rt.size, t.size)
+        # Test rolling operators that produce a single output column
+        for op in self.rolling_ops_one_output:
+            with self.subTest(op):
+                for t in (self.static_table, self.ticking_table):
+                    rt = t.update_by(ops=op, by="c")
+                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
+                    self.assertEqual(len(rt.definition), 1 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -239,13 +257,24 @@ class UpdateByTestCase(BaseTestCase):
                       self.ticking_table.partition_by("b").proxy(),
                       ]
 
+        # Test rolling operators that produce 2 output columns
         for op in self.rolling_ops:
             with self.subTest(op):
                 for pt_proxy in pt_proxies:
                     rt_proxy = pt_proxy.update_by(op, by="c")
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
+                        self.assertEqual(len(rct.definition), 2 + len(ct.definition))
+                        with update_graph.exclusive_lock(self.test_update_graph):
+                            self.assertEqual(ct.size, rct.size)
+        # Test rolling operators that produce a single output column
+        for op in self.rolling_ops_one_output:
+            with self.subTest(op):
+                for pt_proxy in pt_proxies:
+                    rt_proxy = pt_proxy.update_by(op, by="c")
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
+                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
+                        self.assertEqual(len(rct.definition), 1 + len(ct.definition))
                         with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)
 
@@ -260,7 +289,7 @@ class UpdateByTestCase(BaseTestCase):
         for t in (self.static_table, self.ticking_table):
             rt = t.update_by(ops=multiple_ops, by="c")
             self.assertTrue(rt.is_refreshing is t.is_refreshing)
-            self.assertEqual(len(rt.columns), 10 + len(t.columns))
+            self.assertEqual(len(rt.definition), 10 + len(t.definition))
             with update_graph.exclusive_lock(self.test_update_graph):
                 self.assertEqual(rt.size, t.size)
 

@@ -9,8 +9,10 @@
 package io.deephaven.engine.table.impl.join.stamp;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -87,17 +89,7 @@ public class ObjectReverseStampKernel implements StampKernel {
     // region comparison functions
     // descending comparison
     private static int doComparison(Object lhs, Object rhs) {
-        if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return 1;
-        }
-        if (rhs == null) {
-            return -1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)rhs).compareTo(lhs);
+        return ObjectComparisons.compare(rhs, lhs);
     }
     // endregion comparison functions
 

@@ -5,15 +5,17 @@
 #include "deephaven/tests/test_util.h"
 
 namespace deephaven::client::tests {
-// TODO(kosak): This test is currently disabled (by membership in the [.] test group, because we
-//  don't yet deserialize the grouped column correctly.
+// TODO(kosak): This test is currently disabled (by membership in the [.] test group).
+// The reason is because each cell in the grouped column comes back as the Arrow type list<double>,
+// but the library does not currently know how to deserialize Arrow list types.
 TEST_CASE("Ungroup columns", "[.]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
 
   table = table.Where("ImportDate == `2017-11-01`");
 
-  auto by_table = table.Where("Ticker == `AAPL`").View("Ticker", "Close").View("Ticker");
+  auto by_table = table.Where("Ticker == `AAPL`").View("Ticker", "Close").By("Ticker");
+  std::cout << by_table.Stream(true) << '\n';
   auto ungrouped = by_table.Ungroup("Close");
 
   std::vector<std::string> ticker_data = {"AAPL"};

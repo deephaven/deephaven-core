@@ -3,6 +3,8 @@
 //
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ClientChannelFactory;
+import io.deephaven.client.impl.ClientChannelFactoryDefaulter;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.FlightSessionFactoryConfig;
 import io.deephaven.client.impl.FlightSessionFactoryConfig.Factory;
@@ -12,12 +14,17 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import picocli.CommandLine.ArgGroup;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 abstract class FlightExampleBase implements Callable<Void> {
+
+    static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
+            .userAgent(FlightSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-flight-examples")))
+            .build();
 
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
@@ -34,6 +41,7 @@ abstract class FlightExampleBase implements Callable<Void> {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         final Factory factory = FlightSessionFactoryConfig.builder()
                 .clientConfig(ConnectOptions.options(connectOptions).config())
+                .clientChannelFactory(CLIENT_CHANNEL_FACTORY)
                 .allocator(bufferAllocator)
                 .scheduler(scheduler)
                 .build()

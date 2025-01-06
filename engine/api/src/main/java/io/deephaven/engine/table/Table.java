@@ -44,8 +44,7 @@ public interface Table extends
     TableDefinition getDefinition();
 
     /**
-     * Provides column metadata in Table form. Convenience method, behaves exactly the same as
-     * getDefinition().getColumnDefinitionsTable().
+     * Provides column metadata in Table form.
      *
      * @return A Table of metadata about this Table's columns.
      */
@@ -302,6 +301,9 @@ public interface Table extends
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
 
+    <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz);
+
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
@@ -450,35 +452,6 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Extracts a subset of a table by row position.
-     * <p>
-     * If both firstPosition and lastPosition are positive, then the rows are counted from the beginning of the table.
-     * The firstPosition is inclusive, and the lastPosition is exclusive. The {@link #head}(N) call is equivalent to
-     * slice(0, N). The firstPosition must be less than or equal to the lastPosition.
-     * <p>
-     * If firstPosition is positive and lastPosition is negative, then the firstRow is counted from the beginning of the
-     * table, inclusively. The lastPosition is counted from the end of the table. For example, slice(1, -1) includes all
-     * rows but the first and last. If the lastPosition would be before the firstRow, the result is an emptyTable.
-     * <p>
-     * If firstPosition is negative, and lastPosition is zero, then the firstRow is counted from the end of the table,
-     * and the end of the slice is the size of the table. slice(-N, 0) is equivalent to {@link #tail}(N).
-     * <p>
-     * If the firstPosition is negative and the lastPosition is negative, they are both counted from the end of the
-     * table. For example, slice(-2, -1) returns the second to last row of the table.
-     * <p>
-     * If firstPosition is negative and lastPosition is positive, then firstPosition is counted from the end of the
-     * table, inclusively. The lastPosition is counted from the beginning of the table, exclusively. For example,
-     * slice(-3, 5) returns all rows starting from the third-last row to the fifth row of the table. If there are no
-     * rows between these positions, the function will return an empty table.
-     *
-     * @param firstPositionInclusive the first position to include in the result
-     * @param lastPositionExclusive the last position to include in the result
-     * @return a new Table, which is the request subset of rows from the original table
-     */
-    @ConcurrentMethod
-    Table slice(long firstPositionInclusive, long lastPositionExclusive);
 
     /**
      * Extracts a subset of a table by row percentages.

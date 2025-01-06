@@ -56,7 +56,7 @@ public class MultiplexedWebsocketStreamImpl extends AbstractWebsocketStreamImpl 
     private final class Sink implements AbstractServerStream.Sink {
 
         @Override
-        public void writeHeaders(Metadata headers) {
+        public void writeHeaders(Metadata headers, boolean flush) {
             writeMetadataToStream(headers, false);
         }
 

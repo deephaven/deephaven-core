@@ -11,18 +11,17 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.streams.ByteBufferInputStream;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -62,12 +61,6 @@ public class BarrageProtoUtil {
             return ExternalizableRowSetUtils.readExternalCompressedDelta(ois);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
-        }
-    }
-
-    public static class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-        public byte[] peekBuffer() {
-            return buf;
         }
     }
 
@@ -196,7 +189,7 @@ public class BarrageProtoUtil {
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
             // noinspection UnstableApiUsage
             mi.inputStream =
-                    new LittleEndianDataInputStream(new ByteArrayInputStream(CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+                    new LittleEndianDataInputStream(new ByteArrayInputStream(ArrayTypeUtils.EMPTY_BYTE_ARRAY));
         }
 
         return mi;

@@ -8,14 +8,11 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.IntComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class IntRangeComparator {
     private IntRangeComparator() {} // static use only
 
-    private abstract static class IntIntFilter implements ChunkFilter.IntChunkFilter {
+    private abstract static class IntIntFilter extends IntChunkFilter {
         final int lower;
         final int upper;
 
@@ -23,80 +20,53 @@ public class IntRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
+    final static class IntIntInclusiveInclusiveFilter extends IntIntFilter {
         private IntIntInclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
 
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int value = values.get(ii);
-                if (IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(int value) {
+            return IntComparisons.geq(value, lower) && IntComparisons.leq(value, upper);
         }
     }
 
-    static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
+    final static class IntIntInclusiveExclusiveFilter extends IntIntFilter {
         private IntIntInclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
 
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int value = values.get(ii);
-                if (IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(int value) {
+            return IntComparisons.geq(value, lower) && IntComparisons.lt(value, upper);
         }
     }
 
-    static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
+    final static class IntIntExclusiveInclusiveFilter extends IntIntFilter {
         private IntIntExclusiveInclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
 
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int value = values.get(ii);
-                if (IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(int value) {
+            return IntComparisons.gt(value, lower) && IntComparisons.leq(value, upper);
         }
     }
 
-    static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
+    final static class IntIntExclusiveExclusiveFilter extends IntIntFilter {
         private IntIntExclusiveExclusiveFilter(int lower, int upper) {
             super(lower, upper);
         }
 
-        public void filter(IntChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final int value = values.get(ii);
-                if (IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(int value) {
+            return IntComparisons.gt(value, lower) && IntComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.IntChunkFilter makeIntFilter(int lower, int upper, boolean lowerInclusive,
+    public static IntChunkFilter makeIntFilter(int lower, int upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

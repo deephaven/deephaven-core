@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.engine.table.impl.locations.TableDataService;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -39,6 +40,18 @@ public abstract class AbstractTableDataService implements TableDataService, Name
     @NotNull
     public final TableLocationProvider getTableLocationProvider(@NotNull final TableKey tableKey) {
         return tableLocationProviders.putIfAbsent(tableKey, this::makeTableLocationProvider);
+    }
+
+    @Override
+    @Nullable
+    public TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
+            @NotNull TableLocationKey tableLocationKey) {
+        final TableLocationProvider tableLocationProvider = tableLocationProviders.get(tableKey);
+        if (tableLocationProvider == null || !tableLocationProvider.hasTableLocationKey(tableLocationKey)) {
+            return null;
+        }
+
+        return tableLocationProvider;
     }
 
     @Override

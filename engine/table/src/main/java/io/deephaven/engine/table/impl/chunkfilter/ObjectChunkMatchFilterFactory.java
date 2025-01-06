@@ -3,10 +3,6 @@
 //
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -14,7 +10,8 @@ import java.util.Objects;
 public class ObjectChunkMatchFilterFactory {
     private ObjectChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ObjectChunkFilter makeFilter(boolean invert, Object... values) {
+    @SuppressWarnings("rawtypes")
+    public static ObjectChunkFilter makeFilter(boolean invert, Object... values) {
         if (invert) {
             if (values.length == 1) {
                 return new InverseSingleValueObjectChunkFilter(values[0]);
@@ -40,7 +37,7 @@ public class ObjectChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class SingleValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value;
 
         private SingleValueObjectChunkFilter(Object value) {
@@ -48,18 +45,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (Objects.equals(values.get(ii), value)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return Objects.equals(value, this.value);
         }
     }
 
-    private static class InverseSingleValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class InverseSingleValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value;
 
         private InverseSingleValueObjectChunkFilter(Object value) {
@@ -67,18 +58,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (!Objects.equals(values.get(ii), value)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return !Objects.equals(value, this.value);
         }
     }
 
-    private static class TwoValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class TwoValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value1;
         private final Object value2;
 
@@ -88,19 +73,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Object checkValue = values.get(ii);
-                if (Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return Objects.equals(value, value1) || Objects.equals(value, value2);
         }
     }
 
-    private static class InverseTwoValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class InverseTwoValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value1;
         private final Object value2;
 
@@ -110,19 +88,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Object checkValue = values.get(ii);
-                if (!(Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return !(Objects.equals(value, value1) || Objects.equals(value, value2));
         }
     }
 
-    private static class ThreeValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class ThreeValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value1;
         private final Object value2;
         private final Object value3;
@@ -134,19 +105,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Object checkValue = values.get(ii);
-                if (Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)
-                        || Objects.equals(checkValue, value3)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return Objects.equals(value, value1) || Objects.equals(value, value2) || Objects.equals(value, value3);
         }
     }
-    private static class InverseThreeValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+
+    private final static class InverseThreeValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final Object value1;
         private final Object value2;
         private final Object value3;
@@ -158,20 +122,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final Object checkValue = values.get(ii);
-                if (!(Objects.equals(checkValue, value1) || Objects.equals(checkValue, value2)
-                        || Objects.equals(checkValue, value3))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return !(Objects.equals(value, value1) || Objects.equals(value, value2) || Objects.equals(value, value3));
         }
     }
 
-    private static class MultiValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class MultiValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final HashSet<?> values;
 
         private MultiValueObjectChunkFilter(Object... values) {
@@ -179,18 +135,12 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (this.values.contains(values.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return this.values.contains(value);
         }
     }
 
-    private static class InverseMultiValueObjectChunkFilter implements ChunkFilter.ObjectChunkFilter<Object> {
+    private final static class InverseMultiValueObjectChunkFilter extends ObjectChunkFilter<Object> {
         private final HashSet<?> values;
 
         private InverseMultiValueObjectChunkFilter(Object... values) {
@@ -198,14 +148,8 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (!this.values.contains(values.get(ii))) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(Object value) {
+            return !this.values.contains(value);
         }
     }
 }

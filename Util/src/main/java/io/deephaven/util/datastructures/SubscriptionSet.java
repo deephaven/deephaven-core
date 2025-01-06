@@ -7,6 +7,7 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakReferenceWrapper;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import org.apache.commons.lang3.function.TriConsumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +55,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
          * Activate this subscription entry. Must hold the lock on the enclosing subscription set.
          */
         public void activate() {
-            Assert.holdsLock(SubscriptionSet.this, "SubscriptionSet.this");
+            Assert.assertion(Thread.holdsLock(SubscriptionSet.this), "Thread.holdsLock(SubscriptionSet.this)");
             active = true;
         }
     }
@@ -213,6 +214,36 @@ public class SubscriptionSet<LISTENER_TYPE> {
             }
             if (!activeOnly || currentEntry.isActive()) {
                 procedure.accept(currentListener, notification);
+            }
+            ++si;
+        }
+        return initialSize > 0 && size == 0;
+    }
+
+    /**
+     * Dispatch a notification to all subscribers. Clean up any GC'd subscriptions.
+     *
+     * @param procedure The notification procedure to invoke
+     * @param firstNotification The first item to deliver
+     * @param secondNotification The second item to deliver (must be of the same type as {@code firstNotification})
+     * @param activeOnly Whether to restrict this notification to active subscriptions only
+     * @return Whether this operation caused the set to become <b>empty</b>
+     */
+    public final <NOTIFICATION_TYPE> boolean deliverNotification(
+            @NotNull final TriConsumer<LISTENER_TYPE, NOTIFICATION_TYPE, NOTIFICATION_TYPE> procedure,
+            @Nullable final NOTIFICATION_TYPE firstNotification,
+            @Nullable final NOTIFICATION_TYPE secondNotification,
+            final boolean activeOnly) {
+        final int initialSize = size;
+        for (int si = 0; si < size;) {
+            final Entry currentEntry = subscriptions[si];
+            final LISTENER_TYPE currentListener = currentEntry.getListener();
+            if (currentListener == null) {
+                removeAt(si);
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+            }
+            if (!activeOnly || currentEntry.isActive()) {
+                procedure.accept(currentListener, firstNotification, secondNotification);
             }
             ++si;
         }

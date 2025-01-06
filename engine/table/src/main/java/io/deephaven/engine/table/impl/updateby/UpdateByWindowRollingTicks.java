@@ -30,9 +30,12 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         private RowSet affectedRowPositions;
         private RowSet influencerPositions;
 
-        UpdateByWindowTicksBucketContext(final TrackingRowSet sourceRowSet,
-                final int chunkSize, final boolean initialStep) {
-            super(sourceRowSet, null, null, null, false, chunkSize, initialStep);
+        UpdateByWindowTicksBucketContext(
+                final TrackingRowSet sourceRowSet,
+                final int chunkSize,
+                final boolean initialStep,
+                final Object[] bucketKeyValues) {
+            super(sourceRowSet, null, null, null, false, chunkSize, initialStep, bucketKeyValues);
         }
 
         @Override
@@ -77,14 +80,16 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
     }
 
     @Override
-    UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
+    UpdateByWindowBucketContext makeWindowContext(
+            final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
             final LongSegmentedSortedArray timestampSsa,
             final TrackingRowSet timestampValidRowSet,
             final boolean timestampsModified,
             final int chunkSize,
-            final boolean isInitializeStep) {
-        return new UpdateByWindowTicksBucketContext(sourceRowSet, chunkSize, isInitializeStep);
+            final boolean isInitializeStep,
+            final Object[] bucketKeyValues) {
+        return new UpdateByWindowTicksBucketContext(sourceRowSet, chunkSize, isInitializeStep, bucketKeyValues);
     }
 
     private static WritableRowSet computeAffectedRowsTicks(final RowSet sourceSet, final RowSet invertedSubSet,

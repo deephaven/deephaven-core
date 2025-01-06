@@ -41,7 +41,6 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
 
     protected class Context extends BaseRollingFormulaOperator.Context {
-        private final ColumnSource<?> formulaOutputSource;
         private final IntConsumer outputSetter;
 
         private ByteChunk<? extends Values> influencerValuesChunk;
@@ -64,11 +63,12 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
             final SingleValueColumnSource<ObjectVector<?>> formulaInputSource =
                     (SingleValueColumnSource<ObjectVector<?>>) SingleValueColumnSource
                             .getSingleValueColumnSource(inputVectorType);
-            formulaInputSource.set(new ObjectRingBufferVectorWrapper(windowValues, inputVectorType));
+            // noinspection rawtypes
+            formulaInputSource.set(new ObjectRingBufferVectorWrapper(windowValues, inputComponentType));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
 
-            formulaOutputSource = formulaCopy.getDataView();
+            final ColumnSource<?> formulaOutputSource = formulaCopy.getDataView();
             outputSetter = getChunkSetter(outputValues, formulaOutputSource);
         }
 
@@ -173,11 +173,22 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
+            final Class<?> columnType,
+            final Class<?> componentType,
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType,
-                formulaColumnMap, tableDef);
+        super(
+                pair,
+                affectingColumns,
+                timestampColumnName,
+                reverseWindowScaleUnits,
+                forwardWindowScaleUnits,
+                columnType,
+                componentType,
+                vectorType,
+                formulaColumnMap,
+                tableDef);
     }
 
     @Override
@@ -187,6 +198,8 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits,
+                inputColumnType,
+                inputComponentType,
                 inputVectorType,
                 formulaColumnMap,
                 tableDef);

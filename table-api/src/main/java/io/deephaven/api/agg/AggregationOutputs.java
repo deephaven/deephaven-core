@@ -50,6 +50,11 @@ public class AggregationOutputs implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(CountWhere countWhere) {
+        out = Stream.of(countWhere.column());
+    }
+
+    @Override
     public void visit(FirstRowKey firstRowKey) {
         out = Stream.of(firstRowKey.column());
     }
@@ -62,5 +67,11 @@ public class AggregationOutputs implements Aggregation.Visitor {
     @Override
     public void visit(Partition partition) {
         out = Stream.of(partition.column());
+    }
+
+
+    @Override
+    public void visit(Formula formula) {
+        out = Stream.of(formula.column());
     }
 }

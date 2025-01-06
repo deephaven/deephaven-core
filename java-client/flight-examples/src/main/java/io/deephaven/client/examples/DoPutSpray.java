@@ -26,6 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static io.deephaven.client.examples.FlightExampleBase.CLIENT_CHANNEL_FACTORY;
+
 @Command(name = "do-put-spray", mixinStandardHelpOptions = true,
         description = "Do Put Spray", version = "0.1.0")
 class DoPutSpray implements Callable<Void> {
@@ -48,6 +50,7 @@ class DoPutSpray implements Callable<Void> {
 
         final Factory sourceFactory = FlightSessionFactoryConfig.builder()
                 .clientConfig(source.config())
+                .clientChannelFactory(CLIENT_CHANNEL_FACTORY)
                 .allocator(bufferAllocator)
                 .scheduler(scheduler)
                 .build()
@@ -62,6 +65,7 @@ class DoPutSpray implements Callable<Void> {
                 for (ConnectOptions other : connects.subList(1, connects.size())) {
                     final Factory otherFactory = FlightSessionFactoryConfig.builder()
                             .clientConfig(other.config())
+                            .clientChannelFactory(CLIENT_CHANNEL_FACTORY)
                             .allocator(bufferAllocator)
                             .scheduler(scheduler)
                             .build()

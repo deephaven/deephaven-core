@@ -5,7 +5,6 @@ package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable;
@@ -89,7 +88,7 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
             case IN_MEMORY_KEY_BACKED:
                 return KeyedArrayBackedInputTable.make(tableDefinitionFromSchema,
                         request.getKind().getInMemoryKeyBacked().getKeyColumnsList()
-                                .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                                .toArray(String[]::new));
             case BLINK:
                 final String name =
                         CreateInputTableGrpcImpl.class.getSimpleName() + ".BLINK-" + blinkTableCount.getAndIncrement();

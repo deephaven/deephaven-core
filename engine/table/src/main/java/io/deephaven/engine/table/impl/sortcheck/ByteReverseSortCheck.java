@@ -38,12 +38,8 @@ public class ByteReverseSortCheck implements SortCheck {
 
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(byte lhs, byte rhs) {
-        return -1 * ByteComparisons.compare(lhs, rhs);
+    private static boolean leq(byte lhs, byte rhs) {
+        return ByteComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

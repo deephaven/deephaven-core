@@ -6,20 +6,16 @@ package io.deephaven.server.table.ops;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.google.rpc.Code;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Aggregations;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.FirstRowKey;
-import io.deephaven.api.agg.LastRowKey;
-import io.deephaven.api.agg.Partition;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
+import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCountWhere;
+import io.deephaven.proto.backplane.grpc.Aggregation.AggregationFormula;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
+import io.deephaven.proto.backplane.grpc.Selectable;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 
@@ -59,6 +55,16 @@ public class AggregationAdapter {
         Singleton.INSTANCE.adapters().validate(aggregation);
     }
 
+    private static io.deephaven.api.Selectable adapt(Selectable selectable) {
+        switch (selectable.getTypeCase()) {
+            case RAW:
+                return io.deephaven.api.Selectable.parse(selectable.getRaw());
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported Selectable type (%s) in Aggregation.",
+                        selectable.getTypeCase()));
+        }
+    }
+
     public static Aggregation adapt(io.deephaven.proto.backplane.grpc.Aggregation aggregation) {
         return Singleton.INSTANCE.adapters().adapt(aggregation);
     }
@@ -77,6 +83,14 @@ public class AggregationAdapter {
 
     public static Count adapt(AggregationCount count) {
         return Aggregation.AggCount(count.getColumnName());
+    }
+
+    public static CountWhere adapt(AggregationCountWhere count) {
+        return Aggregation.AggCountWhere(count.getColumnName(), count.getFiltersList().toArray(String[]::new));
+    }
+
+    public static Formula adapt(AggregationFormula formula) {
+        return Formula.of(adapt(formula.getSelectable()));
     }
 
     public static FirstRowKey adaptFirst(AggregationRowKey key) {
@@ -164,6 +178,15 @@ public class AggregationAdapter {
                     AggregationAdapter::adapt);
         }
 
+        public void visit(CountWhere countWhere) {
+            add(
+                    TypeCase.COUNT_WHERE,
+                    AggregationCountWhere.class,
+                    CountWhere.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adapt);
+        }
+
         @Override
         public void visit(FirstRowKey firstRowKey) {
             add(
@@ -190,6 +213,16 @@ public class AggregationAdapter {
                     TypeCase.PARTITION,
                     AggregationPartition.class,
                     Partition.class,
+                    GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
+                    AggregationAdapter::adapt);
+        }
+
+        @Override
+        public void visit(Formula formula) {
+            add(
+                    TypeCase.FORMULA,
+                    AggregationFormula.class,
+                    Formula.class,
                     GrpcErrorHelper::checkHasNoUnknownFieldsRecursive,
                     AggregationAdapter::adapt);
         }

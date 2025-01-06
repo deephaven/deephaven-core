@@ -17,6 +17,9 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 public class TypedNaturalJoinFactory {
+
+    public static final String FIRST_DUPLICATE = "FIRST_DUPLICATE";
+
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("leftHashSlots.set(hashSlotOffset++, tableLocation)");
@@ -204,7 +207,7 @@ public class TypedNaturalJoinFactory {
         final String tableLocation = getTableLocation(alternate);
         builder.beginControlFlow("if (existingRightRowKey == $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement(
                 "rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
@@ -229,7 +232,7 @@ public class TypedNaturalJoinFactory {
 
     private static void checkForDuplicateErrorLeftDecorate(CodeBlock.Builder builder, String leftRowKey,
             String rightRowState) {
-        builder.beginControlFlow("if ($L < $T.NULL_ROW_KEY)", rightRowState, RowSet.class);
+        builder.beginControlFlow("if ($L <= $L)", rightRowState, FIRST_DUPLICATE);
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
                 leftRowKey);
@@ -247,7 +250,7 @@ public class TypedNaturalJoinFactory {
         final String sourceType = alternate ? "alternate" : "main";
         final String tableLocation = alternate ? "alternateTableLocation" : "tableLocation";
 
-        builder.beginControlFlow("if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.beginControlFlow("if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
                 WritableRowSet.class);
@@ -262,7 +265,16 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("$T.statementNeverExecuted($S)", Assert.class,
                 "Could not find existing right row in state");
         builder.nextControlFlow("else");
+        // we need to check if our left hand side is empty at this location, if so then we must mark the location as a
+        // tombstone and reduce the number of entries in the table
+        builder.addStatement("final boolean leftEmpty = $LLeftRowSet.getUnsafe($L).isEmpty()", sourceType,
+                tableLocation);
+        builder.beginControlFlow("if (leftEmpty)");
+        builder.addStatement("$LRightRowKey.set($L, $L)", sourceType, tableLocation, hasherConfig.tombstoneStateName);
+        builder.addStatement("liveEntries--");
+        builder.nextControlFlow("else");
         builder.addStatement("$LRightRowKey.set($L, $T.NULL_ROW_KEY)", sourceType, tableLocation, RowSet.class);
+        builder.endControlFlow();
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
     }
@@ -280,7 +292,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (existingRightRowKey == $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
                 WritableRowSet.class);
@@ -351,8 +363,16 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalRemoveLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("$LLeftRowSet.getUnsafe($L).remove(rowKeyChunk.get(chunkPosition))",
-                getSourceType(alternate), getTableLocation(alternate));
+        final String sourceType = getSourceType(alternate);
+        final String tableLocation = getTableLocation(alternate);
+        builder.addStatement("final WritableRowSet left = $LLeftRowSet.getUnsafe($L)",
+                sourceType, tableLocation);
+        builder.addStatement("left.remove(rowKeyChunk.get(chunkPosition))");
+        builder.beginControlFlow("if (left.isEmpty() && rightState == $T.NULL_ROW_KEY)", RowSet.class);
+        // it is actually deleted
+        builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
+        builder.addStatement("liveEntries--");
+        builder.endControlFlow();
     }
 
     public static void incrementalRemoveLeftMissing(CodeBlock.Builder builder) {
@@ -382,7 +402,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (existingRightRowKey == keyToShift - shiftDelta)");
         builder.addStatement("$LRightRowKey.set($L, keyToShift)", sourceType, tableLocation);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_SHIFT");
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.beginControlFlow("if (shiftDelta < 0)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",

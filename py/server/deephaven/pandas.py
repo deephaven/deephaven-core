@@ -11,7 +11,7 @@ import pandas as pd
 import pyarrow as pa
 
 from deephaven import DHError, new_table, dtypes, arrow
-from deephaven.column import Column
+from deephaven.column import ColumnDefinition
 from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
 from deephaven.jcompat import _j_array_to_series
 from deephaven.numpy import _make_input_column
@@ -22,12 +22,12 @@ _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors"
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
 
-def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Series:
+def _column_to_series(table: Table, col_def: ColumnDefinition, conv_null: bool) -> pd.Series:
     """Produce a copy of the specified column as a pandas.Series object.
 
     Args:
         table (Table): the table
-        col_def (Column):  the column definition
+        col_def (ColumnDefinition): the column definition
         conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
             pd.NA.
 
@@ -133,17 +133,17 @@ def to_pandas(table: Table, cols: List[str] = None,
         if table.is_refreshing:
             table = table.snapshot()
 
-        col_def_dict = {col.name: col for col in table.columns}
+        table_def = table.definition
         if not cols:
-            cols = list(col_def_dict.keys())
+            cols = list(table_def.keys())
         else:
-            diff_set = set(cols) - set(col_def_dict.keys())
+            diff_set = set(cols) - set(table_def.keys())
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
         data = {}
         for col in cols:
-            series = _column_to_series(table, col_def_dict[col], conv_null)
+            series = _column_to_series(table, table_def[col], conv_null)
             data[col] = series
 
         return pd.DataFrame(data=data, columns=cols, copy=False)
@@ -201,12 +201,15 @@ def _map_na(array: [np.ndarray, pd.api.extensions.ExtensionArray]):
     return array
 
 
-def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
+def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = True) -> Table:
     """Creates a new table from a pandas DataFrame.
 
     Args:
         df (DataFrame): the pandas DataFrame instance
         cols (List[str]): the dataframe column names, default is None which means including all columns in the DataFrame
+        infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
+            DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
+            perform the conversion. Note that any conversion will make a copy of the data.
 
     Returns:
         a Deephaven table
@@ -222,11 +225,19 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
         if diff_set:
             raise DHError(message=f"columns - {list(diff_set)} not found")
 
+    # if infer_objects is True, convert object dtypes to the best possible types supporting pd.NA
+    converted_df = df
+    if infer_objects:
+        converted_df = df[cols]
+        for col in cols:
+            if df.dtypes[col] == object:
+                converted_df[col] = df[col].convert_dtypes()
+
     # if any arrow backed column is present, create a pyarrow table first, then upload to DH, if error occurs, fall
     # back to the numpy-array based approach
-    if _is_dtype_backend_supported and any(isinstance(df[col].dtype, pd.ArrowDtype) for col in cols):
+    if _is_dtype_backend_supported and any(isinstance(converted_df[col].dtype, pd.ArrowDtype) for col in cols):
         try:
-            pa_table = pa.Table.from_pandas(df=df, columns=cols)
+            pa_table = pa.Table.from_pandas(df=converted_df, columns=cols)
             dh_table = arrow.to_table(pa_table)
             return dh_table
         except:
@@ -235,9 +246,9 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
     try:
         input_cols = []
         for col in cols:
-            np_array = df.get(col).values
-            if isinstance(df.dtypes[col], pd.CategoricalDtype):
-                dtype = df.dtypes[col].categories.dtype
+            np_array = converted_df.get(col).values
+            if isinstance(converted_df.dtypes[col], pd.CategoricalDtype):
+                dtype = converted_df.dtypes[col].categories.dtype
             else:
                 dtype = np_array.dtype
             dh_dtype = dtypes.from_np_dtype(dtype)

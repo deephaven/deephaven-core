@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.util.string.StringUtils;
@@ -16,6 +16,7 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
-        implements TableLocation {
+        implements TableLocation, DelegatingLivenessReferent {
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -35,6 +36,8 @@ public abstract class AbstractTableLocation
     private final TableLocationStateHolder state = new TableLocationStateHolder();
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
+
+    private final ReferenceCountedLivenessReferent livenessReferent;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<AbstractTableLocation, KeyedObjectHashMap> CACHED_DATA_INDEXES_UPDATER =
@@ -59,6 +62,15 @@ public abstract class AbstractTableLocation
         super(supportsSubscriptions);
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
+
+        livenessReferent = new ReferenceCountedLivenessReferent() {
+            @OverridingMethodsMustInvokeSuper
+            @Override
+            protected void destroy() {
+                super.destroy();
+                AbstractTableLocation.this.destroy();
+            }
+        };
     }
 
     @Override
@@ -66,6 +78,10 @@ public abstract class AbstractTableLocation
         return toStringHelper();
     }
 
+    @Override
+    public LivenessReferent asLivenessReferent() {
+        return livenessReferent;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // TableLocationState implementation
@@ -159,7 +175,7 @@ public abstract class AbstractTableLocation
      * Clear all column locations (usually because a truncated location was observed).
      */
     @SuppressWarnings("unused")
-    protected final void clearColumnLocations() {
+    public final void clearColumnLocations() {
         columnLocations.clear();
     }
 
@@ -197,7 +213,7 @@ public abstract class AbstractTableLocation
                 if (localReference != null && (localIndex = localReference.get()) != null) {
                     return localIndex;
                 }
-                localIndex = loadDataIndex(columns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                localIndex = loadDataIndex(columns.toArray(String[]::new));
                 indexReference = localIndex == null ? NO_INDEX_SENTINEL : new SoftReference<>(localIndex);
                 return localIndex;
             }
@@ -230,4 +246,19 @@ public abstract class AbstractTableLocation
     @InternalUseOnly
     @Nullable
     public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
+
+    // ------------------------------------------------------------------------------------------------------------------
+    // Reference counting implementation
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * The reference count has reached zero, we can clear this location and release any resources.
+     */
+    protected void destroy() {
+        handleUpdate(null, System.currentTimeMillis());
+        clearColumnLocations();
+
+        // The key may be holding resources that can be cleared.
+        tableLocationKey.clear();
+    }
 }

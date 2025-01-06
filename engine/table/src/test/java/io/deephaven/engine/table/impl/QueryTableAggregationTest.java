@@ -10,7 +10,6 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -199,13 +198,26 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticGroupedByWithChunks() {
-        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
+        final Table input1 = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5", "C=ii");
 
         DataIndexer.getOrCreateDataIndex(input1, "A");
         DataIndexer.getOrCreateDataIndex(input1, "B");
+        DataIndexer.getOrCreateDataIndex(input1, "A", "B");
 
         individualStaticByTest(input1, null, "A");
         individualStaticByTest(input1, null, "B");
+        individualStaticByTest(input1, null, "A", "B");
+
+        // Test scenario where the key columns have different order than in the index
+        individualStaticByTest(input1, null, "B", "A");
+
+        // Test scenarios where the key columns have different names than in the index
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "D");
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "E");
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "D", "E");
+
+        // Test scenario where the key columns have different names and order than in the index
+        individualStaticByTest(input1.renameColumns("D=A", "E=B"), null, "E", "D");
     }
 
     @Test
@@ -887,7 +899,7 @@ public class QueryTableAggregationTest {
 
         final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
-        final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] keyColumns = keyColumnSet.toArray(String[]::new);
 
         table.lastBy("Date", "Sym");
 
@@ -3922,7 +3934,7 @@ public class QueryTableAggregationTest {
             final Table agg = data.selectDistinct("NonExistentCol");
             fail("Should have thrown an exception");
         } catch (Exception ex) {
-            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            assertTrue(ex instanceof IllegalArgumentException);
             io.deephaven.base.verify.Assert.assertion(
                     ex.getMessage().contains("Missing columns: [NonExistentCol]"),
                     "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
@@ -3977,7 +3989,7 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readTable(
-                    new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                    ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                     ParquetInstructions.EMPTY);
 
             // verify the sources are identical

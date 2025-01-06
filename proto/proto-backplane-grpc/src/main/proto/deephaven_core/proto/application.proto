@@ -1,0 +1,53 @@
+/*
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+package io.deephaven.proto.backplane.grpc;
+
+option java_multiple_files = true;
+option optimize_for = SPEED;
+option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/application";
+
+import "deephaven_core/proto/ticket.proto";
+
+/*
+ * Allows clients to list fields that are accessible to them.
+ */
+service ApplicationService {
+
+  /*
+   * Request the list of the fields exposed via the worker.
+   *
+   * - The first received message contains all fields that are currently available
+   *   on the worker. None of these fields will be RemovedFields.
+   * - Subsequent messages modify the existing state. Fields are identified by
+   *   their ticket and may be replaced or removed.
+   */
+  rpc ListFields(ListFieldsRequest) returns (stream FieldsChangeUpdate) {}
+
+}
+
+message ListFieldsRequest {
+  // Intentionally empty and is here for backwards compatibility should this API change.
+}
+
+/*
+ * Represents a batch of fields.
+ */
+message FieldsChangeUpdate {
+  repeated FieldInfo created = 1;
+  repeated FieldInfo updated = 2;
+  repeated FieldInfo removed = 3;
+}
+
+/*
+ * A lightweight object describing the exposed field.
+ */
+message FieldInfo {
+  TypedTicket typed_ticket = 1;
+  string field_name = 2;
+  string field_description = 3;
+  string application_name = 4; // display-friendly identification
+  string application_id = 5; // computer-friendly identification
+}

@@ -4,7 +4,6 @@
 package io.deephaven.server.runner;
 
 import dagger.Module;
-import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
@@ -35,7 +34,6 @@ import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
  * @see PythonConsoleSessionModule
  * @see GroovyConsoleSessionModule
  * @see ExecutionContextModule
- * @see ClientDefaultsModule
  * @see ObfuscatingErrorTransformerModule
  * @see CalendarsFromConfigurationModule
  */
@@ -49,7 +47,6 @@ import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         ExecutionContextModule.class,
-        ClientDefaultsModule.class,
         ObfuscatingErrorTransformerModule.class,
         CalendarsFromConfigurationModule.class,
 })

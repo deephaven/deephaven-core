@@ -7,6 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
+import java.util.ArrayList;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -224,6 +225,20 @@ public class TestCalendar extends BaseArrayTestCase {
         assertNull(calendar.calendarDates(start.atTime(3, 15).atZone(timeZone).toInstant(), null, false, false));
         assertNull(calendar.calendarDates(null, end.atTime(3, 15).atZone(timeZone), false, false));
         assertNull(calendar.calendarDates(start.atTime(3, 15).atZone(timeZone), null, false, false));
+
+        // end before start
+        assertEquals(new LocalDate[0], calendar.calendarDates(end, start));
+
+        // long span of dates
+        final LocalDate startLong = LocalDate.of(2019, 2, 1);
+        final LocalDate endLong = LocalDate.of(2023, 12, 31);
+        final ArrayList<LocalDate> targetLong = new ArrayList<>();
+
+        for (LocalDate d = startLong; !d.isAfter(endLong); d = d.plusDays(1)) {
+            targetLong.add(d);
+        }
+
+        assertEquals(targetLong.toArray(LocalDate[]::new), calendar.calendarDates(startLong, endLong));
     }
 
     public void testNumberCalendarDates() {

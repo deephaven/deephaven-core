@@ -26,6 +26,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public final class S3Helper {
+
+    /**
+     * Timeout in seconds for S3 operations for testing.
+     */
+    public static final int TIMEOUT_SECONDS = 30;
+
     public static void uploadDirectory(
             S3AsyncClient s3AsyncClient,
             Path dir,
@@ -59,7 +65,8 @@ public final class S3Helper {
     public static void deleteAllKeys(S3AsyncClient s3AsyncClient, String bucket)
             throws ExecutionException, InterruptedException, TimeoutException {
         ListObjectsV2Response response = s3AsyncClient
-                .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build()).get(5, TimeUnit.SECONDS);
+                .listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).build())
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         final List<CompletableFuture<?>> futures = new ArrayList<>();
         while (true) {
             final List<ObjectIdentifier> deletes = response.contents()
@@ -80,12 +87,13 @@ public final class S3Helper {
             }
             response = s3AsyncClient.listObjectsV2(
                     ListObjectsV2Request.builder().bucket(bucket).continuationToken(nextContinuationToken).build())
-                    .get(5, TimeUnit.SECONDS);
+                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         }
         if (futures.isEmpty()) {
             return;
         }
-        CompletableFuture.allOf(futures.stream().toArray(CompletableFuture[]::new)).get(5, TimeUnit.SECONDS);
+        CompletableFuture.allOf(futures.stream().toArray(CompletableFuture[]::new))
+                .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     private static ObjectIdentifier objectId(String o) {

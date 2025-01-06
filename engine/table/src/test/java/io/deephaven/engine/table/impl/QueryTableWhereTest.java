@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -31,6 +29,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
@@ -43,7 +42,6 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -867,8 +865,10 @@ public abstract class QueryTableWhereTest {
         }
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
             if (++invokes == 1) {
                 latch.countDown();
             }
@@ -881,6 +881,42 @@ public abstract class QueryTableWhereTest {
                 while (System.nanoTime() < end);
             }
             actualFilter.filter(values, keys, results);
+        }
+
+        @Override
+        public int filter(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filter(values, results);
+        }
+
+        @Override
+        public int filterAnd(
+                final Chunk<? extends Values> values,
+                final WritableBooleanChunk<Values> results) {
+            if (++invokes == 1) {
+                latch.countDown();
+            }
+            invokedValues += values.size();
+            if (sleepDurationNanos > 0) {
+                long nanos = sleepDurationNanos * values.size();
+                final long timeStart = System.nanoTime();
+                final long timeEnd = timeStart + nanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < timeEnd);
+            }
+            return actualFilter.filterAnd(values, results);
         }
 
         void reset() {
@@ -1448,18 +1484,38 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testEnsureColumnArraysTakePrecedence() {
-        // TODO: column arrays aren't well supported in match arrays and this example's where filter fails to compile
-        final Table table = emptyTable(10).update("X=i", "Y=new int[]{1, 5, 9}");
-        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 8});
+        final Table table = emptyTable(10).update("X = i", "Y = ii == 1 ? 5 : -1");
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 0});
 
-        final Table result = table.where("X == Y_[1]");
-        Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
+        {
+            final Table result = table.where("X == Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
 
-        // check that the mirror matches the expected result
-        final Table mResult = table.where("Y_[1] == X");
-        assertTableEquals(result, mResult);
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] == X");
+            assertTableEquals(result, mResult);
+        }
+
+        {
+            final Table result = table.where("X < Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.flat(5));
+
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] > X");
+            assertTableEquals(result, mResult);
+        }
+
+        // note that array access doesn't match the RangeFilter/MatchFilter regex, so let's try to override the
+        // array access with a type that would otherwise work.
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", 4);
+        try {
+            table.where("X == Y_");
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
+        } catch (IllegalArgumentException expected) {
+
+        }
     }
 
     @Test
@@ -1626,5 +1682,75 @@ public abstract class QueryTableWhereTest {
         ExecutionContext.getContext().getQueryScope().putParam("bi_5", BigInteger.valueOf(5));
         final Table bi_result = table.where("X >= bi_5");
         assertTableEquals(range_result, bi_result);
+    }
+
+    @Test
+    public void testAddAndRemoveRefilter() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), stringCol("FV", "A", "B", "C"),
+                intCol("Sentinel", 10, 20, 30));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final QueryTable setTable = testRefreshingTable(i(10, 30).toTracking(), stringCol("FV", "A", "C"));
+
+        final Table result = source.whereIn(setTable, "FV");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final PrintListener plResult = new PrintListener("testAddAndRemoveRefilter-result", result);
+        assertTableEquals(source.where("FV in `A`, `C`"), result);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(20), stringCol("FV", "B"));
+            TstUtils.removeRows(setTable, i(30));
+            setTable.notifyListeners(i(20), i(30), i());
+            TstUtils.addToTable(source, i(10), stringCol("FV", "A"), intCol("Sentinel", 40));
+            source.notifyListeners(i(10), i(10), i());
+        });
+
+        assertEquals(i(10, 20), listener.update.added());
+        assertEquals(i(10, 30), listener.update.removed());
+        assertEquals(i(), listener.update.modified());
+
+        assertTableEquals(source.where("FV in `A`, `B`"), result);
+    }
+
+    @Test
+    public void testWhereFilterEquality() {
+        final Table x = TableTools.newTable(intCol("A", 1, 2, 3), intCol("B", 4, 2, 1), stringCol("S", "A", "B", "C"));
+
+        final WhereFilter f1 = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter f2 = WhereFilterFactory.getExpression("A in 8");
+        final WhereFilter f3 = WhereFilterFactory.getExpression("A in 7");
+
+        final Table ignored = x.where(Filter.and(f1, f2, f3));
+
+        assertEquals(f1, f3);
+        assertNotEquals(f1, f2);
+        assertNotEquals(f2, f3);
+
+        final WhereFilter fa = WhereFilterFactory.getExpression("A in 7");
+        final WhereFilter fb = WhereFilterFactory.getExpression("B in 7");
+        final WhereFilter fap = WhereFilterFactory.getExpression("A not in 7");
+
+        final Table ignored2 = x.where(Filter.and(fa, fb, fap));
+
+        assertNotEquals(fa, fb);
+        assertNotEquals(fa, fap);
+        assertNotEquals(fb, fap);
+
+        final WhereFilter fs = WhereFilterFactory.getExpression("S icase in `A`");
+        final WhereFilter fs2 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        final WhereFilter fs3 = WhereFilterFactory.getExpression("S icase in `A`, `B`, `C`");
+        final Table ignored3 = x.where(Filter.and(fs, fs2, fs3));
+        assertNotEquals(fs, fs2);
+        assertNotEquals(fs, fs3);
+        assertEquals(fs2, fs3);
+
+        final WhereFilter fof1 = WhereFilterFactory.getExpression("A = B");
+        final WhereFilter fof2 = WhereFilterFactory.getExpression("A = B");
+        final Table ignored4 = x.where(fof1);
+        final Table ignored5 = x.where(fof2);
+        // the ConditionFilters do not compare as equal, so this is unfortunate, but expected behavior
+        assertNotEquals(fof1, fof2);
     }
 }

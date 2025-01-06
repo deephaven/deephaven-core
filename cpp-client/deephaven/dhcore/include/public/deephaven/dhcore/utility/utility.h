@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <typeinfo>
@@ -186,6 +187,60 @@ TimePointToEpochMillis(
 [[nodiscard]] std::string
 TimePointToStr(
     std::chrono::time_point<std::chrono::system_clock> time_point);
+
+/**
+ * This is a method that simply invokes std::filesystem::path(path).filename().string().
+ * We put it here because it is sometimes useful, to provide functionality
+ * similar to the POSIX basename() call. We deliberately do not inline it
+ * because is generates a surprising amount of code.
+ * @param path The path
+ * @return The basename of the path, as returned by std::filesystem::path(path).filename().string()
+ */
+std::string Basename(std::string_view path);
+
+/**
+ * Returns the current thread ID as a string.
+ * @return The current thread ID as a string.
+ */
+[[nodiscard]] std::string GetTidAsString();
+
+/**
+ * Gets the hostname.
+ * @return The hostname.
+ */
+[[nodiscard]] std::string GetHostname();
+
+/**
+ * Gets a value from the environment.
+ * @param envname the key
+ * @return If found, an optional set to the value. Otherwise (if not found), an empty optional.
+ */
+[[nodiscard]] std::optional<std::string> GetEnv(const std::string& envname);
+
+/**
+ * Sets a value in the environment.
+ * @param envname the key
+ * @param value the value to set in the environment
+ */
+void SetEnv(const std::string& envname, const std::string& value);
+
+/**
+ * Unsets a value in the environment.
+ * @param envname the key to unset
+ */
+void UnsetEnv(const std::string& envname);
+
+/**
+ * Enables or disables echo for stdin.
+ * @param enable true to enable, false to disable
+ */
+void SetStdinEcho(bool enable);
+
+/**
+ * Reads a password from stdin up to pressing 'Enter', without echoing the characters typed.
+ * @return the password read
+ */
+std::string ReadPasswordFromStdinNoEcho();
 
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {

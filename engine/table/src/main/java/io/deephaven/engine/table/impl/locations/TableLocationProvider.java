@@ -3,17 +3,23 @@
 //
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.engine.liveness.LiveSupplier;
+import io.deephaven.engine.table.impl.TableUpdateMode;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Discovery utility for {@link TableLocation}s for a given table.
  */
 public interface TableLocationProvider extends NamedImplementation {
-
     /**
      * Get the {@link TableKey} associated with this provider.
      *
@@ -22,25 +28,59 @@ public interface TableLocationProvider extends NamedImplementation {
     ImmutableTableKey getKey();
 
     /**
+     * Get the {@link TableUpdateMode update guarantees} of this provider describing how this provider will add or
+     * remove table locations.
+     */
+    @NotNull
+    TableUpdateMode getUpdateMode();
+
+    /**
+     * Get the location {@link TableUpdateMode update guarantees} of this provider describing how individual locations
+     * will add or remove rows.
+     */
+    @NotNull
+    TableUpdateMode getLocationUpdateMode();
+
+    /**
      * ShiftObliviousListener interface for anything that wants to know about new table location keys.
      */
     interface Listener extends BasicTableDataListener {
+        /**
+         * Notify the listener of a {@link LiveSupplier<ImmutableTableLocationKey>} encountered while initiating or
+         * maintaining the location subscription. This should occur at most once per location, but the order of delivery
+         * is <i>not</i> guaranteed. This addition is not part of any transaction, and is equivalent to
+         * {@code handleTableLocationKeyAdded(tableLocationKey, null);} by default.
+         *
+         * @param tableLocationKey The new table location key.
+         */
+        void handleTableLocationKeyAdded(@NotNull LiveSupplier<ImmutableTableLocationKey> tableLocationKey);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
-         * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
-         * guaranteed.
+         * Notify the listener of a {@link LiveSupplier<ImmutableTableLocationKey>} that has been removed. This removal
+         * is not part of any transaction, and is equivalent to
+         * {@code handleTableLocationKeyRemoved(tableLocationKey, null);} by default.
          *
-         * @param tableLocationKey The new table location key
+         * @param tableLocationKey The table location key that was removed.
          */
-        void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+        @SuppressWarnings("unused")
+        void handleTableLocationKeyRemoved(@NotNull LiveSupplier<ImmutableTableLocationKey> tableLocationKey);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} that has been removed.
+         * <p>
+         * Notify the listener of collections of {@link TableLocationKey TableLocationKeys} added or removed while
+         * initiating or maintaining the location subscription. Addition or removal should occur at most once per
+         * location, but the order of delivery is <i>not</i> guaranteed.
+         * </p>
          *
-         * @param tableLocationKey The table location key that was removed
+         * @param addedKeys Collection of table location keys that were added.
+         * @param removedKeys Collection of table location keys that were removed.
          */
-        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
+        default void handleTableLocationKeysUpdate(
+                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
+                @NotNull Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+            removedKeys.forEach(this::handleTableLocationKeyRemoved);
+            addedKeys.forEach(this::handleTableLocationKeyAdded);
+        }
     }
 
     /**
@@ -62,8 +102,8 @@ public interface TableLocationProvider extends NamedImplementation {
      * <b>must not</b> hold any lock that prevents notification delivery while subscribing. Callers <b>must</b> guard
      * against duplicate notifications.
      * <p>
-     * This method only guarantees eventually consistent state. To force a state update, use run() after subscription
-     * completes.
+     * This method only guarantees eventually consistent state. To force a state update, use refresh() after
+     * subscription completes.
      *
      * @param listener A listener.
      */
@@ -86,30 +126,59 @@ public interface TableLocationProvider extends NamedImplementation {
      * that {@link #refresh()} or {@link #subscribe(Listener)} has been called prior to calls to the various table
      * location fetch methods.
      *
-     * @return this, to allow method chaining
+     * @return this, to allow method chaining.
      */
     TableLocationProvider ensureInitialized();
 
     /**
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
-     * guaranteed to succeed for all results.
-     *
-     * @return A collection of keys for locations available from this provider
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
      */
-    @NotNull
-    Collection<ImmutableTableLocationKey> getTableLocationKeys();
+    @TestUseOnly
+    default Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+        final List<ImmutableTableLocationKey> keys = new ArrayList<>();
+        getTableLocationKeys(trackedKey -> keys.add(trackedKey.get()));
+        return keys;
+    }
+
+    /**
+     * Get this provider's currently known location keys. The locations specified by the keys returned may have null
+     * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
+     *
+     * @param consumer A consumer to receive the location keys
+     */
+    default void getTableLocationKeys(Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer) {
+        getTableLocationKeys(consumer, key -> true);
+    }
+
+    /**
+     * Get this provider's currently known location keys. The locations specified by the keys returned may have null
+     * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
+     * guaranteed to succeed for all results as long as the associated {@link LiveSupplier} is retained by the caller.
+     *
+     * @param consumer A consumer to receive the location keys
+     * @param filter A filter to apply to the location keys before the consumer is called
+     */
+    void getTableLocationKeys(
+            Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
+            Predicate<ImmutableTableLocationKey> filter);
 
     /**
      * Check if this provider knows the supplied location key.
      *
-     * @param tableLocationKey The key to test for
-     * @return Whether the key is known to this provider
+     * @param tableLocationKey The key to test.
+     * @return Whether the key is known to this provider.
      */
-    boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
+    boolean hasTableLocationKey(@NotNull TableLocationKey tableLocationKey);
 
     /**
-     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
+     * Get the {@link TableLocation} associated with the given key. Callers should ensure that they retain the
+     * {@link LiveSupplier} returned by {@link #getTableLocationKeys(Consumer, Predicate)} for the key they are
+     * interested in, as the location may be removed if the supplier is no longer live.
+     *
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
      * @return The {@link TableLocation} matching the given key
      */
     @NotNull
@@ -122,8 +191,12 @@ public interface TableLocationProvider extends NamedImplementation {
     }
 
     /**
-     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
-     * @return The {@link TableLocation} matching the given key if present, else null
+     * Get the {@link TableLocation} associated with the given key if it exists. Callers should ensure that they retain
+     * the {@link LiveSupplier} returned by {@link #getTableLocationKeys(Consumer, Predicate)} for the key they are
+     * interested in, as the location may be removed if the supplier is no longer live.
+     *
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
+     * @return The {@link TableLocation} matching the given key if present, else null.
      */
     @Nullable
     TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey);

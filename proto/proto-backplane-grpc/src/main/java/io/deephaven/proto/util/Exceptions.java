@@ -14,4 +14,19 @@ public class Exceptions {
         return StatusProto.toStatusRuntimeException(
                 Status.newBuilder().setCode(statusCode.getNumber()).setMessage(details).build());
     }
+
+    static StatusRuntimeException error(io.grpc.Status.Code code, String message) {
+        return code
+                .toStatus()
+                .withDescription("Flight SQL: " + message)
+                .asRuntimeException();
+    }
+
+    static StatusRuntimeException error(io.grpc.Status.Code code, String message, Throwable cause) {
+        return code
+                .toStatus()
+                .withDescription("Flight SQL: " + message)
+                .withCause(cause)
+                .asRuntimeException();
+    }
 }

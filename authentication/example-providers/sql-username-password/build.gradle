@@ -3,15 +3,15 @@ configurations {
     pwGen
 }
 dependencies {
-    implementation('org.postgresql:postgresql:42.7.1') {
+    implementation(libs.postgresql) {
         because 'Postgres driver to connect to a running DB to query for user information'
     }
-    implementation('org.mindrot:jbcrypt:0.4') {
+    implementation(libs.mindrot.jbcrypt) {
         because 'bcrypt is used in this example to ensure passwords are never stored or queried in plain text'
     }
 
     pwGen project(':log-to-stream')
-    Classpaths.inheritLogbackClassic(project, 'pwGen')
+    pwGen libs.logback.classic
 }
 
 shadowJar {

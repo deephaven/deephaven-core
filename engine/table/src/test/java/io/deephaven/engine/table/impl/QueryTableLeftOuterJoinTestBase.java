@@ -10,7 +10,6 @@ import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -1232,13 +1231,13 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final QueryTable left = (QueryTable) TableTools.newTable(
-                stringCol("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                stringCol("sharedKey", leftKeys.toArray(String[]::new)),
                 longCol("leftData", leftData.toArray()));
         if (leftTicking) {
             left.setRefreshing(true);
         }
         final QueryTable right = (QueryTable) TableTools.newTable(
-                stringCol("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                stringCol("sharedKey", rightKeys.toArray(String[]::new)),
                 longCol("rightData", rightData.toArray()));
         if (rightTicking) {
             right.setRefreshing(true);

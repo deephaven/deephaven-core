@@ -5,35 +5,39 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.ObjectMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
-import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
 import java.util.function.Function;
 
 public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
 
+    private final PageMaterializerFactory pageMaterializerFactory;
     private final Class<T> nativeType;
-    private final ObjectCodec<T> codec;
 
     public static <T, ATTR extends Any> ToPage<ATTR, T[]> create(
             final Class<T> nativeType,
             @NotNull final ObjectCodec<T> codec,
             final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (!nativeType.isPrimitive()) {
-            return dictionarySupplier == null ? new ToObjectPage<>(nativeType, codec)
-                    : new ToPageWithDictionary<>(
-                            nativeType,
-                            new ChunkDictionary<>(
-                                    (dictionary, key) -> {
-                                        final byte[] bytes = dictionary.decodeToBinary(key).getBytes();
-                                        return codec.decode(bytes, 0, bytes.length);
-                                    },
-                                    dictionarySupplier),
-                            (final Object result) -> convertResult(nativeType, codec, result));
+            if (dictionarySupplier == null) {
+                return new ToObjectPage<>(nativeType, codec);
+            }
+            // Note that dictionary supplier is never null, even if it points to a NULL_DICTIONARY.
+            // So we always use the following dictionary version of ToPage but internally, we check if the dictionary is
+            // NULL and fall back to the default implementation.
+            // noinspection unchecked
+            return new ToPageWithDictionary<>(
+                    nativeType,
+                    new ChunkDictionary<>(
+                            (dictionary, key) -> codec.decode(dictionary.decodeToBinary(key).toByteBuffer()),
+                            dictionarySupplier),
+                    (final Object result) -> (T[]) result,
+                    new ObjectMaterializer.Factory<>(codec, nativeType));
         }
 
         throw new IllegalArgumentException("The native type for a Object column is " + nativeType.getCanonicalName());
@@ -41,7 +45,7 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
 
     private ToObjectPage(Class<T> nativeType, ObjectCodec<T> codec) {
         this.nativeType = nativeType;
-        this.codec = codec;
+        this.pageMaterializerFactory = new ObjectMaterializer.Factory<>(codec, nativeType);
     }
 
     @Override
@@ -58,23 +62,7 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
 
     @Override
     @NotNull
-    public final T[] convertResult(Object result) {
-        return convertResult(nativeType, codec, result);
-    }
-
-    private static <T2> T2[] convertResult(final Class<T2> nativeType, final ObjectCodec<T2> codec,
-            final Object result) {
-        Binary[] from = (Binary[]) result;
-        // noinspection unchecked
-        T2[] to = (T2[]) Array.newInstance(nativeType, from.length);
-
-        for (int ri = 0; ri < to.length; ++ri) {
-            if (from[ri] != null) {
-                byte[] bytes = from[ri].getBytes();
-                to[ri] = codec.decode(bytes, 0, bytes.length);
-            }
-        }
-
-        return to;
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 }

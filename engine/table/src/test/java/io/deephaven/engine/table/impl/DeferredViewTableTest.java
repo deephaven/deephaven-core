@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -15,6 +14,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class DeferredViewTableTest {
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 viewColumns,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
@@ -67,7 +67,7 @@ public class DeferredViewTableTest {
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
@@ -90,7 +90,7 @@ public class DeferredViewTableTest {
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 whereFilters);
 
@@ -110,7 +110,7 @@ public class DeferredViewTableTest {
                 resultDef,
                 "test",
                 new DeferredViewTable.TableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 viewColumns,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 

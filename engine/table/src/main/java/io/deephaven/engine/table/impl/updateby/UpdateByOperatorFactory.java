@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -14,6 +15,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -23,6 +25,7 @@ import io.deephaven.engine.table.impl.updateby.prod.*;
 import io.deephaven.engine.table.impl.updateby.rollingavg.*;
 import io.deephaven.engine.table.impl.updateby.rollingcount.*;
 import io.deephaven.engine.table.impl.updateby.rollingformula.*;
+import io.deephaven.engine.table.impl.updateby.rollingformulamulticolumn.RollingFormulaMultiColumnOperator;
 import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.impl.updateby.rollingminmax.*;
 import io.deephaven.engine.table.impl.updateby.rollingproduct.*;
@@ -32,6 +35,8 @@ import io.deephaven.engine.table.impl.updateby.rollingwavg.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.vector.VectorFactory;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -54,6 +59,7 @@ public class UpdateByOperatorFactory {
     private final MatchPair[] groupByColumns;
     @NotNull
     private final UpdateByControl control;
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     public UpdateByOperatorFactory(
             @NotNull final TableDefinition tableDef,
@@ -538,6 +544,12 @@ public class UpdateByOperatorFactory {
 
             // These operators can re-use formula columns when the types match.
             final Map<Class<?>, FormulaColumn> formulaColumnMap = new HashMap<>();
+
+            // noinspection deprecation
+            if (spec.paramToken().isEmpty()) {
+                ops.add(makeRollingFormulaMultiColumnOperator(tableDef, spec));
+                return null;
+            }
 
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
@@ -1371,52 +1383,138 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
 
+            final String formula = rs.formula();
+            // noinspection deprecation
+            final String paramToken = rs.paramToken().orElseThrow();
+
             if (csType == boolean.class || csType == Boolean.class) {
                 return new BooleanRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingFormulaOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                         formulaColumnMap, tableDef, compilationProcessor);
             }
             return new ObjectRollingFormulaOperator<>(pair, affectingColumns,
                     rs.revWindowScale().timestampCol(),
-                    prevWindowScaleUnits, fwdWindowScaleUnits, rs.formula(), rs.paramToken(),
+                    prevWindowScaleUnits, fwdWindowScaleUnits, formula, paramToken,
                     formulaColumnMap, tableDef, compilationProcessor);
         }
 
+        private UpdateByOperator makeRollingFormulaMultiColumnOperator(
+                @NotNull final TableDefinition tableDef,
+                @NotNull final RollingFormulaSpec rs) {
+            final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+            final Map<String, ColumnDefinition<?>> columnDefinitionMap = tableDef.getColumnNameMap();
+
+            // Create the colum
+            final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(rs.formula()));
+
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the group_by columns).
+            final Set<String> groupByColumnSet =
+                    Arrays.stream(groupByColumns).map(MatchPair::rightColumn).collect(Collectors.toSet());
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = tableDef.getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
+            }
+
+            // Get the input column names from the formula and provide them to the rolling formula operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+            if (!selectColumn.getColumnArrays().isEmpty()) {
+                throw new IllegalArgumentException("RollingFormulaMultiColumnOperator does not support column arrays ("
+                        + selectColumn.getColumnArrays() + ")");
+            }
+            if (selectColumn.hasVirtualRowVariables()) {
+                throw new IllegalArgumentException("RollingFormula does not support virtual row variables");
+            }
+
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            final Class<?>[] inputKeyColumnTypes = new Class[inputKeyColumns.length];
+            final Class<?>[] inputKeyComponentTypes = new Class[inputKeyColumns.length];
+            for (int i = 0; i < inputKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputKeyColumns[i]);
+                inputKeyColumnTypes[i] = columnDef.getDataType();
+                inputKeyComponentTypes[i] = columnDef.getComponentType();
+            }
+
+            final Class<?>[] inputNonKeyColumnTypes = new Class[inputNonKeyColumns.length];
+            final Class<?>[] inputNonKeyVectorTypes = new Class[inputNonKeyColumns.length];
+            for (int i = 0; i < inputNonKeyColumns.length; i++) {
+                final ColumnDefinition<?> columnDef = columnDefinitionMap.get(inputNonKeyColumns[i]);
+                inputNonKeyColumnTypes[i] = columnDef.getDataType();
+                inputNonKeyVectorTypes[i] = vectorColumnDefinitions.get(inputNonKeyColumns[i]).getDataType();
+            }
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = inputNonKeyColumns;
+            } else {
+                affectingColumns = ArrayUtils.add(inputNonKeyColumns, rs.revWindowScale().timestampCol());
+            }
+
+            // Create a new column pair with the same name for the left and right columns
+            final MatchPair pair = new MatchPair(selectColumn.getName(), selectColumn.getName());
+
+            return new RollingFormulaMultiColumnOperator(
+                    pair,
+                    affectingColumns,
+                    rs.revWindowScale().timestampCol(),
+                    prevWindowScaleUnits,
+                    fwdWindowScaleUnits,
+                    selectColumn,
+                    inputKeyColumns,
+                    inputKeyColumnTypes,
+                    inputKeyComponentTypes,
+                    inputNonKeyColumns,
+                    inputNonKeyColumnTypes,
+                    inputNonKeyVectorTypes);
+        }
     }
 }

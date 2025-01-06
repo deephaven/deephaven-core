@@ -39,7 +39,8 @@ public abstract class SnapshotWhenOptions {
         INCREMENTAL,
         /**
          * Whether the resulting table should keep history. A history table appends a full snapshot of {@code base} and
-         * the "stamp key" as opposed to updating existing rows.
+         * the "stamp key" as opposed to updating existing rows. When this flag is used, the trigger table must be
+         * append-only.
          *
          * <p>
          * Note: this flag is currently incompatible with {@link #INITIAL} and {@link #INCREMENTAL}.

@@ -3,12 +3,11 @@
 //
 package io.deephaven.extensions.s3;
 
-
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CredentialsTest {
+class CredentialsTest {
 
     @Test
     void defaultCredentials() {

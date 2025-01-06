@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -37,6 +36,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -215,7 +215,7 @@ public class SortHelpers {
         }
     }
 
-    static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(CollectionUtil.ZERO_LENGTH_LONG_ARRAY);
+    static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(ArrayTypeUtils.EMPTY_LONG_ARRAY);
 
     /**
      * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
@@ -358,6 +358,11 @@ public class SortHelpers {
 
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
         final Table symbolTable = ((SymbolTableSource<?>) columnSource).getStaticSymbolTable(rowSet, true);
+
+        if (symbolTable.isEmpty()) {
+            // All nulls, so we can just return the row set as the sort mapping
+            return new IndexedSortMapping(rowSet.size(), new long[] {rowSet.size()}, new RowSet[] {rowSet});
+        }
 
         if (symbolTable.size() >= sortSize) {
             // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the

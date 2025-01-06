@@ -45,7 +45,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -116,7 +115,7 @@ public final class ServletAdapter {
      * {@code resp.setBufferSize()} before invocation is allowed.
      */
     public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        // TODO(zdapeng)
+        resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "GET method not supported");
     }
 
     /**
@@ -144,7 +143,10 @@ public final class ServletAdapter {
             logger.log(FINEST, "[{0}] headers: {1}", new Object[] {logId, headers});
         }
 
-        Long timeoutNanos = headers.get(TIMEOUT_KEY);
+        // Always ignore grpc-timeout at this time, as the servlet timeout isn't being reset
+        // when the output stream is closed. See https://github.com/deephaven/deephaven-core/issues/6400
+        // for more information.
+        Long timeoutNanos = null; // headers.get(TIMEOUT_KEY);
         if (timeoutNanos == null) {
             timeoutNanos = 0L;
         }
@@ -172,10 +174,8 @@ public final class ServletAdapter {
                 getAuthority(req),
                 logId);
 
-        stream.transportState().runOnTransportThread(() -> {
-            transportListener.streamCreated(stream, method, headers);
-            stream.transportState().onStreamAllocated();
-        });
+        transportListener.streamCreated(stream, method, headers);
+        stream.transportState().runOnTransportThread(stream.transportState()::onStreamAllocated);
 
         asyncCtx.getRequest().getInputStream()
                 .setReadListener(new GrpcReadListener(stream, asyncCtx, logId));
@@ -217,7 +217,7 @@ public final class ServletAdapter {
         try {
             return new URI(req.getRequestURL().toString()).getAuthority();
         } catch (URISyntaxException e) {
-            logger.log(FINE, "Error getting authority from the request URL {0}" + req.getRequestURL());
+            logger.log(FINE, "Error getting authority from the request URL {0}", req.getRequestURL());
             return req.getServerName() + ":" + req.getServerPort();
         }
     }
@@ -282,7 +282,6 @@ public final class ServletAdapter {
         final AsyncContext asyncCtx;
         final ServletInputStream input;
         final InternalLogId logId;
-        private final AtomicBoolean closed = new AtomicBoolean(false);
 
         GrpcReadListener(
                 ServletServerStream stream,
@@ -325,16 +324,8 @@ public final class ServletAdapter {
         @Override
         public void onAllDataRead() {
             logger.log(FINE, "[{0}] onAllDataRead", logId);
-            if (!closed.compareAndSet(false, true)) {
-                // https://github.com/eclipse/jetty.project/issues/8405
-                // Note that while this can be mitigated by setting
-                // AbstractHTTP2ServerConnectionFactory.getStreamIdleTimeout to zero, we allow this to be customized, so
-                // this workaround is being left in place.
-                logger.log(FINE, "[{0}] onAllDataRead already called, skipping this one", logId);
-                return;
-            }
-            stream.transportState().runOnTransportThread(
-                    () -> stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true));
+            stream.transportState().runOnTransportThread(() ->
+                    stream.transportState().inboundDataReceived(ReadableBuffers.empty(), true));
         }
 
         @Override

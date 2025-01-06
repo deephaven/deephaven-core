@@ -9,12 +9,14 @@ configurations {
 
 dependencies {
     implementation project(':server-jetty')
-    Classpaths.inheritDagger(project)
+    implementation project(":util-thread")
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {

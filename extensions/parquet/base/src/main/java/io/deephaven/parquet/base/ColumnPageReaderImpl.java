@@ -4,20 +4,21 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.apache.parquet.bytes.ByteBufferInputStream;
-import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.column.Encoding;
-import org.apache.parquet.column.page.DataPageV1;
-import org.apache.parquet.column.page.DataPageV2;
 import org.apache.parquet.column.values.ValuesReader;
 import org.apache.parquet.column.values.dictionary.DictionaryValuesReader;
 import org.apache.parquet.format.DataPageHeader;
@@ -40,10 +41,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import static io.deephaven.parquet.compress.CompressorAdapter.readNBytes;
 import static org.apache.parquet.column.ValuesType.VALUES;
 
 final class ColumnPageReaderImpl implements ColumnPageReader {
     private static final int NULL_OFFSET = -1;
+    private static final String REPETITION_LEVELS_BUFFER_KEY = "PARQUET_REPETITION_LEVELS_BUFFER";
+    private static final String DEFINITION_LEVELS_BUFFER_KEY = "PARQUET_DEFINITION_LEVELS_BUFFER";
+    private static final String PAGE_BUFFER_KEY = "PARQUET_PAGE_BUFFER";
+    private static final String DECOMPRESSOR_HOLDER_KEY = "DECOMPRESSOR_HOLDER";
 
     private final String columnName;
     private final SeekableChannelsProvider channelsProvider;
@@ -140,7 +146,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     /**
      * Callers must ensure resulting data page does not outlive the input stream.
      */
-    private DataPageV1 readV1Unsafe(
+    private InputStream readV1Unsafe(
             final InputStream in,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE) {
@@ -149,23 +155,40 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
-        final BytesInput decompressedInput =
-                compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize, channelContext);
-        final DataPageHeader header = pageHeader.getData_page_header();
-        return new DataPageV1(
-                decompressedInput,
-                header.getNum_values(),
-                uncompressedPageSize,
-                null, // TODO in the future might want to pull in statistics
-                getEncoding(header.getRepetition_level_encoding()),
-                getEncoding(header.getDefinition_level_encoding()),
-                getEncoding(header.getEncoding()));
+        return compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize,
+                getDecompressorHolder(channelContext));
+    }
+
+    static CompressorAdapter.ResourceCache getDecompressorHolder(@NotNull SeekableChannelContext channelContext) {
+        // dhs = Decompressor Holder Supplier
+        return dhs -> channelContext.getCachedResource(DECOMPRESSOR_HOLDER_KEY, dhs);
+    }
+
+    /**
+     * Helper struct for holding the fields of a DATA_PAGE_V2 page while reading it.
+     */
+    private static class DataPageV2Partial {
+        final ByteBuffer repetitionLevels;
+        final ByteBuffer definitionLevels;
+        final InputStream decompressedStream;
+        final int uncompressedSize;
+
+        DataPageV2Partial(
+                final ByteBuffer repetitionLevels,
+                final ByteBuffer definitionLevels,
+                final InputStream decompressedStream,
+                final int uncompressedSize) {
+            this.repetitionLevels = repetitionLevels;
+            this.definitionLevels = definitionLevels;
+            this.decompressedStream = decompressedStream;
+            this.uncompressedSize = uncompressedSize;
+        }
     }
 
     /**
      * Callers must ensure resulting data page does not outlive the input stream.
      */
-    private DataPageV2 readV2Unsafe(
+    private DataPageV2Partial readV2Unsafe(
             final InputStream in,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE_V2) {
@@ -181,25 +204,20 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 - header.getDefinition_levels_byte_length();
         // With our current single input stream `in` construction, we must copy out the bytes for repetition and
         // definition levels to proceed to data. We could theoretically restructure this to be fully lazy, either by
-        // creating a BytesInput impl for SeekableByteChannel, or by migrating this logic one layer up and ensuring we
+        // creating a ByteBuffer impl for SeekableByteChannel, or by migrating this logic one layer up and ensuring we
         // construct input streams separately for repetitionLevelsIn, definitionLevelsIn, and dataIn. Both of these
         // solutions would potentially suffer from a disconnect in cache-ability that a single input stream provides.
-        final BytesInput repetitionLevels =
-                BytesInput.copy(BytesInput.from(in, header.getRepetition_levels_byte_length()));
-        final BytesInput definitionLevels =
-                BytesInput.copy(BytesInput.from(in, header.getDefinition_levels_byte_length()));
-        final BytesInput data = compressorAdapter.decompress(in, compressedSize, uncompressedSize, channelContext);
-        return new DataPageV2(
-                header.getNum_rows(),
-                header.getNum_nulls(),
-                header.getNum_values(),
-                repetitionLevels,
-                definitionLevels,
-                getEncoding(header.getEncoding()),
-                data,
-                uncompressedPageSize,
-                null, // TODO in the future might want to pull in statistics,
-                false);
+        final int repetitionLevelsLength = header.getRepetition_levels_byte_length();
+        final ByteBuffer repetitionLevels =
+                getCachedBuffer(channelContext, REPETITION_LEVELS_BUFFER_KEY, repetitionLevelsLength);
+        readNBytes(in, repetitionLevels.array(), repetitionLevels.arrayOffset(), repetitionLevelsLength);
+        final int definitionLevelsLength = header.getDefinition_levels_byte_length();
+        final ByteBuffer definitionLevels =
+                getCachedBuffer(channelContext, DEFINITION_LEVELS_BUFFER_KEY, definitionLevelsLength);
+        readNBytes(in, definitionLevels.array(), definitionLevels.arrayOffset(), definitionLevelsLength);
+        final InputStream decompressed = compressorAdapter.decompress(in, compressedSize, uncompressedSize,
+                getDecompressorHolder(channelContext));
+        return new DataPageV2Partial(repetitionLevels, definitionLevels, decompressed, uncompressedSize);
     }
 
     private int readRowCountFromDataPage(
@@ -208,7 +226,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
-                    return readRowCountFromPageV1(readV1Unsafe(in, channelContext));
+                    return readRowCountFromPageV1(readV1Unsafe(in, channelContext), channelContext);
                 }
             case DATA_PAGE_V2:
                 final DataPageHeaderV2 dataHeaderV2 = pageHeader.getData_page_header_v2();
@@ -264,16 +282,72 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         return org.apache.parquet.column.Encoding.valueOf(encoding.name());
     }
 
-    private int readRowCountFromPageV1(final DataPageV1 page) {
+    /**
+     * Helper struct for holding a ByteBuffer backed by a {@link SizedByteChunk}.
+     */
+    private static class SizedByteBuffer implements SafeCloseable {
+        private SizedByteChunk<?> chunk;
+        private ByteBuffer buffer;
+
+        SizedByteBuffer() {}
+
+        /**
+         * Ensure the underlying chunk has a capacity of at least {@code capacity}.
+         */
+        @NotNull
+        private ByteBuffer ensureCapacity(final int capacity) {
+            if (buffer != null && buffer.capacity() >= capacity) {
+                return buffer;
+            }
+            final int roundedCapacity = MathUtil.roundUpArraySize(capacity);
+            if (chunk == null) {
+                chunk = new SizedByteChunk<>(roundedCapacity);
+            } else {
+                chunk.ensureCapacity(roundedCapacity);
+            }
+            final WritableByteChunk<?> currentChunk = chunk.get();
+            // noinspection DataFlowIssue
+            buffer = ByteBuffer.wrap(currentChunk.array(), currentChunk.arrayOffset(), roundedCapacity);
+            return buffer;
+        }
+
+        @Override
+        public void close() {
+            chunk.close();
+        }
+    }
+
+    /**
+     * Get a cached array-backed ByteBuffer from the channel context for the provided key, or create a new one if it
+     * doesn't exist or is too small.
+     */
+    private static ByteBuffer getCachedBuffer(@NotNull final SeekableChannelContext channelContext, final String key,
+            final int size) {
+        final SizedByteBuffer sizedByteBuffer = channelContext.getCachedResource(key, SizedByteBuffer::new);
+        // Not checking for null here because we know the above factory will create a new instance if it doesn't exist
+        // noinspection DataFlowIssue
+        return sizedByteBuffer.ensureCapacity(size).limit(size).position(0);
+    }
+
+    private int readRowCountFromPageV1(
+            final InputStream decompressedInput,
+            @NotNull final SeekableChannelContext channelContext) {
         try {
             if (path.getMaxRepetitionLevel() != 0) {
-                // TODO - move away from page and use ByteBuffers directly
-                final ByteBuffer bytes = page.getBytes().toByteBuffer();
-                bytes.order(ByteOrder.LITTLE_ENDIAN);
-                final int length = bytes.getInt();
-                return readRepetitionLevels(bytes.slice().limit(length));
+                final int length;
+                {
+                    // Use the page buffer to read the length of page data
+                    final ByteBuffer lengthBuffer = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, Integer.BYTES)
+                            .order(ByteOrder.LITTLE_ENDIAN);
+                    readNBytes(decompressedInput, lengthBuffer.array(), lengthBuffer.arrayOffset(), Integer.BYTES);
+                    length = lengthBuffer.getInt();
+                }
+                final ByteBuffer pageBytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, length)
+                        .order(ByteOrder.LITTLE_ENDIAN);
+                readNBytes(decompressedInput, pageBytes.array(), pageBytes.arrayOffset(), length);
+                return readRepetitionLevels(pageBytes);
             } else {
-                return page.getValueCount();
+                return pageHeader.getData_page_header().getNum_values();
             }
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to read row count from Parquet V1 page for column: " +
@@ -319,22 +393,25 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Nullable
     private IntBuffer readKeysFromPageV1(
-            final DataPageV1 page,
+            final InputStream decompressedInput,
             final IntBuffer keyDest,
             final int nullPlaceholder,
             @NotNull final SeekableChannelContext channelContext) {
+        final DataPageHeader header = pageHeader.getData_page_header();
+        final int uncompressedSize = pageHeader.getUncompressed_page_size();
+        final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, uncompressedSize)
+                .order(ByteOrder.LITTLE_ENDIAN);
         try {
-            // TODO - move away from page and use ByteBuffers directly
-            final ByteBuffer bytes = page.getBytes().toByteBuffer();
-            bytes.order(ByteOrder.LITTLE_ENDIAN);
+            readNBytes(decompressedInput, bytes.array(), bytes.arrayOffset(), uncompressedSize);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
             final ValuesReader dataReader =
-                    new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getValueEncoding(),
-                            bytes, page.getValueCount(), channelContext));
+                    new KeyIndexReader((DictionaryValuesReader) getDataReader(getEncoding(header.getEncoding()),
+                            bytes, header.getNum_values(), channelContext));
             return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
         } catch (final IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("Failed to read keys from parquet V1 page for column: " + columnName +
+                    ", uri: " + uri, e);
         }
     }
 
@@ -345,7 +422,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final ValuesReader dataReader) throws IOException {
-        final Object result = materialize(IntMaterializer.Factory, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
+        final Object result = materialize(IntMaterializer.FACTORY, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
         if (result instanceof DataWithOffsets) {
             keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
             return ((DataWithOffsets) result).offsets;
@@ -375,17 +452,19 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Object readPageV1(
-            final DataPageV1 page,
+            final InputStream decompressedInput,
             final Object nullValue,
             @NotNull final SeekableChannelContext channelContext) {
+        final DataPageHeader header = pageHeader.getData_page_header();
+        final int uncompressedSize = pageHeader.getUncompressed_page_size();
+        final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, uncompressedSize)
+                .order(ByteOrder.LITTLE_ENDIAN);
         try {
-            // TODO - move away from page and use ByteBuffers directly
-            final ByteBuffer bytes = page.getBytes().toByteBuffer();
-            bytes.order(ByteOrder.LITTLE_ENDIAN);
+            readNBytes(decompressedInput, bytes.array(), bytes.arrayOffset(), uncompressedSize);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
             final ValuesReader dataReader =
-                    getDataReader(page.getValueEncoding(), bytes, page.getValueCount(), channelContext);
+                    getDataReader(getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to read parquet V1 page for column: " + columnName +
@@ -407,46 +486,55 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     @Nullable
-    private RunLengthBitPackingHybridBufferDecoder getRlDecoderPageV2(final DataPageV2 page) throws IOException {
+    private RunLengthBitPackingHybridBufferDecoder getRlDecoderPageV2(final DataPageV2Partial page) throws IOException {
         if (path.getMaxRepetitionLevel() != 0) {
-            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(),
-                    page.getRepetitionLevels().toByteBuffer());
+            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(), page.repetitionLevels);
         }
         return null;
     }
 
     @Nullable
-    private RunLengthBitPackingHybridBufferDecoder getDlDecoderPageV2(final DataPageV2 page) throws IOException {
+    private RunLengthBitPackingHybridBufferDecoder getDlDecoderPageV2(final DataPageV2Partial page) throws IOException {
         if (path.getMaxDefinitionLevel() > 0) {
-            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
-                    page.getDefinitionLevels().toByteBuffer());
+            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(), page.definitionLevels);
         }
         return null;
     }
 
     @Nullable
     private IntBuffer readKeysFromPageV2(
-            final DataPageV2 page,
+            final DataPageV2Partial page,
             final IntBuffer keyDest,
             final int nullPlaceholder,
-            @NotNull final SeekableChannelContext channelContext) throws IOException {
-        final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
-        final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
-        final ValuesReader dataReader =
-                new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getDataEncoding(),
-                        page.getData().toByteBuffer(), page.getValueCount(), channelContext));
-        return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
-    }
-
-    private Object readPageV2(
-            final DataPageV2 page,
-            final Object nullValue,
             @NotNull final SeekableChannelContext channelContext) {
+        final DataPageHeaderV2 header = pageHeader.getData_page_header_v2();
         try {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
-            final ValuesReader dataReader = getDataReader(page.getDataEncoding(),
-                    page.getData().toByteBuffer(), page.getValueCount(), channelContext);
+            final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, page.uncompressedSize);
+            readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
+            final ValuesReader dataReader =
+                    new KeyIndexReader((DictionaryValuesReader) getDataReader(getEncoding(header.getEncoding()),
+                            bytes, header.getNum_values(), channelContext));
+            return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
+        } catch (final IOException e) {
+            throw new ParquetDecodingException("Failed to read keys from parquet V2 page for column: " + columnName +
+                    ", uri: " + uri, e);
+        }
+    }
+
+    private Object readPageV2(
+            final DataPageV2Partial page,
+            final Object nullValue,
+            @NotNull final SeekableChannelContext channelContext) {
+        final DataPageHeaderV2 header = pageHeader.getData_page_header_v2();
+        try {
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
+            final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, page.uncompressedSize);
+            readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
+            final ValuesReader dataReader = getDataReader(getEncoding(header.getEncoding()),
+                    bytes, header.getNum_values(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to read parquet V2 page for column: " + columnName +

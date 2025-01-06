@@ -10,7 +10,6 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.util.SynchronizedJavaFileManager;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -710,7 +709,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         // 1. there are one or more characters that still need to be added to splits
         // 2. originalString was empty and so splits is empty and we need to add a single empty string to splits
         splits.add(originalString.substring(previousEnd));
-        return splits.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return splits.toArray(String[]::new);
     }
 
     private static int calcBytesConsumed(final char ch) {
@@ -1005,7 +1004,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
             }
         });
 
-        return wantRetry;
+        return wantRetry && !toRetry.isEmpty();
     }
 
     /**

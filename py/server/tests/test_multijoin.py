@@ -33,18 +33,18 @@ class MultiJoinTestCase(BaseTestCase):
         mj_table = multi_join(input=[self.static_tableA, self.static_tableB], on=["a","b"])
 
         # Output table is static
-        self.assertFalse(mj_table.table().is_refreshing)
+        self.assertFalse(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
-        self.assertEqual(mj_table.table().size, self.static_tableA.size)
-        self.assertEqual(mj_table.table().size, self.static_tableB.size)
+        self.assertEqual(mj_table.table.size, self.static_tableA.size)
+        self.assertEqual(mj_table.table.size, self.static_tableB.size)
 
         # Test with a single input table
         mj_table = multi_join(self.static_tableA, ["a","b"])
 
         # Output table is static
-        self.assertFalse(mj_table.table().is_refreshing)
+        self.assertFalse(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
-        self.assertEqual(mj_table.table().size, self.static_tableA.size)
+        self.assertEqual(mj_table.table.size, self.static_tableA.size)
 
 
     def test_ticking_simple(self):
@@ -52,20 +52,20 @@ class MultiJoinTestCase(BaseTestCase):
         mj_table = multi_join(input=[self.ticking_tableA, self.ticking_tableB], on=["a","b"])
 
         # Output table is refreshing
-        self.assertTrue(mj_table.table().is_refreshing)
+        self.assertTrue(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
         with update_graph.exclusive_lock(self.test_update_graph):
-            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
-            self.assertEqual(mj_table.table().size, self.ticking_tableB.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableA.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableB.size)
 
         # Test with a single input table
         mj_table = multi_join(input=self.ticking_tableA, on=["a","b"])
 
         # Output table is refreshing
-        self.assertTrue(mj_table.table().is_refreshing)
+        self.assertTrue(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
         with update_graph.exclusive_lock(self.test_update_graph):
-            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableA.size)
 
 
     def test_static(self):
@@ -77,18 +77,18 @@ class MultiJoinTestCase(BaseTestCase):
         mj_table = multi_join(mj_input)
 
         # Output table is static
-        self.assertFalse(mj_table.table().is_refreshing)
+        self.assertFalse(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
-        self.assertEqual(mj_table.table().size, self.static_tableA.size)
-        self.assertEqual(mj_table.table().size, self.static_tableB.size)
+        self.assertEqual(mj_table.table.size, self.static_tableA.size)
+        self.assertEqual(mj_table.table.size, self.static_tableB.size)
 
         # Test with a single input
         mj_table = multi_join(MultiJoinInput(table=self.static_tableA, on=["key1=a","key2=b"], joins="c1"))
 
         # Output table is static
-        self.assertFalse(mj_table.table().is_refreshing)
+        self.assertFalse(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
-        self.assertEqual(mj_table.table().size, self.static_tableA.size)
+        self.assertEqual(mj_table.table.size, self.static_tableA.size)
 
 
     def test_ticking(self):
@@ -100,20 +100,20 @@ class MultiJoinTestCase(BaseTestCase):
         mj_table = multi_join(mj_input)
 
         # Output table is refreshing
-        self.assertTrue(mj_table.table().is_refreshing)
+        self.assertTrue(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
         with update_graph.exclusive_lock(self.test_update_graph):
-            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
-            self.assertEqual(mj_table.table().size, self.ticking_tableB.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableA.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableB.size)
 
         # Test with a single input
         mj_table = multi_join(input=MultiJoinInput(table=self.ticking_tableA, on=["key1=a","key2=b"], joins="c1"))
 
         # Output table is refreshing
-        self.assertTrue(mj_table.table().is_refreshing)
+        self.assertTrue(mj_table.table.is_refreshing)
         # Output table has same # rows as sources
         with update_graph.exclusive_lock(self.test_update_graph):
-            self.assertEqual(mj_table.table().size, self.ticking_tableA.size)
+            self.assertEqual(mj_table.table.size, self.ticking_tableA.size)
 
     def test_errors(self):
         # Assert the exception is raised when providing MultiJoinInput and the on parameter is not None (omitted).

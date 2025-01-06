@@ -3,10 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.TableUpdateMode;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,8 +28,10 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     public PollingTableLocationProvider(@NotNull final TK tableKey,
             @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @Nullable final TableDataRefreshService refreshService) {
-        super(tableKey, refreshService != null);
+            @Nullable final TableDataRefreshService refreshService,
+            final TableUpdateMode updateMode,
+            final TableUpdateMode locationUpdateMode) {
+        super(tableKey, refreshService != null, updateMode, locationUpdateMode);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.refreshService = refreshService;
@@ -48,7 +48,7 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
 
     @Override
     public void refresh() {
-        locationKeyFinder.findKeys(this::handleTableLocationKey);
+        locationKeyFinder.findKeys(this::handleTableLocationKeyAdded);
         setInitialized();
     }
 

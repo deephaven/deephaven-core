@@ -234,7 +234,7 @@ class VectorizationTestCase(BaseTestCase):
 
         source = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
         result = source.update(f"X = my_sum({','.join(cols)})")
-        self.assertEqual(len(cols) + 1, len(result.columns))
+        self.assertEqual(len(cols) + 1, len(result.definition))
         self.assertEqual(_udf.vectorized_count, 0)
 
     def test_enclosed_by_parentheses(self):
@@ -341,6 +341,16 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
             t1 = t.update(["X1 = f3(Y)"])
             self.assertEqual(_udf.vectorized_count, 1)
             _udf.vectorized_count = 0
+
+    def test_no_signature_array(self):
+        builtin_max = max
+
+        t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: `rocks`"]).group_by("X").update("Y = Y.toArray()")
+        t1 = t.update(["X1 = builtin_max(Y)"])
+        self.assertEqual(t1.columns[2].data_type, dtypes.JObject)
+        self.assertEqual(_udf.vectorized_count, 0)
+        _udf.vectorized_count = 0
+
 
 if __name__ == "__main__":
     unittest.main()

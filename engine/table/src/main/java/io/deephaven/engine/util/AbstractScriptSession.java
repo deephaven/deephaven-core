@@ -24,6 +24,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -240,6 +241,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

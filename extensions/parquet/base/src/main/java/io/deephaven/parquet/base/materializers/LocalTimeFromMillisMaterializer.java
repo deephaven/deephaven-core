@@ -16,7 +16,7 @@ import java.time.LocalTime;
 
 public class LocalTimeFromMillisMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LocalTimeFromMillisMaterializer(dataReader, (LocalTime) nullValue, numValues);

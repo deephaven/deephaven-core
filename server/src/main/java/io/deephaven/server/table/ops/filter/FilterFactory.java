@@ -25,7 +25,6 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
-import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
@@ -139,7 +138,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 valueString = Long.toString(value.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                valueString = Long.toString(value.getNanoTimeValue());
+                valueString = String.format("'%d'", value.getNanoTimeValue());
                 break;
             case VALUE_NOT_SET:
             default:
@@ -184,8 +183,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + DateTimeUtils.formatDateTime(
-                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), DateTimeUtils.timeZone()) + "'";
+                values[i] = String.format("'%d'", literal.getNanoTimeValue());
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }

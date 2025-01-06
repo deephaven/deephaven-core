@@ -3,6 +3,8 @@
 //
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ClientChannelFactory;
+import io.deephaven.client.impl.ClientChannelFactoryDefaulter;
 import io.deephaven.client.impl.SessionConfig;
 import io.deephaven.client.impl.SessionConfig.Builder;
 import io.deephaven.client.impl.SessionFactory;
@@ -11,12 +13,17 @@ import io.deephaven.client.impl.SessionFactoryConfig.Factory;
 import io.grpc.ManagedChannel;
 import picocli.CommandLine.ArgGroup;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 abstract class SessionExampleBase implements Callable<Void> {
+
+    private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
+            .userAgent(SessionFactoryConfig.userAgent(Collections.singletonList("deephaven-session-examples")))
+            .build();
 
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
@@ -30,7 +37,8 @@ abstract class SessionExampleBase implements Callable<Void> {
     public final Void call() throws Exception {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         final Factory factory = SessionFactoryConfig.builder()
-                .clientConfig(connectOptions.config())
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .clientChannelFactory(CLIENT_CHANNEL_FACTORY)
                 .scheduler(scheduler)
                 .sessionConfig(sessionConfig())
                 .build()

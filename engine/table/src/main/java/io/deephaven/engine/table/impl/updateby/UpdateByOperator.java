@@ -130,7 +130,8 @@ public abstract class UpdateByOperator {
         protected abstract void reset();
     }
 
-    protected UpdateByOperator(@NotNull final MatchPair pair,
+    protected UpdateByOperator(
+            @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
@@ -159,18 +160,45 @@ public abstract class UpdateByOperator {
     public abstract void initializeSources(@NotNull Table source, @Nullable RowRedirection rowRedirection);
 
     /**
+     * Initialize the bucket context for a cumulative operator and pass in the bucket key values. Most operators will
+     * not need the key values, but those that do can override this method.
+     */
+    public void initializeCumulativeWithKeyValues(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeCumulative(context, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a cumulative operator
      */
-    public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
+    public void initializeCumulative(
+            @NotNull final Context context,
+            final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
+     * Initialize the bucket context for a windowed operator and pass in the bucket key values. Most operators will not
+     * need the key values, but those that do can override this method.
+     */
+    public void initializeRollingWithKeyValues(
+            @NotNull final Context context,
+            @NotNull final RowSet bucketRowSet,
+            @NotNull Object[] bucketKeyValues) {
+        initializeRolling(context, bucketRowSet);
+    }
+
+    /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context,
+    public void initializeRolling(
+            @NotNull final Context context,
             @NotNull final RowSet bucketRowSet) {
         context.reset();
     }

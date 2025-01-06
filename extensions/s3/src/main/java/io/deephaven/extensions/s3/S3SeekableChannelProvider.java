@@ -11,13 +11,17 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.Channels;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +29,6 @@ import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -48,9 +51,10 @@ import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_
 /**
  * {@link SeekableChannelsProvider} implementation that is used to fetch objects from an S3-compatible API.
  */
-final class S3SeekableChannelProvider implements SeekableChannelsProvider {
+class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final int MAX_KEYS_PER_BATCH = 1000;
+    private static final int UNKNOWN_SIZE = -1;
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
@@ -70,20 +74,37 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
+        this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
         this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
     }
 
     @Override
-    public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
+    public boolean exists(@NotNull final URI uri) {
+        if (getCachedSize(uri) != UNKNOWN_SIZE) {
+            return true;
+        }
+        final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
+        try {
+            fetchFileSize(s3Uri);
+        } catch (final NoSuchKeyException e) {
+            return false;
+        } catch (final IOException e) {
+            throw new UncheckedDeephavenException("Error fetching file size for URI " + uri, e);
+        }
+        return true;
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(
+            @NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
-        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
-        if (fileSizeCache != null && fileSizeCache.containsKey(uri)) {
-            return new S3SeekableByteChannel(s3Uri, fileSizeCache.get(uri).size);
+        final long cachedSize = getCachedSize(uri);
+        if (cachedSize != UNKNOWN_SIZE) {
+            return new S3SeekableByteChannel(s3Uri, cachedSize);
         }
         return new S3SeekableByteChannel(s3Uri);
     }
@@ -110,8 +131,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
-        throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
+    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
+        // bufferSizeHint is unused because s3 output stream is buffered internally into parts
+        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions);
     }
 
     @Override
@@ -119,7 +141,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, false);
+        return createStream(directory, false, S3_URI_SCHEME);
     }
 
     @Override
@@ -127,10 +149,20 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, true);
+        return createStream(directory, true, S3_URI_SCHEME);
     }
 
-    private Stream<URI> createStream(@NotNull final URI directory, final boolean isRecursive) {
+    /**
+     * Create a stream of URIs, the elements of which are the entries in the directory.
+     *
+     * @param directory The parent directory to list.
+     * @param isRecursive Whether to list the entries recursively.
+     * @param childScheme The scheme to apply to the children URIs in the returned stream.
+     */
+    Stream<URI> createStream(
+            @NotNull final URI directory,
+            final boolean isRecursive,
+            @NotNull final String childScheme) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
             private final String bucketName;
@@ -142,7 +174,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             {
                 final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
                 bucketName = s3DirectoryURI.bucket().orElseThrow();
-                directoryKey = s3DirectoryURI.key().orElseThrow();
+                directoryKey = s3DirectoryURI.key().orElse(""); // Empty string for the bucket root
             }
 
             @Override
@@ -177,8 +209,10 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             private void fetchNextBatch() throws IOException {
                 final ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder()
                         .bucket(bucketName)
-                        .prefix(directoryKey)
                         .maxKeys(MAX_KEYS_PER_BATCH);
+                if (!directoryKey.isEmpty()) {
+                    requestBuilder.prefix(directoryKey);
+                }
                 if (!isRecursive) {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
@@ -201,7 +235,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                             }
                             final URI uri;
                             try {
-                                uri = new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),
+                                uri = new URI(childScheme, directory.getUserInfo(), directory.getHost(),
                                         directory.getPort(), path, null, null);
                             } catch (final URISyntaxException e) {
                                 throw new UncheckedDeephavenException("Failed to create URI for S3 object with key: "
@@ -235,9 +269,57 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     /**
+     * Fetch the size of the file at the given S3 URI.
+     *
+     * @throws NoSuchKeyException if the file does not exist
+     * @throws IOException if there is an error fetching the file size
+     */
+    long fetchFileSize(@NotNull final S3Uri s3Uri) throws IOException {
+        final long cachedSize = getCachedSize(s3Uri.uri());
+        if (cachedSize != UNKNOWN_SIZE) {
+            return cachedSize;
+        }
+        // Fetch the size of the file using a blocking HEAD request, and store it in the cache for future use
+        if (log.isDebugEnabled()) {
+            log.debug().append("Head: ").append(s3Uri.toString()).endl();
+        }
+        final HeadObjectResponse headObjectResponse;
+        try {
+            headObjectResponse = s3AsyncClient
+                    .headObject(HeadObjectRequest.builder()
+                            .bucket(s3Uri.bucket().orElseThrow())
+                            .key(s3Uri.key().orElseThrow())
+                            .build())
+                    .get(s3Instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
+        } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+            throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
+        }
+        final long fileSize = headObjectResponse.contentLength();
+        updateFileSizeCache(s3Uri.uri(), fileSize);
+        return fileSize;
+    }
+
+    /**
+     * Get the cached size for the given URI, or {@value UNKNOWN_SIZE} if the size is not cached.
+     */
+    private long getCachedSize(final URI uri) {
+        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
+        if (fileSizeCache != null) {
+            final FileSizeInfo sizeInfo = fileSizeCache.get(uri);
+            if (sizeInfo != null) {
+                return sizeInfo.size;
+            }
+        }
+        return UNKNOWN_SIZE;
+    }
+
+    /**
      * Cache the file size for the given URI.
      */
-    void updateFileSizeCache(@NotNull final URI uri, final long size) {
+    private void updateFileSizeCache(@NotNull final URI uri, final long size) {
+        if (size < 0) {
+            throw new IllegalArgumentException("Invalid file size: " + size + " for URI " + uri);
+        }
         final Map<URI, FileSizeInfo> fileSizeCache = getFileSizeCache();
         fileSizeCache.compute(uri, (key, existingInfo) -> {
             if (existingInfo == null) {

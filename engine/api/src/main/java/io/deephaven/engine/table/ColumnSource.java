@@ -177,8 +177,34 @@ public interface ColumnSource<T>
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz) {
+        return cast(clazz, (String) null);
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}.
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class, "MyString")
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @param colName An optional column name, which will be included in exception messages.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable String colName) {
         Require.neqNull(clazz, "clazz");
-        TypeHelper.checkCastTo("ColumnSource", getType(), clazz);
+        final String castCheckPrefix = colName == null ? "ColumnSource" : "ColumnSource[" + colName + ']';
+        TypeHelper.checkCastTo(castCheckPrefix, getType(), clazz);
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
@@ -208,8 +234,39 @@ public interface ColumnSource<T>
      */
     @FinalDefault
     default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType) {
+        return cast(clazz, componentType, null);
+    }
+
+    /**
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}. Additionally, this checks that the component type of this column (as given by
+     * {@link #getComponentType()}) can be cast to {@code componentType} (both must be present and castable, or both
+     * must be {@code null}).
+     *
+     * <p>
+     * For example, the following code will throw an exception if the "MyString" column does not actually contain
+     * {@code String} data:
+     *
+     * <pre>
+     *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").cast(String.class, null, "MyString")
+     * </pre>
+     * <p>
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     *
+     * @param clazz The target type.
+     * @param componentType The target component type, may be {@code null}.
+     * @param colName An optional column name, which will be included in exception messages.
+     * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
+     * @return A {@code ColumnSource} parameterized by {@code TYPE}.
+     */
+    @FinalDefault
+    default <TYPE> ColumnSource<TYPE> cast(Class<? extends TYPE> clazz, @Nullable Class<?> componentType,
+            @Nullable String colName) {
         Require.neqNull(clazz, "clazz");
-        TypeHelper.checkCastTo("ColumnSource", getType(), getComponentType(), clazz, componentType);
+        final String castCheckPrefix = colName == null ? "ColumnSource" : "ColumnSource[" + colName + ']';
+        TypeHelper.checkCastTo(castCheckPrefix, getType(), getComponentType(), clazz, componentType);
         // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }

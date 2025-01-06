@@ -50,7 +50,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private final PerformanceEntry entry;
     private final boolean terminalListener;
 
-    private boolean failed = false;
+    protected boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
             .getInstance()
             .getBooleanWithDefault("InstrumentedTableListenerBase.verboseLogging", false);

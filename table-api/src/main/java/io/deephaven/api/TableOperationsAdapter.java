@@ -42,6 +42,11 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
+    public final TOPS_1 slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return adapt(delegate.slice(firstPositionInclusive, lastPositionExclusive));
+    }
+
+    @Override
     public final TOPS_1 reverse() {
         return adapt(delegate.reverse());
     }

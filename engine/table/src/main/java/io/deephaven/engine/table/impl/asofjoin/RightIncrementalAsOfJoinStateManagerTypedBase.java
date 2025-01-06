@@ -868,7 +868,26 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return ssa;
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
         alternateRightRowSetSource = rightRowSetSource;
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
         rightRowSetSource.ensureCapacity(tableSize);
@@ -951,20 +970,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
-
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
-        alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
-        }
-
-        newAlternate();
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
 
         return true;
     }

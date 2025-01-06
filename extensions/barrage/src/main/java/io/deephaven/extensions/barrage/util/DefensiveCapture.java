@@ -22,7 +22,7 @@ public class DefensiveCapture extends InputStream {
         if (delegate != null) {
             return delegate;
         }
-        final BarrageProtoUtil.ExposedByteArrayOutputStream out = new BarrageProtoUtil.ExposedByteArrayOutputStream();
+        final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
         final int size = in.drainTo(out);
         in.close();
         in = null;

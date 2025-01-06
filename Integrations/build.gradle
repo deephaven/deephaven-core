@@ -9,19 +9,17 @@ plugins {
 
 evaluationDependsOn ':docker-server-jetty'
 
-configurations {
-    implementation.extendsFrom dhIntegrations
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
 
     implementation project(':engine-table')
     implementation project(':plugin')
     implementation project(':Configuration')
     implementation project(':log-factory')
+    implementation project(":util-thread")
+    implementation libs.commons.lang3
 
     testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     // Needed for CalendarInit
     testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
@@ -65,6 +63,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from("${sourcePath}/../client") {
                 include 'setup.py'
                 include 'pydeephaven/**'
+                include 'deephaven_core/**'
                 include 'README.md'
                 into 'python/client'
             }

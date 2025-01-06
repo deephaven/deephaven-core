@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
@@ -122,7 +121,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(8, addedFiles.size());
             assertEquals(0, deletedFiles.size());
             assertEquals(0, modifiedFiles.size());
-            final String[] foundFiles = addedFiles.toArray(ZERO_LENGTH_STRING_ARRAY);
+            final String[] foundFiles = addedFiles.toArray(String[]::new);
             Arrays.sort(foundFiles);
             assertEquals(expectedResults, foundFiles);
         }
@@ -145,7 +144,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(8, addedFiles.size());
             assertEquals(0, deletedFiles.size());
             assertEquals(8, modifiedFiles.size());
-            final String[] updatedFiles = modifiedFiles.toArray(ZERO_LENGTH_STRING_ARRAY);
+            final String[] updatedFiles = modifiedFiles.toArray(String[]::new);
             Arrays.sort(updatedFiles);
             assertEquals(expectedResults, updatedFiles);
         }
@@ -168,7 +167,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(8, addedFiles.size());
             assertEquals(8, deletedFiles.size());
             assertEquals(8, modifiedFiles.size());
-            final String[] removedFiles = deletedFiles.toArray(ZERO_LENGTH_STRING_ARRAY);
+            final String[] removedFiles = deletedFiles.toArray(String[]::new);
             Arrays.sort(removedFiles);
             assertEquals(expectedResults, removedFiles);
         }
@@ -219,7 +218,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(6, addedFiles.size());
             assertEquals(0, deletedFiles.size());
             assertEquals(0, modifiedFiles.size());
-            final String[] foundFiles = addedFiles.toArray(ZERO_LENGTH_STRING_ARRAY);
+            final String[] foundFiles = addedFiles.toArray(String[]::new);
             Arrays.sort(foundFiles);
             assertEquals(expectedResults, foundFiles);
         }
@@ -244,7 +243,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(6, addedFiles.size());
             assertEquals(0, deletedFiles.size());
             assertEquals(6, modifiedFiles.size());
-            final String[] updatedFiles = modifiedFiles.toArray(ZERO_LENGTH_STRING_ARRAY);
+            final String[] updatedFiles = modifiedFiles.toArray(String[]::new);
             Arrays.sort(updatedFiles);
             assertEquals(expectedResults, updatedFiles);
         }

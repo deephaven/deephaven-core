@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -11,75 +10,41 @@ import io.deephaven.engine.table.ColumnSource;
 
 import java.util.*;
 
-public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
-    final SelectAndViewAnalyzer inner;
+public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
     final String name;
     final SelectColumn selectColumn;
     final boolean selectColumnHoldsVector;
     final ColumnSource<?> columnSource;
-    // probably don't need this any more
-    private final String[] dependencies;
     final ModifiedColumnSet myModifiedColumnSet;
+    final BitSet myLayerDependencySet;
 
-    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn,
-            ColumnSource<?> columnSource,
-            String[] dependencies, ModifiedColumnSet mcsBuilder) {
-        super(inner.getLayerIndex() + 1);
-        this.inner = inner;
-        this.name = name;
+    DependencyLayerBase(
+            final SelectAndViewAnalyzer.AnalyzerContext context,
+            final SelectColumn selectColumn,
+            final ColumnSource<?> columnSource,
+            final String[] dependencies,
+            final ModifiedColumnSet mcsBuilder) {
+        super(context.getNextLayerIndex());
+        this.name = selectColumn.getName();
         this.selectColumn = selectColumn;
         selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
-        this.dependencies = dependencies;
-        final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
+        context.populateParentDependenciesMCS(mcsBuilder, dependencies);
+        if (selectColumn.recomputeOnModifiedRow()) {
+            mcsBuilder.setAll(ModifiedColumnSet.ALL);
+        }
         this.myModifiedColumnSet = mcsBuilder;
+        this.myLayerDependencySet = new BitSet();
+        context.populateLayerDependencySet(myLayerDependencySet, dependencies);
     }
 
     @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
-        // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way
-        // down" the recursion.
-        if (remainingDepsToSatisfy.remove(name)) {
-            // Caller had a dependency on us, so caller gets our dependencies
-            mcsBuilder.setAll(myModifiedColumnSet);
-        }
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
+    Set<String> getLayerColumnNames() {
+        return Set.of(name);
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
-        final Map<String, Set<String>> result = inner.calcDependsOnRecurse(forcePublishAllResources);
-        final Set<String> thisResult = new HashSet<>();
-        for (final String dep : dependencies) {
-            final Set<String> innerDependencies = result.get(dep);
-            if (innerDependencies == null) {
-                // There are no further expansions of 'dep', so add it as a dependency.
-                thisResult.add(dep);
-            } else {
-                // Instead of adding 'dep', add what 'dep' expands to.
-                thisResult.addAll(innerDependencies);
-            }
-        }
-        result.put(name, thisResult);
-        return result;
-    }
-
-    @Override
-    public SelectAndViewAnalyzer getInner() {
-        return inner;
-    }
-
-    @Override
-    int getLayerIndexFor(String column) {
-        if (name.equals(column)) {
-            return getLayerIndex();
-        }
-        return inner.getLayerIndexFor(column);
-    }
-
-    @Override
-    void setBaseBits(BitSet bitset) {
-        inner.setBaseBits(bitset);
+    public ModifiedColumnSet getModifiedColumnSet() {
+        return myModifiedColumnSet;
     }
 }

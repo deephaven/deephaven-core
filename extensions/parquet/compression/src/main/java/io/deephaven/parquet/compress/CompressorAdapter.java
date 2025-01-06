@@ -5,13 +5,12 @@ package io.deephaven.parquet.compress;
 
 import io.deephaven.util.SafeCloseable;
 import org.apache.hadoop.io.compress.Decompressor;
-import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -33,10 +32,12 @@ public interface CompressorAdapter extends SafeCloseable {
         }
 
         @Override
-        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+        public InputStream decompress(
+                final InputStream inputStream,
+                final int compressedSize,
                 final int uncompressedSize,
-                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) {
-            return BytesInput.from(inputStream, compressedSize);
+                final ResourceCache decompressorCache) {
+            return inputStream;
         }
 
         @Override
@@ -45,6 +46,63 @@ public interface CompressorAdapter extends SafeCloseable {
         @Override
         public void close() {}
     };
+
+    /**
+     * Reads exactly {@code length} number of bytes from the input stream into the provided byte array.
+     *
+     * @param in The input stream to read from
+     * @param bytes The byte array to read into
+     * @param offset The offset in the byte array to start reading at
+     * @param length The number of bytes to read
+     * @throws IOException If an error occurs while reading from the input stream
+     * @throws IllegalArgumentException If the byte array is too small to read {@code length} number of bytes
+     * @throws IOException If the expected number of bytes could not be read
+     */
+    static void readNBytes(final InputStream in, final byte[] bytes, final int offset, final int length)
+            throws IOException {
+        if (length > bytes.length - offset) {
+            throw new IllegalArgumentException("Bytes array of length " + bytes.length + " with offset " + offset +
+                    " is too small to read " + length + " bytes");
+        }
+        readNBytesHelper(in, bytes, offset, length);
+    }
+
+    /**
+     * Reads exactly {@code length} number of bytes from the input stream into a new byte array and returns it.
+     *
+     * @see #readNBytesHelper(InputStream, byte[], int, int)
+     */
+    static byte[] readNBytes(final InputStream in, final int length) throws IOException {
+        final byte[] bytes = new byte[length];
+        readNBytesHelper(in, bytes, 0, length);
+        return bytes;
+    }
+
+    private static void readNBytesHelper(final InputStream in, final byte[] bytes, final int offset, final int length)
+            throws IOException {
+        int numRead = 0;
+        while (numRead < length) {
+            final int count = in.read(bytes, offset + numRead, length - numRead);
+            if (count == -1) {
+                throw new IOException("Expected to read " + length + " bytes, but read " + numRead + " bytes");
+            }
+            numRead += count;
+        }
+    }
+
+    /**
+     * An {@link InputStream} that will not close the underlying stream when {@link InputStream#close()} is called.
+     */
+    final class InputStreamNoClose extends FilterInputStream {
+        InputStreamNoClose(final InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public void close() {
+            // Do not close the underlying stream.
+        }
+    }
 
     /**
      * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
@@ -58,9 +116,17 @@ public interface CompressorAdapter extends SafeCloseable {
      */
     OutputStream compress(OutputStream os) throws IOException;
 
+    interface ResourceCache {
+        DecompressorHolder get(Supplier<DecompressorHolder> factory);
+    }
+
     /**
-     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream. The
-     * provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
+     * Creates a new input stream that will read compressed data from the provided stream, and return uncompressed data.
+     * Caller should not close the returned {@link InputStream} because this might return an internally cached
+     * decompressor to the pool. Also, callers should not read more data from the returned {@link InputStream} after
+     * closing the argument {@code inputStream}.
+     * <p>
+     * The provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
      * Otherwise, a new decompressor is created and set in the DecompressorHolder.
      * <p>
      * Note that this method is thread safe, assuming the cached decompressor instances are not shared across threads.
@@ -69,11 +135,14 @@ public interface CompressorAdapter extends SafeCloseable {
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed
      * @param decompressorCache Used to cache {@link Decompressor} instances for reuse
-     * @return the decompressed bytes, copied into memory
+     * @return an input stream that will return uncompressed data
      * @throws IOException thrown if an error occurs reading data.
      */
-    BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException;
+    InputStream decompress(
+            InputStream inputStream,
+            int compressedSize,
+            int uncompressedSize,
+            ResourceCache decompressorCache) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

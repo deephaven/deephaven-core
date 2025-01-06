@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.extensions.barrage.util.ExportUtil.buildTableCreationResponse;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNextAndComplete;
 
 public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc.PartitionedTableServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(PartitionedTableServiceGrpcImpl.class);
@@ -67,16 +67,17 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             final SessionState.ExportObject<Table> targetTable =
                     ticketRouter.resolve(session, request.getTableId(), "tableId");
 
-            session.newExport(request.getResultId(), "resultId")
+            session.<PartitionedTable>newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(targetTable)
                     .onError(responseObserver)
+                    .onSuccess((final PartitionedTable ignoredResult) -> safelyOnNextAndComplete(responseObserver,
+                            PartitionByResponse.getDefaultInstance()))
                     .submit(() -> {
                         authWiring.checkPermissionPartitionBy(session.getAuthContext(), request,
                                 Collections.singletonList(targetTable.get()));
                         PartitionedTable partitionedTable = targetTable.get().partitionBy(request.getDropKeys(),
                                 request.getKeyColumnNamesList().toArray(String[]::new));
-                        safelyComplete(responseObserver, PartitionByResponse.getDefaultInstance());
                         return partitionedTable;
                     });
         }
@@ -97,10 +98,12 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             final SessionState.ExportObject<PartitionedTable> partitionedTable =
                     ticketRouter.resolve(session, request.getPartitionedTable(), "partitionedTable");
 
-            session.newExport(request.getResultId(), "resultId")
+            session.<Table>newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable)
                     .onError(responseObserver)
+                    .onSuccess((final Table merged) -> safelyOnNextAndComplete(responseObserver,
+                            buildTableCreationResponse(request.getResultId(), merged)))
                     .submit(() -> {
                         final Table table = partitionedTable.get().table();
                         authWiring.checkPermissionMerge(session.getAuthContext(), request,
@@ -116,9 +119,6 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                             throw Exceptions.statusRuntimeException(
                                     Code.FAILED_PRECONDITION, "Not authorized to merge table.");
                         }
-                        final ExportedTableCreationResponse response =
-                                buildTableCreationResponse(request.getResultId(), merged);
-                        safelyComplete(responseObserver, response);
                         return merged;
                     });
         }
@@ -142,10 +142,12 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
             final SessionState.ExportObject<Table> keys =
                     ticketRouter.resolve(session, request.getKeyTableTicket(), "keyTable");
 
-            session.newExport(request.getResultId(), "resultId")
+            session.<Table>newExport(request.getResultId(), "resultId")
                     .queryPerformanceRecorder(queryPerformanceRecorder)
                     .require(partitionedTable, keys)
                     .onError(responseObserver)
+                    .onSuccess((final Table table) -> safelyOnNextAndComplete(responseObserver,
+                            buildTableCreationResponse(request.getResultId(), table)))
                     .submit(() -> {
                         Table table;
                         Table keyTable = keys.get();
@@ -189,13 +191,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                             });
                         }
                         table = authorizationTransformation.transform(table);
-                        final ExportedTableCreationResponse response =
-                                buildTableCreationResponse(request.getResultId(), table);
                         if (table == null) {
                             throw Exceptions.statusRuntimeException(
                                     Code.FAILED_PRECONDITION, "Not authorized to get table.");
                         }
-                        safelyComplete(responseObserver, response);
                         return table;
                     });
         }

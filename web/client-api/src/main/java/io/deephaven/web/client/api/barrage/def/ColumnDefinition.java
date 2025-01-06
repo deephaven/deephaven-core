@@ -4,106 +4,99 @@
 package io.deephaven.web.client.api.barrage.def;
 
 import io.deephaven.web.client.api.Column;
+import org.apache.arrow.flatbuf.Field;
 
 import java.util.Map;
 
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.keyValuePairs;
+
 public class ColumnDefinition {
-    private int columnIndex;
-    private String name;
-    private String type;
+    private final Field field;
+    private final int columnIndex;
+    private final String type;
 
-    private boolean isSortable;
+    private final boolean isSortable;
 
-    private String styleColumn;
-    private String formatColumn;
+    private final String styleColumn;
+    private final String formatColumn;
 
-    private boolean isStyleColumn;
-    private boolean isFormatColumn;
-    private boolean isNumberFormatColumn;
-    private boolean isPartitionColumn;
-    private boolean isHierarchicalExpandByColumn;
-    private boolean isHierarchicalRowDepthColumn;
-    private boolean isHierarchicalRowExpandedColumn;
-    private boolean isRollupAggregatedNodeColumn;
-    private boolean isRollupConstituentNodeColumn;
-    private boolean isRollupGroupByColumn;
-    private String rollupAggregationInputColumn;
+    private final boolean isStyleColumn;
+    private final boolean isFormatColumn;
+    private final boolean isPartitionColumn;
+    private final boolean isHierarchicalExpandByColumn;
+    private final boolean isHierarchicalRowDepthColumn;
+    private final boolean isHierarchicalRowExpandedColumn;
+    private final boolean isRollupAggregatedNodeColumn;
+    private final boolean isRollupConstituentNodeColumn;
+    private final boolean isRollupGroupByColumn;
+    private final String rollupAggregationInputColumn;
 
-    // Indicates that this is a style column for the row
-    private boolean forRow;
-    private boolean isInputTableKeyColumn;
-    private String description;
+    // Indicates that this is a style column for the whole row
+    private final boolean forRow;
+    private final boolean isInputTableKeyColumn;
+    private final String description;
+
+    public ColumnDefinition(int index, Field field) {
+        Map<String, String> fieldMetadata =
+                keyValuePairs("deephaven:", field.customMetadataLength(), field::customMetadata);
+        this.field = field;
+        columnIndex = index;
+        type = fieldMetadata.get("type");
+        isSortable = "true".equals(fieldMetadata.get("isSortable"));
+        isStyleColumn = "true".equals(fieldMetadata.get("isStyle"));
+        isFormatColumn = "true".equals(fieldMetadata.get("isDateFormat"))
+                || "true".equals(fieldMetadata.get("isNumberFormat"));
+        forRow = "true".equals(fieldMetadata.get("isRowStyle"));
+
+        String formatColumnName = fieldMetadata.get("dateFormatColumn");
+        if (formatColumnName == null) {
+            formatColumnName = fieldMetadata.get("numberFormatColumn");
+        }
+        formatColumn = formatColumnName;
+
+        styleColumn = fieldMetadata.get("styleColumn");
+
+        isInputTableKeyColumn = "true".equals(fieldMetadata.get("inputtable.isKey"));
+
+        this.description = fieldMetadata.get("description");
+
+        isPartitionColumn = "true".equals(fieldMetadata.get("isPartitioning"));
+
+        isHierarchicalExpandByColumn = "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn"));
+        isHierarchicalRowDepthColumn = "true".equals(fieldMetadata.get("hierarchicalTable.isRowDepthColumn"));
+        isHierarchicalRowExpandedColumn = "true".equals(fieldMetadata.get("hierarchicalTable.isRowExpandedColumn"));
+        isRollupAggregatedNodeColumn = "true".equals(fieldMetadata.get("rollupTable.isAggregatedNodeColumn"));
+        isRollupConstituentNodeColumn = "true".equals(fieldMetadata.get("rollupTable.isConstituentNodeColumn"));
+        isRollupGroupByColumn = "true".equals(fieldMetadata.get("rollupTable.isGroupByColumn"));
+        rollupAggregationInputColumn = fieldMetadata.get("rollupTable.aggregationInputColumnName");
+    }
 
     public String getName() {
-        return name;
+        return field.name();
     }
 
     public int getColumnIndex() {
         return columnIndex;
     }
 
-    public void setColumnIndex(int columnIndex) {
-        this.columnIndex = columnIndex;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getType() {
         return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public boolean isSortable() {
         return isSortable;
     }
 
-    public void setIsSortable(boolean sortable) {
-        isSortable = sortable;
-    }
-
     public boolean isStyleColumn() {
         return isStyleColumn;
-    }
-
-    public void setStyleColumn(boolean styleColumn) {
-        isStyleColumn = styleColumn;
     }
 
     public boolean isFormatColumn() {
         return isFormatColumn;
     }
 
-    public void setFormatColumn(boolean formatColumn) {
-        isFormatColumn = formatColumn;
-    }
-
-    /**
-     * @deprecated Use {@link #isFormatColumn()}
-     */
-    @Deprecated
-    public boolean isNumberFormatColumn() {
-        return isNumberFormatColumn;
-    }
-
-    /**
-     * @deprecated Use {@link #setFormatColumn(boolean)}
-     */
-    @Deprecated
-    public void setNumberFormatColumn(boolean numberFormatColumn) {
-        isNumberFormatColumn = numberFormatColumn;
-    }
-
     public boolean isPartitionColumn() {
         return isPartitionColumn;
-    }
-
-    public void setPartitionColumn(boolean partitionColumn) {
-        isPartitionColumn = partitionColumn;
     }
 
     public boolean isVisible() {
@@ -115,36 +108,16 @@ public class ColumnDefinition {
         return forRow;
     }
 
-    public void setForRow(boolean forRow) {
-        this.forRow = forRow;
-    }
-
     public String getFormatColumnName() {
         return formatColumn;
-    }
-
-    public void setFormatColumnName(String formatColumn) {
-        this.formatColumn = formatColumn;
     }
 
     public String getStyleColumnName() {
         return styleColumn;
     }
 
-    public void setStyleColumnName(String styleColumn) {
-        this.styleColumn = styleColumn;
-    }
-
-    public void setInputTableKeyColumn(boolean inputTableKeyColumn) {
-        this.isInputTableKeyColumn = inputTableKeyColumn;
-    }
-
     public boolean isInputTableKeyColumn() {
         return isInputTableKeyColumn;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public String getDescription() {
@@ -161,10 +134,10 @@ public class ColumnDefinition {
 
         return makeColumn(index,
                 this,
-                format == null || !format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                style == null ? null : style.getColumnIndex(),
                 style == null ? null : style.getColumnIndex(),
                 isPartitionColumn(),
-                format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
+                format == null ? null : format.getColumnIndex(),
                 getDescription(),
                 isInputTableKeyColumn());
     }
@@ -181,55 +154,28 @@ public class ColumnDefinition {
         return isHierarchicalExpandByColumn;
     }
 
-    public void setHierarchicalExpandByColumn(boolean hierarchicalExpandByColumn) {
-        isHierarchicalExpandByColumn = hierarchicalExpandByColumn;
-    }
-
     public boolean isHierarchicalRowDepthColumn() {
         return isHierarchicalRowDepthColumn;
-    }
-
-    public void setHierarchicalRowDepthColumn(boolean hierarchicalRowDepthColumn) {
-        isHierarchicalRowDepthColumn = hierarchicalRowDepthColumn;
     }
 
     public boolean isHierarchicalRowExpandedColumn() {
         return isHierarchicalRowExpandedColumn;
     }
 
-    public void setHierarchicalRowExpandedColumn(boolean hierarchicalRowExpandedColumn) {
-        isHierarchicalRowExpandedColumn = hierarchicalRowExpandedColumn;
-    }
-
     public boolean isRollupAggregatedNodeColumn() {
         return isRollupAggregatedNodeColumn;
-    }
-
-    public void setRollupAggregatedNodeColumn(boolean rollupAggregatedNodeColumn) {
-        isRollupAggregatedNodeColumn = rollupAggregatedNodeColumn;
     }
 
     public boolean isRollupConstituentNodeColumn() {
         return isRollupConstituentNodeColumn;
     }
 
-    public void setRollupConstituentNodeColumn(boolean rollupConstituentNodeColumn) {
-        isRollupConstituentNodeColumn = rollupConstituentNodeColumn;
-    }
-
     public boolean isRollupGroupByColumn() {
         return isRollupGroupByColumn;
-    }
-
-    public void setRollupGroupByColumn(boolean rollupGroupByColumn) {
-        isRollupGroupByColumn = rollupGroupByColumn;
     }
 
     public String getRollupAggregationInputColumn() {
         return rollupAggregationInputColumn;
     }
 
-    public void setRollupAggregationInputColumn(String rollupAggregationInputColumn) {
-        this.rollupAggregationInputColumn = rollupAggregationInputColumn;
-    }
 }

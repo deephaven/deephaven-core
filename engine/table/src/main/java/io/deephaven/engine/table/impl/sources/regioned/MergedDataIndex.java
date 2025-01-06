@@ -15,6 +15,7 @@ import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTableFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
@@ -33,7 +34,7 @@ import java.util.stream.IntStream;
 /**
  * DataIndex that accumulates the individual per-{@link TableLocation} data indexes of a {@link Table} backed by a
  * {@link RegionedColumnSourceManager}.
- * 
+ *
  * @implNote This implementation is responsible for ensuring that the provided table accounts for the relative positions
  *           of individual table locations in the provided table of indices. Work to coalesce the index table is
  *           deferred until the first call to {@link #table()}. Refreshing inputs/indexes are not supported at this time
@@ -123,7 +124,7 @@ class MergedDataIndex extends AbstractDataIndex {
             try {
                 return QueryPerformanceRecorder.withNugget(
                         String.format("Merge Data Indexes [%s]", String.join(", ", keyColumnNames)),
-                        this::buildTable);
+                        ForkJoinPoolOperationInitializer.ensureParallelizable(this::buildTable));
             } catch (Throwable t) {
                 isCorrupt = true;
                 throw t;

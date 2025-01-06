@@ -3,30 +3,24 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> implements ChunkInputStreamGenerator {
+public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>>
+        extends ReferenceCounted
+        implements ChunkInputStreamGenerator {
+
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
-
-    // Ensure that we clean up chunk only after all copies of the update are released.
-    private volatile int refCount = 1;
-
-    // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
-    // each instance.
-    @SuppressWarnings("rawtypes")
-    protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
 
     protected final T chunk;
     protected final int elementSize;
@@ -34,6 +28,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     private final long rowOffset;
 
     BaseChunkInputStreamGenerator(final T chunk, final int elementSize, final long rowOffset) {
+        super(1);
         this.chunk = chunk;
         this.elementSize = elementSize;
         this.rowOffset = rowOffset;
@@ -51,10 +46,13 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
 
     @Override
     public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
+        decrementReferenceCount();
+    }
+
+    @Override
+    protected void onReferenceCountAtZero() {
+        if (chunk instanceof PoolableChunk) {
+            ((PoolableChunk) chunk).close();
         }
     }
 
@@ -87,7 +85,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
             this.options = options;
             this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY
                     : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
-            REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
+            BaseChunkInputStreamGenerator.this.incrementReferenceCount();
             // ignore the empty chunk as these are intentionally empty generators that should work for any subset
             if (chunk.size() > 0 && this.subset.lastRowKey() >= chunk.size()) {
                 throw new IllegalStateException(
@@ -97,7 +95,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
 
         @Override
         public void close() throws IOException {
-            BaseChunkInputStreamGenerator.this.close();
+            BaseChunkInputStreamGenerator.this.decrementReferenceCount();
             subset.close();
         }
 

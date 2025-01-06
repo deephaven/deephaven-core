@@ -397,8 +397,8 @@ public class ReplicateSourcesAndChunks {
                 "Object value", "T value");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
         lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
-                "    public ObjectSingleValueSource(Class<T> type) {",
-                "        super(type);",
+                "    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {",
+                "        super(type, componentType);",
                 "        current = null;",
                 "        prev = null;",
                 "    }"));

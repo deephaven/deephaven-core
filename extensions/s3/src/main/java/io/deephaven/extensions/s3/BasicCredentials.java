@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -29,7 +30,7 @@ abstract class BasicCredentials implements AwsSdkV2Credentials {
     abstract String secretAccessKey();
 
     @Override
-    public final AwsCredentialsProvider awsV2CredentialsProvider() {
+    public final AwsCredentialsProvider awsV2CredentialsProvider(@NotNull final S3Instructions instructions) {
         return StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId(), secretAccessKey()));
     }
 }

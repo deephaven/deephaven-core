@@ -5,7 +5,9 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
-import io.deephaven.client.ClientDefaultsModule;
+import dagger.Module;
+import dagger.Provides;
+import io.deephaven.client.impl.BarrageSessionFactoryConfig;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -17,14 +19,17 @@ import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.DeephavenChannelImpl;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.auth.CommunityAuthorizationProvider;
-import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.scheduler.SchedulerDelegatingImplModule;
+import io.deephaven.server.session.ClientChannelFactoryModule;
+import io.deephaven.server.session.ClientChannelFactoryModule.UserAgent;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
+import io.deephaven.server.session.SslConfigModule;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -39,6 +44,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,8 +52,20 @@ import java.util.Optional;
  */
 public abstract class DeephavenApiServerTestBase {
 
-    @Singleton
-    @Component(modules = {
+    @Module(includes = {
+            ClientChannelFactoryModule.class,
+            SslConfigModule.class,
+    })
+    public interface TestClientChannelFactoryModule {
+
+        @Provides
+        @UserAgent
+        static String providesUserAgent() {
+            return BarrageSessionFactoryConfig.userAgent(List.of("deephaven-server-test-utils"));
+        }
+    }
+
+    @Module(includes = {
             DeephavenApiServerModule.class,
             DeephavenApiConfigModule.class,
             LogModule.class,
@@ -55,12 +73,18 @@ public abstract class DeephavenApiServerTestBase {
             ServerBuilderInProcessModule.class,
             RpcServerStateInterceptor.Module.class,
             ExecutionContextUnitTestModule.class,
-            ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             JsPluginNoopConsumerModule.class,
             SchedulerDelegatingImplModule.class,
-            CalendarsFromConfigurationModule.class
+            CalendarsFromConfigurationModule.class,
+            TestClientChannelFactoryModule.class
     })
+    public interface TestModule {
+
+    }
+
+    @Singleton
+    @Component(modules = TestModule.class)
     public interface TestComponent {
 
         void injectFields(DeephavenApiServerTestBase instance);
@@ -109,6 +133,10 @@ public abstract class DeephavenApiServerTestBase {
     @Inject
     RpcServerStateInterceptor serverStateInterceptor;
 
+    protected DeephavenApiServerTestBase.TestComponent.Builder testComponentBuilder() {
+        return DaggerDeephavenApiServerTestBase_TestComponent.builder();
+    }
+
     @Before
     public void setUp() throws Exception {
         logBuffer = new LogBuffer(128);
@@ -125,7 +153,7 @@ public abstract class DeephavenApiServerTestBase {
                 .port(-1)
                 .build();
 
-        DaggerDeephavenApiServerTestBase_TestComponent.builder()
+        testComponentBuilder()
                 .withServerConfig(config)
                 .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)

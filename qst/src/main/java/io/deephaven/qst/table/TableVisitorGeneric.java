@@ -38,6 +38,11 @@ public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
     }
 
     @Override
+    public T visit(SliceTable sliceTable) {
+        return accept(sliceTable);
+    }
+
+    @Override
     public T visit(ReverseTable reverseTable) {
         return accept(reverseTable);
     }
@@ -155,5 +160,10 @@ public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
     @Override
     public T visit(DropColumnsTable dropColumnsTable) {
         return accept(dropColumnsTable);
+    }
+
+    @Override
+    public T visit(MultiJoinTable multiJoinTable) {
+        return accept(multiJoinTable);
     }
 }

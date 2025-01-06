@@ -3,55 +3,44 @@
 //
 package io.deephaven.web.client.api.tree;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsIgnore;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
-import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.MessageHeader;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.RecordBatch;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.ByteBuffer;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableApplyRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
-import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
+import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
-import io.deephaven.web.client.api.subscription.ViewportData;
-import io.deephaven.web.client.api.subscription.ViewportRow;
-import io.deephaven.web.client.api.tree.JsTreeTable.TreeViewportData.TreeRow;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.SubscriptionType;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.*;
-import io.deephaven.web.shared.data.columns.ColumnData;
 import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
@@ -66,10 +55,6 @@ import jsinterop.base.Js;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
-import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -108,7 +93,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * roll-up table, the totals only include leaf nodes (as non-leaf nodes are generated through grouping the contents of
  * the original table). Roll-ups also have the {@link JsRollupConfig#includeConstituents} property, indicating that a
  * {@link Column} in the tree may have a {@link Column#getConstituentType()} property reflecting that the type of cells
- * where {@link TreeRow#hasChildren()} is false will be different from usual.</li>
+ * where {@link TreeSubscription.TreeRowImpl#hasChildren()} is false will be different from usual.</li>
  * </ul>
  */
 @JsType(namespace = "dh", name = "TreeTable")
@@ -126,216 +111,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
     private static final double ACTION_COLLAPSE = 0b100;
 
-    @TsInterface
-    @TsName(namespace = "dh")
-    public class TreeViewportData implements TableData {
-        private final Boolean[] expandedColumn;
-        private final int[] depthColumn;
-        private final double offset;
-        private final double treeSize;
-
-        private final JsArray<Column> columns;
-        private final JsArray<TreeRow> rows;
-
-        private TreeViewportData(double offset, long viewportSize, double treeSize, ColumnData[] dataColumns,
-                Column[] columns) {
-            this.offset = offset;
-            this.treeSize = treeSize;
-            this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
-
-            // Unlike ViewportData, assume that we own this copy of the data and can mutate at will. As such,
-            // we'll just clean the data that the requested columns know about for now.
-            // TODO to improve this, we can have synthetic columns to handle data that wasn't requested/expected,
-            // and then can share code with ViewportData
-            Object[] data = new Object[dataColumns.length];
-
-            expandedColumn = Js.uncheckedCast(
-                    ViewportData.cleanData(dataColumns[rowExpandedCol.getIndex()].getData(), rowExpandedCol));
-            depthColumn = Js.uncheckedCast(
-                    ViewportData.cleanData(dataColumns[rowDepthCol.getIndex()].getData(), rowDepthCol));
-
-            int constituentDepth = keyColumns.length + 2;
-
-            // Without modifying this.columns (copied and frozen), make sure our key columns are present
-            // in the list of columns that we will copy data for the viewport
-            keyColumns.forEach((col, p1) -> {
-                if (this.columns.indexOf(col) == -1) {
-                    columns[columns.length] = col;
-                }
-                return null;
-            });
-
-            for (int i = 0; i < columns.length; i++) {
-                Column c = columns[i];
-                int index = c.getIndex();
-
-                // clean the data, since it will be exposed to the client
-                data[index] = ViewportData.cleanData(dataColumns[index].getData(), c);
-                if (c.getStyleColumnIndex() != null) {
-                    data[c.getStyleColumnIndex()] = dataColumns[c.getStyleColumnIndex()].getData();
-                }
-                if (c.getFormatStringColumnIndex() != null) {
-                    data[c.getFormatStringColumnIndex()] = dataColumns[c.getFormatStringColumnIndex()].getData();
-                }
-
-                // if there is a matching constituent column array, clean it and copy from it
-                Column sourceColumn = sourceColumns.get(c.getName());
-                if (sourceColumn != null) {
-                    ColumnData constituentColumn = dataColumns[sourceColumn.getIndex()];
-                    if (constituentColumn != null) {
-                        JsArray<Any> cleanConstituentColumn =
-                                Js.uncheckedCast(ViewportData.cleanData(constituentColumn.getData(), sourceColumn));
-                        // Overwrite the data with constituent values, if any
-                        // We use cleanConstituentColumn to find max item rather than data[index], since we
-                        // are okay stopping at the last constituent value, in case the server sends shorter
-                        // arrays.
-                        for (int rowIndex = 0; rowIndex < cleanConstituentColumn.length; rowIndex++) {
-                            if (depthColumn[rowIndex] == constituentDepth)
-                                Js.asArrayLike(data[index]).setAt(rowIndex, cleanConstituentColumn.getAt(rowIndex));
-                        }
-
-                        if (sourceColumn.getStyleColumnIndex() != null) {
-                            assert c.getStyleColumnIndex() != null;
-                            ColumnData styleData = dataColumns[sourceColumn.getStyleColumnIndex()];
-                            if (styleData != null) {
-                                JsArray<Any> styleArray = Js.cast(styleData.getData());
-                                for (int rowIndex = 0; rowIndex < styleArray.length; rowIndex++) {
-                                    if (depthColumn[rowIndex] == constituentDepth)
-                                        Js.asArrayLike(data[c.getStyleColumnIndex()]).setAt(rowIndex,
-                                                styleArray.getAt(rowIndex));
-                                }
-                            }
-                        }
-                        if (sourceColumn.getFormatStringColumnIndex() != null) {
-                            assert c.getFormatStringColumnIndex() != null;
-                            ColumnData formatData = dataColumns[sourceColumn.getFormatStringColumnIndex()];
-                            if (formatData != null) {
-                                JsArray<Any> formatArray = Js.cast(formatData.getData());
-                                for (int rowIndex = 0; rowIndex < formatArray.length; rowIndex++) {
-                                    if (depthColumn[rowIndex] == constituentDepth) {
-                                        Js.asArrayLike(data[c.getFormatStringColumnIndex()]).setAt(rowIndex,
-                                                formatArray.getAt(rowIndex));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (rowFormatColumn != NO_ROW_FORMAT_COLUMN) {
-                data[rowFormatColumn] = dataColumns[rowFormatColumn].getData();
-            }
-
-            rows = new JsArray<>();
-            for (int i = 0; i < viewportSize; i++) {
-                rows.push(new TreeRow(i, data, data[rowFormatColumn]));
-            }
-        }
-
-        @Override
-        public Row get(long index) {
-            return getRows().getAt((int) index);
-        }
-
-        @Override
-        public Row get(int index) {
-            return getRows().getAt((int) index);
-        }
-
-        @Override
-        public Any getData(int index, Column column) {
-            return getRows().getAt(index).get(column);
-        }
-
-        @Override
-        public Any getData(long index, Column column) {
-            return getRows().getAt((int) index).get(column);
-        }
-
-        @Override
-        public Format getFormat(int index, Column column) {
-            return getRows().getAt(index).getFormat(column);
-        }
-
-        @Override
-        public Format getFormat(long index, Column column) {
-            return getRows().getAt((int) index).getFormat(column);
-        }
-
-        @JsProperty
-        public double getOffset() {
-            return offset;
-        }
-
-        @JsProperty
-        public JsArray<Column> getColumns() {
-            return columns;
-        }
-
-        @JsProperty
-        public JsArray<TreeRow> getRows() {
-            return rows;
-        }
-
-        public double getTreeSize() {
-            return treeSize;
-        }
-
-        /**
-         * Row implementation that also provides additional read-only properties. represents visible rows in the table,
-         * but with additional properties to reflect the tree structure.
-         */
-        @TsInterface
-        @TsName(namespace = "dh")
-        public class TreeRow extends ViewportRow {
-            public TreeRow(int offsetInSnapshot, Object[] dataColumns, Object rowStyleColumn) {
-                super(offsetInSnapshot, dataColumns, rowStyleColumn);
-            }
-
-            /**
-             * True if this node is currently expanded to show its children; false otherwise. Those children will be the
-             * rows below this one with a greater depth than this one
-             * 
-             * @return boolean
-             */
-            @JsProperty(name = "isExpanded")
-            public boolean isExpanded() {
-                return expandedColumn[offsetInSnapshot] == Boolean.TRUE;
-            }
-
-            /**
-             * True if this node has children and can be expanded; false otherwise. Note that this value may change when
-             * the table updates, depending on the table's configuration
-             * 
-             * @return boolean
-             */
-            @JsProperty(name = "hasChildren")
-            public boolean hasChildren() {
-                return expandedColumn[offsetInSnapshot] != null;
-            }
-
-            /**
-             * The number of levels above this node; zero for top level nodes. Generally used by the UI to indent the
-             * row and its expand/collapse icon
-             * 
-             * @return int
-             */
-            @JsProperty(name = "depth")
-            public int depth() {
-                return depthColumn[offsetInSnapshot];
-            }
-
-            public void appendKeyData(Object[][] keyTableData, double action) {
-                int i;
-                for (i = 0; i < keyColumns.length; i++) {
-                    Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
-                }
-                Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
-                Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
-            }
-        }
-    }
-
     /**
      * Ordered series of steps that must be performed when changes are made to the table. When any change is applied,
      * all subsequent steps must be performed as well.
@@ -352,7 +127,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private final InitialTableDefinition tableDefinition;
     private final Column[] visibleColumns;
     private final Map<String, Column> columnsByName = new HashMap<>();
-    private final int rowFormatColumn;
     private final Map<String, Column> sourceColumns;
     private final JsArray<Column> keyColumns = new JsArray<>();
     private Column rowDepthCol;
@@ -376,7 +150,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Promise<JsTable> keyTable;
 
     private TicketAndPromise<?> viewTicket;
-    private Promise<BiDiStream<?, ?>> stream;
+    private Promise<TreeSubscription> stream;
 
     // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
     // to replace them soon.
@@ -389,7 +163,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Column[] columns;
     private int updateInterval = 1000;
 
-    private TreeViewportData currentViewportData;
+    private TreeSubscription.TreeViewportDataImpl currentViewportData;
 
     private boolean alwaysFireNextEvent = false;
 
@@ -408,10 +182,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
-        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
         this.isRefreshing = !treeDescriptor.getIsStatic();
-        this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
+        this.tableDefinition = WebBarrageUtils.readTableDefinition(flightSchemaMessage);
         Column[] columns = new Column[0];
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
@@ -457,7 +230,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         columnDefsByName.get(true).get(definition.getRollupAggregationInputColumn()).getType());
             }
         }
-        this.rowFormatColumn = rowFormatColumn;
         this.groupedColumns = JsObject.freeze(groupedColumns);
 
         sourceColumns = columnDefsByName.get(false).values().stream()
@@ -602,6 +374,210 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return viewTicket;
     }
 
+    private int constituentDepth() {
+        return keyColumns.length + 2;
+    }
+
+    public class TreeSubscription extends AbstractTableSubscription {
+        @TsIgnore
+        public class TreeViewportDataImpl extends AbstractTableSubscription.UpdateEventData
+                implements TreeViewportData {
+            private final double treeSize;
+
+            private final JsArray<Column> columns;
+
+            private TreeViewportDataImpl(WebBarrageSubscription subscription, int rowStyleColumn,
+                    JsArray<Column> columns,
+                    RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+                super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
+
+                this.treeSize = barrageSubscription.getCurrentRowSet().size();
+                this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
+            }
+
+            @Override
+            public Any getData(int index, Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getData(index, column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getData(index, column);
+                }
+                // read source col instead
+                return super.getData(index, sourceColumn);
+            }
+
+            @Override
+            public Any getData(long index, Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getData(index, column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getData(index, column);
+                }
+                // read source col instead
+                return super.getData(index, sourceColumn);
+            }
+
+            @Override
+            public Format getFormat(int index, Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getFormat(index, column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getFormat(index, column);
+                }
+                // read source col instead
+                return super.getFormat(index, sourceColumn);
+            }
+
+            @Override
+            public Format getFormat(long index, Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getFormat(index, column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getFormat(index, column);
+                }
+                // read source col instead
+                return super.getFormat(index, sourceColumn);
+            }
+
+            @Override
+            public JsArray<Column> getColumns() {
+                // This looks like its superclass, but we're actually returning a different field
+                return columns;
+            }
+
+            @Override
+            protected SubscriptionRow makeRow(long index) {
+                return new TreeRowImpl(subscription, index);
+            }
+
+            @JsProperty
+            public double getTreeSize() {
+                return treeSize;
+            }
+        }
+
+        public class TreeRowImpl extends SubscriptionRow implements TreeViewportData.TreeRow {
+
+            public TreeRowImpl(WebBarrageSubscription subscription, long index) {
+                super(subscription, rowStyleColumn, index);
+            }
+
+            @Override
+            public boolean isExpanded() {
+                return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() == Boolean.TRUE;
+            }
+
+            @Override
+            public boolean hasChildren() {
+                return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() != null;
+            }
+
+            @Override
+            public int depth() {
+                return Js.coerceToInt(barrageSubscription.getData(index, rowDepthCol.getIndex()));
+            }
+
+            public void appendKeyData(Object[][] keyTableData, double action) {
+                int i;
+                for (i = 0; i < keyColumns.length; i++) {
+                    Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
+                }
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
+            }
+
+            @Override
+            public Any get(Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.get(column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.get(column);
+                }
+                // read source col instead
+                return super.get(sourceColumn);
+            }
+
+            @Override
+            public Format getFormat(Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getFormat(column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getFormat(column);
+                }
+                // read source col instead
+                return super.getFormat(sourceColumn);
+            }
+        }
+
+        private RangeSet serverViewport;
+
+        public TreeSubscription(ClientTableState state, WorkerConnection connection) {
+            super(SubscriptionType.VIEWPORT_SUBSCRIPTION, state, connection);
+        }
+
+        @Override
+        protected void sendFirstSubscriptionRequest() {
+            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), (double) updateInterval);
+        }
+
+        @Override
+        protected BitSet makeColumnBitset(JsArray<Column> columns) {
+            BitSet requested = super.makeColumnBitset(columns);
+            requested.or(makeColumnSubscriptionBitset());
+            return requested;
+        }
+
+        @Override
+        protected void onStreamEnd(ResponseStreamWrapper.Status status) {
+            super.onStreamEnd(status);
+            JsTreeTable.this.stream = null;
+            if (!status.isOk()) {
+                failureHandled(status.getDetails());
+            }
+        }
+
+        public void setViewport(double firstRow, double lastRow, JsArray<Column> columns, Double updateInterval) {
+            serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
+
+            sendBarrageSubscriptionRequest(RangeSet.ofRange((long) firstRow, (long) lastRow), Js.uncheckedCast(columns),
+                    updateInterval, false);
+        }
+
+        @Override
+        protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods,
+                ShiftedRange[] shifted) {
+            TreeViewportDataImpl detail =
+                    new TreeViewportDataImpl(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+                            rowsRemoved, totalMods, shifted);
+            detail.setOffset(this.serverViewport.getFirstRow());
+            fireEvent(EVENT_UPDATED, detail);
+        }
+    }
+
     private void replaceSubscription(RebuildStep step) {
         // Perform steps required to remove the existing intermediate tickets.
         // Fall-through between steps is deliberate.
@@ -621,18 +597,28 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     viewTicket.release();
                     viewTicket = null;
                 }
-            case SUBSCRIPTION:
+
+                // In all of the above cases, we replace the subscription
                 if (stream != null) {
                     stream.then(stream -> {
-                        stream.end();
-                        stream.cancel();
+                        stream.close();
                         return null;
                     });
                     stream = null;
                 }
+                break;
+            case SUBSCRIPTION:
+                // If it exists, adjust the existing subscription, otherwise create a new one
+                if (stream != null) {
+                    stream.then(subscription -> {
+                        subscription.setViewport(firstRow, lastRow, Js.uncheckedCast(columns), (double) updateInterval);
+                        return null;
+                    });
+                    return;
+                }
         }
 
-        Promise<BiDiStream<?, ?>> stream = Promise.resolve(defer())
+        Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
                     TicketAndPromise filter = prepareFilter();
@@ -648,8 +634,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
                     RangeSet range = RangeSet.ofRange((long) (double) firstRow, (long) (double) lastRow);
 
-                    Column[] queryColumns = this.columns;
-
                     boolean alwaysFireEvent = this.alwaysFireNextEvent;
                     this.alwaysFireNextEvent = false;
 
@@ -658,91 +642,29 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                             columnsBitset,
                             range,
                             alwaysFireEvent);
-                    BiDiStream<FlightData, FlightData> doExchange =
-                            connection.<FlightData, FlightData>streamFactory().create(
-                                    headers -> connection.flightServiceClient().doExchange(headers),
-                                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first,
-                                            headers),
-                                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next,
-                                            headers,
-                                            c::apply),
-                                    new FlightData());
 
-                    FlightData subscriptionRequestWrapper = new FlightData();
-                    Builder doGetRequest = new Builder(1024);
-                    double columnsOffset = BarrageSubscriptionRequest.createColumnsVector(doGetRequest,
-                            makeUint8ArrayFromBitset(columnsBitset));
-                    double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest,
-                            serializeRanges(
-                                    Collections.singleton(
-                                            range)));
-                    double serializationOptionsOffset = BarrageSubscriptionOptions
-                            .createBarrageSubscriptionOptions(doGetRequest, ColumnConversionMode.Stringify, true,
-                                    updateInterval, 0, 0);
-                    double tableTicketOffset =
-                            BarrageSubscriptionRequest.createTicketVector(doGetRequest,
-                                    viewTicket.ticket().getTicket_asU8());
-                    BarrageSubscriptionRequest.startBarrageSubscriptionRequest(doGetRequest);
-                    BarrageSubscriptionRequest.addTicket(doGetRequest, tableTicketOffset);
-                    BarrageSubscriptionRequest.addColumns(doGetRequest, columnsOffset);
-                    BarrageSubscriptionRequest.addSubscriptionOptions(doGetRequest, serializationOptionsOffset);
-                    BarrageSubscriptionRequest.addViewport(doGetRequest, viewportOffset);
-                    doGetRequest.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(doGetRequest));
+                    ClientTableState state = new ClientTableState(connection,
+                            new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
+                                callback.apply("fail, trees dont reconnect like this", null);
+                            }, "");
+                    ExportedTableCreationResponse def = new ExportedTableCreationResponse();
+                    HierarchicalTableDescriptor treeDescriptor =
+                            HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
+                    def.setSchemaHeader(treeDescriptor.getSnapshotSchema_asU8());
+                    def.setResultId(new TableReference());
+                    def.getResultId().setTicket(viewTicket.ticket());
+                    state.applyTableCreationResponse(def);
 
-                    subscriptionRequestWrapper.setAppMetadata(
-                            WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSubscriptionRequest));
-                    doExchange.send(subscriptionRequestWrapper);
+                    TreeSubscription subscription = new TreeSubscription(state, connection);
 
-                    String[] columnTypes = Arrays.stream(tableDefinition.getColumns())
-                            .map(ColumnDefinition::getType)
-                            .toArray(String[]::new);
-                    doExchange.onStatus(status -> {
-                        if (!status.isOk()) {
-                            failureHandled(status.getDetails());
-                        }
-                    });
-                    doExchange.onEnd(status -> {
-                        this.stream = null;
-                    });
-                    doExchange.onData(flightData -> {
-                        Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
-                        if (message.headerType() == MessageHeader.Schema) {
-                            // ignore for now, we'll handle this later
-                            return;
-                        }
-                        assert message.headerType() == MessageHeader.RecordBatch;
-                        RecordBatch header = message.header(new RecordBatch());
-                        Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
-                        BarrageUpdateMetadata update = null;
-                        if (appMetadataBytes.length != 0) {
-                            BarrageMessageWrapper barrageMessageWrapper =
-                                    BarrageMessageWrapper.getRootAsBarrageMessageWrapper(
-                                            new ByteBuffer(
-                                                    appMetadataBytes));
+                    subscription.addEventListener(TreeSubscription.EVENT_UPDATED,
+                            (Event<AbstractTableSubscription.UpdateEventData> data) -> {
+                                TreeSubscription.TreeViewportDataImpl detail =
+                                        (TreeSubscription.TreeViewportDataImpl) data.getDetail();
 
-                            update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                                    new ByteBuffer(
-                                            new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
-                        }
-                        TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                                WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()),
-                                update,
-                                true,
-                                columnTypes);
-
-                        final RangeSet includedRows = snapshot.getIncludedRows();
-                        double offset = firstRow;
-                        assert includedRows.isEmpty() || Js.asInt(offset) == includedRows.getFirstRow();
-                        TreeViewportData vd = new TreeViewportData(
-                                offset,
-                                includedRows.isEmpty() ? 0 : includedRows.size(),
-                                snapshot.getTableSize(),
-                                snapshot.getDataColumns(),
-                                queryColumns);
-
-                        handleUpdate(nextSort, nextFilters, vd, alwaysFireEvent);
-                    });
-                    return Promise.resolve(doExchange);
+                                handleUpdate(nextSort, nextFilters, detail, alwaysFireEvent);
+                            });
+                    return Promise.resolve(subscription);
                 });
         stream.catch_(err -> {
             // if this is the active attempt at a subscription, report the error
@@ -765,7 +687,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     private void handleUpdate(List<Sort> nextSort, List<FilterCondition> nextFilters,
-            TreeViewportData viewportData, boolean alwaysFireEvent) {
+            TreeSubscription.TreeViewportDataImpl viewportData, boolean alwaysFireEvent) {
         JsLog.debug("tree table response arrived", viewportData);
         if (closed) {
             // ignore
@@ -781,9 +703,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.filters = nextFilters;
 
         if (fireEvent) {
-            CustomEventInit<TreeViewportData> updatedEvent = CustomEventInit.create();
-            updatedEvent.setDetail(viewportData);
-            fireEvent(EVENT_UPDATED, updatedEvent);
+            fireEvent(EVENT_UPDATED, viewportData);
         }
     }
 
@@ -863,7 +783,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         @JsOverlay
         default boolean isTreeRow() {
-            return this instanceof TreeRow;
+            return this instanceof TreeSubscription.TreeRowImpl;
         }
 
         @JsOverlay
@@ -873,7 +793,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         @JsOverlay
         @TsUnionMember
-        default TreeRow asTreeRow() {
+        default TreeViewportData.TreeRow asTreeRow() {
             return Js.cast(this);
         }
 
@@ -889,9 +809,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * the size of the table will change. If node is to be expanded and the third parameter, <b>expandDescendants</b>,
      * is true, then its children will also be expanded.
      *
-     * @param row
-     * @param isExpanded
-     * @param expandDescendants
+     * @param row the row to expand or collapse, either the absolute row index or the row object
+     * @param isExpanded true to expand the row, false to collapse
+     * @param expandDescendants true to expand the row and all descendants, false to expand only the row, defaults to
+     *        false
      */
     public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
@@ -904,11 +825,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             action = ACTION_EXPAND;
         }
 
-        final TreeRow r;
+        final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = currentViewportData.rows.getAt((int) (row.asNumber() - currentViewportData.offset));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
+                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
-            r = row.asTreeRow();
+            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -926,18 +848,18 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     /**
-     * true if the given row is expanded, false otherwise. Equivalent to `TreeRow.isExpanded`, if an instance of the row
-     * is available
+     * Tests if the specified row is expanded.
      * 
-     * @param row
-     * @return boolean
+     * @param row the row to test, either the absolute row index or the row object
+     * @return boolean true if the row is expanded, false otherwise
      */
     public boolean isExpanded(RowReferenceUnion row) {
-        final TreeRow r;
+        final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = currentViewportData.rows.getAt((int) (row.asNumber() - currentViewportData.offset));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows()
+                    .getAt((int) (row.asNumber() - currentViewportData.getOffset()));
         } else if (row.isTreeRow()) {
-            r = row.asTreeRow();
+            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -956,8 +878,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         replaceSubscription(RebuildStep.SUBSCRIPTION);
     }
 
-    public Promise<TreeViewportData> getViewportData() {
-        LazyPromise<TreeViewportData> promise = new LazyPromise<>();
+    public Promise<@TsTypeRef(TreeViewportData.class) Object> getViewportData() {
+        LazyPromise<Object> promise = new LazyPromise<>();
 
         if (currentViewportData == null) {
             // only one of these two will fire, and when they do, they'll remove both handlers.
@@ -1020,8 +942,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         if (stream != null) {
             stream.then(stream -> {
-                stream.end();
-                stream.cancel();
+                stream.close();
                 return null;
             });
             stream = null;
@@ -1036,6 +957,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     @Override
+    @JsIgnore
     public TypedTicket typedTicket() {
         return widget.typedTicket();
     }

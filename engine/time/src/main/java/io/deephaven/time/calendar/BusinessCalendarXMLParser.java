@@ -35,7 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *     <description>New York Stock Exchange Calendar</description>
  *     <timeZone>America/New_York</timeZone>
  *     <default>
- *          <businessTime><open>09:30</open><close>16:00</close></businessTime>
+ *          <businessTime>
+ *              <open>09:30</open>
+ *              <close>16:00</close>
+ *              <!-- Optional include the close nanosecond in the business time range. -->
+ *              <includeClose>true</includeClose>
+ *          </businessTime>
  *          <weekend>Saturday</weekend>
  *          <weekend>Sunday</weekend>
  *      </default>
@@ -51,6 +56,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *          <businessTime>
  *              <open>09:30</open>
  *              <close>13:00</close>
+ *              <!-- Optional include the close nanosecond in the business time range. -->
+ *              <includeClose>true</includeClose>
  *          </businessTime>
  *      </holiday>
  * </calendar>
@@ -254,6 +261,7 @@ public final class BusinessCalendarXMLParser {
         for (int i = 0; i < businessRanges.size(); i++) {
             final String openTxt = getText(getRequiredChild(businessRanges.get(i), "open"));
             final String closeTxt = getText(getRequiredChild(businessRanges.get(i), "close"));
+            final String includeCloseTxt = getText(businessRanges.get(i).getChild("includeClose"));
 
             if (closeTxt.startsWith("24:00")) {
                 throw new RuntimeException("Close time (" + closeTxt
@@ -262,7 +270,8 @@ public final class BusinessCalendarXMLParser {
 
             final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
             final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
-            rst[i] = new TimeRange<>(open, close, true);
+            final boolean inclusiveEnd = Boolean.parseBoolean(includeCloseTxt); // defaults to false
+            rst[i] = new TimeRange<>(open, close, inclusiveEnd);
         }
 
         return rst;
@@ -282,7 +291,7 @@ public final class BusinessCalendarXMLParser {
                 final String closeTxt = openClose[1];
                 final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
                 final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
-                rst[i] = new TimeRange<>(open, close, true);
+                rst[i] = new TimeRange<>(open, close, false);
             } else {
                 throw new IllegalArgumentException("Can not parse business periods; open/close = " + br.getText());
             }

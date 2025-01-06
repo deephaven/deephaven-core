@@ -207,7 +207,7 @@ class TableListenerHandle:
         fls = self._table.session.flight_service
         self._writer, self._reader = fls.do_exchange()
         self._bp = dhc.BarrageProcessor.create(self._table.schema)
-        subreq = dhc.BarrageProcessor.create_subscription_request(self._table.ticket.ticket)
+        subreq = dhc.BarrageProcessor.create_subscription_request(self._table.ticket._ticket_bytes)
         self._writer.write_metadata(subreq)
 
         self._thread = threading.Thread(target=self._process_data)

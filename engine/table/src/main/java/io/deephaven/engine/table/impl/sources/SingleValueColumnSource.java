@@ -8,19 +8,22 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftData;
-
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements WritableColumnSource<T>, ChunkSink<Values>, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
 
-    SingleValueColumnSource(Class<T> type) {
-        super(type);
+    SingleValueColumnSource(@NotNull final Class<T> type) {
+        this(type, null);
+    }
+
+    SingleValueColumnSource(@NotNull final Class<T> type, @Nullable final Class<?> elementType) {
+        super(type, elementType);
     }
 
     @Override
@@ -28,10 +31,11 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         isTrackingPrevValues = true;
     }
 
-    @Override
-    public void shift(long start, long end, long offset) {}
-
     public static <T> SingleValueColumnSource<T> getSingleValueColumnSource(Class<T> type) {
+        return getSingleValueColumnSource(type, null);
+    }
+
+    public static <T> SingleValueColumnSource<T> getSingleValueColumnSource(Class<T> type, Class<?> componentType) {
         SingleValueColumnSource<?> result;
         if (type == Byte.class || type == byte.class) {
             result = new ByteSingleValueSource();
@@ -50,7 +54,7 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         } else if (type == Boolean.class || type == boolean.class) {
             result = new BooleanSingleValueSource();
         } else {
-            result = new ObjectSingleValueSource<>(type);
+            result = new ObjectSingleValueSource<>(type, componentType);
         }
         // noinspection unchecked
         return (SingleValueColumnSource<T>) result;

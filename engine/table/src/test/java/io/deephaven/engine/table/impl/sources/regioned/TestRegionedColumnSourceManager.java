@@ -30,6 +30,7 @@ import org.jmock.lib.action.CustomAction;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -150,6 +151,17 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         tableLocation1A = tableLocations[1];
         tableLocation0B = tableLocations[2];
         tableLocation1B = tableLocations[3];
+        checking(new Expectations() {
+            {
+                for (final TableLocation tl : tableLocations) {
+                    allowing(tl).tryRetainReference();
+                    will(returnValue(true));
+                    allowing(tl).getWeakReference();
+                    will(returnValue(new WeakReference<>(tl)));
+                    allowing(tl).dropReference();
+                }
+            }
+        });
 
         duplicateTableLocation0A = setUpTableLocation(0, "-duplicate");
 
@@ -525,19 +537,19 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Refresh them
         setSizeExpectations(true, true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with no change
         setSizeExpectations(true, true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with a change for the subscription-supporting one
         setSizeExpectations(true, true, 5, 1001);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
@@ -568,26 +580,26 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with new locations included
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test no-op run
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test run with a location updated from null to not
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location updated
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
@@ -650,6 +662,23 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
+
+        // expect table locations to be cleaned up via LivenessScope release as the test exits
+        IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
     }
 
     private static void maybePrintStackTrace(@NotNull final Exception e) {

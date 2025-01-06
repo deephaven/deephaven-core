@@ -8,16 +8,16 @@ description = "Converts a list of QSTs into other formats."
 dependencies {
     implementation project(':qst')
 
-    implementation 'guru.nidi:graphviz-java:0.18.1'
+    implementation libs.nidi.graphviz.java
 
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation libs.picocli
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 
-    Classpaths.inheritLogbackClassic(project, 'implementation')
+    implementation libs.logback.classic
 }
 
 test {

@@ -49,7 +49,7 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
             int tableLocation = firstTableLocation;
             while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
-                if (outputPosition == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(outputPosition)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     outputPosition = nextOutputPosition.getAndIncrement();
@@ -73,6 +73,10 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
         return hash;
     }
 
+    private static boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
@@ -84,7 +88,7 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];
@@ -92,7 +96,7 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != destinationTableLocation) {
@@ -114,7 +118,7 @@ final class StaticAggOpenHasherInt extends StaticChunkedOperatorAggregationState
         final int firstTableLocation = tableLocation;
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
-            if (positionValue == EMPTY_OUTPUT_POSITION) {
+            if (isStateEmpty(positionValue)) {
                 return UNKNOWN_ROW;
             }
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {

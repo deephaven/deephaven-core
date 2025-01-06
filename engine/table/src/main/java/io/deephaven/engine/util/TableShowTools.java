@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
@@ -31,7 +30,7 @@ class TableShowTools {
         try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()")) {
             if (columns.length == 0) {
                 final List<String> columnNames = source.getDefinition().getColumnNames();
-                columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                columns = columnNames.toArray(String[]::new);
             }
             final ColumnSource[] columnSources =
                     Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);

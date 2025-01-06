@@ -19,10 +19,12 @@ import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableHeader.Builder;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.type.Type;
 import io.deephaven.sql.Scope;
 import io.deephaven.sql.ScopeStaticImpl;
 import io.deephaven.sql.SqlAdapter;
 import io.deephaven.sql.TableInformation;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 /**
  * Experimental SQL execution. Subject to change.
@@ -47,35 +50,38 @@ public final class Sql {
         return dryRun(sql, currentScriptSessionNamedTables());
     }
 
+    @InternalUseOnly
+    public static TableSpec parseSql(String sql, Map<String, Table> scope, Function<String, TicketTable> ticketFunction,
+            Map<TicketTable, Table> out) {
+        return SqlAdapter.parseSql(sql, scope(scope, out, ticketFunction));
+    }
+
     private static Table evaluate(String sql, Map<String, Table> scope) {
         final Map<TicketTable, Table> map = new HashMap<>(scope.size());
-        final TableSpec tableSpec = parseSql(sql, scope, map);
+        final TableSpec tableSpec = parseSql(sql, scope, Sql::sqlref, map);
         log.debug().append("Executing. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
         return tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, map));
     }
 
     private static TableSpec dryRun(String sql, Map<String, Table> scope) {
-        final TableSpec tableSpec = parseSql(sql, scope, null);
+        final TableSpec tableSpec = parseSql(sql, scope, Sql::sqlref, null);
         log.info().append("Dry run. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
         return tableSpec;
     }
 
-    private static TableSpec parseSql(String sql, Map<String, Table> scope, Map<TicketTable, Table> out) {
-        return SqlAdapter.parseSql(sql, scope(scope, out));
-    }
-
     private static TicketTable sqlref(String tableName) {
+        // The TicketTable can technically be anything unique (incrementing number, random, ...), but for
+        // visualization purposes it makes sense to use the (already unique) table name.
         return TicketTable.of(("sqlref/" + tableName).getBytes(StandardCharsets.UTF_8));
     }
 
-    private static Scope scope(Map<String, Table> scope, Map<TicketTable, Table> out) {
+    private static Scope scope(Map<String, Table> scope, Map<TicketTable, Table> out,
+            Function<String, TicketTable> ticketFunction) {
         final ScopeStaticImpl.Builder builder = ScopeStaticImpl.builder();
         for (Entry<String, Table> e : scope.entrySet()) {
             final String tableName = e.getKey();
             final Table table = e.getValue();
-            // The TicketTable can technically be anything unique (incrementing number, random, ...), but for
-            // visualization purposes it makes sense to use the (already unique) table name.
-            final TicketTable spec = sqlref(tableName);
+            final TicketTable spec = ticketFunction.apply(tableName);
             final List<String> qualifiedName = List.of(tableName);
             final TableHeader header = adapt(table.getDefinition());
             builder.addTables(TableInformation.of(qualifiedName, header, spec));
@@ -103,11 +109,7 @@ public final class Sql {
     }
 
     private static ColumnHeader<?> adapt(ColumnDefinition<?> columnDef) {
-        if (columnDef.getComponentType() == null) {
-            return ColumnHeader.of(columnDef.getName(), columnDef.getDataType());
-        }
-        // SQLTODO(array-type)
-        throw new UnsupportedOperationException("SQLTODO(array-type)");
+        return ColumnHeader.of(columnDef.getName(), Type.find(columnDef.getDataType()));
     }
 
     private enum ToGraphvizDot implements ObjFormatter<TableSpec> {

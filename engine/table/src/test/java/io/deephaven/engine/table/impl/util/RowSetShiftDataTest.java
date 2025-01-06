@@ -458,7 +458,7 @@ public class RowSetShiftDataTest {
         return values;
     }
 
-    private RowSetShiftData.Callback createMemMovCallback(final long[] arr) {
+    private RowKeyRangeShiftCallback createMemMovCallback(final long[] arr) {
         return (start, end, delta) -> {
             final long dir = (delta > 0) ? -1 : 1;
             if (dir < 0) {

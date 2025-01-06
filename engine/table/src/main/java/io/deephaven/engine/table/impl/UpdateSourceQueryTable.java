@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.table.ColumnSource;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Map;
 
 /**
@@ -47,6 +48,7 @@ public class UpdateSourceQueryTable extends QueryTable implements Runnable {
         additionsBuilder.addRange(firstRowKey, lastRowKey);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     public void destroy() {
         super.destroy();

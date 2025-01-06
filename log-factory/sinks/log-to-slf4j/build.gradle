@@ -8,7 +8,8 @@ dependencies {
 	// internal logger, that is in service of the ServiceLoader - and if consumers should not need
 	// access to the internal logger.
 	implementation project(':log-factory')
-	Classpaths.inheritSlf4j(project, 'slf4j-api', 'compileOnly') // users must provide their own impl and slf4j config
-	Classpaths.inheritLogbackClassic(project, 'compileOnly') // so we can attach an interceptor, if supported
-	Classpaths.inheritAutoService(project)
+	compileOnly libs.slf4j.api // users must provide their own impl and slf4j config
+	compileOnly libs.logback.classic // so we can attach an interceptor, if supported
+	compileOnly libs.autoservice
+	annotationProcessor libs.autoservice.compiler
 }

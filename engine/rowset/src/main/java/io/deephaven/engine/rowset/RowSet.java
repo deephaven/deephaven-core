@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.rowset;
 
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -115,15 +114,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @return A new {@link WritableRowSet} containing the positions of the keys in this RowSet
      */
     WritableRowSet invert(RowSet keys, long maximumPosition);
-
-    /**
-     * For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the
-     * tentative insertion points in the current RowSet with the count for each of them
-     *
-     * @param keys the keys to identify insertion locations
-     * @return two TLongArrayLists; [0] contains the positions, [1] contains the counts.
-     */
-    TLongArrayList[] findMissing(RowSet keys);
 
     /**
      * Returns a new RowSet representing the intersection of the current RowSet with the input RowSet

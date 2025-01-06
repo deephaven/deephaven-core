@@ -15,6 +15,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.DataIndexTransformer;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.FunctionalColumnLong;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -79,25 +81,28 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
             if ((localIndexTable = indexTable) != null) {
                 return localIndexTable;
             }
+            indexTable = localIndexTable = QueryPerformanceRecorder.withNugget("Transform Data Index",
+                    ForkJoinPoolOperationInitializer.ensureParallelizable(this::buildTable));
+            // Don't hold onto the transformer after the index table is computed, we don't need to maintain
+            // reachability for its RowSets anymore.
+            transformer = null;
+            return localIndexTable;
+        }
+    }
 
-            try (final SafeCloseable ignored = parentIndex.isRefreshing() ? LivenessScopeStack.open() : null) {
-                localIndexTable = parentIndex.table();
-                localIndexTable = maybeIntersectAndInvert(localIndexTable);
-                localIndexTable = maybeSortByFirstKey(localIndexTable);
-                localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
-                        ? localIndexTable.snapshot()
-                        : localIndexTable;
+    private Table buildTable() {
+        try (final SafeCloseable ignored = parentIndex.isRefreshing() ? LivenessScopeStack.open() : null) {
+            Table localIndexTable = parentIndex.table();
+            localIndexTable = maybeIntersectAndInvert(localIndexTable);
+            localIndexTable = maybeSortByFirstKey(localIndexTable);
+            localIndexTable = localIndexTable.isRefreshing() && transformer.snapshotResult()
+                    ? localIndexTable.snapshot()
+                    : localIndexTable;
 
-                if (localIndexTable.isRefreshing()) {
-                    manage(localIndexTable);
-                }
-
-                indexTable = localIndexTable;
-                // Don't hold onto the transformer after the index table is computed, we don't need to maintain
-                // reachability for its RowSets anymore.
-                transformer = null;
-                return localIndexTable;
+            if (localIndexTable.isRefreshing()) {
+                manage(localIndexTable);
             }
+            return localIndexTable;
         }
     }
 

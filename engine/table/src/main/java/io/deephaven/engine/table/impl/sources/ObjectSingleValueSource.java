@@ -36,8 +36,8 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T>
     private transient T prev;
 
     // region Constructor
-    public ObjectSingleValueSource(Class<T> type) {
-        super(type);
+    public ObjectSingleValueSource(Class<T> type, Class<?> componentType) {
+        super(type, componentType);
         current = null;
         prev = null;
     }

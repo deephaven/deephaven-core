@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.ssms;
 import gnu.trove.set.hash.THashSet;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;

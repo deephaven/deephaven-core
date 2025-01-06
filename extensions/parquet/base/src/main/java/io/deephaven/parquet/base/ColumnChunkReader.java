@@ -71,9 +71,10 @@ public interface ColumnChunkReader {
     }
 
     /**
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
      * @return An iterator over individual parquet pages.
      */
-    ColumnPageReaderIterator getPageIterator() throws IOException;
+    ColumnPageReaderIterator getPageIterator(PageMaterializerFactory pageMaterializerFactory) throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**
@@ -86,9 +87,10 @@ public interface ColumnChunkReader {
     }
 
     /**
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
      * @return An accessor for individual parquet pages which uses the provided offset index.
      */
-    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex);
+    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex, PageMaterializerFactory pageMaterializerFactory);
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page.

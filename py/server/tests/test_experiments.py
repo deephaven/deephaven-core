@@ -31,13 +31,13 @@ class ExperimentalTestCase(BaseTestCase):
             rt = full_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
-            self.assertEqual(len(rt.columns), len(t1.columns) + len(t2.columns))
+            self.assertEqual(len(rt.definition), len(t1.definition) + len(t2.definition))
 
         with self.subTest("full outer join with no matching keys"):
             t1 = empty_table(2).update(["X = i", "a = i"])
             rt = full_outer_join(self.test_table, t1, joins=["Y = a"])
             self.assertEqual(rt.size, t1.size * self.test_table.size)
-            self.assertEqual(len(rt.columns), 1 + len(self.test_table.columns))
+            self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
 
         with self.subTest("Conflicting column names"):
             with self.assertRaises(DHError) as cm:
@@ -52,13 +52,13 @@ class ExperimentalTestCase(BaseTestCase):
             rt = left_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
-            self.assertEqual(len(rt.columns), len(t1.columns) + len(t2.columns))
+            self.assertEqual(len(rt.definition), len(t1.definition) + len(t2.definition))
 
         with self.subTest("left outer join with no matching keys"):
             t1 = empty_table(2).update(["X = i", "a = i"])
             rt = left_outer_join(self.test_table, t1, joins=["Y = a"])
             self.assertEqual(rt.size, t1.size * self.test_table.size)
-            self.assertEqual(len(rt.columns), 1 + len(self.test_table.columns))
+            self.assertEqual(len(rt.definition), 1 + len(self.test_table.definition))
 
         with self.subTest("Conflicting column names"):
             with self.assertRaises(DHError) as cm:
@@ -66,15 +66,24 @@ class ExperimentalTestCase(BaseTestCase):
             self.assertRegex(str(cm.exception), r"Conflicting column names")
 
     def test_time_window(self):
-        with exclusive_lock(self.test_update_graph):
+        with self.subTest("user-explicit lock"):
+            with exclusive_lock(self.test_update_graph):
+                source_table = time_table("PT00:00:00.01").update(["TS=now()"])
+                t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
+
+            self.assertEqual("InWindow", t.columns[-1].name)
+            self.wait_ticking_table_update(t, row_count=20, timeout=60)
+            self.assertIn("true", t.to_string(1000))
+            self.assertIn("false", t.to_string(1000))
+
+        with self.subTest("auto-lock"):
             source_table = time_table("PT00:00:00.01").update(["TS=now()"])
             t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
 
-        self.assertEqual("InWindow", t.columns[-1].name)
-        self.wait_ticking_table_update(t, row_count=20, timeout=60)
-        self.assertIn("true", t.to_string(1000))
-        self.assertIn("false", t.to_string(1000))
-
+            self.assertEqual("InWindow", t.columns[-1].name)
+            self.wait_ticking_table_update(t, row_count=20, timeout=60)
+            self.assertIn("true", t.to_string(1000))
+            self.assertIn("false", t.to_string(1000))
 
 if __name__ == '__main__':
     unittest.main()

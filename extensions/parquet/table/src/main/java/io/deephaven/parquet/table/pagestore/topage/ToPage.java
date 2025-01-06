@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
@@ -105,12 +106,17 @@ public interface ToPage<ATTR extends Any, RESULT> {
     }
 
     /**
-     * @return an reverse lookup map of the dictionary.
+     * @return a reverse lookup map of the dictionary.
      * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
         return null;
     }
+
+    /**
+     * @return the factory to create the materializers for this column.
+     */
+    PageMaterializerFactory getPageMaterializerFactory();
 
     abstract class Wrap<ATTR extends Any, INNER_RESULT, OUTER_RESULT>
             implements ToPage<ATTR, OUTER_RESULT> {
@@ -149,6 +155,11 @@ public interface ToPage<ATTR extends Any, RESULT> {
         @Override
         public LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
             return toPage.getReversibleLookup();
+        }
+
+        @Override
+        public PageMaterializerFactory getPageMaterializerFactory() {
+            return toPage.getPageMaterializerFactory();
         }
     }
 }

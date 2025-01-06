@@ -3,9 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
@@ -93,12 +91,16 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.VectorFactory;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -106,28 +108,20 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
-import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -154,6 +148,13 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private final Collection<? extends Aggregation> aggregations;
     private final Type type;
+
+    /**
+     * For {@link Formula formula} aggregations we need a representation of the table definition with the column data
+     * types converted to {@link io.deephaven.vector.Vector vectors}. This can be computed once and re-used across all
+     * formula aggregations.
+     */
+    private Map<String, ColumnDefinition<?>> vectorColumnDefinitions;
 
     /**
      * Convert a collection of {@link Aggregation aggregations} to an {@link AggregationContextFactory}.
@@ -411,7 +412,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         void addNoInputOperator(@NotNull final IterativeChunkedAggregationOperator operator) {
-            addOperator(operator, null, ZERO_LENGTH_STRING_ARRAY);
+            addOperator(operator, null, ArrayTypeUtils.EMPTY_STRING_ARRAY);
         }
 
         @SafeVarargs
@@ -650,6 +651,55 @@ public class AggregationProcessor implements AggregationContextFactory {
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
         }
+
+        final void addCountWhereOperator(@NotNull CountWhere countWhere) {
+            final WhereFilter[] whereFilters = WhereFilter.fromInternal(countWhere.filter());
+
+            final Map<String, RecordingInternalOperator> inputColumnRecorderMap = new HashMap<>();
+            final List<RecordingInternalOperator> recorderList = new ArrayList<>();
+            final List<RecordingInternalOperator[]> filterRecorderList = new ArrayList<>();
+
+            // Verify all the columns in the where filters are present in the table and valid for use.
+            for (final WhereFilter whereFilter : whereFilters) {
+                whereFilter.init(table.getDefinition());
+                if (whereFilter.isRefreshing()) {
+                    throw new UnsupportedOperationException("AggCountWhere does not support refreshing filters");
+                }
+
+                // Compute which recording operators this filter will use.
+                final List<String> inputColumnNames = whereFilter.getColumns();
+                final int inputColumnCount = whereFilter.getColumns().size();
+                final RecordingInternalOperator[] recorders = new RecordingInternalOperator[inputColumnCount];
+                for (int ii = 0; ii < inputColumnCount; ++ii) {
+                    final String inputColumnName = inputColumnNames.get(ii);
+                    final RecordingInternalOperator recorder =
+                            inputColumnRecorderMap.computeIfAbsent(inputColumnName, k -> {
+                                // Create a recording operator for the column and add it to the list of operators.
+                                final ColumnSource<?> inputSource = table.getColumnSource(inputColumnName);
+                                final RecordingInternalOperator newRecorder =
+                                        new RecordingInternalOperator(inputColumnName, inputSource);
+                                recorderList.add(newRecorder);
+                                return newRecorder;
+                            });
+                    recorders[ii] = recorder;
+                }
+                filterRecorderList.add(recorders);
+            }
+
+            final RecordingInternalOperator[] recorders = recorderList.toArray(RecordingInternalOperator[]::new);
+            final RecordingInternalOperator[][] filterRecorders =
+                    filterRecorderList.toArray(RecordingInternalOperator[][]::new);
+            final String[] inputColumnNames =
+                    inputColumnRecorderMap.keySet().toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY);
+
+            // Add the recording operators, making them dependent on all input columns so they all are populated if any
+            // are modified
+            for (final RecordingInternalOperator recorder : recorders) {
+                addOperator(recorder, recorder.getInputColumnSource(), inputColumnNames);
+            }
+            addOperator(new CountWhereOperator(countWhere.column().name(), whereFilters, recorders, filterRecorders),
+                    null, inputColumnNames);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -688,6 +738,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addCountWhereOperator(countWhere);
+        }
+
+        @Override
         public void visit(@NotNull final FirstRowKey firstRowKey) {
             addFirstOrLastOperators(true, firstRowKey.column().name());
         }
@@ -707,6 +762,50 @@ public class AggregationProcessor implements AggregationContextFactory {
                     partition.column().name(),
                     PARTITION_ATTRIBUTE_COPIER,
                     groupByColumnNames));
+        }
+
+        @Override
+        public void visit(@NotNull final Formula formula) {
+            final SelectColumn selectColumn = SelectColumn.of(formula.selectable());
+
+            // Get or create a column definition map composed of vectors of the original column types (or scalars when
+            // part of the key columns).
+            final Set<String> groupByColumnSet = Set.of(groupByColumnNames);
+            if (vectorColumnDefinitions == null) {
+                vectorColumnDefinitions = table.getDefinition().getColumnStream().collect(Collectors.toMap(
+                        ColumnDefinition::getName,
+                        (final ColumnDefinition<?> cd) -> groupByColumnSet.contains(cd.getName())
+                                ? cd
+                                : ColumnDefinition.fromGenericType(
+                                        cd.getName(),
+                                        VectorFactory.forElementType(cd.getDataType()).vectorType(),
+                                        cd.getDataType())));
+            }
+
+            // Get the input column names from the formula and provide them to the groupBy operator
+            final String[] allInputColumns =
+                    selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
+
+            final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)
+                    .collect(Collectors.partitioningBy(groupByColumnSet::contains));
+            final String[] inputKeyColumns = partitioned.get(true).toArray(String[]::new);
+            final String[] inputNonKeyColumns = partitioned.get(false).toArray(String[]::new);
+
+            if (!selectColumn.getColumnArrays().isEmpty()) {
+                throw new IllegalArgumentException("AggFormula does not support column arrays ("
+                        + selectColumn.getColumnArrays() + ")");
+            }
+            if (selectColumn.hasVirtualRowVariables()) {
+                throw new IllegalArgumentException("AggFormula does not support virtual row variables");
+            }
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
+                    Arrays.stream(inputNonKeyColumns).map(col -> MatchPair.of(Pair.parse(col)))
+                            .toArray(MatchPair[]::new));
+
+            final FormulaMultiColumnChunkedOperator op = new FormulaMultiColumnChunkedOperator(table,
+                    groupByChunkedOperator, true, selectColumn, inputKeyColumns);
+            addNoInputOperator(op);
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -747,6 +846,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             unsupportedForBlinkTables("Formula");
+            // TODO: re-use shared groupBy operators (https://github.com/deephaven/deephaven-core/issues/6363)
             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
@@ -815,7 +915,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final AggSpecTDigest tDigest) {
             addBasicOperators((t, n) -> new TDigestPercentileOperator(t,
                     tDigest.compression().orElse(TDigestPercentileOperator.COMPRESSION_DEFAULT), n,
-                    ZERO_LENGTH_DOUBLE_ARRAY, ZERO_LENGTH_STRING_ARRAY));
+                    ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY));
         }
 
         @Override
@@ -860,6 +960,12 @@ public class AggregationProcessor implements AggregationContextFactory {
         @FinalDefault
         default void visit(@NotNull final LastRowKey lastRowKey) {
             rollupUnsupported("LastRowKey");
+        }
+
+        @Override
+        @FinalDefault
+        default void visit(@NotNull final Formula formula) {
+            rollupUnsupported("Formula");
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -945,6 +1051,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             addNoInputOperator(new CountAggregationOperator(count.column().name()));
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            addCountWhereOperator(countWhere);
         }
 
         @Override
@@ -1088,6 +1199,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Count count) {
             final String resultName = count.column().name();
+            final ColumnSource<?> resultSource = table.getColumnSource(resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+        }
+
+        @Override
+        public void visit(@NotNull final CountWhere countWhere) {
+            final String resultName = countWhere.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
             addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
         }
@@ -1405,7 +1523,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new AggregationContext(
                 new IterativeChunkedAggregationOperator[] {
                         new UniqueRowKeyChunkedOperator(TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name())},
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
@@ -1415,13 +1533,13 @@ public class AggregationProcessor implements AggregationContextFactory {
             // noinspection unchecked
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                     new ChunkSource.WithPrev[] {null});
         }
         // noinspection unchecked
         return new AggregationContext(
                 ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
-                ZERO_LENGTH_STRING_ARRAY_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY_ARRAY,
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
     }
 
@@ -1436,7 +1554,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                             new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name()),
                             new CountAggregationOperator(null)
                     },
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY},
                     new ChunkSource.WithPrev[] {null, null},
                     new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
         }
@@ -1445,7 +1563,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 new IterativeChunkedAggregationOperator[] {
                         new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
                 },
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
@@ -2007,7 +2125,6 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
         final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
         return (AggregationRowLookup) value;
     }
 }

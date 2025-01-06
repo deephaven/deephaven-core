@@ -32,7 +32,7 @@ public interface TableDataRefreshService {
     void submitOneTimeAsyncTask(@NotNull Runnable task);
 
     /**
-     * Schedule run for an AbstractTableLocationProvider.
+     * Schedule run for an AbstractTableLocationProvider using an implementation-defined default refresh interval
      *
      * @param tableLocationProvider The table location provider
      * @return A subscription token to be used for matching, which also supports cancellation
@@ -41,12 +41,34 @@ public interface TableDataRefreshService {
             @NotNull AbstractTableLocationProvider tableLocationProvider);
 
     /**
-     * Schedule run for an AbstractTableLocation.
+     * Schedule run for an AbstractTableLocationProvider.
+     *
+     * @param tableLocationProvider The table location provider
+     * @param refreshIntervalMs The interval in milliseconds between refreshes
+     * @return A subscription token to be used for matching, which also supports cancellation
+     */
+    CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+            @NotNull AbstractTableLocationProvider tableLocationProvider,
+            long refreshIntervalMs);
+
+    /**
+     * Schedule run for an AbstractTableLocation using an implementation-defined default refresh interval
      *
      * @param tableLocation The table location
      * @return A subscription token to be used for matching, which also supports cancellation
      */
     CancellableSubscriptionToken scheduleTableLocationRefresh(@NotNull AbstractTableLocation tableLocation);
+
+    /**
+     * Schedule run for an AbstractTableLocation.
+     *
+     * @param tableLocation The table location
+     * @param refreshIntervalMs The interval in milliseconds between refreshes
+     * @return A subscription token to be used for matching, which also supports cancellation
+     */
+    CancellableSubscriptionToken scheduleTableLocationRefresh(
+            @NotNull AbstractTableLocation tableLocation,
+            long refreshIntervalMs);
 
     /**
      * Get (and possibly construct) a shared instance.
@@ -127,8 +149,22 @@ public interface TableDataRefreshService {
         }
 
         @Override
+        public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+                @NotNull final AbstractTableLocationProvider tableLocationProvider,
+                final long refreshIntervalMs) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public CancellableSubscriptionToken scheduleTableLocationRefresh(
                 @NotNull final AbstractTableLocation tableLocation) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CancellableSubscriptionToken scheduleTableLocationRefresh(
+                @NotNull AbstractTableLocation tableLocation,
+                final long refreshIntervalMs) {
             throw new UnsupportedOperationException();
         }
     }

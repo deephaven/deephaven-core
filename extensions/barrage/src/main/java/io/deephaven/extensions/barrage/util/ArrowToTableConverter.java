@@ -13,6 +13,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
@@ -22,6 +24,7 @@ import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,8 +32,10 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 /**
@@ -40,15 +45,14 @@ import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_
 public class ArrowToTableConverter {
     protected long totalRowsRead = 0;
     protected BarrageTable resultTable;
-    private ChunkType[] columnChunkTypes;
-    private int[] columnConversionFactors;
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
     protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
+    private final List<ChunkReader> readers = new ArrayList<>();
 
     private volatile boolean completed = false;
 
-    private static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) throws IOException {
+    public static BarrageProtoUtil.MessageInfo parseArrowIpcMessage(final ByteBuffer bb) {
         final BarrageProtoUtil.MessageInfo mi = new BarrageProtoUtil.MessageInfo();
 
         bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -61,11 +65,43 @@ public class ArrowToTableConverter {
             final ByteBuffer bodyBB = bb.slice();
             final ByteBufferInputStream bbis = new ByteBufferInputStream(bodyBB);
             final CodedInputStream decoder = CodedInputStream.newInstance(bbis);
-            // noinspection UnstableApiUsage
             mi.inputStream = new LittleEndianDataInputStream(
                     new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, bodyBB.remaining()));
         }
         return mi;
+    }
+
+    public static Schema parseArrowSchema(final BarrageProtoUtil.MessageInfo mi) {
+        if (mi.header.headerType() != MessageHeader.Schema) {
+            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
+        }
+
+        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
+        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
+        // the header to use after the return of this method.
+        ByteBuffer original = mi.header.getByteBuffer();
+        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
+        Schema schema = new Schema();
+        Message.getRootAsMessage(copy).header(schema);
+
+        return schema;
+    }
+
+    public static PrimitiveIterator.OfLong extractBufferInfo(@NotNull final RecordBatch batch) {
+        final long[] bufferInfo = new long[batch.buffersLength()];
+        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+            if (bi < batch.buffersLength() - 1) {
+                final int nextOffset =
+                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                // our parsers handle overhanging buffers
+                length += Math.max(0, nextOffset - offset - length);
+            }
+            bufferInfo[bi] = length;
+        }
+        return Arrays.stream(bufferInfo).iterator();
     }
 
     @ScriptApi
@@ -76,11 +112,8 @@ public class ArrowToTableConverter {
         if (completed) {
             throw new IllegalStateException("Conversion is complete; cannot process additional messages");
         }
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
-        if (mi.header.headerType() != MessageHeader.Schema) {
-            throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
-        }
-        parseSchema((Schema) mi.header.header(new Schema()));
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
+        configureWithSchema(parseArrowSchema(mi));
     }
 
     @ScriptApi
@@ -105,7 +138,7 @@ public class ArrowToTableConverter {
             throw new IllegalStateException("Arrow schema must be provided before record batches can be added");
         }
 
-        final BarrageProtoUtil.MessageInfo mi = getMessageInfo(ipcMessage);
+        final BarrageProtoUtil.MessageInfo mi = parseArrowIpcMessage(ipcMessage);
         if (mi.header.headerType() != MessageHeader.RecordBatch) {
             throw new IllegalArgumentException("The input is not a valid Arrow RecordBatch IPC message");
         }
@@ -135,22 +168,24 @@ public class ArrowToTableConverter {
         completed = true;
     }
 
-    protected void parseSchema(final Schema header) {
-        // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
-        // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
-        // the header to use after the return of this method.
+    protected void configureWithSchema(final Schema schema) {
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
-        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
-        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
+        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
+        resultTable = BarrageTable.make(null, result.tableDef, result.attributes, true, null);
         resultTable.setFlat();
 
-        columnConversionFactors = result.conversionFactors;
-        columnChunkTypes = result.computeWireChunkTypes();
+        ChunkType[] columnChunkTypes = result.computeWireChunkTypes();
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
+        for (int i = 0; i < schema.fieldsLength(); i++) {
+            final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
+            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(options, factor,
+                    typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
+            readers.add(reader);
+        }
 
         // retain reference until the resultTable can be sealed
         resultTable.retainReference();
@@ -167,20 +202,7 @@ public class ArrowToTableConverter {
                 new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                         i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
-        final long[] bufferInfo = new long[batch.buffersLength()];
-        for (int bi = 0; bi < batch.buffersLength(); ++bi) {
-            int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
-            int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
-
-            if (bi < batch.buffersLength() - 1) {
-                final int nextOffset =
-                        LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
-                // our parsers handle overhanging buffers
-                length += Math.max(0, nextOffset - offset - length);
-            }
-            bufferInfo[bi] = length;
-        }
-        final PrimitiveIterator.OfLong bufferInfoIter = Arrays.stream(bufferInfo).iterator();
+        final PrimitiveIterator.OfLong bufferInfoIter = extractBufferInfo(batch);
 
         msg.rowsRemoved = RowSetFactory.empty();
         msg.shifted = RowSetShiftData.EMPTY;
@@ -192,11 +214,8 @@ public class ArrowToTableConverter {
             final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
-            final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
             try {
-                acd.data.add(ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
-                        columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
-                        bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }
@@ -212,16 +231,4 @@ public class ArrowToTableConverter {
         msg.length = numRowsAdded;
         return msg;
     }
-
-    private BarrageProtoUtil.MessageInfo getMessageInfo(ByteBuffer ipcMessage) {
-        final BarrageProtoUtil.MessageInfo mi;
-        try {
-            mi = parseArrowIpcMessage(ipcMessage);
-        } catch (IOException unexpected) {
-            throw new UncheckedDeephavenException(unexpected);
-        }
-        return mi;
-    }
-
-
 }

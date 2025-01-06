@@ -14,27 +14,28 @@ import java.util.Iterator;
 import java.util.List;
 
 public class CompressedRangeSetReader {
-    private static final byte SHORT_VALUE = 1;
-    private static final byte INT_VALUE = 2;
-    private static final byte LONG_VALUE = 3;
-    private static final byte BYTE_VALUE = 4;
 
-    private static final byte VALUE_MASK = 7;
+    // @formatter:off
+    private static final byte SHORT_VALUE = 0b00000001;
+    private static final byte INT_VALUE   = 0b00000010;
+    private static final byte LONG_VALUE  = 0b00000011;
+    private static final byte BYTE_VALUE  = 0b00000100;
 
-    private static final byte OFFSET = 8;
-    private static final byte SHORT_ARRAY = 16;
-    private static final byte BYTE_ARRAY = 24;
-    private static final byte END = 32;
+    private static final byte VALUE_MASK  = 0b00000111;
 
-    private static final byte CMD_MASK = 0x78;
+    private static final byte OFFSET      = 0b00001000;
+    private static final byte SHORT_ARRAY = 0b00010000;
+    private static final byte BYTE_ARRAY  = 0b00011000;
+    private static final byte END         = 0b00100000;
 
+    private static final byte CMD_MASK    = 0b00111000;
+    // @formatter:on
 
     private long pending = -1;
     private long offset = 0;
-    private List<Range> sortedRanges = new ArrayList<>();
+    private final List<Range> sortedRanges = new ArrayList<>();
 
-
-    public static ByteBuffer writeRange(RangeSet s) {
+    public static ByteBuffer writeRange(final RangeSet s) {
         long offset = 0;
         ByteBuffer payload = ByteBuffer.allocate(s.rangeCount() * 2 * (8 + 1) + 1);// max size it would need to be
         payload.order(ByteOrder.LITTLE_ENDIAN);
@@ -58,77 +59,74 @@ public class CompressedRangeSetReader {
         return sliced;
     }
 
-    private static long appendWithDeltaOffset(ByteBuffer payload, ShortBuffer shorts, long offset, long value,
-            boolean negate) {
-        if (value >= offset + Short.MAX_VALUE) {
+    private static long appendWithDeltaOffset(final ByteBuffer payload, final ShortBuffer shorts,
+            final long offset, final long value, final boolean negate) {
+        final long delta = value - offset;
+        if (delta >= Short.MAX_VALUE) {
             flushShorts(payload, shorts);
-
-            long newValue = value - offset;
-            writeValue(payload, OFFSET, negate ? -newValue : newValue);
-        } else if (negate) {
-            shorts.put((short) -(value - offset));
+            writeValue(payload, OFFSET, negate ? -delta : delta);
+            return value;
+        }
+        if (negate) {
+            shorts.put((short) -delta);
         } else {
-            shorts.put((short) (value - offset));
+            shorts.put((short) delta);
         }
         return value;
     }
 
-    private static void flushShorts(ByteBuffer payload, ShortBuffer shorts) {
-        for (int offset = 0; offset < shorts.position();) {
-            int byteCount = 0;
-            while (offset + byteCount < shorts.position() && (shorts.get(offset + byteCount) < Byte.MAX_VALUE
-                    && shorts.get(offset + byteCount) > Byte.MIN_VALUE)) {
-                byteCount++;
+    private static void flushShorts(final ByteBuffer payload, final ShortBuffer shorts) {
+        final int size = shorts.position();
+        int writtenCount = 0;
+        int consecutiveTrailingBytes = 0;
+        for (int nextShortIndex = 0; nextShortIndex < size; ++nextShortIndex) {
+            final short nextShort = shorts.get(nextShortIndex);
+            if (nextShort <= Byte.MAX_VALUE && nextShort >= Byte.MIN_VALUE) {
+                // nextShort can fit into a byte
+                ++consecutiveTrailingBytes;
+                continue;
             }
-            if (byteCount > 3 || byteCount + offset == shorts.position()) {
-                if (byteCount == 1) {
-                    writeValue(payload, OFFSET, shorts.get(offset));
-                } else {
-                    writeValue(payload, BYTE_ARRAY, byteCount);
-                    for (int ii = offset; ii < offset + byteCount; ++ii) {
-                        payload.put((byte) shorts.get(ii));
-                    }
-                }
-
-                offset += byteCount;
-            } else {
-                int shortCount = byteCount;
-                int consecutiveBytes = 0;
-                while (shortCount + consecutiveBytes + offset < shorts.position()) {
-                    final short shortValue = shorts.get(offset + shortCount + consecutiveBytes);
-                    final boolean requiresShort = (shortValue >= Byte.MAX_VALUE || shortValue <= Byte.MIN_VALUE);
-                    if (!requiresShort) {
-                        consecutiveBytes++;
-                    } else {
-                        consecutiveBytes = 0;
-                        shortCount += consecutiveBytes;
-                        shortCount++;
-                    }
-                    if (consecutiveBytes > 3) {
-                        // switch to byte mode
-                        break;
-                    }
-                }
-                // if we have a small number of trailing bytes, tack them onto the end
-                if (consecutiveBytes > 0 && consecutiveBytes <= 3
-                        && (offset + shortCount + consecutiveBytes == shorts.position())) {
-                    shortCount += consecutiveBytes;
-                }
-                if (shortCount >= 2) {
-                    writeValue(payload, SHORT_ARRAY, shortCount);
-                    for (int ii = offset; ii < offset + shortCount; ++ii) {
-                        payload.putShort(shorts.get(ii));
-                    }
-                } else if (shortCount == 1) {
-                    writeValue(payload, OFFSET, shorts.get(offset));
-                }
-                offset += shortCount;
+            // nextShort doesn't fit into a byte, so we've found the end of a (possibly-empty) sequence of bytes
+            if (consecutiveTrailingBytes >= 4) { // See ExternalizableRowSetUtils.shouldWriteBytes for explanation
+                // Write a possibly-empty prefix of shorts, followed by the consecutive bytes we found. Note that we're
+                // not writing the short that triggered the end of the byte sequence; it will join the next sequence.
+                final int shortCount = nextShortIndex - writtenCount - consecutiveTrailingBytes;
+                writeShortsThenBytes(payload, shorts, writtenCount, shortCount, consecutiveTrailingBytes);
+                writtenCount = nextShortIndex;
             }
+            // Now we have at least one short, and no trailing bytes
+            consecutiveTrailingBytes = 0;
         }
+
+        // Write the remaining possibly-empty sequence of shorts, followed by any trailing consecutive bytes
+        final int shortCount = size - writtenCount - consecutiveTrailingBytes;
+        writeShortsThenBytes(payload, shorts, writtenCount, shortCount, consecutiveTrailingBytes);
         shorts.position(0);
     }
 
-    private static void writeValue(ByteBuffer out, byte command, long value) {
+    private static void writeShortsThenBytes(final ByteBuffer payload, final ShortBuffer shorts,
+            int index, final int shortCount, final int byteCount) {
+        if (shortCount == 1) {
+            writeValue(payload, OFFSET, shorts.get(index++));
+        } else if (shortCount > 1) {
+            writeValue(payload, SHORT_ARRAY, shortCount);
+            final int shortLimit = index + shortCount;
+            do {
+                payload.putShort(shorts.get(index++));
+            } while (index < shortLimit);
+        }
+        if (byteCount == 1) {
+            writeValue(payload, OFFSET, shorts.get(index)); // Note, no increment, to avoid unused assignment
+        } else if (byteCount > 1) {
+            writeValue(payload, BYTE_ARRAY, byteCount);
+            final int byteLimit = index + byteCount;
+            do {
+                payload.put((byte) shorts.get(index++));
+            } while (index < byteLimit);
+        }
+    }
+
+    private static void writeValue(final ByteBuffer out, final byte command, final long value) {
         if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
             out.put((byte) (command | LONG_VALUE));
             out.putLong(value);
@@ -177,7 +175,7 @@ public class CompressedRangeSetReader {
                     if (pending >= 0) {
                         append(pending);
                     }
-                    return RangeSet.fromSortedRanges(sortedRanges.toArray(new Range[0]));
+                    return RangeSet.fromSortedRanges(sortedRanges);
                 default:
                     throw new IllegalStateException("Bad command: " + command + " at position " + data.position());
             }

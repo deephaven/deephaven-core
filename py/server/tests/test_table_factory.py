@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import jpy
 import numpy as np
-
+from time import sleep
 from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, \
     input_table, time, _wrapper
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
@@ -16,7 +16,7 @@ from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NU
 from deephaven.table_factory import DynamicTableWriter, InputTable, ring_table
 from tests.testbase import BaseTestCase
 from deephaven.table import Table
-from deephaven.stream import blink_to_append_only, stream_to_append_only
+from deephaven.stream import blink_to_append_only, stream_to_append_only, add_only_to_blink
 
 JArrayList = jpy.get_type("java.util.ArrayList")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
@@ -41,7 +41,7 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_empty_table(self):
         t = empty_table(10)
-        self.assertEqual(0, len(t.columns))
+        self.assertEqual(0, len(t.definition))
 
     def test_empty_table_error(self):
         with self.assertRaises(DHError) as cm:
@@ -52,22 +52,22 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table(self):
         t = time_table("PT00:00:01")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
                                                         time.to_j_time_zone('ET')))
 
         t = time_table(1000_000_000)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
@@ -75,12 +75,12 @@ class TableFactoryTestCase(BaseTestCase):
 
         p = time.to_timedelta(time.to_j_duration("PT1s"))
         t = time_table(p)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
 
         st = time.to_datetime(time.to_j_instant("2021-11-06T13:21:00 ET"))
         t = time_table(p, start_time=st)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET",
                          _JDateTimeUtils.formatDateTime(t.j_table.getColumnSource("Timestamp").get(0),
@@ -88,14 +88,17 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table_blink(self):
         t = time_table("PT1s", blink_table=True)
-        self.assertEqual(1, len(t.columns))
+        self.assertEqual(1, len(t.definition))
         self.assertTrue(t.is_blink)
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
-            t = time_table("PT00:0a:01")
+            time_table("PT00:0a:01")
 
         self.assertIn("DateTimeParseException", cm.exception.root_cause)
+
+        with self.assertRaises(DHError):
+            time_table(None)
 
     def test_merge(self):
         t1 = self.test_table.update(formulas=["Timestamp=epochNanosToInstant(0L)"])
@@ -325,19 +328,18 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
-        col_defs = {c.name: c.data_type for c in t.columns}
         with self.subTest("from table definition"):
-            append_only_input_table = input_table(col_defs=col_defs)
+            append_only_input_table = input_table(col_defs=t.definition)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
-            keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
+            keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
@@ -346,14 +348,14 @@ class TableFactoryTestCase(BaseTestCase):
         with self.subTest("from init table"):
             append_only_input_table = input_table(init_table=t)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(init_table=t, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -368,7 +370,7 @@ class TableFactoryTestCase(BaseTestCase):
 
             keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
             self.assertEqual(keyed_input_table.key_names, ["String", "Double"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String" and col.name != "Double"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String" and col._column_definition.name != "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
@@ -407,6 +409,17 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertTrue(ring_t.is_refreshing)
         self.wait_ticking_table_update(ring_t, 6, 5)
 
+    def test_add_only_to_blink(self):
+        t = time_table("PT00:00:01")
+        bt = add_only_to_blink(t)
+        self.assertTrue(bt.is_refreshing)
+        self.assertTrue(bt.is_blink)
+
+        t = empty_table(0).update("Timestamp=nowSystem()")
+        with self.assertRaises(DHError) as cm:
+            add_only_to_blink(t)
+        self.assertIn("failed to create a blink table", str(cm.exception))
+
     def test_blink_to_append_only(self):
         _JTimeTable = jpy.get_type("io.deephaven.engine.table.impl.TimeTable")
         _JBaseTable = jpy.get_type("io.deephaven.engine.table.impl.BaseTable")
@@ -428,10 +441,7 @@ class TableFactoryTestCase(BaseTestCase):
         from deephaven import dtypes as dht
         from deephaven import time as dhtu
 
-        col_defs_5 = \
-            { \
-                "InstantArray": dht.instant_array \
-                }
+        col_defs_5 = {"InstantArray": dht.instant_array}
 
         dtw5 = DynamicTableWriter(col_defs_5)
         t5 = dtw5.table
@@ -449,7 +459,7 @@ class TableFactoryTestCase(BaseTestCase):
 
         with cm:
             t = time_table("PT1s", blink_table=True)
-            it = input_table({c.name: c.data_type for c in t.columns}, key_cols="Timestamp")
+            it = input_table(t.definition, key_cols="Timestamp")
             it.add(t)
             self.assertEqual(it.size, 0)
             it.delete(t)
@@ -467,8 +477,7 @@ class TableFactoryTestCase(BaseTestCase):
             string_col(name="String", data=["foo", "bar"]),
         ]
         t = new_table(cols=cols)
-        col_defs = {c.name: c.data_type for c in t.columns}
-        append_only_input_table = input_table(col_defs=col_defs)
+        append_only_input_table = input_table(col_defs=t.definition)
 
         it = _wrapper.wrap_j_object(append_only_input_table.j_table)
         self.assertTrue(isinstance(it, InputTable))
@@ -476,6 +485,60 @@ class TableFactoryTestCase(BaseTestCase):
         t = _wrapper.wrap_j_object(t.j_object)
         self.assertFalse(isinstance(t, InputTable))
         self.assertTrue(isinstance(t, Table))
+
+    def test_input_table_async(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, -1]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+
+        with self.subTest("async add"):
+            self.assertEqual(t.size, 2)
+            success_count = 0
+            def on_success():
+                nonlocal success_count
+                success_count += 1
+            append_only_input_table = input_table(col_defs=t.definition)
+            append_only_input_table.add_async(t, on_success=on_success)
+            append_only_input_table.add_async(t, on_success=on_success)
+            while success_count < 2:
+                sleep(0.1)
+            self.assertEqual(append_only_input_table.size, 4)
+
+            keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
+            keyed_input_table.add_async(t, on_success=on_success)
+            keyed_input_table.add_async(t, on_success=on_success)
+            while success_count < 4:
+                sleep(0.1)
+            self.assertEqual(keyed_input_table.size, 2)
+
+        with self.subTest("async delete"):
+            keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
+            keyed_input_table.delete_async(t.select(["String", "Double"]), on_success=on_success)
+            while success_count < 5:
+                sleep(0.1)
+            self.assertEqual(keyed_input_table.size, 0)
+            t1 = t.drop_columns("String")
+
+        with self.subTest("schema mismatch"):
+            error_count = 0
+            def on_error(e: Exception):
+                nonlocal error_count
+                error_count += 1
+
+            append_only_input_table = input_table(col_defs=t1.definition)
+            with self.assertRaises(DHError) as cm:
+                append_only_input_table.add_async(t, on_success=on_success, on_error=on_error)
+            self.assertEqual(error_count, 0)
 
 
 if __name__ == '__main__':

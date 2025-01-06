@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +36,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  * A column source that returns null for all keys. Trivially "writable" since it can only contain null values.
  */
 public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
+        implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
         WritableColumnSource<T> {
 
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
@@ -166,9 +165,6 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
     public short getPrevShort(long rowKey) {
         return NULL_SHORT;
     }
-
-    @Override
-    public void shift(long start, long end, long offset) {}
 
     @Override
     public boolean isImmutable() {

@@ -19,9 +19,6 @@ import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
@@ -29,6 +26,9 @@ import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSourc
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
@@ -36,14 +36,17 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.lang.ref.WeakReference;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -174,8 +177,10 @@ public class StreamToBlinkTableAdapter
                 }
             }
 
+            @OverridingMethodsMustInvokeSuper
             @Override
             public void destroy() {
+                super.destroy();
                 StreamToBlinkTableAdapter.this.close();
             }
         };
@@ -268,6 +273,15 @@ public class StreamToBlinkTableAdapter
         }
     }
 
+    private synchronized void clearChunkColumnSources() {
+        SafeCloseable.closeAll(
+                Stream.of(bufferChunkSources, currentChunkSources, prevChunkSources)
+                        .filter(Objects::nonNull)
+                        .flatMap(Arrays::stream)
+                        .map(ccs -> ccs::clear));
+        bufferChunkSources = currentChunkSources = prevChunkSources = null;
+    }
+
     /**
      * Return the {@link Table#BLINK_TABLE_ATTRIBUTE blink} {@link Table table} that this adapter is producing, and
      * ensure that this StreamToBlinkTableAdapter no longer enforces strong reachability of the result. May return
@@ -303,6 +317,7 @@ public class StreamToBlinkTableAdapter
                     .endl();
             updateSourceRegistrar.removeSource(this);
             streamPublisher.shutdown();
+            getUpdateGraph().runWhenIdle(this::clearChunkColumnSources);
         }
     }
 

@@ -9,13 +9,15 @@ import pathlib
 # install extra dependencies, at least until we can more properly manage the build environment (pyproject.toml).
 # TODO(deephaven-core#2233): upgrade setup.py to pyproject.toml
 from pkg_resources import parse_version
-from setuptools import find_packages, setup
+from setuptools import setup, find_namespace_packages
+
 
 def _get_readme() -> str:
     # The directory containing this file
-    HERE = pathlib.Path(__file__).parent
+    here = pathlib.Path(__file__).parent
     # The text of the README file
-    return (HERE / "README.md").read_text(encoding="utf-8")
+    return (here / "README.md").read_text(encoding="utf-8")
+
 
 def _normalize_version(java_version):
     partitions = java_version.partition("-")
@@ -24,8 +26,10 @@ def _normalize_version(java_version):
     python_version = f"{regular_version}+{local_segment}" if local_segment else regular_version
     return str(parse_version(python_version))
 
+
 def _compute_version():
     return _normalize_version(os.environ['DEEPHAVEN_VERSION'])
+
 
 setup(
     name='pydeephaven',
@@ -33,7 +37,7 @@ setup(
     description='The Deephaven Python Client',
     long_description=_get_readme(),
     long_description_content_type="text/markdown",
-    packages=find_packages(exclude=("tests",)),
+    packages=find_namespace_packages(exclude=("tests", "examples", "docs.source", "build")),
     url='https://deephaven.io/',
     license='Deephaven Community License Agreement Version 1.0',
     author='Deephaven Data Labs',
@@ -54,6 +58,7 @@ setup(
     install_requires=['pyarrow',
                       'bitstring',
                       'grpcio',
-                      'protobuf'],
+                      'protobuf',
+                      'numpy'],
     package_data={'pydeephaven': ['py.typed']}
 )

@@ -12,6 +12,8 @@ using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::utility::TableMaker;
 using deephaven::dhcore::DateTime;
+using deephaven::dhcore::LocalDate;
+using deephaven::dhcore::LocalTime;
 using deephaven::dhcore::DeephavenConstants;
 
 namespace deephaven::client::tests {
@@ -28,6 +30,8 @@ TEST_CASE("Support all types", "[select]") {
   std::vector<double> double_data;
   std::vector<std::string> string_data;
   std::vector<DateTime> date_time_data;
+  std::vector<LocalDate> local_date_data;
+  std::vector<LocalTime> local_time_data;
 
   const int start_value = -8;
   const int end_value = 8;
@@ -42,6 +46,8 @@ TEST_CASE("Support all types", "[select]") {
     double_data.push_back(i * 987654.321);
     string_data.push_back(fmt::format("test {}", i));
     date_time_data.push_back(DateTime::FromNanos(i));
+    local_date_data.push_back(LocalDate::FromMillis(i * 86400 * 1000));
+    local_time_data.push_back(LocalTime::FromNanos(1000 + i));  // nanos argument cannot be negative
   }
 
   TableMaker maker;
@@ -55,6 +61,8 @@ TEST_CASE("Support all types", "[select]") {
   maker.AddColumn("doubleData", double_data);
   maker.AddColumn("stringData", string_data);
   maker.AddColumn("dateTimeData", date_time_data);
+  maker.AddColumn("localDateData", local_date_data);
+  maker.AddColumn("localTimeData", local_time_data);
 
   auto t = maker.MakeTable(tm.Client().GetManager());
 
@@ -71,7 +79,9 @@ TEST_CASE("Support all types", "[select]") {
       "floatData", float_data,
       "doubleData", double_data,
       "stringData", string_data,
-      "dateTimeData", date_time_data
+      "dateTimeData", date_time_data,
+      "localDateData", local_date_data,
+      "localTimeData", local_time_data
   );
 }
 

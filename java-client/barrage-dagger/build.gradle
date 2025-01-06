@@ -10,12 +10,12 @@ dependencies {
     api project(':java-client-flight-dagger')
     api project(':uri')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
     testImplementation project(':log-to-slf4j')
 }
 

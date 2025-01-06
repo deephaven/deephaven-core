@@ -3,12 +3,10 @@
 //
 package io.deephaven.engine.rowset;
 
-import gnu.trove.list.TLongList;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Repository of factory methods for constructing {@link WritableRowSet row sets}.
@@ -54,21 +52,6 @@ public abstract class RowSetFactory {
      */
     public static WritableRowSet fromKeys(final long rowKey) {
         return fromRange(rowKey, rowKey);
-    }
-
-    /**
-     * Get a {@link WritableRowSet} containing the specified row keys.
-     * <p>
-     * The provided {@link TLongList} is sorted and then passed to a {@link RowSetBuilderSequential}.
-     *
-     * @param rowKeys A {@link TLongList}. Note that this list is mutated within the method!
-     * @return A new {@link WritableRowSet} containing the values from {@code rowKeys}
-     */
-    public static RowSet fromKeys(@NotNull final TLongList rowKeys) {
-        rowKeys.sort();
-        final RowSetBuilderSequential builder = builderSequential();
-        rowKeys.forEach(builder);
-        return builder.build();
     }
 
     /**

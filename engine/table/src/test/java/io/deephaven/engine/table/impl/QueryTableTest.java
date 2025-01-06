@@ -12,7 +12,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -22,7 +23,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
@@ -46,6 +46,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -68,6 +69,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -75,7 +77,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Test of QueryTable functionality.
  * <p>
- * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
+ * This test used to be a catch-all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
  * some specific classes of tests have been broken out.
  * <p>
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
@@ -436,11 +438,11 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
-        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
+        assertEquals(2, table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
         assertEquals(table.getDefinition().getColumns().get(1).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("String", "Int").numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
@@ -594,22 +596,22 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = newTable(3,
                 Arrays.asList("String", "Int", "Double"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0)));
-        assertEquals(3, table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources().size());
+        assertEquals(3, table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources().size());
         final Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
         final ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final Collection<? extends ColumnSource<?>> renamedColumnSources =
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources();
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources();
         final ColumnSource<?>[] renamedColumns =
                 renamedColumnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], renamedColumns[0]);
         assertSame(columns[1], renamedColumns[1]);
         assertSame(columns[2], renamedColumns[2]);
         assertSame(table.getColumnSource("String"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("String"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("String"));
         assertSame(table.getColumnSource("Int"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Int"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Int"));
         assertSame(table.getColumnSource("Double"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Double"));
 
         assertEquals(3, table.renameColumns("NewInt=Int").numColumns());
         assertEquals(table.getColumnSources().toArray()[0],
@@ -2631,7 +2633,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testUngroupingAgnostic() {
         int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         Table table = testRefreshingTable(col("X", 1, 2, 3),
-                col("Y", new String[] {"a", "b", "c"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                col("Y", new String[] {"a", "b", "c"}, ArrayTypeUtils.EMPTY_STRING_ARRAY,
                         new String[] {"d", "e"}),
                 col("Z", data1));
 
@@ -2654,7 +2656,7 @@ public class QueryTableTest extends QueryTableTestBase {
         int[][] data = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         table = testRefreshingTable(col("X", 1, 2, 3),
                 col("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"},
-                        CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                        ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("Z", data));
         try {
             table.ungroup();
@@ -2703,18 +2705,114 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    public void testEmptyTableSnapshot() {
+        final Table emptyTableNoColumns = emptyTable(0);
+        final Table emptyTableWithSingleColumn = emptyTable(0).update("X = i");
+        final Table emptyTableWithMultipleColumns = emptyTable(0).update("X = i", "Y = 2*i", "Z = 3*i");
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 0);
+            assertTrue(snap.modColumnData.length == 0);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithSingleColumn)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 1);
+            assertTrue(snap.modColumnData.length == 1);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithMultipleColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 3);
+            assertTrue(snap.modColumnData.length == 3);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.addColumnData[1].data.isEmpty());
+            assertTrue(snap.addColumnData[2].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[1].data.isEmpty());
+            assertTrue(snap.modColumnData[2].data.isEmpty());
+        }
+    }
+
     public void testUngroupConstructSnapshotOfBoxedNull() {
         final Table t =
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
 
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
-                    io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
-                    io.deephaven.util.QueryConstants.NULL_INT);
+        // Snapshot the second column for last two rows
+        final BitSet columnsToSnapshot = new BitSet(2);
+        columnsToSnapshot.set(1);
+        final RowSequence rowsToSnapshot = RowSequenceFactory.forRange(1, 2);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) ungrouped,
+                        columnsToSnapshot, rowsToSnapshot, null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
+                        columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final List<Chunk<Values>> secondColChunk = snap.addColumnData[1].data;
+        final int[] secondColExpected = new int[] {4, 5, QueryConstants.NULL_INT};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
+            assertEquals(secondColChunk.get(0).asIntChunk().get(i), secondColExpected[i]);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsIncluded, i(1, 2));
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
+    }
+
+
+    public void testUngroupConstructSnapshotSingleColumnTable() {
+        final Table t =
+                testRefreshingTable(i(0).toTracking())
+                        .update("X = new Integer[]{null, 2, 3}");
+        final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotSingleColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
         }
     }
 
@@ -2881,7 +2979,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30),
-                        new SetGenerator<>(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"a", "b"},
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
                                 new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -3082,10 +3180,10 @@ public class QueryTableTest extends QueryTableTestBase {
         assertNull(ungrouped.getColumnSource("CCol").getPrev(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrev(secondKey));
 
-        // This tests the NPE condition in the ungrouped column sources
-        final Table snappy = InitialSnapshotTable.setupInitialSnapshotTable(ungrouped,
-                ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
-        assertTableEquals(expected, snappy);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            verifySnapshotBarrageMessage(snap, expected);
+        }
     }
 
     private void testMemoize(QueryTable source, UnaryOperator<Table> op) {
@@ -3181,6 +3279,11 @@ public class QueryTableTest extends QueryTableTestBase {
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym not in `aa`, `bb`"));
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));
+
+            testMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("A=intCol == 6"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol == 7"), t -> t.wouldMatch("B=intCol == 7"));
+            testNoMemoize(source, t -> t.wouldMatch("A=intCol < 7"), t -> t.wouldMatch("A=intCol < 7"));
 
             testMemoize(source, t -> t.countBy("Count", "Sym"));
             testMemoize(source, t -> t.countBy("Sym"));
@@ -3748,6 +3851,79 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, r2).getUpdateGraph()));
         assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(r2, s2, s1).getUpdateGraph()));
         assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, s2, r2).getUpdateGraph()));
+    }
+
+    public void testColumnSourceCast() {
+        // Create a test table with a String column and an array column
+        final Table testTable = TableTools.newTable(
+                TableTools.stringCol("MyTestStrCol", "A", "B", "C"),
+                TableTools.col("MyTestArrCol", new String[] {"A0", "A1"}, new String[] {"B0", "B1"},
+                        new String[] {"C0", "C1"}));
+
+        /* Test getting column sources with checked types */
+
+        // Test getColumnSource for MyTestStrCol
+        ColumnSource<CharSequence> stringColSource = testTable.getColumnSource("MyTestStrCol", CharSequence.class);
+        assertNotNull(stringColSource);
+        assertEquals(String.class, stringColSource.getType()); // actual type is still String
+
+        // Test getColumnSource for MyTestStrCol with wrong type and verify exception message
+        ClassCastException colTypeException = Assert.assertThrows(ClassCastException.class, () -> {
+            ColumnSource<Integer> intColSource = testTable.getColumnSource("MyTestStrCol", Integer.class);
+        });
+        assertEquals("Cannot convert ColumnSource[MyTestStrCol] of type java.lang.String to type java.lang.Integer",
+                colTypeException.getMessage());
+
+        // Test getColumnSource for MyTestArrCol
+        ColumnSource<CharSequence[]> arrColSource =
+                testTable.getColumnSource("MyTestArrCol", CharSequence[].class, CharSequence.class);
+        assertNotNull(arrColSource);
+        assertEquals(String[].class, arrColSource.getType());
+        assertEquals(String.class, arrColSource.getComponentType());
+
+        // Test getColumnSource for MyTestArrCol with a wrong component type and verify exception message
+        ClassCastException wrongComponentException = Assert.assertThrows(ClassCastException.class, () -> {
+            ColumnSource<CharSequence[]> wrongComponentTypeSource =
+                    testTable.getColumnSource("MyTestArrCol", CharSequence[].class, Integer.class);
+        });
+        assertEquals(
+                "Cannot convert ColumnSource[MyTestArrCol] componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.CharSequence;)",
+                wrongComponentException.getMessage());
+
+
+        /* Verify exception messages of underlying ColumnSource.cast method, with and without column name specified */
+
+        ColumnSource<?> rawStrColSource = testTable.getColumnSource("MyTestStrCol");
+        // cast() without component type, with column name specified
+        ClassCastException castExceptionNoCompWithColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawStrColSource.cast(Boolean.class, "MyTestStrCol");
+        });
+        assertEquals("Cannot convert ColumnSource[MyTestStrCol] of type java.lang.String to type java.lang.Boolean",
+                castExceptionNoCompWithColName.getMessage());
+
+        // cast() without component type and no column name specified
+        ClassCastException castExceptionNoCompNoColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawStrColSource.cast(Boolean.class);
+        });
+        assertEquals("Cannot convert ColumnSource of type java.lang.String to type java.lang.Boolean",
+                castExceptionNoCompNoColName.getMessage());
+
+        ColumnSource<Object> rawArrColSource = testTable.getColumnSource("MyTestArrCol");
+        // cast() with component type and column name specified
+        ClassCastException castExceptionWithCompAndColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawArrColSource.cast(Object[].class, Integer.class, "MyTestArrCol");
+        });
+        assertEquals(
+                "Cannot convert ColumnSource[MyTestArrCol] componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
+                castExceptionWithCompAndColName.getMessage());
+
+        // cast() with component type and no column name specified
+        ClassCastException castExceptionWithCompNoColName = Assert.assertThrows(ClassCastException.class, () -> {
+            rawArrColSource.cast(Object[].class, Integer.class);
+        });
+        assertEquals(
+                "Cannot convert ColumnSource componentType of type java.lang.String to java.lang.Integer (for [Ljava.lang.String; / [Ljava.lang.Object;)",
+                castExceptionWithCompNoColName.getMessage());
     }
 
     private static final class DummyUpdateGraph implements UpdateGraph {

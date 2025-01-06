@@ -11,6 +11,7 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +25,7 @@ import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
- * Top level accessor for a parquet file which can read both from a file path string or a CLI style file URI,
- * ex."s3://bucket/key".
+ * Top level accessor for a parquet file which can read from a CLI style file URI, ex."s3://bucket/key".
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
@@ -38,25 +38,7 @@ public class ParquetFileReader {
      * If reading a single parquet file, root URI is the URI of the file, else the parent directory for a metadata file
      */
     private final URI rootURI;
-    private final MessageType type;
-
-    /**
-     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
-     * {@link UncheckedIOException}.
-     *
-     * @param parquetFile The parquet file or the parquet metadata file
-     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
-     * @return The new {@link ParquetFileReader}
-     */
-    public static ParquetFileReader create(
-            @NotNull final File parquetFile,
-            @NotNull final SeekableChannelsProvider channelsProvider) {
-        try {
-            return new ParquetFileReader(convertToURI(parquetFile, false), channelsProvider);
-        } catch (final IOException e) {
-            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFile, e);
-        }
-    }
+    private final MessageType schema;
 
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
@@ -90,7 +72,6 @@ public class ParquetFileReader {
             // Construct a new file URI for the parent directory
             rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
         } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
             rootURI = parquetFileURI;
         }
         try (
@@ -101,7 +82,7 @@ public class ParquetFileReader {
                 fileMetaData = Util.readFileMetaData(in);
             }
         }
-        type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
+        schema = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
     /**
@@ -147,87 +128,6 @@ public class ParquetFileReader {
         return channelsProvider;
     }
 
-    private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
-
-    /**
-     * Get the name of all columns that we can know for certain (a) have a dictionary, and (b) use the dictionary on all
-     * data pages.
-     *
-     * @return A set of parquet column names that satisfies the required condition.
-     */
-    @SuppressWarnings("unused")
-    public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
-        if (columnsWithDictionaryUsedOnEveryDataPage == null) {
-            columnsWithDictionaryUsedOnEveryDataPage =
-                    calculateColumnsWithDictionaryUsedOnEveryDataPage();
-        }
-        return columnsWithDictionaryUsedOnEveryDataPage;
-    }
-
-    /**
-     * True only if we are certain every data page in this column chunk uses dictionary encoding; note false also covers
-     * the "we can't tell" case.
-     */
-    private static boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
-        final ColumnMetaData columnMeta = columnChunk.getMeta_data();
-        if (columnMeta.encoding_stats == null) {
-            return false; // this is false as "don't know".
-        }
-        for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
-            if (encodingStat.page_type != PageType.DATA_PAGE
-                    && encodingStat.page_type != PageType.DATA_PAGE_V2) {
-                // skip non-data pages.
-                continue;
-            }
-            // this is a data page.
-            if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
-                    && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private Set<String> calculateColumnsWithDictionaryUsedOnEveryDataPage() {
-        final Set<String> result = new HashSet<>(fileMetaData.getSchemaSize());
-        final List<RowGroup> rowGroups = fileMetaData.getRow_groups();
-        final Iterator<RowGroup> riter = rowGroups.iterator();
-        if (!riter.hasNext()) {
-            // For an empty file we say all columns satisfy the property.
-            for (SchemaElement se : fileMetaData.getSchema()) {
-                if (!se.isSetNum_children()) { // We want only the leaves.
-                    result.add(se.getName());
-                }
-            }
-            return result;
-        }
-        // On the first pass, for row group zero, we are going to add all columns to the set
-        // that satisfy the restriction.
-        // On later passes after zero, we will remove any column that does not satisfy
-        // the restriction.
-        final RowGroup rg0 = riter.next();
-        for (ColumnChunk columnChunk : rg0.columns) {
-            if (columnChunkUsesDictionaryOnEveryPage(columnChunk)) {
-                final String parquetColumnName = columnChunk.getMeta_data().path_in_schema.get(0);
-                result.add(parquetColumnName);
-            }
-        }
-
-        while (riter.hasNext()) {
-            final RowGroup rowGroup = riter.next();
-            for (ColumnChunk columnChunk : rowGroup.columns) {
-                final String parquetColumnName = columnChunk.getMeta_data().path_in_schema.get(0);
-                if (!result.contains(parquetColumnName)) {
-                    continue;
-                }
-                if (!columnChunkUsesDictionaryOnEveryPage(columnChunk)) {
-                    result.remove(parquetColumnName);
-                }
-            }
-        }
-        return result;
-    }
-
     /**
      * Create a {@link RowGroupReader} object for provided row group number
      *
@@ -238,7 +138,7 @@ public class ParquetFileReader {
                 fileMetaData.getRow_groups().get(groupNumber),
                 channelsProvider,
                 rootURI,
-                type,
+                schema,
                 getSchema(),
                 version);
     }
@@ -297,19 +197,12 @@ public class ParquetFileReader {
             }
 
             if (schemaElement.isSetLogicalType()) {
-                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
-            }
-
-            if (schemaElement.isSetConverted_type()) {
-                final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
-                        schemaElement.converted_type, schemaElement.logicalType, schemaElement);
-                final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
-                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
-                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
-                                : null;
-                if (!originalType.equals(newOriginalType)) {
-                    ((Types.Builder) childBuilder).as(originalType);
-                }
+                final LogicalTypeAnnotation logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
+                ((Types.Builder) childBuilder).as(logicalType);
+            } else if (schemaElement.isSetConverted_type()) {
+                final LogicalTypeAnnotation logicalType = getLogicalTypeFromConvertedType(
+                        schemaElement.converted_type, schemaElement);
+                ((Types.Builder) childBuilder).as(logicalType);
             }
 
             if (schemaElement.isSetField_id()) {
@@ -335,7 +228,9 @@ public class ParquetFileReader {
         }
     }
 
-    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) throws ParquetFileReaderException {
+    @Nullable
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(@NotNull final LogicalType type)
+            throws ParquetFileReaderException {
         switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
@@ -405,8 +300,15 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(final ConvertedType convertedType,
-            final LogicalType logicalType, final SchemaElement schemaElement) throws ParquetFileReaderException {
+    /**
+     * This method will convert the {@link ConvertedType} to a {@link LogicalTypeAnnotation} and should only be called
+     * if the logical type is not set in the schema element.
+     *
+     * @see <a href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md">Reference for conversions</a>
+     */
+    private static LogicalTypeAnnotation getLogicalTypeFromConvertedType(
+            final ConvertedType convertedType,
+            final SchemaElement schemaElement) throws ParquetFileReaderException {
         switch (convertedType) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -425,17 +327,13 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                // isAdjustedToUTC parameter is ignored while reading Parquet TIME type, so disregard it here
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // Converted type doesn't have isAdjustedToUTC parameter, so use the information from logical type
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
@@ -464,24 +362,7 @@ public class ParquetFileReader {
         }
     }
 
-    /**
-     * Helper method to determine if a logical type is adjusted to UTC.
-     *
-     * @param logicalType the logical type to check
-     * @return true if the logical type is a timestamp adjusted to UTC, false otherwise
-     */
-    private static boolean isAdjustedToUTC(final LogicalType logicalType) {
-        if (logicalType.getSetField() == LogicalType._Fields.TIMESTAMP) {
-            return logicalType.getTIMESTAMP().isAdjustedToUTC;
-        }
-        return false;
-    }
-
     public MessageType getSchema() {
-        return type;
-    }
-
-    public int rowGroupCount() {
-        return fileMetaData.getRow_groups().size();
+        return schema;
     }
 }

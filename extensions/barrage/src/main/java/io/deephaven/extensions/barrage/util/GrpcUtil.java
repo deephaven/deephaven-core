@@ -14,7 +14,7 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
+import java.util.function.Supplier;
 
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
@@ -56,7 +56,7 @@ public class GrpcUtil {
      * @param message the last message to send on this stream before completing
      * @param <T> the type of message that the stream handles
      */
-    public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
+    public static <T> void safelyOnNextAndComplete(StreamObserver<T> observer, T message) {
         safelyExecuteLocked(observer, () -> {
             observer.onNext(message);
             observer.onCompleted();

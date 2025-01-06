@@ -28,10 +28,10 @@ Schema::Schema(Private, std::vector<std::string> names, std::vector<ElementTypeI
      index_(std::move(index)) {}
 Schema::~Schema() = default;
 
-std::optional<size_t> Schema::GetColumnIndex(std::string_view name, bool strict) const {
+std::optional<int32_t> Schema::GetColumnIndex(std::string_view name, bool strict) const {
   auto ip = index_.find(name);
   if (ip != index_.end()) {
-    return ip->second;
+    return static_cast<int32_t>(ip->second);
   }
   // Not found: check strictness flag.
   if (!strict) {

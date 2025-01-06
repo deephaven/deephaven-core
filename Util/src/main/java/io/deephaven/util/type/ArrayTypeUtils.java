@@ -5,11 +5,7 @@ package io.deephaven.util.type;
 
 import io.deephaven.base.verify.Require;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -28,54 +24,28 @@ public class ArrayTypeUtils {
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
     public static final String[] EMPTY_STRING_ARRAY = new String[0];
+    public static final String[][] EMPTY_STRING_ARRAY_ARRAY = new String[0][];
     public static final Boolean[] EMPTY_BOOLEANBOXED_ARRAY = new Boolean[0];
 
-    public static ArrayAccessor getArrayAccessor(Object array) {
-        final Class<?> c = array.getClass();
-        if (c.equals(Boolean[].class)) {
+    public static ArrayAccessor<?> getArrayAccessor(Object array) {
+        if (array instanceof Boolean[]) {
             return new BooleanArrayAccessor((Boolean[]) array);
-        } else if (c.equals(byte[].class)) {
+        } else if (array instanceof byte[]) {
             return new ByteArrayAccessor((byte[]) array);
-        } else if (c.equals(char[].class)) {
+        } else if (array instanceof char[]) {
             return new CharArrayAccessor((char[]) array);
-        } else if (c.equals(double[].class)) {
+        } else if (array instanceof double[]) {
             return new DoubleArrayAccessor((double[]) array);
-        } else if (c.equals(float[].class)) {
+        } else if (array instanceof float[]) {
             return new FloatArrayAccessor((float[]) array);
-        } else if (c.equals(int[].class)) {
+        } else if (array instanceof int[]) {
             return new IntArrayAccessor((int[]) array);
-        } else if (c.equals(long[].class)) {
+        } else if (array instanceof long[]) {
             return new LongArrayAccessor((long[]) array);
-        } else if (c.equals(short[].class)) {
+        } else if (array instanceof short[]) {
             return new ShortArrayAccessor((short[]) array);
         } else {
-            return new ObjectArrayAccessor((Object[]) array);
-        }
-    }
-
-    public static ArrayAccessor createArrayAccessor(Object element, int size) {
-        if (element == null) {
-            return new ObjectArrayAccessor(new Object[size]);
-        }
-        final Class<?> c = element.getClass();
-        if (c.equals(boolean.class) || c.equals(Boolean.class)) {
-            return new BooleanArrayAccessor(booleanNullArray(size));
-        } else if (c.equals(byte.class) || c.equals(Byte.class)) {
-            return new ByteArrayAccessor(byteNullArray(size));
-        } else if (c.equals(char.class) || c.equals(Character.class)) {
-            return new CharArrayAccessor(charNullArray(size));
-        } else if (c.equals(double.class) || c.equals(Double.class)) {
-            return new DoubleArrayAccessor(doubleNullArray(size));
-        } else if (c.equals(float.class) || c.equals(Float.class)) {
-            return new FloatArrayAccessor(floatNullArray(size));
-        } else if (c.equals(int.class) || c.equals(Integer.class)) {
-            return new IntArrayAccessor(intNullArray(size));
-        } else if (c.equals(long.class) || c.equals(Long.class)) {
-            return new LongArrayAccessor(longNullArray(size));
-        } else if (c.equals(short.class) || c.equals(Short.class)) {
-            return new ShortArrayAccessor(shortNullArray(size));
-        } else {
-            return new ObjectArrayAccessor((Object[]) Array.newInstance(c, size));
+            return new ObjectArrayAccessor<>((Object[]) array);
         }
     }
 
@@ -125,99 +95,6 @@ public class ArrayTypeUtils {
         short[] result = new short[size];
         Arrays.fill(result, NULL_SHORT);
         return result;
-    }
-
-    public static Object toArray(Collection<?> objects, Class elementType) {
-        if (elementType == boolean.class) {
-            elementType = Boolean.class;
-        }
-        Object result = Array.newInstance(elementType, objects.size());
-        ArrayAccessor accessor = getArrayAccessor(result);
-        int i = 0;
-        for (Object object : objects) {
-            accessor.set(i++, object);
-        }
-        return result;
-    }
-
-    public static Object boxedToPrimitive(Set<?> objects, Class type) {
-        Iterator<?> it = objects.iterator();
-        if (objects.isEmpty()) {
-            Class primitiveType = io.deephaven.util.type.TypeUtils.getUnboxedType(type);
-            if (primitiveType == null) {
-                return Array.newInstance(type, 0);
-            } else {
-                return Array.newInstance(primitiveType, 0);
-            }
-        }
-        Object current = it.next();
-        ArrayAccessor resultAccessor = createArrayAccessor(current, objects.size());
-        int i = 0;
-        resultAccessor.set(i++, current);
-        while (it.hasNext()) {
-            current = it.next();
-            resultAccessor.set(i++, current);
-        }
-        return resultAccessor.getArray();
-    }
-
-    public static ArrayAccessor getArrayAccessorFromArray(Object arrayPrototype, int size) {
-        final Class<?> c = arrayPrototype.getClass();
-        if (c.equals(boolean[].class)) {
-            return new BooleanArrayAccessor(booleanNullArray(size));
-        } else if (c.equals(byte[].class)) {
-            return new ByteArrayAccessor(byteNullArray(size));
-        } else if (c.equals(char[].class)) {
-            return new CharArrayAccessor(charNullArray(size));
-        } else if (c.equals(double[].class)) {
-            return new DoubleArrayAccessor(doubleNullArray(size));
-        } else if (c.equals(float[].class)) {
-            return new FloatArrayAccessor(floatNullArray(size));
-        } else if (c.equals(int[].class)) {
-            return new IntArrayAccessor(intNullArray(size));
-        } else if (c.equals(long[].class)) {
-            return new LongArrayAccessor(longNullArray(size));
-        } else if (c.equals(short[].class)) {
-            return new ShortArrayAccessor(shortNullArray(size));
-        } else {
-            return new ObjectArrayAccessor((Object[]) Array.newInstance(c.getComponentType(), size));
-        }
-    }
-
-    public static Object toArray(Collection<?> objects) {
-        if (objects.size() == 0) {
-            return toArray(objects, Object.class);
-        }
-        Object prototype = objects.iterator().next();
-        if (prototype == null) {
-            return toArray(objects, Object.class);
-        }
-        Class ubType = TypeUtils.getUnboxedType(prototype.getClass());
-
-        return toArray(objects, (ubType == null ? prototype.getClass() : ubType));
-    }
-
-    public static ArrayAccessor getAccessorForElementType(Class componentType, int size) {
-        if (componentType.equals(boolean.class) || componentType.equals(Boolean.class)) {
-            return new BooleanArrayAccessor(booleanNullArray(size));
-        } else if (componentType.equals(byte.class) || componentType.equals(Byte.class)) {
-            return new ByteArrayAccessor(byteNullArray(size));
-        } else if (componentType.equals(char.class) || componentType.equals(Character.class)) {
-            return new CharArrayAccessor(charNullArray(size));
-        } else if (componentType.equals(double.class) || componentType.equals(Double.class)) {
-            return new DoubleArrayAccessor(doubleNullArray(size));
-        } else if (componentType.equals(float.class) || componentType.equals(Float.class)) {
-            return new FloatArrayAccessor(floatNullArray(size));
-        } else if (componentType.equals(int.class) || componentType.equals(Integer.class)) {
-            return new IntArrayAccessor(intNullArray(size));
-        } else if (componentType.equals(long.class) || componentType.equals(Long.class)) {
-            return new LongArrayAccessor(longNullArray(size));
-        } else if (componentType.equals(short.class) || componentType.equals(Short.class)) {
-            return new ShortArrayAccessor(shortNullArray(size));
-        } else {
-            return new ObjectArrayAccessor((Object[]) Array.newInstance(componentType, size));
-        }
-
     }
 
     public static Character[] getBoxedArray(char[] referenceData) {
@@ -425,22 +302,21 @@ public class ArrayTypeUtils {
             return null;
         }
 
-        final Class<?> c = value.getClass();
-        if (c.equals(boolean[].class)) {
+        if (value instanceof boolean[]) {
             return getBoxedArray((boolean[]) value);
-        } else if (c.equals(byte[].class)) {
+        } else if (value instanceof byte[]) {
             return getBoxedArray((byte[]) value);
-        } else if (c.equals(char[].class)) {
+        } else if (value instanceof char[]) {
             return getBoxedArray((char[]) value);
-        } else if (c.equals(double[].class)) {
+        } else if (value instanceof double[]) {
             return getBoxedArray((double[]) value);
-        } else if (c.equals(float[].class)) {
+        } else if (value instanceof float[]) {
             return getBoxedArray((float[]) value);
-        } else if (c.equals(int[].class)) {
+        } else if (value instanceof int[]) {
             return getBoxedArray((int[]) value);
-        } else if (c.equals(long[].class)) {
+        } else if (value instanceof long[]) {
             return getBoxedArray((long[]) value);
-        } else if (c.equals(short[].class)) {
+        } else if (value instanceof short[]) {
             return getBoxedArray((short[]) value);
         } else {
             return (Object[]) value;
@@ -448,47 +324,42 @@ public class ArrayTypeUtils {
     }
 
     public static boolean equals(Object actualValue, Object expectedValue) {
-        final Class<?> ct = actualValue.getClass().getComponentType();
-        if (Object.class.isAssignableFrom(ct)) {
-            return Arrays.equals((Object[]) actualValue, (Object[]) expectedValue);
-        } else if (byte.class.isAssignableFrom(ct)) {
+        if (actualValue instanceof byte[] && expectedValue instanceof byte[]) {
             return Arrays.equals((byte[]) actualValue, (byte[]) expectedValue);
-        } else if (char.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof char[] && expectedValue instanceof char[]) {
             return Arrays.equals((char[]) actualValue, (char[]) expectedValue);
-        } else if (double.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof double[] && expectedValue instanceof double[]) {
             return Arrays.equals((double[]) actualValue, (double[]) expectedValue);
-        } else if (float.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof float[] && expectedValue instanceof float[]) {
             return Arrays.equals((float[]) actualValue, (float[]) expectedValue);
-        } else if (int.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof int[] && expectedValue instanceof int[]) {
             return Arrays.equals((int[]) actualValue, (int[]) expectedValue);
-        } else if (long.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof long[] && expectedValue instanceof long[]) {
             return Arrays.equals((long[]) actualValue, (long[]) expectedValue);
-        } else if (short.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof short[] && expectedValue instanceof short[]) {
             return Arrays.equals((short[]) actualValue, (short[]) expectedValue);
+        } else {
+            return Arrays.equals((Object[]) actualValue, (Object[]) expectedValue);
         }
-        return false;
     }
 
     public static String toString(Object actualValue) {
-        final Class<?> ct = actualValue.getClass().getComponentType();
-        if (Object.class.isAssignableFrom(ct)) {
-            return Arrays.toString((Object[]) actualValue);
-        } else if (byte.class.isAssignableFrom(ct)) {
+        if (actualValue instanceof byte[]) {
             return Arrays.toString((byte[]) actualValue);
-        } else if (char.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof char[]) {
             return Arrays.toString((char[]) actualValue);
-        } else if (double.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof double[]) {
             return Arrays.toString((double[]) actualValue);
-        } else if (float.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof float[]) {
             return Arrays.toString((float[]) actualValue);
-        } else if (int.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof int[]) {
             return Arrays.toString((int[]) actualValue);
-        } else if (long.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof long[]) {
             return Arrays.toString((long[]) actualValue);
-        } else if (short.class.isAssignableFrom(ct)) {
+        } else if (actualValue instanceof short[]) {
             return Arrays.toString((short[]) actualValue);
         }
-        return null;
+        return Arrays.toString((Object[]) actualValue);
     }
 
     public static String toString(boolean[] a, int offset, int length) {
@@ -673,10 +544,10 @@ public class ArrayTypeUtils {
 
     public static class ObjectArrayAccessor<T> implements ArrayAccessor<T> {
 
-        private T array[];
+        private final T[] array;
 
 
-        public ObjectArrayAccessor(T array[]) {
+        public ObjectArrayAccessor(T[] array) {
             this.array = array;
         }
 
@@ -716,9 +587,9 @@ public class ArrayTypeUtils {
 
     public static class BooleanArrayAccessor implements ArrayAccessor<Boolean> {
 
-        private Boolean array[];
+        private final Boolean[] array;
 
-        public BooleanArrayAccessor(Boolean array[]) {
+        public BooleanArrayAccessor(Boolean[] array) {
             this.array = array;
         }
 
@@ -760,9 +631,9 @@ public class ArrayTypeUtils {
 
     public static class ByteArrayAccessor implements ArrayAccessor<Byte> {
 
-        private byte array[];
+        private final byte[] array;
 
-        public ByteArrayAccessor(byte array[]) {
+        public ByteArrayAccessor(byte[] array) {
             this.array = array;
         }
 
@@ -803,9 +674,9 @@ public class ArrayTypeUtils {
     }
     public static class CharArrayAccessor implements ArrayAccessor<Character> {
 
-        private char array[];
+        private final char[] array;
 
-        public CharArrayAccessor(char array[]) {
+        public CharArrayAccessor(char[] array) {
             this.array = array;
         }
 
@@ -846,9 +717,9 @@ public class ArrayTypeUtils {
     }
     public static class DoubleArrayAccessor implements ArrayAccessor<Double> {
 
-        private double array[];
+        private final double[] array;
 
-        public DoubleArrayAccessor(double array[]) {
+        public DoubleArrayAccessor(double[] array) {
             this.array = array;
         }
 
@@ -889,9 +760,9 @@ public class ArrayTypeUtils {
     }
     public static class FloatArrayAccessor implements ArrayAccessor<Float> {
 
-        private float array[];
+        private final float[] array;
 
-        public FloatArrayAccessor(float array[]) {
+        public FloatArrayAccessor(float[] array) {
             this.array = array;
         }
 
@@ -932,9 +803,9 @@ public class ArrayTypeUtils {
     }
     public static class IntArrayAccessor implements ArrayAccessor<Integer> {
 
-        private int array[];
+        private final int[] array;
 
-        public IntArrayAccessor(int array[]) {
+        public IntArrayAccessor(int[] array) {
             this.array = array;
         }
 
@@ -980,9 +851,9 @@ public class ArrayTypeUtils {
     }
     public static class LongArrayAccessor implements ArrayAccessor<Long> {
 
-        private long array[];
+        private final long[] array;
 
-        public LongArrayAccessor(long array[]) {
+        public LongArrayAccessor(long[] array) {
             this.array = array;
         }
 
@@ -1024,9 +895,9 @@ public class ArrayTypeUtils {
     }
     public static class ShortArrayAccessor implements ArrayAccessor<Short> {
 
-        private short array[];
+        private final short[] array;
 
-        public ShortArrayAccessor(short array[]) {
+        public ShortArrayAccessor(short[] array) {
             this.array = array;
         }
 

@@ -6,6 +6,8 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSessionFactoryConfig;
 import io.deephaven.client.impl.BarrageSessionFactoryConfig.Factory;
+import io.deephaven.client.impl.ClientChannelFactory;
+import io.deephaven.client.impl.ClientChannelFactoryDefaulter;
 import io.deephaven.client.impl.SessionConfig;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -15,12 +17,17 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import picocli.CommandLine.ArgGroup;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 abstract class BarrageClientExampleBase implements Callable<Void> {
+
+    private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
+            .userAgent(BarrageSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-barrage-examples")))
+            .build();
 
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
@@ -36,6 +43,7 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
         final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         final Factory factory = BarrageSessionFactoryConfig.builder()
                 .clientConfig(ConnectOptions.options(connectOptions).config())
+                .clientChannelFactory(CLIENT_CHANNEL_FACTORY)
                 .allocator(bufferAllocator)
                 .scheduler(scheduler)
                 .build()

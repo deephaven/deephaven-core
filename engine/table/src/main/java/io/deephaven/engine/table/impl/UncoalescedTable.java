@@ -204,6 +204,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName,
+            @NotNull Class<? extends DATA_TYPE> clazz) {
+        return coalesce().objectColumnIterator(columnName, clazz);
+    }
+
+    @Override
     @ConcurrentMethod
     public Table where(Filter filter) {
         return coalesce().where(filter);

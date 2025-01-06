@@ -6,7 +6,7 @@
 
 namespace deephaven::client::tests {
 
-TEST_CASE("Drop all columns", "[adddrop]") {
+TEST_CASE("Drop some columns", "[adddrop]") {
   auto tm = TableMakerForTests::Create();
   auto table = tm.Table();
   auto t = table.Update("II = ii").Where("Ticker == `AAPL`");

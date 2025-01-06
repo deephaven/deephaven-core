@@ -1,6 +1,7 @@
 plugins {
     id 'application'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.optional-server-dependencies'
 }
 
 configurations {
@@ -13,7 +14,7 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {
@@ -32,31 +33,14 @@ if (hasProperty('groovy')) {
 }
 
 if (!hasProperty('excludeHotspotImpl')) {
-    dependencies {
-        runtimeOnly project(':hotspot-impl')
-    }
     extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
 }
 
 if (!hasProperty('excludeClockImpl')) {
-    dependencies {
-        runtimeOnly project(':clock-impl')
-    }
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
-if (!hasProperty('excludeSql')) {
-    dependencies {
-        runtimeOnly project(':engine-sql')
-    }
-}
-
-if (!hasProperty('excludeS3')) {
-    dependencies {
-        runtimeOnly project(':extensions-s3')
-        runtimeOnly project(':extensions-iceberg-s3')
-    }
-}
+// Note: add optional server dependencies to io.deephaven.optional-server-dependencies plugin in buildSrc
 
 def authHandlers = []
 def authConfigs = ['AuthHandlers']

@@ -4,14 +4,11 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 
 public class CharRangeComparator {
     private CharRangeComparator() {} // static use only
 
-    private abstract static class CharCharFilter implements ChunkFilter.CharChunkFilter {
+    private abstract static class CharCharFilter extends CharChunkFilter {
         final char lower;
         final char upper;
 
@@ -19,80 +16,53 @@ public class CharRangeComparator {
             this.lower = lower;
             this.upper = upper;
         }
-
-        abstract public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results);
     }
 
-    static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
+    final static class CharCharInclusiveInclusiveFilter extends CharCharFilter {
         private CharCharInclusiveInclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.geq(value, lower) && CharComparisons.leq(value, upper);
         }
     }
 
-    static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
+    final static class CharCharInclusiveExclusiveFilter extends CharCharFilter {
         private CharCharInclusiveExclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.geq(value, lower) && CharComparisons.lt(value, upper);
         }
     }
 
-    static class CharCharExclusiveInclusiveFilter extends CharCharFilter {
+    final static class CharCharExclusiveInclusiveFilter extends CharCharFilter {
         private CharCharExclusiveInclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.gt(value, lower) && CharComparisons.leq(value, upper);
         }
     }
 
-    static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
+    final static class CharCharExclusiveExclusiveFilter extends CharCharFilter {
         private CharCharExclusiveExclusiveFilter(char lower, char upper) {
             super(lower, upper);
         }
 
-        public void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final char value = values.get(ii);
-                if (CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        @Override
+        public boolean matches(char value) {
+            return CharComparisons.gt(value, lower) && CharComparisons.lt(value, upper);
         }
     }
 
-    public static ChunkFilter.CharChunkFilter makeCharFilter(char lower, char upper, boolean lowerInclusive,
+    public static CharChunkFilter makeCharFilter(char lower, char upper, boolean lowerInclusive,
             boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {

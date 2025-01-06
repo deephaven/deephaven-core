@@ -17,6 +17,7 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
 
 import java.util.Arrays;
@@ -225,6 +226,28 @@ public interface Aggregation {
     }
 
     /**
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filters}.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhere(String resultColumn, String... filters) {
+        return CountWhere.of(resultColumn, filters);
+    }
+
+    /**
+     * Create a {@link io.deephaven.api.agg.CountWhere count} aggregation with the supplied output column name, counting
+     * values that pass the supplied {@code filter}.
+     *
+     * @param resultColumn The {@link Count#column() output column} name
+     * @return The aggregation
+     */
+    static CountWhere AggCountWhere(String resultColumn, Filter filter) {
+        return CountWhere.of(resultColumn, filter);
+    }
+
+    /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecCountDistinct count distinct} aggregation for the supplied
      * column name pairs. This will not count {@code null} values from the input column(s).
      *
@@ -292,6 +315,40 @@ public interface Aggregation {
     }
 
     /**
+     * <p>
+     * Create a {@link Formula formula} aggregation with the supplied {@code formula}. This variant requires the formula
+     * to provide the output column name and specific input column names in the following format:
+     * </p>
+     * {@code
+     * AggFormula("output_col=(input_col1 + input_col2) * input_col3")
+     * }
+     *
+     * @param formulaString The formula to use to produce the output column
+     * @return The aggregation
+     */
+    static Formula AggFormula(String formulaString) {
+        return Formula.parse(formulaString);
+    }
+
+    /**
+     * <p>
+     * Create a {@link Formula formula} aggregation with the supplied {@code columnName} and {@code expression}. This
+     * variant requires the formula to provide the output column name and the expression to evaluate in the following
+     * format:
+     * </p>
+     * {@code
+     * AggFormula("output_col", "(input_col1 + input_col2) * input_col3")
+     * }
+     *
+     * @param columnName The output column name
+     * @param expression The expression to use to produce the output column
+     * @return The aggregation
+     */
+    static Formula AggFormula(String columnName, String expression) {
+        return Formula.of(columnName, expression);
+    }
+
+    /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecFormula formula} aggregation with the supplied {@code formula},
      * {@code paramToken}, and column name pairs.
      *
@@ -302,6 +359,7 @@ public interface Aggregation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
+    @Deprecated
     static Aggregation AggFormula(String formula, String paramToken, String... pairs) {
         return of(AggSpec.formula(formula, paramToken), pairs);
     }
@@ -524,7 +582,7 @@ public interface Aggregation {
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecStd sample standard deviation} aggregation for the supplied
      * column name pairs.
-     *
+     * <p>
      * Sample standard deviation is computed using Bessel's correction
      * (https://en.wikipedia.org/wiki/Bessel%27s_correction), which ensures that the sample variance will be an unbiased
      * estimator of population variance.
@@ -614,7 +672,7 @@ public interface Aggregation {
     /**
      * Create a {@link io.deephaven.api.agg.spec.AggSpecVar sample variance} aggregation for the supplied column name
      * pairs.
-     *
+     * <p>
      * Sample variance is computed using Bessel's correction (https://en.wikipedia.org/wiki/Bessel%27s_correction),
      * which ensures that the sample variance will be an unbiased estimator of population variance.
      *
@@ -675,9 +733,11 @@ public interface Aggregation {
         visitor.visit((ColumnAggregation) null);
         visitor.visit((ColumnAggregations) null);
         visitor.visit((Count) null);
+        visitor.visit((CountWhere) null);
         visitor.visit((FirstRowKey) null);
         visitor.visit((LastRowKey) null);
         visitor.visit((Partition) null);
+        visitor.visit((Formula) null);
     }
 
     /**
@@ -723,6 +783,13 @@ public interface Aggregation {
         void visit(Count count);
 
         /**
+         * Visit a {@link CountWhere count aggregation}.
+         *
+         * @param countWhere The count aggregation
+         */
+        void visit(CountWhere countWhere);
+
+        /**
          * Visit a {@link FirstRowKey first row key aggregation}.
          *
          * @param firstRowKey The first row key aggregation
@@ -742,5 +809,12 @@ public interface Aggregation {
          * @param partition The partition aggregation
          */
         void visit(Partition partition);
+
+        /**
+         * Visit a {@link Formula formula aggregation}.
+         *
+         * @param formula The formula aggregation
+         */
+        void visit(Formula formula);
     }
 }

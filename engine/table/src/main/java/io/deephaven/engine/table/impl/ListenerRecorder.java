@@ -14,6 +14,8 @@ import io.deephaven.engine.table.TableUpdate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
+
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
  * {@link MergedListener} that a change has occurred. The combination of a {@link ListenerRecorder} and
@@ -90,6 +92,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
         return parent.satisfied(step);
     }
 
+    @OverridingMethodsMustInvokeSuper
     @Override
     protected void destroy() {
         super.destroy();

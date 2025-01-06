@@ -13,7 +13,7 @@ rm -f ./*.cpp ./*.so
 PATH="/opt/python/${PYTHON_TAG}/bin:$PATH"
 
 MAKEFLAGS="-j${NCPUS}" \
-  CFLAGS="-I${DHCPP}/include" \
+  CPPFLAGS="-I${DHCPP}/include" \
   LDFLAGS="-L${DHCPP}/lib" \
   DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION}" \
   python setup.py build_ext -i

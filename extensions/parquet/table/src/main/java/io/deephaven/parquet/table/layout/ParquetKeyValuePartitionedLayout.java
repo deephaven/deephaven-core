@@ -18,6 +18,7 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,7 +28,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetUtils.isVisibleParquetFile;
 
@@ -49,46 +49,71 @@ public class ParquetKeyValuePartitionedLayout
 
     private final SeekableChannelsProvider channelsProvider;
 
-    public ParquetKeyValuePartitionedLayout(
+    /**
+     * Create a new {@link ParquetKeyValuePartitionedLayout} for the given {@code tableRootDirectory} and
+     * {@code tableDefinition}.
+     *
+     * @param tableRootDirectory The root directory for the table.
+     * @param tableDefinition The table definition to use for the layout.
+     * @param readInstructions The instructions for customizations while reading.
+     * @param channelsProvider The provider for seekable channels. If {@code null}, a new provider will be created and
+     *        used for all location keys.
+     */
+    public static ParquetKeyValuePartitionedLayout create(
             @NotNull final URI tableRootDirectory,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(tableRootDirectory, tableDefinition, readInstructions,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                        readInstructions.getSpecialInstructions()));
+            @NotNull final ParquetInstructions readInstructions,
+            @Nullable SeekableChannelsProvider channelsProvider) {
+        if (channelsProvider == null) {
+            // noinspection resource
+            channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                    .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
+        }
+        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, tableDefinition, channelsProvider);
     }
 
     private ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
-                        channelsProvider),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, channelsProvider),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
         this.channelsProvider = channelsProvider;
     }
 
-    public ParquetKeyValuePartitionedLayout(
+    /**
+     * Create a new {@link ParquetKeyValuePartitionedLayout} for the given {@code tableRootDirectory}. The table
+     * definition will be inferred from the data using {@link CsvTools#readCsv(java.io.InputStream) CsvTools.readCsv}.
+     *
+     * @param tableRootDirectory The root directory for the table.
+     * @param maxPartitioningLevels The maximum number of partitioning levels to use.
+     * @param readInstructions The instructions for customizations while reading.
+     * @param channelsProvider The provider for seekable channels. If {@code null}, a new provider will be created and
+     *        used for all location keys.
+     */
+
+    public static ParquetKeyValuePartitionedLayout create(
             @NotNull final URI tableRootDirectory,
             final int maxPartitioningLevels,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(tableRootDirectory, maxPartitioningLevels, readInstructions,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
-                        readInstructions.getSpecialInstructions()));
+            @NotNull final ParquetInstructions readInstructions,
+            @Nullable SeekableChannelsProvider channelsProvider) {
+        if (channelsProvider == null) {
+            // noinspection resource
+            channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                    .load(tableRootDirectory.getScheme(), readInstructions.getSpecialInstructions());
+        }
+        return new ParquetKeyValuePartitionedLayout(tableRootDirectory, maxPartitioningLevels, channelsProvider);
     }
 
     private ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             final int maxPartitioningLevels,
-            @NotNull final ParquetInstructions readInstructions,
             @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
-                        channelsProvider),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, channelsProvider),
                 maxPartitioningLevels);
         this.channelsProvider = channelsProvider;
     }

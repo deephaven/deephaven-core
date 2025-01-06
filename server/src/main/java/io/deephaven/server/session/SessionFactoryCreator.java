@@ -9,11 +9,9 @@ import io.deephaven.client.impl.ClientConfig;
 import io.deephaven.client.impl.FlightSessionFactoryConfig;
 import io.deephaven.client.impl.SessionConfig;
 import io.deephaven.client.impl.SessionFactoryConfig;
-import io.deephaven.ssl.config.SSLConfig;
 import org.apache.arrow.memory.BufferAllocator;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -26,17 +24,14 @@ public final class SessionFactoryCreator {
     private final ScheduledExecutorService scheduler;
     private final BufferAllocator allocator;
     private final ClientChannelFactory clientChannelFactory;
-    private final SSLConfig defaultOutboundSslConfig;
 
     @Inject
     public SessionFactoryCreator(
             ScheduledExecutorService scheduler,
             BufferAllocator allocator,
-            @Named("client.sslConfig") SSLConfig defaultOutboundSslConfig,
             ClientChannelFactory clientChannelFactory) {
         this.scheduler = Objects.requireNonNull(scheduler);
         this.allocator = Objects.requireNonNull(allocator);
-        this.defaultOutboundSslConfig = Objects.requireNonNull(defaultOutboundSslConfig);
         this.clientChannelFactory = Objects.requireNonNull(clientChannelFactory);
     }
 
@@ -50,7 +45,7 @@ public final class SessionFactoryCreator {
      */
     public SessionFactoryConfig.Factory sessionFactory(ClientConfig clientConfig) {
         return SessionFactoryConfig.builder()
-                .clientConfig(clientConfigToUse(clientConfig))
+                .clientConfig(clientConfig)
                 .clientChannelFactory(clientChannelFactory)
                 .sessionConfig(SESSION_CONFIG_EMPTY)
                 .scheduler(scheduler)
@@ -68,7 +63,7 @@ public final class SessionFactoryCreator {
      */
     public FlightSessionFactoryConfig.Factory flightFactory(ClientConfig clientConfig) {
         return FlightSessionFactoryConfig.builder()
-                .clientConfig(clientConfigToUse(clientConfig))
+                .clientConfig(clientConfig)
                 .clientChannelFactory(clientChannelFactory)
                 .sessionConfig(SESSION_CONFIG_EMPTY)
                 .allocator(allocator)
@@ -87,18 +82,12 @@ public final class SessionFactoryCreator {
      */
     public BarrageSessionFactoryConfig.Factory barrageFactory(ClientConfig clientConfig) {
         return BarrageSessionFactoryConfig.builder()
-                .clientConfig(clientConfigToUse(clientConfig))
+                .clientConfig(clientConfig)
                 .clientChannelFactory(clientChannelFactory)
                 .sessionConfig(SESSION_CONFIG_EMPTY)
                 .allocator(allocator)
                 .scheduler(scheduler)
                 .build()
                 .factory();
-    }
-
-    private ClientConfig clientConfigToUse(ClientConfig config) {
-        return config.ssl().isEmpty() && config.target().isSecure()
-                ? config.withSsl(defaultOutboundSslConfig)
-                : config;
     }
 }

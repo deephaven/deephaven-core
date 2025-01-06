@@ -10,8 +10,8 @@ description 'Deephaven Authorization Code Generator'
 dependencies {
     implementation project(':engine-api')
 
-    Classpaths.inheritGrpcPlatform(project, 'implementation')
-    implementation 'io.grpc:grpc-services'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.services
 
-    implementation 'com.squareup:javapoet:1.13.0'
+    implementation libs.squareup.javapoet
 }

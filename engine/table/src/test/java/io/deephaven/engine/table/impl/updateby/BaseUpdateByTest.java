@@ -3,12 +3,12 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.junit.Rule;
 
 import java.math.BigInteger;
@@ -39,7 +39,7 @@ public class BaseUpdateByTest {
     static CreateResult createTestTable(int tableSize, boolean includeSym, boolean includeGroups, boolean isRefreshing,
             int seed) {
         return createTestTable(tableSize, includeSym, includeGroups, isRefreshing, seed,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]);
+                ArrayTypeUtils.EMPTY_STRING_ARRAY, new TestDataGenerator[0]);
     }
 
     static CreateResult createTestTable(
@@ -107,7 +107,7 @@ public class BaseUpdateByTest {
                 new BigDecimalGenerator(new BigInteger("1"), new BigInteger("2"), 5, nullFraction)));
 
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 generators.toArray(new TestDataGenerator[0]));
         final QueryTable t = getTable(isRefreshing, tableSize, random, columnInfos);
 

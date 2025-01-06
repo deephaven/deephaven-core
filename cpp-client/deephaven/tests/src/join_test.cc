@@ -135,8 +135,6 @@ TEST_CASE("Aj", "[join]") {
 
 TEST_CASE("Raj", "[join]") {
   auto tm = TableMakerForTests::Create();
-  auto q = arrow::timestamp(arrow::TimeUnit::NANO, "UTC");
-
   TableHandle trades;
   {
     std::vector<std::string> ticker_data = {"AAPL", "AAPL", "AAPL", "IBM", "IBM"};
@@ -206,15 +204,6 @@ TEST_CASE("Raj", "[join]") {
     std::vector<std::optional<int32_t>> bid_size_data = {10, {}, {}, 5, 13};
     std::vector<std::optional<double>> ask_data = {2.5, {}, {}, 105, 110};
     std::vector<std::optional<int32_t>> ask_size_data = {83, {}, {}, 47, 15};
-    TableMaker table_maker;
-    table_maker.AddColumn("Ticker", ticker_data);
-    table_maker.AddColumn("Timestamp", timestamp_data);
-    table_maker.AddColumn("Price", price_data);
-    table_maker.AddColumn("Size", size_data);
-    table_maker.AddColumn("Bid", bid_data);
-    table_maker.AddColumn("BidSize", bid_size_data);
-    table_maker.AddColumn("Ask", ask_data);
-    table_maker.AddColumn("AskSize", ask_size_data);
 
     CompareTable(
         result,

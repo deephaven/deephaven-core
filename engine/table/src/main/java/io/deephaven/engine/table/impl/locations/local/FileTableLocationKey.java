@@ -66,10 +66,11 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     }
 
     /**
-     * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
-     * {@code partitions}, then compares {@code file}.
-     *
-     * @inheritDoc
+     * When comparing with another {@link FileTableLocationKey}, precedence-wise this implementation compares
+     * {@code order}, then applies a {@link PartitionsComparator} to {@code partitions}, then compares {@code file}.
+     * Otherwise, it delegates to parent class.
+     * <p>
+     * {@inheritDoc}
      */
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
@@ -86,7 +87,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
             }
             return file.compareTo(otherTyped.file);
         }
-        throw new ClassCastException("Cannot compare " + getClass() + " to " + other.getClass());
+        return super.compareTo(other);
     }
 
     @Override

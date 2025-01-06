@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.UnknownPartitionKeyException;
@@ -15,9 +16,9 @@ import java.util.*;
 
 /**
  * Base {@link ImmutableTableLocationKey} implementation for table locations that may be enclosed by partitions.
- * Sub-classes should be sure to invoke the partition-map comparator at higher priority than other comparisons when
- * implementing {@link #compareTo(Object)}, and to include the partitions in their {@link #equals(Object)}
- * implementations.
+ * Subclasses should consider invoking the partition-map comparator at higher priority than other comparisons when
+ * implementing {@link #compareTo(Object)}. Also, should include the partitions in their {@link #equals(Object)} and
+ * {@link #hashCode()} implementations if not calling {@code super.equals()} and {@code super.hashCode()}.
  */
 public abstract class PartitionedTableLocationKey implements ImmutableTableLocationKey {
 
@@ -25,6 +26,8 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
     private static final Comparable<?> MISSING_PARTITION_VALUE = new String("MISSING PARTITION VALUE");
 
     protected final Map<String, Comparable<?>> partitions;
+
+    private int cachedHashCode;
 
     /**
      * Construct a new PartitionedTableLocationKey for the supplied {@code partitions}.
@@ -53,6 +56,46 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
     @Override
     public final Set<String> getPartitionKeys() {
         return partitions.keySet();
+    }
+
+    @Override
+    public int compareTo(@NotNull final TableLocationKey other) {
+        if (other instanceof PartitionedTableLocationKey) {
+            final PartitionedTableLocationKey otherTyped = (PartitionedTableLocationKey) other;
+            final int partitionComparisonResult =
+                    PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions);
+            if (partitionComparisonResult != 0) {
+                return partitionComparisonResult;
+            }
+        }
+        return ImmutableTableLocationKey.super.compareTo(other);
+    }
+
+    @Override
+    public int hashCode() {
+        if (cachedHashCode == 0) {
+            final int computedHashCode = partitions.hashCode();
+            // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
+            if (computedHashCode == 0) {
+                final int fallbackHashCode = PartitionedTableLocationKey.class.hashCode();
+                cachedHashCode = fallbackHashCode == 0 ? 1 : fallbackHashCode;
+            } else {
+                cachedHashCode = computedHashCode;
+            }
+        }
+        return cachedHashCode;
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof PartitionedTableLocationKey)) {
+            return false;
+        }
+        final PartitionedTableLocationKey otherTyped = (PartitionedTableLocationKey) other;
+        return partitions.equals(otherTyped.partitions);
     }
 
     /**

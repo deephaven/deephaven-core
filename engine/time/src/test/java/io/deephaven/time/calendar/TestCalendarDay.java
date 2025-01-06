@@ -7,8 +7,8 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.*;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertNotEquals;
@@ -61,10 +61,10 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(close1, single.businessEnd());
         assertEquals(close1, single.businessEnd());
         assertTrue(single.isInclusiveEnd());
-        assertEquals(DateTimeUtils.HOUR, single.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR), single.businessDuration());
-        assertEquals(DateTimeUtils.HOUR, single.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR), single.businessDuration());
+        assertEquals(DateTimeUtils.HOUR + 1, single.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR + 1), single.businessDuration());
+        assertEquals(DateTimeUtils.HOUR + 1, single.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR + 1), single.businessDuration());
         assertTrue(single.isBusinessDay());
         assertTrue(single.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY")));
         assertTrue(single.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:15:00.000000000 NY")));
@@ -77,13 +77,13 @@ public class TestCalendarDay extends BaseArrayTestCase {
                 single.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
         assertEquals(Duration.ofNanos(DateTimeUtils.MINUTE * 30),
                 single.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR,
+        assertEquals(DateTimeUtils.HOUR + 1,
                 single.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR + 1),
                 single.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.MINUTE * 30,
+        assertEquals(DateTimeUtils.MINUTE * 30 + 1,
                 single.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.MINUTE * 30),
+        assertEquals(Duration.ofNanos(DateTimeUtils.MINUTE * 30 + 1),
                 single.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
         assertEquals(0L,
                 single.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
@@ -105,10 +105,10 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(close2, multi.businessEnd());
         assertEquals(close2, multi.businessEnd());
         assertTrue(multi.isInclusiveEnd());
-        assertEquals(DateTimeUtils.HOUR * 6, multi.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi.businessDuration());
-        assertEquals(DateTimeUtils.HOUR * 6, multi.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi.businessDuration());
+        assertEquals(DateTimeUtils.HOUR * 6 + 2, multi.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6 + 2), multi.businessDuration());
+        assertEquals(DateTimeUtils.HOUR * 6 + 2, multi.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6 + 2), multi.businessDuration());
         assertTrue(multi.isBusinessDay());
         assertTrue(multi.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY")));
         assertTrue(multi.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:15:00.000000000 NY")));
@@ -122,25 +122,25 @@ public class TestCalendarDay extends BaseArrayTestCase {
                 multi.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
         assertEquals(Duration.ofNanos(DateTimeUtils.MINUTE * 30),
                 multi.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 2,
+        assertEquals(DateTimeUtils.HOUR * 2 + 1,
                 multi.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2 + 1),
                 multi.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 2,
+        assertEquals(DateTimeUtils.HOUR * 2 + 1,
                 multi.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2 + 1),
                 multi.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 6,
+        assertEquals(DateTimeUtils.HOUR * 6 + 2,
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6 + 2),
                 multi.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T01:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 5 + DateTimeUtils.MINUTE * 30,
+        assertEquals(DateTimeUtils.HOUR * 5 + DateTimeUtils.MINUTE * 30 + 2,
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 5 + DateTimeUtils.MINUTE * 30),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 5 + DateTimeUtils.MINUTE * 30 + 2),
                 multi.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 4,
+        assertEquals(DateTimeUtils.HOUR * 4 + 1,
                 multi.businessNanosRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 4),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 4 + 1),
                 multi.businessDurationRemaining(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
 
         assertEquals(NULL_LONG, multi.businessNanosElapsed(null));
@@ -156,10 +156,10 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(close2, multi2.businessEnd());
         assertEquals(close2, multi2.businessEnd());
         assertTrue(multi2.isInclusiveEnd());
-        assertEquals(DateTimeUtils.HOUR * 6, multi2.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi2.businessDuration());
-        assertEquals(DateTimeUtils.HOUR * 6, multi2.businessNanos());
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6), multi2.businessDuration());
+        assertEquals(DateTimeUtils.HOUR * 6 + 2, multi2.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6 + 2), multi2.businessDuration());
+        assertEquals(DateTimeUtils.HOUR * 6 + 2, multi2.businessNanos());
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 6 + 2), multi2.businessDuration());
         assertTrue(multi2.isBusinessDay());
         assertTrue(multi2.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY")));
         assertTrue(multi2.isBusinessTime(DateTimeUtils.parseInstant("2017-03-11T10:15:00.000000000 NY")));
@@ -173,13 +173,13 @@ public class TestCalendarDay extends BaseArrayTestCase {
                 multi2.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
         assertEquals(Duration.ofNanos(DateTimeUtils.MINUTE * 30),
                 multi2.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T10:30:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 2,
+        assertEquals(DateTimeUtils.HOUR * 2 + 1,
                 multi2.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2 + 1),
                 multi2.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(DateTimeUtils.HOUR * 2,
+        assertEquals(DateTimeUtils.HOUR * 2 + 1,
                 multi2.businessNanosElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
-        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2),
+        assertEquals(Duration.ofNanos(DateTimeUtils.HOUR * 2 + 1),
                 multi2.businessDurationElapsed(DateTimeUtils.parseInstant("2017-03-11T13:00:00.000000000 NY")));
 
         assertEquals(NULL_LONG, multi2.businessNanosElapsed(null));
@@ -216,7 +216,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(List.of(period1, period2), multi.businessTimeRanges());
 
-        int hashTarget = Objects.hash(multi.businessTimeRanges());
+        int hashTarget = Arrays.hashCode(multi.businessTimeRanges().toArray());
         assertEquals(hashTarget, multi.hashCode());
 
         final CalendarDay<Instant> multi2 = new CalendarDay<>(new TimeRange[] {period1, period2});

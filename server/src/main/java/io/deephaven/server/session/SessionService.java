@@ -4,6 +4,7 @@
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
@@ -35,6 +36,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -325,6 +327,9 @@ public class SessionService {
      * @return the session or null if the session is invalid
      */
     public SessionState getSessionForAuthToken(final String token) throws AuthenticationException {
+        String bearerKey = null;
+        String bearerPayload = null;
+
         if (token.startsWith(Auth2Constants.BEARER_PREFIX)) {
             final String authToken = token.substring(Auth2Constants.BEARER_PREFIX.length());
             try {
@@ -333,21 +338,41 @@ public class SessionService {
                 if (session != null) {
                     return session;
                 }
-            } catch (IllegalArgumentException ignored) {
+            } catch (InvalidUuidException ignored) {
             }
+
+            // In case we don't have another handler for Bearer, look for nested tokens to try later
+            int offset = authToken.indexOf(' ');
+            bearerKey = authToken.substring(0, offset < 0 ? authToken.length() : offset);
+            bearerPayload = offset < 0 ? "" : authToken.substring(offset + 1);
         }
 
         int offset = token.indexOf(' ');
         final String key = token.substring(0, offset < 0 ? token.length() : offset);
         final String payload = offset < 0 ? "" : token.substring(offset + 1);
+        // Use the auth type to look up a handler. If this happens to be Bearer, this gives a chance for an auth handler
+        // to claim that type
         AuthenticationRequestHandler handler = authRequestHandlers.get(key);
-        if (handler == null) {
-            log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
-            throw new AuthenticationException();
+        if (handler != null) {
+            Optional<AuthContext> s = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
+            if (s.isPresent()) {
+                return newSession(s.get());
+            }
         }
-        return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
-                .map(this::newSession)
-                .orElseThrow(AuthenticationException::new);
+        // If nothing succeeded or errored yet, and we found a key in the bearer value, try that next
+        if (bearerKey != null) {
+            handler = authRequestHandlers.get(bearerKey);
+            if (handler != null) {
+                Optional<AuthContext> s = handler.login(bearerPayload, SessionServiceGrpcImpl::insertCallHeader);
+                if (s.isPresent()) {
+                    return newSession(s.get());
+                }
+            }
+        }
+
+        // No more options, log an error and return
+        log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
+        throw new AuthenticationException();
     }
 
     /**
@@ -486,7 +511,7 @@ public class SessionService {
         }
 
         void sendMessage(final TerminationNotificationResponse response) {
-            GrpcUtil.safelyComplete(responseObserver, response);
+            GrpcUtil.safelyOnNextAndComplete(responseObserver, response);
         }
     }
 }

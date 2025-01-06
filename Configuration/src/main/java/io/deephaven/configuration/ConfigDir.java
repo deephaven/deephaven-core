@@ -5,6 +5,7 @@ package io.deephaven.configuration;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 public final class ConfigDir {
@@ -21,9 +22,7 @@ public final class ConfigDir {
      * @return the config directory
      */
     public static Optional<Path> get() {
-        return viaProperty()
-                .or(ConfigDir::viaEnvVar)
-                .map(Path::of);
+        return getOptional().map(Paths::get);
     }
 
     /**
@@ -35,14 +34,12 @@ public final class ConfigDir {
      * @return the config directory
      */
     public static Path getOrSet(String defaultValue) {
-        final String existing = viaProperty()
-                .or(ConfigDir::viaEnvVar)
-                .orElse(null);
+        final String existing = getOptional().orElse(null);
         if (existing != null) {
-            return Path.of(existing);
+            return Paths.get(existing);
         }
         System.setProperty(PROPERTY, defaultValue);
-        return Path.of(defaultValue);
+        return Paths.get(defaultValue);
     }
 
     /**
@@ -53,10 +50,11 @@ public final class ConfigDir {
      * @return the configuration file
      */
     public static String configurationFile() {
-        return Optional
-                .ofNullable(System.getProperty(ROOT_FILE_PROP))
-                .or(ConfigDir::configDirectoryFileIfExists)
-                .orElse(DEFAULT_CONFIGURATION_FILE);
+        Optional<String> optional = Optional.ofNullable(System.getProperty(ROOT_FILE_PROP));
+        if (!optional.isPresent()) {
+            optional = configDirectoryFileIfExists();
+        }
+        return optional.orElse(DEFAULT_CONFIGURATION_FILE);
     }
 
     private static Optional<String> configDirectoryFileIfExists() {
@@ -64,6 +62,14 @@ public final class ConfigDir {
                 .map(ConfigDir::defaultFileName)
                 .filter(Files::exists)
                 .map(Path::toString);
+    }
+
+    private static Optional<String> getOptional() {
+        Optional<String> optional = viaProperty();
+        if (!optional.isPresent()) {
+            optional = viaEnvVar();
+        }
+        return optional;
     }
 
     private static Path defaultFileName(Path p) {

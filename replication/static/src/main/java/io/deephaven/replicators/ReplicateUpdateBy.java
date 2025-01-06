@@ -242,6 +242,14 @@ public class ReplicateUpdateBy {
             }
         }
 
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingformulamulticolumn/windowconsumer/CharRingBufferWindowConsumer.java");
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)

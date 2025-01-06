@@ -130,6 +130,20 @@ public class MathUtil {
     }
 
     /**
+     * Rounds up to the next power of 2 for {@code x}; if {@code x} is already a power of 2, {@code x} will be returned.
+     * Values outside the range {@code 1 <= x <= Long.MAX_VALUE} will return {@code 1}.
+     *
+     * <p>
+     * Equivalent to {@code Math.max(Long.highestOneBit(x - 1) << 1, 1)}.
+     *
+     * @param x the value
+     * @return the next power of 2 for {@code x}
+     */
+    public static long roundUpPowerOf2(long x) {
+        return Math.max(Long.highestOneBit(x - 1) << 1, 1);
+    }
+
+    /**
      * Rounds up to the next power of 2 for {@code size <= MAX_POWER_OF_2}, otherwise returns
      * {@link ArrayUtil#MAX_ARRAY_SIZE}.
      *

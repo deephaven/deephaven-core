@@ -9,8 +9,6 @@ import io.deephaven.plot.axistransformations.AxisTransforms;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 
-import static io.deephaven.plot.filters.Selectables.oneClick;
-
 public class SimpleXYTable {
 
     public static void main(String[] args) {

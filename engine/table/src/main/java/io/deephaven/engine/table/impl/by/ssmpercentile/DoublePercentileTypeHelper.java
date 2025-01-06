@@ -107,7 +107,7 @@ public class DoublePercentileTypeHelper implements SsmChunkedPercentileOperator.
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final double testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = DoubleComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -116,13 +116,5 @@ public class DoublePercentileTypeHelper implements SsmChunkedPercentileOperator.
         }
 
         return hi;
-    }
-
-    private static int doComparison(double lhs, double rhs) {
-        return DoubleComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(double lhs, double rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }

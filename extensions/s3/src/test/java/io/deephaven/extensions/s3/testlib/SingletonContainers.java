@@ -16,6 +16,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import java.net.URI;
+import java.util.Map;
 
 public final class SingletonContainers {
 
@@ -53,6 +54,22 @@ public final class SingletonContainers {
                             AwsBasicCredentials.create(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey())))
                     .build();
         }
+
+        public static String s3Endpoint() {
+            return LOCALSTACK_S3.getEndpoint().toString();
+        }
+
+        public static String region() {
+            return LOCALSTACK_S3.getRegion();
+        }
+
+        public static String accessKey() {
+            return LOCALSTACK_S3.getAccessKey();
+        }
+
+        public static String secretAccessKey() {
+            return LOCALSTACK_S3.getSecretKey();
+        }
     }
 
     public static final class MinIO {
@@ -86,6 +103,22 @@ public final class SingletonContainers {
                     .credentialsProvider(StaticCredentialsProvider.create(
                             AwsBasicCredentials.create(MINIO.getUserName(), MINIO.getPassword())))
                     .build();
+        }
+
+        public static String s3Endpoint() {
+            return MINIO.getS3URL();
+        }
+
+        public static String region() {
+            return Region.AWS_GLOBAL.toString();
+        }
+
+        public static String accessKey() {
+            return MINIO.getUserName();
+        }
+
+        public static String secretAccessKey() {
+            return MINIO.getPassword();
         }
     }
 }

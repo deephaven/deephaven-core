@@ -14,7 +14,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
 import io.deephaven.qst.array.ByteArray;
@@ -47,7 +46,7 @@ import java.util.Collection;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
-        implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
@@ -425,20 +424,6 @@ public abstract class ArrayBackedColumnSource<T>
 
     @Override
     public abstract void ensureCapacity(long size, boolean nullFill);
-
-    @Override
-    public void shift(final long start, final long end, final long offset) {
-        if (offset > 0) {
-            for (long i = end; i >= start; i--) {
-                set((i + offset), get(i));
-            }
-        } else {
-            for (long i = start; i <= end; i++) {
-                set((i + offset), get(i));
-            }
-        }
-
-    }
 
     /**
      * Creates an in-memory ColumnSource from the supplied dataArray, using instanceof checks to determine the

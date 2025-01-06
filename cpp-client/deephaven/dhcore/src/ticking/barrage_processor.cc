@@ -330,10 +330,10 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
   std::shared_ptr<ClientTable> after_removes;
   if (removed_rows.Empty()) {
     removed_rows_index_space = RowSequence::CreateEmpty();
-      after_removes = prev;
+    after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-      after_removes = table_state_.Snapshot();
+    after_removes = table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
@@ -511,7 +511,7 @@ std::optional<TickingUpdate> AwaitingModifies::ProcessNextChunk(BarrageProcessor
 
   for (const auto &mr : modified_rows_remaining_) {
     if (!mr->Empty()) {
-      // Need more data from caller.
+      // Return an indication that at least one column is hungry for more data
       return {};
     }
   }

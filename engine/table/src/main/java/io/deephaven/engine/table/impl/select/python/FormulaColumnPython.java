@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.util.CompletionStageFuture;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.select.AbstractFormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -18,8 +19,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
 /**
  * A formula column for python native code.
@@ -62,9 +61,9 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     protected final FormulaSourceDescriptor getSourceDescriptor() {
         return new FormulaSourceDescriptor(
                 returnedType,
-                dcf.getColumnNames().toArray(new String[0]),
-                ZERO_LENGTH_STRING_ARRAY,
-                ZERO_LENGTH_STRING_ARRAY);
+                dcf.getColumnNames().toArray(String[]::new),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY);
     }
 
     @Override

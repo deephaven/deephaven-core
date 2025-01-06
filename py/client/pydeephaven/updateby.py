@@ -10,7 +10,7 @@ from typing import List, Union, Any
 
 from ._utils import to_list
 from .dherror import DHError
-from pydeephaven.proto import table_pb2
+from deephaven_core.proto import table_pb2
 
 _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
 _GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn

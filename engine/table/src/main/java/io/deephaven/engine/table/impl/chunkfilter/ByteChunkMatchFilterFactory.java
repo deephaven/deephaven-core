@@ -7,23 +7,20 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.chunk.attributes.Values;
 import gnu.trove.set.hash.TByteHashSet;
 
 /**
  * Creates chunk filters for byte values.
- *
+ * <p>
  * The strategy is that for one, two, or three values we have specialized classes that will do the appropriate simple
  * equality check.
- *
+ * <p>
  * For more values, we use a trove set and check contains for each value in the chunk.
  */
 public class ByteChunkMatchFilterFactory {
     private ByteChunkMatchFilterFactory() {} // static use only
 
-    public static ChunkFilter.ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
+    public static ByteChunkFilter makeFilter(boolean invertMatch, byte... values) {
         if (invertMatch) {
             if (values.length == 1) {
                 return new InverseSingleValueByteChunkFilter(values[0]);
@@ -49,7 +46,7 @@ public class ByteChunkMatchFilterFactory {
         }
     }
 
-    private static class SingleValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class SingleValueByteChunkFilter extends ByteChunkFilter {
         private final byte value;
 
         private SingleValueByteChunkFilter(byte value) {
@@ -57,18 +54,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) == value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value == this.value;
         }
     }
 
-    private static class InverseSingleValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class InverseSingleValueByteChunkFilter extends ByteChunkFilter {
         private final byte value;
 
         private InverseSingleValueByteChunkFilter(byte value) {
@@ -76,18 +67,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                if (values.get(ii) != value) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value != this.value;
         }
     }
 
-    private static class TwoValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class TwoValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
 
@@ -97,19 +82,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value == value1 || value == value2;
         }
     }
 
-    private static class InverseTwoValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class InverseTwoValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
 
@@ -119,19 +97,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value != value1 && value != value2;
         }
     }
 
-    private static class ThreeValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class ThreeValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
         private final byte value3;
@@ -143,19 +114,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (checkValue == value1 || checkValue == value2 || checkValue == value3) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value == value1 || value == value2 || value == value3;
         }
     }
 
-    private static class InverseThreeValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class InverseThreeValueByteChunkFilter extends ByteChunkFilter {
         private final byte value1;
         private final byte value2;
         private final byte value3;
@@ -167,19 +131,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (!(checkValue == value1 || checkValue == value2 || checkValue == value3)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return value != value1 && value != value2 && value != value3;
         }
     }
 
-    private static class MultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class MultiValueByteChunkFilter extends ByteChunkFilter {
         private final TByteHashSet values;
 
         private MultiValueByteChunkFilter(byte... values) {
@@ -187,19 +144,12 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return this.values.contains(value);
         }
     }
 
-    private static class InverseMultiValueByteChunkFilter implements ChunkFilter.ByteChunkFilter {
+    private final static class InverseMultiValueByteChunkFilter extends ByteChunkFilter {
         private final TByteHashSet values;
 
         private InverseMultiValueByteChunkFilter(byte... values) {
@@ -207,15 +157,8 @@ public class ByteChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ByteChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<OrderedRowKeys> results) {
-            results.setSize(0);
-            for (int ii = 0; ii < values.size(); ++ii) {
-                final byte checkValue = values.get(ii);
-                if (!this.values.contains(checkValue)) {
-                    results.add(keys.get(ii));
-                }
-            }
+        public boolean matches(byte value) {
+            return !this.values.contains(value);
         }
     }
 }

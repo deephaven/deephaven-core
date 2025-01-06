@@ -7,6 +7,7 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
+import io.deephaven.qst.table.MultiJoinInput;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -98,6 +100,14 @@ public interface TableCreator<TABLE> {
      * @return the input table
      */
     TABLE of(InputTable inputTable);
+
+    /**
+     * Creates a multi join table.
+     *
+     * @param inputs the inputs
+     * @return the multi join table
+     */
+    TABLE multiJoin(List<MultiJoinInput<TABLE>> inputs);
 
     /**
      * Merges the given {@code tables}.

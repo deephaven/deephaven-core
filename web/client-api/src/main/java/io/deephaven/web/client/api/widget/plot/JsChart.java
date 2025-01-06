@@ -7,7 +7,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.ChartDescriptor;
-import io.deephaven.web.client.api.HasEventHandling;
+import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.widget.plot.enums.JsChartType;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;

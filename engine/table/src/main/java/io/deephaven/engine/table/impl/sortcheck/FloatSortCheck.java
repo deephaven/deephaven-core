@@ -36,12 +36,8 @@ public class FloatSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(float lhs, float rhs) {
-        return FloatComparisons.compare(lhs, rhs);
+    private static boolean leq(float lhs, float rhs) {
+        return FloatComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(float lhs, float rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

@@ -26,44 +26,7 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
-import com.github.javaparser.ast.expr.ArrayAccessExpr;
-import com.github.javaparser.ast.expr.ArrayCreationExpr;
-import com.github.javaparser.ast.expr.ArrayInitializerExpr;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.BinaryExpr;
-import com.github.javaparser.ast.expr.BooleanLiteralExpr;
-import com.github.javaparser.ast.expr.CastExpr;
-import com.github.javaparser.ast.expr.CharLiteralExpr;
-import com.github.javaparser.ast.expr.ClassExpr;
-import com.github.javaparser.ast.expr.ConditionalExpr;
-import com.github.javaparser.ast.expr.DoubleLiteralExpr;
-import com.github.javaparser.ast.expr.EnclosedExpr;
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
-import com.github.javaparser.ast.expr.InstanceOfExpr;
-import com.github.javaparser.ast.expr.IntegerLiteralExpr;
-import com.github.javaparser.ast.expr.LambdaExpr;
-import com.github.javaparser.ast.expr.LongLiteralExpr;
-import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
-import com.github.javaparser.ast.expr.MemberValuePair;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.MethodReferenceExpr;
-import com.github.javaparser.ast.expr.Name;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.expr.NullLiteralExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
-import com.github.javaparser.ast.expr.PatternExpr;
-import com.github.javaparser.ast.expr.SimpleName;
-import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
-import com.github.javaparser.ast.expr.SuperExpr;
-import com.github.javaparser.ast.expr.SwitchExpr;
-import com.github.javaparser.ast.expr.TextBlockLiteralExpr;
-import com.github.javaparser.ast.expr.ThisExpr;
-import com.github.javaparser.ast.expr.TypeExpr;
-import com.github.javaparser.ast.expr.UnaryExpr;
-import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.modules.ModuleDeclaration;
 import com.github.javaparser.ast.modules.ModuleExportsDirective;
 import com.github.javaparser.ast.modules.ModuleOpensDirective;
@@ -117,7 +80,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -260,7 +223,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     public static Table getShiftedColumnsTable(
             @NotNull final Table source,
             @NotNull FormulaColumn formulaColumn,
-            @NotNull SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor) {
+            @NotNull SelectAndViewAnalyzer.UpdateFlavor updateFlavor) {
         String nuggetName = "getShiftedColumnsTable( " + formulaColumn + ", " + updateFlavor + ") ";
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
             Table tableSoFar = source;
@@ -896,8 +859,13 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     }
 
     @Override
-    public void visit(PatternExpr n, ShiftedColumnAttributes arg) {
-        throw new UnsupportedOperationException("PatternExpr Operation not supported");
+    public void visit(TypePatternExpr n, ShiftedColumnAttributes arg) {
+        throw new UnsupportedOperationException("TypePatternExpr Operation not supported");
+    }
+
+    @Override
+    public void visit(RecordPatternExpr n, ShiftedColumnAttributes arg) {
+        throw new UnsupportedOperationException("RecordPatternExpr Operation not supported");
     }
 
     @Override

@@ -834,7 +834,7 @@ public class GenerateFigureImmutable {
         final String[] names = f.getParameterNames();
         String args = String.join(", ", names);
         if (!names[names.length - 1].equals("keys")) {
-            args += ", io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY";
+            args += ", io.deephaven.util.type.ArrayTypeUtils.EMPTY_OBJECT_ARRAY";
         }
 
         return args;

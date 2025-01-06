@@ -93,12 +93,16 @@ public class IntAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirst
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final long index = indices.get(start + ii);
             final int value = values.get(start + ii);
-            final int comparison = IntComparisons.compare(value, bestValue);
-            // @formatter:off
-            final boolean better =
-                    ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||
-                    (!isFirst && (comparison > 0 || (comparison == 0 && index > bestIndex)))  ;
-            // @formatter:on
+            final boolean better;
+            if (isFirst) {
+                better = index < bestIndex
+                        ? IntComparisons.leq(value, bestValue)
+                        : IntComparisons.lt(value, bestValue);
+            } else {
+                better = index > bestIndex
+                        ? IntComparisons.geq(value, bestValue)
+                        : IntComparisons.gt(value, bestValue);
+            }
             if (better) {
                 bestIndex = index;
                 bestValue = value;

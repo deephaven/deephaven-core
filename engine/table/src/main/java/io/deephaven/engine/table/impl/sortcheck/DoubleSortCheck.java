@@ -36,12 +36,8 @@ public class DoubleSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(double lhs, double rhs) {
-        return DoubleComparisons.compare(lhs, rhs);
+    private static boolean leq(double lhs, double rhs) {
+        return DoubleComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(double lhs, double rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

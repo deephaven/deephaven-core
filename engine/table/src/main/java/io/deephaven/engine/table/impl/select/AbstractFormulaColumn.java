@@ -51,7 +51,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private Formula formula;
     protected QueryScopeParam<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
-    protected Map<String, ? extends ColumnDefinition<?>> columnDefinitions;
+    protected Map<String, ColumnDefinition<?>> columnDefinitions;
     private TrackingRowSet rowSet;
     protected Class<?> returnedType;
     public static final String COLUMN_SUFFIX = "_";
@@ -90,12 +90,28 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         this.rowSet = rowSet;
 
-        this.columnSources = columnsOfInterest;
-        if (usedColumns != null) {
-            return usedColumns;
+        if (usedColumns == null) {
+            initDef(extractDefinitions(columnsOfInterest), QueryCompilerRequestProcessor.immediate());
+        }
+        this.columnSources = filterColumnSources(columnsOfInterest);
+
+        return usedColumns;
+    }
+
+    private Map<String, ColumnSource<?>> filterColumnSources(
+            final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        if (usedColumns.isEmpty() && usedColumnArrays.isEmpty()) {
+            return Map.of();
         }
 
-        return initDef(extractDefinitions(columnsOfInterest), QueryCompilerRequestProcessor.immediate());
+        final HashMap<String, ColumnSource<?>> sources = new HashMap<>();
+        for (String columnName : usedColumns) {
+            sources.put(columnName, columnsOfInterest.get(columnName));
+        }
+        for (String columnName : usedColumnArrays) {
+            sources.put(columnName, columnsOfInterest.get(columnName));
+        }
+        return sources;
     }
 
     @Override
@@ -119,28 +135,32 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void applyUsedVariables(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Map<String, ColumnDefinition<?>> parentColumnDefinitions,
             @NotNull final Set<String> variablesUsed,
             @NotNull final Map<String, Object> possibleParams) {
         // the column definition map passed in is being mutated by the caller, so we need to make a copy
-        columnDefinitions = Map.copyOf(columnDefinitionMap);
+        columnDefinitions = new HashMap<>();
 
         final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
         usedColumns = new ArrayList<>();
         usedColumnArrays = new ArrayList<>();
         for (String variable : variablesUsed) {
+            ColumnDefinition<?> columnDefinition = parentColumnDefinitions.get(variable);
             if (variable.equals("i")) {
                 usesI = true;
             } else if (variable.equals("ii")) {
                 usesII = true;
             } else if (variable.equals("k")) {
                 usesK = true;
-            } else if (columnDefinitions.get(variable) != null) {
+            } else if (columnDefinition != null) {
+                columnDefinitions.put(variable, columnDefinition);
                 usedColumns.add(variable);
             } else {
                 String strippedColumnName =
                         variable.substring(0, Math.max(0, variable.length() - COLUMN_SUFFIX.length()));
-                if (variable.endsWith(COLUMN_SUFFIX) && columnDefinitions.get(strippedColumnName) != null) {
+                columnDefinition = parentColumnDefinitions.get(strippedColumnName);
+                if (variable.endsWith(COLUMN_SUFFIX) && columnDefinition != null) {
+                    columnDefinitions.put(strippedColumnName, columnDefinition);
                     usedColumnArrays.add(strippedColumnName);
                 } else if (possibleParams.containsKey(variable)) {
                     paramsList.add(new QueryScopeParam<>(variable, possibleParams.get(variable)));
@@ -318,6 +338,11 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     @Override
     public boolean isRetain() {
         return false;
+    }
+
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return usesI || usesII || usesK;
     }
 
     @Override

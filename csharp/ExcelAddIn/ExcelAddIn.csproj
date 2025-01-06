@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="ExcelDna.Addin" Version="*-*" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\client\DeephavenClient\DeephavenClient.csproj" />
+	</ItemGroup>
+
+	<PropertyGroup>
+		<ExcelDnaCreate32BitAddIn>false</ExcelDnaCreate32BitAddIn>
+		<ExcelDnaPack64BitXllName>DeephavenExcelAddIn64</ExcelDnaPack64BitXllName>
+	</PropertyGroup>
+
+</Project>

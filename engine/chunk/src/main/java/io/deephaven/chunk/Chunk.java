@@ -117,8 +117,7 @@ public interface Chunk<ATTR extends Any> {
     default void checkChunkType(ChunkType expected) {
         final ChunkType actual = getChunkType();
         if (actual != expected) {
-            throw new IllegalArgumentException(
-                    String.format("Expected chunk type '%s', but is '%s'.", expected, actual));
+            throw new IllegalArgumentException("Expected chunk type '" + expected + "', but is '" + actual + "'.");
         }
     }
 

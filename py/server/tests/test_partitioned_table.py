@@ -65,6 +65,9 @@ class PartitionedTableTestCase(BaseTestCase):
     def test_constituent_table_columns(self):
         self.assertEqual(self.test_table.columns, self.partitioned_table.constituent_table_columns)
 
+    def test_constituent_table_definition(self):
+        self.assertEqual(self.test_table.definition, self.partitioned_table.constituent_table_definition)
+
     def test_merge(self):
         t = self.partitioned_table.merge()
         self.assert_table_equals(t, self.test_table)
@@ -188,7 +191,7 @@ class PartitionedTableTestCase(BaseTestCase):
             key_cols="Y",
             unique_keys=True,
             constituent_column="aggPartition",
-            constituent_table_columns=test_table.columns,
+            constituent_table_columns=test_table.definition,
             constituent_changes_permitted=True,
         )
         self.assertEqual(pt.key_columns, pt1.key_columns)
@@ -201,7 +204,7 @@ class PartitionedTableTestCase(BaseTestCase):
                 key_cols="Y",
                 unique_keys=True,
                 constituent_column="Non-existing",
-                constituent_table_columns=test_table.columns,
+                constituent_table_columns=test_table.definition,
                 constituent_changes_permitted=True,
             )
         self.assertIn("no column named", str(cm.exception))
@@ -222,7 +225,7 @@ class PartitionedTableTestCase(BaseTestCase):
             self.assertIn("IncompatibleTableDefinitionException", str(cm.exception))
 
         with self.subTest("Compatible table definition"):
-            pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.columns)
+            pt = PartitionedTable.from_constituent_tables([test_table, test_table1, test_table3], test_table.definition)
 
     def test_keys(self):
         keys_table = self.partitioned_table.keys()

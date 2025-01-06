@@ -197,19 +197,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
-    public void shift(long start, long end, long offset) {
-        if (offset > 0) {
-            for (long i = (int) end; i >= start; i--) {
-                set((i + offset), getByte(i));
-            }
-        } else {
-            for (int i = (int) start; i <= end; i++) {
-                set((i + offset), getByte(i));
-            }
-        }
-    }
-
-    @Override
     byte[] allocateNullFilledBlock(int size) {
         final byte[] result = new byte[size];
         Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);

@@ -8,10 +8,10 @@ from typing import List
 
 import jpy
 import numpy as np
-from deephaven.dtypes import DType, BusinessCalendar
+from deephaven.dtypes import BusinessCalendar
 
 from deephaven import DHError, dtypes, new_table
-from deephaven.column import Column, InputColumn
+from deephaven.column import InputColumn, ColumnDefinition
 from deephaven.dtypes import DType
 from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.table import Table
@@ -27,11 +27,11 @@ def _to_column_name(name: str) -> str:
     return re.sub(r"\s+", "_", tmp_name)
 
 
-def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
+def _column_to_numpy_array(col_def: ColumnDefinition, j_array: jpy.JType) -> np.ndarray:
     """ Produces a numpy array from the given Java array and the Table column definition.
 
     Args:
-        col_def (Column): the column definition
+        col_def (ColumnDefinition): the column definition
         j_array (jpy.JType): the Java array
 
     Returns:
@@ -48,7 +48,7 @@ def _column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
         raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
 
 
-def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.ndarray:
+def _columns_to_2d_numpy_array(col_def: ColumnDefinition, j_arrays: List[jpy.JType]) -> np.ndarray:
     """ Produces a 2d numpy array from the given Java arrays of the same component type and the Table column
     definition """
     try:
@@ -95,15 +95,15 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
         if table.is_refreshing:
             table = table.snapshot()
 
-        col_def_dict = {col.name: col for col in table.columns}
+        table_def = table.definition
         if not cols:
-            cols = list(col_def_dict.keys())
+            cols = list(table_def.keys())
         else:
-            diff_set = set(cols) - set(col_def_dict.keys())
+            diff_set = set(cols) - set(table_def.keys())
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
-        col_defs = [col_def_dict[col] for col in cols]
+        col_defs = [table_def[col] for col in cols]
         if len(set([col_def.data_type for col_def in col_defs])) != 1:
             raise DHError(message="columns must be of the same data type.")
 

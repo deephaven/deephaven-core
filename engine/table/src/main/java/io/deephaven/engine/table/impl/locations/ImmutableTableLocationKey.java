@@ -12,9 +12,6 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public interface ImmutableTableLocationKey extends TableLocationKey {
-
-    ImmutableTableLocationKey[] ZERO_LENGTH_IMMUTABLE_TABLE_LOCATION_KEY_ARRAY = new ImmutableTableLocationKey[0];
-
     @FinalDefault
     default ImmutableTableLocationKey makeImmutable() {
         return this;

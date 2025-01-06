@@ -1,0 +1,51 @@
+{# Tera templates are used to generate the changelog content -#}
+{# https://keats.github.io/tera/docs/ -#}
+{# Based on Cocogittos remote template, but adds breaking changes: https://github.com/cocogitto/cocogitto/blob/main/src/conventional/changelog/template/remote -#}
+{# First display all the breaking changes -#}
+{% set breaking_commits = commits | filter(attribute="breaking_change", value=true) -%}
+{% if breaking_commits | length > 0 -%}
+#### ⚠ Breaking Changes
+
+{% for commit in breaking_commits -%}
+{% set commit_link = repository_url ~ "/commit/" ~ commit.id -%}
+{% set shorthand = commit.id | truncate(length=7, end="") -%}
+{% for footer in commit.footer | filter(attribute="token", value="BREAKING CHANGE") -%}
+- {{ footer.content }} - ([{{shorthand}}]({{ commit_link }}))
+{% endfor -%}
+{% endfor -%}
+{% endif %}
+
+{# Now group the rest of the commits and display them -#}
+{% for type, typed_commits in commits | sort(attribute="type")| group_by(attribute="type") -%}
+#### {{ type | upper_first }}
+{% for scope, scoped_commits in typed_commits | group_by(attribute="scope") -%}
+
+{% for commit in scoped_commits | sort(attribute="scope") -%}
+    {% if commit.author and repository_url -%}
+        {% set author = "@" ~ commit.author -%}
+        {% set author_link = platform ~ "/" ~ commit.author -%}
+        {% set author = "[" ~ author ~ "](" ~ author_link ~ ")" -%}
+    {% else -%}
+        {% set author = commit.signature -%}
+    {% endif -%}
+    {% set commit_link = repository_url ~ "/commit/" ~ commit.id -%}
+    {% set shorthand = commit.id | truncate(length=7, end="") -%}
+    - **({{ scope }})** {{ commit.summary }} - ([{{shorthand}}]({{ commit_link }})) - {{ author }}
+{% endfor -%}
+
+{% endfor -%}
+
+{% for commit in typed_commits | unscoped -%}
+    {% if commit.author and repository_url -%}
+        {% set author = "@" ~ commit.author -%}
+        {% set author_link = platform ~ "/" ~ commit.author -%}
+        {% set author = "[" ~ author ~ "](" ~ author_link ~ ")" -%}
+    {% else -%}
+        {% set author = commit.signature -%}
+    {% endif -%}
+    {% set commit_link = repository_url ~ "/commit/" ~ commit.id -%}
+    {% set shorthand = commit.id | truncate(length=7, end="") -%}
+    - {{ commit.summary }} - ([{{shorthand}}]({{ commit_link }})) - {{ author }}
+{% endfor -%}
+
+{% endfor -%}

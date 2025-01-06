@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
@@ -14,6 +13,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         super(definition, description);
         this.tableReference = tableReference;
         this.deferredDropColumns =
-                deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
+                deferredDropColumns == null ? ArrayTypeUtils.EMPTY_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
         final TableDefinition parentDefinition = tableReference.getDefinition();

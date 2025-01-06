@@ -29,7 +29,6 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.List;
 
 public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableServiceImplBase {
@@ -99,7 +98,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         inputTableUpdater.addAsync(tableToAdd, new InputTableStatusListener() {
                             @Override
                             public void onSuccess() {
-                                GrpcUtil.safelyComplete(responseObserver, AddTableResponse.getDefaultInstance());
+                                GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                                        AddTableResponse.getDefaultInstance());
                             }
 
                             @Override
@@ -164,7 +164,8 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         inputTableUpdater.deleteAsync(tableToRemove, new InputTableStatusListener() {
                             @Override
                             public void onSuccess() {
-                                GrpcUtil.safelyComplete(responseObserver, DeleteTableResponse.getDefaultInstance());
+                                GrpcUtil.safelyOnNextAndComplete(responseObserver,
+                                        DeleteTableResponse.getDefaultInstance());
                             }
 
                             @Override

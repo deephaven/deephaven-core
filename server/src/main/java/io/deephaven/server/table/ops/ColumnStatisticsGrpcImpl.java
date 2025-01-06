@@ -22,7 +22,7 @@ import io.deephaven.server.table.stats.ChunkedNumericalStatsKernel;
 import io.deephaven.server.table.stats.ChunkedStatsKernel;
 import io.deephaven.server.table.stats.DateTimeChunkedStats;
 import io.deephaven.server.table.stats.ObjectChunkedStats;
-import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.type.NumericTypeUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -67,20 +67,13 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
         // Based on the column type, make a stats function and get a column source
         final ChunkedStatsKernel statsFunc;
         final ColumnSource<?> columnSource;
-        if (TypeUtils.isDateTime(type)) {
-            // Instant/ZonedDateTime only look at max/min and count
+        if (type == Instant.class) {
             statsFunc = new DateTimeChunkedStats();
-
-            // Reinterpret the column to read only long values
-            if (Instant.class.isAssignableFrom(type)) {
-                columnSource = ReinterpretUtils.instantToLongSource(table.getColumnSource(columnName));
-            } else if (ZonedDateTime.class.isAssignableFrom(type)) {
-                columnSource = ReinterpretUtils.zonedDateTimeToLongSource(table.getColumnSource(columnName));
-            } else {
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "DateTime columns must be Instant or ZonedDateTime");
-            }
-        } else if (TypeUtils.isNumeric(type)) {
+            columnSource = ReinterpretUtils.instantToLongSource(table.getColumnSource(columnName));
+        } else if (type == ZonedDateTime.class) {
+            statsFunc = new DateTimeChunkedStats();
+            columnSource = ReinterpretUtils.zonedDateTimeToLongSource(table.getColumnSource(columnName));
+        } else if (NumericTypeUtils.isNumeric(type)) {
             // Numeric types have a variety of statistics recorded
             statsFunc = ChunkedNumericalStatsKernel.makeChunkedNumericalStats(type);
             columnSource = table.getColumnSource(columnName);

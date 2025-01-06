@@ -10,6 +10,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.ByteComparisons;
 
 // region name
 public class ByteChunkEquals implements ChunkEquals {
@@ -250,7 +251,7 @@ public class ByteChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(byte lhs, byte rhs) {
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
     }
     // endregion eq
 

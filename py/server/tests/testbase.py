@@ -10,16 +10,13 @@ from deephaven import DHError
 from deephaven.liveness_scope import liveness_scope
 
 from deephaven.update_graph import exclusive_lock
-from deephaven.table import Table, PartitionedTableProxy
+from deephaven.table import Table, PartitionedTableProxy, table_diff
 
 from test_helper import py_dh_session
 
-_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-
-
 def table_equals(table_a: Table, table_b: Table) -> bool:
     try:
-        return False if _JTableTools.diff(table_a.j_table, table_b.j_table, 1) else True
+        return False if table_diff(table_a, table_b, 1) else True
     except Exception as e:
         raise DHError(e, "table equality test failed.") from e
 

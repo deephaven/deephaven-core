@@ -60,15 +60,15 @@ namespace deephaven::client::update_by {
  * This enum is meant to be a parallel of the Java enum java.math.MathContext.
  * See https://docs.oracle.com/javase/8/docs/api/java/math/MathContext.html
  */
-enum class MathContext {
+enum class MathContext : int32_t {
   kUnlimited, kDecimal32, kDecimal64, kDecimal128
 };
 
-enum class BadDataBehavior {
+enum class BadDataBehavior : int32_t {
   kReset, kSkip, kThrow, kPoison
 };
 
-enum class DeltaControl {
+enum class DeltaControl : int32_t {
   kNullDominates, kValueDominates, kZeroDominates
 };
 

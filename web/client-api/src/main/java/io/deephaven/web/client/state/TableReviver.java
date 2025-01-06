@@ -5,7 +5,6 @@ package io.deephaven.web.client.state;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
-import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
@@ -175,15 +174,15 @@ public class TableReviver implements HasTableBinding {
     }
 
     @Override
-    public void fireEvent(String name, CustomEventInit e) {
+    public <T> void fireEvent(String name, T detail) {
         switch (name) {
             case JsTable.EVENT_REQUEST_FAILED:
                 // log this failure
-                JsLog.debug("Revivification failed", e.getDetail());
+                JsLog.debug("Revivification failed", detail);
                 //
                 return;
             default:
-                JsLog.debug("The table reviver does not accept event", name, e);
+                JsLog.debug("The table reviver does not accept event", name, detail);
         }
     }
 

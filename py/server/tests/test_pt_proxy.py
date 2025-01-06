@@ -127,7 +127,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 result_pt_proxy = op(
                     self.pt_proxy, formulas=["a", "c", "Sum = a + b + c + d"])
                 for rct, ct in zip(result_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
-                    self.assertTrue(len(rct.columns) >= 3)
+                    self.assertTrue(len(rct.definition) >= 3)
                     self.assertLessEqual(rct.size, ct.size)
 
     def test_select_distinct(self):
@@ -144,7 +144,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             right_table = self.test_table.drop_columns(["b", "c"]).head(5)
             joined_pt_proxy = pt_proxy.natural_join(right_table, on="a", joins=["d", "e"])
             for ct in joined_pt_proxy.target.constituent_tables:
-                self.assertEqual(len(ct.columns), 5)
+                self.assertEqual(len(ct.definition), 5)
 
         with self.subTest("Join with another Proxy"):
             with self.assertRaises(DHError) as cm:
@@ -163,7 +163,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
             joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             for ct in joined_pt_proxy.target.constituent_tables:
-                self.assertEqual(len(ct.columns), 4)
+                self.assertEqual(len(ct.definition), 4)
 
     def test_exact_join(self):
         with self.subTest("Join with a Table"):
@@ -171,7 +171,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             right_table = self.test_table.drop_columns(["b", "c"]).group_by('a')
             joined_pt_proxy = pt_proxy.exact_join(right_table, on="a", joins=["d", "e"])
             for ct, jct in zip(pt_proxy.target.constituent_tables, joined_pt_proxy.target.constituent_tables):
-                self.assertEqual(len(jct.columns), 5)
+                self.assertEqual(len(jct.definition), 5)
                 self.assertEqual(ct.size, jct.size)
                 self.assertLessEqual(jct.size, right_table.size)
 
@@ -180,7 +180,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
             joined_pt_proxy = pt_proxy.exact_join(right_proxy, on="a", joins="e")
             for ct, jct in zip(pt_proxy.target.constituent_tables, joined_pt_proxy.target.constituent_tables):
-                self.assertEqual(len(jct.columns), 4)
+                self.assertEqual(len(jct.definition), 4)
                 self.assertEqual(ct.size, jct.size)
                 self.assertLessEqual(jct.size, right_table.size)
 
@@ -247,7 +247,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         agg_pt_proxy = self.pt_proxy.count_by(col="cnt", by=["a"])
         for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
             self.assertLessEqual(gct.size, ct.size)
-            self.assertEqual(len(gct.columns), 2)
+            self.assertEqual(len(gct.definition), 2)
 
     def test_dedicated_agg(self):
         ops = [
@@ -268,7 +268,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 agg_pt_proxy = op(self.pt_proxy, by=["a", "b"])
                 for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
                     self.assertLessEqual(gct.size, ct.size)
-                    self.assertEqual(len(gct.columns), len(ct.columns))
+                    self.assertEqual(len(gct.definition), len(ct.definition))
 
         wops = [PartitionedTableProxy.weighted_avg_by,
                 PartitionedTableProxy.weighted_sum_by,
@@ -279,7 +279,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 agg_pt_proxy = wop(self.pt_proxy, wcol="e", by=["a", "b"])
                 for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
                     self.assertLessEqual(gct.size, ct.size)
-                    self.assertEqual(len(gct.columns), len(ct.columns) - 1)
+                    self.assertEqual(len(gct.definition), len(ct.definition) - 1)
 
     def test_agg_by(self):
         aggs = [
@@ -295,7 +295,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         agg_pt_proxy = self.pt_proxy.agg_by(aggs=aggs, by=["a"])
         for gct, ct in zip(agg_pt_proxy.target.constituent_tables, self.pt_proxy.target.constituent_tables):
             self.assertLessEqual(gct.size, ct.size)
-            self.assertEqual(len(gct.columns), 8)
+            self.assertEqual(len(gct.definition), 8)
 
     def test_agg_all_by(self):
         aggs = [

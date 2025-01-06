@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    implementation project(":util-thread")
+    implementation project(":util-processenvironment")
     implementation project(':authentication')
     implementation project(':authorization')
     implementation project(':engine-table')
@@ -14,17 +16,17 @@ dependencies {
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
-    implementation depCommonsLang3
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.lang3
+    implementation libs.commons.text
 
-    Classpaths.inheritJavaParser(project, 'implementation')
+    implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')
 
     api(project(':java-client-barrage'))
     api(project(':java-client-session-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
+    implementation libs.hdrhistogram
 
     implementation project(':proto:proto-backplane-grpc-flight')
     api(project(':open-api-lang-tools')) {
@@ -33,11 +35,11 @@ dependencies {
     api(project(':log-factory')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
+    implementation libs.slf4j.jul.to.slf4j
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    implementation libs.f4b6a3.uuid.creator
 
     api(project(':Configuration')) {
         because 'jetty/netty implementations will access the configuration in their main()s'
@@ -45,15 +47,21 @@ dependencies {
 
     api project(':ssl-config')
 
-    Classpaths.inheritFlatbuffer(project, 'implementation')
+    implementation libs.flatbuffers.java
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritAutoService(project)
-    Classpaths.inheritAutoService(project, /* test */ true)
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritImmutables(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
     implementation project(':Plot')
 
@@ -80,23 +88,23 @@ dependencies {
     runtimeOnly project(':plugin-hierarchicaltable')
     implementation project(':plugin-gc-app')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
+    api platform(libs.grpc.bom)
 
-    api('io.grpc:grpc-services') {
+    api(libs.grpc.services) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
 
     implementation project(':grpc-java:grpc-mtls')
 
-    implementation 'dev.dirs:directories:26'
+    implementation libs.dev.dirs.directories
 
     testImplementation project(':server-test-utils')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly project(':authentication:example-providers:psk')
 }

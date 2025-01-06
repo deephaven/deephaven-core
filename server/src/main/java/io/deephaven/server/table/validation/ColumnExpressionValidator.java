@@ -11,7 +11,6 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
@@ -90,7 +89,7 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
             }
         }
         if (!dummyAssignments.isEmpty()) {
-            final String[] daArray = dummyAssignments.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            final String[] daArray = dummyAssignments.toArray(String[]::new);
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
             validateColumnExpressions(selectColumns, daArray, table);
         }

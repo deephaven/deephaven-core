@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
@@ -236,10 +235,8 @@ public class JsFigure extends HasLifecycle {
             final FigureFetchError fetchError = new FigureFetchError(LazyPromise.ofObject(err),
                     this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
             // noinspection unchecked
-            final CustomEventInit<FigureFetchError> init = CustomEventInit.create();
-            init.setDetail(fetchError);
             unsuppressEvents();
-            fireEvent(EVENT_RECONNECTFAILED, init);
+            fireEvent(EVENT_RECONNECTFAILED, fetchError);
             suppressEvents();
 
             // noinspection unchecked,rawtypes
@@ -269,10 +266,8 @@ public class JsFigure extends HasLifecycle {
                     enqueueSubscriptionCheck();
                     return null;
                 }, failure -> {
-                    CustomEventInit<Object> init = CustomEventInit.create();
-                    init.setDetail(failure);
                     unsuppressEvents();
-                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    fireEvent(EVENT_RECONNECTFAILED, failure);
                     suppressEvents();
                     return null;
                 });
@@ -362,16 +357,14 @@ public class JsFigure extends HasLifecycle {
 
     @JsIgnore
     public void downsampleNeeded(String message, Set<JsSeries> series, double tableSize) {
-        CustomEventInit failInit = CustomEventInit.create();
-        failInit.setDetail(JsPropertyMap.of("series", series, "message", message, "size", tableSize));
-        fireEvent(EVENT_DOWNSAMPLENEEDED, failInit);
+        fireEvent(EVENT_DOWNSAMPLENEEDED,
+                JsPropertyMap.of("series", series, "message", message, "size", tableSize));
     }
 
     @JsIgnore
     public void downsampleFailed(String message, Set<JsSeries> series, double tableSize) {
-        CustomEventInit failInit = CustomEventInit.create();
-        failInit.setDetail(JsPropertyMap.of("series", series, "message", message, "size", tableSize));
-        fireEvent(EVENT_DOWNSAMPLEFAILED, failInit);
+        fireEvent(EVENT_DOWNSAMPLEFAILED,
+                JsPropertyMap.of("series", series, "message", message, "size", tableSize));
     }
 
     private void updateSubscriptions() {

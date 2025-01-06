@@ -107,7 +107,7 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = FloatComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -116,13 +116,5 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
         }
 
         return hi;
-    }
-
-    private static int doComparison(float lhs, float rhs) {
-        return FloatComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(float lhs, float rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }

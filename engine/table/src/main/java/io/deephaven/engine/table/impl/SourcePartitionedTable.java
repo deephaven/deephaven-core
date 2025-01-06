@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -15,7 +16,9 @@ import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
@@ -73,7 +76,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 false);
     }
 
-    private static final class UnderlyingTableMaintainer {
+    private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode
+            implements NotificationQueue.Dependency {
 
         private final TableDefinition constituentDefinition;
         private final UnaryOperator<Table> applyTablePermissions;
@@ -103,13 +107,14 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 final boolean refreshLocations,
                 final boolean refreshSizes,
                 @NotNull final Predicate<ImmutableTableLocationKey> locationKeyMatcher) {
+            super(false);
+
             this.constituentDefinition = constituentDefinition;
             this.applyTablePermissions = applyTablePermissions;
             this.tableLocationProvider = tableLocationProvider;
             this.refreshSizes = refreshSizes;
             this.locationKeyMatcher = locationKeyMatcher;
 
-            // noinspection resource
             resultRows = RowSetFactory.empty().toTracking();
             resultTableLocationKeys = ArrayBackedColumnSource.getMemoryColumnSource(TableLocationKey.class, null);
             resultLocationTables = ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null);
@@ -123,13 +128,19 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             if (needToRefreshLocations || refreshSizes) {
                 result.setRefreshing(true);
                 refreshCombiner = new UpdateSourceCombiner(result.getUpdateGraph());
-                result.addParentReference(refreshCombiner);
+                result.addParentReference(this);
+                manage(refreshCombiner);
             } else {
                 refreshCombiner = null;
             }
 
             if (needToRefreshLocations) {
+                resultTableLocationKeys.startTrackingPrevValues();
+                resultLocationTables.startTrackingPrevValues();
+
                 subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
+                manage(subscriptionBuffer);
+
                 pendingLocationStates = new IntrusiveDoublyLinkedQueue<>(
                         IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
@@ -143,7 +154,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         processPendingLocations(true);
                     }
                 };
-                result.addParentReference(processNewLocationsUpdateRoot);
                 refreshCombiner.addSource(processNewLocationsUpdateRoot);
 
                 this.removedLocationsComitter = new UpdateCommitter<>(
@@ -154,7 +164,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                             removedConstituents.forEach(result::unmanage);
                             removedConstituents = null;
                         });
-
                 processPendingLocations(false);
             } else {
                 subscriptionBuffer = null;
@@ -163,10 +172,22 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 processNewLocationsUpdateRoot = null;
                 removedLocationsComitter = null;
                 tableLocationProvider.refresh();
-                try (final RowSet added = sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream()
-                        .filter(locationKeyMatcher)
-                        .map(tableLocationProvider::getTableLocation))) {
-                    resultRows.insert(added);
+
+                final Collection<TableLocation> locations = new ArrayList<>();
+                try {
+                    retainReference();
+                    tableLocationProvider.getTableLocationKeys(
+                            (final LiveSupplier<ImmutableTableLocationKey> lstlk) -> {
+                                final TableLocation tableLocation = tableLocationProvider.getTableLocation(lstlk.get());
+                                manage(tableLocation);
+                                locations.add(tableLocation);
+                            },
+                            locationKeyMatcher);
+                    try (final RowSet added = sortAndAddLocations(locations.stream())) {
+                        resultRows.insert(added);
+                    }
+                } finally {
+                    dropReference();
                 }
             }
 
@@ -192,7 +213,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 resultLocationTables.ensureCapacity(constituentRowKey + 1);
                 resultLocationTables.set(constituentRowKey, constituentTable);
 
-                result.manage(constituentTable);
+                if (result.isRefreshing()) {
+                    result.manage(constituentTable);
+                }
             });
             return initialLastRowKey == lastInsertedRowKey.get()
                     ? RowSetFactory.empty()
@@ -204,8 +227,15 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     constituentDefinition,
                     "SingleLocationSourceTable-" + tableLocation,
                     RegionedTableComponentFactoryImpl.INSTANCE,
-                    new SingleTableLocationProvider(tableLocation),
+                    new SingleTableLocationProvider(tableLocation, refreshSizes
+                            ? tableLocationProvider.getLocationUpdateMode()
+                            : TableUpdateMode.STATIC),
                     refreshSizes ? refreshCombiner : null);
+
+            // Transfer management to the constituent CSM. NOTE: this is likely to end up double-managed
+            // after the CSM adds the location to the table, but that's acceptable.
+            constituent.columnSourceManager.manage(tableLocation);
+            unmanage(tableLocation);
 
             // Be careful to propagate the systemic attribute properly to child tables
             constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
@@ -213,9 +243,14 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private void processPendingLocations(final boolean notifyListeners) {
-            final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = subscriptionBuffer.processPending();
-            final RowSet removed = processRemovals(locationUpdate);
-            final RowSet added = processAdditions(locationUpdate);
+            final RowSet removed;
+            final RowSet added;
+
+            try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                    subscriptionBuffer.processPending()) {
+                removed = processRemovals(locationUpdate);
+                added = processAdditions(locationUpdate);
+            }
 
             resultRows.update(added, removed);
             if (notifyListeners) {
@@ -242,8 +277,10 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
             locationUpdate.getPendingAddedLocationKeys().stream()
+                    .map(LiveSupplier::get)
                     .filter(locationKeyMatcher)
                     .map(tableLocationProvider::getTableLocation)
+                    .peek(this::manage)
                     .map(PendingLocationState::new)
                     .forEach(pendingLocationStates::offer);
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
@@ -263,11 +300,22 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final Set<ImmutableTableLocationKey> relevantRemovedLocations =
                     locationUpdate.getPendingRemovedLocationKeys()
                             .stream()
+                            .map(LiveSupplier::get)
                             .filter(locationKeyMatcher)
                             .collect(Collectors.toSet());
 
             if (relevantRemovedLocations.isEmpty()) {
                 return RowSetFactory.empty();
+            }
+
+            // Iterate through the pending locations and remove any that are in the removed set.
+            for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
+                final PendingLocationState pendingLocationState = iter.next();
+                if (relevantRemovedLocations.contains(pendingLocationState.location.getKey())) {
+                    iter.remove();
+                    // Release the state and unmanage the location
+                    unmanage(pendingLocationState.release());
+                }
             }
 
             // At the end of the cycle we need to make sure we unmanage any removed constituents.
@@ -305,6 +353,22 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             resultTableLocationKeys.setNull(deletedRows);
             resultLocationTables.setNull(deletedRows);
             return deletedRows;
+        }
+
+        @Override
+        public boolean satisfied(final long step) {
+            if (refreshCombiner == null) {
+                throw new UnsupportedOperationException("This method should not be called when result is static");
+            }
+            return refreshCombiner.satisfied(step);
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            if (refreshCombiner == null) {
+                throw new UnsupportedOperationException("This method should not be called when result is static");
+            }
+            return refreshCombiner.getUpdateGraph();
         }
     }
 

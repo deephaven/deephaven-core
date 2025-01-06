@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
-import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 
 import java.io.IOException;
@@ -66,9 +65,8 @@ public class TableToArrowConverter {
         public void onNext(final BarrageStreamGenerator.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                        ((Drainable) inputStream).drainTo(baos);
+                    try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                        inputStream.drainTo(baos);
                         batchMessages.add(baos.toByteArray());
                         inputStream.close();
                     } catch (final IOException e) {

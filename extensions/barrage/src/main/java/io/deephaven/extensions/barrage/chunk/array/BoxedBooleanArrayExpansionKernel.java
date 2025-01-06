@@ -47,7 +47,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
                 continue;
             }
             for (int j = 0; j < row.length; ++j) {
-                final byte value = row[j] ? BooleanUtils.TRUE_BOOLEAN_AS_BYTE : BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+                final byte value = BooleanUtils.booleanAsByte(row[j]);
                 result.set(lenWritten + j, value);
             }
             lenWritten += row.length;

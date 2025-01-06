@@ -5,6 +5,8 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.StringMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.column.Dictionary;
 import org.jetbrains.annotations.NotNull;
@@ -26,14 +28,13 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
                             new ChunkDictionary<>(
                                     (dictionary, key) -> dictionary.decodeToBinary(key).toStringUsingUTF8(),
                                     dictionarySupplier),
-                            INSTANCE::convertResult);
+                            INSTANCE::convertResult,
+                            INSTANCE.getPageMaterializerFactory());
         }
 
         throw new IllegalArgumentException(
                 "The native type for a String column is " + nativeType.getCanonicalName());
     }
-
-    private ToStringPage() {}
 
     @Override
     @NotNull
@@ -45,5 +46,11 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return StringMaterializer.FACTORY;
     }
 }

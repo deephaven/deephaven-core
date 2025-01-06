@@ -58,16 +58,22 @@ public interface WhereFilter extends Filter {
         void requestRecompute();
 
         /**
-         * Notify the something about the filters has changed such that all unmatched rows of the source table should be
-         * re-evaluated.
+         * Notify that something about the filters has changed such that all unmatched rows of the source table should
+         * be re-evaluated.
          */
         void requestRecomputeUnmatched();
 
         /**
-         * Notify the something about the filters has changed such that all matched rows of the source table should be
+         * Notify that something about the filters has changed such that all matched rows of the source table should be
          * re-evaluated.
          */
         void requestRecomputeMatched();
+
+        /**
+         * Notify that something about the filters has changed such that the following rows of the source table should
+         * be re-evaluated. The rowSet ownership is not taken by requestRecompute.
+         */
+        void requestRecompute(RowSet rowSet);
 
         /**
          * Get the table underlying this listener.
@@ -296,6 +302,13 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     */
+    default boolean hasVirtualRowVariables() {
+        return false;
+    }
+
+    /**
      * Create a copy of this WhereFilter.
      *
      * @return an independent copy of this WhereFilter.
@@ -325,7 +338,7 @@ public interface WhereFilter extends Filter {
 
     @Override
     default <T> T walk(Expression.Visitor<T> visitor) {
-        throw new UnsupportedOperationException("WhereFilters do not implement walk");
+        return visitor.visit(this);
     }
 
     @Override

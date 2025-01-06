@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
-import io.deephaven.web.shared.data.ColumnStatistics;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
@@ -18,8 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Javascript wrapper for {@link ColumnStatistics} This class holds the results of a call to generate statistics on a
- * table column.
+ * Represents statistics for a given table column.
  */
 @TsInterface
 @TsName(name = "ColumnStatistics", namespace = "dh")
@@ -38,7 +36,7 @@ public class JsColumnStatistics {
         /**
          * The number of unique values in the column.
          */
-        UNIQUE_VALUES("UNIQUE VALUES", "long"),
+        UNIQUE_VALUES("UNIQUE VALUES", "int"),
         /**
          * The sum of all data in the column.
          */

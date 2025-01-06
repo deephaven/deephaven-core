@@ -36,12 +36,8 @@ public class IntSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(int lhs, int rhs) {
-        return IntComparisons.compare(lhs, rhs);
+    private static boolean leq(int lhs, int rhs) {
+        return IntComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(int lhs, int rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

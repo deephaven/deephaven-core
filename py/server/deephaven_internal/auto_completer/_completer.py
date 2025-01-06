@@ -6,6 +6,9 @@ from enum import Enum
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
+from importlib.metadata import version
+import sys
+import warnings
 
 
 class Mode(Enum):
@@ -34,6 +37,13 @@ _JEDI_COMPLETION_TYPE_MAP = {
     "statement": 6,
     "text": 1,
 }
+
+
+"""
+For Python 3.9 and 3.10, there is a bug in recursion which can result in a segfault. Lowering this
+limit to 2000 or less seems to mitigate it.
+"""
+MAX_RECURSION_LIMIT = 2000
 
 
 def wrap_python(txt: str) -> str:
@@ -80,6 +90,8 @@ class Completer:
         except ImportError:
             self.__can_jedi = False
             self.mode = Mode.OFF
+        self.recursion_limit_already_warned = False
+        self.check_recursion_limit(True)
 
     @property
     def mode(self) -> Mode:
@@ -135,6 +147,7 @@ class Completer:
         Modeled after Jedi language server
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L189
         """
+        self.check_recursion_limit()
         if not self._versions[uri] == version:
             # if you aren't the newest completion, you get nothing, quickly
             return []
@@ -253,3 +266,27 @@ class Completer:
             hoverstring += '\n---\n' + wrap_plaintext(raw_docstring)
 
         return hoverstring.strip()
+
+    def check_recursion_limit(self, suppress_warning: bool = False) -> None:
+        """
+        Tests for python+jedi+numpy versions that are susceptible to a RecursionError/segfault issue, and lowers
+        the recursion limit, warning if the limit is raised externally.
+        """
+        if sys.version_info < (3, 9) or sys.version_info >= (3, 11):
+            return
+
+        if sys.getrecursionlimit() <= MAX_RECURSION_LIMIT:
+            return
+
+        sys.setrecursionlimit(MAX_RECURSION_LIMIT)
+
+        # Log a warning if the user (or some user code) seems to have tried to raise the limit again after we lowered it.
+        # This is not a fool-proof way to keep the limit down, and isn't meant to be, only to guard against the primary
+        # way we've seen to cause this issue.
+        if not suppress_warning and not self.recursion_limit_already_warned:
+            self.recursion_limit_already_warned = True
+            warnings.warn(f"""Recursion limit has been set to {MAX_RECURSION_LIMIT} to avoid a known segfault in Python 3.9 and 3.10
+related to RecursionErrors. This limit will be set to {MAX_RECURSION_LIMIT} whenever autocomplete takes place
+to avoid this, because the jedi library sets this to 3000, above the safe limit. Disabling autocomplete
+will prevent this check, as it will also prevent jedi from raising the limit.
+See https://github.com/deephaven/deephaven-core/issues/5878 for more information.""")

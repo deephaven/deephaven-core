@@ -8,7 +8,6 @@ import io.deephaven.qst.table.TableSpec.Visitor;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -169,6 +168,11 @@ public enum ParentsVisitor implements Visitor<Stream<TableSpec>> {
     }
 
     @Override
+    public Stream<TableSpec> visit(SliceTable sliceTable) {
+        return single(sliceTable);
+    }
+
+    @Override
     public Stream<TableSpec> visit(ReverseTable reverseTable) {
         return single(reverseTable);
     }
@@ -300,6 +304,11 @@ public enum ParentsVisitor implements Visitor<Stream<TableSpec>> {
     @Override
     public Stream<TableSpec> visit(DropColumnsTable dropColumnsTable) {
         return single(dropColumnsTable);
+    }
+
+    @Override
+    public Stream<TableSpec> visit(MultiJoinTable multiJoinTable) {
+        return multiJoinTable.inputs().stream().map(MultiJoinInput::table);
     }
 
     private static class Search {

@@ -202,7 +202,11 @@ class _ParsedSignature:
         parameters."""
         # numba and numpy ufuncs don't need auto argument conversion as they handle the conversion themselves and the
         # arg types are already verified by the query engine
-        if isinstance(self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)) or isinstance(self.fn, numpy.ufunc):
+        if numba:
+            if isinstance(self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)):
+                return False
+
+        if isinstance(self.fn, numpy.ufunc):
             return False
 
         if not self.params or not encoded_arg_types:
@@ -481,7 +485,7 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
     return p_sig
 
 
-def _parse_signature(fn: Callable) -> _ParsedSignature:
+def _parse_signature(fn: Callable) -> Optional[_ParsedSignature]:
     """ Parse the signature of a function """
 
     if numba:
@@ -492,10 +496,14 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         return _parse_np_ufunc_signature(fn)
     else:
         p_sig = _ParsedSignature(fn=fn)
-        if sys.version_info >= (3, 10):
-            sig = inspect.signature(fn, eval_str=True)  # novermin
-        else:
-            sig = inspect.signature(fn)
+        try:
+            if sys.version_info >= (3, 10):
+                sig = inspect.signature(fn, eval_str=True)  # novermin
+            else:
+                sig = inspect.signature(fn)
+        except ValueError:
+            # some built-in functions don't have a signature, neither do some functions from C extensions
+            return None
 
         for n, p in sig.parameters.items():
             # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get
@@ -509,7 +517,7 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
-def _udf_parser(fn: Callable):
+def _udf_parser(fn: Callable) -> Optional[Callable]:
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for internal use by the Deephaven query engine and should not be used by
     users.
@@ -527,6 +535,9 @@ def _udf_parser(fn: Callable):
         return fn
 
     p_sig = _parse_signature(fn)
+    if p_sig is None:
+        return None
+
     return_array = p_sig.ret_annotation.has_array
     ret_np_char = p_sig.ret_annotation.encoded_type[-1]
     ret_dtype = dtypes.from_np_dtype(np.dtype(ret_np_char if ret_np_char != "X" else "O"))

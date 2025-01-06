@@ -1933,6 +1933,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
                     DateTimeUtils.nowMillisResolution());
 
+            // Occasionally tests fail because of invalid clocks on the test system
+            final LocalDate startDate = LocalDate.of(1990, 1, 1);
+            final LocalDate currentDate = DateTimeUtils.toLocalDate(
+                    DateTimeUtils.epochNanosToInstant(Clock.system().currentTimeNanos()), DateTimeUtils.timeZone());
+            assertTrue("Checking for a valid date on the test system: currentDate=" + currentDate,
+                    currentDate.isAfter(startDate));
+
             TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
                     - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
             TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()

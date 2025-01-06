@@ -609,9 +609,26 @@ def test_udf(x: {np_type}) -> bool:
         dv = 0.05
         with warnings.catch_warnings(record=True) as w:
             t = empty_table(10).update("X = f(dv, dv)")
-            self.assertEqual(w[-1].category, UserWarning)
-            self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
-            self.assertEqual(10, t.to_string().count("true"))
+        self.assertEqual(w[-1].category, UserWarning)
+        self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
+        self.assertEqual(10, t.to_string().count("true"))
+
+    def test_no_signature(self):
+        builtin_max = max
+        t = empty_table(10).update("X = (int) builtin_max(1, 2, 3)")
+        self.assertEqual(t.columns[0].data_type, dtypes.int32)
+        self.assertEqual(10, t.to_string().count("3"))
+
+    def test_no_name(self):
+        from functools import partial
+        def fn(i: int, z: int) -> int:
+            return i * 5 - z
+        local_fn = partial(fn, z=5)
+
+        t = empty_table(5).update("col=i*2")
+        t = t.update('col2=local_fn(col)')
+        self.assertEqual(t.columns[1].data_type, dtypes.int64)
+        self.assertEqual(5, t.size)
 
 
 if __name__ == "__main__":

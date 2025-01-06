@@ -6,7 +6,6 @@ package io.deephaven.plot.util;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.plot.ChartImpl;
@@ -724,7 +723,7 @@ public class PlotUtils {
         final List<String> lastColumns = t.getDefinition().getColumnNames();
         lastColumns.removeAll(Arrays.asList(catColumns));
         final QueryTable result = (QueryTable) t.aggBy(
-                createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
+                createCategoryAggs(AggLast(lastColumns.toArray(String[]::new))),
                 ColumnName.from(catColumns));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not

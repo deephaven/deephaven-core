@@ -3,25 +3,33 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.UncheckedDeephavenException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
+import static io.deephaven.base.FileUtils.URI_SEPARATOR;
 import static io.deephaven.base.FileUtils.URI_SEPARATOR_CHAR;
 
 public final class ParquetUtils {
 
+    public static final String PARQUET_FILE_EXTENSION = ".parquet";
+
     public static final String METADATA_FILE_NAME = "_metadata";
     public static final String COMMON_METADATA_FILE_NAME = "_common_metadata";
-    public static final String PARQUET_FILE_EXTENSION = ".parquet";
     public static final String METADATA_FILE_URI_SUFFIX = URI_SEPARATOR_CHAR + METADATA_FILE_NAME;
     public static final String COMMON_METADATA_FILE_URI_SUFFIX = URI_SEPARATOR_CHAR + COMMON_METADATA_FILE_NAME;
-    public static final String METADATA_FILE_SUFFIX = File.separatorChar + METADATA_FILE_NAME;
-    public static final String COMMON_METADATA_FILE_SUFFIX = File.separatorChar + COMMON_METADATA_FILE_NAME;
+    private static final String METADATA_FILE_SUFFIX = File.separatorChar + METADATA_FILE_NAME;
+    private static final String COMMON_METADATA_FILE_SUFFIX = File.separatorChar + COMMON_METADATA_FILE_NAME;
+
     private static final String MAGIC_STR = "PAR1";
     public static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+
+    private static final String WINDOWS_FILE_SEPARATOR = "\\";
 
     /**
      * The number of bytes to buffer before flushing while writing parquet files and metadata files.
@@ -42,17 +50,23 @@ public final class ParquetUtils {
     }
 
     /**
-     * This method verifies if the source points to a parquet file or a metadata file. Provided source can be a local
-     * file path or a URI. Also, it can point to a parquet file, metadata file or a directory.
+     * This method verifies if the source points to a parquet file. Provided source can be a local file path or a URI.
      */
     public static boolean isParquetFile(@NotNull final String source) {
-        boolean ret = source.endsWith(PARQUET_FILE_EXTENSION)
-                || source.endsWith(METADATA_FILE_URI_SUFFIX)
-                || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
-        if (File.separatorChar != URI_SEPARATOR_CHAR) {
-            ret = ret || source.endsWith(METADATA_FILE_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_SUFFIX);
+        return source.endsWith(PARQUET_FILE_EXTENSION);
+    }
+
+    /**
+     * This method verifies if the source points to a metadata file. Provided source can be a local file path or a URI.
+     */
+    public static boolean isMetadataFile(@NotNull final String source) {
+        if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
+            return true;
         }
-        return ret;
+        if (File.separatorChar != URI_SEPARATOR_CHAR) {
+            return source.endsWith(METADATA_FILE_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_SUFFIX);
+        }
+        return false;
     }
 
     /**
@@ -73,5 +87,21 @@ public final class ParquetUtils {
             parent = parent.getParent();
         }
         return true;
+    }
+
+    /**
+     * Resolve a relative path against a base URI. The path can be from Windows or Unix systems. This method should be
+     * used if we expect the relative path to contain file separators or special characters, otherwise use
+     * {@code base.resolve(relativePath)}
+     */
+    public static URI resolve(final URI base, final String relativePath) {
+        final URI relativeURI;
+        try {
+            // Sanitize the relative path before resolving it to avoid issues with separators and special characters
+            relativeURI = new URI(null, null, relativePath.replace(WINDOWS_FILE_SEPARATOR, URI_SEPARATOR), null);
+        } catch (final URISyntaxException e) {
+            throw new UncheckedDeephavenException("Failed to create URI from relative path: " + relativePath, e);
+        }
+        return base.resolve(relativeURI);
     }
 }

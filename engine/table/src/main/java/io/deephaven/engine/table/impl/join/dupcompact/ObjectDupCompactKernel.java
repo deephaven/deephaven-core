@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.join.dupcompact;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
@@ -109,19 +110,8 @@ public class ObjectDupCompactKernel implements DupCompactKernel {
     // region comparison functions
     // ascending comparison
     private static int doComparison(Object lhs, Object rhs) {
-       if (lhs == rhs) {
-            return 0;
-        }
-        if (lhs == null) {
-            return -1;
-        }
-        if (rhs == null) {
-            return 1;
-        }
-        //noinspection unchecked,rawtypes
-        return ((Comparable)lhs).compareTo(rhs);
+        return ObjectComparisons.compare(lhs, rhs);
     }
-
     // endregion comparison functions
 
     private static boolean leq(Object lhs, Object rhs) {

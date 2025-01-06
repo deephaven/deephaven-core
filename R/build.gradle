@@ -138,7 +138,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
                    ''')
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('roxygen2', repos='https://cran.r-project.org'); " \
+                           "      install.packages('roxygen2'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \
@@ -179,7 +179,7 @@ def rClientSite = Docker.registerDockerTask(project, 'rClientSite') {
         runCommand("mkdir -p ${prefix}/src/rdeephaven/docs")
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('pkgdown', repos='https://cran.r-project.org'); " \
+                           "      install.packages('pkgdown'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \

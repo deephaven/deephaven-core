@@ -13,18 +13,18 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation project(':engine-test-utils')
-    testImplementation depCommonsLang3
+    testImplementation libs.commons.lang3
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.junit4
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 TestTools.addEngineOutOfBandTest(project)

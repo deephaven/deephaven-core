@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.join.dupexpand;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;

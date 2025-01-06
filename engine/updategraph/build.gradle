@@ -10,18 +10,19 @@ dependencies {
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation project(':util-processenvironment')
+    implementation libs.commons.lang3
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly depAnnotations
+    compileOnly libs.google.findbugs.jsr305
+    compileOnly libs.jetbrains.annotations
 
     testImplementation project(':engine-context')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import gnu.trove.map.hash.TLongObjectHashMap;
@@ -58,7 +57,7 @@ public class KeyedTableListener {
         };
 
         List<String> allColumnNames = table.getDefinition().getColumnNames();
-        this.allColumnNames = allColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        this.allColumnNames = allColumnNames.toArray(String[]::new);
         this.parentColumnSourceMap = table.getColumnSourceMap();
     }
 

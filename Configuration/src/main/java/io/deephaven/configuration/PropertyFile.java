@@ -5,7 +5,6 @@ package io.deephaven.configuration;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.io.logger.Logger;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -15,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.BitSet;
@@ -474,7 +474,10 @@ public class PropertyFile {
     }
 
     public Set<String> getStringSetFromProperty(final String propertyName) {
-        Set<String> set = CollectionUtil.setFromArray(getProperty(propertyName).split("[, ]"));
+        String[] data = getProperty(propertyName).split("[, ]");
+        Require.neqNull(data, "data");
+        Set<String> set = new LinkedHashSet<>(Arrays.asList(data));
+        Require.eq(set.size(), "set.size()", data.length, "data.length");
         set.remove("");
         return set;
     }
@@ -499,13 +502,101 @@ public class PropertyFile {
         final String propertyValue = getProperty(propertyName).trim();
         switch (propertyValue) {
             case "*":
-                return CollectionUtil.universalSet();
+                // noinspection unchecked
+                return (Set<String>) UNIVERSAL_SET;
             case "":
                 return Collections.emptySet();
             default:
-                Set<String> result = CollectionUtil.setFromArray(propertyValue.split("[, ]+"));
-                result.remove("");
-                return result;
+                String[] data = propertyValue.split("[, ]+");
+                Require.neqNull(data, "data");
+                Set<String> set = new LinkedHashSet<>(Arrays.asList(data));
+                Require.eq(set.size(), "set.size()", data.length, "data.length");
+                set.remove("");
+                return set;
+        }
+    }
+
+
+    /**
+     * The universal set (immutable). This set is serializable.
+     */
+    @SuppressWarnings("rawtypes")
+    private static final Set UNIVERSAL_SET = new UniversalSet();
+
+    /**
+     * A set that contains everything. Iteration is not supported - only containment checks.
+     */
+    private static class UniversalSet<T> implements Set<T>, Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        private Object readResolve() {
+            return UNIVERSAL_SET;
+        }
+
+        @Override
+        public int size() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean contains(Object o) {
+            return true;
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object[] toArray() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean add(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c) {
+            return true;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends T> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a) {
+            throw new UnsupportedOperationException();
         }
     }
 

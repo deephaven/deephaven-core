@@ -10,7 +10,7 @@ A Docker Compose deployment for [Deephaven](https://deephaven.io).
 
 ## Launch Deephaven
 
-For instructions on launching and using Kafka, see [How to connect to a Kafka stream](https://deephaven.io/core/docs/how-to-guides/data-import-export/kafka-stream/). For instructions on getting started with Deephaven, see the [Quickstart](https://deephaven.io/core/docs/tutorials/quickstart).
+For instructions on launching and using Kafka, see [How to connect to a Kafka stream](https://deephaven.io/core/docs/how-to-guides/data-import-export/kafka-stream/). For instructions on getting started with Deephaven, see the [Quickstart](https://deephaven.io/core/docs/getting-started/quickstart/).
 
 To launch Deephaven, execute the following in your deployment directory:
 

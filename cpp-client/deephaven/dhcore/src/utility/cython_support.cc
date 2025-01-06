@@ -15,11 +15,14 @@ using deephaven::dhcore::column::BooleanArrayColumnSource;
 using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::column::ColumnSourceVisitor;
 using deephaven::dhcore::column::DateTimeArrayColumnSource;
+using deephaven::dhcore::column::LocalDateArrayColumnSource;
+using deephaven::dhcore::column::LocalTimeArrayColumnSource;
 using deephaven::dhcore::column::StringArrayColumnSource;
 
 namespace deephaven::dhcore::utility {
 namespace {
 void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elements, bool invert);
+void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements);
 }  // namespace
 
 std::shared_ptr<ColumnSource>
@@ -59,10 +62,38 @@ CythonSupport::CreateDateTimeColumnSource(const int64_t *data_begin, const int64
   auto nulls = std::make_unique<bool[]>(num_elements);
 
   for (size_t i = 0; i != num_elements; ++i) {
-    elements[i] = DateTime(data_begin[i]);
+    elements[i] = DateTime::FromNanos(data_begin[i]);
   }
-  populateArrayFromPackedData(validity_begin, nulls.get(), num_elements, true);
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
   return DateTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
+}
+
+std::shared_ptr<ColumnSource>
+CythonSupport::CreateLocalDateColumnSource(const int64_t *data_begin, const int64_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<LocalDate[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
+
+  for (size_t i = 0; i != num_elements; ++i) {
+    elements[i] = LocalDate::FromMillis(data_begin[i]);
+  }
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  return LocalDateArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
+      num_elements);
+}
+
+std::shared_ptr<ColumnSource>
+CythonSupport::CreateLocalTimeColumnSource(const int64_t *data_begin, const int64_t *data_end,
+    const uint8_t *validity_begin, const uint8_t *validity_end, size_t num_elements) {
+  auto elements = std::make_unique<LocalTime[]>(num_elements);
+  auto nulls = std::make_unique<bool[]>(num_elements);
+
+  for (size_t i = 0; i != num_elements; ++i) {
+    elements[i] = LocalTime::FromNanos(data_begin[i]);
+  }
+  populateNullsFromDeephavenConvention(data_begin, nulls.get(), num_elements);
+  return LocalTimeArrayColumnSource::CreateFromArrays(std::move(elements), std::move(nulls),
       num_elements);
 }
 
@@ -108,6 +139,14 @@ struct ElementTypeIdVisitor final : ColumnSourceVisitor {
     elementTypeId_ = ElementTypeId::kTimestamp;
   }
 
+  void Visit(const column::LocalDateColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kLocalDate;
+  }
+
+  void Visit(const column::LocalTimeColumnSource &/*source*/) final {
+    elementTypeId_ = ElementTypeId::kLocalTime;
+  }
+
   ElementTypeId::Enum elementTypeId_ = ElementTypeId::kChar;
 };
 }  // namespace
@@ -134,6 +173,12 @@ void populateArrayFromPackedData(const uint8_t *src, bool *dest, size_t num_elem
       ++src;
     }
     --num_elements;
+  }
+}
+
+void populateNullsFromDeephavenConvention(const int64_t *data_begin, bool *dest, size_t num_elements) {
+  for (size_t i = 0; i != num_elements; ++i) {
+    dest[i] = data_begin[i] == DeephavenConstants::kNullLong;
   }
 }
 }  // namespace

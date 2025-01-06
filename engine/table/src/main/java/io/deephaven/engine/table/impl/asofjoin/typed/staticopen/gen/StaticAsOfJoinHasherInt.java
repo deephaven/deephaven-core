@@ -54,7 +54,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
             int tableLocation = firstTableLocation;
             while (true) {
                 Object rightSideSentinel = rightRowSetSource.getUnsafe(tableLocation);
-                if (rightSideSentinel == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(rightSideSentinel)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     addLeftKey(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -82,7 +82,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
             int tableLocation = firstTableLocation;
             while (true) {
                 Object rightSideSentinel = rightRowSetSource.getUnsafe(tableLocation);
-                if (rightSideSentinel == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(rightSideSentinel)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     addRightKey(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -109,7 +109,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (rightRowSetSource.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(rightRowSetSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long indexKey = rowKeyChunk.get(chunkPosition);
                     if (addLeftKey(tableLocation, indexKey) && hashSlots != null) {
@@ -133,7 +133,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (rightRowSetSource.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(rightRowSetSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     addRightKey(tableLocation, rowKeyChunk.get(chunkPosition));
                     break;
@@ -147,6 +147,10 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
     private static int hash(int k0) {
         int hash = IntChunkHasher.hashInitialSingle(k0);
         return hash;
+    }
+
+    private static boolean isStateEmpty(Object state) {
+        return state == EMPTY_RIGHT_STATE;
     }
 
     @Override
@@ -163,7 +167,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
         leftRowSetSource.setArray(destLeftState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final Object currentStateValue = (Object)originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_RIGHT_STATE) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];
@@ -171,7 +175,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty((Object)destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destLeftState[destinationTableLocation] = oldLeftState[sourceBucket];

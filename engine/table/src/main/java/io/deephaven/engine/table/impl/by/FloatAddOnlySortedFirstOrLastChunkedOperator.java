@@ -93,12 +93,16 @@ public class FloatAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFir
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final long index = indices.get(start + ii);
             final float value = values.get(start + ii);
-            final int comparison = FloatComparisons.compare(value, bestValue);
-            // @formatter:off
-            final boolean better =
-                    ( isFirst && (comparison < 0 || (comparison == 0 && index < bestIndex))) ||
-                    (!isFirst && (comparison > 0 || (comparison == 0 && index > bestIndex)))  ;
-            // @formatter:on
+            final boolean better;
+            if (isFirst) {
+                better = index < bestIndex
+                        ? FloatComparisons.leq(value, bestValue)
+                        : FloatComparisons.lt(value, bestValue);
+            } else {
+                better = index > bestIndex
+                        ? FloatComparisons.geq(value, bestValue)
+                        : FloatComparisons.gt(value, bestValue);
+            }
             if (better) {
                 bestIndex = index;
                 bestValue = value;

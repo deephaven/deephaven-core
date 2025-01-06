@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.hadoop-common-dependencies'
 }
 
 evaluationDependsOn Docker.registryProject('localstack')
@@ -9,26 +10,52 @@ evaluationDependsOn Docker.registryProject('minio')
 description 'Iceberg: Support to read iceberg catalogs.'
 
 dependencies {
-    implementation project(':extensions-iceberg')
+    api project(':extensions-iceberg')
 
     // Bring in the AWS / S3 extensions
-    Classpaths.inheritIcebergCore(project)
+    api platform(libs.iceberg.bom)
+    api libs.iceberg.api
+    implementation libs.iceberg.core
+    implementation libs.iceberg.bundled.guava
 
     implementation project(':extensions-s3')
-    implementation "org.apache.iceberg:iceberg-aws"
+    implementation libs.iceberg.aws
 
-    Classpaths.inheritAWSSDK(project)
-    runtimeOnly "software.amazon.awssdk:sts"
-    runtimeOnly "software.amazon.awssdk:glue"
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
+    runtimeOnly libs.awssdk.sts
+    implementation libs.awssdk.glue
 
-    Classpaths.inheritTestContainers(project)
+    // We don't want to explicitly pull in dependencies for dynamodb (org.apache.iceberg.aws.dynamodb.DynamoDbCatalog),
+    // but we need to be able to compile against it to implement AwsClientFactory
+    compileOnly libs.awssdk.dynamodb
+
+    // We don't want to explicitly pull in dependencies for KMS (there doesn't seem to be anything in Iceberg that
+    // actually calls it?), but we need to be able to compile against it to implement AwsClientFactory
+    compileOnly libs.awssdk.kms
+
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
+    testImplementation project(':engine-test-utils')
+
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     testImplementation TestTools.projectDependency(project, 'extensions-iceberg')
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
 test {

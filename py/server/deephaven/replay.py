@@ -4,16 +4,12 @@
 
 """ This module provides support for replaying historical data. """
 
-from typing import Union
 import jpy
 
-import datetime
-import numpy as np
-import pandas as pd
-
-from deephaven import dtypes, DHError, time
+from deephaven import DHError, time
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
+from deephaven.time import InstantLike
 
 _JReplayer = jpy.get_type("io.deephaven.engine.table.impl.replay.Replayer")
 
@@ -27,14 +23,13 @@ class TableReplayer(JObjectWrapper):
 
     j_object_type = _JReplayer
 
-    def __init__(self, start_time: Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp],
-                 end_time: Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
+    def __init__(self, start_time: InstantLike, end_time: InstantLike):
         """Initializes the replayer.
 
         Args:
-             start_time (Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
+             start_time (InstantLike):
                 replay start time.  Integer values are nanoseconds since the Epoch.
-             end_time (Union[dtypes.Instant, int, str, datetime.datetime, np.datetime64, pd.Timestamp]):
+             end_time (InstantLike):
                 replay end time.  Integer values are nanoseconds since the Epoch.
 
         Raises:

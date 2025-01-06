@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,9 +47,9 @@ public class ReplicateSortKernel {
         fixupObjectRuns(objectRunPath);
 
         charToAllButBoolean(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         final String objectPartitionPath = charToObject(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
         charToAllButBoolean(TASK,
@@ -366,49 +367,47 @@ public class ReplicateSortKernel {
     }
 
     public static List<String> fixupObjectComparisons(List<String> lines, boolean ascending) {
-        final List<String> ascendingComparision = Arrays.asList(
+        final List<String> ascendingComparison = Arrays.asList(
                 "    // ascending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "       if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return -1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return 1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)lhs).compareTo(rhs);",
-                "    }",
-                "");
-        final List<String> descendingComparision = Arrays.asList(
+                "        return ObjectComparisons.compare(lhs, rhs);",
+                "    }");
+        final List<String> descendingComparison = Arrays.asList(
                 "    // descending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "        if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return 1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return -1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)rhs).compareTo(lhs);",
+                "        return ObjectComparisons.compare(rhs, lhs);",
                 "    }");
-
-        return addImport(simpleFixup(
-                replaceRegion(lines, "comparison functions", ascending ? ascendingComparision : descendingComparision),
-                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)"), "import java.util.Objects;");
+        lines = replaceRegion(lines, "comparison functions", ascending ? ascendingComparison : descendingComparison);
+        lines = simpleFixup(
+                lines,
+                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
+        return addImport(lines, "import java.util.Objects;", "import io.deephaven.util.compare.ObjectComparisons;");
     }
 
     public static List<String> invertComparisons(List<String> lines) {
         final List<String> descendingComment = Collections.singletonList(
                 "    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)");
-        return insertRegion(
-                applyFixup(lines, "comparison functions", "(\\s+return )(.*compare.*;)",
-                        m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2))),
-                "comparison functions", descendingComment);
+        lines = applyFixup(lines, "comparison functions", "(\\s+return )(.*compare.*;)",
+                m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2)));
+        lines = applyFixup(lines, "comparison functions", "(\\s+return .*)(\\.gt\\(|\\.lt\\(|\\.geq\\(|\\.leq\\()(.*;)",
+                m -> Collections.singletonList(invertBooleanCompare(m)));
+        return insertRegion(lines, "comparison functions", descendingComment);
+    }
+
+    private static String invertBooleanCompare(Matcher matcher) {
+        // Note: we can't just return the boolean inverse; a compare inverse must handle three states, and those
+        // semantics must be preserved even though it's a boolean function.
+        switch (matcher.group(2)) {
+            case ".gt(":
+                return matcher.group(1) + ".lt(" + matcher.group(3);
+            case ".lt(":
+                return matcher.group(1) + ".gt(" + matcher.group(3);
+            case ".geq(":
+                return matcher.group(1) + ".leq(" + matcher.group(3);
+            case ".leq(":
+                return matcher.group(1) + ".geq(" + matcher.group(3);
+            default:
+                throw new IllegalStateException("Unexpected match: " + matcher.group(2));
+        }
     }
 }

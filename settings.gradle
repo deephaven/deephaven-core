@@ -1,6 +1,6 @@
 plugins {
-    id 'com.gradle.enterprise' version '3.13.1'
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+    id 'com.gradle.develocity' version '3.19'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
 }
 
 gradle.ext.buildStartTime = new Date()
@@ -352,6 +352,15 @@ project(':util-function').projectDir = file('Util/function')
 include(':util-channel')
 project(':util-channel').projectDir = file('Util/channel')
 
+include(':util-processenvironment')
+project(':util-processenvironment').projectDir = file('Util/processenvironment')
+
+include(':util-thread')
+project(':util-thread').projectDir = file('Util/thread')
+
+include(':util-pool')
+project(':util-pool').projectDir = file('Util/pool')
+
 include(':deephaven-jpy-config')
 project(':deephaven-jpy-config').projectDir = file('py/jpy-config')
 
@@ -415,6 +424,16 @@ include ':clock-impl'
 
 include ':sql'
 
+include ':extensions-flight-sql'
+project(':extensions-flight-sql').projectDir = file('extensions/flight-sql')
+
+include(':codec-api')
+project(':codec-api').projectDir = file('codec/api')
+include(':codec-builtin')
+project(':codec-builtin').projectDir = file('codec/builtin')
+include(':codec-cache')
+project(':codec-cache').projectDir = file('codec/cache')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")
@@ -459,14 +478,14 @@ buildCache {
     }
 }
 
-def isCiServer = System.getenv('CI') == 'true'
-if (isCiServer) {
-    gradleEnterprise {
-        buildScan {
-            termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-            termsOfServiceAgree = 'yes'
+develocity {
+    buildScan {
+        // buildScan will still publish when gradlew is explicitly invoked with `--scan`
+        publishing.onlyIf { false }
+        termsOfUseUrl = 'https://gradle.com/help/legal-terms-of-use'
+        termsOfUseAgree = 'yes'
+        if(System.getenv('CI') == 'true') {
             tag('CI')
         }
     }
 }
-

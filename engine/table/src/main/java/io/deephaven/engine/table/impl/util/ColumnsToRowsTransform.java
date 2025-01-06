@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -207,7 +206,7 @@ public class ColumnsToRowsTransform {
             final String[] sourceColumns = new String[sourceColumnCount];
             final MutableInt columnIndex = new MutableInt();
             final ModifiedColumnSet modifyAll = querySource
-                    .newModifiedColumnSet(expandSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    .newModifiedColumnSet(expandSet.toArray(String[]::new));
             final ModifiedColumnSet[] modifyOneRow = new ModifiedColumnSet[labels.length];
             // noinspection unchecked
             final List<String>[] sourcesForRow = new ArrayList[labels.length];
@@ -233,7 +232,7 @@ public class ColumnsToRowsTransform {
 
             for (int cc = 0; cc < labels.length; ++cc) {
                 modifyOneRow[cc] = querySource
-                        .newModifiedColumnSet(sourcesForRow[cc].toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        .newModifiedColumnSet(sourcesForRow[cc].toArray(String[]::new));
             }
 
             final ModifiedColumnSet.Transformer transformer =

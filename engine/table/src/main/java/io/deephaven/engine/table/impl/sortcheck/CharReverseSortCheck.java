@@ -38,12 +38,8 @@ public class CharReverseSortCheck implements SortCheck {
 
     // region comparison functions
     // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-    private static int doComparison(char lhs, char rhs) {
-        return -1 * CharComparisons.compare(lhs, rhs);
+    private static boolean leq(char lhs, char rhs) {
+        return CharComparisons.geq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(char lhs, char rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

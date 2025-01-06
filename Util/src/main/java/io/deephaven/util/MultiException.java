@@ -105,7 +105,7 @@ public class MultiException extends Exception {
     @Override
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
-        sb.append(super.getMessage()).append(": \n");
+        sb.append(super.getMessage()).append(":\n");
         for (int i = 0; i < causes.length; i++) {
             sb.append("Cause ").append(i).append(": ");
             sb.append(causes[i].toString());

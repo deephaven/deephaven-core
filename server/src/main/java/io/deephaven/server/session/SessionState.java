@@ -43,6 +43,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
@@ -417,7 +418,6 @@ public class SessionState {
      * the close() method be idempotent, but when combined with {@link #removeOnCloseCallback(Closeable)}, close() will
      * only be called once from this class.
      * <p>
-     * </p>
      * If called after the session has expired, this will throw, and the close() method on the provided instance will
      * not be called.
      *
@@ -436,7 +436,7 @@ public class SessionState {
 
     /**
      * Remove an on-close callback bound to the life of the session.
-     * <p />
+     * <p>
      * A common pattern to use this will be for an object to try to remove itself, and if it succeeds, to call its own
      * {@link Closeable#close()}. If it fails, it can expect to have close() be called automatically.
      *
@@ -525,7 +525,6 @@ public class SessionState {
      * Note: we reuse ExportObject for non-exporting tasks that have export dependencies.
      *
      * @param <T> Is context-sensitive depending on the export.
-     *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
      *          itself. Non-exports do not publish state changes.
      */
@@ -718,7 +717,7 @@ public class SessionState {
                 return;
             }
 
-            this.exportMain = exportMain;
+            this.exportMain = Objects.requireNonNull(exportMain);
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
@@ -798,6 +797,13 @@ public class SessionState {
          */
         public Ticket getExportId() {
             return ExportTicketHelper.wrapExportIdInTicket(exportId);
+        }
+
+        /**
+         * @return the export id for this export
+         */
+        public int getExportIdInt() {
+            return exportId;
         }
 
         /**
@@ -1133,6 +1139,7 @@ public class SessionState {
             }
         }
 
+        @OverridingMethodsMustInvokeSuper
         @Override
         protected synchronized void destroy() {
             super.destroy();
@@ -1313,6 +1320,7 @@ public class SessionState {
                 @Nullable final Exception cause,
                 @Nullable final String dependentExportId);
     }
+
     @FunctionalInterface
     public interface ExportErrorGrpcHandler {
         /**
@@ -1368,7 +1376,6 @@ public class SessionState {
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
@@ -1506,6 +1513,21 @@ public class SessionState {
         }
 
         /**
+         * Invoke this method to set the {@link StreamObserver} to be
+         * {@link io.deephaven.extensions.barrage.util.GrpcUtil#safelyComplete(StreamObserver) safely completed} if this
+         * export succeeds. Only one success handler may be set. Exactly one of the onError and onSuccess handlers will
+         * be invoked.
+         * <p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         *
+         * @param streamObserver the streamObserver to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onSuccess(final StreamObserver<?> streamObserver) {
+            return onSuccess(() -> safelyComplete(streamObserver));
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
@@ -1515,6 +1537,9 @@ public class SessionState {
          *
          * @param exportMain the callable that generates the export
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
             export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
@@ -1531,6 +1556,9 @@ public class SessionState {
          *
          * @param exportMain the runnable to execute once dependencies have resolved
          * @return the submitted export object
+         * @apiNote For exports used in RPC handling, it is recommended to use {@link #onSuccess onSuccess} for result
+         *          message (unary) and completion (unary or streaming) delivery, rather than from {@code exportMain}.
+         *          This allows clients to observe performance results more predictably.
          */
         public ExportObject<T> submit(final Runnable exportMain) {
             return submit(() -> {
@@ -1555,7 +1583,7 @@ public class SessionState {
     }
 
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =
-            new KeyedIntObjectKey.BasicStrict<ExportObject<?>>() {
+            new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
                 public int getIntKey(final ExportObject<?> exportObject) {
                     return exportObject.exportId;
@@ -1563,7 +1591,7 @@ public class SessionState {
             };
 
     private final KeyedIntObjectHash.ValueFactory<ExportObject<?>> EXPORT_OBJECT_VALUE_FACTORY =
-            new KeyedIntObjectHash.ValueFactory.Strict<ExportObject<?>>() {
+            new KeyedIntObjectHash.ValueFactory.Strict<>() {
                 @Override
                 public ExportObject<?> newValue(final int key) {
                     if (isExpired()) {

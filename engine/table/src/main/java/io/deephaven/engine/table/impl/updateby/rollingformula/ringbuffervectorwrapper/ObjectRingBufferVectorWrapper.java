@@ -9,7 +9,7 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.ObjectVectorSlice;
 
-public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBufferVectorWrapper {
+public class ObjectRingBufferVectorWrapper<T> implements ObjectVector<T>, RingBufferVectorWrapper<ObjectVector<T>> {
     private final ObjectRingBuffer<T> ringBuffer;
     private final Class<T> componentType;
 

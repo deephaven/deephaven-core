@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.TestCatalog;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
@@ -10,18 +11,25 @@ import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
 import org.apache.iceberg.exceptions.NoSuchNamespaceException;
-import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.io.ResolvingFileIO;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
 
-public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
+public class IcebergTestCatalog implements Catalog, SupportsNamespaces, AutoCloseable {
     private final Map<Namespace, Map<TableIdentifier, Table>> namespaceTableMap;
     private final Map<TableIdentifier, Table> tableMap;
 
-    private IcebergTestCatalog(final String path, final FileIO fileIO) {
+    private final ResolvingFileIO fileIO;
+
+    private IcebergTestCatalog(final String path, @NotNull final Map<String, String> properties) {
         namespaceTableMap = new HashMap<>();
         tableMap = new HashMap<>();
+        final Configuration hadoopConf = new Configuration();
+        fileIO = new ResolvingFileIO();
+        fileIO.setConf(hadoopConf);
+        fileIO.initialize(properties);
 
         // Assume first level is namespace.
         final File root = new File(path);
@@ -44,8 +52,8 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
         }
     }
 
-    public static IcebergTestCatalog create(final String path, final FileIO fileIO) {
-        return new IcebergTestCatalog(path, fileIO);
+    public static IcebergTestCatalog create(final String path, @NotNull final Map<String, String> properties) {
+        return new IcebergTestCatalog(path, properties);
     }
 
     @Override
@@ -102,5 +110,10 @@ public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
     @Override
     public boolean removeProperties(Namespace namespace, Set<String> set) throws NoSuchNamespaceException {
         return false;
+    }
+
+    @Override
+    public void close() {
+        fileIO.close();
     }
 }

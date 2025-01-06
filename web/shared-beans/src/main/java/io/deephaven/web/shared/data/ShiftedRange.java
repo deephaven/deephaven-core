@@ -31,4 +31,16 @@ public class ShiftedRange implements Serializable {
     public void setDelta(final long delta) {
         this.delta = delta;
     }
+
+    public Range getResultRange() {
+        return range.shift(delta);
+    }
+
+    @Override
+    public String toString() {
+        return "ShiftedRange{" +
+                "range=" + range +
+                ", delta=" + delta +
+                '}';
+    }
 }

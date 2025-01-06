@@ -15,29 +15,38 @@ dependencies {
     implementation project(':Util')
     implementation project(':Configuration')
     implementation project(':log-factory')
+    implementation project(':util-thread')
 
-    Classpaths.inheritAWSSDK(project)
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     // For OSUtil
     testImplementation project(':Stats')
 
-    Classpaths.inheritAutoService(project)
-    Classpaths.inheritImmutables(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    testImplementation 'software.amazon.awssdk:s3-transfer-manager'
-    Classpaths.inheritTestContainers(project)
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testImplementation libs.awssdk.s3.transfer.manager
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test {

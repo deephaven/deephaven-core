@@ -9,10 +9,11 @@ dependencies {
     api project(':java-client-flight')
     api project(':java-client-session-dagger')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    implementation libs.slf4j.api
+    testRuntimeOnly libs.slf4j.simple
 
     // Unable to use newer junit here because of test-libs/junit-wall-4.11.jar
     /*
@@ -23,7 +24,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     */
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testImplementation project(':server')
     testImplementation project(':server-test-utils')

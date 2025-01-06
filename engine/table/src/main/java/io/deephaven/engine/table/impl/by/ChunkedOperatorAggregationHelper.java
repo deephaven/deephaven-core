@@ -60,10 +60,6 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
-    static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
-            Configuration.getInstance().getBooleanWithDefault(
-                    "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
-                    true);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -167,14 +163,13 @@ public class ChunkedOperatorAggregationHelper {
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
         if (dataIndex != null && initialKeys == null && !input.isRefreshing()) {
-            return staticIndexedAggregation(dataIndex, keyNames, ac);
+            return staticIndexedAggregation(input, dataIndex, keyNames, ac);
         }
 
         final Table symbolTable;
         final boolean useSymbolTable;
         if (!input.isRefreshing() && control.considerSymbolTables(input, dataIndex != null, keySources)) {
             Assert.eq(keySources.length, "keySources.length", 1);
-
             symbolTable = ((SymbolTableSource<?>) keySources[0]).getStaticSymbolTable(input.getRowSet(),
                     control.useSymbolTableLookupCaching());
             useSymbolTable = control.useSymbolTables(input.size(), symbolTable.size());
@@ -317,31 +312,19 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table symbolTableToUse) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
-            if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
-                stateManager = TypedHasherFactory.make(
-                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
-                        reinterpretedKeySources,
-                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
-            } else {
-                stateManager = TypedHasherFactory.make(
-                        IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
-                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
-            }
+            stateManager = TypedHasherFactory.make(
+                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                    reinterpretedKeySources,
+                    keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                    control.getTargetLoadFactor());
         } else {
             if (symbolTableToUse != null) {
                 stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
                         symbolTableToUse);
-            } else if (USE_OPEN_ADDRESSED_STATE_MANAGER) {
+            } else {
                 stateManager = TypedHasherFactory.make(
                         StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
                         reinterpretedKeySources,
-                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
-            } else {
-                stateManager = TypedHasherFactory.make(
-                        StaticChunkedOperatorAggregationStateManagerTypedBase.class, reinterpretedKeySources,
                         keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
             }
@@ -1635,6 +1618,7 @@ public class ChunkedOperatorAggregationHelper {
 
     @NotNull
     private static QueryTable staticIndexedAggregation(
+            final QueryTable input,
             final BasicDataIndex dataIndex,
             final String[] keyNames,
             final AggregationContext ac) {
@@ -1644,10 +1628,22 @@ public class ChunkedOperatorAggregationHelper {
 
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
 
-        // Add the index key columns directly to the result table.
-        final Table indexKeyTable = indexTable.flatten().select(keyNames);
-        for (final String keyName : keyNames) {
-            resultColumnSourceMap.put(keyName, indexKeyTable.getColumnSource(keyName));
+        // Add the index table's key columns directly to the result table (after flattening and selecting).
+        final Table indexKeyTable = indexTable.flatten().select(dataIndex.keyColumnNames().toArray(String[]::new));
+        // Index key names corresponding to the input key names in the order of the input key names
+        final String[] dataIndexKeyNames = new String[keyNames.length];
+        final Map<String, ColumnSource<?>> inputNamesToSources = input.getColumnSourceMap();
+        final Map<ColumnSource<?>, String> indexedSourcesToNames = dataIndex.keyColumnNamesByIndexedColumn();
+        for (int ki = 0; ki < keyNames.length; ki++) {
+            final String keyName = keyNames[ki];
+            // Note that we must be careful to find the index key column sources by indexed (input) column source, not
+            // by input key name, as the input key names may not match the indexed column names.
+            // We build dataIndexKeyNames as part of this mapping, so we can use them for the row lookup remapping.
+            final ColumnSource<?> keyColumnSource = inputNamesToSources.get(keyName);
+            final String dataIndexKeyName = indexedSourcesToNames.get(keyColumnSource);
+            dataIndexKeyNames[ki] = dataIndexKeyName;
+            final ColumnSource<?> indexKeyColumnSource = indexKeyTable.getColumnSource(dataIndexKeyName);
+            resultColumnSourceMap.put(keyName, indexKeyColumnSource);
         }
         ac.getResultColumns(resultColumnSourceMap);
 
@@ -1664,7 +1660,7 @@ public class ChunkedOperatorAggregationHelper {
         // Create a lookup function from the index table
         ac.supplyRowLookup(() -> {
             final ToLongFunction<Object> lookupKeyToRowKey =
-                    DataIndexUtils.buildRowKeyMappingFunction(indexKeyTable, keyNames);
+                    DataIndexUtils.buildRowKeyMappingFunction(indexKeyTable, dataIndexKeyNames);
             return key -> (int) lookupKeyToRowKey.applyAsLong(key);
         });
 

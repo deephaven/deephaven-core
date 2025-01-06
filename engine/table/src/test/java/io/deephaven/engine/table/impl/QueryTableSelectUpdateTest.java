@@ -3,23 +3,23 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.TableOperations;
+import io.deephaven.api.*;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterIn;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.DhFormulaColumn;
-import io.deephaven.engine.table.impl.select.FormulaCompilationException;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -33,6 +33,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -42,15 +43,19 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test QueryTable select and update operations.
@@ -1299,5 +1304,363 @@ public class QueryTableSelectUpdateTest {
             final BaseTable<?> result = (BaseTable<?>) op.invoke(blink, "I = ii", "J = I_[ii - 1]");
             Assert.assertTrue(result.isBlink());
         }
+    }
+
+    @Test
+    public void testFilterExpression() {
+        final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(1), Literal.of(3));
+        final Table t = TableTools.newTable(intCol("A", 1, 1, 2, 3, 5, 8));
+        final Table wm = t.wouldMatch(new WouldMatchPair("AWM", filter));
+
+        // use an update
+        final Table up = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+        assertTableEquals(wm, up);
+
+        // use an updateView
+        final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+        assertTableEquals(wm, upv);
+
+        // Test the getBoolean method
+        assertEquals(true, upv.getColumnSource("AWM").get(t.getRowSet().get(0)));
+        assertEquals(false, upv.getColumnSource("AWM").get(t.getRowSet().get(2)));
+
+        // and now a more generic WhereFilter
+
+        final Filter filter2 = WhereFilterFactory.getExpression("A == 1 || A==3");
+        final Table wm2 = t.wouldMatch(new WouldMatchPair("AWM", filter2));
+
+        // use an update
+        final Table up2 = t.update(List.of(Selectable.of(ColumnName.of("AWM"), filter2)));
+        assertTableEquals(wm2, up2);
+
+        // a Filter where nothing is true, to check that state
+        final Table upvf = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofFalse())));
+        assertTableEquals(t.updateView("AWM=false"), upvf);
+
+        // a Filter where everything is true
+        final Table upvt = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), Filter.ofTrue())));
+        assertTableEquals(t.updateView("AWM=true"), upvt);
+
+        // a Filter where the last value in the chunk is true
+        final Filter filter3 = WhereFilterFactory.getExpression("A in 8");
+        final Table wm3 = t.wouldMatch(new WouldMatchPair("AWM", filter3));
+        final Table upv3 = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter3)));
+        assertTableEquals(wm3, upv3);
+    }
+
+    @Test
+    public void testFilterExpressionGetPrev() {
+        final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(2), Literal.of(4));
+        final QueryTable t = TstUtils.testRefreshingTable(i(2, 4, 6, 8).toTracking(), intCol("A", 1, 2, 3, 4));
+        // noinspection resource
+        final TrackingWritableRowSet rs = t.getRowSet().writableCast();
+
+        // use an updateView
+        final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+
+        // Test the getBoolean method
+        ColumnSource<Object> resultColumn = upv.getColumnSource("AWM");
+        assertEquals(false, resultColumn.get(rs.get(0)));
+        assertEquals(true, resultColumn.get(rs.get(1)));
+        assertEquals(false, resultColumn.get(rs.get(2)));
+        assertEquals(true, resultColumn.get(rs.get(3)));
+
+        // and do it with chunks
+        try (final CloseableIterator<Object> awm = upv.columnIterator("AWM")) {
+            assertEquals(Arrays.asList(false, true, false, true), awm.stream().collect(Collectors.toList()));
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            assertEquals(false, resultColumn.get(t.getRowSet().get(0)));
+            assertEquals(true, resultColumn.get(t.getRowSet().get(1)));
+            assertEquals(false, resultColumn.get(t.getRowSet().get(2)));
+            assertEquals(true, resultColumn.get(t.getRowSet().get(3)));
+
+            final RowSet prevRowset = rs.prev();
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(0)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(1)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(2)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(3)));
+
+            addToTable(t, i(1, 2, 9), intCol("A", 2, 2, 4));
+            removeRows(t, i(8));
+            rs.insert(i(1, 9));
+            rs.remove(8);
+            t.notifyListeners(i(1, 9), i(8), i());
+
+            // with a chunk
+            try (final ChunkSource.GetContext fc = resultColumn.makeGetContext(4)) {
+                final ObjectChunk<Boolean, ? extends Values> prevValues =
+                        resultColumn.getPrevChunk(fc, prevRowset).asObjectChunk();
+                assertEquals(false, prevValues.get(0));
+                assertEquals(true, prevValues.get(1));
+                assertEquals(false, prevValues.get(2));
+                assertEquals(true, prevValues.get(3));
+            }
+
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(0)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(1)));
+            assertEquals(false, resultColumn.getPrev(prevRowset.get(2)));
+            assertEquals(true, resultColumn.getPrev(prevRowset.get(3)));
+
+            assertEquals(true, resultColumn.get(rs.get(0)));
+            assertEquals(true, resultColumn.get(rs.get(1)));
+            assertEquals(true, resultColumn.get(rs.get(2)));
+            assertEquals(false, resultColumn.get(rs.get(3)));
+            assertEquals(true, resultColumn.get(rs.get(4)));
+        });
+    }
+
+    @Test
+    public void testFilterExpressionFillChunkPerformance() {
+        testFilterExpressionFillChunkPerformance(1.0);
+        testFilterExpressionFillChunkPerformance(.9999);
+        testFilterExpressionFillChunkPerformance(.999);
+        testFilterExpressionFillChunkPerformance(.8725);
+        testFilterExpressionFillChunkPerformance(.75);
+        testFilterExpressionFillChunkPerformance(.5);
+        testFilterExpressionFillChunkPerformance(.25);
+        testFilterExpressionFillChunkPerformance(.125);
+        testFilterExpressionFillChunkPerformance(0.001);
+        testFilterExpressionFillChunkPerformance(0.0001);
+    }
+
+    public void testFilterExpressionFillChunkPerformance(final double density) {
+        final int numIterations = 1;
+        final int size = 100_000;
+        final Filter filter = FilterIn.of(ColumnName.of("A"), Literal.of(1));
+
+        final Random random = new Random(20241120);
+        final List<Boolean> values = IntStream.range(0, size).mapToObj(ignored -> random.nextDouble() < density)
+                .collect(Collectors.toList());
+        QueryScope.addParam("values", values);
+        final Table t = TableTools.emptyTable(size).update("A=(Boolean)(values[i]) ? 1: 0");
+        QueryScope.addParam("values", null);
+
+        final Table upv = t.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter)));
+        final long startTime = System.nanoTime();
+        for (int iters = 0; iters < numIterations; ++iters) {
+            final long trueValues = upv.columnIterator("AWM").stream().filter(x -> (Boolean) x).count();
+            assertEquals(values.stream().filter(x -> x).count(), trueValues);
+        }
+        final long endTime = System.nanoTime();
+        final double duration = endTime - startTime;
+        System.out.println("Density: " + new DecimalFormat("0.0000").format(density) + ", Nanos: " + (long) duration
+                + ", per cell=" + new DecimalFormat("0.00").format(duration / (size * numIterations)));
+    }
+
+    @Test
+    public void testFilterExpressionArray() {
+        final Filter filter = WhereFilterFactory.getExpression("A=A_[i-1]");
+        final Filter filterArrayOnly = WhereFilterFactory.getExpression("A=A_.size() = 1");
+        final Filter filterKonly = WhereFilterFactory.getExpression("A=k+1");
+        final QueryTable setTable = TstUtils.testRefreshingTable(intCol("B"));
+        final Filter whereIn = new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpression("A=B"));
+        final QueryTable table = TstUtils.testRefreshingTable(intCol("A", 1, 1, 2, 3, 5, 8, 9, 9));
+
+        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
+        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]",
+                wme.getMessage());
+
+        final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
+        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]",
+                wme2.getMessage());
+
+        final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals(
+                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                upe.getMessage());
+
+        final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
+        Assert.assertEquals(
+                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                uve.getMessage());
+
+        final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                se.getMessage());
+
+        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
+        Assert.assertEquals(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                ve.getMessage());
+
+        final UncheckedTableException dw = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), whereIn))));
+        Assert.assertEquals(
+                "Cannot use a refreshing filter in select, view, update, or updateView: DynamicWhereFilter([A=B])",
+                dw.getMessage());
+
+    }
+
+    @Test
+    public void testFilterExpressionTicking() {
+        for (int seed = 0; seed < 5; ++seed) {
+            testFilterExpressionTicking(seed, new MutableInt(100));
+        }
+    }
+
+    private void testFilterExpressionTicking(final int seed, final MutableInt numSteps) {
+        final Random random = new Random(seed);
+        final ColumnInfo<?, ?>[] columnInfo;
+        final int size = 25;
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"),
+                        queryTable.update(List.of(Selectable.of(ColumnName.of("SM"),
+                                WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("SM=Sym in `b`, `d`"),
+                        queryTable.updateView(List.of(Selectable.of(ColumnName.of("SM"),
+                                WhereFilterFactory.getExpression("Sym in `b`, `d`"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"),
+                        queryTable.update(List.of(
+                                Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=intCol < 50"),
+                        queryTable.updateView(List.of(
+                                Selectable.of(ColumnName.of("IM"), WhereFilterFactory.getExpression("intCol < 50"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"),
+                        queryTable.update(List.of(Selectable.of(ColumnName.of("IM"),
+                                WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+                new TableComparator(queryTable.wouldMatch("IM=Sym= (intCol%2 == 0? `a` : `b`)"),
+                        queryTable.updateView(List.of(Selectable.of(ColumnName.of("IM"),
+                                WhereFilterFactory.getExpression("Sym= (intCol%2 == 0? `a` : `b`)"))))),
+        };
+
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + numSteps.get());
+            }
+            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
+        }
+    }
+
+    @Test
+    public void testAlwaysUpdate() {
+        final MutableInt count = new MutableInt(0);
+        final MutableInt count2 = new MutableInt(0);
+        QueryScope.addParam("__COUNT1", count);
+        QueryScope.addParam("__COUNT2", count2);
+        final QueryTable base = testRefreshingTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                stringCol("Thing", "A", "B", "C", "D", "E", "F", "G", "H", "I"));
+
+        final SelectColumn sc1 = SelectColumnFactory.getExpression("NormalCount=__COUNT1.getAndIncrement()");
+        final SelectColumn sc2 =
+                SelectColumnFactory.getExpression("AlwaysCount=__COUNT2.getAndIncrement()")
+                        .withRecomputeOnModifiedRow();
+
+        final Table withUpdates = base.update(Arrays.asList(sc1, sc2));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(base, i(9), intCol("Sentinel", 10), stringCol("Thing", "J"));
+            base.notifyListeners(i(9), i(), i());
+        });
+
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(base, i(0, 2, 4), intCol("Sentinel", 1, 3, 5), stringCol("Thing", "a", "c", "e"));
+            base.notifyListeners(i(), i(), i(0, 2, 4));
+        });
+
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {10, 1, 11, 3, 12, 5, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(5));
+            base.notifyListeners(i(), i(5), i());
+        });
+
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "NormalCount").toArray());
+        assertArrayEquals(new int[] {10, 1, 11, 3, 12, 6, 7, 8, 9},
+                ColumnVectors.ofInt(withUpdates, "AlwaysCount").toArray());
+    }
+
+    @Test
+    public void testAlwaysUpdateMCS() {
+        final AtomicInteger a = new AtomicInteger(100);
+        QueryScope.addParam("a", a);
+        final AtomicInteger b = new AtomicInteger(200);
+        QueryScope.addParam("b", b);
+        final QueryTable base = testRefreshingTable(RowSetFactory.fromKeys(10, 11).toTracking(),
+                intCol("Sentinel", 1, 2), intCol("B", 10, 11));
+
+        final SelectColumn x =
+                SelectColumnFactory.getExpression("X = a.getAndIncrement()").withRecomputeOnModifiedRow();
+
+        final Table withUpdates = base.update(Arrays.asList(x, SelectColumnFactory.getExpression("Y=1"),
+                SelectColumnFactory.getExpression("Z=B+b.getAndIncrement()")));
+
+        final PrintListener pl = new PrintListener("withUpdates", withUpdates, 10);
+
+        final SimpleListener simpleListener = new SimpleListener(withUpdates);
+        withUpdates.addUpdateListener(simpleListener);
+
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 1, 2), intCol("B", 10, 11), intCol("X", 100, 101),
+                intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(base, i(10), intCol("Sentinel", 3), intCol("B", 10));
+            base.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(10), RowSetShiftData.EMPTY, base.newModifiedColumnSet("Sentinel")));
+        });
+
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 2), intCol("B", 10, 11), intCol("X", 102, 101),
+                intCol("Y", 1, 1), intCol("Z", 210, 212)), withUpdates);
+
+        assertEquals(1, simpleListener.count);
+        assertEquals(i(), simpleListener.update.added());
+        assertEquals(i(), simpleListener.update.removed());
+        assertEquals(i(10), simpleListener.update.modified());
+        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "X"),
+                simpleListener.update.modifiedColumnSet());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(base, i(11), intCol("Sentinel", 4), intCol("B", 12));
+            base.notifyListeners(new TableUpdateImpl(i(), i(), i(11), RowSetShiftData.EMPTY,
+                    base.newModifiedColumnSet("Sentinel", "B")));
+        });
+
+        assertTableEquals(TableTools.newTable(intCol("Sentinel", 3, 4), intCol("B", 10, 12), intCol("X", 102, 103),
+                intCol("Y", 1, 1), intCol("Z", 210, 214)), withUpdates);
+
+        assertEquals(2, simpleListener.count);
+        assertEquals(i(), simpleListener.update.added());
+        assertEquals(i(), simpleListener.update.removed());
+        assertEquals(i(11), simpleListener.update.modified());
+        assertEquals(((QueryTable) withUpdates).newModifiedColumnSet("Sentinel", "B", "X", "Z"),
+                simpleListener.update.modifiedColumnSet());
+
+        QueryScope.addParam("a", null);
+        QueryScope.addParam("b", null);
     }
 }

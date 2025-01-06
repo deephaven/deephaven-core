@@ -7,8 +7,43 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
-import io.deephaven.qst.table.*;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
+import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.DropColumnsTable;
+import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.table.ExactJoinTable;
+import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InputTable;
+import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.LazyUpdateTable;
+import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MultiJoinInput;
+import io.deephaven.qst.table.MultiJoinTable;
+import io.deephaven.qst.table.NaturalJoinTable;
+import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.ParentsVisitor;
+import io.deephaven.qst.table.RangeJoinTable;
+import io.deephaven.qst.table.ReverseTable;
+import io.deephaven.qst.table.SelectDistinctTable;
+import io.deephaven.qst.table.SelectTable;
+import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SliceTable;
+import io.deephaven.qst.table.SnapshotTable;
+import io.deephaven.qst.table.SnapshotWhenTable;
+import io.deephaven.qst.table.SortTable;
+import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpec.Visitor;
+import io.deephaven.qst.table.TailTable;
+import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
+import io.deephaven.qst.table.UpdateByTable;
+import io.deephaven.qst.table.UpdateTable;
+import io.deephaven.qst.table.UpdateViewTable;
+import io.deephaven.qst.table.ViewTable;
+import io.deephaven.qst.table.WhereInTable;
+import io.deephaven.qst.table.WhereTable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -99,6 +134,22 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
+    public Void visit(MultiJoinTable multiJoinTable) {
+        final List<MultiJoinInput<TABLE>> inputs =
+                multiJoinTable.inputs().stream().map(this::adapt).collect(Collectors.toList());
+        addTable(multiJoinTable, tableCreation.multiJoin(inputs));
+        return null;
+    }
+
+    private MultiJoinInput<TABLE> adapt(MultiJoinInput<TableSpec> input) {
+        return MultiJoinInput.<TABLE>builder()
+                .table(table(input.table()))
+                .addAllMatches(input.matches())
+                .addAllAdditions(input.additions())
+                .build();
+    }
+
+    @Override
     public Void visit(MergeTable mergeTable) {
         List<TABLE> tables =
                 mergeTable.tables().stream().map(this::table).collect(Collectors.toList());
@@ -115,6 +166,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public Void visit(TailTable tailTable) {
         addOp(tailTable, parentOps(tailTable).tail(tailTable.size()));
+        return null;
+    }
+
+    @Override
+    public Void visit(SliceTable sliceTable) {
+        addOp(sliceTable,
+                parentOps(sliceTable).slice(sliceTable.firstPositionInclusive(), sliceTable.lastPositionExclusive()));
         return null;
     }
 

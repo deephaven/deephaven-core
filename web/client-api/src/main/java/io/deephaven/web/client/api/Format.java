@@ -10,12 +10,16 @@ import elemental2.core.JsString;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
+import java.util.Objects;
+
 /**
  * This object may be pooled internally or discarded and not updated. Do not retain references to it.
  */
 @TsInterface
 @TsName(namespace = "dh")
-public class Format {
+public final class Format {
+    public static final Format EMPTY = new Format(0, 0, null, null);
+
     private final long cellColors;
     private final long rowColors;
 
@@ -23,8 +27,8 @@ public class Format {
     private final String formatString;
 
     public Format(long cellColors, long rowColors, String numberFormat, String formatString) {
-        this.cellColors = cellColors;
-        this.rowColors = rowColors;
+        this.cellColors = cellColors == Long.MIN_VALUE ? 0 : cellColors;
+        this.rowColors = rowColors == Long.MIN_VALUE ? 0 : rowColors;
         this.numberFormat = numberFormat;
         this.formatString = formatString;
     }
@@ -103,4 +107,30 @@ public class Format {
         return formatString;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Format format = (Format) o;
+        return cellColors == format.cellColors && rowColors == format.rowColors
+                && Objects.equals(numberFormat, format.numberFormat)
+                && Objects.equals(formatString, format.formatString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cellColors, rowColors, numberFormat, formatString);
+    }
+
+    @Override
+    public String toString() {
+        return "Format{" +
+                "cellColors=" + cellColors +
+                ", rowColors=" + rowColors +
+                ", numberFormat='" + numberFormat + '\'' +
+                ", formatString='" + formatString + '\'' +
+                '}';
+    }
 }

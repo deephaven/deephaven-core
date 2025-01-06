@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -16,6 +15,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -55,7 +55,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKeyAllNulls() {
         final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]).t;
+                ArrayTypeUtils.EMPTY_STRING_ARRAY, new TestDataGenerator[0]).t;
 
         final Table result = t.updateBy(List.of(
                 UpdateByOperation.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",

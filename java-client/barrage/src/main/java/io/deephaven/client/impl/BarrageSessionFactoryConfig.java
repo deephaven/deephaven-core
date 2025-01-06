@@ -4,21 +4,54 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.client.grpc.UserAgentUtility;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Immutable
 @BuildableStyle
 public abstract class BarrageSessionFactoryConfig {
     private static final SessionConfig SESSION_CONFIG_EMPTY = SessionConfig.builder().build();
 
+    static final List<String> VERSION_PROPERTIES = Collections.unmodifiableList(Stream.concat(
+            FlightSessionFactoryConfig.VERSION_PROPERTIES.stream(),
+            Stream.of(UserAgentUtility.versionProperty("barrage", BarrageMessageWrapper.class)))
+            .collect(Collectors.toUnmodifiableList()));
+
+    private static final String DEEPHAVEN_JAVA_CLIENT_BARRAGE = "deephaven-java-client-barrage";
+
+    private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
+            .userAgent(userAgent(List.of(DEEPHAVEN_JAVA_CLIENT_BARRAGE)))
+            .build();
+
     public static Builder builder() {
         return ImmutableBarrageSessionFactoryConfig.builder();
+    }
+
+    /**
+     * Constructs a <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents">grpc
+     * user-agent</a> with {@code grpc-java}, {@code deephaven}, {@code flight}, and {@code barrage} versions, with the
+     * addition of {@code extraProperties}.
+     *
+     * @param extraProperties the extra properties
+     * @return the user-agent
+     * @see UserAgentUtility#userAgent(List)
+     */
+    public static String userAgent(List<String> extraProperties) {
+        return UserAgentUtility.userAgent(Stream.concat(
+                VERSION_PROPERTIES.stream(),
+                extraProperties.stream())
+                .collect(Collectors.toList()));
     }
 
     /**
@@ -27,11 +60,12 @@ public abstract class BarrageSessionFactoryConfig {
     public abstract ClientConfig clientConfig();
 
     /**
-     * The client channel factory. By default is {@link ClientChannelFactory#defaultInstance()}.
+     * The client channel factory. By default, is a factory that sets a user-agent which includes relevant versions (see
+     * {@link #userAgent(List)}) and the property {@value DEEPHAVEN_JAVA_CLIENT_BARRAGE}.
      */
     @Default
     public ClientChannelFactory clientChannelFactory() {
-        return ClientChannelFactory.defaultInstance();
+        return CLIENT_CHANNEL_FACTORY;
     }
 
     /**

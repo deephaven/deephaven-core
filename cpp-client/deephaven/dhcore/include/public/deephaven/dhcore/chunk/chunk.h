@@ -160,61 +160,70 @@ private:
 };
 
 /**
- * For convenience.
+ * Convenience using.
  */
 using CharChunk = GenericChunk<char16_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using Int8Chunk = GenericChunk<int8_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using UInt8Chunk = GenericChunk<uint8_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using Int16Chunk = GenericChunk<int16_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using UInt16Chunk = GenericChunk<uint16_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using Int32Chunk = GenericChunk<int32_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using UInt32Chunk = GenericChunk<uint32_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using Int64Chunk = GenericChunk<int64_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using UInt64Chunk = GenericChunk<uint64_t>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using FloatChunk = GenericChunk<float>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using DoubleChunk = GenericChunk<double>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using BooleanChunk = GenericChunk<bool>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using StringChunk = GenericChunk<std::string>;
 /**
- * Convenience typedef.
+ * Convenience using.
  */
 using DateTimeChunk = GenericChunk<deephaven::dhcore::DateTime>;
+/**
+ * Convenience using.
+ */
+using LocalDateChunk = GenericChunk<deephaven::dhcore::LocalDate>;
+/**
+ * Convenience using.
+ */
+using LocalTimeChunk = GenericChunk<deephaven::dhcore::LocalTime>;
+
 
 /**
  * Abstract base class that implements the visitor pattern for Chunk.
@@ -272,6 +281,11 @@ public:
   /**
    * Implements the visitor pattern.
    */
+  virtual void Visit(const LocalDateChunk &) = 0;
+  /**
+   * Implements the visitor pattern.
+   */
+  virtual void Visit(const LocalTimeChunk &) = 0;
 };
 
 template<typename T>
@@ -286,7 +300,8 @@ void GenericChunk<T>::AcceptVisitor(ChunkVisitor *visitor) const {
  */
 class AnyChunk {
   using variant_t = std::variant<CharChunk, Int8Chunk, Int16Chunk, Int32Chunk, Int64Chunk,
-     UInt64Chunk, FloatChunk, DoubleChunk, BooleanChunk, StringChunk, DateTimeChunk>;
+     UInt64Chunk, FloatChunk, DoubleChunk, BooleanChunk, StringChunk, DateTimeChunk,
+     LocalDateChunk, LocalTimeChunk>;
 
 public:
   /**
@@ -351,8 +366,8 @@ GenericChunk<T> GenericChunk<T>::Create(size_t size) {
 
 template<typename T>
 GenericChunk<T> GenericChunk<T>::CreateView(T *data, size_t size) {
-  // GenericChunks allocated by create() point to an underlying heap-allocated buffer. On the other
-  // hand, GenericChunks created by createView() point to the caller's buffer. In the former case
+  // GenericChunks allocated by Create() point to an underlying heap-allocated buffer. On the other
+  // hand, GenericChunks created by CreateView() point to the caller's buffer. In the former case
   // we own the buffer and need to delete it when there are no more shared_ptrs pointing to it. In
   // the latter case the caller owns the buffer, and we should not try to deallocate it.
   // One might think we have to use two different data structures to handle these two different
