@@ -82,7 +82,7 @@ vertispan-ts-defs = "1.0.0-RC4"
 xerial = "3.47.1.0"
 
 # test versions
-assertj = "3.27.0"
+assertj = "3.27.2"
 h2database = "2.3.232"
 jmock = "2.13.1"
 junit = "5.11.4"
