@@ -105,7 +105,7 @@ message ExecuteCommandRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
-    bool systemic=4;
+    optional bool systemic=4;
 }
 
 message ExecuteCommandResponse {
