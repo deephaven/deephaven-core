@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
-from pydeephaven.ticket import SharedTicket
+from pydeephaven.ticket import SharedTicket, ScopeTicket
 from tests.testbase import BaseTestCase
 
 
@@ -409,6 +409,34 @@ t1 = empty_table(0) if t.size == 2 else None
         for t in threads:
             t.join()
 
+    def test_systemic_scripts(self):
+        with Session() as session:
+            console_script = ("""
+from deephaven import time_table
+import jpy
+
+j_sot = jpy.get_type("io.deephaven.engine.util.systemicmarking.SystemicObjectTracker")
+
+print("SYSTEMIC: " + str(j_sot.isSystemicThread()))
+print("SYSTEMIC_ENABLED: " + str(j_sot.isSystemicObjectMarkingEnabled()))
+
+t1 = time_table("PT1S").update("A=ii")
+t2 = empty_table(1).update("S = (boolean)j_sot.isSystemic(t1.j_table)")
+""")
+            session.run_script(console_script, False)
+            t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
+            pa_data = [
+                pa.array([True])
+            ]
+            fields = [pa.field(f"S", pa.bool_())]
+            schema = pa.schema(fields)
+
+            pa_table = pa.table(pa_data, schema=schema)
+
+            print(pa_table.to_string(preview_cols=1))
+            print(t.to_arrow().to_string(preview_cols=1))
+            self.assertTrue(pa_table.equals(t.to_arrow()))
+            self.assertFalse(True)
 
 if __name__ == '__main__':
     unittest.main()

@@ -102,13 +102,20 @@ message LogSubscriptionData {
 }
 
 message ExecuteCommandRequest {
+    enum SystemicType {
+        NOT_SET_SYSTEMIC = 0;
+        EXECUTE_NOT_SYSTEMIC = 1;
+        EXECUTE_SYSTEMIC = 2;
+    }
+
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
 
     // If set to `true` the command will be executed systemically.  Failures in systemic code
-    // are treated as important failures and cause the server to shut down
-    optional bool systemic=4;
+    // are treated as important failures and cause the server to shut down.
+    // If this is unset it is treated as `false`
+    optional SystemicType systemic = 4;
 }
 
 message ExecuteCommandResponse {

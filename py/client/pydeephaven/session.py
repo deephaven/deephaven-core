@@ -494,16 +494,17 @@ class Session:
         self.session_service.release(ticket)
 
     # convenience/factory methods
-    def run_script(self, script: str) -> None:
+    def run_script(self, script: str, systemic: bool = False) -> None:
         """Runs the supplied Python script on the server.
 
         Args:
             script (str): the Python script code
+            systemic (bool): Set to True to treat the code as systemically important
 
         Raises:
             DHError
         """
-        response = self.console_service.run_script(script)
+        response = self.console_service.run_script(script, systemic)
         if response.error_message != '':
             raise DHError("could not run script: " + response.error_message)
 

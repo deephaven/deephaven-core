@@ -41,7 +41,7 @@ public interface ConsoleSession extends Closeable {
      * @throws TimeoutException if the request times out
      */
     default Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
-        return executeCode(code, false);
+        return executeCode(code, ExecuteCodeOptions.DEFAULT);
     }
 
     /**
@@ -55,7 +55,7 @@ public interface ConsoleSession extends Closeable {
      * @throws ExecutionException if the request has an exception
      * @throws TimeoutException if the request times out
      */
-    Changes executeCode(String code, boolean systemic)
+    Changes executeCode(String code, ExecuteCodeOptions options)
             throws InterruptedException, ExecutionException, TimeoutException;
 
     /**
@@ -69,12 +69,12 @@ public interface ConsoleSession extends Closeable {
      */
     default Changes executeScript(Path path)
             throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        return executeScript(path, false);
+        return executeScript(path, ExecuteCodeOptions.DEFAULT);
     }
 
     /**
-     * Execute the given {@code path path's} code against the script session. The code may be executed systemically, meaning that
-     * failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code path path's} code against the script session. The code may be executed systemically,
+     * meaning that failures of the executed script constitute failures of the application and cause shut down.
      *
      * @param path the path to the code
      * @param systemic if the code should be executed systemically.
@@ -83,7 +83,7 @@ public interface ConsoleSession extends Closeable {
      * @throws ExecutionException if the request has an exception
      * @throws TimeoutException if the request times out
      */
-    Changes executeScript(Path path, boolean systemic)
+    Changes executeScript(Path path, ExecuteCodeOptions options)
             throws IOException, InterruptedException, ExecutionException, TimeoutException;
 
     /**
@@ -93,7 +93,7 @@ public interface ConsoleSession extends Closeable {
      * @return the changes future
      */
     default CompletableFuture<Changes> executeCodeFuture(String code) {
-        return executeCodeFuture(code, false);
+        return executeCodeFuture(code, ExecuteCodeOptions.DEFAULT);
     }
 
     /**
@@ -104,7 +104,7 @@ public interface ConsoleSession extends Closeable {
      * @param systemic if the code should be executed systemically.
      * @return the changes future
      */
-    CompletableFuture<Changes> executeCodeFuture(String code, boolean systemic);
+    CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options);
 
     /**
      * Execute the given {@code path path's} code against the script session.
@@ -113,18 +113,18 @@ public interface ConsoleSession extends Closeable {
      * @return the changes future
      */
     default CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
-        return executeScriptFuture(path, false);
+        return executeScriptFuture(path, ExecuteCodeOptions.DEFAULT);
     }
 
     /**
-     * Execute the given {@code path path's} code against the script session. The code may be executed systemically, meaning that
-     * failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code path path's} code against the script session. The code may be executed systemically,
+     * meaning that failures of the executed script constitute failures of the application and cause shut down.
      *
      * @param path the path to the code
      * @param systemic if the code should be executed systemically.
      * @return the changes future
      */
-    CompletableFuture<Changes> executeScriptFuture(Path path, boolean systemic) throws IOException;
+    CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options) throws IOException;
 
     /**
      * Closes {@code this} console session.
