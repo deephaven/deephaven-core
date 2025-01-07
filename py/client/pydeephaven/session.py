@@ -494,12 +494,13 @@ class Session:
         self.session_service.release(ticket)
 
     # convenience/factory methods
-    def run_script(self, script: str, systemic: bool = False) -> None:
+    def run_script(self, script: str, systemic: Optional[bool] = None) -> None:
         """Runs the supplied Python script on the server.
 
         Args:
             script (str): the Python script code
-            systemic (bool): Set to True to treat the code as systemically important
+            systemic (bool): Whether to treat the code as systemically important. Defaults to None which uses the
+                    default system behavior
 
         Raises:
             DHError

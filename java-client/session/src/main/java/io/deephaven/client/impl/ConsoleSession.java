@@ -45,11 +45,10 @@ public interface ConsoleSession extends Closeable {
     }
 
     /**
-     * Execute the given {@code code} against the script session. The code may be executed systemically, meaning that
-     * failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code code} against the script session.
      *
      * @param code the code
-     * @param systemic if the code should be executed systemically.
+     * @param options an {@link ExecuteCodeOptions} to control behavior
      * @return the changes
      * @throws InterruptedException if the current thread is interrupted
      * @throws ExecutionException if the request has an exception
@@ -73,11 +72,10 @@ public interface ConsoleSession extends Closeable {
     }
 
     /**
-     * Execute the given {@code path path's} code against the script session. The code may be executed systemically,
-     * meaning that failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code path path's} code against the script session.
      *
      * @param path the path to the code
-     * @param systemic if the code should be executed systemically.
+     * @param options an {@link ExecuteCodeOptions} to control behavior
      * @return the changes
      * @throws InterruptedException if the current thread is interrupted
      * @throws ExecutionException if the request has an exception
@@ -97,11 +95,10 @@ public interface ConsoleSession extends Closeable {
     }
 
     /**
-     * Execute the given {@code code} against the script session. The code may be executed systemically, meaning that
-     * failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code code} against the script session.
      *
      * @param code the code
-     * @param systemic if the code should be executed systemically.
+     * @param options an {@link ExecuteCodeOptions} to control behavior
      * @return the changes future
      */
     CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options);
@@ -117,11 +114,10 @@ public interface ConsoleSession extends Closeable {
     }
 
     /**
-     * Execute the given {@code path path's} code against the script session. The code may be executed systemically,
-     * meaning that failures of the executed script constitute failures of the application and cause shut down.
+     * Execute the given {@code path path's} code against the script session.
      *
      * @param path the path to the code
-     * @param systemic if the code should be executed systemically.
+     * @param options an {@link ExecuteCodeOptions} to control behavior
      * @return the changes future
      */
     CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options) throws IOException;

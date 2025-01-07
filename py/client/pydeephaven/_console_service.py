@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-from typing import Any
+from typing import Any, Optional
 
 from pydeephaven.dherror import DHError
 from deephaven_core.proto import console_pb2_grpc, console_pb2
@@ -32,11 +32,12 @@ class ConsoleService:
                 except Exception as e:
                     raise DHError("failed to start a console.") from e
 
-    def run_script(self, server_script: str, systemic: bool = None) -> Any:
+    def run_script(self, server_script: str, systemic: Optional[bool] = None) -> Any:
         """Runs a Python script in the console.
             Args:
                 server_script (str): The script code to run
-                systemic (bool): Set to True to treat the code as systemically important
+                systemic (bool): Whether to treat the code as systemically important. Defaults to None which uses the
+                    default system behavior
         """
         self.start_console()
 
