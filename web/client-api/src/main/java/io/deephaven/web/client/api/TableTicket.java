@@ -5,8 +5,8 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 
 /**

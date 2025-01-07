@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
