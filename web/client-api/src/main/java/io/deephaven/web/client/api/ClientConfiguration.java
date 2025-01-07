@@ -4,7 +4,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 
 /**
  * A place to assemble various "services" we want to make ubiquitously available in the client by passing around a

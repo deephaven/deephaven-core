@@ -4,8 +4,8 @@
 package io.deephaven.web.client.api.storage;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.Storage_pb;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.storage_pb.ItemInfo;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
