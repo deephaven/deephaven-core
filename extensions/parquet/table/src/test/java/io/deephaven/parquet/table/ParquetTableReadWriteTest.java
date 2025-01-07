@@ -393,6 +393,56 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void remappedIndexRetentionThroughGC() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_remappedIndexRetention_test.parquet").toString();
+        final int tableSize = 10_000;
+
+        final Table testTable = TableTools.emptyTable(tableSize).update(
+                "symbol = randomInt(0,4)",
+                "price = randomInt(0,10000) * 0.01",
+                "str_id = `str_` + String.format(`%08d`, randomInt(0,1_000_000))",
+                "indexed_val = ii % 10_000");
+
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .addIndexColumns("symbol")
+                .addIndexColumns("indexed_val")
+                .build();
+
+        ParquetTools.writeTable(testTable, destPath, writeInstructions);
+
+        final Table child;
+
+        // Read from disk and validate the indexes through GC.
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            Table parent = ParquetTools.readTable(destPath);
+
+            // select() produces in-memory column sources, triggering the remapping of the indexes.
+            child = parent.select();
+
+            // These indexes will survive GC because the parent table is holding strong references.
+            System.gc();
+
+            // The parent table should have the indexes.
+            Assert.eqTrue(DataIndexer.hasDataIndex(parent, "symbol"), "hasDataIndex -> symbol");
+            Assert.eqTrue(DataIndexer.hasDataIndex(parent, "indexed_val"), "hasDataIndex -> indexed_val");
+
+            // The child table should have the indexes while the parent is retained.
+            Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
+            Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
+
+            // Explicitly release the parent table to encourage GC.
+            parent = null;
+        }
+
+        // After a GC, the child table should still have access to the indexes.
+        System.gc();
+
+        Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
+        Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
+    }
+
+    @Test
     public void indexByLongKey() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
