@@ -113,7 +113,7 @@ message ExecuteCommandRequest {
     string code = 3;
 
     // If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
-    // are treated as important failures and cause the server to shut down.
+    // are treated as important failures and cause errors to be reported to the io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier.
     // If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
     optional SystemicType systemic = 4;
 }
