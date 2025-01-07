@@ -112,9 +112,9 @@ message ExecuteCommandRequest {
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
 
-    // If set to `true` the command will be executed systemically.  Failures in systemic code
+    // If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
     // are treated as important failures and cause the server to shut down.
-    // If this is unset it is treated as `false`
+    // If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
     optional SystemicType systemic = 4;
 }
 
