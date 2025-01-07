@@ -64,7 +64,7 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=1.0.0',
+        'jpy>=1.1.0',
         'java-utilities',
         f"deephaven-core[autocomplete]=={_version}",
         'click>=8.1.7',
