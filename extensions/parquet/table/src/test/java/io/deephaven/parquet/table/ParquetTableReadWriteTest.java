@@ -344,27 +344,24 @@ public final class ParquetTableReadWriteTest {
     public void indexRetentionThroughGC() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_indexRetention_test").toString();
         final int tableSize = 10_000;
-
         final Table testTable = TableTools.emptyTable(tableSize).update(
                 "symbol = randomInt(0,4)",
                 "price = randomInt(0,10000) * 0.01",
                 "str_id = `str_` + String.format(`%08d`, randomInt(0,1_000_000))",
                 "indexed_val = ii % 10_000");
-
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .addIndexColumns("indexed_val")
                 .build();
-
         final PartitionedTable partitionedTable = testTable.partitionBy("symbol");
         ParquetTools.writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
-
         final Table child;
 
-        // Read from disk and validate the indexes through GC.
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        // We don't need this liveness scope for liveness management, but rather to opt out of the enclosing scope's
+        // enforceStrongReachability
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            // Read from disk and validate the indexes through GC.
             Table parent = ParquetTools.readTable(destPath);
-
             child = parent.update("new_val = indexed_val + 1")
                     .update("new_val = new_val + 1")
                     .update("new_val = new_val + 1")
@@ -381,13 +378,12 @@ public final class ParquetTableReadWriteTest {
             Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
             Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
 
-            // Explicitly release the parent table to encourage GC.
+            // Force the parent to null to allow GC to collect it.
             parent = null;
         }
 
         // After a GC, the child table should still have access to the indexes.
         System.gc();
-
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
     }
@@ -397,25 +393,23 @@ public final class ParquetTableReadWriteTest {
         final String destPath =
                 Path.of(rootFile.getPath(), "ParquetTest_remappedIndexRetention_test.parquet").toString();
         final int tableSize = 10_000;
-
         final Table testTable = TableTools.emptyTable(tableSize).update(
                 "symbol = randomInt(0,4)",
                 "price = randomInt(0,10000) * 0.01",
                 "str_id = `str_` + String.format(`%08d`, randomInt(0,1_000_000))",
                 "indexed_val = ii % 10_000");
-
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .addIndexColumns("symbol")
                 .addIndexColumns("indexed_val")
                 .build();
-
         ParquetTools.writeTable(testTable, destPath, writeInstructions);
-
         final Table child;
 
-        // Read from disk and validate the indexes through GC.
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        // We don't need this liveness scope for liveness management, but rather to opt out of the enclosing scope's
+        // enforceStrongReachability
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            // Read from disk and validate the indexes through GC.
             Table parent = ParquetTools.readTable(destPath);
 
             // select() produces in-memory column sources, triggering the remapping of the indexes.
@@ -432,13 +426,12 @@ public final class ParquetTableReadWriteTest {
             Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
             Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
 
-            // Explicitly release the parent table to encourage GC.
+            // Force the parent to null to allow GC to collect it.
             parent = null;
         }
 
         // After a GC, the child table should still have access to the indexes.
         System.gc();
-
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "symbol"), "hasDataIndex -> symbol");
         Assert.eqTrue(DataIndexer.hasDataIndex(child, "indexed_val"), "hasDataIndex -> indexed_val");
     }
