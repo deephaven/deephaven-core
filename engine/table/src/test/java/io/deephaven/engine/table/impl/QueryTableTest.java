@@ -964,6 +964,51 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public void testIndexRetentionThroughGC() {
+        final Table childTable;
+
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+
+            final Random random = new Random(0);
+
+            final int size = 500;
+
+            final ColumnInfo<?, ?>[] columnInfo;
+            QueryTable parentTable = getTable(false, size, random,
+                    columnInfo = initColumnInfos(new String[] {"S1", "S2"},
+                            new SetGenerator<>("aa", "bb", "cc", "dd", "AA", "BB", "CC", "DD"),
+                            new SetGenerator<>("aaa", "bbb", "ccc", "ddd", "AAA", "BBB", "CCC", "DDD")));
+
+            // Explicitly retain the index references.
+            DataIndex di1 = DataIndexer.getOrCreateDataIndex(parentTable, "S1");
+            DataIndex di2 = DataIndexer.getOrCreateDataIndex(parentTable, "S2");
+
+            childTable = parentTable.update("isEven = ii % 2 == 0");
+
+            // While retained, the indexes will survive GC
+            System.gc();
+
+            // While the references are held, the parent and child tables should have the indexes.
+            Assert.assertTrue(DataIndexer.hasDataIndex(parentTable, "S1"));
+            Assert.assertTrue(DataIndexer.hasDataIndex(parentTable, "S2"));
+
+            Assert.assertTrue(DataIndexer.hasDataIndex(childTable, "S1"));
+            Assert.assertTrue(DataIndexer.hasDataIndex(childTable, "S2"));
+
+            // Explicitly release the references.
+            parentTable = null;
+            di1 = null;
+            di2 = null;
+        }
+
+        // After a GC, the child table should not have the indexes.
+        System.gc();
+
+        Assert.assertFalse(DataIndexer.hasDataIndex(childTable, "S1"));
+        Assert.assertFalse(DataIndexer.hasDataIndex(childTable, "S2"));
+    }
+
+
     public void testStringMatchFilterIndexed() {
         // MatchFilters (currently) only use indexes on initial creation but this incremental test will recreate
         // index-enabled match filtered tables and compare them against incremental non-indexed filtered tables.
