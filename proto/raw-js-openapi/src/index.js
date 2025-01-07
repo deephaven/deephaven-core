@@ -29,7 +29,7 @@ var browserHeaders = require("browser-headers");
 var grpcWeb = require("@improbable-eng/grpc-web");//usually .grpc
 var jspb = require("google-protobuf");
 
-var io = { deephaven: {
+var io = { deephaven_core: {
     proto: {
             session_pb,
             session_pb_service,
