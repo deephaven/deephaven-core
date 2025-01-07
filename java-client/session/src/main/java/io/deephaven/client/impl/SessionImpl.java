@@ -434,9 +434,9 @@ public final class SessionImpl extends SessionBase {
             final ExecuteCommandRequest.Builder requestBuilder =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code);
 
-            final Boolean systemicOption = options.executeSystemic();
-            if (systemicOption != null) {
-                requestBuilder.setSystemic(systemicOption
+            final ExecuteCodeOptions.SystemicType systemicOption = options.executeSystemic();
+            if (systemicOption != ExecuteCodeOptions.SystemicType.ServerDefault) {
+                requestBuilder.setSystemic(systemicOption == ExecuteCodeOptions.SystemicType.Systemic
                         ? ExecuteCommandRequest.SystemicType.EXECUTE_SYSTEMIC
                         : ExecuteCommandRequest.SystemicType.EXECUTE_NOT_SYSTEMIC);
             }
