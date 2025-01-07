@@ -1061,9 +1061,9 @@ type ExecuteCommandRequest struct {
 
 	ConsoleId *ticket.Ticket `protobuf:"bytes,1,opt,name=console_id,json=consoleId,proto3" json:"console_id,omitempty"`
 	Code      string         `protobuf:"bytes,3,opt,name=code,proto3" json:"code,omitempty"`
-	// If set to `true` the command will be executed systemically.  Failures in systemic code
+	// If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
 	// are treated as important failures and cause the server to shut down.
-	// If this is unset it is treated as `false`
+	// If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
 	Systemic *ExecuteCommandRequest_SystemicType `protobuf:"varint,4,opt,name=systemic,proto3,enum=io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest_SystemicType,oneof" json:"systemic,omitempty"`
 }
 
