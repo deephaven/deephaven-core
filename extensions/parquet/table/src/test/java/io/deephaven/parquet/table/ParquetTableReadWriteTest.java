@@ -394,7 +394,8 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void remappedIndexRetentionThroughGC() {
-        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_remappedIndexRetention_test.parquet").toString();
+        final String destPath =
+                Path.of(rootFile.getPath(), "ParquetTest_remappedIndexRetention_test.parquet").toString();
         final int tableSize = 10_000;
 
         final Table testTable = TableTools.emptyTable(tableSize).update(
