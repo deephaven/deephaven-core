@@ -235,7 +235,7 @@ class TableDataServiceTestCase(BaseTestCase):
         data_service = TableDataService(backend)
         partitioned_table = data_service.make_partitioned_table(TableKeyImpl("test"), refreshing=False)
         self.assertIsNotNone(partitioned_table)
-        for constituent_table in partitioned_table.constituent_tables
+        for constituent_table in partitioned_table.constituent_tables:
             self.assertEqual(constituent_table.columns, self.test_table.columns)
 
     def test_make_static_table_with_partition_schema(self):
