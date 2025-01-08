@@ -4,6 +4,9 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import com.google.common.collect.Sets;
+import io.deephaven.base.reference.HardSimpleReference;
+import io.deephaven.base.reference.SimpleReference;
+import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -20,8 +23,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
@@ -391,6 +392,27 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
+     * Interface for {@link DataIndex} implementations that may opt into strong reachability within the DataIndexer's
+     * cache.
+     */
+    public interface RetainableDataIndex extends DataIndex {
+
+        /**
+         * @return Whether {@code this} should be strongly held (if {@link #addDataIndex(DataIndex) added}) to maintain
+         *         reachability
+         */
+        boolean shouldRetain();
+
+        /**
+         * @return Whether {@code dataIndex} should be strongly held (if {@link #addDataIndex(DataIndex) added}) to
+         *         maintain reachability
+         */
+        static boolean shouldRetain(@NotNull final DataIndex dataIndex) {
+            return dataIndex instanceof RetainableDataIndex && ((RetainableDataIndex) dataIndex).shouldRetain();
+        }
+    }
+
+    /**
      * Node structure for our multi-level cache of indexes.
      */
     private static class DataIndexCache {
@@ -399,14 +421,14 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         @SuppressWarnings("rawtypes")
         private static final AtomicReferenceFieldUpdater<DataIndexCache, Map> DESCENDANT_CACHES_UPDATER =
                 AtomicReferenceFieldUpdater.newUpdater(DataIndexCache.class, Map.class, "descendantCaches");
-        private static final Reference<DataIndex> MISSING_INDEX_REFERENCE = new WeakReference<>(null);
+        private static final SimpleReference<DataIndex> MISSING_INDEX_REFERENCE = new WeakSimpleReference<>(null);
 
         /** The sub-indexes below this level. */
         @SuppressWarnings("FieldMayBeFinal")
         private volatile Map<ColumnSource<?>, DataIndexCache> descendantCaches = EMPTY_DESCENDANT_CACHES;
 
         /** A reference to the index at this level. Note that there will never be an index at the "root" level. */
-        private volatile Reference<DataIndex> dataIndexReference = MISSING_INDEX_REFERENCE;
+        private volatile SimpleReference<DataIndex> dataIndexReference = MISSING_INDEX_REFERENCE;
 
         private DataIndexCache() {}
 
@@ -509,7 +531,9 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                     // noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized (cache) {
                         if (!isValidAndLive(cache.dataIndexReference.get())) {
-                            cache.dataIndexReference = new WeakReference<>(dataIndex);
+                            cache.dataIndexReference = RetainableDataIndex.shouldRetain(dataIndex)
+                                    ? new HardSimpleReference<>(dataIndex)
+                                    : new WeakSimpleReference<>(dataIndex);
                             return true;
                         }
                     }
@@ -544,7 +568,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                             // managed by the appropriate scope for the caller's own use. Further validation is deferred
                             // as in add.
                             dataIndex = dataIndexFactory.get();
-                            cache.dataIndexReference = new WeakReference<>(dataIndex);
+                            cache.dataIndexReference = new WeakSimpleReference<>(dataIndex);
                         }
                     }
                 }

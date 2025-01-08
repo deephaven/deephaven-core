@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * A {@link AbstractDataIndex} that remaps the key columns of another {@link AbstractDataIndex}. Used to implement
  * {@link io.deephaven.engine.table.DataIndex#remapKeyColumns(Map)}.
  */
-public class RemappedDataIndex extends AbstractDataIndex {
+public class RemappedDataIndex extends AbstractDataIndex implements DataIndexer.RetainableDataIndex {
 
     private final AbstractDataIndex sourceIndex;
     private final Map<ColumnSource<?>, ColumnSource<?>> oldToNewColumnMap;
@@ -108,5 +109,10 @@ public class RemappedDataIndex extends AbstractDataIndex {
     @Override
     public boolean isValid() {
         return sourceIndex.isValid();
+    }
+
+    @Override
+    public boolean shouldRetain() {
+        return DataIndexer.RetainableDataIndex.shouldRetain(sourceIndex);
     }
 }
