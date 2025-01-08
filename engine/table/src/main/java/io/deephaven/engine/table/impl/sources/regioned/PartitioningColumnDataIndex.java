@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -30,7 +31,7 @@ import java.util.Map;
 /**
  * DataIndex over a partitioning column of a {@link Table} backed by a {@link RegionedColumnSourceManager}.
  */
-class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
+class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements DataIndexer.RetainableDataIndex {
 
     private static final int KEY_NOT_FOUND = (int) RowSequence.NULL_ROW_KEY;
 
@@ -316,6 +317,11 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
 
     @Override
     public boolean isValid() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldRetain() {
         return true;
     }
 }
