@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.impl.util.RuntimeMemory.Sample;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -189,7 +190,30 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             response))
                     .submit(() -> {
                         final ScriptSession scriptSession = exportedConsole.get();
-                        final ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+                        final ExecuteCommandRequest.SystemicType systemicOption =
+                                request.hasSystemic()
+                                        ? request.getSystemic()
+                                        : ExecuteCommandRequest.SystemicType.NOT_SET_SYSTEMIC;
+
+                        // If not set, we'll use defaults, otherwise we will explicitly set the systemicness.
+                        final ScriptSession.Changes changes;
+                        switch (systemicOption) {
+                            case NOT_SET_SYSTEMIC:
+                                changes = scriptSession.evaluateScript(request.getCode());
+                                break;
+                            case EXECUTE_NOT_SYSTEMIC:
+                                changes = SystemicObjectTracker.executeSystemically(false,
+                                        () -> scriptSession.evaluateScript(request.getCode()));
+                                break;
+                            case EXECUTE_SYSTEMIC:
+                                changes = SystemicObjectTracker.executeSystemically(true,
+                                        () -> scriptSession.evaluateScript(request.getCode()));
+                                break;
+                            default:
+                                throw new UnsupportedOperationException(
+                                        "Unrecognized systemic option: " + systemicOption);
+                        }
+
                         final ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
                         final FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
                         changes.created.entrySet()
