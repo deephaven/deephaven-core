@@ -198,7 +198,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
 
     /**
-     * If set to true, then permit where filters to use a data index, when applicable.  If false, data indexes are not
+     * If set to true, then permit where filters to use a data index, when applicable. If false, data indexes are not
      * used even if present.
      */
     public static boolean USE_DATA_INDEX_FOR_WHERE =

@@ -254,7 +254,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
         if (!QueryTable.USE_DATA_INDEX_FOR_WHERE) {
-            return () -> {};
+            return () -> {
+            };
         }
         try (final SafeCloseable ignored = sourceTable.isRefreshing() ? LivenessScopeStack.open() : null) {
             dataIndex = DataIndexer.getDataIndex(sourceTable, columnName);
