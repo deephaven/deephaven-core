@@ -196,6 +196,14 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     static boolean USE_REDIRECTED_COLUMNS_FOR_SELECT =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
+
+    /**
+     * If set to true, then permit where filters to use a data index, when applicable. If false, data indexes are not
+     * used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
+
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
      * may be spread out across many blocks depending on the input RowSet). However, the select() can become slower
@@ -1225,7 +1233,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
-        final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
+        final DataIndexer dataIndexer = USE_DATA_INDEX_FOR_WHERE ? DataIndexer.existingOf(rowSet) : null;
         final int numFilters = filters.length;
         final BitSet priorityFilterIndexes = new BitSet(numFilters);
 
