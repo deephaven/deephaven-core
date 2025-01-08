@@ -418,21 +418,30 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
-            return executeCodeFuture(code).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+        public Changes executeCode(String code, ExecuteCodeOptions options)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return executeCodeFuture(code, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public Changes executeScript(Path path)
+        public Changes executeScript(Path path, ExecuteCodeOptions options)
                 throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            return executeScriptFuture(path).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
+            return executeScriptFuture(path, options).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public CompletableFuture<Changes> executeCodeFuture(String code) {
-            final ExecuteCommandRequest request =
-                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
-            return UnaryGrpcFuture.of(request, channel().console()::executeCommand,
+        public CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options) {
+            final ExecuteCommandRequest.Builder requestBuilder =
+                    ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code);
+
+            final ExecuteCodeOptions.SystemicType systemicOption = options.executeSystemic();
+            if (systemicOption != ExecuteCodeOptions.SystemicType.ServerDefault) {
+                requestBuilder.setSystemic(systemicOption == ExecuteCodeOptions.SystemicType.Systemic
+                        ? ExecuteCommandRequest.SystemicType.EXECUTE_SYSTEMIC
+                        : ExecuteCommandRequest.SystemicType.EXECUTE_NOT_SYSTEMIC);
+            }
+
+            return UnaryGrpcFuture.of(requestBuilder.build(), channel().console()::executeCommand,
                     response -> {
                         Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
                         if (!response.getErrorMessage().isEmpty()) {
@@ -443,9 +452,10 @@ public final class SessionImpl extends SessionBase {
         }
 
         @Override
-        public CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
+        public CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options)
+                throws IOException {
             final String code = String.join(System.lineSeparator(), Files.readAllLines(path, StandardCharsets.UTF_8));
-            return executeCodeFuture(code);
+            return executeCodeFuture(code, options);
         }
 
         @Override

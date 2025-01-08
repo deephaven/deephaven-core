@@ -10,7 +10,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
-from pydeephaven.ticket import SharedTicket
+from pydeephaven.ticket import SharedTicket, ScopeTicket
 from tests.testbase import BaseTestCase
 
 
@@ -409,6 +409,37 @@ t1 = empty_table(0) if t.size == 2 else None
         for t in threads:
             t.join()
 
+    def test_systemic_scripts(self):
+        fields = [pa.field(f"S", pa.bool_())]
+        schema = pa.schema(fields)
+
+        with Session() as session:
+            # Run the setup script.
+            session.run_script("""
+from deephaven import time_table
+import jpy
+
+j_sot = jpy.get_type("io.deephaven.engine.util.systemicmarking.SystemicObjectTracker")
+""")
+            table_script = """
+t1 = time_table("PT1S").update("A=ii")
+t2 = empty_table(1).update("S = (boolean)j_sot.isSystemic(t1.j_table)")
+"""
+            # Make sure defaults apply (expected false)
+            session.run_script(table_script)
+            t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
+            pa_table = pa.table([ pa.array([False]) ], schema=schema)
+            self.assertTrue(pa_table.equals(t.to_arrow()))
+
+            session.run_script(table_script, True)
+            t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
+            pa_table = pa.table([ pa.array([True]) ], schema=schema)
+            self.assertTrue(pa_table.equals(t.to_arrow()))
+
+            session.run_script(table_script, False)
+            t = session.fetch_table(ticket=ScopeTicket.scope_ticket("t2"))
+            pa_table = pa.table([ pa.array([False]) ], schema=schema)
+            self.assertTrue(pa_table.equals(t.to_arrow()))
 
 if __name__ == '__main__':
     unittest.main()
