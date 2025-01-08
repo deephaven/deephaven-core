@@ -14,9 +14,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.SourcePartitionedTable;
 import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.locations.*;
@@ -45,6 +47,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 import static io.deephaven.extensions.barrage.util.ArrowToTableConverter.parseArrowIpcMessage;
@@ -110,6 +113,26 @@ public class PythonTableDataService extends AbstractTableDataService {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 tableLocationProvider,
                 live ? ExecutionContext.getContext().getUpdateGraph() : null);
+    }
+
+    /**
+     * Get a Deephaven {@link PartitionedTable} for the supplied {@link TableKey}.
+     *
+     * @param tableKey The table key
+     * @param live Whether the result should update as new data becomes available
+     * @return The {@link PartitionedTable}
+     */
+    @ScriptApi
+    public PartitionedTable makePartitionedTable(@NotNull final TableKeyImpl tableKey, final boolean live) {
+        final TableLocationProviderImpl tableLocationProvider =
+                (TableLocationProviderImpl) getTableLocationProvider(tableKey);
+        return new SourcePartitionedTable(
+                tableLocationProvider.tableDefinition,
+                UnaryOperator.identity(),
+                tableLocationProvider,
+                live,
+                live,
+                tlk -> true);
     }
 
     /**
