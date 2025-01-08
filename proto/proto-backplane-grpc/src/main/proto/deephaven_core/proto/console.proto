@@ -100,11 +100,24 @@ message LogSubscriptionData {
     reserved 4;//if we can scope logs to a script session
     //    Ticket console_id = 4;
 }
+
 message ExecuteCommandRequest {
+    enum SystemicType {
+        NOT_SET_SYSTEMIC = 0;
+        EXECUTE_NOT_SYSTEMIC = 1;
+        EXECUTE_SYSTEMIC = 2;
+    }
+
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
     reserved 2;//if script sessions get a ticket, we will use this reserved tag
     string code = 3;
+
+    // If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
+    // are treated as important failures and cause errors to be reported to the io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier.
+    // If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
+    optional SystemicType systemic = 4;
 }
+
 message ExecuteCommandResponse {
     string error_message = 1;
     io.deephaven.proto.backplane.grpc.FieldsChangeUpdate changes = 2;
