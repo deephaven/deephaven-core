@@ -250,6 +250,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             Boolean isReverseViewport) {
         // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
+            if (firstRow < 0 || firstRow > lastRow) {
+                throw new IllegalArgumentException("Invalid viewport row range: " + firstRow + " to " + lastRow);
+            }
             this.firstRow = firstRow;
             this.lastRow = lastRow;
             this.columns = columns;
@@ -273,8 +276,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             isReverseViewport = false;
         }
         RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
-        this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
-                isReverseViewport);
+        try {
+            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
+                    isReverseViewport);
+        } catch (Exception e) {
+            fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
+        }
     }
 
     /**
