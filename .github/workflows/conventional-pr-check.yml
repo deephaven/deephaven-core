@@ -9,7 +9,7 @@ on:
 
 jobs:
   pr-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: amannn/action-semantic-pull-request@v5
         id: lint_pr_title
