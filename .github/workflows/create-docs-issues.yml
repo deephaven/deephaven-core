@@ -12,7 +12,7 @@ jobs:
   create-docs-ticket:
     # Only on merged PRs that contain the DocumentationNeeded flag
     if: github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
