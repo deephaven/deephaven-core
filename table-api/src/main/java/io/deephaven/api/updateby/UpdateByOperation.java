@@ -4,6 +4,7 @@
 package io.deephaven.api.updateby;
 
 import io.deephaven.api.Pair;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.spec.*;
 
 import java.time.Duration;
@@ -1620,6 +1621,77 @@ public interface UpdateByOperation {
     static UpdateByOperation RollingCount(String timestampCol, long revTime, long fwdTime, String... pairs) {
         return RollingCountSpec.ofTime(timestampCol, revTime, fwdTime).clause(pairs);
     }
+
+
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
+     * to include. The current row is considered to belong to the reverse window, so calling this with
+     * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
+     * previous 9 rows to this one and this row for a total of 10 rows.
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(long revTicks, String resultColumn, String... filters) {
+        return RollingCountWhereSpec.ofTicks(revTicks, resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
+     * to include. The current row is considered to belong to the reverse window, so calling this with
+     * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
+     * previous 9 rows to this one and this row for a total of 10 rows.
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param fwdTicks the look-ahead window size (in rows/ticks)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(long revTicks, long fwdTicks, String resultColumn, String... filters) {
+        return RollingCountWhereSpec.ofTicks(revTicks, fwdTicks, resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
+     * to include. The current row is considered to belong to the reverse window, so calling this with
+     * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
+     * previous 9 rows to this one and this row for a total of 10 rows.
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(long revTicks, String resultColumn, Filter filter) {
+        return RollingCountWhereSpec.ofTicks(revTicks, resultColumn, filter).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
+     * to include. The current row is considered to belong to the reverse window, so calling this with
+     * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
+     * previous 9 rows to this one and this row for a total of 10 rows.
+     *
+     * @param revTicks the look-behind window size (in rows/ticks)
+     * @param fwdTicks the look-ahead window size (in rows/ticks)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(long revTicks, long fwdTicks, String resultColumn, Filter filter) {
+        return RollingCountWhereSpec.ofTicks(revTicks, fwdTicks, resultColumn, filter).clause();
+    }
+
+    // TODO: complete the variations of allowed calls.
+
 
 
     /**

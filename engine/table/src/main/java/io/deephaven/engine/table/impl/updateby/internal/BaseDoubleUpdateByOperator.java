@@ -117,7 +117,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
             outputValues.set(outIdx, curVal);
         }
 
-        void writeNullToOutputChunk(final int outIdx) {
+        protected void writeNullToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, NULL_DOUBLE);
         }
 

@@ -102,11 +102,13 @@ public interface UpdateBySpec {
 
         T visit(RollingCountSpec spec);
 
+        T visit(RollingCountWhereSpec spec);
+
         T visit(RollingStdSpec spec);
 
-        T visit(RollingWAvgSpec w);
+        T visit(RollingWAvgSpec spec);
 
-        T visit(RollingFormulaSpec w);
+        T visit(RollingFormulaSpec spec);
     }
     // endregion
 }
