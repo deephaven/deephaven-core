@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.BitMaskingColumnSource;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
@@ -1418,7 +1419,11 @@ public class CrossJoinHelper {
         }
 
         for (MatchPair mp : columnsToAdd) {
-            final T wrappedSource = newRightColumnSource.apply(rightTable.getColumnSource(mp.rightColumn()));
+            // If rhs is empty and static, can substitute with a NullValueColumnSource
+            final ColumnSource<?> rcs = rightTable.getColumnSource(mp.rightColumn());
+            final ColumnSource<?> wrappedSource = rightTable.isEmpty() && !rightTable.isRefreshing()
+                    ? NullValueColumnSource.getInstance(rcs.getType(), rcs.getComponentType())
+                    : newRightColumnSource.apply(rcs);
             columnSourceMap.put(mp.leftColumn(), wrappedSource);
         }
 
