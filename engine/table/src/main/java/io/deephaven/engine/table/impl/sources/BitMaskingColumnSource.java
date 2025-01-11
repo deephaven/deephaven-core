@@ -30,9 +30,11 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
     public static <T> ColumnSource<T> maybeWrap(
             final ZeroKeyCrossJoinShiftState shiftState,
             @NotNull final ColumnSource<T> innerSource) {
-        if (innerSource instanceof RowKeyAgnosticChunkSource) {
+        if (innerSource instanceof NullValueColumnSource) {
             return innerSource;
         }
+        // We must wrap all other sources to leverage shiftState.rightEmpty() and shiftState.rightEmptyPrev()
+        // before calling the inner source.
         return new BitMaskingColumnSource<>(shiftState, innerSource);
     }
 
