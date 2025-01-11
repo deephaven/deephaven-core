@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.promise.Promise;
@@ -29,7 +32,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                     return new Promise<AbstractTableSubscription.SubscriptionEventData>((resolve, reject) -> {
                         delayTestFinish(12301);
                         sub.addEventListener(TableSubscription.EVENT_UPDATED, event -> {
-                            AbstractTableSubscription.SubscriptionEventData data = (AbstractTableSubscription.SubscriptionEventData) event.getDetail();
+                            AbstractTableSubscription.SubscriptionEventData data =
+                                    (AbstractTableSubscription.SubscriptionEventData) event.getDetail();
                             chartData.update(data);
 
                             if (count[0] > 0) {
@@ -61,7 +65,8 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                         delayTestFinish(12302);
                         sub.addEventListener(TableSubscription.EVENT_UPDATED, event -> {
 
-                            AbstractTableSubscription.SubscriptionEventData data = (AbstractTableSubscription.SubscriptionEventData) event.getDetail();
+                            AbstractTableSubscription.SubscriptionEventData data =
+                                    (AbstractTableSubscription.SubscriptionEventData) event.getDetail();
 
                             chartData.update(data);
                             if (count[0] > 0) {
