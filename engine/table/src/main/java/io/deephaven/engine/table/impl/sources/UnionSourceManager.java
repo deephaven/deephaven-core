@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -323,12 +324,16 @@ public class UnionSourceManager {
          * {@link #resultRows}. The truncating constituent and following will need to insert their entire shifted row
          * set, and must update the next slot in {@link #currFirstRowKeys}.
          */
-        boolean slotAllocationChanged;
+        private boolean slotAllocationChanged;
         /**
          * The first key after which we began inserting shifted constituent row sets instead of trying for piecemeal
          * updates.
          */
-        long firstTruncatedResultKey;
+        private long firstTruncatedResultKey;
+        /**
+         * Removed constituent listeners to bulk-unmanage.
+         */
+        private List<LivenessReferent> toUnmanage;
 
         private ChangeProcessingContext(@NotNull final TableUpdate constituentChanges) {
             modifiedColumnSet.clear();
@@ -388,7 +393,10 @@ public class UnionSourceManager {
                  final SafeCloseable ignored3 = removedValues;
                  final SafeCloseable ignored4 = addedKeys;
                  final SafeCloseable ignored5 = modifiedKeys;
-                 final SafeCloseable ignored6 = modifiedPreviousValues) {
+                 final SafeCloseable ignored6 = modifiedPreviousValues;
+                 final SafeCloseable ignored7 = toUnmanage == null
+                         ? null
+                         : () -> mergedListener.unmanage(toUnmanage.stream())) {
             }
             // @formatter:on
         }
@@ -504,7 +512,10 @@ public class UnionSourceManager {
                     listeners.remove();
                 }
                 removedConstituent.removeUpdateListener(nextListener);
-                mergedListener.unmanage(nextListener);
+                if (toUnmanage == null) {
+                    toUnmanage = new ArrayList<>();
+                }
+                toUnmanage.add(nextListener);
                 advanceListener();
             }
             final long firstRemovedKey = prevFirstRowKeys[nextPreviousSlot];
