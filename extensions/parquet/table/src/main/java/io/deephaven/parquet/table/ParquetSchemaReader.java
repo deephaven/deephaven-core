@@ -110,8 +110,7 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
-     *        {@link ParquetFileReader}!
+     * @param schema Parquet schema
      * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
      *        Note a new read instructions based on this one may be returned by this method to provide necessary
@@ -274,8 +273,7 @@ public class ParquetSchemaReader {
     /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
-     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
-     *        {@link ParquetFileReader}!
+     * @param schema Parquet schema
      * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructionsIn Input conversion {@link ParquetInstructions}
      * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}

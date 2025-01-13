@@ -121,13 +121,13 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         if (inputInstructions.getTableDefinition().isEmpty()) {
             // Infer the definition from the metadata file
             final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo =
-                    convertSchema(metadataFileMetadata.getFileMetaData(), inputInstructions);
+                    convertSchema(metadataFileMetadata, inputInstructions);
             if (channelsProvider.exists(commonMetadataFileURI)) {
                 // Infer the partitioning columns using the common metadata file
                 final ParquetFileReader commonMetadataFileReader =
                         ParquetFileReader.create(commonMetadataFileURI, channelsProvider);
-                final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = convertSchema(
-                        commonMetadataFileReader.getMetadata().getFileMetaData(), leafSchemaInfo.getSecond());
+                final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo =
+                        convertSchema(commonMetadataFileReader.getMetadata(), leafSchemaInfo.getSecond());
                 final Collection<ColumnDefinition<?>> adjustedColumnDefinitions = new ArrayList<>();
                 final Map<String, ColumnDefinition<?>> leafDefinitionsMap =
                         leafSchemaInfo.getFirst().stream()
@@ -230,14 +230,13 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     }
 
     private static Pair<List<ColumnDefinition<?>>, ParquetInstructions> convertSchema(
-            FileMetaData fileMetadata,
+            ParquetMetadata metadata,
             @NotNull ParquetInstructions readInstructionsIn) {
         return ParquetSchemaReader.convertSchema(
-                fileMetadata.getSchema(),
-                fileMetadata.getKeyValueMetaData(),
+                metadata.getFileMetaData().getSchema(),
+                metadata.getFileMetaData().getKeyValueMetaData(),
                 readInstructionsIn);
     }
-
 
     /**
      * This method takes the {@link ParquetMetadata} from the metadata file, extracts the key-value metadata specific to
