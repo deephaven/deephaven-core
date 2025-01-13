@@ -331,7 +331,9 @@ public abstract class AbstractTableLocationProvider
         }
         // Release the keys that were removed after we have delivered the notifications and the
         // subscribers have had a chance to process them
-        removedKeys.forEach(livenessManager::unmanage);
+        if (!removedKeys.isEmpty()) {
+            livenessManager.unmanage(removedKeys.stream());
+        }
     }
 
     /**
