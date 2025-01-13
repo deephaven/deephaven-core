@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +26,8 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     public static final String LOCATION_ID_ATTR = "ID";
     private final UpdateSourceRegistrar registrar;
 
+    private final String callSite;
+
     private final List<TableBackedTableLocationKey> pending = new ArrayList<>();
     private final AtomicInteger nextId = new AtomicInteger();
 
@@ -37,6 +40,8 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
         super(StandaloneTableKey.getInstance(), supportsSubscriptions, updateMode, locationUpdateMode);
         this.registrar = registrar;
 
+        callSite = QueryPerformanceRecorder.getCallerLine();
+
         for (final Table table : tables) {
             add(table);
         }
@@ -45,10 +50,14 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
     private TableBackedTableLocationKey makeTableLocationKey(
             @NotNull final Table table,
             @Nullable final Map<String, Comparable<?>> partitions) {
+        final boolean needToClearCallsite = QueryPerformanceRecorder.setCallsite(callSite);
         final QueryTable coalesced = (QueryTable) table.coalesce();
         Assert.assertion(coalesced.isAppendOnly(), "table is append only");
         final QueryTable withId =
                 (QueryTable) coalesced.withAttributes(Map.of(LOCATION_ID_ATTR, nextId.getAndIncrement()));
+        if (needToClearCallsite) {
+            QueryPerformanceRecorder.clearCallsite();
+        }
         return new TableBackedTableLocationKey(partitions, withId);
     }
 

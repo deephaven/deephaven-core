@@ -21,8 +21,8 @@ import java.util.*;
 public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNode
         implements TableLocationProvider.Listener {
 
-    private static final Set<LiveSupplier<ImmutableTableLocationKey>> EMPTY_TABLE_LOCATION_KEYS =
-            Collections.emptySet();
+    private static final Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> EMPTY_TABLE_LOCATION_KEYS =
+            Collections.emptyMap();
 
     private final TableLocationProvider tableLocationProvider;
 
@@ -30,10 +30,7 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
 
     private final Object updateLock = new Object();
 
-    // These sets represent adds and removes from completed transactions.
-    private Set<LiveSupplier<ImmutableTableLocationKey>> pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
-    private Set<LiveSupplier<ImmutableTableLocationKey>> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
-
+    private LocationUpdate pendingUpdate = null;
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
@@ -42,28 +39,77 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
     }
 
     public final class LocationUpdate implements SafeCloseable {
-        private final Collection<LiveSupplier<ImmutableTableLocationKey>> pendingAddedLocationKeys;
-        private final Collection<LiveSupplier<ImmutableTableLocationKey>> pendingRemovedLocations;
 
-        public LocationUpdate(
-                @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> pendingAddedLocationKeys,
-                @NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> pendingRemovedLocations) {
-            this.pendingAddedLocationKeys = pendingAddedLocationKeys;
-            this.pendingRemovedLocations = pendingRemovedLocations;
+        private final ReferenceCountedLivenessNode livenessNode = new ReferenceCountedLivenessNode(false) {};
+
+        // These sets represent adds and removes from completed transactions.
+        private Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> added =
+                EMPTY_TABLE_LOCATION_KEYS;
+        private Map<ImmutableTableLocationKey, LiveSupplier<ImmutableTableLocationKey>> removed =
+                EMPTY_TABLE_LOCATION_KEYS;
+
+        private LocationUpdate() {
+            TableLocationSubscriptionBuffer.this.manage(livenessNode);
+        }
+
+        private void processAdd(@NotNull final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier) {
+            final ImmutableTableLocationKey addedKey = addedKeySupplier.get();
+            // Need to verify that we don't have stacked adds (without intervening removes).
+            if (added.containsKey(addedKey)) {
+                throw new IllegalStateException("TableLocationKey " + addedKey
+                        + " was already added by a previous transaction.");
+            }
+            if (added == EMPTY_TABLE_LOCATION_KEYS) {
+                added = new HashMap<>();
+            }
+            livenessNode.manage(addedKeySupplier);
+            added.put(addedKey, addedKeySupplier);
+        }
+
+        private void processRemove(@NotNull final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier) {
+            final ImmutableTableLocationKey removedKey = removedKeySupplier.get();
+            // If we have a pending add, it is being cancelled by this remove.
+            if (added.remove(removedKey) != null) {
+                return;
+            }
+            // Verify that we don't have stacked removes (without intervening adds).
+            if (removed.containsKey(removedKey)) {
+                throw new IllegalStateException("TableLocationKey " + removedKey
+                        + " was already removed and has not been replaced.");
+            }
+            if (removed == EMPTY_TABLE_LOCATION_KEYS) {
+                removed = new HashMap<>();
+            }
+            livenessNode.manage(removedKeySupplier);
+            removed.put(removedKey, removedKeySupplier);
+        }
+
+        private void processTransaction(
+                @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeySuppliers,
+                @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeySuppliers) {
+            if (removedKeySuppliers != null) {
+                for (final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier : removedKeySuppliers) {
+                    processRemove(removedKeySupplier);
+                }
+            }
+            if (addedKeySuppliers != null) {
+                for (final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier : addedKeySuppliers) {
+                    processAdd(addedKeySupplier);
+                }
+            }
         }
 
         public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingAddedLocationKeys() {
-            return pendingAddedLocationKeys;
+            return added.values();
         }
 
         public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingRemovedLocationKeys() {
-            return pendingRemovedLocations;
+            return removed.values();
         }
 
         @Override
         public void close() {
-            pendingAddedLocationKeys.forEach(TableLocationSubscriptionBuffer.this::unmanage);
-            pendingRemovedLocations.forEach(TableLocationSubscriptionBuffer.this::unmanage);
+            TableLocationSubscriptionBuffer.this.unmanage(livenessNode);
         }
     }
 
@@ -76,7 +122,6 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
      * @return The collection of pending location keys.
      */
     public synchronized LocationUpdate processPending() {
-        // TODO: Should I change this to instead re-use the collection?
         if (!subscribed) {
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
@@ -90,23 +135,21 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
             }
             subscribed = true;
         }
-        final Collection<LiveSupplier<ImmutableTableLocationKey>> resultLocationKeys;
-        final Collection<LiveSupplier<ImmutableTableLocationKey>> resultLocationsRemoved;
+        final LocationUpdate resultUpdate;
         final TableDataException resultException;
         synchronized (updateLock) {
-            resultLocationKeys = pendingLocationsAdded;
-            pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
-            resultLocationsRemoved = pendingLocationsRemoved;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+            resultUpdate = pendingUpdate;
+            pendingUpdate = null;
             resultException = pendingException;
             pendingException = null;
         }
 
         if (resultException != null) {
-            throw new TableDataException("Processed pending exception", resultException);
+            try (final SafeCloseable ignored = resultUpdate) {
+                throw new TableDataException("Processed pending exception", resultException);
+            }
         }
-
-        return new LocationUpdate(resultLocationKeys, resultLocationsRemoved);
+        return resultUpdate;
     }
 
     /**
@@ -119,12 +162,14 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
             }
             subscribed = false;
         }
+        final LocationUpdate toClose;
         synchronized (updateLock) {
-            pendingLocationsAdded.forEach(this::unmanage);
-            pendingLocationsRemoved.forEach(this::unmanage);
-            pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
-            pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+            toClose = pendingUpdate;
+            pendingUpdate = null;
             pendingException = null;
+        }
+        if (toClose != null) {
+            toClose.close();
         }
     }
 
@@ -132,79 +177,37 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
     // TableLocationProvider.Listener implementation
     // ------------------------------------------------------------------------------------------------------------------
 
+    private LocationUpdate ensurePendingUpdate() {
+        if (pendingUpdate == null) {
+            pendingUpdate = new LocationUpdate();
+        }
+        return pendingUpdate;
+    }
+
     @Override
-    public void handleTableLocationKeyAdded(@NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
+    public void handleTableLocationKeyAdded(@NotNull final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier) {
         synchronized (updateLock) {
-            // Need to verify that we don't have stacked adds (without intervening removes).
-            if (pendingLocationsAdded.contains(tableLocationKey)) {
-                throw new IllegalStateException("TableLocationKey " + tableLocationKey
-                        + " was already added by a previous transaction.");
-            }
-            if (pendingLocationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationsAdded = new HashSet<>();
-            }
-            manage(tableLocationKey);
-            pendingLocationsAdded.add(tableLocationKey);
+            // noinspection resource
+            ensurePendingUpdate().processAdd(addedKeySupplier);
         }
     }
 
     @Override
-    public void handleTableLocationKeyRemoved(@NotNull final LiveSupplier<ImmutableTableLocationKey> tableLocationKey) {
+    public void handleTableLocationKeyRemoved(
+            @NotNull final LiveSupplier<ImmutableTableLocationKey> removedKeySupplier) {
         synchronized (updateLock) {
-            // If we have a pending add, it is being cancelled by this remove.
-            if (pendingLocationsAdded.remove(tableLocationKey)) {
-                return;
-            }
-            // Verify that we don't have stacked removes (without intervening adds).
-            if (pendingLocationsRemoved.contains(tableLocationKey)) {
-                throw new IllegalStateException("TableLocationKey " + tableLocationKey
-                        + " was already removed and has not been replaced.");
-            }
-            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationsRemoved = new HashSet<>();
-            }
-            manage(tableLocationKey);
-            pendingLocationsRemoved.add(tableLocationKey);
+            // noinspection resource
+            ensurePendingUpdate().processRemove(removedKeySupplier);
         }
     }
 
     @Override
     public void handleTableLocationKeysUpdate(
-            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeys,
-            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> addedKeySuppliers,
+            @Nullable Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeySuppliers) {
         synchronized (updateLock) {
-            if (removedKeys != null) {
-                for (final LiveSupplier<ImmutableTableLocationKey> removedTableLocationKey : removedKeys) {
-                    // If we have a pending add, it is being cancelled by this remove.
-                    if (pendingLocationsAdded.remove(removedTableLocationKey)) {
-                        continue;
-                    }
-                    // Verify that we don't have stacked removes.
-                    if (pendingLocationsRemoved.contains(removedTableLocationKey)) {
-                        throw new IllegalStateException("TableLocationKey " + removedTableLocationKey
-                                + " was already removed and has not been replaced.");
-                    }
-                    if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
-                        pendingLocationsRemoved = new HashSet<>();
-                    }
-                    manage(removedTableLocationKey);
-                    pendingLocationsRemoved.add(removedTableLocationKey);
-                }
-            }
-            if (addedKeys != null) {
-                for (final LiveSupplier<ImmutableTableLocationKey> addedTableLocationKey : addedKeys) {
-                    // Need to verify that we don't have stacked adds.
-                    if (pendingLocationsAdded.contains(addedTableLocationKey)) {
-                        throw new IllegalStateException("TableLocationKey " + addedTableLocationKey
-                                + " was already added by a previous transaction.");
-                    }
-                    if (pendingLocationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
-                        pendingLocationsAdded = new HashSet<>();
-                    }
-                    manage(addedTableLocationKey);
-                    pendingLocationsAdded.add(addedTableLocationKey);
-                }
-            }
+            // noinspection resource
+            ensurePendingUpdate().processTransaction(addedKeySuppliers, removedKeySuppliers);
         }
     }
 
