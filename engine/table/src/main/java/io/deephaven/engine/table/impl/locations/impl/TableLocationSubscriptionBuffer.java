@@ -54,6 +54,10 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
 
         private void processAdd(@NotNull final LiveSupplier<ImmutableTableLocationKey> addedKeySupplier) {
             final ImmutableTableLocationKey addedKey = addedKeySupplier.get();
+            // Note that we might have a remove for this key if it previously existed and is being replaced. Hence, we
+            // don't look for an existing remove, which is apparently asymmetric w.r.t. processRemove but still correct.
+            // Consumers of a LocationUpdate must process removes before adds.
+
             // Need to verify that we don't have stacked adds (without intervening removes).
             if (added.containsKey(addedKey)) {
                 throw new IllegalStateException("TableLocationKey " + addedKey
@@ -99,10 +103,16 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
             }
         }
 
+        /**
+         * @return The pending location keys to add. <em>Note that removes should be processed before adds.</em>
+         */
         public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingAddedLocationKeys() {
             return added.values();
         }
 
+        /**
+         * @return The pending location keys to remove. <em>Note that removes should be processed before adds.</em>
+         */
         public Collection<LiveSupplier<ImmutableTableLocationKey>> getPendingRemovedLocationKeys() {
             return removed.values();
         }
