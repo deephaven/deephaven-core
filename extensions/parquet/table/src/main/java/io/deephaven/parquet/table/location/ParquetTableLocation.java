@@ -60,6 +60,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
 
+    private final ParquetColumnResolver resolver;
+
     private final RowGroup[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
     private final Map<String, String[]> parquetColumnNameToPath;
@@ -88,7 +90,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
-
+        {
+            final ParquetColumnResolver.Factory factory = readInstructions.getColumnResolver().orElse(null);
+            resolver = factory == null
+                    ? null
+                    : Objects.requireNonNull(factory.init(tableKey, tableLocationKey));
+        }
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
                 .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
@@ -181,12 +188,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
+        final List<String> nameList;
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        if (resolver == null) {
+            final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
+            nameList = columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        } else {
+            final ColumnDescriptor columnDescriptor = resolver.mapping().get(columnName);
+            if (columnDescriptor == null) {
+                nameList = List.of(); // empty, will not resolve
+            } else {
+                nameList = Arrays.asList(columnDescriptor.getPath());
+            }
+        }
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, nameList))
+                .toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);
