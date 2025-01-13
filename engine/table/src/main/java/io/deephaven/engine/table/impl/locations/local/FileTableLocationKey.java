@@ -27,8 +27,6 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     protected final File file;
     private final int order;
 
-    private int cachedHashCode;
-
     /**
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.
      *

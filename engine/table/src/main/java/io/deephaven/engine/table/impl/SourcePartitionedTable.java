@@ -248,6 +248,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     subscriptionBuffer.processPending()) {
+                if (locationUpdate == null) {
+                    return;
+                }
                 removed = processRemovals(locationUpdate);
                 added = processAdditions(locationUpdate);
             }

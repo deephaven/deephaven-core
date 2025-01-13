@@ -182,8 +182,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // Add a new location (p3)
         ////////////////////////////////////////////
 
-        tlp.addPending(p3);
-        tlp.refresh();
+        tlp.add(p3);
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -210,9 +209,8 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         ////////////////////////////////////////////
 
         tlks = tlp.getTableLocationKeys().stream().sorted().toArray(ImmutableTableLocationKey[]::new);
-        tlp.addPending(p4);
         tlp.removeTableLocationKey(tlks[0]);
-        tlp.refresh();
+        tlp.add(p4);
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -245,8 +243,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                     intCol("intCol", 10000, 20000, 40000, 60000),
                     doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
             p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-            tlp.addPending(p5);
-            tlp.refresh();
+            tlp.add(p5);
 
             updateGraph.getDelegate().startCycleForUnitTests(false);
             updateGraph.refreshSources();
