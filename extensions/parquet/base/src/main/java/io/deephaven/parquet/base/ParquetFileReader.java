@@ -83,8 +83,8 @@ public class ParquetFileReader {
                 // Ideally, we would be able to get rid of our dependency on the underlying thrift structures, but there
                 // is a non-trivial chain of usages stemming from fileMetaData. For now, we will create ParquetMetadata
                 // in a two-step process that preserves the thrift structure.
-                fileMetaData = Util.readFileMetaData(in);
                 // metadata = PARQUET_METADATA_CONVERTER.readParquetMetadata(in, ParquetMetadataConverter.NO_FILTER);
+                fileMetaData = Util.readFileMetaData(in);
             }
         }
         try {
