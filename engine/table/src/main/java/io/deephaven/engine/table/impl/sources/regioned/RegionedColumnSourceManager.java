@@ -239,8 +239,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
     private synchronized void invalidateAndRelease() {
         invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
         invalidatedLocations.clear();
-        releasedLocations.forEach(this::unmanage);
-        releasedLocations.clear();
+        if (!releasedLocations.isEmpty()) {
+            unmanage(releasedLocations.stream());
+            releasedLocations.clear();
+        }
     }
 
     @Override

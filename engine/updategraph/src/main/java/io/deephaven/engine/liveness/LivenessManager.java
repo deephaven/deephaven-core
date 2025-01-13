@@ -42,6 +42,8 @@ public interface LivenessManager {
     /**
      * If this manager manages {@code referent} one or more times, drop one such reference. If this manager is also a
      * {@link LivenessReferent}, then it must also be live.
+     * <p>
+     * <em>Strongly prefer using {@link #unmanage(Stream)} when multiple referents should be unmanaged.</em>
      *
      * @param referent The referent to drop
      */
@@ -55,6 +57,8 @@ public interface LivenessManager {
     /**
      * If this manager manages referent one or more times, drop one such reference. If this manager is also a
      * {@link LivenessReferent}, then this method is a no-op if {@code this} is not live.
+     * <p>
+     * <em>Strongly prefer using {@link #tryUnmanage(Stream)}} when multiple referents should be unmanaged.</em>
      *
      * @param referent The referent to drop
      * @return If this node is also a {@link LivenessReferent}, whether this node was live and thus in fact tried to
