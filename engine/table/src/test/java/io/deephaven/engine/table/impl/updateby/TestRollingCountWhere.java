@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -16,7 +15,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
-import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -24,12 +22,9 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
@@ -37,8 +32,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -46,76 +39,15 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 
 @Category(OutOfBandTest.class)
 public class TestRollingCountWhere extends BaseUpdateByTest {
-    /**
-     * These are used in the static tests and leverage the Numeric class functions for verification. Additional tests
-     * are performed on BigInteger/BigDecimal columns as well.
-     */
-    final String[] primitiveColumns = new String[] {
-            "charCol",
-            "byteCol",
-            "shortCol",
-            "intCol",
-            "longCol",
-            "floatCol",
-            "doubleCol",
-    };
-
-    /**
-     * These are used in the ticking table evaluations where we verify dynamic vs static tables.
-     */
-    final String[] columns = new String[] {
-            "boolCol",
-            "charCol",
-            "byteCol",
-            "shortCol",
-            "intCol",
-            "longCol",
-            "floatCol",
-            "doubleCol",
-            "bigIntCol",
-    };
-
     final int STATIC_TABLE_SIZE = 10_000;
     final int DYNAMIC_TABLE_SIZE = 1_000;
     final int DYNAMIC_UPDATE_SIZE = 100;
     final int DYNAMIC_UPDATE_STEPS = 20;
 
-    private String[] getFormulas(String[] columns) {
-        return Arrays.stream(columns)
-                .map(c -> String.format("%s=count(%s)", c, c))
-                .toArray(String[]::new);
-    }
-
-    private String[] getCastingFormulas(String[] columns) {
-        return Arrays.stream(columns)
-                .map(c -> String.format("%s=(double)%s", c, c))
-                .toArray(String[]::new);
-    }
 
     // region Object Helper functions
 
-    @SuppressWarnings("unused") // Functions used via QueryLibrary
-    @VisibleForTesting
-    @TestUseOnly
-    public static class TestHelper {
-
-        public static long countObject(ObjectVector<?> objectVector) {
-
-            if (objectVector == null || objectVector.isEmpty()) {
-                return 0L;
-            }
-
-            final long n = objectVector.size();
-            long nullCount = 0;
-
-            for (long i = 0; i < n; i++) {
-                if (objectVector.get(i) == null) {
-                    nullCount++;
-                }
-            }
-            return n - nullCount;
-        }
-
+    private static class TestHelper {
 
         private static long countWhereInt(final IntVector intVector, final Predicate.Int predicate) {
             if (intVector == null || intVector.isEmpty()) {
@@ -132,128 +64,22 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
             return count;
         }
-    }
 
-    private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        ExecutionContext.getContext().getQueryLibrary().importStatic(TestHelper.class);
+        private static <T> long countWhereObject(final ObjectVector<T> objectVector,
+                final Predicate.Unary<T> predicate) {
+            if (objectVector == null || objectVector.isEmpty()) {
+                return 0L;
+            }
 
-        Table actual = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
-        Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=countObject(bigIntCol)", "bigDecimalCol=countObject(bigDecimalCol)");
+            final long n = objectVector.size();
+            long count = 0;
 
-        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
-        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
-
-        Assert.eq(biActual.length, "array length", biExpected.length);
-        for (int ii = 0; ii < biActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-
-        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
-        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
-
-        Assert.eq(bdActual.length, "array length", bdExpected.length);
-        for (int ii = 0; ii < bdActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-    }
-
-    private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
-            final Duration postTime) {
-        ExecutionContext.getContext().getQueryLibrary().importStatic(TestHelper.class);
-
-        Table actual =
-                t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
-        Table expected =
-                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=countObject(bigIntCol)",
-                                "bigDecimalCol=countObject(bigDecimalCol)");
-
-        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
-        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
-
-        Assert.eq(biActual.length, "array length", biExpected.length);
-        for (int ii = 0; ii < biActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-
-        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
-        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
-
-        Assert.eq(bdActual.length, "array length", bdExpected.length);
-        for (int ii = 0; ii < bdActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-    }
-
-    private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        ExecutionContext.getContext().getQueryLibrary().importStatic(TestHelper.class);
-
-        Table actual =
-                t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
-        Table expected =
-                t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=countObject(bigIntCol)",
-                                "bigDecimalCol=countObject(bigDecimalCol)");
-
-        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
-        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
-
-        Assert.eq(biActual.length, "array length", biExpected.length);
-        for (int ii = 0; ii < biActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-
-        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
-        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
-
-        Assert.eq(bdActual.length, "array length", bdExpected.length);
-        for (int ii = 0; ii < bdActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-    }
-
-    private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
-            final Duration postTime) {
-        ExecutionContext.getContext().getQueryLibrary().importStatic(TestHelper.class);
-
-        Table actual =
-                t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"),
-                        "Sym");
-        Table expected = t
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=countObject(bigIntCol)", "bigDecimalCol=countObject(bigDecimalCol)");
-
-        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
-        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
-
-        Assert.eq(biActual.length, "array length", biExpected.length);
-        for (int ii = 0; ii < biActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
-        }
-
-        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
-        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
-
-        Assert.eq(bdActual.length, "array length", bdExpected.length);
-        for (int ii = 0; ii < bdActual.length; ii++) {
-            final long actualVal = biActual[ii];
-            final long expectedVal = biExpected[ii];
-            Assert.eq(actualVal, "values match", expectedVal);
+            for (long i = 0; i < n; i++) {
+                if (predicate.call(objectVector.get(i))) {
+                    count++;
+                }
+            }
+            return count;
         }
     }
     // endregion Object Helper functions
@@ -348,8 +174,6 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
     }
 
     private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
-        ExecutionContext.getContext().getQueryLibrary().importStatic(TestHelper.class);
-
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
                 new String[] {"charCol"},
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
@@ -429,6 +253,103 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
         }
 
+        // Test chunk, then conditional filter, int > 10 && int % 2 == 0
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 10", "intCol % 2 == 0"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val > 10 && val % 2 == 0));
+            }
+        }
+
+        // Test on String column (representing in for Object)
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                        "Sym != null && Sym.startsWith(`A`)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "SymGroup=Sym"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<String>> expectedGroupIt = expected.columnIterator("SymGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<String> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.<String>countWhereObject(expectedValGroup,
+                                val -> val != null && val.startsWith("A")));
+            }
+        }
+
+        // Test OR filter (processed as a WhereFilter)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                Filter.or(Filter.from("intCol < 25", "intCol > 75"))));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val < 25 || val > 75));
+            }
+        }
+
+        // Test AND of chunkfilter and OR filter
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                Filter.and(Filter.and(Filter.from("intCol > 50")),
+                        Filter.or(Filter.from("intCol < 25", "intCol > 75")))));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val > 50 && (val < 25 || val > 75)));
+            }
+        }
+
+        // Test ANDing two OR filter (processed as sequential WhereFilters)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                Filter.and(Filter.or(Filter.from("intCol < 25", "intCol > 75")),
+                        Filter.or(Filter.from("longCol < 25", "longCol > 75")))));
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol", "longColGroup=longCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if ((intVal < 25 || intVal > 75) && (longVal < 25 || longVal > 75)) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
         // Test multi-column chunk filter, int > 10, longCol <= 50
         actual = t.updateBy(
                 UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 10", "longCol <= 50"));
@@ -487,10 +408,129 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
         }
 
-        // Test OR filter (processed as a WhereFilter)
-        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
-                Filter.or(Filter.from("intCol < 25", "intCol > 75"))));
+        // Test DynamicWhereFilter to ensure we have supported generic WhereFilters correctly.
+        final QueryTable setTable = (QueryTable) TableTools.emptyTable(30).update("intCol = (int)ii");
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("intCol", "intCol"));
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", filter));
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"));
+
+        // The set table contains 0-29, so we can compare against an equivalent filter.
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
+            }
+        }
+    }
+
+    private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
+
+        Table actual;
+        Table expected;
+
+        // Test simple ChunkFilter, int > 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val > 50));
+            }
+        }
+
+        // Test simple ChunkFilter, int <= 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol <= 50"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val <= 50));
+            }
+        }
+
+        // Test simple conditional filter, true
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "true"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test simple conditional filter, false
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "true"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test complex conditional filter, int > 10 && int <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10 && intCol <= 50"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val > 10 && val <= 50));
+            }
+        }
+
+        // Test on String column (representing in for Object)
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                        "Sym != null && Sym.startsWith(`A`)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "SymGroup=Sym"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<String>> expectedGroupIt = expected.columnIterator("SymGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<String> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.<String>countWhereObject(expectedValGroup,
+                                val -> val != null && val.startsWith("A")));
+            }
+        }
+
+        // Test OR filter (processed as a WhereFilter)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                Filter.or(Filter.from("intCol < 25", "intCol > 75"))));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
 
         try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
                 final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
@@ -504,11 +544,11 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
         }
 
         // Test ANDing two OR filter (processed as sequential WhereFilters)
-        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
                 Filter.and(Filter.or(Filter.from("intCol < 25", "intCol > 75")),
                         Filter.or(Filter.from("longCol < 25", "longCol > 75")))));
         expected = t.updateBy(
-                UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol", "longColGroup=longCol"));
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"));
 
         try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
                 final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
@@ -533,11 +573,69 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
         }
 
+        // Test multi-column chunk filter, int > 10, longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10", "longCol <= 50"));
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 && longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test multi-column conditional filter, int > 10 || longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10 || longCol <= 50"));
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 || longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
         // Test DynamicWhereFilter to ensure we have supported generic WhereFilters correctly.
         final QueryTable setTable = (QueryTable) TableTools.emptyTable(30).update("intCol = (int)ii");
         final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("intCol", "intCol"));
-        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", filter));
-        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"));
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", filter));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
 
         // The set table contains 0-29, so we can compare against an equivalent filter.
         try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
@@ -550,23 +648,6 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                         TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
             }
         }
-    }
-
-    private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
-                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
-                        new CharGenerator('A', 'z', 0.1)}).t;
-
-        final Table actual = t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, primitiveColumns));
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
-                .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
-                TableDiff.DiffItems.DoubleFraction);
-
-        doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
     }
 
     // endregion
@@ -666,15 +747,209 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                 new String[] {"charCol"},
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
-        final Table actual =
-                t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, primitiveColumns), "Sym");
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
-                .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
-                TableDiff.DiffItems.DoubleFraction);
+        Table actual;
+        Table expected;
 
-        doTestStaticBucketedBigNumbers(t, prevTicks, postTicks);
+        // Test simple ChunkFilter, int > 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val > 50));
+            }
+        }
+
+        // Test simple ChunkFilter, int <= 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol <= 50"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val <= 50));
+            }
+        }
+
+        // Test simple conditional filter, true
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "true"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test simple conditional filter, false
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "true"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test complex conditional filter, int > 10 && int <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 10 && intCol <= 50"),
+                "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val > 10 && val <= 50));
+            }
+        }
+
+        // Test OR filter (processed as a WhereFilter)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                Filter.or(Filter.from("intCol < 25", "intCol > 75"))), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val < 25 || val > 75));
+            }
+        }
+
+        // Test ANDing two OR filter (processed as sequential WhereFilters)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                Filter.and(Filter.or(Filter.from("intCol < 25", "intCol > 75")),
+                        Filter.or(Filter.from("longCol < 25", "longCol > 75")))),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if ((intVal < 25 || intVal > 75) && (longVal < 25 || longVal > 75)) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test multi-column chunk filter, int > 10, longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 10", "longCol <= 50"),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 && longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test multi-column conditional filter, int > 10 || longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 10 || longCol <= 50"),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 || longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test DynamicWhereFilter to ensure we have supported generic WhereFilters correctly.
+        final QueryTable setTable = (QueryTable) TableTools.emptyTable(30).update("intCol = (int)ii");
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("intCol", "intCol"));
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", filter), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "intColGroup=intCol"), "Sym");
+
+        // The set table contains 0-29, so we can compare against an equivalent filter.
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
+            }
+        }
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
@@ -684,15 +959,211 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                         DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
-        final Table actual =
-                t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, primitiveColumns), "Sym");
-        final Table expected = t.update(getCastingFormulas(primitiveColumns))
-                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
-                .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
-                TableDiff.DiffItems.DoubleFraction);
+        Table actual;
+        Table expected;
 
-        doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);
+        // Test simple ChunkFilter, int > 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"),
+                "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val > 50));
+            }
+        }
+
+        // Test simple ChunkFilter, int <= 50
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol <= 50"),
+                "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> val <= 50));
+            }
+        }
+
+        // Test simple conditional filter, true
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "true"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test simple conditional filter, false
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "true"), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+            }
+        }
+
+        // Test complex conditional filter, int > 10 && int <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10 && intCol <= 50"),
+                "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val > 10 && val <= 50));
+            }
+        }
+
+        // Test OR filter (processed as a WhereFilter)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                Filter.or(Filter.from("intCol < 25", "intCol > 75"))), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val < 25 || val > 75));
+            }
+        }
+
+        // Test ANDing two OR filter (processed as sequential WhereFilters)
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                Filter.and(Filter.or(Filter.from("intCol < 25", "intCol > 75")),
+                        Filter.or(Filter.from("longCol < 25", "longCol > 75")))),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if ((intVal < 25 || intVal > 75) && (longVal < 25 || longVal > 75)) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test multi-column chunk filter, int > 10, longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10", "longCol <= 50"),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 && longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test multi-column conditional filter, int > 10 || longCol <= 50
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 10 || longCol <= 50"),
+                "Sym");
+        expected = t.updateBy(
+                UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol", "longColGroup=longCol"),
+                "Sym");
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroup1It = expected.columnIterator("intColGroup");
+                final CloseableIterator<LongVector> expectedGroup2It = expected.columnIterator("longColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup1 = expectedGroup1It.next();
+                final LongVector expectedValGroup2 = expectedGroup2It.next();
+
+                long expectedVal = 0;
+                for (int ii = 0; ii < expectedValGroup1.size(); ii++) {
+                    final int intVal = expectedValGroup1.get(ii);
+                    final long longVal = expectedValGroup2.get(ii);
+
+                    if (intVal > 10 || longVal <= 50) {
+                        expectedVal++;
+                    }
+                }
+
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match", expectedVal);
+            }
+        }
+
+        // Test DynamicWhereFilter to ensure we have supported generic WhereFilters correctly.
+        final QueryTable setTable = (QueryTable) TableTools.emptyTable(30).update("intCol = (int)ii");
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("intCol", "intCol"));
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", filter), "Sym");
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"), "Sym");
+
+        // The set table contains 0-29, so we can compare against an equivalent filter.
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<IntVector> expectedGroupIt = expected.columnIterator("intColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final IntVector expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
+            }
+        }
     }
 
     // endregion
@@ -860,8 +1331,33 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
-                        ? t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, columns), "Sym")
-                        : t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, columns)))
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"),
+                                "Sym")
+                        : t.updateBy(
+                                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "false"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "false"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "longCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && longCol < 90")))
         };
 
         final Random billy = new Random(0xB177B177);
@@ -882,10 +1378,36 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                EvalNugget.from(() -> bucketed ? t.updateBy(
-                        UpdateByOperation.RollingCount("ts", prevTime, postTime, columns), "Sym")
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"),
+                                "Sym")
                         : t.updateBy(
-                                UpdateByOperation.RollingCount("ts", prevTime, postTime, columns)))
+                                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "longCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && longCol < 90")))
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1012,19 +1534,42 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
         doTestTickingTimed(true, prevTime, postTime);
     }
 
-    private void doTestTicking(final boolean bucketed, final long prevTicks, final long fwdTicks) {
+    private void doTestTicking(final boolean bucketed, final long prevTicks, final long postTicks) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"charCol"},
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                EvalNugget.from(() -> bucketed ? t.updateBy(
-                        UpdateByOperation.RollingCount(prevTicks, fwdTicks, columns), "Sym")
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"),
+                                "Sym")
                         : t.updateBy(
-                                UpdateByOperation.RollingCount(prevTicks, fwdTicks, columns)))
+                                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "false"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "false"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "longCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && longCol < 90")))
         };
-
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
@@ -1044,10 +1589,36 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                EvalNugget.from(() -> bucketed ? t.updateBy(
-                        UpdateByOperation.RollingCount("ts", prevTime, postTime, columns), "Sym")
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(
+                                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"),
+                                "Sym")
                         : t.updateBy(
-                                UpdateByOperation.RollingCount("ts", prevTime, postTime, columns)))
+                                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && intCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && intCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"),
+                                "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50", "longCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && longCol < 90"), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && longCol < 90")))
         };
 
 
@@ -1073,8 +1644,25 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> t.updateBy(control,
-                        List.of(UpdateByOperation.RollingCount(prevTicks, postTicks, columns)),
-                        ColumnName.from("Sym")))
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"), "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "intCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && intCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "false"), "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50",
+                                "longCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                                "intCol > 50 && longCol < 90"),
+                        "Sym"))
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1105,9 +1693,27 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> t.updateBy(control,
-                        List.of(UpdateByOperation.RollingCount("ts", prevTime, postTime, columns)),
-                        ColumnName.from("Sym")))
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50"), "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50",
+                                "intCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && intCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"), "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "intCol > 50",
+                                "longCol < 90"),
+                        "Sym")),
+                EvalNugget.from(() -> t.updateBy(control,
+                        UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                                "intCol > 50 && longCol < 90"),
+                        "Sym"))
         };
+
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {

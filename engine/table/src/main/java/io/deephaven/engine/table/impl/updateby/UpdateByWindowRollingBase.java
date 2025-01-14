@@ -204,7 +204,8 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                             influencePosChunk,
                             ctx.pushChunks[affectedChunkOffset],
                             ctx.popChunks[affectedChunkOffset],
-                            affectedChunkSize);
+                            affectedChunkSize,
+                            influencerCount);
                 }
 
                 affectedChunkOffset++;

@@ -33,7 +33,7 @@ import java.util.Map;
  * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
- * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int, int)}
  * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
@@ -99,18 +99,21 @@ public abstract class UpdateByOperator {
             throw new UnsupportedOperationException("pop() must be overriden by rolling operators");
         }
 
-        public abstract void accumulateCumulative(RowSequence inputKeys,
+        public abstract void accumulateCumulative(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len);
 
-        public abstract void accumulateRolling(RowSequence inputKeys,
+        public abstract void accumulateRolling(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
                 LongChunk<OrderedRowKeys> affectedPosChunk,
                 LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
-                int len);
+                int affectedCount,
+                int influencerCount);
 
         /**
          * Write the current value for this row to the output chunk

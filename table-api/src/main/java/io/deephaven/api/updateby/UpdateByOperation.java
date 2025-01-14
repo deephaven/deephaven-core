@@ -1623,7 +1623,6 @@ public interface UpdateByOperation {
     }
 
 
-
     /**
      * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
      * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
@@ -1658,7 +1657,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
      * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
      * to include. The current row is considered to belong to the reverse window, so calling this with
      * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
@@ -1674,7 +1673,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
      * using ticks as the windowing unit. Ticks are row counts and you may specify the previous window in number of rows
      * to include. The current row is considered to belong to the reverse window, so calling this with
      * {@code revTicks = 1} will simply return the current row. Specifying {@code revTicks = 10} will include the
@@ -1683,15 +1682,197 @@ public interface UpdateByOperation {
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param fwdTicks the look-ahead window size (in rows/ticks)
      * @param resultColumn The output column name in the result table
-     * @param filter The filters to apply to the input columns
+     * @param filter The filter to apply to the input columns
      * @return The aggregation
      */
     static UpdateByOperation RollingCountWhere(long revTicks, long fwdTicks, String resultColumn, Filter filter) {
         return RollingCountWhereSpec.ofTicks(revTicks, fwdTicks, resultColumn, filter).clause();
     }
 
-    // TODO: complete the variations of allowed calls.
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using time as the windowing unit. This function accepts {@link Duration duration} as the reverse window
+     * parameter. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
+     * computed or be considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, Duration revDuration, String resultColumn,
+            String... filters) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revDuration, resultColumn, filters).clause();
+    }
 
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using time as the windowing unit. This function accepts {@link Duration durations} as the reverse and forward
+     * window parameters. Negative values are allowed and can be used to generate completely forward or completely
+     * reverse windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a
+     * value computed or be considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 0m} - contains rows from 10m earlier through the current row
+     * timestamp (inclusive)</li>
+     * <li>{@code revDuration = 0m, fwdDuration = 10m} - contains rows from the current row through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 10m} - contains rows from 10m earlier through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = -5m} - contains rows from 10m earlier through 5m before the current
+     * row timestamp (inclusive), this is a purely backwards looking window</li>
+     * <li>{@code revDuration = -5m, fwdDuration = 10m} - contains rows from 5m following through 10m following the
+     * current row timestamp (inclusive), this is a purely forwards looking window</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param fwdDuration the look-ahead window size (in Duration)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, Duration revDuration, Duration fwdDuration,
+            String resultColumn, String... filters) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revDuration, fwdDuration, resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using time as the windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A
+     * row containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or
+     * be considered in the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, long revTime, String resultColumn,
+            String... filters) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revTime, resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filters,
+     * using time as the windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window
+     * parameters. Negative values are allowed and can be used to generate completely forward or completely reverse
+     * windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
+     * computed or be considered in the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param fwdTime the look-ahead window size (in nanoseconds)
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, long revTime, long fwdTime, String resultColumn,
+            String... filters) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revTime, fwdTime, resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
+     * using time as the windowing unit. This function accepts {@link Duration duration} as the reverse window
+     * parameter. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
+     * computed or be considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m} - contains rows from 10m earlier through the current row timestamp (inclusive)</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, Duration revDuration, String resultColumn,
+            Filter filter) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revDuration, resultColumn, filter).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
+     * using time as the windowing unit. This function accepts {@link Duration durations} as the reverse and forward
+     * window parameters. Negative values are allowed and can be used to generate completely forward or completely
+     * reverse windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a
+     * value computed or be considered in the windows of other rows.
+     * <p>
+     * Here are some examples of window values:
+     * <ul>
+     * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 0m} - contains rows from 10m earlier through the current row
+     * timestamp (inclusive)</li>
+     * <li>{@code revDuration = 0m, fwdDuration = 10m} - contains rows from the current row through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = 10m} - contains rows from 10m earlier through 10m following the
+     * current row timestamp (inclusive)</li>
+     * <li>{@code revDuration = 10m, fwdDuration = -5m} - contains rows from 10m earlier through 5m before the current
+     * row timestamp (inclusive), this is a purely backwards looking window</li>
+     * <li>{@code revDuration = -5m, fwdDuration = 10m} - contains rows from 5m following through 10m following the
+     * current row timestamp (inclusive), this is a purely forwards looking window</li>
+     * </ul>
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revDuration the look-behind window size (in Duration)
+     * @param fwdDuration the look-ahead window size (in Duration)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, Duration revDuration, Duration fwdDuration,
+            String resultColumn, Filter filter) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revDuration, fwdDuration, resultColumn, filter).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
+     * using time as the windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A
+     * row containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or
+     * be considered in the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, long revTime, String resultColumn, Filter filter) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revTime, resultColumn, filter).clause();
+    }
+
+    /**
+     * Create a {@link RollingCountWhereSpec rolling count where} that will count values that pass the provided filter,
+     * using time as the windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window
+     * parameters. Negative values are allowed and can be used to generate completely forward or completely reverse
+     * windows. A row containing a {@code null} in the timestamp column belongs to no window and will not have a value
+     * computed or be considered in the windows of other rows.
+     *
+     * @param timestampCol the name of the timestamp column
+     * @param revTime the look-behind window size (in nanoseconds)
+     * @param fwdTime the look-ahead window size (in nanoseconds)
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingCountWhere(String timestampCol, long revTime, long fwdTime, String resultColumn,
+            Filter filter) {
+        return RollingCountWhereSpec.ofTime(timestampCol, revTime, fwdTime, resultColumn, filter).clause();
+    }
 
 
     /**
