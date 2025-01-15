@@ -144,7 +144,6 @@ public class ParquetFieldIdColumnResolverFactoryTest {
 
     @Test
     public void ambiguousFieldsNested() {
-        final ParquetFieldIdColumnResolverFactory factory = ParquetFieldIdColumnResolverFactory.of(Map.of("Col1", 1));
         // X (1), list, element (2)
         // Y (2), list, element (1)
         // Z (3)
@@ -158,7 +157,7 @@ public class ParquetFieldIdColumnResolverFactoryTest {
         // for example, an implementation could choose to consider the innermost (or outermost) field id for matching
         // purposes.
         try {
-            factory.of(schema);
+            ParquetFieldIdColumnResolverFactory.of(Map.of("Col1", 1)).of(schema);
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("Col1 -> 1 has multiple paths [X, list, element], [Y, list, element]");

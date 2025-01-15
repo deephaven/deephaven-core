@@ -29,14 +29,14 @@ public abstract class ParquetColumnResolverMap implements ParquetColumnResolver 
     public abstract MessageType schema();
 
     /**
-     * The map from Deephaven column name to {@link ColumnDescriptor}. The {@link #schema()} must contains the column
-     * descriptors.
+     * The map from Deephaven column name to {@link ColumnDescriptor}. The {@link #schema()} must contain each column
+     * descriptor.
      */
     public abstract Map<String, ColumnDescriptor> mapping();
 
     @Override
-    public final Optional<ColumnDescriptor> of(String columnName) {
-        return Optional.ofNullable(mapping().get(columnName));
+    public final Optional<String[]> of(String columnName) {
+        return Optional.ofNullable(mapping().get(columnName)).map(ColumnDescriptor::getPath);
     }
 
     public interface Builder {

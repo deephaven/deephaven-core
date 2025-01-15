@@ -193,7 +193,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else {
             // empty list will result in exists=false
             nameList = resolver.of(columnName)
-                    .map(ColumnDescriptor::getPath)
                     .map(Arrays::asList)
                     .orElse(List.of());
         }
