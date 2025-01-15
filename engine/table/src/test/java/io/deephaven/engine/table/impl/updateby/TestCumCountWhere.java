@@ -34,7 +34,6 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestCumCountWhere extends BaseUpdateByTest {

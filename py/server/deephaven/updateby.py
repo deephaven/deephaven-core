@@ -3,7 +3,7 @@
 #
 """This module supports building various operations for use with the update-by Table operation."""
 from enum import Enum
-from typing import Union, List, Sequence
+from typing import Union, List
 
 import jpy
 
@@ -564,13 +564,13 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
         raise DHError(e, "failed to create a cumulative maximum UpdateByOperation.") from e
 
 
-def cum_count_where(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> UpdateByOperation:
+def cum_count_where(col: str, filters: Union[str, Filter, List[str], List[Filter]]) -> UpdateByOperation:
     """Creates a cumulative count where UpdateByOperation that counts the number of values that pass the provided
     filters.
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
 
     Returns:
@@ -1523,7 +1523,7 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str = None, c
         raise DHError(e, "failed to create a rolling formula (time) UpdateByOperation.") from e
 
 
-def rolling_count_where_tick(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]],
+def rolling_count_where_tick(col: str, filters: Union[str, Filter, List[str], List[Filter]],
                              rev_ticks: int = 0, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using ticks as the windowing unit. Ticks are row counts, and you may specify the reverse and forward
@@ -1545,7 +1545,7 @@ def rolling_count_where_tick(col: str, filters: Union[str, Filter, Sequence[str]
 
     Args:
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
@@ -1566,7 +1566,7 @@ def rolling_count_where_tick(col: str, filters: Union[str, Filter, Sequence[str]
         raise DHError(e, "failed to create a rolling count_where UpdateByOperation.") from e
 
 
-def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]],
+def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, Filter, List[str], List[Filter]],
                              rev_time: Union[int, str] = 0, fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using time as the windowing unit. This function accepts nanoseconds or time strings as the reverse and
@@ -1590,7 +1590,7 @@ def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, Filter, 
     Args:
         ts_col (str): the timestamp column for determining the window
         col (str): the column to hold the counts of rows that pass the filter condition columns.
-        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
             expression(s) or Filter object(s)
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001" or "PT5M"

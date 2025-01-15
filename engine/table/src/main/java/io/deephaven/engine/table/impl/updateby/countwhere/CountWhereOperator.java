@@ -13,13 +13,16 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
+import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,6 +51,84 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
      * Whether we need to create and maintain a chunk source table?
      */
     private final boolean chunkSourceTableRequired;
+
+    /**
+     * Holder class to hold filter objects and the input column indices they apply to.
+     */
+    public static class CountFilter {
+        final ChunkFilter chunkFilter;
+        final AbstractConditionFilter.Filter conditionFilter;
+        final WhereFilter whereFilter;
+        final int[] inputColumnIndices;
+
+        public CountFilter(ChunkFilter chunkFilter, int[] inputColumnIndices) {
+            this.chunkFilter = chunkFilter;
+            this.conditionFilter = null;
+            this.whereFilter = null;
+            this.inputColumnIndices = inputColumnIndices;
+        }
+
+        public CountFilter(AbstractConditionFilter.Filter conditionFilter, int[] inputColumnIndices) {
+            this.chunkFilter = null;
+            this.conditionFilter = conditionFilter;
+            this.whereFilter = null;
+            this.inputColumnIndices = inputColumnIndices;
+        }
+
+        public CountFilter(WhereFilter whereFilter, int[] inputColumnIndices) {
+            this.chunkFilter = null;
+            this.conditionFilter = null;
+            this.whereFilter = whereFilter;
+            this.inputColumnIndices = inputColumnIndices;
+        }
+
+        public WhereFilter whereFilter() {
+            return whereFilter;
+        }
+
+        /**
+         * Create CountFilters from WhereFilter array, initializing the filters against the provided table.
+         */
+        public static CountFilter[] createCountFilters(
+                final WhereFilter[] filters,
+                final Table inputTable,
+                final List<int[]> filterInputIndices) {
+
+            // Create the internal filters
+            final List<CountFilter> filterList = new ArrayList<>();
+            boolean forcedWhereFilter = false;
+            for (int fi = 0; fi < filters.length; fi++) {
+                final WhereFilter filter = filters[fi];
+                final CountFilter countFilter;
+                if (!forcedWhereFilter && filter instanceof ConditionFilter) {
+                    final ConditionFilter conditionFilter = (ConditionFilter) filter;
+                    if (conditionFilter.hasVirtualRowVariables()) {
+                        throw new UnsupportedOperationException(
+                                "UpdateBy CountWhere operator does not support refreshing filters");
+                    }
+                    try {
+                        countFilter = new CountFilter(conditionFilter.getFilter(inputTable, RowSetFactory.empty()),
+                                filterInputIndices.get(fi));
+                    } catch (final Exception e) {
+                        throw new IllegalArgumentException(
+                                "Error creating condition filter in UpdateBy CountWhere Operator", e);
+                    }
+                } else if (!forcedWhereFilter && filter instanceof ExposesChunkFilter
+                        && ((ExposesChunkFilter) filter).chunkFilter().isPresent()) {
+                    final Optional<ChunkFilter> chunkFilter = ((ExposesChunkFilter) filter).chunkFilter();
+                    countFilter = new CountFilter(chunkFilter.get(), filterInputIndices.get(fi));
+                } else {
+                    try (final SafeCloseable ignored = filter.beginOperation(inputTable)) {
+                        countFilter = new CountFilter(filter, filterInputIndices.get(fi));
+                    }
+                    forcedWhereFilter = true;
+                }
+                filterList.add(countFilter);
+            }
+
+            return filterList.toArray(CountFilter[]::new);
+        }
+    }
 
     private class Context extends BaseLongUpdateByOperator.Context {
         /**
@@ -85,9 +166,16 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
          */
         final SafeCloseable[] filterOperationContexts;
 
+        /**
+         * A list of all items that need to be closed when the context is released.
+         */
+        final SafeCloseableList closeableList;
+
         @SuppressWarnings("unused")
         private Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
+
+            closeableList = new SafeCloseableList();
 
             // Create a new chunk source table for this context
             if (chunkSourceTableRequired) {
@@ -120,6 +208,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
 
                     // noinspection resource
                     filterOperationContexts[fi] = copiedFilter.beginOperation(chunkSourceTable);
+                    closeableList.add(filterOperationContexts[fi]);
 
                     // Use this WhereFilter in chunk processing
                     contextFilters[fi] = new CountFilter(copiedFilter, filter.inputColumnIndices);
@@ -132,6 +221,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             for (int ii = 0; ii < filters.length; ii++) {
                 if (filters[ii].conditionFilter != null) {
                     conditionFilterContexts[ii] = filters[ii].conditionFilter.getContext(influencerChunkSize);
+                    closeableList.add(conditionFilterContexts[ii]);
                 }
             }
 
@@ -144,6 +234,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             }
 
             resultsChunk = WritableBooleanChunk.makeWritableChunk(influencerChunkSize);
+            closeableList.add(resultsChunk);
+
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             curVal = 0;
@@ -157,12 +249,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void close() {
-            // TODO: single SafeClosableList for all these items
-            SafeCloseableArray.close(conditionFilterContexts);
-            SafeCloseableArray.close(filterOperationContexts);
-            resultsChunk.close();
-            outputValues.close();
-            outputFillContext.close();
+            super.close();
+            closeableList.close();
         }
 
         @Override

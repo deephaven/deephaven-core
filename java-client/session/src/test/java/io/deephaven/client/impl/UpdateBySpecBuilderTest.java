@@ -351,7 +351,6 @@ public class UpdateBySpecBuilderTest {
         }
     }
 
-
     @Test
     void ema() {
         check(EmaSpec.ofTime("Timestamp", Duration.ofNanos(1)));
