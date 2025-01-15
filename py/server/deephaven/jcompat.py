@@ -100,6 +100,19 @@ def j_list_to_list(jlist) -> List[Any]:
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
 
+def j_collection_to_list(jcollection) -> List[Any]:
+    """Converts a java Collection to a python list."""
+    if not jcollection:
+        return []
+
+    res = []
+    it = jcollection.iterator()
+    while it.hasNext():
+        res.append(wrap_j_object(it.next()))
+
+    return res
+
+
 T = TypeVar("T")
 R = TypeVar("R")
 
