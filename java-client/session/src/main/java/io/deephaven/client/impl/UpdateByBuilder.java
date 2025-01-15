@@ -192,6 +192,19 @@ class UpdateByBuilder {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(CumCountWhereSpec spec) {
+            final Collection<String> filters = Filter.extractAnds(spec.filter()).stream()
+                    .map(Strings::of)
+                    .collect(Collectors.toList());
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setCountWhere(UpdateByCumulativeCountWhere.newBuilder()
+                            .setColumnName(spec.column().name())
+                            .addAllFilters(filters)
+                            .build())
+                    .build();
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
             UpdateByEmStd.Builder builder = UpdateByEmStd.newBuilder().setWindowScale(adapt(spec.windowScale()));
             spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);

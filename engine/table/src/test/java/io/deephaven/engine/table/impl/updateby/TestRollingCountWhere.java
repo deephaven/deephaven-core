@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -35,6 +36,7 @@ import java.time.Duration;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 
 @Category(OutOfBandTest.class)
@@ -44,9 +46,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_SIZE = 100;
     final int DYNAMIC_UPDATE_STEPS = 20;
 
-
     // region Object Helper functions
-
     private static class TestHelper {
 
         private static long countWhereInt(final IntVector intVector, final Predicate.Int predicate) {
@@ -269,7 +269,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
         }
 
-        // Test on String column (representing in for Object)
+        // Test on String column (representing all Object)
         actual = t.updateBy(
                 UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
                         "Sym != null && Sym.startsWith(`A`)"));
@@ -282,7 +282,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                 final ObjectVector<String> expectedValGroup = expectedGroupIt.next();
                 // Use a lambda over expectedValGroup to compute the expected val.
                 Assert.eq(actualVal, "values match",
-                        TestHelper.<String>countWhereObject(expectedValGroup,
+                        TestHelper.countWhereObject(expectedValGroup,
                                 val -> val != null && val.startsWith("A")));
             }
         }
@@ -480,7 +480,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
         }
 
         // Test simple conditional filter, false
-        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "true"));
+        actual = t.updateBy(UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count", "false"));
         expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "intColGroup=intCol"));
 
         try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
@@ -489,7 +489,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                 final long actualVal = actualIt.nextLong();
                 final IntVector expectedValGroup = expectedGroupIt.next();
                 // Use a lambda over expectedValGroup to compute the expected val.
-                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> true));
+                Assert.eq(actualVal, "values match", TestHelper.countWhereInt(expectedValGroup, val -> false));
             }
         }
 
@@ -509,7 +509,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
             }
         }
 
-        // Test on String column (representing in for Object)
+        // Test on String column (representing all Object)
         actual = t.updateBy(
                 UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
                         "Sym != null && Sym.startsWith(`A`)"));
@@ -522,7 +522,7 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                 final ObjectVector<String> expectedValGroup = expectedGroupIt.next();
                 // Use a lambda over expectedValGroup to compute the expected val.
                 Assert.eq(actualVal, "values match",
-                        TestHelper.<String>countWhereObject(expectedValGroup,
+                        TestHelper.countWhereObject(expectedValGroup,
                                 val -> val != null && val.startsWith("A")));
             }
         }
@@ -1727,4 +1727,33 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
     }
 
     // endregion
+
+    @Test
+    public void testProxy() {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131).t;
+
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        Table actual;
+        Table expected;
+
+        // Compare the merged proxy table to the bucketed version (need to sort by symbol to get alignment).
+        PartitionedTable pt = t.partitionBy("Sym");
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"))
+                .target().merge().sort("Sym");
+        expected = t
+                .updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol > 50"), "Sym")
+                .sort("Sym");
+        assertTableEquals(expected, actual);
+
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol <= 50"))
+                .target().merge().sort("Sym");
+        expected = t
+                .updateBy(UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count", "intCol <= 50"), "Sym")
+                .sort("Sym");
+        assertTableEquals(expected, actual);
+    }
 }

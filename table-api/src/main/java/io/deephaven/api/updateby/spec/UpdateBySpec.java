@@ -88,6 +88,8 @@ public interface UpdateBySpec {
 
         T visit(CumProdSpec spec);
 
+        T visit(CumCountWhereSpec spec);
+
         T visit(DeltaSpec spec);
 
         T visit(RollingSumSpec spec);

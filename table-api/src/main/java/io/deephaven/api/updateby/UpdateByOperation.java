@@ -78,6 +78,30 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create a {@link CumCountWhereSpec cumulative count where} that counts the number of rows that pass the provided
+     * filters.
+     *
+     * @param resultColumn The output column name in the result table
+     * @param filters The filters to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountWhere(String resultColumn, String... filters) {
+        return CumCountWhereSpec.of(resultColumn, filters).clause();
+    }
+
+    /**
+     * Create a {@link CumCountWhereSpec cumulative count where} that counts the number of rows that pass the provided
+     * filter.
+     *
+     * @param resultColumn The output column name in the result table
+     * @param filter The filter to apply to the input columns
+     * @return The aggregation
+     */
+    static UpdateByOperation CumCountWhere(String resultColumn, Filter filter) {
+        return CumCountWhereSpec.of(resultColumn, filter).clause();
+    }
+
+    /**
      * Create a {@link FillBySpec forward fill} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs

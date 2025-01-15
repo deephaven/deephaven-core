@@ -600,6 +600,11 @@ message UpdateByRequest {
           repeated string filters = 4;
         }
 
+        message UpdateByCumulativeCountWhere {
+          string column_name = 3;
+          repeated string filters = 4;
+        }
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -623,6 +628,7 @@ message UpdateByRequest {
           UpdateByRollingWAvg rolling_wavg = 20;
           UpdateByRollingFormula rolling_formula = 21;
           UpdateByRollingCountWhere rolling_count_where = 22;
+          UpdateByCumulativeCountWhere count_where = 23;
         }
       }
 

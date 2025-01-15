@@ -28,10 +28,7 @@ import java.util.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
-// TODO: this operator can alomost certainly be re-used with minor changes for the cumulative version as well. Should
-// probably be called CountWhereOperator, even though that sorta collides with AggBy operator name.
-
-public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
+public class CountWhereOperator extends BaseLongUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 512;
 
     /**
@@ -192,10 +189,7 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
          * Do the work of applying the filters against the input data and assigning true to the result chunk where all
          * filters pass, false otherwise.
          */
-        private void applyFilters(
-                final Chunk<? extends Values>[] inputChunks,
-                final int chunkSize) {
-
+        private void applyFilters(final int chunkSize) {
             // Use the filters to populate a boolean buffer with the filter results.
             boolean initialized = false;
             WritableRowSet remainingRows = null;
@@ -264,7 +258,7 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
 
-            applyFilters(influencerValueChunkArr, influencerCount);
+            applyFilters(influencerCount);
 
             int pushIndex = 0;
 
@@ -290,6 +284,26 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
                 }
 
                 // write the results to the output chunk
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void accumulateCumulative(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                @Nullable final LongChunk<? extends Values> tsChunk,
+                final int len) {
+
+            setValueChunks(valueChunkArr);
+            applyFilters(len);
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                push(ii, 1);
                 writeToOutputChunk(ii);
             }
 
@@ -325,16 +339,6 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
                 }
             }
         }
-
-        @Override
-        public void accumulateCumulative(
-                @NotNull final RowSequence inputKeys,
-                @NotNull final Chunk<? extends Values>[] valueChunkArr,
-                @Nullable final LongChunk<? extends Values> tsChunk,
-                final int len) {
-            throw new UnsupportedOperationException(
-                    "RollingCountWhereOperator is not supported in cumulative operations.");
-        }
     }
 
     /**
@@ -351,7 +355,7 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
     }
 
     /**
-     * Create a new RollingCountWhereOperator.
+     * Create a new CountWhereOperator for rolling / windowed operations.
      *
      * @param pair Contains the output column name as a MatchPair
      * @param affectingColumns The names of the columns that when changed would affect this formula output
@@ -365,7 +369,7 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
      * @param inputColumnTypes The data types for each input column
      * @param inputComponentTypes The component types for each input column
      */
-    public RollingCountWhereOperator(
+    public CountWhereOperator(
             @NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final String timestampColumnName,
@@ -386,9 +390,46 @@ public class RollingCountWhereOperator extends BaseLongUpdateByOperator {
         this.chunkSourceTableRequired = chunkSourceTableRequired;
     }
 
+    /**
+     * Create a new CountWhereOperator for cumulative operations.
+     *
+     * @param pair Contains the output column name as a MatchPair
+     * @param filters the filters to apply to the input columns
+     * @param inputColumnNames The names of the key columns to be used as inputs
+     * @param inputChunkTypes The chunk types for each input column
+     * @param inputColumnTypes The data types for each input column
+     * @param inputComponentTypes The component types for each input column
+     */
+    public CountWhereOperator(
+            @NotNull final MatchPair pair,
+            final CountFilter[] filters,
+            final String[] inputColumnNames,
+            final ChunkType[] inputChunkTypes,
+            final Class<?>[] inputColumnTypes,
+            final Class<?>[] inputComponentTypes,
+            final boolean chunkSourceTableRequired) {
+        super(pair, inputColumnNames, null, 0, 0, false);
+        this.filters = filters;
+        this.inputColumnNames = inputColumnNames;
+        this.inputChunkTypes = inputChunkTypes;
+        this.inputColumnTypes = inputColumnTypes;
+        this.inputComponentTypes = inputComponentTypes;
+        this.chunkSourceTableRequired = chunkSourceTableRequired;
+    }
+
     @Override
     public UpdateByOperator copy() {
-        return new RollingCountWhereOperator(
+        if (!isWindowed) {
+            return new CountWhereOperator(
+                    pair,
+                    filters,
+                    inputColumnNames,
+                    inputChunkTypes,
+                    inputColumnTypes,
+                    inputComponentTypes,
+                    chunkSourceTableRequired);
+        }
+        return new CountWhereOperator(
                 pair,
                 affectingColumns,
                 timestampColumnName,
