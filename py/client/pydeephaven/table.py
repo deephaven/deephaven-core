@@ -665,7 +665,8 @@ class Table(TableInterface, ServerObject):
         """
         return super(Table, self).agg_all_by(agg, by)
 
-    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]) -> Table:
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]],
+                  by: Union[str, List[str]] = None) -> Table:
         """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
         which support incremental aggregations over the corresponding rows in the table. The aggregations will

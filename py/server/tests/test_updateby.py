@@ -361,7 +361,7 @@ class UpdateByTestCase(BaseTestCase):
 
     def test_rolling_count_where_output(self):
         """
-        Test and validation of the cum_count_where feature
+        Test and validation of the rolling_count_where feature
         """
         test_table = empty_table(4).update(["a=ii", "b=ii%2"])
         count_aggs = [
