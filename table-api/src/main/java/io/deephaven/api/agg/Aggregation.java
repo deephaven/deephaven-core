@@ -242,7 +242,7 @@ public interface Aggregation {
      * values that pass the supplied {@code filter}.
      *
      * @param resultColumn The {@link Count#column() output column} name
-     * @param filter The {@link Filter) to apply to the input columns
+     * @param filter The {@link Filter} to apply to the input columns
      * @return The aggregation
      */
     static CountWhere AggCountWhere(String resultColumn, Filter filter) {
