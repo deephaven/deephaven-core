@@ -169,7 +169,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract Optional<Collection<List<String>>> getIndexColumns();
 
-    public abstract Optional<ParquetColumnResolver.Factory> getColumnResolver();
+    public abstract Optional<ParquetColumnResolver.Factory> getColumnResolverFactory();
 
     /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
@@ -321,7 +321,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<ParquetColumnResolver.Factory> getColumnResolver() {
+        public Optional<ParquetColumnResolver.Factory> getColumnResolverFactory() {
             return Optional.empty();
         }
 
@@ -635,7 +635,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public Optional<ParquetColumnResolver.Factory> getColumnResolver() {
+        public Optional<ParquetColumnResolver.Factory> getColumnResolverFactory() {
             return Optional.ofNullable(columnResolver);
         }
 
@@ -760,7 +760,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
             onWriteCompleted = readOnlyParquetInstructions.onWriteCompleted().orElse(null);
-            columnResolverFactory = readOnlyParquetInstructions.getColumnResolver().orElse(null);
+            columnResolverFactory = readOnlyParquetInstructions.getColumnResolverFactory().orElse(null);
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {

@@ -32,7 +32,7 @@ public class ParquetInstructionsTest {
         assertThat(ParquetInstructions.EMPTY.getFileLayout()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getTableDefinition()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.getIndexColumns()).isEmpty();
-        assertThat(ParquetInstructions.EMPTY.getColumnResolver()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.getColumnResolverFactory()).isEmpty();
         assertThat(ParquetInstructions.EMPTY.baseNameForPartitionedParquetData()).isEqualTo("{uuid}");
     }
 
@@ -152,7 +152,7 @@ public class ParquetInstructionsTest {
                 .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("Foo")))
                 .setColumnResolverFactory(ColumnResolverTestImpl.INSTANCE)
                 .build();
-        assertThat(instructions.getColumnResolver()).hasValue(ColumnResolverTestImpl.INSTANCE);
+        assertThat(instructions.getColumnResolverFactory()).hasValue(ColumnResolverTestImpl.INSTANCE);
     }
 
     @Test
@@ -171,7 +171,7 @@ public class ParquetInstructionsTest {
         INSTANCE;
 
         @Override
-        public ParquetColumnResolver init(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
+        public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
             throw new UnsupportedOperationException();
         }
     }

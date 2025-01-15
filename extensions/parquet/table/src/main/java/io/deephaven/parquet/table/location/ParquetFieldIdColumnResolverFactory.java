@@ -5,7 +5,6 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
 import org.apache.parquet.column.ColumnDescriptor;
-import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
  * The following is an example {@link ParquetColumnResolver.Factory} that may be useful for testing and debugging
  * purposes, but is not meant to be used for production use cases.
  */
-public final class ParquetColumnResolverFieldIdFactory implements ParquetColumnResolver.Factory {
+public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnResolver.Factory {
 
     /**
      * TODO: javadoc
@@ -30,8 +29,8 @@ public final class ParquetColumnResolverFieldIdFactory implements ParquetColumnR
      * @param columnNameToFieldId a map from Deephaven column names to field ids
      * @return the column resolver provider
      */
-    public static ParquetColumnResolverFieldIdFactory of(Map<String, Integer> columnNameToFieldId) {
-        return new ParquetColumnResolverFieldIdFactory(columnNameToFieldId
+    public static ParquetFieldIdColumnResolverFactory of(Map<String, Integer> columnNameToFieldId) {
+        return new ParquetFieldIdColumnResolverFactory(columnNameToFieldId
                 .entrySet()
                 .stream()
                 .collect(Collectors.groupingBy(
@@ -41,18 +40,22 @@ public final class ParquetColumnResolverFieldIdFactory implements ParquetColumnR
 
     private final Map<Integer, Set<String>> fieldIdsToDhColumnNames;
 
-    private ParquetColumnResolverFieldIdFactory(Map<Integer, Set<String>> fieldIdsToDhColumnNames) {
+    private ParquetFieldIdColumnResolverFactory(Map<Integer, Set<String>> fieldIdsToDhColumnNames) {
         this.fieldIdsToDhColumnNames = Objects.requireNonNull(fieldIdsToDhColumnNames);
     }
 
     @Override
-    public ParquetColumnResolver init(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
+    public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
         final MessageType schema = tableLocationKey.getFileReader().getSchema();
         // TODO: note the potential for confusion on where to derive schema from.
         // final MessageType schema = tableLocationKey.getMetadata().getFileMetaData().getSchema();
+        return of(schema);
+    }
+
+    public ParquetColumnResolverMap of(MessageType schema) {
         final FieldIdMappingVisitor visitor = new FieldIdMappingVisitor();
         ParquetUtil.walk(schema, visitor);
-        return ParquetColumnResolver.builder()
+        return ParquetColumnResolverMap.builder()
                 .schema(schema)
                 .putAllMapping(visitor.nameToColumnDescriptor)
                 .build();
@@ -67,10 +70,11 @@ public final class ParquetColumnResolverFieldIdFactory implements ParquetColumnR
             // field id closest to the leaf. This version, however, takes the most general approach and considers field
             // ids wherever they appear; ultimately, only being resolvable if the field id mapping is unambiguous.
             for (Type type : path) {
-                if (type.getId() == null) {
+                final Type.ID id = type.getId();
+                if (id == null) {
                     continue;
                 }
-                final int fieldId = type.getId().intValue();
+                final int fieldId = id.intValue();
                 final Set<String> set = fieldIdsToDhColumnNames.get(fieldId);
                 if (set == null) {
                     continue;
@@ -79,9 +83,9 @@ public final class ParquetColumnResolverFieldIdFactory implements ParquetColumnR
                 for (String columnName : set) {
                     final ColumnDescriptor existing = nameToColumnDescriptor.putIfAbsent(columnName, columnDescriptor);
                     if (existing != null) {
-                        throw new IllegalStateException(String.format(
-                                "Parquet columns can't be unambigously mapped. %d -> %s has multiple paths %s, %s",
-                                fieldId, columnName, Arrays.toString(existing.getPath()),
+                        throw new IllegalArgumentException(String.format(
+                                "Parquet columns can't be unambigously mapped. %s -> %d has multiple paths %s, %s",
+                                columnName, fieldId, Arrays.toString(existing.getPath()),
                                 Arrays.toString(columnDescriptor.getPath())));
                     }
                 }

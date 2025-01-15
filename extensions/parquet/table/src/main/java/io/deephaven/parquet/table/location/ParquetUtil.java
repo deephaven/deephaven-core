@@ -26,7 +26,6 @@ final class ParquetUtil {
         void accept(Collection<Type> path, PrimitiveType primitiveType);
     }
 
-
     static class ColumnDescriptorVisitor implements Visitor {
 
         private final Consumer<ColumnDescriptor> consumer;

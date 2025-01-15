@@ -5,10 +5,8 @@ package io.deephaven.parquet.table.location;
 
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.GroupType;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
-import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
 
@@ -16,6 +14,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiPredicate;
 
+import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.apache.parquet.schema.Types.optional;
+import static org.apache.parquet.schema.Types.repeated;
+import static org.apache.parquet.schema.Types.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ParquetUtilTest {
@@ -23,9 +27,9 @@ public class ParquetUtilTest {
     private static final MessageType SCHEMA;
 
     static {
-        final PrimitiveType required = Types.required(PrimitiveTypeName.INT32).named("Required");
-        final PrimitiveType repeated = Types.repeated(PrimitiveTypeName.INT32).named("Repeated");
-        final PrimitiveType optional = Types.optional(PrimitiveTypeName.INT32).named("Optional");
+        final PrimitiveType required = required(INT32).named("Required");
+        final PrimitiveType repeated = repeated(INT32).named("Repeated");
+        final PrimitiveType optional = optional(INT32).named("Optional");
         final GroupType requiredGroup = Types.requiredGroup()
                 .addFields(required, repeated, optional)
                 .named("RequiredGroup");
@@ -82,31 +86,21 @@ public class ParquetUtilTest {
         for (ColumnDescriptor column : ParquetUtil.getColumns(SCHEMA)) {
             assertThat(ParquetUtil.contains(SCHEMA, column)).isTrue();
         }
-        assertThat(ParquetUtil.contains(SCHEMA, new ColumnDescriptor(new String[] {"Required"},
-                Types.required(PrimitiveTypeName.INT32).named("Required"), 0, 0))).isTrue();
+        assertThat(ParquetUtil.contains(SCHEMA,
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).named("Required"), 0, 0))).isTrue();
         for (ColumnDescriptor column : new ColumnDescriptor[] {
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.optional(PrimitiveTypeName.INT32).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.repeated(PrimitiveTypeName.INT32).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT32).id(42).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required2"},
-                        Types.required(PrimitiveTypeName.INT32).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT32).named("Required2"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT32).named("Required"), 1, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT32).named("Required"), 0, 1),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT64).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.required(PrimitiveTypeName.INT32).as(LogicalTypeAnnotation.intType(16)).named("Required"),
-                        0, 0),
-                new ColumnDescriptor(new String[] {"Required"},
-                        Types.optional(PrimitiveTypeName.INT32).named("Required"), 0, 0),
-                new ColumnDescriptor(new String[] {}, Types.repeated(PrimitiveTypeName.INT32).named("Required"), 0, 0)
+                new ColumnDescriptor(new String[] {"Required"}, optional(INT32).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required"}, repeated(INT32).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).id(42).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required2"}, required(INT32).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).named("Required2"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).named("Required"), 1, 0),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).named("Required"), 0, 1),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT64).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {"Required"}, required(INT32).as(intType(16)).named("Required"), 0,
+                        0),
+                new ColumnDescriptor(new String[] {"Required"}, optional(INT32).named("Required"), 0, 0),
+                new ColumnDescriptor(new String[] {}, repeated(INT32).named("Required"), 0, 0)
         }) {
             assertThat(ParquetUtil.contains(SCHEMA, column)).isFalse();
         }
