@@ -16,7 +16,8 @@ import jsinterop.base.JsPropertyMap;
 public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
     @Override
     public String getModuleName() {
-        return "io.deephaven.web.DeephavenIntegrationTest";
+        // This test runs in its own module to avoid risking poisoning other tests with its broken custom transports
+        return "io.deephaven.web.CustomTransportTest";
     }
 
     /**

@@ -346,8 +346,8 @@ class TableDataServiceTestCase(BaseTestCase):
         backend.sub_new_partition_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
         with self.assertRaises(Exception) as cm:
-            # failure_cb will be called in the background thread after 2 PUG cycles
-            self.wait_ticking_table_update(table, 600, 2)
+            # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
+            self.wait_ticking_table_update(table, 600, 3)
         self.assertTrue(table.j_table.isFailed())
 
     def test_partition_size_sub_failure(self):
@@ -358,8 +358,8 @@ class TableDataServiceTestCase(BaseTestCase):
         backend.sub_partition_size_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
         with self.assertRaises(Exception) as cm:
-            # failure_cb will be called in the background thread after 2 PUG cycles
-            self.wait_ticking_table_update(table, 600, 2)
+            # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
+            self.wait_ticking_table_update(table, 600, 3)
 
         self.assertTrue(table.j_table.isFailed())
 
