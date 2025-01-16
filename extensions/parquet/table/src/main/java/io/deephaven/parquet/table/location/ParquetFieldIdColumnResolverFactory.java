@@ -18,13 +18,56 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The following is an example {@link ParquetColumnResolver.Factory} that may be useful for testing and debugging
- * purposes, but is not meant to be used for production use cases.
+ * This {@link ParquetColumnResolver.Factory} resolves Parquet columns via {@link Type#getId() field ids}. The field ids
+ * are considered for resolution no matter what level in the schema they exist. For example, the following schema has
+ * field ids at different levels:
+ *
+ * <pre>
+ * message root {
+ *   required int32 X = 42;
+ *   required group Y (LIST) = 43 {
+ *     repeated group list {
+ *       required int32 element;
+ *     }
+ *   }
+ *   required group Z (LIST) {
+ *     repeated group list {
+ *       required int32 element = 44;
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * In this example, {@code 42} would be resolvable to {@code [X]}, {@code 43} would be resolvable to
+ * {@code [Y, list, element]}, and {@code 44} would be resolvable to {@code [Z, list, element]}.
+ *
+ * <p>
+ * If a schema has ambiguous field ids (according to this implementation's definition), the resolution will fail if the
+ * user requests those field ids. For example:
+ *
+ * <pre>
+ * message root {
+ *   required int32 X = 42;
+ *   required group Y (LIST) = 43 {
+ *     repeated group list {
+ *       required int32 element;
+ *     }
+ *   }
+ *   required group Z (LIST) {
+ *     repeated group list {
+ *       required int32 element = 42;
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
+ * In this example, if {@code 42} was requested, resolution would fail because it is ambiguous between paths {@code [X]}
+ * and {@code [Z, list, element]}. If {@code 43} was requested, resolution would succeed.
  */
 public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnResolver.Factory {
 
     /**
-     * TODO: javadoc
+     * Creates a field id column resolver factory.
      * 
      * @param columnNameToFieldId a map from Deephaven column names to field ids
      * @return the column resolver provider
@@ -44,14 +87,12 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
         this.fieldIdsToDhColumnNames = Objects.requireNonNull(fieldIdsToDhColumnNames);
     }
 
-    @Override
-    public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
-        final MessageType schema = tableLocationKey.getFileReader().getSchema();
-        // TODO: note the potential for confusion on where to derive schema from.
-        // final MessageType schema = tableLocationKey.getMetadata().getFileMetaData().getSchema();
-        return of(schema);
-    }
-
+    /**
+     * Resolves the requested field ids for {@code schema}.
+     *
+     * @param schema the schema
+     * @return the resolver map
+     */
     public ParquetColumnResolverMap of(MessageType schema) {
         final FieldIdMappingVisitor visitor = new FieldIdMappingVisitor();
         ParquetUtil.walk(schema, visitor);
@@ -59,6 +100,22 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
                 .schema(schema)
                 .putAllMapping(visitor.nameToColumnDescriptor)
                 .build();
+    }
+
+    /**
+     * Equivalent to {@code of(tableLocationKey.getFileReader().getSchema())}.
+     *
+     * @param tableKey the table key
+     * @param tableLocationKey the Parquet TLK
+     * @return the resolver map
+     * @see #of(MessageType)
+     */
+    @Override
+    public ParquetColumnResolverMap of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
+        final MessageType schema = tableLocationKey.getFileReader().getSchema();
+        // TODO: note the potential for confusion on where to derive schema from.
+        // final MessageType schema = tableLocationKey.getMetadata().getFileMetaData().getSchema();
+        return of(schema);
     }
 
     private class FieldIdMappingVisitor implements ParquetUtil.Visitor {
@@ -82,7 +139,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
                 final ColumnDescriptor columnDescriptor = ParquetUtil.makeColumnDescriptor(path, primitiveType);
                 for (String columnName : set) {
                     final ColumnDescriptor existing = nameToColumnDescriptor.putIfAbsent(columnName, columnDescriptor);
-                    if (existing != null) {
+                    if (existing != null && !existing.equals(columnDescriptor)) {
                         throw new IllegalArgumentException(String.format(
                                 "Parquet columns can't be unambigously mapped. %s -> %d has multiple paths %s, %s",
                                 columnName, fieldId, Arrays.toString(existing.getPath()),

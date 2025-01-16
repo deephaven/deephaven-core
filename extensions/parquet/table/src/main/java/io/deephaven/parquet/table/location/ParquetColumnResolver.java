@@ -16,14 +16,15 @@ import java.util.Optional;
 public interface ParquetColumnResolver {
 
     /**
-     * {@link ParquetInstructions.Builder#setColumnResolverFactory(Factory)}
+     * A factory for creating Parquet column resolvers. This may be useful in situations where the mapping from a
+     * Deephaven column name to a Parquet column is not derived directly from the Deephaven column name.
+     *
+     * @see ParquetInstructions.Builder#setColumnResolverFactory(Factory)
      */
     interface Factory {
 
         /**
-         * TODO: description
-         *
-         *
+         * Create a Parquet column resolver.
          *
          * @param tableKey the table key
          * @param tableLocationKey the Parquet TLK
@@ -33,10 +34,10 @@ public interface ParquetColumnResolver {
     }
 
     /**
-     *
+     * The path to the leaf field in the Parquet schema corresponding to the Deephaven {@code columnName}.
      *
      * @param columnName the column name
-     * @return the path to the leaf field in the schema
+     * @return the path to the leaf field in the Parquet schema
      * @see ColumnDescriptor#getPath()
      * @see MessageType#getColumnDescription(String[])
      */

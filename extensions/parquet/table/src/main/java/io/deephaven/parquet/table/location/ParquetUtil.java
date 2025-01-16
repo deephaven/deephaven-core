@@ -23,49 +23,25 @@ import java.util.function.Predicate;
 final class ParquetUtil {
 
     interface Visitor {
+
+        /**
+         * Accept a Parquet column.
+         *
+         * <p>
+         * This represents the constituents parts of a {@link ColumnDescriptor} in an easier to consume fashion. In
+         * particular, it is useful when the consumer wants to iterate the Typed-path from MessageType root to leaf
+         * without needing to resort to extraneous allocation of {@link MessageType#getType(String...)} or state
+         * management needed via {@link GroupType#getType(String)}. The arguments of this method can be made into a
+         * {@link ColumnDescriptor} using {@link #makeColumnDescriptor(Collection, PrimitiveType)}.
+         *
+         * @param path the full path
+         * @param primitiveType the leaf primitiveType, guaranteed to be the last element of path
+         */
         void accept(Collection<Type> path, PrimitiveType primitiveType);
-    }
-
-    static class ColumnDescriptorVisitor implements Visitor {
-
-        private final Consumer<ColumnDescriptor> consumer;
-
-        public ColumnDescriptorVisitor(Consumer<ColumnDescriptor> consumer) {
-            this.consumer = Objects.requireNonNull(consumer);
-        }
-
-        @Override
-        public void accept(Collection<Type> path, PrimitiveType primitiveType) {
-            consumer.accept(makeColumnDescriptor(path, primitiveType));
-        }
-    }
-
-    static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
-        final String[] namePath = path.stream().map(Type::getName).toArray(String[]::new);
-        final int maxRep = (int) path.stream().filter(ParquetUtil::isRepeated).count();
-        final int maxDef = (int) path.stream().filter(Predicate.not(ParquetUtil::isRequired)).count();
-        return new ColumnDescriptor(namePath, primitiveType, maxRep, maxDef);
-    }
-
-    static boolean columnDescriptorEquals(ColumnDescriptor a, ColumnDescriptor b) {
-        return a.equals(b)
-                && a.getPrimitiveType().equals(b.getPrimitiveType())
-                && a.getMaxRepetitionLevel() == b.getMaxRepetitionLevel()
-                && a.getMaxDefinitionLevel() == b.getMaxDefinitionLevel();
-    }
-
-    static boolean contains(MessageType schema, ColumnDescriptor descriptor) {
-        final ColumnDescriptor cd = getColumnDescriptor(schema, descriptor.getPath());
-        if (cd == null) {
-            return false;
-        }
-        return columnDescriptorEquals(descriptor, cd);
     }
 
     /**
      * A more efficient implementation of {@link MessageType#getColumns()}.
-     *
-     * @param schema the message schema
      */
     static List<ColumnDescriptor> getColumns(MessageType schema) {
         final List<ColumnDescriptor> out = new ArrayList<>();
@@ -73,11 +49,19 @@ final class ParquetUtil {
         return out;
     }
 
+    static void walkColumnDescriptors(MessageType type, Consumer<ColumnDescriptor> consumer) {
+        walk(type, new ColumnDescriptorVisitor(consumer));
+    }
+
+    /**
+     * An alternative interface for traversing the leaf fields of a Parquet schema.
+     */
+    static void walk(MessageType type, Visitor visitor) {
+        walk(type, visitor, new ArrayDeque<>());
+    }
+
     /**
      * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}
-     * 
-     * @param path
-     * @return
      */
     static ColumnDescriptor getColumnDescriptor(MessageType schema, String[] path) {
         if (path.length == 0) {
@@ -122,12 +106,26 @@ final class ParquetUtil {
         return new ColumnDescriptor(path, primitiveType, repeatedCount, notRequiredCount);
     }
 
-    static void walkColumnDescriptors(MessageType type, Consumer<ColumnDescriptor> consumer) {
-        walk(type, new ColumnDescriptorVisitor(consumer));
+    static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
+        final String[] namePath = path.stream().map(Type::getName).toArray(String[]::new);
+        final int maxRep = (int) path.stream().filter(ParquetUtil::isRepeated).count();
+        final int maxDef = (int) path.stream().filter(Predicate.not(ParquetUtil::isRequired)).count();
+        return new ColumnDescriptor(namePath, primitiveType, maxRep, maxDef);
     }
 
-    static void walk(MessageType type, Visitor visitor) {
-        walk(type, visitor, new ArrayDeque<>());
+    static boolean columnDescriptorEquals(ColumnDescriptor a, ColumnDescriptor b) {
+        return a.equals(b)
+                && a.getPrimitiveType().equals(b.getPrimitiveType())
+                && a.getMaxRepetitionLevel() == b.getMaxRepetitionLevel()
+                && a.getMaxDefinitionLevel() == b.getMaxDefinitionLevel();
+    }
+
+    static boolean contains(MessageType schema, ColumnDescriptor descriptor) {
+        final ColumnDescriptor cd = getColumnDescriptor(schema, descriptor.getPath());
+        if (cd == null) {
+            return false;
+        }
+        return columnDescriptorEquals(descriptor, cd);
     }
 
     private static void walk(Type type, Visitor visitor, Deque<Type> stack) {
@@ -152,5 +150,19 @@ final class ParquetUtil {
 
     private static boolean isRequired(Type x) {
         return x.isRepetition(Repetition.REQUIRED);
+    }
+
+    private static class ColumnDescriptorVisitor implements Visitor {
+
+        private final Consumer<ColumnDescriptor> consumer;
+
+        public ColumnDescriptorVisitor(Consumer<ColumnDescriptor> consumer) {
+            this.consumer = Objects.requireNonNull(consumer);
+        }
+
+        @Override
+        public void accept(Collection<Type> path, PrimitiveType primitiveType) {
+            consumer.accept(makeColumnDescriptor(path, primitiveType));
+        }
     }
 }

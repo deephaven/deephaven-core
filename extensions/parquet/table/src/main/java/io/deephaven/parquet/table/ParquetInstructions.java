@@ -1000,9 +1000,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         /**
          * Sets the column resolver factory to allow higher-level managers (such as Iceberg) to use advanced column
-         * resolution logic based on each Parquet file's {@link FileMetaData}. When set,
+         * resolution logic based on the table key and table location key. When set,
          * {@link #setTableDefinition(TableDefinition)} must also be set. As such, the factory is <i>not</i> used for
          * inference purposes.
+         *
+         * <p>
+         * This is not typically set by end-users.
          *
          * @param columnResolverFactory the column resolver factory
          */

@@ -114,6 +114,27 @@ public class ParquetFieldIdColumnResolverFactoryTest {
     }
 
     @Test
+    public void singleFieldRepeatedIds() {
+        final ParquetFieldIdColumnResolverFactory factory = ParquetFieldIdColumnResolverFactory.of(Map.of("Col1", 42));
+        // X (42), list, element (42)
+        final MessageType schema = Types.buildMessage().addFields(Types.requiredList()
+                .id(42)
+                .requiredElement(INT32)
+                .id(42)
+                .named("X"))
+                .named("root");
+
+        final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
+                .schema(schema)
+                .putMapping("Col1", schema.getColumnDescription(p("X", "list", "element")))
+                .build();
+
+        // This resolution strategy is a little bit questionable... but it is unambiguous. If instead we needed to also
+        // provide the user with a single resulting Type with said field id, this strategy would not work.
+        assertThat(factory.of(schema)).isEqualTo(expected);
+    }
+
+    @Test
     public void ambiguousFields() {
         // X (1)
         // Y (1)
@@ -153,6 +174,7 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                         Types.requiredList().id(2).requiredElement(INT32).id(1).named("Y"),
                         Types.required(INT32).id(3).named("Z"))
                 .named("root");
+        System.out.println(schema);
         // Note: a different implementation _could_ take a different course of action here and proceed without error;
         // for example, an implementation could choose to consider the innermost (or outermost) field id for matching
         // purposes.
