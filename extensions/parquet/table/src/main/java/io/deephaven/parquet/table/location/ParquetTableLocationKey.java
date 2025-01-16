@@ -5,19 +5,16 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -148,11 +145,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (metadata != null) {
             return metadata;
         }
-        try {
-            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
-        }
+        // No need to cache the metadata; it is already present on the fileReader
+        return getFileReader().getMetadata();
     }
 
     /**
