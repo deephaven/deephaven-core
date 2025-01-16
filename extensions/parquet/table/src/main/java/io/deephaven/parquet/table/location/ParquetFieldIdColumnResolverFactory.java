@@ -112,10 +112,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
      */
     @Override
     public ParquetColumnResolverMap of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
-        final MessageType schema = tableLocationKey.getFileReader().getSchema();
-        // TODO: note the potential for confusion on where to derive schema from.
-        // final MessageType schema = tableLocationKey.getMetadata().getFileMetaData().getSchema();
-        return of(schema);
+        return of(tableLocationKey.getSchema());
     }
 
     private class FieldIdMappingVisitor implements ParquetUtil.Visitor {
