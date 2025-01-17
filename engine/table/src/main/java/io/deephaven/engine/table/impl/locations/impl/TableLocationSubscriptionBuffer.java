@@ -129,7 +129,8 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
      * reset). No order is maintained internally. If a pending exception is thrown, this signals that the subscription
      * is no longer valid and no subsequent location keys will be returned.
      *
-     * @return The collection of pending location keys.
+     * @return A {@link LocationUpdate} collecting pending added and removed location keys, or {@code null} if there are
+     *         none; the caller must {@link LocationUpdate#close() close} the returned object when done.
      */
     public synchronized LocationUpdate processPending() {
         if (!subscribed) {
