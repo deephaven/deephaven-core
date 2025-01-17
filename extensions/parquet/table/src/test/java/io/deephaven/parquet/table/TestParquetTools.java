@@ -1094,9 +1094,9 @@ public class TestParquetTools {
             try {
                 table.select();
                 failBecauseExceptionWasNotThrown(IllegalStateException.class);
-            } catch (IllegalStateException e) {
+            } catch (IllegalArgumentException e) {
                 assertThat(e).hasMessageContaining(
-                        "Parquet columns can't be unambigously mapped. 31337 -> Bar has multiple paths [Foo], [Bar]");
+                        "Parquet columns can't be unambigously mapped. Bar -> 31337 has multiple paths [Foo], [Bar]");
             }
         }
     }
