@@ -1,0 +1,20 @@
+
+if (Boolean.getBoolean("coverageEnabled")) {
+    apply plugin: 'jacoco'
+    jacoco {
+        toolVersion = '0.8.12'
+    }
+    test {
+        finalizedBy jacocoTestReport
+    }
+    jacocoTestReport {
+    	dependsOn test
+        reports {
+            csv.required = true
+            csv.destination = layout.buildDirectory.file('reports/jacoco/java-coverage.csv').get().asFile
+            xml.required = false
+            html.outputLocation = layout.buildDirectory.dir('reports/jacoco/html')
+        }
+    }
+}
+
