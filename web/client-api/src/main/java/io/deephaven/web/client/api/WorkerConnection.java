@@ -796,10 +796,10 @@ public class WorkerConnection {
     private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
         final TypedArray.SetArrayUnionType array;
         if (sharedTicketBytes.isString()) {
-            byte[] arr = sharedTicketBytes.toString().getBytes(StandardCharsets.UTF_8);
+            byte[] arr = sharedTicketBytes.asString().getBytes(StandardCharsets.UTF_8);
             array = TypedArray.SetArrayUnionType.of(arr);
         } else {
-            Uint8Array bytes = (Uint8Array) sharedTicketBytes;
+            Uint8Array bytes = sharedTicketBytes.asUint8Array();
             array = TypedArray.SetArrayUnionType.of(bytes);
         }
         return tickets.sharedTicket(array);

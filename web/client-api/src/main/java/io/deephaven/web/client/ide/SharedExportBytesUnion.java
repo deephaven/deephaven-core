@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -26,5 +27,17 @@ public interface SharedExportBytesUnion {
     @JsOverlay
     default boolean isUint8Array() {
         return this instanceof Uint8Array;
+    }
+
+    @TsUnionMember
+    @JsOverlay
+    default String asString() {
+        return Js.cast(this);
+    }
+
+    @TsUnionMember
+    @JsOverlay
+    default Uint8Array asUint8Array() {
+        return (Uint8Array) this;
     }
 }
