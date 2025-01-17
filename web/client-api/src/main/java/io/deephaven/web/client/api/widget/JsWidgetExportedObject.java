@@ -99,7 +99,7 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public Promise<JsWidgetExportedObject> reexport() {
-        Ticket reexportedTicket = connection.getConfig().newTicket();
+        Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
         // Future optimization - we could "race" these by running the export in the background, to avoid
         // an extra round trip.

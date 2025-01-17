@@ -162,7 +162,7 @@ public class WorkerConnection {
 
     private final QueryConnectable<?> info;
     private final ClientRpcOptions options = ClientRpcOptions.create();
-    private final ClientConfiguration config;
+    private final Tickets tickets;
     private final ReconnectState newSessionReconnect;
     private final TableReviver reviver;
     // un-finished fetch operations - these can fail on connection issues, won't be attempted again
@@ -208,7 +208,7 @@ public class WorkerConnection {
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
 
-        this.config = new ClientConfiguration();
+        this.tickets = new Tickets();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
         sessionServiceClient = info.createClient(SessionServiceClient::new);
@@ -674,12 +674,12 @@ public class WorkerConnection {
                         // TODO (deephaven-core#188): eliminate this branch by applying preview cols before subscribing
                         if (applyPreviewColumns == null || applyPreviewColumns) {
                             ApplyPreviewColumnsRequest req = new ApplyPreviewColumnsRequest();
-                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setSourceId(Tickets.createTableRef(varDef));
                             req.setResultId(cts.getHandle().makeTicket());
                             tableServiceClient.applyPreviewColumns(req, metadata, c::apply);
                         } else {
                             FetchTableRequest req = new FetchTableRequest();
-                            req.setSourceId(TableTicket.createTableRef(varDef));
+                            req.setSourceId(Tickets.createTableRef(varDef));
                             req.setResultId(cts.getHandle().makeTicket());
                             tableServiceClient.fetchTable(req, metadata, c::apply);
                         }
@@ -793,26 +793,16 @@ public class WorkerConnection {
         }).then(ignore -> Promise.resolve(sharedTicketBytes));
     }
 
-    private static Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
-        Ticket ticket = new Ticket();
-        final int length;
+    private Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
         final TypedArray.SetArrayUnionType array;
         if (sharedTicketBytes.isString()) {
             byte[] arr = sharedTicketBytes.toString().getBytes(StandardCharsets.UTF_8);
-            length = arr.length;
             array = TypedArray.SetArrayUnionType.of(arr);
         } else {
             Uint8Array bytes = (Uint8Array) sharedTicketBytes;
-            length = bytes.length;
             array = TypedArray.SetArrayUnionType.of(bytes);
         }
-        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
-        // Add the shared ticket prefix at the start of the provided value
-        bytesWithPrefix.setAt(0, (double) 'h');
-        bytesWithPrefix.setAt(1, (double) '/');
-        bytesWithPrefix.set(array, 2);
-        ticket.setTicket(bytesWithPrefix);
-        return ticket;
+        return tickets.sharedTicket(array);
     }
 
     public Promise<?> getSharedObject(SharedExportBytesUnion sharedExportBytes, String type) {
@@ -840,7 +830,7 @@ public class WorkerConnection {
         }
 
         TypedTicket result = new TypedTicket();
-        result.setTicket(getConfig().newTicket());
+        result.setTicket(getTickets().newExportTicket());
         result.setType(type);
 
         ExportRequest request = new ExportRequest();
@@ -936,7 +926,7 @@ public class WorkerConnection {
     }
 
     private TicketAndPromise<?> exportScopeTicket(JsVariableDefinition varDef) {
-        Ticket ticket = getConfig().newTicket();
+        Ticket ticket = getTickets().newExportTicket();
         return new TicketAndPromise<>(ticket, whenServerReady("exportScopeTicket").then(server -> {
             ExportRequest req = new ExportRequest();
             req.setSourceId(createTypedTicket(varDef).getTicket());
@@ -985,7 +975,7 @@ public class WorkerConnection {
 
     private TypedTicket createTypedTicket(JsVariableDefinition varDef) {
         TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(TableTicket.createTicket(varDef));
+        typedTicket.setTicket(Tickets.createTicket(varDef));
         typedTicket.setType(varDef.getType());
         return typedTicket;
     }
@@ -1063,7 +1053,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(info.supportsClientStreaming(), this::metadata, config::newTicketInt);
+        return new BiDiStream.Factory<>(info.supportsClientStreaming(), this::metadata, tickets::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
@@ -1256,10 +1246,6 @@ public class WorkerConnection {
         return null;
     }
 
-    private TableTicket newHandle() {
-        return new TableTicket(config.newTicketRaw());
-    }
-
     public RequestBatcher getBatcher(JsTable table) {
         // LATER: consider a global client.batch(()=>{}) method which causes all table statements to be batched
         // together.
@@ -1294,7 +1280,8 @@ public class WorkerConnection {
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
-        return cache.create(newHandle(), handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
+        return cache.create(tickets.newTableTicket(),
+                handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
     }
 
     /**
@@ -1305,13 +1292,13 @@ public class WorkerConnection {
      *         TODO: consider a fetch timeout.
      */
     public Promise<ClientTableState> newState(HasEventHandling failHandler, JsTableFetch fetcher, String fetchSummary) {
-        final TableTicket handle = newHandle();
+        final TableTicket handle = tickets.newTableTicket();
         final ClientTableState s = cache.create(handle, h -> new ClientTableState(this, h, fetcher, fetchSummary));
         return s.refetch(failHandler, metadata);
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to) {
-        return newState(from, to, newHandle());
+        return newState(from, to, tickets.newTableTicket());
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to, TableTicket handle) {
@@ -1386,8 +1373,8 @@ public class WorkerConnection {
         return false;
     }
 
-    public ClientConfiguration getConfig() {
-        return config;
+    public Tickets getTickets() {
+        return tickets;
     }
 
     public ConfigValue getServerConfigValue(String key) {
