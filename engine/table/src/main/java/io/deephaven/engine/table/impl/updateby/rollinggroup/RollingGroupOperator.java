@@ -120,7 +120,8 @@ public class RollingGroupOperator extends UpdateByOperator {
                 final LongChunk<OrderedRowKeys> influencerPosChunk,
                 final IntChunk<? extends Values> pushChunk,
                 final IntChunk<? extends Values> popChunk,
-                final int len) {
+                final int affectedCount,
+                final int influencerCount) {
 
             if (timestampColumnName == null) {
                 // The only work for ticks operators is to update the groupRowSetSource
@@ -133,7 +134,7 @@ public class RollingGroupOperator extends UpdateByOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 

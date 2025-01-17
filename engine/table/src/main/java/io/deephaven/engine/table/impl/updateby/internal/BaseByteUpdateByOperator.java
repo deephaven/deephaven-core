@@ -73,13 +73,15 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateRolling(@NotNull final RowSequence inputKeys,
+        public void accumulateRolling(
+                @NotNull final RowSequence inputKeys,
                 @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
                 @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
                 @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
                 @NotNull final IntChunk<? extends Values> pushChunk,
                 @NotNull final IntChunk<? extends Values> popChunk,
-                final int len) {
+                final int affectedCount,
+                final int influencerCount) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -87,7 +89,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 
@@ -123,7 +125,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
             outputValues.set(outIdx, curVal);
         }
 
-        void writeNullToOutputChunk(final int outIdx) {
+        protected void writeNullToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, NULL_BYTE);
         }
 

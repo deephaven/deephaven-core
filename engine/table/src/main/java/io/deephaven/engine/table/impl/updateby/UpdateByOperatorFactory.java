@@ -10,12 +10,21 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
 import io.deephaven.engine.table.impl.updateby.emstd.*;
@@ -45,6 +54,7 @@ import java.math.MathContext;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -415,6 +425,12 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
+        public Void visit(CumCountWhereSpec spec) {
+            ops.add(makeCountWhereOperator(tableDef, spec));
+            return null;
+        }
+
+        @Override
         public Void visit(@NotNull final DeltaSpec spec) {
             Arrays.stream(pairs)
                     .map(fc -> makeDeltaOperator(fc, tableDef, spec))
@@ -534,6 +550,12 @@ public class UpdateByOperatorFactory {
                             tableDef,
                             spec))
                     .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingCountWhereSpec spec) {
+            ops.add(makeCountWhereOperator(tableDef, spec));
             return null;
         }
 
@@ -1237,6 +1259,130 @@ public class UpdateByOperatorFactory {
                 return new ObjectRollingCountOperator(pair, affectingColumns,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
+            }
+        }
+
+        /**
+         * This is used for Cum/Rolling CountWhere operators
+         */
+        private UpdateByOperator makeCountWhereOperator(
+                @NotNull final TableDefinition tableDef,
+                @NotNull final UpdateBySpec spec) {
+
+            Require.eqTrue(spec instanceof CumCountWhereSpec || spec instanceof RollingCountWhereSpec,
+                    "spec instanceof CumCountWhereSpec || spec instanceof RollingCountWhereSpec");
+
+            final boolean isCumulative = spec instanceof CumCountWhereSpec;
+
+            final WhereFilter[] whereFilters = isCumulative
+                    ? WhereFilter.fromInternal(((CumCountWhereSpec) spec).filter())
+                    : WhereFilter.fromInternal(((RollingCountWhereSpec) spec).filter());
+
+            final List<String> inputColumnNameList = new ArrayList<>();
+            final Map<String, Integer> inputColumnMap = new HashMap<>();
+            final List<int[]> filterInputColumnIndicesList = new ArrayList<>();
+
+            // Verify all the columns in the where filters are present in the dummy table and valid for use.
+            for (final WhereFilter whereFilter : whereFilters) {
+                whereFilter.init(tableDef);
+                if (whereFilter.isRefreshing()) {
+                    throw new UnsupportedOperationException("CountWhere does not support refreshing filters");
+                }
+
+                // Compute which input sources this filter will use.
+                final List<String> filterColumnName = whereFilter.getColumns();
+                final int inputColumnCount = whereFilter.getColumns().size();
+                final int[] inputColumnIndices = new int[inputColumnCount];
+                for (int ii = 0; ii < inputColumnCount; ++ii) {
+                    final String inputColumnName = filterColumnName.get(ii);
+                    final int inputColumnIndex = inputColumnMap.computeIfAbsent(inputColumnName, k -> {
+                        inputColumnNameList.add(inputColumnName);
+                        return inputColumnNameList.size() - 1;
+                    });
+                    inputColumnIndices[ii] = inputColumnIndex;
+                }
+                filterInputColumnIndicesList.add(inputColumnIndices);
+            }
+
+            // Gather the input column type info and create a dummy table we can use to initialize filters.
+            final String[] inputColumnNames = inputColumnNameList.toArray(String[]::new);
+            final ColumnSource<?>[] originalColumnSources = new ColumnSource[inputColumnNames.length];
+            final ColumnSource<?>[] reinterpretedColumnSources = new ColumnSource[inputColumnNames.length];
+
+            final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
+            for (int i = 0; i < inputColumnNames.length; i++) {
+                final String col = inputColumnNames[i];
+                final ColumnDefinition<?> def = tableDef.getColumn(col);
+                // Create a representative column source of the correct type for the filter.
+                final ColumnSource<?> nullSource =
+                        NullValueColumnSource.getInstance(def.getDataType(), def.getComponentType());
+                // Create a reinterpreted version of the column source.
+                final ColumnSource<?> maybeReinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(nullSource);
+                if (nullSource != maybeReinterpretedSource) {
+                    originalColumnSources[i] = nullSource;
+                }
+                columnSourceMap.put(col, maybeReinterpretedSource);
+                reinterpretedColumnSources[i] = maybeReinterpretedSource;
+            }
+            final Table dummyTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
+
+            final CountWhereOperator.CountFilter[] countFilters =
+                    CountWhereOperator.CountFilter.createCountFilters(whereFilters, dummyTable,
+                            filterInputColumnIndicesList);
+
+            // If any filter is ConditionFilter or ChunkFilter and uses a reinterpreted column, need to produce
+            // original-typed chunks.
+            final boolean originalChunksRequired = Arrays.asList(countFilters).stream()
+                    .anyMatch(filter -> (filter.chunkFilter() != null || filter.conditionFilter() != null)
+                            && IntStream.of(filter.inputColumnIndices())
+                                    .anyMatch(i -> originalColumnSources[i] != null));
+
+            // If any filter is a standard WhereFilter or we need to produce original-typed chunks, need a chunk source
+            // table.
+            final boolean chunkSourceTableRequired = originalChunksRequired ||
+                    Arrays.asList(countFilters).stream().anyMatch(filter -> filter.whereFilter() != null);
+
+            // Create a new column pair with the same name for the left and right columns
+            final String columnName = isCumulative
+                    ? ((CumCountWhereSpec) spec).column().name()
+                    : ((RollingCountWhereSpec) spec).column().name();
+            final MatchPair pair = new MatchPair(columnName, columnName);
+
+            // Create and return the operator.
+            if (isCumulative) {
+                return new CountWhereOperator(
+                        pair,
+                        countFilters,
+                        inputColumnNames,
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
+            } else {
+                final RollingCountWhereSpec rs = (RollingCountWhereSpec) spec;
+
+                final String[] affectingColumns;
+                if (rs.revWindowScale().timestampCol() == null) {
+                    affectingColumns = inputColumnNames;
+                } else {
+                    affectingColumns = ArrayUtils.add(inputColumnNames, rs.revWindowScale().timestampCol());
+                }
+
+                final long prevWindowScaleUnits = rs.revWindowScale().getTimeScaleUnits();
+                final long fwdWindowScaleUnits = rs.fwdWindowScale().getTimeScaleUnits();
+
+                return new CountWhereOperator(
+                        pair,
+                        affectingColumns,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits,
+                        fwdWindowScaleUnits,
+                        countFilters,
+                        inputColumnNames,
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
             }
         }
 

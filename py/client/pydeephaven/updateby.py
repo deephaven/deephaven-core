@@ -31,6 +31,7 @@ _GrpcUpdateByRollingCount = _GrpcUpdateBySpec.UpdateByRollingCount
 _GrpcUpdateByRollingStd = _GrpcUpdateBySpec.UpdateByRollingStd
 _GrpcUpdateByRollingWAvg = _GrpcUpdateBySpec.UpdateByRollingWAvg
 _GrpcUpdateByRollingFormula = _GrpcUpdateBySpec.UpdateByRollingFormula
+_GrpcUpdateByRollingCountWhere = _GrpcUpdateBySpec.UpdateByRollingCountWhere
 _GrpcUpdateByDeltaOptions = table_pb2.UpdateByDeltaOptions
 _GrpcUpdateByWindowScale = table_pb2.UpdateByWindowScale
 _GrpcUpdateByWindowTicks = _GrpcUpdateByWindowScale.UpdateByWindowTicks
@@ -182,6 +183,27 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
     """
     ub_spec = _GrpcUpdateBySpec(max=_GrpcUpdateBySpec.UpdateByCumulativeMax())
     ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
+    return UpdateByOperation(ub_column=ub_column)
+
+
+def cum_count_where(col: str, filters: Union[str, List[str]]) -> UpdateByOperation:
+    """Creates a cumulative count where UpdateByOperation that counts the number of values that pass the provided
+    filters.
+
+    Args:
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+
+    Returns:
+        an UpdateByOperation
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_list(filters)
+
+    ub_spec = _GrpcUpdateBySpec(count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(result_column=col, filters=filters))
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec)
     return UpdateByOperation(ub_column=ub_column)
 
 
@@ -1601,3 +1623,117 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str, cols: Un
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
         raise DHError(e, "failed to create a rolling formula (time) UpdateByOperation.") from e
+
+
+def rolling_count_where_tick(col: str, filters: Union[str, List[str]],
+                             rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
+    filters, using ticks as the windowing unit. Ticks are row counts, and you may specify the reverse and forward
+    window in number of rows to include. The current row is considered to belong to the reverse window but not the
+    forward window. Also, negative values are allowed and can be used to generate completely forward or completely
+    reverse windows.
+
+    Here are some examples of window values:
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+    Args:
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_list(filters)
+
+    try:
+        rev_window_scale = _GrpcUpdateByWindowScale(ticks=_GrpcUpdateByWindowTicks(ticks=rev_ticks))
+        fwd_window_scale = _GrpcUpdateByWindowScale(ticks=_GrpcUpdateByWindowTicks(ticks=fwd_ticks))
+        ub_count_where = _GrpcUpdateByRollingCountWhere(reverse_window_scale=rev_window_scale,
+                                                 forward_window_scale=fwd_window_scale,
+                                                 result_column=col,
+                                                 filters=filters)
+        ub_spec = _GrpcUpdateBySpec(rolling_count_where=ub_count_where)
+        ub_column = _GrpcUpdateByColumn(spec=ub_spec)
+        return UpdateByOperation(ub_column=ub_column)
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling count_where UpdateByOperation.") from e
+
+
+def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, List[str]],
+                             rev_time: Union[int, str], fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
+    filters, using time as the windowing unit. This function accepts nanoseconds or time strings as the reverse and
+    forward window parameters. Negative values are allowed and can be used to generate completely forward or completely
+    reverse windows. A row containing a null in the timestamp column belongs to no window and will not be considered in
+    the windows of other rows; its output will be null.
+
+    Here are some examples of window values:
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_list(filters)
+
+    try:
+        if isinstance(rev_time, str):
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=rev_time))
+        else:
+            rev_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=rev_time))
+
+        if isinstance(fwd_time, str):
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, duration_string=fwd_time))
+        else:
+            fwd_window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, nanos=fwd_time))
+
+        ub_count_where = _GrpcUpdateByRollingCountWhere(reverse_window_scale=rev_window_scale,
+                                                    forward_window_scale=fwd_window_scale,
+                                                    result_column=col,
+                                                    filters=filters)
+        ub_spec = _GrpcUpdateBySpec(rolling_count_where=ub_count_where)
+        ub_column = _GrpcUpdateByColumn(spec=ub_spec)
+        return UpdateByOperation(ub_column=ub_column)
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling count_where UpdateByOperation.") from e

@@ -140,6 +140,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptMax(spec.getMax());
             case PRODUCT:
                 return adaptProduct(spec.getProduct());
+            case COUNT_WHERE:
+                return adaptCountWhere(spec.getCountWhere());
             case FILL:
                 return adaptFill(spec.getFill());
             case EMA:
@@ -175,6 +177,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptRollingWAvg(spec.getRollingWavg());
             case ROLLING_FORMULA:
                 return adaptRollingFormula(spec.getRollingFormula());
+            case ROLLING_COUNT_WHERE:
+                return adaptRollingCountWhere(spec.getRollingCountWhere());
 
             case TYPE_NOT_SET:
             default:
@@ -196,6 +200,11 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static CumProdSpec adaptProduct(@SuppressWarnings("unused") UpdateByCumulativeProduct product) {
         return CumProdSpec.of();
+    }
+
+    private static CumCountWhereSpec adaptCountWhere(
+            @SuppressWarnings("unused") UpdateByCumulativeCountWhere countWhere) {
+        return CumCountWhereSpec.of(countWhere.getResultColumn(), countWhere.getFiltersList().toArray(String[]::new));
     }
 
     private static FillBySpec adaptFill(@SuppressWarnings("unused") UpdateByFill fill) {
@@ -326,6 +335,15 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 adaptWindowScale(formula.getForwardWindowScale()),
                 formula.getFormula(),
                 formula.getParamToken());
+    }
+
+    private static RollingCountWhereSpec adaptRollingCountWhere(
+            @SuppressWarnings("unused") UpdateByRollingCountWhere countWhere) {
+        return RollingCountWhereSpec.of(
+                adaptWindowScale(countWhere.getReverseWindowScale()),
+                adaptWindowScale(countWhere.getForwardWindowScale()),
+                countWhere.getResultColumn(),
+                countWhere.getFiltersList().toArray(String[]::new));
     }
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {

@@ -593,6 +593,24 @@ message UpdateByRequest {
           string param_token = 4;
         }
 
+        message UpdateByRollingCountWhere {
+          // The reverse window for the rolling operation, may be in ticks or time-based.
+          UpdateByWindowScale reverse_window_scale = 1;
+          // The forward window for the rolling operation, may be in ticks or time-based.
+          UpdateByWindowScale forward_window_scale = 2;
+          // The output column name
+          string result_column = 3;
+          // The filters tp apply before counting
+          repeated string filters = 4;
+        }
+
+        message UpdateByCumulativeCountWhere {
+          // The output column name
+          string result_column = 1;
+          // The filters tp apply before counting
+          repeated string filters = 2;
+        }
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -615,6 +633,8 @@ message UpdateByRequest {
           UpdateByRollingStd rolling_std = 19;
           UpdateByRollingWAvg rolling_wavg = 20;
           UpdateByRollingFormula rolling_formula = 21;
+          UpdateByRollingCountWhere rolling_count_where = 22;
+          UpdateByCumulativeCountWhere count_where = 23;
         }
       }
 

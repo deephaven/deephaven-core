@@ -10,6 +10,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
+from deephaven.filters import Filter, and_
 
 _JUpdateByOperation = jpy.get_type("io.deephaven.api.updateby.UpdateByOperation")
 _JBadDataBehavior = jpy.get_type("io.deephaven.api.updateby.BadDataBehavior")
@@ -561,6 +562,31 @@ def cum_max(cols: Union[str, List[str]]) -> UpdateByOperation:
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumMax(cols))
     except Exception as e:
         raise DHError(e, "failed to create a cumulative maximum UpdateByOperation.") from e
+
+
+def cum_count_where(col: str, filters: Union[str, Filter, List[str], List[Filter]]) -> UpdateByOperation:
+    """Creates a cumulative count where UpdateByOperation that counts the number of values that pass the provided
+    filters.
+
+    Args:
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_sequence(filters)
+
+    try:
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.CumCountWhere(col, and_(filters).j_filter))
+    except Exception as e:
+        raise DHError(e, "failed to create a cumulative count_where UpdateByOperation.") from e
 
 
 def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
@@ -1495,3 +1521,95 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str = None, c
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingFormula(ts_col, rev_time, fwd_time, formula, formula_param, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling formula (time) UpdateByOperation.") from e
+
+
+def rolling_count_where_tick(col: str, filters: Union[str, Filter, List[str], List[Filter]],
+                             rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
+    filters, using ticks as the windowing unit. Ticks are row counts, and you may specify the reverse and forward
+    window in number of rows to include. The current row is considered to belong to the reverse window but not the
+    forward window. Also, negative values are allowed and can be used to generate completely forward or completely
+    reverse windows.
+
+    Here are some examples of window values:
+        |  `rev_ticks = 1, fwd_ticks = 0` - contains only the current row
+        |  `rev_ticks = 10, fwd_ticks = 0` - contains 9 previous rows and the current row
+        |  `rev_ticks = 0, fwd_ticks = 10` - contains the following 10 rows, excludes the current row
+        |  `rev_ticks = 10, fwd_ticks = 10` - contains the previous 9 rows, the current row and the 10 rows following
+        |  `rev_ticks = 10, fwd_ticks = -5` - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        |  `rev_ticks = 11, fwd_ticks = -1` - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        |  `rev_ticks = -5, fwd_ticks = 10` - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+    Args:
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_sequence(filters)
+
+    try:
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingCountWhere(rev_ticks, fwd_ticks, col, and_(filters).j_filter))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling count_where UpdateByOperation.") from e
+
+
+def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, Filter, List[str], List[Filter]],
+                             rev_time: Union[int, str], fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
+    filters, using time as the windowing unit. This function accepts nanoseconds or time strings as the reverse and
+    forward window parameters. Negative values are allowed and can be used to generate completely forward or completely
+    reverse windows. A row containing a null in the timestamp column belongs to no window and will not be considered in
+    the windows of other rows; its output will be null.
+
+    Here are some examples of window values:
+        |  `rev_time = 0, fwd_time = 0` - contains rows that exactly match the current row timestamp
+        |  `rev_time = "PT00:10:00", fwd_time = "0"` - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        |  `rev_time = 0, fwd_time = 600_000_000_000` - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "PT00:10:00"` - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        |  `rev_time = "PT00:10:00", fwd_time = "-PT00:05:00"` - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        |  `rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"` - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        col (str): the column to hold the counts of rows that pass the filter condition columns.
+        filters (Union[str, Filter, List[str], List[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001" or "PT5M"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001" or "PT5M", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    if not isinstance(col, str):
+        raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
+    filters = to_sequence(filters)
+
+    try:
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingCountWhere(ts_col, rev_time, fwd_time, col, and_(filters).j_filter))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling count_where UpdateByOperation.") from e
