@@ -18,9 +18,9 @@ import (
 func ExampleRecord() arrow.Record {
 	schema := arrow.NewSchema(
 		[]arrow.Field{
-			{Name: "Ticker", Type: arrow.BinaryTypes.String},
-			{Name: "Close", Type: arrow.PrimitiveTypes.Float32},
-			{Name: "Volume", Type: arrow.PrimitiveTypes.Int32},
+			{Name: "Ticker", Type: arrow.BinaryTypes.String, Nullable: true},
+			{Name: "Close", Type: arrow.PrimitiveTypes.Float32, Nullable: true},
+			{Name: "Volume", Type: arrow.PrimitiveTypes.Int32, Nullable: true},
 		},
 		nil,
 	)

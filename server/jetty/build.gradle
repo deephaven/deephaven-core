@@ -55,6 +55,8 @@ dependencies {
     testImplementation libs.junit4
     testImplementation libs.assertj
 
+    testImplementation project(':proto:proto-backplane-grpc-flight')
+
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 }

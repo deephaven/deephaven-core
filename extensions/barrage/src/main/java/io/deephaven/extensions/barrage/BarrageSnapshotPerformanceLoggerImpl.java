@@ -27,7 +27,7 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
                 ExecutionContext.getContext().getUpdateGraph(),
                 BarrageSnapshotPerformanceLoggerImpl.class.getName(),
                 Map.of(
-                        BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
+                        Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
                         BarrageSnapshotPerformanceLogger.getDefaultTableName()));
         blink = adapter.table();
     }

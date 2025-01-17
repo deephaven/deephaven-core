@@ -14,7 +14,7 @@ import java.nio.Buffer;
  *
  * @param <ATTR> Descriptive attribute that applies to the elements stored within this WritableChunk
  */
-public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableChunk {
+public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableChunk<ATTR> {
     @Override
     WritableChunk<ATTR> slice(int offset, int capacity);
 
