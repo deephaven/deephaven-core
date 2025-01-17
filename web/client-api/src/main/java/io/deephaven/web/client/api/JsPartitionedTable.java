@@ -71,6 +71,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     }
 
     @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
+    @JsIgnore
     public Promise<JsPartitionedTable> refetch() {
         closeSubscriptions();
 

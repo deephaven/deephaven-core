@@ -67,6 +67,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         this.groupBy = Js.uncheckedCast(groupBy.slice());
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return wrappedTable.getConnection();
+    }
+
     public void refreshViewport() {
         if (firstRow != null && lastRow != null) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);

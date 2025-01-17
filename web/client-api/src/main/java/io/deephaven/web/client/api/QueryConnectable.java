@@ -146,9 +146,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public CancellablePromise<IdeSession> startSession(String type) {
         JsLog.debug("Starting", type, "console session");
         LazyPromise<Ticket> promise = new LazyPromise<>();
-        final ClientConfiguration config = connection.get().getConfig();
-        final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicketRaw());
+        final Tickets config = connection.get().getTickets();
+        final Ticket ticket = config.newExportTicket();
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);
