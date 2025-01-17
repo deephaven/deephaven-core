@@ -250,27 +250,42 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     subscriptionBuffer.processPending()) {
                 if (locationUpdate == null) {
-                    return;
+                    removed = null;
+                } else {
+                    removed = processRemovals(locationUpdate);
+                    processAdditions(locationUpdate);
                 }
-                removed = processRemovals(locationUpdate);
-                added = processAdditions(locationUpdate);
+                added = checkPendingLocations();
             }
 
-            resultRows.update(added, removed);
+            if (removed == null) {
+                if (added == null) {
+                    return;
+                }
+                resultRows.insert(added);
+            } else if (added == null) {
+                resultRows.remove(removed);
+            } else {
+                resultRows.update(added, removed);
+            }
             if (notifyListeners) {
                 result.notifyListeners(new TableUpdateImpl(
-                        added,
-                        removed,
+                        added == null ? RowSetFactory.empty() : added,
+                        removed == null ? RowSetFactory.empty() : removed,
                         RowSetFactory.empty(),
                         RowSetShiftData.EMPTY,
                         ModifiedColumnSet.EMPTY));
             } else {
-                added.close();
-                removed.close();
+                if (added != null) {
+                    added.close();
+                }
+                if (removed != null) {
+                    removed.close();
+                }
             }
         }
 
-        private RowSet processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+        private void processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
             /*
              * This block of code is unfortunate, because it largely duplicates the intent and effort of similar code in
              * RegionedColumnSourceManager. I think that the RegionedColumnSourceManager could be changed to
@@ -280,13 +295,18 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              * population in STM ColumnSources.
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
-            locationUpdate.getPendingAddedLocationKeys().stream()
-                    .map(LiveSupplier::get)
-                    .filter(locationKeyMatcher)
-                    .map(tableLocationProvider::getTableLocation)
-                    .peek(this::manage)
-                    .map(PendingLocationState::new)
-                    .forEach(pendingLocationStates::offer);
+            if (locationUpdate != null) {
+                locationUpdate.getPendingAddedLocationKeys().stream()
+                        .map(LiveSupplier::get)
+                        .filter(locationKeyMatcher)
+                        .map(tableLocationProvider::getTableLocation)
+                        .peek(this::manage)
+                        .map(PendingLocationState::new)
+                        .forEach(pendingLocationStates::offer);
+            }
+        }
+
+        private RowSet checkPendingLocations() {
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
                 final PendingLocationState pendingLocationState = iter.next();
                 if (pendingLocationState.exists()) {
@@ -296,7 +316,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (readyLocationStates.isEmpty()) {
-                return RowSetFactory.empty();
+                return null;
             }
 
             final RowSet added = sortAndAddLocations(readyLocationStates.stream().map(PendingLocationState::release));
