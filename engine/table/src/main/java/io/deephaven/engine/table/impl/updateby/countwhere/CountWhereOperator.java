@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.select.AbstractConditionFilter;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ExposesChunkFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
@@ -38,19 +39,25 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
      * Store the input column names and type information.
      */
     private final String[] inputColumnNames;
-    private final ChunkType[] inputChunkTypes;
-    private final Class<?>[] inputColumnTypes;
-    private final Class<?>[] inputComponentTypes;
-
+    /**
+     * Store representative sources for reinterpreted input and original columns, will not hold data.
+     */
+    private final ColumnSource<?>[] originalSources;
+    private final ColumnSource<?>[] reinterpretedSources;
     /**
      * The raw filters to apply to the data.
      */
     private final CountFilter[] filters;
 
     /**
-     * Whether we need to create and maintain a chunk source table?
+     * Whether we need to create and maintain a chunk source table.
      */
     private final boolean chunkSourceTableRequired;
+
+    /**
+     * Whether we need to produce original-typed chunks for condition and chunk filters.
+     */
+    private final boolean originalChunksRequired;
 
     /**
      * Holder class to hold filter objects and the input column indices they apply to.
@@ -82,8 +89,20 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             this.inputColumnIndices = inputColumnIndices;
         }
 
+        public ChunkFilter chunkFilter() {
+            return chunkFilter;
+        }
+
+        public AbstractConditionFilter.Filter conditionFilter() {
+            return conditionFilter;
+        }
+
         public WhereFilter whereFilter() {
             return whereFilter;
+        }
+
+        public int[] inputColumnIndices() {
+            return inputColumnIndices;
         }
 
         /**
@@ -136,6 +155,19 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
          */
         private final ChunkColumnSource<?>[] chunkColumnSources;
         /**
+         * The chunk sources that help populate the original-typed chunks for this context.
+         */
+        private final ColumnSource<?>[] contextOriginalColumnSources;
+        /**
+         * Fill contexts to help convert back to original-typed chunks.
+         */
+        private final ChunkSource.FillContext[] originalFillContexts;
+        /**
+         * Chunks to store original-typed values for condition and chunk filters.
+         */
+        private final WritableChunk<? super Values>[] originalValueChunks;
+
+        /**
          * A table composed of chunk sources for generic where filters for this context.
          */
         private final Table chunkSourceTable;
@@ -177,19 +209,45 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
 
             closeableList = new SafeCloseableList();
 
+            if (originalChunksRequired) {
+                originalFillContexts = new ChunkSource.FillContext[inputColumnNames.length];
+                // noinspection unchecked
+                originalValueChunks = new WritableChunk[inputColumnNames.length];
+            } else {
+                originalFillContexts = null;
+                originalValueChunks = null;
+            }
+
             // Create a new chunk source table for this context
             if (chunkSourceTableRequired) {
+                contextOriginalColumnSources = new ColumnSource<?>[inputColumnNames.length];
                 final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
                 chunkColumnSources = new ChunkColumnSource<?>[inputColumnNames.length];
                 for (int i = 0; i < inputColumnNames.length; i++) {
-                    chunkColumnSources[i] =
-                            ChunkColumnSource.make(inputChunkTypes[i], inputColumnTypes[i], inputComponentTypes[i]);
-                    columnSourceMap.put(inputColumnNames[i], chunkColumnSources[i]);
+                    final ColumnSource<?> inputSource = reinterpretedSources[i];
+                    chunkColumnSources[i] = ChunkColumnSource.make(inputSource.getChunkType(), inputSource.getType(),
+                            inputSource.getComponentType());
+                    if (originalSources[i] != null) {
+                        // This column needs to be interpreted back to the original type.
+                        final ColumnSource<?> toOriginal =
+                                ReinterpretUtils.convertToOriginalType(originalSources[i], chunkColumnSources[i]);
+                        // Put the re-reinterpreted column source in the map
+                        columnSourceMap.put(inputColumnNames[i], toOriginal);
+                        // Create chunk and fill context for original-typed converted values
+                        originalFillContexts[i] = toOriginal.makeFillContext(influencerChunkSize);
+                        closeableList.add(originalFillContexts[i]);
+                        originalValueChunks[i] = toOriginal.getChunkType().makeWritableChunk(influencerChunkSize);
+                        closeableList.add(originalValueChunks[i]);
+                        contextOriginalColumnSources[i] = toOriginal;
+                    } else {
+                        columnSourceMap.put(inputColumnNames[i], chunkColumnSources[i]);
+                    }
                 }
                 chunkSourceTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
             } else {
                 chunkColumnSources = null;
                 chunkSourceTable = null;
+                contextOriginalColumnSources = null;
             }
 
             // Store the operator's chunk and condition filters, but create new WhereFilters. This is required because
@@ -253,22 +311,41 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             closeableList.close();
         }
 
-        @Override
-        public void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks) {
-            // Update the chunk source table chunks if needed.
-            if (chunkSourceTableRequired) {
-                for (int i = 0; i < inputColumnNames.length; i++) {
-                    chunkColumnSources[i].clear();
-                    chunkColumnSources[i].addChunk((WritableChunk<? extends Values>) valueChunks[i]);
+        /**
+         * Assign the input chunks to the correct filters, maybe reinterpreting the chunks to the original type.
+         */
+        private void assignInputChunksToFilters(
+                @NotNull Chunk<? extends Values>[] valueChunks,
+                final int influencerChunkSize) {
+
+            try (final RowSet influencerRs = originalChunksRequired ? RowSetFactory.flat(influencerChunkSize) : null) {
+                // Update the chunk source table chunks if needed.
+                if (chunkSourceTableRequired) {
+                    for (int i = 0; i < inputColumnNames.length; i++) {
+                        chunkColumnSources[i].clear();
+                        chunkColumnSources[i].addChunk((WritableChunk<? extends Values>) valueChunks[i]);
+                    }
                 }
-            }
 
-            // Assign the filter input chunks from the value chunks.
-            for (int fi = 0; fi < filters.length; fi++) {
-                final CountFilter filter = filters[fi];
+                // Assign the filter input chunks from the value chunks.
+                for (int fi = 0; fi < filters.length; fi++) {
+                    final CountFilter filter = filters[fi];
 
-                for (int ri = 0; ri < filter.inputColumnIndices.length; ri++) {
-                    filterChunks[fi][ri] = valueChunks[filter.inputColumnIndices[ri]];
+                    for (int fci = 0; fci < filter.inputColumnIndices.length; fci++) {
+                        final int inputIndex = filter.inputColumnIndices[fci];
+                        if (originalChunksRequired && contextOriginalColumnSources[inputIndex] != null) {
+                            // Filling from contextOriginalColumnSources[] will produce original typed version of the
+                            // input chunk data since we seeded the underlying ChunkColumnSource with the input chunk.
+                            contextOriginalColumnSources[inputIndex].fillChunk(
+                                    originalFillContexts[inputIndex],
+                                    originalValueChunks[inputIndex],
+                                    influencerRs);
+                            // noinspection unchecked
+                            filterChunks[fi][fci] = (Chunk<? extends Values>) originalValueChunks[inputIndex];
+                        } else {
+                            filterChunks[fi][fci] = valueChunks[inputIndex];
+                        }
+                    }
                 }
             }
         }
@@ -341,7 +418,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 final int affectedCount,
                 final int influencerCount) {
 
-            setValueChunks(influencerValueChunkArr);
+            assignInputChunksToFilters(influencerValueChunkArr, influencerCount);
             setPosChunks(affectedPosChunk, influencerPosChunk);
 
             applyFilters(influencerCount);
@@ -384,7 +461,7 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 @Nullable final LongChunk<? extends Values> tsChunk,
                 final int len) {
 
-            setValueChunks(valueChunkArr);
+            assignInputChunksToFilters(valueChunkArr, len);
             applyFilters(len);
 
             // chunk processing
@@ -451,9 +528,12 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
      * @param forwardWindowScaleUnits The size of the forward window in ticks (or nanoseconds when time-based)
      * @param filters the filters to apply to the input columns
      * @param inputColumnNames The names of the key columns to be used as inputs
-     * @param inputChunkTypes The chunk types for each input column
-     * @param inputColumnTypes The data types for each input column
-     * @param inputComponentTypes The component types for each input column
+     * @param originalSources Representative original sources for the input columns; stores type information and helps
+     *        convert input data chunks but does not hold any actual data
+     * @param reinterpretedSources Representative reinterpreted sources for input columns; stores type information but
+     *        does not hold any actual data
+     * @param chunkSourceTableRequired Whether we need to create and maintain a chunk source table
+     * @param originalChunksRequired Whether we need to produce original-typed chunks for condition and chunk filters
      */
     public CountWhereOperator(
             @NotNull final MatchPair pair,
@@ -463,17 +543,17 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
             final long forwardWindowScaleUnits,
             final CountFilter[] filters,
             final String[] inputColumnNames,
-            final ChunkType[] inputChunkTypes,
-            final Class<?>[] inputColumnTypes,
-            final Class<?>[] inputComponentTypes,
-            final boolean chunkSourceTableRequired) {
+            final ColumnSource<?>[] originalSources,
+            final ColumnSource<?>[] reinterpretedSources,
+            final boolean chunkSourceTableRequired,
+            final boolean originalChunksRequired) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.filters = filters;
         this.inputColumnNames = inputColumnNames;
-        this.inputChunkTypes = inputChunkTypes;
-        this.inputColumnTypes = inputColumnTypes;
-        this.inputComponentTypes = inputComponentTypes;
+        this.originalSources = originalSources;
+        this.reinterpretedSources = reinterpretedSources;
         this.chunkSourceTableRequired = chunkSourceTableRequired;
+        this.originalChunksRequired = originalChunksRequired;
     }
 
     /**
@@ -481,26 +561,29 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
      *
      * @param pair Contains the output column name as a MatchPair
      * @param filters the filters to apply to the input columns
-     * @param inputColumnNames The names of the key columns to be used as inputs
-     * @param inputChunkTypes The chunk types for each input column
-     * @param inputColumnTypes The data types for each input column
-     * @param inputComponentTypes The component types for each input column
+     * @param originalSources The original sources for reinterpreted columns
+     * @param originalSources Representative original sources for the input columns; stores type information and helps
+     *        convert input data chunks but does not hold any actual data
+     * @param reinterpretedSources Representative reinterpreted sources for input columns; stores type information but
+     *        does not hold any actual data
+     * @param chunkSourceTableRequired Whether we need to create and maintain a chunk source table
+     * @param originalChunksRequired Whether we need to produce original-typed chunks for condition and chunk filters
      */
     public CountWhereOperator(
             @NotNull final MatchPair pair,
             final CountFilter[] filters,
             final String[] inputColumnNames,
-            final ChunkType[] inputChunkTypes,
-            final Class<?>[] inputColumnTypes,
-            final Class<?>[] inputComponentTypes,
-            final boolean chunkSourceTableRequired) {
+            final ColumnSource<?>[] originalSources,
+            final ColumnSource<?>[] reinterpretedSources,
+            final boolean chunkSourceTableRequired,
+            final boolean originalChunksRequired) {
         super(pair, inputColumnNames, null, 0, 0, false);
         this.filters = filters;
         this.inputColumnNames = inputColumnNames;
-        this.inputChunkTypes = inputChunkTypes;
-        this.inputColumnTypes = inputColumnTypes;
-        this.inputComponentTypes = inputComponentTypes;
+        this.originalSources = originalSources;
+        this.reinterpretedSources = reinterpretedSources;
         this.chunkSourceTableRequired = chunkSourceTableRequired;
+        this.originalChunksRequired = originalChunksRequired;
     }
 
     @Override
@@ -510,10 +593,10 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                     pair,
                     filters,
                     inputColumnNames,
-                    inputChunkTypes,
-                    inputColumnTypes,
-                    inputComponentTypes,
-                    chunkSourceTableRequired);
+                    originalSources,
+                    reinterpretedSources,
+                    chunkSourceTableRequired,
+                    originalChunksRequired);
         }
         return new CountWhereOperator(
                 pair,
@@ -523,10 +606,10 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 forwardWindowScaleUnits,
                 filters,
                 inputColumnNames,
-                inputChunkTypes,
-                inputColumnTypes,
-                inputComponentTypes,
-                chunkSourceTableRequired);
+                originalSources,
+                reinterpretedSources,
+                chunkSourceTableRequired,
+                originalChunksRequired);
     }
 
     /**

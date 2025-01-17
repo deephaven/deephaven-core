@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -175,8 +176,10 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
 
     private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
-                new String[] {"charCol"},
-                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         Table actual;
         Table expected;
@@ -425,6 +428,43 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                         TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
             }
         }
+
+        // Test Boolean column
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                        "!isNull(boolCol) && boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "boolColGroup=boolCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<Boolean>> expectedGroupIt =
+                        expected.columnIterator("boolColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<Boolean> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereObject(expectedValGroup,
+                                val -> val != null && val));
+            }
+        }
+
+        // Test Instant column
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere(prevTicks, postTicks, "count",
+                        "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "tsGroup=ts"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<Instant>> expectedGroupIt = expected.columnIterator("tsGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<Instant> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereObject(expectedValGroup,
+                                val -> val.isAfter(DateTimeUtils.parseInstant("2022-03-09T12:00:00.000 NY"))));
+            }
+        }
     }
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
@@ -646,6 +686,43 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
                 // Use a lambda over expectedValGroup to compute the expected val.
                 Assert.eq(actualVal, "values match",
                         TestHelper.countWhereInt(expectedValGroup, val -> val >= 0 && val < 30));
+            }
+        }
+
+        // Test Boolean column
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                        "!isNull(boolCol) && boolCol"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "boolColGroup=boolCol"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<Boolean>> expectedGroupIt =
+                        expected.columnIterator("boolColGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<Boolean> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereObject(expectedValGroup,
+                                val -> val != null && val));
+            }
+        }
+
+        // Test Instant column
+        actual = t.updateBy(
+                UpdateByOperation.RollingCountWhere("ts", prevTime, postTime, "count",
+                        "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"));
+        expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "tsGroup=ts"));
+
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<ObjectVector<Instant>> expectedGroupIt = expected.columnIterator("tsGroup")) {
+            while (actualIt.hasNext()) {
+                final long actualVal = actualIt.nextLong();
+                final ObjectVector<Instant> expectedValGroup = expectedGroupIt.next();
+                // Use a lambda over expectedValGroup to compute the expected val.
+                Assert.eq(actualVal, "values match",
+                        TestHelper.countWhereObject(expectedValGroup,
+                                val -> val.isAfter(DateTimeUtils.parseInstant("2022-03-09T12:00:00.000 NY"))));
             }
         }
     }

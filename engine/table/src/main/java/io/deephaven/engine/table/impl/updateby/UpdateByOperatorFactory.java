@@ -11,7 +11,6 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -55,6 +54,7 @@ import java.math.MathContext;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -1282,7 +1282,7 @@ public class UpdateByOperatorFactory {
             final Map<String, Integer> inputColumnMap = new HashMap<>();
             final List<int[]> filterInputColumnIndicesList = new ArrayList<>();
 
-            // Verify all the columns in the where filters are present in the table def and valid for use.
+            // Verify all the columns in the where filters are present in the dummy table and valid for use.
             for (final WhereFilter whereFilter : whereFilters) {
                 whereFilter.init(tableDef);
                 if (whereFilter.isRefreshing()) {
@@ -1304,27 +1304,25 @@ public class UpdateByOperatorFactory {
                 filterInputColumnIndicesList.add(inputColumnIndices);
             }
 
-            // Gather the input column type info.
+            // Gather the input column type info and create a dummy table we can use to initialize filters.
             final String[] inputColumnNames = inputColumnNameList.toArray(String[]::new);
-            final ChunkType[] inputChunkTypes = new ChunkType[inputColumnNames.length];
-            final Class<?>[] inputColumnTypes = new Class[inputColumnNames.length];
-            final Class<?>[] inputComponentTypes = new Class[inputColumnNames.length];
-            for (int i = 0; i < inputColumnNames.length; i++) {
-                final ColumnDefinition<?> columnDef = tableDef.getColumn(inputColumnNames[i]);
-                inputColumnTypes[i] = columnDef.getDataType();
-                inputChunkTypes[i] = ChunkType.fromElementType(inputColumnTypes[i]);
-                inputComponentTypes[i] = columnDef.getComponentType();
-            }
+            final ColumnSource<?>[] originalColumnSources = new ColumnSource[inputColumnNames.length];
+            final ColumnSource<?>[] reinterpretedColumnSources = new ColumnSource[inputColumnNames.length];
 
-            // Create a dummy table we can use to initialize filters.
             final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
             for (int i = 0; i < inputColumnNames.length; i++) {
-                final ColumnDefinition<?> columnDef = tableDef.getColumn(inputColumnNames[i]);
-                // Reinterpret the column source to a primitive type if necessary so the filter is working with
-                // primitive types.
-                final ColumnSource<?> maybeReinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(
-                        NullValueColumnSource.getInstance(columnDef.getDataType(), columnDef.getComponentType()));
-                columnSourceMap.put(inputColumnNames[i], maybeReinterpretedSource);
+                final String col = inputColumnNames[i];
+                final ColumnDefinition<?> def = tableDef.getColumn(col);
+                // Create a representative column source of the correct type for the filter.
+                final ColumnSource<?> nullSource =
+                        NullValueColumnSource.getInstance(def.getDataType(), def.getComponentType());
+                // Create a reinterpreted version of the column source.
+                final ColumnSource<?> maybeReinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(nullSource);
+                if (nullSource != maybeReinterpretedSource) {
+                    originalColumnSources[i] = nullSource;
+                }
+                columnSourceMap.put(col, maybeReinterpretedSource);
+                reinterpretedColumnSources[i] = maybeReinterpretedSource;
             }
             final Table dummyTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
 
@@ -1332,8 +1330,16 @@ public class UpdateByOperatorFactory {
                     CountWhereOperator.CountFilter.createCountFilters(whereFilters, dummyTable,
                             filterInputColumnIndicesList);
 
-            // If any filter is a standard WhereFilter, we need a chunk source table.
-            final boolean chunkSourceTableRequired =
+            // If any filter is ConditionFilter or ChunkFilter and uses a reinterpreted column, need to produce
+            // original-typed chunks.
+            final boolean originalChunksRequired = Arrays.asList(countFilters).stream()
+                    .anyMatch(filter -> (filter.chunkFilter() != null || filter.conditionFilter() != null)
+                            && IntStream.of(filter.inputColumnIndices())
+                                    .anyMatch(i -> originalColumnSources[i] != null));
+
+            // If any filter is a standard WhereFilter or we need to produce original-typed chunks, need a chunk source
+            // table.
+            final boolean chunkSourceTableRequired = originalChunksRequired ||
                     Arrays.asList(countFilters).stream().anyMatch(filter -> filter.whereFilter() != null);
 
             // Create a new column pair with the same name for the left and right columns
@@ -1348,10 +1354,10 @@ public class UpdateByOperatorFactory {
                         pair,
                         countFilters,
                         inputColumnNames,
-                        inputChunkTypes,
-                        inputColumnTypes,
-                        inputComponentTypes,
-                        chunkSourceTableRequired);
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
             } else {
                 final RollingCountWhereSpec rs = (RollingCountWhereSpec) spec;
 
@@ -1373,10 +1379,10 @@ public class UpdateByOperatorFactory {
                         fwdWindowScaleUnits,
                         countFilters,
                         inputColumnNames,
-                        inputChunkTypes,
-                        inputColumnTypes,
-                        inputComponentTypes,
-                        chunkSourceTableRequired);
+                        originalColumnSources,
+                        reinterpretedColumnSources,
+                        chunkSourceTableRequired,
+                        originalChunksRequired);
             }
         }
 

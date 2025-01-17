@@ -25,10 +25,10 @@ import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.type.ArrayTypeUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.time.Instant;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -213,12 +213,31 @@ public class TestCumCountWhere extends BaseUpdateByTest {
                 final CloseablePrimitiveIteratorOfInt expectedIt = t.integerColumnIterator("intCol")) {
             TestHelper.assertWhereInt(actualIt, expectedIt, val -> val >= 0 && val <= 29);
         }
+
+        // Test Boolean column
+        actual = t.updateBy(UpdateByOperation.CumCountWhere("count", "!isNull(boolCol) && boolCol"));
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<Boolean> expectedIt = t.columnIterator("boolCol")) {
+            TestHelper.assertWhereObject(actualIt, expectedIt, val -> val != null && val);
+        }
+
+        // Test Instant column
+        actual = t.updateBy(UpdateByOperation.CumCountWhere("count",
+                "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"));
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<Instant> expectedIt = t.columnIterator("ts")) {
+            TestHelper.assertWhereObject(actualIt, expectedIt,
+                    val -> val.isAfter(DateTimeUtils.parseInstant("2022-03-09T12:00:00.000 NY")));
+        }
     }
 
     @Test
     public void testStaticZeroKeyAllNulls() {
-        final QueryTable t = createTestTableAllNull(100000, true, false, false, 0x31313131,
-                ArrayTypeUtils.EMPTY_STRING_ARRAY, new TestDataGenerator[0]).t;
+        final QueryTable t = createTestTableAllNull(STATIC_TABLE_SIZE, true, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         Table actual;
 
@@ -343,6 +362,22 @@ public class TestCumCountWhere extends BaseUpdateByTest {
                 final CloseablePrimitiveIteratorOfInt expectedIt = t.integerColumnIterator("intCol")) {
             TestHelper.assertWhereInt(actualIt, expectedIt, val -> val >= 0 && val <= 29);
         }
+
+        // Test Boolean column
+        actual = t.updateBy(UpdateByOperation.CumCountWhere("count", "!isNull(boolCol) && boolCol"));
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<Boolean> expectedIt = t.columnIterator("boolCol")) {
+            TestHelper.assertWhereObject(actualIt, expectedIt, val -> val != null && val);
+        }
+
+        // Test Instant column
+        actual = t.updateBy(UpdateByOperation.CumCountWhere("count",
+                "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"));
+        try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                final CloseableIterator<Instant> expectedIt = t.columnIterator("ts")) {
+            TestHelper.assertWhereObject(actualIt, expectedIt,
+                    val -> val.isAfter(DateTimeUtils.parseInstant("2022-03-09T12:00:00.000 NY")));
+        }
     }
 
     // endregion
@@ -351,7 +386,12 @@ public class TestCumCountWhere extends BaseUpdateByTest {
 
     @Test
     public void testStaticBucketed() {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0xACDB4321).t;
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
+
         final PartitionedTable preOp = t.partitionBy("Sym");
 
         PartitionedTable postOp;
@@ -516,6 +556,32 @@ public class TestCumCountWhere extends BaseUpdateByTest {
             }
             return source;
         });
+
+
+        // Test Boolean column
+        postOp = t.updateBy(UpdateByOperation.CumCountWhere("count", "!isNull(boolCol) && boolCol"), "Sym")
+                .partitionBy("Sym");
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                    final CloseableIterator<Boolean> expectedIt = source.columnIterator("boolCol")) {
+                TestHelper.assertWhereObject(actualIt, expectedIt, val -> val != null && val);
+            }
+            return source;
+        });
+
+        // Test Instant column
+        postOp = t
+                .updateBy(UpdateByOperation.CumCountWhere("count",
+                        "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"), "Sym")
+                .partitionBy("Sym");
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            try (final CloseablePrimitiveIteratorOfLong actualIt = actual.longColumnIterator("count");
+                    final CloseableIterator<Instant> expectedIt = source.columnIterator("ts")) {
+                TestHelper.assertWhereObject(actualIt, expectedIt,
+                        val -> val.isAfter(DateTimeUtils.parseInstant("2022-03-09T12:00:00.000 NY")));
+            }
+            return source;
+        });
     }
 
     // endregion
@@ -544,7 +610,12 @@ public class TestCumCountWhere extends BaseUpdateByTest {
 
     private void doTestTicking(boolean bucketed, boolean appendOnly) {
         final int seed = 0xB177B177;
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, seed);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, seed,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
+
         final QueryTable t = result.t;
 
         if (appendOnly) {
@@ -578,7 +649,17 @@ public class TestCumCountWhere extends BaseUpdateByTest {
                         ? t.updateBy(UpdateByOperation.CumCountWhere("count",
                                 "intCol > 50 && longCol < 90"), "Sym")
                         : t.updateBy(UpdateByOperation.CumCountWhere("count",
-                                "intCol > 50 && longCol < 90")))
+                                "intCol > 50 && longCol < 90"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.CumCountWhere("count",
+                                "boolCol != null && boolCol"), "Sym")
+                        : t.updateBy(UpdateByOperation.CumCountWhere("count",
+                                "boolCol != null && boolCol"))),
+                EvalNugget.from(() -> bucketed
+                        ? t.updateBy(UpdateByOperation.CumCountWhere("count",
+                                "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)"), "Sym")
+                        : t.updateBy(UpdateByOperation.CumCountWhere("count",
+                                "ts > DateTimeUtils.parseInstant(`2022-03-09T12:00:00.000 NY`)")))
         };
 
         final Random random = new Random(seed);
