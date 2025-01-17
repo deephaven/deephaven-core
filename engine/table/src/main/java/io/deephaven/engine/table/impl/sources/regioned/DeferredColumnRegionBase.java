@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
@@ -33,39 +32,33 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
     public void invalidate() {
         super.invalidate();
         synchronized (this) {
-            if (resultRegion != null) {
-                resultRegion.invalidate();
+            REGION_TYPE localResultRegion;
+            if ((localResultRegion = resultRegion) != null) {
+                localResultRegion.invalidate();
             }
         }
     }
 
     @Override
     public final REGION_TYPE getResultRegion() {
-        if (resultRegion == null) {
+        REGION_TYPE localResultRegion;
+        if ((localResultRegion = resultRegion) == null) {
             synchronized (this) {
-                if (resultRegion == null) {
-                    resultRegion = Require.neqNull(resultRegionFactory.get(), "resultRegionFactory.get()");
+                if ((localResultRegion = resultRegion) == null) {
+                    resultRegion =
+                            localResultRegion = Require.neqNull(resultRegionFactory.get(), "resultRegionFactory.get()");
                     resultRegionFactory = null;
                 }
             }
         }
-        return resultRegion;
-    }
-
-    /**
-     * Get the result region if it has already been supplied (because of a call to {@link #getResultRegion()}).
-     *
-     * @return The result region
-     */
-    private REGION_TYPE getResultRegionIfSupplied() {
-        return resultRegion;
+        return localResultRegion;
     }
 
     @Override
     @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
         DeferredColumnRegion.super.releaseCachedResources();
-        final REGION_TYPE localResultRegion = getResultRegionIfSupplied();
+        final REGION_TYPE localResultRegion = resultRegion;
         if (localResultRegion != null) {
             localResultRegion.releaseCachedResources();
         }
