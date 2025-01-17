@@ -202,7 +202,7 @@ def cum_count_where(col: str, filters: Union[str, List[str]]) -> UpdateByOperati
         raise DHError(message="count_where aggregation requires a string value for the 'col' argument.")
     filters = to_list(filters)
 
-    ub_spec = _GrpcUpdateBySpec(count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(column_name=col, filters=filters))
+    ub_spec = _GrpcUpdateBySpec(count_where=_GrpcUpdateBySpec.UpdateByCumulativeCountWhere(result_column=col, filters=filters))
     ub_column = _GrpcUpdateByColumn(spec=ub_spec)
     return UpdateByOperation(ub_column=ub_column)
 
