@@ -127,7 +127,7 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(CumCountWhereSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setCountWhere(UpdateByCumulativeCountWhere.newBuilder()
-                            .setColumnName("count")
+                            .setResultColumn("count")
                             .addFilters("x > 5"))
                     .build();
         }
@@ -344,7 +344,7 @@ public class UpdateBySpecBuilderTest {
                                             .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
                                                     .setColumn("Timestamp").setNanos(1).build())
                                             .build())
-                                    .setColumnName("count")
+                                    .setResultColumn("count")
                                     .addFilters("x > 5")
                                     .build())
                     .build();

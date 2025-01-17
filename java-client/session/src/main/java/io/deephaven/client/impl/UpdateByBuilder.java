@@ -198,7 +198,7 @@ class UpdateByBuilder {
                     .collect(Collectors.toList());
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setCountWhere(UpdateByCumulativeCountWhere.newBuilder()
-                            .setColumnName(spec.column().name())
+                            .setResultColumn(spec.column().name())
                             .addAllFilters(filters)
                             .build())
                     .build();
@@ -307,7 +307,7 @@ class UpdateByBuilder {
                     UpdateByRollingCountWhere.newBuilder()
                             .setReverseWindowScale(adapt(rs.revWindowScale()))
                             .setForwardWindowScale(adapt(rs.fwdWindowScale()))
-                            .setColumnName(rs.column().name())
+                            .setResultColumn(rs.column().name())
                             .addAllFilters(filters);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingCountWhere(builder.build())

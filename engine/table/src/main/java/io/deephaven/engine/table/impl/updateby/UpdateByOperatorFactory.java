@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.em.*;
@@ -1319,9 +1320,11 @@ public class UpdateByOperatorFactory {
             final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
             for (int i = 0; i < inputColumnNames.length; i++) {
                 final ColumnDefinition<?> columnDef = tableDef.getColumn(inputColumnNames[i]);
-                final ColumnSource<?> source =
-                        NullValueColumnSource.getInstance(columnDef.getDataType(), columnDef.getComponentType());
-                columnSourceMap.put(inputColumnNames[i], source);
+                // Reinterpret the column source to a primitive type if necessary so the filter is working with
+                // primitive types.
+                final ColumnSource<?> maybeReinterpretedSource = ReinterpretUtils.maybeConvertToPrimitive(
+                        NullValueColumnSource.getInstance(columnDef.getDataType(), columnDef.getComponentType()));
+                columnSourceMap.put(inputColumnNames[i], maybeReinterpretedSource);
             }
             final Table dummyTable = new QueryTable(RowSetFactory.empty().toTracking(), columnSourceMap);
 

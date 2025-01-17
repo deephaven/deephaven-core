@@ -1524,7 +1524,7 @@ def rolling_formula_time(ts_col: str, formula: str, formula_param: str = None, c
 
 
 def rolling_count_where_tick(col: str, filters: Union[str, Filter, List[str], List[Filter]],
-                             rev_ticks: int = 0, fwd_ticks: int = 0) -> UpdateByOperation:
+                             rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using ticks as the windowing unit. Ticks are row counts, and you may specify the reverse and forward
     window in number of rows to include. The current row is considered to belong to the reverse window but not the
@@ -1567,7 +1567,7 @@ def rolling_count_where_tick(col: str, filters: Union[str, Filter, List[str], Li
 
 
 def rolling_count_where_time(ts_col: str, col: str, filters: Union[str, Filter, List[str], List[Filter]],
-                             rev_time: Union[int, str] = 0, fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+                             rev_time: Union[int, str], fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling count where UpdateByOperation that counts the number of values that pass the provided
     filters, using time as the windowing unit. This function accepts nanoseconds or time strings as the reverse and
     forward window parameters. Negative values are allowed and can be used to generate completely forward or completely

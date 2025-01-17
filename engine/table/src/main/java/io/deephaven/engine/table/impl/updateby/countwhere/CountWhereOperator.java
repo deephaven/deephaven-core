@@ -297,7 +297,6 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                     } else {
                         filter.chunkFilter.filterAnd(valueChunks[0], resultsChunk);
                     }
-                    continue;
                 } else if (filter.conditionFilter != null) {
                     if (!initialized) {
                         filter.conditionFilter.filter(conditionalFilterContext, valueChunks, chunkSize, resultsChunk);
@@ -306,19 +305,18 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                         filter.conditionFilter.filterAnd(conditionalFilterContext, valueChunks, chunkSize,
                                 resultsChunk);
                     }
-                    continue;
+                } else {
+                    if (remainingRows == null) {
+                        // This is the first WhereFilter to run, initialize the remainingRows RowSet
+                        remainingRows = initialized
+                                ? buildFromBooleanChunk(resultsChunk, chunkSize)
+                                : RowSetFactory.flat(chunkSize);
+                    }
+                    try (final RowSet ignored = remainingRows) {
+                        remainingRows = filter.whereFilter.filter(remainingRows, flatRowSet, chunkSourceTable, false);
+                    }
+                    initialized = true;
                 }
-
-                if (remainingRows == null) {
-                    // This is the first WhereFilter to run, initialize the remainingRows RowSet
-                    remainingRows = initialized
-                            ? buildFromBooleanChunk(resultsChunk, chunkSize)
-                            : RowSetFactory.flat(chunkSize);
-                }
-                try (final RowSet ignored = remainingRows) {
-                    remainingRows = filter.whereFilter.filter(remainingRows, flatRowSet, chunkSourceTable, false);
-                }
-                initialized = true;
             }
 
             try (final RowSet ignored = remainingRows; final RowSet ignored2 = flatRowSet) {

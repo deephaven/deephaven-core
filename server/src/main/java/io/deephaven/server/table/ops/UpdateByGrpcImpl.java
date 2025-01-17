@@ -204,7 +204,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
 
     private static CumCountWhereSpec adaptCountWhere(
             @SuppressWarnings("unused") UpdateByCumulativeCountWhere countWhere) {
-        return CumCountWhereSpec.of(countWhere.getColumnName(), countWhere.getFiltersList().toArray(String[]::new));
+        return CumCountWhereSpec.of(countWhere.getResultColumn(), countWhere.getFiltersList().toArray(String[]::new));
     }
 
     private static FillBySpec adaptFill(@SuppressWarnings("unused") UpdateByFill fill) {
@@ -342,7 +342,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return RollingCountWhereSpec.of(
                 adaptWindowScale(countWhere.getReverseWindowScale()),
                 adaptWindowScale(countWhere.getForwardWindowScale()),
-                countWhere.getColumnName(),
+                countWhere.getResultColumn(),
                 countWhere.getFiltersList().toArray(String[]::new));
     }
 

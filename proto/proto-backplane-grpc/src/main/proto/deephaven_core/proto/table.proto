@@ -594,15 +594,21 @@ message UpdateByRequest {
         }
 
         message UpdateByRollingCountWhere {
+          // The reverse window for the rolling operation, may be in ticks or time-based.
           UpdateByWindowScale reverse_window_scale = 1;
+          // The forward window for the rolling operation, may be in ticks or time-based.
           UpdateByWindowScale forward_window_scale = 2;
-          string column_name = 3;
+          // The output column name
+          string result_column = 3;
+          // The filters tp apply before counting
           repeated string filters = 4;
         }
 
         message UpdateByCumulativeCountWhere {
-          string column_name = 3;
-          repeated string filters = 4;
+          // The output column name
+          string result_column = 1;
+          // The filters tp apply before counting
+          repeated string filters = 2;
         }
 
         oneof type {

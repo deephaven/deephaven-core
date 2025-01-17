@@ -675,7 +675,8 @@ class Table(TableInterface, ServerObject):
 
         Args:
             ops (Union[UpdateByOperatoin, List[UpdateByOperation]]): the UpdateByOperation(s) to be applied
-            by (Union[str, List[str]]): the group-by column name(s)
+            by (Union[str, List[str]]): the group-by column name(s), defaults to None, meaning all calculations are
+                performed over the entire table
 
         Returns:
             a Table object
