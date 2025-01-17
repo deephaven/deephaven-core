@@ -3,12 +3,38 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.parquet.table.location.ParquetColumnResolver;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ParquetInstructionsTest {
+
+    @Test
+    public void empty() {
+        assertThat(ParquetInstructions.EMPTY.getSpecialInstructions()).isNull();
+        assertThat(ParquetInstructions.EMPTY.getCompressionCodecName())
+                .isEqualTo(ParquetInstructions.DEFAULT_COMPRESSION_CODEC_NAME);
+        assertThat(ParquetInstructions.EMPTY.getMaximumDictionaryKeys())
+                .isEqualTo(ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_KEYS);
+        assertThat(ParquetInstructions.EMPTY.getMaximumDictionarySize())
+                .isEqualTo(ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_SIZE);
+        assertThat(ParquetInstructions.EMPTY.isLegacyParquet()).isFalse();
+        assertThat(ParquetInstructions.EMPTY.getTargetPageSize())
+                .isEqualTo(ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE);
+        assertThat(ParquetInstructions.EMPTY.isRefreshing()).isFalse();
+        assertThat(ParquetInstructions.EMPTY.generateMetadataFiles()).isFalse();
+        assertThat(ParquetInstructions.EMPTY.getFileLayout()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.getTableDefinition()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.getIndexColumns()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.getColumnResolverFactory()).isEmpty();
+        assertThat(ParquetInstructions.EMPTY.baseNameForPartitionedParquetData()).isEqualTo("{uuid}");
+    }
 
     @Test
     public void setFieldId() {
@@ -117,6 +143,36 @@ public class ParquetInstructionsTest {
             failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("Invalid column name");
+        }
+    }
+
+    @Test
+    public void columnResolver() {
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("Foo")))
+                .setColumnResolverFactory(ColumnResolverTestImpl.INSTANCE)
+                .build();
+        assertThat(instructions.getColumnResolverFactory()).hasValue(ColumnResolverTestImpl.INSTANCE);
+    }
+
+    @Test
+    public void columnResolverNoTableDefinition() {
+        try {
+            ParquetInstructions.builder()
+                    .setColumnResolverFactory(ColumnResolverTestImpl.INSTANCE)
+                    .build();
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("When setting columnResolver, tableDefinition must be provided");
+        }
+    }
+
+    private enum ColumnResolverTestImpl implements ParquetColumnResolver.Factory {
+        INSTANCE;
+
+        @Override
+        public ParquetColumnResolver of(TableKey tableKey, ParquetTableLocationKey tableLocationKey) {
+            throw new UnsupportedOperationException();
         }
     }
 }
