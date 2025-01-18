@@ -41,4 +41,5 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DHC_NOTIFY }}
         with:
+          webhook-type: webhook-trigger
           payload: '{"repository": "${{ github.repository }}", "message": "${{ github.workflow }}/${{ github.job }} failure, some image is out of date", "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'
