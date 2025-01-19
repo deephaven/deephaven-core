@@ -37,6 +37,7 @@ def start_jvm_for_tests(jvm_props: Dict[str, str] = None):
 
             'Calendar.default': 'USNYSE_EXAMPLE',
             'Calendar.importPath': '/test_calendar_imports.txt',
+            'SystemicObjectTracker.enabled': 'true',
         }
 
         if jvm_props:
