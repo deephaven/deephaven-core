@@ -95,7 +95,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
      */
     public ParquetColumnResolverMap of(MessageType schema) {
         final FieldIdMappingVisitor visitor = new FieldIdMappingVisitor();
-        ParquetUtil.walk(schema, visitor);
+        ParquetSchemaUtil.walk(schema, visitor);
         return ParquetColumnResolverMap.builder()
                 .schema(schema)
                 .putAllMapping(visitor.nameToColumnDescriptor)
@@ -115,7 +115,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
         return of(tableLocationKey.getSchema());
     }
 
-    private class FieldIdMappingVisitor implements ParquetUtil.Visitor {
+    private class FieldIdMappingVisitor implements ParquetSchemaUtil.Visitor {
         private final Map<String, ColumnDescriptor> nameToColumnDescriptor = new HashMap<>();
 
         @Override
@@ -133,7 +133,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
                 if (set == null) {
                     continue;
                 }
-                final ColumnDescriptor columnDescriptor = ParquetUtil.makeColumnDescriptor(path, primitiveType);
+                final ColumnDescriptor columnDescriptor = ParquetSchemaUtil.makeColumnDescriptor(path, primitiveType);
                 for (String columnName : set) {
                     final ColumnDescriptor existing = nameToColumnDescriptor.putIfAbsent(columnName, columnDescriptor);
                     if (existing != null && !existing.equals(columnDescriptor)) {

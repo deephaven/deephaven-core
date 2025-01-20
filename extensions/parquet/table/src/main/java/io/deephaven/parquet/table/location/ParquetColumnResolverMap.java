@@ -53,7 +53,7 @@ public abstract class ParquetColumnResolverMap implements ParquetColumnResolver 
     final void checkMapping() {
         for (Map.Entry<String, ColumnDescriptor> e : mapping().entrySet()) {
             final ColumnDescriptor columnDescriptor = e.getValue();
-            if (!ParquetUtil.contains(schema(), columnDescriptor)) {
+            if (!ParquetSchemaUtil.contains(schema(), columnDescriptor)) {
                 throw new IllegalArgumentException(
                         String.format("schema does not contain Deephaven columnName=%s columnDescriptor=%s", e.getKey(),
                                 columnDescriptor));

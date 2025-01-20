@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-final class ParquetUtil {
+final class ParquetSchemaUtil {
 
     interface Visitor {
 
@@ -108,8 +108,8 @@ final class ParquetUtil {
 
     static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
         final String[] namePath = path.stream().map(Type::getName).toArray(String[]::new);
-        final int maxRep = (int) path.stream().filter(ParquetUtil::isRepeated).count();
-        final int maxDef = (int) path.stream().filter(Predicate.not(ParquetUtil::isRequired)).count();
+        final int maxRep = (int) path.stream().filter(ParquetSchemaUtil::isRepeated).count();
+        final int maxDef = (int) path.stream().filter(Predicate.not(ParquetSchemaUtil::isRequired)).count();
         return new ColumnDescriptor(namePath, primitiveType, maxRep, maxDef);
     }
 

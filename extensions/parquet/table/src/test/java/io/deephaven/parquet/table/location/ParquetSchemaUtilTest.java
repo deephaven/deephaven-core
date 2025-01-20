@@ -22,7 +22,7 @@ import static org.apache.parquet.schema.Types.repeated;
 import static org.apache.parquet.schema.Types.required;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ParquetUtilTest {
+public class ParquetSchemaUtilTest {
 
     private static final MessageType SCHEMA;
 
@@ -57,36 +57,36 @@ public class ParquetUtilTest {
     @Test
     public void getColumnsEmpty() {
         final MessageType schema = Types.buildMessage().named("root");
-        final List<ColumnDescriptor> columns = ParquetUtil.getColumns(schema);
+        final List<ColumnDescriptor> columns = ParquetSchemaUtil.getColumns(schema);
         assertThat(columns)
-                .usingElementComparator(equalityMethod(ParquetUtil::columnDescriptorEquals))
+                .usingElementComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
                 .isEqualTo(schema.getColumns());
     }
 
     @Test
     public void getColumns() {
-        final List<ColumnDescriptor> columns = ParquetUtil.getColumns(SCHEMA);
+        final List<ColumnDescriptor> columns = ParquetSchemaUtil.getColumns(SCHEMA);
         assertThat(columns)
-                .usingElementComparator(equalityMethod(ParquetUtil::columnDescriptorEquals))
+                .usingElementComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
                 .isEqualTo(SCHEMA.getColumns());
 
     }
 
     @Test
     public void getColumnDescriptor() {
-        for (ColumnDescriptor expected : ParquetUtil.getColumns(SCHEMA)) {
-            assertThat(ParquetUtil.getColumnDescriptor(SCHEMA, expected.getPath()))
-                    .usingComparator(equalityMethod(ParquetUtil::columnDescriptorEquals))
+        for (ColumnDescriptor expected : ParquetSchemaUtil.getColumns(SCHEMA)) {
+            assertThat(ParquetSchemaUtil.getColumnDescriptor(SCHEMA, expected.getPath()))
+                    .usingComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
                     .isEqualTo(expected);
         }
     }
 
     @Test
     public void contains() {
-        for (ColumnDescriptor column : ParquetUtil.getColumns(SCHEMA)) {
-            assertThat(ParquetUtil.contains(SCHEMA, column)).isTrue();
+        for (ColumnDescriptor column : ParquetSchemaUtil.getColumns(SCHEMA)) {
+            assertThat(ParquetSchemaUtil.contains(SCHEMA, column)).isTrue();
         }
-        assertThat(ParquetUtil.contains(SCHEMA,
+        assertThat(ParquetSchemaUtil.contains(SCHEMA,
                 new ColumnDescriptor(new String[] {"Required"}, required(INT32).named("Required"), 0, 0))).isTrue();
         for (ColumnDescriptor column : new ColumnDescriptor[] {
                 new ColumnDescriptor(new String[] {"Required"}, optional(INT32).named("Required"), 0, 0),
@@ -102,7 +102,7 @@ public class ParquetUtilTest {
                 new ColumnDescriptor(new String[] {"Required"}, optional(INT32).named("Required"), 0, 0),
                 new ColumnDescriptor(new String[] {}, repeated(INT32).named("Required"), 0, 0)
         }) {
-            assertThat(ParquetUtil.contains(SCHEMA, column)).isFalse();
+            assertThat(ParquetSchemaUtil.contains(SCHEMA, column)).isFalse();
         }
     }
 

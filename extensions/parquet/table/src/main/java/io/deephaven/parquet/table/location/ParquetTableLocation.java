@@ -185,23 +185,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
-        final List<String> nameList;
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        if (resolver == null) {
-            final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-            nameList = columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        } else {
-            // empty list will result in exists=false
-            nameList = resolver.of(columnName)
-                    .map(Arrays::asList)
-                    .orElse(List.of());
-        }
+        final List<String> columnPath = getColumnPath(columnName, parquetColumnName);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList))
+                .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
                 .toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);
+    }
+
+    private List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
+        if (resolver != null) {
+            // empty list will result in exists=false
+            return resolver.of(columnName).map(Arrays::asList).orElse(List.of());
+        }
+        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnNameOrDefault);
+        return columnPath == null
+                ? Collections.singletonList(parquetColumnNameOrDefault)
+                : Arrays.asList(columnPath);
     }
 
     private RowSet computeIndex() {
