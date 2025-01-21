@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table.location;
+package io.deephaven.parquet.impl;
 
 import io.deephaven.base.verify.Assert;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -20,9 +20,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-final class ParquetSchemaUtil {
+/**
+ * Various improved ways of traversing {@link MessageType}.
+ */
+public final class ParquetSchemaUtil {
 
-    interface Visitor {
+    public interface Visitor {
 
         /**
          * Accept a Parquet column.
@@ -43,27 +46,36 @@ final class ParquetSchemaUtil {
     /**
      * A more efficient implementation of {@link MessageType#getColumns()}.
      */
-    static List<ColumnDescriptor> getColumns(MessageType schema) {
+    public static List<ColumnDescriptor> getColumns(MessageType schema) {
         final List<ColumnDescriptor> out = new ArrayList<>();
         walkColumnDescriptors(schema, out::add);
         return out;
     }
 
-    static void walkColumnDescriptors(MessageType type, Consumer<ColumnDescriptor> consumer) {
+    /**
+     * A more efficient implementation of {@link MessageType#getPaths()}.
+     */
+    public static List<String[]> getPaths(MessageType schema) {
+        final List<String[]> out = new ArrayList<>();
+        walk(schema, (path, primitiveType) -> out.add(makeNamePath(path)));
+        return out;
+    }
+
+    public static void walkColumnDescriptors(MessageType type, Consumer<ColumnDescriptor> consumer) {
         walk(type, new ColumnDescriptorVisitor(consumer));
     }
 
     /**
      * An alternative interface for traversing the leaf fields of a Parquet schema.
      */
-    static void walk(MessageType type, Visitor visitor) {
+    public static void walk(MessageType type, Visitor visitor) {
         walk(type, visitor, new ArrayDeque<>());
     }
 
     /**
-     * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}
+     * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}.
      */
-    static ColumnDescriptor getColumnDescriptor(MessageType schema, String[] path) {
+    public static ColumnDescriptor getColumnDescriptor(MessageType schema, String[] path) {
         if (path.length == 0) {
             return null;
         }
@@ -106,26 +118,37 @@ final class ParquetSchemaUtil {
         return new ColumnDescriptor(path, primitiveType, repeatedCount, notRequiredCount);
     }
 
-    static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
-        final String[] namePath = path.stream().map(Type::getName).toArray(String[]::new);
+    /**
+     * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}.
+     */
+    public static ColumnDescriptor getColumnDescriptor(MessageType schema, List<String> path) {
+        return getColumnDescriptor(schema, path.toArray(new String[0]));
+    }
+
+    public static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
+        final String[] namePath = makeNamePath(path);
         final int maxRep = (int) path.stream().filter(ParquetSchemaUtil::isRepeated).count();
         final int maxDef = (int) path.stream().filter(Predicate.not(ParquetSchemaUtil::isRequired)).count();
         return new ColumnDescriptor(namePath, primitiveType, maxRep, maxDef);
     }
 
-    static boolean columnDescriptorEquals(ColumnDescriptor a, ColumnDescriptor b) {
+    public static boolean columnDescriptorEquals(ColumnDescriptor a, ColumnDescriptor b) {
         return a.equals(b)
                 && a.getPrimitiveType().equals(b.getPrimitiveType())
                 && a.getMaxRepetitionLevel() == b.getMaxRepetitionLevel()
                 && a.getMaxDefinitionLevel() == b.getMaxDefinitionLevel();
     }
 
-    static boolean contains(MessageType schema, ColumnDescriptor descriptor) {
+    public static boolean contains(MessageType schema, ColumnDescriptor descriptor) {
         final ColumnDescriptor cd = getColumnDescriptor(schema, descriptor.getPath());
         if (cd == null) {
             return false;
         }
         return columnDescriptorEquals(descriptor, cd);
+    }
+
+    private static String[] makeNamePath(Collection<Type> path) {
+        return path.stream().map(Type::getName).toArray(String[]::new);
     }
 
     private static void walk(Type type, Visitor visitor, Deque<Type> stack) {

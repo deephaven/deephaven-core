@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -68,8 +69,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.columnName = columnName;
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.path = type
-                .getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
+        this.path = ParquetSchemaUtil.getColumnDescriptor(type, columnChunk.meta_data.getPath_in_schema());
         if (columnChunk.getMeta_data().isSetCodec()) {
             decompressor = DeephavenCompressorAdapterFactory.getInstance()
                     .getByName(columnChunk.getMeta_data().getCodec().name());

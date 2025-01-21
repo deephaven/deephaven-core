@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;

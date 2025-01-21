@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTools;
@@ -34,7 +35,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
@@ -103,8 +103,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
-        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
-            final String[] path = column.getPath();
+        for (String[] path : ParquetSchemaUtil.getPaths(parquetFileReader.getSchema())) {
             if (path.length > 1) {
                 parquetColumnNameToPath.put(path[0], path);
             }

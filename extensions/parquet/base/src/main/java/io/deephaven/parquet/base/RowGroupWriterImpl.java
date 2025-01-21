@@ -5,6 +5,7 @@ package io.deephaven.parquet.base;
 
 import com.google.common.io.CountingOutputStream;
 import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -16,6 +17,7 @@ import org.apache.parquet.schema.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 final class RowGroupWriterImpl implements RowGroupWriter {
     private final CountingOutputStream countingOutput;
@@ -42,12 +44,12 @@ final class RowGroupWriterImpl implements RowGroupWriter {
             ByteBufferAllocator allocator,
             BlockMetaData blockMetaData,
             CompressorAdapter compressorAdapter) {
-        this.countingOutput = countingOutput;
-        this.type = type;
+        this.countingOutput = Objects.requireNonNull(countingOutput);
+        this.type = Objects.requireNonNull(type);
         this.targetPageSize = targetPageSize;
-        this.allocator = allocator;
-        this.blockMetaData = blockMetaData;
-        this.compressorAdapter = compressorAdapter;
+        this.allocator = Objects.requireNonNull(allocator);
+        this.blockMetaData = Objects.requireNonNull(blockMetaData);
+        this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
     }
 
     String[] getPrimitivePath(String columnName) {
@@ -74,7 +76,7 @@ final class RowGroupWriterImpl implements RowGroupWriter {
         }
         activeWriter = new ColumnWriterImpl(this,
                 countingOutput,
-                type.getColumnDescription(getPrimitivePath(columnName)),
+                ParquetSchemaUtil.getColumnDescriptor(type, getPrimitivePath(columnName)),
                 compressorAdapter,
                 targetPageSize,
                 allocator);

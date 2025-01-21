@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.MessageType;
 import org.immutables.value.Value;
