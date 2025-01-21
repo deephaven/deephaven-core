@@ -561,7 +561,6 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
      *
      * @param pair Contains the output column name as a MatchPair
      * @param filters the filters to apply to the input columns
-     * @param originalSources The original sources for reinterpreted columns
      * @param originalSources Representative original sources for the input columns; stores type information and helps
      *        convert input data chunks but does not hold any actual data
      * @param reinterpretedSources Representative reinterpreted sources for input columns; stores type information but
