@@ -4,17 +4,24 @@ plugins {
 }
 
 jacoco {
-    toolVersion = '0.8.8'
+    toolVersion = '0.8.12'
+}
+
+test {
+    jacoco {
+        destinationFile = layout.buildDirectory.file('jacoco/jacoco.exec').get().asFile
+    }
+    finalizedBy jacocoTestReport
 }
 
 jacocoTestReport {
+    dependsOn test
     reports {
-        xml.enabled true
-        csv.enabled true
-        html.enabled true
+        csv.required = true
+        csv.destination = layout.buildDirectory.file('reports/jacoco/java-coverage.csv').get().asFile
+        xml.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/java-coverage.xml').get().asFile
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/html')
     }
 }
 
-project.tasks.withType(Test).all { Test t ->
-    finalizedBy jacocoTestReport
-}
