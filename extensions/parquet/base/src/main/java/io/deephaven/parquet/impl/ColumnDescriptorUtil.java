@@ -4,6 +4,9 @@
 package io.deephaven.parquet.impl;
 
 import org.apache.parquet.column.ColumnDescriptor;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
 
 public final class ColumnDescriptorUtil {
     /**
@@ -12,10 +15,10 @@ public final class ColumnDescriptorUtil {
      * checks for the equality of {@link ColumnDescriptor#getPrimitiveType()},
      * {@link ColumnDescriptor#getMaxRepetitionLevel()}, and {@link ColumnDescriptor#getMaxDefinitionLevel()}.
      */
-    public static boolean equals(ColumnDescriptor x, ColumnDescriptor y) {
-        return x.equals(y)
+    public static boolean equals(@NotNull ColumnDescriptor x, @Nullable ColumnDescriptor y) {
+        return x == y || (x.equals(y)
                 && x.getPrimitiveType().equals(y.getPrimitiveType())
                 && x.getMaxRepetitionLevel() == y.getMaxRepetitionLevel()
-                && x.getMaxDefinitionLevel() == y.getMaxDefinitionLevel();
+                && x.getMaxDefinitionLevel() == y.getMaxDefinitionLevel());
     }
 }

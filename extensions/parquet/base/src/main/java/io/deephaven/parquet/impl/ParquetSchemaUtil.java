@@ -146,7 +146,7 @@ public final class ParquetSchemaUtil {
                 .isPresent();
     }
 
-    public static String[] makePath(Collection<Type> typePath) {
+    private static String[] makePath(Collection<Type> typePath) {
         return typePath.stream().map(Type::getName).toArray(String[]::new);
     }
 
