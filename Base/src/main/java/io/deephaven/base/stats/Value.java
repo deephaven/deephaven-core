@@ -74,7 +74,7 @@ public abstract class Value {
             AtomicUtil.setMax(this, MAX_UPDATER, x);
         }
         if (x < min) {
-            AtomicUtil.setMin(this, MAX_UPDATER, x);
+            AtomicUtil.setMin(this, MIN_UPDATER, x);
         }
     }
 
@@ -116,10 +116,6 @@ public abstract class Value {
 
     @Override
     public String toString() {
-        final DecimalFormat format = new DecimalFormat("#,###");
-        final DecimalFormat avgFormat = new DecimalFormat("#,###.###");
-
-
         if (n > 0) {
             final double std = Math.sqrt(n > 1 ? (sum2 - ((double) sum * sum / (double) n)) / (n - 1) : Double.NaN);
             final double avg = (double) sum / n;
