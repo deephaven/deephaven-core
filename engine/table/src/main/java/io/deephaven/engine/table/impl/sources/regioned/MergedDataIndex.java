@@ -315,18 +315,24 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         }
     }
 
-    private PartitionedTable buildPartitionedTable(boolean lazyRowsetMerge) {
+    /**
+     * Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by the
+     * appropriate region offset. The keys are always forced into memory so that the groupBy operation need not read
+     * from disk serially.
+     * <p>
+     * If lazyRowSetMerge is true, the rowsets are read into memory as part of the mergeRowSets call and are not forced
+     * into memory here. If lazyRowSetMerge is false, then the RowSets are also forced into memory.
+     * </p>
+     */
+    private PartitionedTable buildPartitionedTable(final boolean lazyRowSetMerge) {
         final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
         final Table locationTable = columnSourceManager.locationTable().coalesce();
-        // Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by
-        // the appropriate region offset. The row sets are not forced into memory, but keys are in order to enable
-        // efficient grouping. The rowsets are read into memory as part of the mergeRowSets call.
         final Table locationDataIndexes = locationTable
                 .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         columnSourceManager.locationColumnName(), TableLocation.class,
                         LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
                         (final long locationRowKey, final TableLocation location) -> loadIndexTableAndShiftRowSets(
-                                locationRowKey, location, keyColumnNamesArray, !lazyRowsetMerge)))))
+                                locationRowKey, location, keyColumnNamesArray, !lazyRowSetMerge)))))
                 .dropColumns(columnSourceManager.locationColumnName());
 
         return PartitionedTableFactory.of(locationDataIndexes);
