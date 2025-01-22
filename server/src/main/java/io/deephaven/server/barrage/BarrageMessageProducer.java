@@ -364,7 +364,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         parent.getColumnSourceMap().forEach((columnName, columnSource) -> {
             int ii = mi.getAndIncrement();
             chunkWriters[ii] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                    columnSource.getType(),
+                    ReinterpretUtils.maybeConvertToPrimitiveDataType(columnSource.getType()),
                     columnSource.getComponentType(),
                     schema.fields(ii)));
         });

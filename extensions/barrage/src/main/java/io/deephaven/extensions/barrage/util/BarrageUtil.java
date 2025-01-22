@@ -1092,7 +1092,7 @@ public class BarrageUtil {
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                        cd.getDataType(),
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
                         flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);

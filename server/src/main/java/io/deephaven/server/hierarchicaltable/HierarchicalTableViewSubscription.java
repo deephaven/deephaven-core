@@ -365,7 +365,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             barrageMessage.addColumnData[ci] = addColumnData;
 
             chunkWriters[ci] = DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                    columnDefinition.getDataType(),
+                    ReinterpretUtils.maybeConvertToPrimitiveDataType(columnDefinition.getDataType()),
                     columnDefinition.getComponentType(),
                     BarrageUtil.flatbufFieldFor(columnDefinition, Map.of())));
         }
