@@ -212,8 +212,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForAggregation", true);
 
     /**
-     * If the Configuration property "QueryTable.useDataIndexForJoins" is set to true (default), then permit
-     * naturalJoin and aj to use a data index, when applicable. If false, data indexes are not used even if present.
+     * If the Configuration property "QueryTable.useDataIndexForJoins" is set to true (default), then permit naturalJoin
+     * and aj to use a data index, when applicable. If false, data indexes are not used even if present.
      */
     public static boolean USE_DATA_INDEX_FOR_JOINS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
