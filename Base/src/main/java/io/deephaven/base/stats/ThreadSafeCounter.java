@@ -8,36 +8,22 @@ import java.util.function.LongFunction;
 // --------------------------------------------------------------------
 
 /**
- * A statistic where each value represents a additive quantity, and thus the sum of the values <U>does</U> have meaning.
- * Examples include event counts and processing duration. If the sum of the values <I>does not</I> have a useful
- * interpretation, use {@link State} instead.
+ * A statistic where each value represents an additive quantity, and thus the sum of the values <U>does</U> have
+ * meaning. Examples include event counts and processing duration. If the sum of the values <I>does not</I> have a
+ * useful interpretation, use {@link State} instead.
  * <UL>
  * <LI>{@link #increment} updates the counter, recording a single value. This is the most common usage. ({@link #sample}
  * does exactly the same thing but is a poor verb to use with a Counter.)
- * <LI>{@link #incrementFromSample} updates the counter, recording a value that is the difference between this sample
- * and the last sample. (The first call just sets the "last" sample and does not record a value.) For example, this can
- * be used to CPU usage rate when only a running total is available by periodically sampling the running total.
  * </UL>
  */
 public class ThreadSafeCounter extends ThreadSafeValue {
 
-    public static final char TYPE_TAG = 'C';
-
-    public ThreadSafeCounter(long now) {
+    public ThreadSafeCounter(final long now) {
         super(now);
     }
 
-    long previousSample = Long.MIN_VALUE;
-
-    public void incrementFromSample(long n) {
-        if (Long.MIN_VALUE != previousSample) {
-            sample(n - previousSample);
-        }
-        previousSample = n;
-    }
-
     public char getTypeTag() {
-        return TYPE_TAG;
+        return Counter.TYPE_TAG;
     }
 
     public static final LongFunction<ThreadSafeCounter> FACTORY = ThreadSafeCounter::new;

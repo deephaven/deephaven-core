@@ -22,7 +22,7 @@ public interface DataIndexOptions {
     /**
      * Static options that uses a partial table instead of the full table.
      */
-    DataIndexOptions USE_PARTIAL_TABLE = DataIndexOptions.builder().operationUsesPartialTable(true).build();
+    DataIndexOptions USING_PARTIAL_TABLE = DataIndexOptions.builder().operationUsesPartialTable(true).build();
 
     /**
      * Does this operation use only a subset of the DataIndex?

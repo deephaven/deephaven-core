@@ -53,8 +53,9 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     /**
      * The duration in nanos to build a DataIndex table.
      */
-    public static final Value BUILD_INDEX_TABLE_MILLIS = Stats
-            .makeItem("DataIndex", "buildTable", ThreadSafeCounter.FACTORY, "Duration in millis of building an index")
+    private static final Value BUILD_INDEX_TABLE_MILLIS = Stats
+            .makeItem("MergedDataIndex", "buildTableMillis", ThreadSafeCounter.FACTORY,
+                    "Duration in millis of building an index")
             .getValue();
 
     /**

@@ -57,9 +57,9 @@ public abstract class Value {
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void sample(final long x) {
         n++;
+        last = x;
         sum += x;
         sum2 += x * x;
-        last = x;
         if (x > max) {
             max = x;
         }

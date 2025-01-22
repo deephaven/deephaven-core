@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
@@ -70,15 +69,15 @@ public abstract class AbstractColumnSource<T> implements
     /**
      * Duration of match() calls using a DataIndex (also provides the count).
      */
-    public static final Value INDEX_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "indexFilter", ThreadSafeCounter.FACTORY,
+    private static final Value INDEX_FILTER_MILLIS =
+            Stats.makeItem("AbstractColumnSource", "indexFilterMillis", ThreadSafeCounter.FACTORY,
                     "Duration of match() with a DataIndex in millis")
                     .getValue();
     /**
      * Duration of match() calls using a chunk filter (i.e. no DataIndex).
      */
-    public static final Value CHUNK_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "chunkFilter", ThreadSafeCounter.FACTORY,
+    private static final Value CHUNK_FILTER_MILLIS =
+            Stats.makeItem("AbstractColumnSource", "chunkFilterMillis", ThreadSafeCounter.FACTORY,
                     "Duration of match() without a DataIndex in millis")
                     .getValue();
 
@@ -178,7 +177,7 @@ public abstract class AbstractColumnSource<T> implements
             @NotNull final RowSet rowsetToFilter,
             final Object[] keys) {
         final DataIndexOptions partialOption =
-                USE_PARTIAL_TABLE_DATA_INDEX ? DataIndexOptions.USE_PARTIAL_TABLE : DataIndexOptions.DEFAULT;
+                USE_PARTIAL_TABLE_DATA_INDEX ? DataIndexOptions.USING_PARTIAL_TABLE : DataIndexOptions.DEFAULT;
 
         final Table indexTable = dataIndex.table(partialOption);
 
