@@ -86,8 +86,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     private volatile Table indexTable;
 
     /**
-     * A lazy version of the table. This value is never set if indexTable is set. Can be converted to indexTable by
-     * selecting the RowSet column.
+     * A lazy version of the table. This value is never set if indexTable is set.
      */
     private volatile Table lazyTable;
 
@@ -370,7 +369,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         } else {
             // pull the key columns into memory while we are parallel; but do not read all the RowSets
             final Table withInMemoryKeyColumns = coalesced.update(keyColumnNames);
-            return withInMemoryKeyColumns.update(List.of(SelectColumn.ofStateless(shiftFunction)));
+            return withInMemoryKeyColumns.updateView(List.of(SelectColumn.ofStateless(shiftFunction)));
         }
     }
 
