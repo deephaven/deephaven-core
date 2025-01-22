@@ -50,6 +50,32 @@ public class CharChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
         super(transformer, emptyChunkSupplier, Character.BYTES, true, fieldNullable);
     }
 
+    public static ChunkWriter<ObjectChunk<Character, Values>> makeBoxed(
+            @NotNull final ChunkWriter<CharChunk<Values>> innerWriter) {
+        return new ChunkWriter<>() {
+            @Override
+            public Context makeContext(@NotNull final ObjectChunk<Character, Values> chunk, final long rowOffset) {
+                return innerWriter.makeContext(chunkUnboxer(chunk), rowOffset);
+            }
+
+            @Override
+            public DrainableColumn getInputStream(@NotNull Context context, @Nullable RowSet subset,
+                    @NotNull BarrageOptions options) throws IOException {
+                return innerWriter.getInputStream(context, subset, options);
+            }
+
+            @Override
+            public DrainableColumn getEmptyInputStream(@NotNull BarrageOptions options) throws IOException {
+                return innerWriter.getEmptyInputStream(options);
+            }
+
+            @Override
+            public boolean isFieldNullable() {
+                return innerWriter.isFieldNullable();
+            }
+        };
+    }
+
     @Override
     public DrainableColumn getInputStream(
             @NotNull final Context context,

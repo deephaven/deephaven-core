@@ -12,11 +12,11 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.List;
 
-public class ChunkListWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> implements SafeCloseable {
+public class ColumnChunksWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> implements SafeCloseable {
     private final ChunkWriter<SOURCE_CHUNK_TYPE> writer;
     private final ChunkWriter.Context[] contexts;
 
-    public ChunkListWriter(
+    public ColumnChunksWriter(
             final ChunkWriter<SOURCE_CHUNK_TYPE> writer,
             final List<SOURCE_CHUNK_TYPE> chunks) {
         this.writer = writer;

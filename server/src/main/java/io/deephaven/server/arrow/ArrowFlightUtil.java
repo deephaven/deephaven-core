@@ -217,6 +217,11 @@ public class ArrowFlightUtil {
                 return;
             }
 
+            if (resultTable == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Schema must be processed before record-batch messages");
+            }
+
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Only schema/record-batch messages supported, instead got "

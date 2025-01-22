@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -17,6 +18,10 @@ import java.util.function.IntFunction;
 
 public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>>
         implements ChunkReader<READ_CHUNK_TYPE> {
+    @FunctionalInterface
+    public interface ChunkTransformer<READ_CHUNK_TYPE extends Chunk<Values>, DEST_CHUNK_TYPE extends WritableChunk<Values>> {
+        void transform(READ_CHUNK_TYPE source, DEST_CHUNK_TYPE dest, int destOffset);
+    }
 
     protected static <T extends WritableChunk<Values>> T castOrCreateChunk(
             final WritableChunk<Values> outChunk,

@@ -25,24 +25,20 @@ import java.util.function.IntFunction;
 public class TransformingChunkReader<INPUT_CHUNK_TYPE extends WritableChunk<Values>, OUTPUT_CHUNK_TYPE extends WritableChunk<Values>>
         extends BaseChunkReader<OUTPUT_CHUNK_TYPE> {
 
-    public interface TransformFunction<INPUT_CHUNK_TYPE extends WritableChunk<Values>, OUTPUT_CHUNK_TYPE extends WritableChunk<Values>> {
-        void apply(INPUT_CHUNK_TYPE wireValues, OUTPUT_CHUNK_TYPE outChunk, int wireOffset, int outOffset);
-    }
-
     private final ChunkReader<INPUT_CHUNK_TYPE> wireChunkReader;
     private final IntFunction<OUTPUT_CHUNK_TYPE> chunkFactory;
     private final Function<WritableChunk<Values>, OUTPUT_CHUNK_TYPE> castFunction;
-    private final TransformFunction<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformFunction;
+    private final BaseChunkReader.ChunkTransformer<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformer;
 
     public TransformingChunkReader(
             @NotNull final ChunkReader<INPUT_CHUNK_TYPE> wireChunkReader,
             final IntFunction<OUTPUT_CHUNK_TYPE> chunkFactory,
             final Function<WritableChunk<Values>, OUTPUT_CHUNK_TYPE> castFunction,
-            final TransformFunction<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformFunction) {
+            final BaseChunkReader.ChunkTransformer<INPUT_CHUNK_TYPE, OUTPUT_CHUNK_TYPE> transformer) {
         this.wireChunkReader = wireChunkReader;
         this.chunkFactory = chunkFactory;
         this.castFunction = castFunction;
-        this.transformFunction = transformFunction;
+        this.transformer = transformer;
     }
 
     @Override
@@ -60,9 +56,7 @@ public class TransformingChunkReader<INPUT_CHUNK_TYPE extends WritableChunk<Valu
                 // if we're not given an output chunk then we better be writing at the front of the new one
                 Assert.eqZero(outOffset, "outOffset");
             }
-            for (int ii = 0; ii < wireValues.size(); ++ii) {
-                transformFunction.apply(wireValues, chunk, ii, outOffset + ii);
-            }
+            transformer.transform(wireValues, chunk, outOffset);
             chunk.setSize(outOffset + wireValues.size());
             return chunk;
         }

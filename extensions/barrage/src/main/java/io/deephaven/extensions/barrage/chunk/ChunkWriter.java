@@ -78,6 +78,11 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
     DrainableColumn getEmptyInputStream(
             @NotNull BarrageOptions options) throws IOException;
 
+    /**
+     * @return whether the wire format for this writer might include a validity buffer
+     */
+    boolean isFieldNullable();
+
     class Context extends ReferenceCounted implements SafeCloseable {
         private final Chunk<Values> chunk;
         private final long rowOffset;

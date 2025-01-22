@@ -120,12 +120,12 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
     public static class ModColumnWriter implements SafeCloseable {
         private final RowSetWriter rowsModified;
-        private final ChunkListWriter<Chunk<Values>> chunkListWriter;
+        private final ColumnChunksWriter<Chunk<Values>> chunkListWriter;
 
         ModColumnWriter(final ChunkWriter<Chunk<Values>> writer, final BarrageMessage.ModColumnData col)
                 throws IOException {
             rowsModified = new RowSetWriter(col.rowsModified);
-            chunkListWriter = new ChunkListWriter<>(writer, col.data);
+            chunkListWriter = new ColumnChunksWriter<>(writer, col.data);
         }
 
         @Override
@@ -148,7 +148,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
     private final RowSetWriter rowsRemoved;
     private final RowSetShiftDataWriter shifted;
 
-    private final ChunkListWriter<Chunk<Values>>[] addColumnData;
+    private final ColumnChunksWriter<Chunk<Values>>[] addColumnData;
     private final ModColumnWriter[] modColumnData;
 
     /**
@@ -175,11 +175,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             shifted = new RowSetShiftDataWriter(message.shifted);
 
             // noinspection unchecked
-            addColumnData = (ChunkListWriter<Chunk<Values>>[]) new ChunkListWriter[message.addColumnData.length];
+            addColumnData = (ColumnChunksWriter<Chunk<Values>>[]) new ColumnChunksWriter[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 BarrageMessage.AddColumnData columnData = message.addColumnData[i];
                 // noinspection resource
-                addColumnData[i] = new ChunkListWriter<>(chunkWriters[i], columnData.data);
+                addColumnData[i] = new ColumnChunksWriter<>(chunkWriters[i], columnData.data);
             }
 
             modColumnData = new ModColumnWriter[message.modColumnData.length];
@@ -959,7 +959,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 final WritableRowSet myAddedOffsets = view.addRowOffsets().intersect(allowedRange);
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
-            for (final ChunkListWriter<Chunk<Values>> chunkListWriter : addColumnData) {
+            for (final ColumnChunksWriter<Chunk<Values>> chunkListWriter : addColumnData) {
                 final int numElements = chunkListWriter.chunks().length == 0
                         ? 0
                         : myAddedOffsets.intSize("BarrageStreamWriterImpl");

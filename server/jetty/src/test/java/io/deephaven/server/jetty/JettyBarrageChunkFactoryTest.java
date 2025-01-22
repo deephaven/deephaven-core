@@ -52,6 +52,7 @@ import io.deephaven.server.test.TestAuthorizationProvider;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.VectorFactory;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -79,13 +80,20 @@ import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.Decimal256Vector;
 import org.apache.arrow.vector.DecimalVector;
 import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.Float2Vector;
+import org.apache.arrow.vector.Float4Vector;
+import org.apache.arrow.vector.Float8Vector;
+import org.apache.arrow.vector.FloatingPointVector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
+import org.apache.arrow.vector.TimeStampVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt1Vector;
 import org.apache.arrow.vector.UInt2Vector;
 import org.apache.arrow.vector.UInt4Vector;
 import org.apache.arrow.vector.UInt8Vector;
+import org.apache.arrow.vector.ValueVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.BaseListVector;
 import org.apache.arrow.vector.complex.FixedSizeListVector;
@@ -95,6 +103,17 @@ import org.apache.arrow.vector.complex.impl.ComplexCopier;
 import org.apache.arrow.vector.complex.reader.FieldReader;
 import org.apache.arrow.vector.complex.writer.BaseWriter;
 import org.apache.arrow.vector.complex.writer.FieldWriter;
+import org.apache.arrow.vector.holders.NullableTimeStampMicroTZHolder;
+import org.apache.arrow.vector.holders.NullableTimeStampMilliTZHolder;
+import org.apache.arrow.vector.holders.NullableTimeStampNanoTZHolder;
+import org.apache.arrow.vector.holders.NullableTimeStampSecTZHolder;
+import org.apache.arrow.vector.holders.TimeStampMicroHolder;
+import org.apache.arrow.vector.holders.TimeStampMilliHolder;
+import org.apache.arrow.vector.holders.TimeStampNanoHolder;
+import org.apache.arrow.vector.holders.TimeStampSecHolder;
+import org.apache.arrow.vector.types.FloatingPointPrecision;
+import org.apache.arrow.vector.types.TimeUnit;
+import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -113,7 +132,10 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,12 +146,12 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -362,7 +384,7 @@ public class JettyBarrageChunkFactoryTest {
         executionContext.close();
 
         closeClient();
-        server.stopWithTimeout(1, TimeUnit.MINUTES);
+        server.stopWithTimeout(1, java.util.concurrent.TimeUnit.MINUTES);
 
         try {
             server.join();
@@ -403,20 +425,26 @@ public class JettyBarrageChunkFactoryTest {
         }
     };
 
-    private Schema createSchema(boolean nullable, ArrowType arrowType, Class<?> dhType) {
-        return createSchema(nullable, arrowType, dhType, null);
+    private Schema createSchema(boolean nullable, boolean isDefault, ArrowType arrowType, Class<?> dhType) {
+        return createSchema(nullable, isDefault, arrowType, dhType, null);
     }
 
     private Schema createSchema(
             final boolean nullable,
+            final boolean isDefault,
             final ArrowType arrowType,
             final Class<?> dhType,
             final Class<?> dhComponentType) {
-        final Map<String, String> attrs = new HashMap<>();
-        attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG, dhType.getCanonicalName());
-        if (dhComponentType != null) {
-            attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG,
-                    dhComponentType.getCanonicalName());
+        final Map<String, String> attrs;
+        if (isDefault) {
+            attrs = null;
+        } else {
+            attrs = new HashMap<>();
+            attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG, dhType.getCanonicalName());
+            if (dhComponentType != null) {
+                attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG,
+                        dhComponentType.getCanonicalName());
+            }
         }
         final FieldType fieldType = new FieldType(nullable, arrowType, null, attrs);
         return new Schema(Collections.singletonList(
@@ -442,7 +470,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(8, true), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(8, true), dhType);
             }
 
             @Override
@@ -460,7 +488,7 @@ public class JettyBarrageChunkFactoryTest {
             }
         }
 
-        new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).runTest();
+        new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).isDefault().runTest();
         new Test(char.class, n -> (byte) (char) n.intValue(), (byte) QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
         new Test(int.class).runTest();
@@ -484,7 +512,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(8, false), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(8, false), dhType);
             }
 
             @Override
@@ -504,7 +532,7 @@ public class JettyBarrageChunkFactoryTest {
 
         new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).runTest();
         new Test(char.class, n -> (byte) (char) n.intValue(), (byte) QueryConstants.NULL_CHAR).runTest();
-        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
+        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).isDefault().runTest();
         new Test(int.class).runTest();
         new Test(long.class).runTest();
         new Test(float.class).runTest();
@@ -526,7 +554,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(16, true), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(16, true), dhType);
             }
 
             @Override
@@ -546,7 +574,7 @@ public class JettyBarrageChunkFactoryTest {
 
         new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).runTest();
         new Test(char.class, n -> (short) (char) n.intValue(), (short) QueryConstants.NULL_CHAR).runTest();
-        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
+        new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).isDefault().runTest();
         new Test(int.class).runTest();
         new Test(long.class).runTest();
         new Test(float.class).runTest();
@@ -568,7 +596,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(16, false), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(16, false), dhType);
             }
 
             @Override
@@ -588,7 +616,7 @@ public class JettyBarrageChunkFactoryTest {
 
         // convert to char to avoid sign extension, then an int to return a Number
         new Test(byte.class, n -> (int) (char) n.byteValue(), (int) (char) QueryConstants.NULL_BYTE).runTest();
-        new Test(char.class, n -> (int) (char) n.intValue(), (int) QueryConstants.NULL_CHAR).runTest();
+        new Test(char.class, n -> (int) (char) n.intValue(), (int) QueryConstants.NULL_CHAR).isDefault().runTest();
         new Test(short.class, n -> (int) (char) n.shortValue(), (int) (char) QueryConstants.NULL_SHORT).runTest();
         new Test(int.class).runTest();
         new Test(long.class).runTest();
@@ -611,7 +639,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(32, true), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(32, true), dhType);
             }
 
             @Override
@@ -632,7 +660,7 @@ public class JettyBarrageChunkFactoryTest {
         new Test(byte.class, Number::byteValue, QueryConstants.NULL_BYTE).runTest();
         new Test(char.class, n -> (int) (char) n.intValue(), (int) QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
-        new Test(int.class).runTest();
+        new Test(int.class).isDefault().runTest();
         new Test(long.class).runTest();
         new Test(float.class, n -> (int) n.floatValue(), (int) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class).runTest();
@@ -653,7 +681,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(32, false), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(32, false), dhType);
             }
 
             @Override
@@ -675,7 +703,7 @@ public class JettyBarrageChunkFactoryTest {
         new Test(char.class, n -> 0xFFFF & n.intValue(), 0xFFFF & QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, n -> 0xFFFF & n.shortValue(), 0xFFFF & QueryConstants.NULL_SHORT).runTest();
         new Test(int.class).runTest();
-        new Test(long.class).runTest();
+        new Test(long.class).isDefault().runTest();
         new Test(float.class, n -> (int) n.floatValue(), (int) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class).runTest();
         new Test(BigInteger.class).runTest();
@@ -690,12 +718,13 @@ public class JettyBarrageChunkFactoryTest {
             }
 
             Test(Class<?> dhType, Function<Number, Number> truncate, long dhWireNull) {
-                super(BigIntVector::get, QueryConstants.NULL_LONG, dhType, truncate, dhWireNull);
+                super((v, ii) -> (v.isNull(ii) ? null : v.get(ii)), QueryConstants.NULL_LONG, dhType, truncate,
+                        dhWireNull);
             }
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(64, true), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(64, true), dhType);
             }
 
             @Override
@@ -717,11 +746,11 @@ public class JettyBarrageChunkFactoryTest {
         new Test(char.class, n -> (long) (char) n.intValue(), QueryConstants.NULL_CHAR).runTest();
         new Test(short.class, Number::shortValue, QueryConstants.NULL_SHORT).runTest();
         new Test(int.class, Number::intValue, QueryConstants.NULL_INT).runTest();
-        new Test(long.class).runTest();
+        new Test(long.class).isDefault().runTest();
         new Test(float.class, n -> (long) n.floatValue(), (long) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class, Number::doubleValue, (long) QueryConstants.NULL_DOUBLE).runTest();
-        new Test(BigInteger.class).runTest();
-        new Test(BigDecimal.class).runTest();
+        new Test(BigInteger.class, Number::longValue, QueryConstants.NULL_LONG).runTest();
+        new Test(BigDecimal.class, Number::longValue, QueryConstants.NULL_LONG).runTest();
     }
 
     @Test
@@ -737,7 +766,7 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public Schema newSchema(boolean isNullable) {
-                return createSchema(isNullable, new ArrowType.Int(64, false), dhType);
+                return createSchema(isNullable, isDefault, new ArrowType.Int(64, false), dhType);
             }
 
             @Override
@@ -762,8 +791,8 @@ public class JettyBarrageChunkFactoryTest {
         new Test(long.class).runTest();
         new Test(float.class, n -> (long) n.floatValue(), (long) QueryConstants.NULL_FLOAT).runTest();
         new Test(double.class, n -> (long) n.doubleValue(), (long) QueryConstants.NULL_DOUBLE).runTest();
-        new Test(BigInteger.class).runTest();
-        new Test(BigDecimal.class).runTest();
+        new Test(BigInteger.class, Number::longValue, QueryConstants.NULL_LONG).isDefault().runTest();
+        new Test(BigDecimal.class, Number::longValue, QueryConstants.NULL_LONG).runTest();
     }
 
     @Test
@@ -782,7 +811,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDecimal128() throws Exception {
         // 128-bit tests
-        new DecimalRoundTripTest(BigDecimal.class, 1, 0).runTest();
+        new DecimalRoundTripTest(BigDecimal.class, 1, 0).isDefault().runTest();
         new DecimalRoundTripTest(BigDecimal.class, 19, 0).runTest();
         new DecimalRoundTripTest(BigDecimal.class, 19, 9).runTest();
         new DecimalRoundTripTest(BigDecimal.class, 38, 0).runTest();
@@ -790,11 +819,11 @@ public class JettyBarrageChunkFactoryTest {
         new DecimalRoundTripTest(BigDecimal.class, 38, 37).runTest();
 
         // test dh coercion
-        new DecimalRoundTripTest(byte.class, QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, true).runTest();
-        new DecimalRoundTripTest(char.class, QueryConstants.MIN_CHAR, QueryConstants.MAX_CHAR, true).runTest();
-        new DecimalRoundTripTest(short.class, QueryConstants.MIN_SHORT, QueryConstants.MAX_SHORT, true).runTest();
-        new DecimalRoundTripTest(int.class, QueryConstants.MIN_INT, QueryConstants.MAX_INT, true).runTest();
-        new DecimalRoundTripTest(long.class, QueryConstants.MIN_LONG, QueryConstants.MAX_LONG, true).runTest();
+        new DecimalRoundTripTest(byte.class).runTest();
+        new DecimalRoundTripTest(char.class).runTest();
+        new DecimalRoundTripTest(short.class).runTest();
+        new DecimalRoundTripTest(int.class).runTest();
+        new DecimalRoundTripTest(long.class).runTest();
 
         final int floatDigits = (int) Math.floor(Math.log10(1L << 24));
         new DecimalRoundTripTest(float.class, floatDigits, floatDigits / 2).runTest();
@@ -805,7 +834,7 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testDecimal256() throws Exception {
         // 256-bit tests
-        new Decimal256RoundTripTest(BigDecimal.class, 1, 0).runTest();
+        new Decimal256RoundTripTest(BigDecimal.class, 1, 0).isDefault().runTest();
         new Decimal256RoundTripTest(BigDecimal.class, 38, 0).runTest();
         new Decimal256RoundTripTest(BigDecimal.class, 38, 19).runTest();
         new Decimal256RoundTripTest(BigDecimal.class, 76, 0).runTest();
@@ -813,11 +842,11 @@ public class JettyBarrageChunkFactoryTest {
         new Decimal256RoundTripTest(BigDecimal.class, 76, 75).runTest();
 
         // test dh coercion
-        new Decimal256RoundTripTest(byte.class, QueryConstants.MIN_BYTE, QueryConstants.MAX_BYTE, true).runTest();
-        new Decimal256RoundTripTest(char.class, QueryConstants.MIN_CHAR, QueryConstants.MAX_CHAR, true).runTest();
-        new Decimal256RoundTripTest(short.class, QueryConstants.MIN_SHORT, QueryConstants.MAX_SHORT, true).runTest();
-        new Decimal256RoundTripTest(int.class, QueryConstants.MIN_INT, QueryConstants.MAX_INT, true).runTest();
-        new Decimal256RoundTripTest(long.class, QueryConstants.MIN_LONG, QueryConstants.MAX_LONG, true).runTest();
+        new Decimal256RoundTripTest(byte.class).runTest();
+        new Decimal256RoundTripTest(char.class).runTest();
+        new Decimal256RoundTripTest(short.class).runTest();
+        new Decimal256RoundTripTest(int.class).runTest();
+        new Decimal256RoundTripTest(long.class).runTest();
 
         final int floatDigits = (int) Math.floor(Math.log10(1L << 24));
         new DecimalRoundTripTest(float.class, floatDigits, floatDigits / 2).runTest();
@@ -825,8 +854,60 @@ public class JettyBarrageChunkFactoryTest {
         new DecimalRoundTripTest(double.class, doubleDigits, doubleDigits / 2).runTest();
     }
 
-    // For list tests: test both head and tail via FixedSizeList limits
-    // Union needs to test boolean transformation
+    @Test
+    public void testFloatingPoint() throws Exception {
+        for (FloatingPointPrecision precision : FloatingPointPrecision.values()) {
+            new FloatingPointRoundTripTest(float.class, precision).checkIfDefault().runTest();
+            new FloatingPointRoundTripTest(double.class, precision).runTest();
+            new FloatingPointRoundTripTest(BigDecimal.class, precision).runTest();
+
+            new FloatingPointRoundTripTest(byte.class, precision).runTest();
+            new FloatingPointRoundTripTest(char.class, precision).runTest();
+            new FloatingPointRoundTripTest(short.class, precision).runTest();
+            new FloatingPointRoundTripTest(int.class, precision).runTest();
+            new FloatingPointRoundTripTest(long.class, precision).runTest();
+            new FloatingPointRoundTripTest(BigInteger.class, precision).runTest();
+        }
+    }
+
+    @Test
+    public void testTimestamp() throws Exception {
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.NANOSECOND, null).isDefault().runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MICROSECOND, null).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND, null).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND, null).runTest();
+
+        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND,
+        // "America/New_York").isDefault().runTest();
+        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
+        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
+        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
+    }
+
+    @Test
+    public void testDuration() throws Exception {
+        // TODO NATE NOCOMMIT
+    }
+
+    @Test
+    public void testTime() throws Exception {
+        // TODO NATE NOCOMMIT
+        // local time
+    }
+
+    @Test
+    public void testDate() throws Exception {
+        // TODO NATE NOCOMMIT
+        // local date
+    }
+
+    @Test
+    public void testInterval() throws Exception {
+        // TODO NATE NOCOMMIT
+        // duration
+        // period
+        // period duration
+    }
 
     @SafeVarargs
     private static <T> int setAll(BiConsumer<Integer, T> setter, T... values) {
@@ -890,10 +971,11 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
 
-    private abstract class RoundTripTest<T extends FieldVector> {
+    private abstract class RoundTripTest<T extends ValueVector> {
         protected final Random rnd = new Random(RANDOM_SEED);
         protected Class<?> dhType;
         protected Class<?> componentType;
+        protected boolean isDefault;
 
         public RoundTripTest(@NotNull final Class<?> dhType) {
             this(dhType, null);
@@ -910,8 +992,34 @@ public class JettyBarrageChunkFactoryTest {
 
         public abstract void validate(TestNullMode nullMode, @NotNull T source, @NotNull T dest);
 
+        public <RTT extends RoundTripTest<T>> RTT isDefault() {
+            isDefault = true;
+            // noinspection unchecked
+            return (RTT) this;
+        }
+
         public void runTest() throws Exception {
+            runTest(TestNullMode.NONE, TestArrayMode.FIXED_ARRAY);
             for (TestArrayMode arrayMode : TestArrayMode.values()) {
+                for (TestNullMode mode : TestNullMode.values()) {
+                    runTest(mode, arrayMode);
+                }
+            }
+
+            if (dhType.isPrimitive()) {
+                isDefault = false;
+                dhType = TypeUtils.getBoxedType(dhType);
+                runBoxedTestsOnly();
+            }
+        }
+
+        public void runBoxedTestsOnly() throws Exception {
+            runTest(TestNullMode.NONE, TestArrayMode.FIXED_ARRAY);
+            for (TestArrayMode arrayMode : TestArrayMode.values()) {
+                if (arrayMode == TestArrayMode.NONE || arrayMode.isVector()) {
+                    // can't have boxed vector's
+                    continue;
+                }
                 for (TestNullMode mode : TestNullMode.values()) {
                     runTest(mode, arrayMode);
                 }
@@ -920,6 +1028,7 @@ public class JettyBarrageChunkFactoryTest {
 
         public void runTest(final TestNullMode nullMode, final TestArrayMode arrayMode) throws Exception {
             final boolean isNullable = nullMode != TestNullMode.NOT_NULLABLE;
+            final boolean hasNulls = isNullable && nullMode != TestNullMode.NONE;
             final int listItemLength;
             Schema schema = newSchema(isNullable);
 
@@ -929,12 +1038,15 @@ public class JettyBarrageChunkFactoryTest {
                 final Field innerField = schema.getFields().get(0);
 
                 final Map<String, String> attrs = new LinkedHashMap<>(innerField.getMetadata());
-                attrs.put(DH_COMPONENT_TYPE_TAG, innerField.getMetadata().get(DH_TYPE_TAG));
+                final String dhExplicitType = innerField.getMetadata().get(DH_TYPE_TAG);
                 if (arrayMode.isVector()) {
                     final Class<?> vectorType = VectorFactory.forElementType(dhType).vectorType();
                     attrs.put(DH_TYPE_TAG, vectorType.getCanonicalName());
-                } else {
-                    attrs.put(DH_TYPE_TAG, innerField.getMetadata().get(DH_TYPE_TAG) + "[]");
+                } else if (dhExplicitType != null) {
+                    attrs.put(DH_TYPE_TAG, dhExplicitType + "[]");
+                }
+                if (dhExplicitType != null) {
+                    attrs.put(DH_COMPONENT_TYPE_TAG, dhExplicitType);
                 }
 
                 final ArrowType listType = getArrayArrowType(arrayMode);
@@ -981,7 +1093,7 @@ public class JettyBarrageChunkFactoryTest {
                             dataVector.setValueCount(realRows * listItemLength);
                             for (int ii = 0; ii < realRows; ++ii) {
                                 FixedSizeListVector listVector = (FixedSizeListVector) source.getVector(0);
-                                if (isNullable && rnd.nextBoolean()) {
+                                if (hasNulls && rnd.nextBoolean()) {
                                     listVector.setNull(ii);
                                     // to simplify validation, set inner values to null
                                     for (int jj = 0; jj < listItemLength; ++jj) {
@@ -996,7 +1108,7 @@ public class JettyBarrageChunkFactoryTest {
                             int itemsConsumed = 0;
                             final ListVector listVector = (ListVector) source.getVector(0);
                             for (int ii = 0; ii < numRows; ++ii) {
-                                if (isNullable && rnd.nextBoolean()) {
+                                if (hasNulls && rnd.nextBoolean()) {
                                     listVector.setNull(ii);
                                     continue;
                                 } else if (rnd.nextInt(8) == 0) {
@@ -1005,8 +1117,8 @@ public class JettyBarrageChunkFactoryTest {
                                     continue;
                                 }
                                 int itemLen = Math.min(rnd.nextInt(MAX_LIST_ITEM_LEN), numRows - itemsConsumed);
-                                listVector.startNewValue(itemsConsumed);
-                                listVector.endValue(itemsConsumed, itemLen);
+                                listVector.startNewValue(ii);
+                                listVector.endValue(ii, itemLen);
                                 itemsConsumed += itemLen;
                             }
                             dataVector.setValueCount(itemsConsumed);
@@ -1015,7 +1127,7 @@ public class JettyBarrageChunkFactoryTest {
                             dataVector.setValueCount(numRows);
                             int maxItemWritten = 0;
                             for (int ii = 0; ii < numRows; ++ii) {
-                                if (isNullable && rnd.nextBoolean()) {
+                                if (hasNulls && rnd.nextBoolean()) {
                                     listVector.setNull(ii);
                                     continue;
                                 }
@@ -1074,7 +1186,9 @@ public class JettyBarrageChunkFactoryTest {
                         assertEquals(source.getRowCount(), dest.getRowCount());
 
                         if (arrayMode != TestArrayMode.NONE) {
-                            validateList(arrayMode, source.getVector(0), dest.getVector(0));
+                            validateList(arrayMode,
+                                    (BaseListVector) source.getVector(0),
+                                    (BaseListVector) dest.getVector(0));
                         }
 
                         if (arrayMode == TestArrayMode.NONE) {
@@ -1091,7 +1205,7 @@ public class JettyBarrageChunkFactoryTest {
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
-                                        // TODO: when https://github.com/apache/arrow-java/issues/470 is fixed, use
+                                        // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
                                         // totalLen += sourceArr.getElementEndIndex(ii) -
                                         // sourceArr.getElementStartIndex(ii);
                                         totalLen += sourceArr.getObject(ii).size();
@@ -1132,15 +1246,26 @@ public class JettyBarrageChunkFactoryTest {
 
                                 final int finTotalLen = totalLen;
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
-                                for (int ii = 0; ii < source.getRowCount(); ++ii) {
-                                    if (sourceArr.isNull(ii)) {
-                                        newView.setNull(ii);
-                                    } else {
-                                        newView.copyFrom(ii, ii, sourceArr);
+                                if (dhType == ZonedDateTime.class) {
+                                    // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
+                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                                        if (sourceArr.isNull(ii)) {
+                                            newView.setNull(ii);
+                                        } else {
+                                            copyListItem(newView, sourceArr, ii);
+                                        }
+                                    }
+                                } else {
+                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                                        if (sourceArr.isNull(ii)) {
+                                            newView.setNull(ii);
+                                        } else {
+                                            newView.copyFrom(ii, ii, sourceArr);
+                                        }
                                     }
                                 }
 
-                                // if the inner data is empty then we the inner DataVector will be a ZeroVector not a T
+                                // if the inner data is empty then the inner DataVector will be a ZeroVector not a T
                                 if (totalLen != 0) {
                                     // noinspection unchecked
                                     validate(nullMode, (T) newView.getChildrenFromFields().get(0),
@@ -1159,13 +1284,13 @@ public class JettyBarrageChunkFactoryTest {
     }
 
     private static void copyListItem(
-            @NotNull final ListViewVector dest,
-            @NotNull final ListViewVector source,
+            @NotNull final BaseListVector dest,
+            @NotNull final BaseListVector source,
             final int index) {
         Preconditions.checkArgument(dest.getMinorType() == source.getMinorType());
         FieldReader in = source.getReader();
         in.setPosition(index);
-        FieldWriter out = dest.getWriter();
+        FieldWriter out = getListWriter(dest);
         out.setPosition(index);
 
         if (!in.isSet()) {
@@ -1179,12 +1304,87 @@ public class JettyBarrageChunkFactoryTest {
         for (int ii = 0; ii < in.size(); ++ii) {
             childReader.setPosition(source.getElementStartIndex(index) + ii);
             if (childReader.isSet()) {
-                ComplexCopier.copy(childReader, childWriter);
+                copyValue(childReader, childWriter);
             } else {
                 childWriter.writeNull();
             }
         }
         out.endList();
+    }
+
+    private static void copyValue(FieldReader reader, FieldWriter writer) {
+        // TODO: call ComplexCopier directly when https://github.com/apache/arrow-java/issues/551 is fixed
+        final Types.MinorType mt = reader.getMinorType();
+
+        // note that these TZ impls are not support properly in arrow-java, so we need to "strip" them of their TZ
+        switch (mt) {
+            case TIMESTAMPSECTZ:
+                if (reader.isSet()) {
+                    final NullableTimeStampSecTZHolder h1 = new NullableTimeStampSecTZHolder();
+                    reader.read(h1);
+                    final TimeStampSecHolder h2 = new TimeStampSecHolder();
+                    h2.value = h1.value;
+                    writer.write(h2);
+                } else {
+                    writer.writeNull();
+                }
+                break;
+
+            case TIMESTAMPMILLITZ:
+                if (reader.isSet()) {
+                    final NullableTimeStampMilliTZHolder h1 = new NullableTimeStampMilliTZHolder();
+                    reader.read(h1);
+                    final TimeStampMilliHolder h2 = new TimeStampMilliHolder();
+                    h2.value = h1.value;
+                    writer.write(h2);
+                } else {
+                    writer.writeNull();
+                }
+                break;
+
+
+            case TIMESTAMPMICROTZ:
+                if (reader.isSet()) {
+                    final NullableTimeStampMicroTZHolder h1 = new NullableTimeStampMicroTZHolder();
+                    reader.read(h1);
+                    final TimeStampMicroHolder h2 = new TimeStampMicroHolder();
+                    h2.value = h1.value;
+                    writer.write(h2);
+                } else {
+                    writer.writeNull();
+                }
+                break;
+
+
+            case TIMESTAMPNANOTZ:
+                if (reader.isSet()) {
+                    final NullableTimeStampNanoTZHolder h1 = new NullableTimeStampNanoTZHolder();
+                    reader.read(h1);
+                    final TimeStampNanoHolder h2 = new TimeStampNanoHolder();
+                    h2.value = h1.value;
+                    writer.write(h2);
+                } else {
+                    writer.writeNull();
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        // other types already supported
+        ComplexCopier.copy(reader, writer);
+    }
+
+    private static FieldWriter getListWriter(
+            @NotNull final BaseListVector dest) {
+        if (dest instanceof ListViewVector) {
+            return ((ListViewVector) dest).getWriter();
+        } else if (dest instanceof ListVector) {
+            return ((ListVector) dest).getWriter();
+        } else {
+            return ((FixedSizeListVector) dest).getWriter();
+        }
     }
 
     private static FieldWriter getListWriterForReader(
@@ -1223,12 +1423,16 @@ public class JettyBarrageChunkFactoryTest {
                 return (FieldWriter) writer.float8();
             case DATEMILLI:
                 return (FieldWriter) writer.dateMilli();
+            case TIMESTAMPSECTZ:
             case TIMESTAMPSEC:
                 return (FieldWriter) writer.timeStampSec();
+            case TIMESTAMPMILLITZ:
             case TIMESTAMPMILLI:
                 return (FieldWriter) writer.timeStampMilli();
+            case TIMESTAMPMICROTZ:
             case TIMESTAMPMICRO:
                 return (FieldWriter) writer.timeStampMicro();
+            case TIMESTAMPNANOTZ:
             case TIMESTAMPNANO:
                 return (FieldWriter) writer.timeStampNano();
             case TIMEMICRO:
@@ -1273,8 +1477,26 @@ public class JettyBarrageChunkFactoryTest {
 
     private static void validateList(
             final TestArrayMode arrayMode,
-            final FieldVector source,
-            final FieldVector dest) {}
+            final BaseListVector source,
+            final BaseListVector dest) {
+        assertEquals(source.getValueCount(), dest.getValueCount());
+        if (arrayMode.isVariableLength()) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    continue;
+                }
+                if (dest instanceof ListViewVector) {
+                    // NOTE: https://github.com/apache/arrow-java/issues/470 points out that LVV's getElementEndIndex is
+                    // returning size and not an offset.
+                    assertEquals(source.getElementEndIndex(ii), dest.getElementEndIndex(ii));
+                    continue;
+                }
+                int srcLen = source.getElementEndIndex(ii) - source.getElementStartIndex(ii);
+                int dstLen = dest.getElementEndIndex(ii) - dest.getElementStartIndex(ii);
+                assertEquals(srcLen, dstLen);
+            }
+        }
+    }
 
     private static FieldVector getDataVector(
             final TestArrayMode arrayMode,
@@ -1334,7 +1556,9 @@ public class JettyBarrageChunkFactoryTest {
                         assertTrue(dest.isNull(ii));
                     }
                 } else {
-                    assertEquals(truncated, getter.apply(dest, ii).longValue());
+                    assertFalse(dest.isNull(ii));
+                    long computed = getter.apply(dest, ii).longValue();
+                    assertEquals(truncated, computed);
                 }
             }
         }
@@ -1347,7 +1571,7 @@ public class JettyBarrageChunkFactoryTest {
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, new ArrowType.Bool(), dhType);
+            return createSchema(isNullable, isDefault, new ArrowType.Bool(), dhType);
         }
 
         @Override
@@ -1399,31 +1623,30 @@ public class JettyBarrageChunkFactoryTest {
         final private long minValue;
         final private long maxValue;
 
-        public DecimalRoundTripTest(
-                @NotNull Class<?> dhType, long precision, long scale) {
-            this(dhType, precision, scale, false);
+        public DecimalRoundTripTest(@NotNull Class<?> dhType) {
+            this(dhType, 0, 0);
         }
 
         public DecimalRoundTripTest(
-                @NotNull Class<?> dhType, long precision, long scale, boolean primitiveDest) {
+                @NotNull Class<?> dhType, int precision, int scale) {
             super(dhType);
 
-            if (primitiveDest) {
-                this.minValue = precision;
-                this.maxValue = scale;
+            if (dhType.isPrimitive() && !Set.of(float.class, double.class, boolean.class).contains(dhType)) {
+                this.minValue = integralMin(dhType);
+                this.maxValue = integralMax(dhType);
                 this.precision = (int) Math.ceil(Math.log10(maxValue));
-                this.scale = 0;
             } else {
                 this.minValue = 0;
                 this.maxValue = 0;
-                this.precision = (int) precision;
-                this.scale = (int) scale;
+                this.precision = precision;
             }
+
+            this.scale = scale;
         }
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, new ArrowType.Decimal(precision, scale, 128), dhType);
+            return createSchema(isNullable, isDefault, new ArrowType.Decimal(precision, scale, 128), dhType);
         }
 
         @Override
@@ -1462,31 +1685,30 @@ public class JettyBarrageChunkFactoryTest {
         final private long minValue;
         final private long maxValue;
 
-        public Decimal256RoundTripTest(
-                @NotNull Class<?> dhType, long precision, long scale) {
-            this(dhType, precision, scale, false);
+        public Decimal256RoundTripTest(@NotNull Class<?> dhType) {
+            this(dhType, 0, 0);
         }
 
         public Decimal256RoundTripTest(
-                @NotNull Class<?> dhType, long precision, long scale, boolean primitiveDest) {
+                @NotNull Class<?> dhType, int precision, int scale) {
             super(dhType);
 
-            if (primitiveDest) {
-                this.minValue = precision;
-                this.maxValue = scale;
+            if (dhType.isPrimitive() && !Set.of(float.class, double.class, boolean.class).contains(dhType)) {
+                this.minValue = integralMin(dhType);
+                this.maxValue = integralMax(dhType);
                 this.precision = (int) Math.ceil(Math.log10(maxValue));
-                this.scale = 0;
             } else {
                 this.minValue = 0;
                 this.maxValue = 0;
-                this.precision = (int) precision;
-                this.scale = (int) scale;
+                this.precision = precision;
             }
+
+            this.scale = scale;
         }
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, new ArrowType.Decimal(precision, scale, 256), dhType);
+            return createSchema(isNullable, isDefault, new ArrowType.Decimal(precision, scale, 256), dhType);
         }
 
         @Override
@@ -1521,8 +1743,265 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
 
+    // Float2Vector / Float4Vector / Float8Vector
+    private class FloatingPointRoundTripTest extends RoundTripTest<FloatingPointVector> {
+        final private FloatingPointPrecision fpp;
+
+        final private long minValue;
+        final private long maxValue;
+
+        public FloatingPointRoundTripTest(
+                @NotNull Class<?> dhType, FloatingPointPrecision fpp) {
+            super(dhType);
+            this.fpp = fpp;
+
+            if ((dhType.isPrimitive() && !Set.of(float.class, double.class, boolean.class).contains(dhType))
+                    || dhType == BigInteger.class) {
+                // note that significands are limited to: 11 bits, 24 bits, and 53 bits (respectively for Float2/4/8)
+                final int nbits;
+                switch (fpp) {
+                    case HALF:
+                        nbits = 11;
+                        break;
+                    case SINGLE:
+                        nbits = 24;
+                        break;
+                    case DOUBLE:
+                        nbits = 53;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unexpected precision: " + fpp);
+                }
+
+                final long mask = (1L << (nbits + 1)) - 1;
+                this.minValue = dhType == BigInteger.class ? -mask : Math.max(integralMin(dhType), -mask);
+                this.maxValue = dhType == BigInteger.class ? mask : Math.min(integralMax(dhType), mask);
+            } else {
+                this.minValue = 0;
+                this.maxValue = 0;
+            }
+        }
+
+        public FloatingPointRoundTripTest checkIfDefault() {
+            if (fpp == FloatingPointPrecision.HALF && dhType == float.class) {
+                isDefault = true;
+            } else if (fpp == FloatingPointPrecision.SINGLE && dhType == float.class) {
+                isDefault = true;
+            } else if (fpp == FloatingPointPrecision.DOUBLE && dhType == double.class) {
+                isDefault = true;
+            }
+            return this;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.FloatingPoint(fpp), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final FloatingPointVector source) {
+            if (source instanceof Float2Vector) {
+                final Float2Vector f2v = (Float2Vector) source;
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    f2v.setWithPossibleTruncate(ii, nextFloat());
+                    if (f2v.getValueAsDouble(ii) == QueryConstants.NULL_DOUBLE) {
+                        --ii;
+                    }
+                }
+            } else if (source instanceof Float4Vector) {
+                final Float4Vector f4v = (Float4Vector) source;
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    f4v.setWithPossibleTruncate(ii, nextDouble());
+                    if (f4v.getValueAsDouble(ii) == QueryConstants.NULL_DOUBLE) {
+                        --ii;
+                    }
+                }
+            } else if (source instanceof Float8Vector) {
+                final Float8Vector f8v = (Float8Vector) source;
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    f8v.setWithPossibleTruncate(ii, nextDouble());
+                    if (f8v.getValueAsDouble(ii) == QueryConstants.NULL_DOUBLE) {
+                        --ii;
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("Unexpected vector type: " + source.getClass());
+            }
+            return NUM_ROWS;
+        }
+
+        private BigInteger nextBigInt() {
+            final BigInteger range = BigInteger.valueOf(maxValue).subtract(BigInteger.valueOf(minValue));
+            return new BigInteger(range.bitLength(), rnd).mod(range).add(BigInteger.valueOf(minValue));
+        }
+
+        private float nextFloat() {
+            if (maxValue != 0) {
+                return nextBigInt().floatValue();
+            }
+            return rnd.nextFloat();
+        }
+
+        private double nextDouble() {
+            if (maxValue != 0) {
+                return nextBigInt().doubleValue();
+            }
+            return rnd.nextDouble();
+        }
+
+        @Override
+        public void validate(
+                final TestNullMode nullMode,
+                @NotNull final FloatingPointVector source,
+                @NotNull final FloatingPointVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    double srcValue = source.getValueAsDouble(ii);
+                    assertEquals(srcValue, dest.getValueAsDouble(ii), srcValue * 1e-6);
+                }
+            }
+        }
+    }
+
+    private class TimeStampRoundTripTest extends RoundTripTest<TimeStampVector> {
+        private final TimeUnit timeUnit;
+        private final String timeZone;
+
+        public TimeStampRoundTripTest(
+                @NotNull Class<?> dhType,
+                final TimeUnit timeUnit) {
+            this(dhType, timeUnit, null);
+        }
+
+        public TimeStampRoundTripTest(
+                @NotNull Class<?> dhType,
+                final TimeUnit timeUnit,
+                @Nullable final String timeZone) {
+            super(dhType);
+            this.timeUnit = timeUnit;
+            this.timeZone = timeZone;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Timestamp(timeUnit, timeZone), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final TimeStampVector source) {
+            final long factor;
+            if (timeUnit == TimeUnit.NANOSECOND) {
+                factor = 1;
+            } else if (timeUnit == TimeUnit.MICROSECOND) {
+                factor = 1_000;
+            } else if (timeUnit == TimeUnit.MILLISECOND) {
+                factor = 1_000_000;
+            } else if (timeUnit == TimeUnit.SECOND) {
+                factor = 1_000_000_000;
+            } else {
+                throw new IllegalArgumentException("Unexpected time unit: " + timeUnit);
+            }
+
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                source.set(ii, rnd.nextLong() / factor);
+                if (source.get(ii) == QueryConstants.NULL_LONG) {
+                    --ii;
+                }
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull TimeStampVector source, @NotNull TimeStampVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertEquals(source.get(ii), dest.get(ii));
+                }
+            }
+        }
+    }
+
+    private class Utf8RoundTripTest extends RoundTripTest<VarCharVector> {
+
+        public Utf8RoundTripTest(@NotNull Class<?> dhType) {
+            super(dhType);
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Utf8(), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final VarCharVector source) {
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                String value = getRandomUtf8String();
+                byte[] utf8Bytes = value.getBytes(StandardCharsets.UTF_8);
+                source.setSafe(ii, utf8Bytes);
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull VarCharVector source, @NotNull VarCharVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    final String sourceValue = new String(source.get(ii), StandardCharsets.UTF_8);
+                    final String destValue = new String(dest.get(ii), StandardCharsets.UTF_8);
+                    assertEquals(sourceValue, destValue);
+                }
+            }
+        }
+
+        private String getRandomUtf8String() {
+            int length = rnd.nextInt(20) + 1;
+            StringBuilder sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++) {
+                char ch = (char) (rnd.nextInt(26) + 'a');
+                sb.append(ch);
+            }
+            return sb.toString();
+        }
+    }
+
     private static Ticket flightTicketFor(int flightDescriptorTicketValue) {
         return new Ticket(FlightExportTicketHelper.exportIdToFlightTicket(flightDescriptorTicketValue).getTicket()
                 .toByteArray());
+    }
+
+    private static long integralMin(final Class<?> dhType) {
+        if (dhType == byte.class) {
+            return QueryConstants.MIN_BYTE;
+        } else if (dhType == char.class) {
+            return QueryConstants.MIN_CHAR;
+        } else if (dhType == short.class) {
+            return QueryConstants.MIN_SHORT;
+        } else if (dhType == int.class) {
+            return QueryConstants.MIN_INT;
+        } else if (dhType == long.class) {
+            return QueryConstants.MIN_LONG;
+        }
+        throw new IllegalArgumentException("Unexpected type: " + dhType);
+    }
+
+    private static long integralMax(final Class<?> dhType) {
+        if (dhType == byte.class) {
+            return QueryConstants.MAX_BYTE;
+        } else if (dhType == char.class) {
+            return QueryConstants.MAX_CHAR;
+        } else if (dhType == short.class) {
+            return QueryConstants.MAX_SHORT;
+        } else if (dhType == int.class) {
+            return QueryConstants.MAX_INT;
+        } else if (dhType == long.class) {
+            return QueryConstants.MAX_LONG;
+        }
+        throw new IllegalArgumentException("Unexpected type: " + dhType);
     }
 }

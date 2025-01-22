@@ -4,6 +4,7 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
+import com.google.rpc.Code;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableCharChunk;
@@ -22,12 +23,16 @@ import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.Float16;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.ByteVectorDirect;
 import io.deephaven.vector.Vector;
 import org.apache.arrow.vector.PeriodDuration;
 import org.apache.arrow.vector.types.TimeUnit;
@@ -35,9 +40,13 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Duration;
 import java.time.Instant;
@@ -50,8 +59,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -86,6 +97,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             new HashMap<>();
 
     protected DefaultChunkReaderFactory() {
+        register(ArrowType.ArrowTypeID.Timestamp, long.class, DefaultChunkReaderFactory::timestampToLong);
         register(ArrowType.ArrowTypeID.Timestamp, Instant.class, DefaultChunkReaderFactory::timestampToInstant);
         register(ArrowType.ArrowTypeID.Timestamp, ZonedDateTime.class,
                 DefaultChunkReaderFactory::timestampToZonedDateTime);
@@ -93,18 +105,18 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 DefaultChunkReaderFactory::timestampToLocalDateTime);
         register(ArrowType.ArrowTypeID.Utf8, String.class, DefaultChunkReaderFactory::utf8ToString);
         register(ArrowType.ArrowTypeID.Duration, Duration.class, DefaultChunkReaderFactory::durationToDuration);
-        register(ArrowType.ArrowTypeID.FloatingPoint, float.class, DefaultChunkReaderFactory::floatingPointToFloat);
-        register(ArrowType.ArrowTypeID.FloatingPoint, double.class, DefaultChunkReaderFactory::floatingPointToDouble);
-        register(ArrowType.ArrowTypeID.FloatingPoint, BigDecimal.class,
-                DefaultChunkReaderFactory::floatingPointToBigDecimal);
-        // TODO NATE NOCOMMIT FloatingPoint for Integral Values
+        register(ArrowType.ArrowTypeID.FloatingPoint, byte.class, DefaultChunkReaderFactory::fpToByte);
+        register(ArrowType.ArrowTypeID.FloatingPoint, char.class, DefaultChunkReaderFactory::fpToChar);
+        register(ArrowType.ArrowTypeID.FloatingPoint, short.class, DefaultChunkReaderFactory::fpToShort);
+        register(ArrowType.ArrowTypeID.FloatingPoint, int.class, DefaultChunkReaderFactory::fpToInt);
+        register(ArrowType.ArrowTypeID.FloatingPoint, long.class, DefaultChunkReaderFactory::fpToLong);
+        register(ArrowType.ArrowTypeID.FloatingPoint, BigInteger.class, DefaultChunkReaderFactory::fpToBigInteger);
+        register(ArrowType.ArrowTypeID.FloatingPoint, float.class, DefaultChunkReaderFactory::fpToFloat);
+        register(ArrowType.ArrowTypeID.FloatingPoint, double.class, DefaultChunkReaderFactory::fpToDouble);
+        register(ArrowType.ArrowTypeID.FloatingPoint, BigDecimal.class, DefaultChunkReaderFactory::fpToBigDecimal);
         register(ArrowType.ArrowTypeID.Binary, byte[].class, DefaultChunkReaderFactory::binaryToByteArray);
-        // TODO NATE NOCOMMIT ByteVector, ByteBuffer
-        register(ArrowType.ArrowTypeID.Binary, String.class, DefaultChunkReaderFactory::utf8ToString);
-        register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkReaderFactory::binaryToBigInt);
-        register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkReaderFactory::binaryToBigDecimal);
-        register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkReaderFactory::binaryToSchema);
-        register(ArrowType.ArrowTypeID.Time, long.class, DefaultChunkReaderFactory::timeToLong);
+        register(ArrowType.ArrowTypeID.Binary, ByteVector.class, DefaultChunkReaderFactory::binaryToByteVector);
+        register(ArrowType.ArrowTypeID.Binary, ByteBuffer.class, DefaultChunkReaderFactory::binaryToByteBuffer);
         register(ArrowType.ArrowTypeID.Time, LocalTime.class, DefaultChunkReaderFactory::timeToLocalTime);
         register(ArrowType.ArrowTypeID.Decimal, byte.class, DefaultChunkReaderFactory::decimalToByte);
         register(ArrowType.ArrowTypeID.Decimal, char.class, DefaultChunkReaderFactory::decimalToChar);
@@ -130,15 +142,22 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.Bool, byte.class, DefaultChunkReaderFactory::boolToBoolean);
         register(ArrowType.ArrowTypeID.FixedSizeBinary, byte[].class,
                 DefaultChunkReaderFactory::fixedSizeBinaryToByteArray);
-        // TODO NATE NOCOMMIT ByteVector, ByteBuffer
-        register(ArrowType.ArrowTypeID.Date, int.class, DefaultChunkReaderFactory::dateToInt);
-        register(ArrowType.ArrowTypeID.Date, long.class, DefaultChunkReaderFactory::dateToLong);
+        register(ArrowType.ArrowTypeID.FixedSizeBinary, ByteVector.class,
+                DefaultChunkReaderFactory::fixedSizeBinaryToByteVector);
+        register(ArrowType.ArrowTypeID.FixedSizeBinary, ByteBuffer.class,
+                DefaultChunkReaderFactory::fixedSizeBinaryToByteBuffer);
         register(ArrowType.ArrowTypeID.Date, LocalDate.class, DefaultChunkReaderFactory::dateToLocalDate);
         register(ArrowType.ArrowTypeID.Interval, long.class, DefaultChunkReaderFactory::intervalToDurationLong);
         register(ArrowType.ArrowTypeID.Interval, Duration.class, DefaultChunkReaderFactory::intervalToDuration);
         register(ArrowType.ArrowTypeID.Interval, Period.class, DefaultChunkReaderFactory::intervalToPeriod);
         register(ArrowType.ArrowTypeID.Interval, PeriodDuration.class,
                 DefaultChunkReaderFactory::intervalToPeriodDuration);
+
+        // These are DH custom wire formats
+        register(ArrowType.ArrowTypeID.Binary, String.class, DefaultChunkReaderFactory::utf8ToString);
+        register(ArrowType.ArrowTypeID.Binary, BigDecimal.class, DefaultChunkReaderFactory::binaryToBigDecimal);
+        register(ArrowType.ArrowTypeID.Binary, BigInteger.class, DefaultChunkReaderFactory::binaryToBigInt);
+        register(ArrowType.ArrowTypeID.Binary, Schema.class, DefaultChunkReaderFactory::binaryToSchema);
     }
 
     @Override
@@ -158,18 +177,20 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final boolean isTopLevel) {
         // TODO (deephaven/deephaven-core#6033): Run-End Support
         // TODO (deephaven/deephaven-core#6034): Dictionary Support
+        // TODO (deephaven/deephaven-core#): Utf8View Support
+        // TODO (deephaven/deephaven-core#): BinaryView Support
 
         final Field field = typeInfo.arrowField();
 
         final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
         final boolean isSpecialType = SPECIAL_TYPES.contains(typeId);
 
-        // TODO (deephaven/deephaven-core#6038): these arrow types require 64-bit offsets
+        // TODO (deephaven/deephaven-core#6038): these arrow types require 64-bit offset support
         if (typeId == ArrowType.ArrowTypeID.LargeUtf8
                 || typeId == ArrowType.ArrowTypeID.LargeBinary
                 || typeId == ArrowType.ArrowTypeID.LargeList
                 || typeId == ArrowType.ArrowTypeID.LargeListView) {
-            throw new UnsupportedOperationException(String.format(
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                     "No support for 64-bit offsets to map arrow type %s to %s.",
                     field.getType().toString(),
                     typeInfo.type().getCanonicalName()));
@@ -177,8 +198,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         final Map<Class<?>, ChunkReaderFactory> knownReaders = registeredFactories.get(typeId);
         if (knownReaders == null && !isSpecialType) {
-            throw new UnsupportedOperationException(String.format(
-                    "No known ChunkReader for arrow type %s to %s.",
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                    "No known Barrage ChunkReader for arrow type %s to %s.",
                     field.getType().toString(),
                     typeInfo.type().getCanonicalName()));
         }
@@ -191,11 +212,11 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return reader;
             }
         } else if (!isSpecialType) {
-            throw new UnsupportedOperationException(String.format(
-                    "No known ChunkReader for arrow type %s to %s. Supported types: %s",
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                    "No known Barrage ChunkReader for arrow type %s to %s. \nSupported types: \n\t%s",
                     field.getType().toString(),
                     typeInfo.type().getCanonicalName(),
-                    knownReaders.keySet().stream().map(Object::toString).collect(Collectors.joining(", "))));
+                    knownReaders.keySet().stream().map(Object::toString).collect(Collectors.joining(",\n\t"))));
         }
 
         if (typeId == ArrowType.ArrowTypeID.Null) {
@@ -242,8 +263,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 // noinspection unchecked
                 return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
             } else {
-                throw new UnsupportedOperationException(String.format(
-                        "No known ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                        "No known barrage ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
                         field.getType().toString(),
                         typeInfo.type().getCanonicalName()));
             }
@@ -296,14 +317,14 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     UnionChunkReader.mode(unionType.getMode()), innerReaders);
         }
 
-        throw new UnsupportedOperationException(String.format(
-                "No known ChunkReader for arrow type %s to %s. Arrow type supports: %s",
+        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                "No known barrage ChunkReader for arrow type %s to %s. \nArrow types supported: \n\t%s",
                 field.getType().toString(),
                 typeInfo.type().getCanonicalName(),
                 knownReaders == null ? "none"
                         : knownReaders.keySet().stream()
                                 .map(Object::toString)
-                                .collect(Collectors.joining(", "))));
+                                .collect(Collectors.joining(",\n\t"))));
     }
 
     @SuppressWarnings("unchecked")
@@ -319,37 +340,65 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Byte.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableByteChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == short.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Short.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableShortChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == int.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Integer.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableIntChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == long.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Long.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableLongChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == char.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Character.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableCharChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == float.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Float.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableFloatChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         } else if (deephavenType == double.class) {
             registeredFactories.computeIfAbsent(arrowType, k -> new HashMap<>())
                     .put(Double.class, (at, typeInfo, options) -> transformToObject(
                             (ChunkReader<WritableDoubleChunk<Values>>) chunkReaderFactory.make(at, typeInfo, options),
-                            (chunk, ii) -> TypeUtils.box(chunk.get(ii))));
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, TypeUtils.box(src.get(ii)));
+                                }
+                            }));
         }
     }
 
@@ -364,8 +413,35 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             case SECOND:
                 return 1000 * 1000 * 1000L;
             default:
-                throw new IllegalArgumentException("Unexpected time unit value: " + unit);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected time unit value: " + unit);
         }
+    }
+
+    private static ChunkReader<WritableLongChunk<Values>> timestampToLong(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        // we always reinterpret Instant's to longs; so we need to explicit support to long (nanos)
+        final long factor = factorForTimeUnit(((ArrowType.Timestamp) arrowType).getUnit());
+        return new LongChunkReader(options) {
+            @Override
+            public WritableLongChunk<Values> readChunk(
+                    @NotNull final Iterator<ChunkWriter.FieldNodeInfo> fieldNodeIter,
+                    @NotNull final PrimitiveIterator.OfLong bufferInfoIter,
+                    @NotNull final DataInput is,
+                    @Nullable final WritableChunk<Values> outChunk,
+                    final int outOffset,
+                    final int totalRows) throws IOException {
+                final WritableLongChunk<Values> values =
+                        super.readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                for (int ii = 0; ii < values.size(); ++ii) {
+                    if (!values.isNull(ii)) {
+                        values.set(ii, values.get(ii) * factor);
+                    }
+                }
+                return values;
+            }
+        };
     }
 
     private static ChunkReader<WritableObjectChunk<Instant, Values>> timestampToInstant(
@@ -428,36 +504,345 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final long factor = factorForTimeUnit(((ArrowType.Duration) arrowType).getUnit());
-        return transformToObject(new LongChunkReader(options), (chunk, ii) -> {
-            long value = chunk.get(ii);
-            return value == QueryConstants.NULL_LONG ? null : Duration.ofNanos(value * factor);
+        return transformToObject(new LongChunkReader(options), (src, dst, dstOffset) -> {
+            for (int ii = 0; ii < src.size(); ++ii) {
+                long value = src.get(ii);
+                dst.set(dstOffset + ii, value == QueryConstants.NULL_LONG ? null : Duration.ofNanos(value * factor));
+            }
         });
     }
 
-    private static ChunkReader<WritableFloatChunk<Values>> floatingPointToFloat(
+    private static ChunkReader<WritableByteChunk<Values>> fpToByte(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return new FloatChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options);
-    }
-
-    private static ChunkReader<WritableDoubleChunk<Values>> floatingPointToDouble(
-            final ArrowType arrowType,
-            final BarrageTypeInfo<Field> typeInfo,
-            final BarrageOptions options) {
-        return new DoubleChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options);
-    }
-
-    private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> floatingPointToBigDecimal(
-            final ArrowType arrowType,
-            final BarrageTypeInfo<Field> typeInfo,
-            final BarrageOptions options) {
-        return transformToObject(
-                new DoubleChunkReader(((ArrowType.FloatingPoint) arrowType).getPrecision().getFlatbufID(), options),
-                (chunk, ii) -> {
-                    double value = chunk.get(ii);
-                    return value == QueryConstants.NULL_DOUBLE ? null : BigDecimal.valueOf(value);
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return ByteChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_BYTE
+                                : QueryLanguageFunctionUtils.byteCast(Float16.toFloat(value)));
+                    }
                 });
+
+            case SINGLE:
+                return ByteChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(value));
+                    }
+                });
+            case DOUBLE:
+                return ByteChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableCharChunk<Values>> fpToChar(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return CharChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_CHAR
+                                : QueryLanguageFunctionUtils.charCast(Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return CharChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(value));
+                    }
+                });
+            case DOUBLE:
+                return CharChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableShortChunk<Values>> fpToShort(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return ShortChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_SHORT
+                                : QueryLanguageFunctionUtils.shortCast(Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return ShortChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(value));
+                    }
+                });
+            case DOUBLE:
+                return ShortChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableIntChunk<Values>> fpToInt(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return IntChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_INT
+                                : QueryLanguageFunctionUtils.intCast(Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return IntChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.intCast(value));
+                    }
+                });
+            case DOUBLE:
+                return IntChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.intCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableLongChunk<Values>> fpToLong(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return LongChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_LONG
+                                : QueryLanguageFunctionUtils.longCast(Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return LongChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.longCast(value));
+                    }
+                });
+            case DOUBLE:
+                return LongChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.longCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableObjectChunk<BigInteger, Values>> fpToBigInteger(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return transformToObject(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? null
+                                : BigInteger.valueOf((long) Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return transformToObject(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_FLOAT
+                                ? null
+                                : BigInteger.valueOf((long) value));
+                    }
+                });
+            case DOUBLE:
+                return transformToObject(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_DOUBLE
+                                ? null
+                                : BigInteger.valueOf((long) value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableFloatChunk<Values>> fpToFloat(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return FloatChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_FLOAT
+                                : Float16.toFloat(value));
+                    }
+                });
+
+            case SINGLE:
+                return new FloatChunkReader(options);
+
+            case DOUBLE:
+                return FloatChunkReader.transformFrom(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.floatCast(value));
+                    }
+                });
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableDoubleChunk<Values>> fpToDouble(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return DoubleChunkReader.transformFrom(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? QueryConstants.NULL_DOUBLE
+                                : Float16.toFloat(value));
+                    }
+                });
+
+            case SINGLE:
+                return DoubleChunkReader.transformFrom(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.doubleCast(value));
+                    }
+                });
+
+            case DOUBLE:
+                return new DoubleChunkReader(options);
+
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
+    }
+
+    private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> fpToBigDecimal(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        final ArrowType.FloatingPoint fpType = (ArrowType.FloatingPoint) typeInfo.arrowField().getType();
+        switch (fpType.getPrecision()) {
+            case HALF:
+                return transformToObject(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final short value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
+                                ? null
+                                : BigDecimal.valueOf(Float16.toFloat(value)));
+                    }
+                });
+
+            case SINGLE:
+                return transformToObject(new FloatChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final float value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_FLOAT
+                                ? null
+                                : BigDecimal.valueOf(value));
+                    }
+                });
+
+            case DOUBLE:
+                return transformToObject(new DoubleChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final double value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_DOUBLE
+                                ? null
+                                : BigDecimal.valueOf(value));
+                    }
+                });
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected floating point precision: " + fpType.getPrecision());
+        }
     }
 
     private static ChunkReader<WritableObjectChunk<byte[], Values>> binaryToByteArray(
@@ -465,6 +850,21 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         return new VarBinaryChunkReader<>((buf, off, len) -> Arrays.copyOfRange(buf, off, off + len));
+    }
+
+    private static ChunkReader<WritableObjectChunk<ByteVector, Values>> binaryToByteVector(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        return new VarBinaryChunkReader<>(
+                (buf, off, len) -> new ByteVectorDirect(Arrays.copyOfRange(buf, off, off + len)));
+    }
+
+    private static ChunkReader<WritableObjectChunk<ByteBuffer, Values>> binaryToByteBuffer(
+            final ArrowType arrowType,
+            final BarrageTypeInfo<Field> typeInfo,
+            final BarrageOptions options) {
+        return new VarBinaryChunkReader<>((buf, off, len) -> ByteBuffer.wrap(Arrays.copyOfRange(buf, off, off + len)));
     }
 
     private static ChunkReader<WritableObjectChunk<BigInteger, Values>> binaryToBigInt(
@@ -496,32 +896,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return new VarBinaryChunkReader<>(ArrowIpcUtil::deserialize);
     }
 
-    private static ChunkReader<WritableLongChunk<Values>> timeToLong(
-            final ArrowType arrowType,
-            final BarrageTypeInfo<Field> typeInfo,
-            final BarrageOptions options) {
-        // See timeToLocalTime's comment for more information on wire format.
-        final ArrowType.Time timeType = (ArrowType.Time) arrowType;
-        final int bitWidth = timeType.getBitWidth();
-        final long factor = factorForTimeUnit(timeType.getUnit());
-        switch (bitWidth) {
-            case 32:
-                return LongChunkReader.transformTo(new IntChunkReader(options), (chunk, ii) -> {
-                    long value = QueryLanguageFunctionUtils.longCast(chunk.get(ii));
-                    return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value * factor;
-                });
-
-            case 64:
-                return LongChunkReader.transformTo(new LongChunkReader(options), (chunk, ii) -> {
-                    long value = chunk.get(ii);
-                    return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value * factor;
-                });
-
-            default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
-        }
-    }
-
     private static ChunkReader<WritableObjectChunk<LocalTime, Values>> timeToLocalTime(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
@@ -547,19 +921,25 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final long factor = factorForTimeUnit(timeType.getUnit());
         switch (bitWidth) {
             case 32:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> {
-                    int value = chunk.get(ii);
-                    return value == QueryConstants.NULL_INT ? null : LocalTime.ofNanoOfDay(value * factor);
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        int value = src.get(ii);
+                        dst.set(dstOffset + ii,
+                                value == QueryConstants.NULL_INT ? null : LocalTime.ofNanoOfDay(value * factor));
+                    }
                 });
 
             case 64:
-                return transformToObject(new LongChunkReader(options), (chunk, ii) -> {
-                    long value = chunk.get(ii);
-                    return value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value * factor);
+                return transformToObject(new LongChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        long value = src.get(ii);
+                        dst.set(dstOffset + ii,
+                                value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value * factor));
+                    }
                 });
 
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -567,40 +947,63 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return ByteChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+        return ByteChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableCharChunk<Values>> decimalToChar(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return CharChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> chunk.isNull(ii) ? QueryConstants.NULL_CHAR : (char) chunk.get(ii).longValue());
+        return CharChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final BigDecimal value = src.get(ii);
+                        final long longVal = QueryLanguageFunctionUtils.longCast(value);
+                        // convert first to long then to char since char is not convertible from Number
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(longVal));
+                    }
+                });
     }
 
     private static ChunkReader<WritableShortChunk<Values>> decimalToShort(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return ShortChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+        return ShortChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableIntChunk<Values>> decimalToInt(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return IntChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
+        return IntChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.intCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableLongChunk<Values>> decimalToLong(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return LongChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
+        return LongChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.longCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableObjectChunk<BigInteger, Values>> decimalToBigInteger(
@@ -637,16 +1040,24 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return FloatChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.floatCast(chunk.get(ii)));
+        return FloatChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.floatCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableDoubleChunk<Values>> decimalToDouble(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        return DoubleChunkReader.transformTo(decimalToBigDecimal(arrowType, typeInfo, options),
-                (chunk, ii) -> QueryLanguageFunctionUtils.doubleCast(chunk.get(ii)));
+        return DoubleChunkReader.transformFrom(decimalToBigDecimal(arrowType, typeInfo, options),
+                (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, QueryLanguageFunctionUtils.doubleCast(src.get(ii)));
+                    }
+                });
     }
 
     private static ChunkReader<WritableObjectChunk<BigDecimal, Values>> decimalToBigDecimal(
@@ -689,21 +1100,37 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             case 16:
                 // note chars/shorts may overflow; but user has asked for this
                 if (unsigned) {
-                    return ByteChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+                    return ByteChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(src.get(ii)));
+                                }
+                            });
                 }
-                return ByteChunkReader.transformTo(new ShortChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+                return ByteChunkReader.transformFrom(new ShortChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(src.get(ii)));
+                            }
+                        });
             case 32:
                 // note ints may overflow; but user has asked for this
-                return ByteChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+                return ByteChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(src.get(ii)));
+                            }
+                        });
             case 64:
                 // note longs may overflow; but user has asked for this
-                return ByteChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.byteCast(chunk.get(ii)));
+                return ByteChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.byteCast(src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -717,24 +1144,41 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return ShortChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned, QueryLanguageFunctionUtils.shortCast(chunk.get(ii))));
+                return ShortChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii,
+                                        maskIfOverflow(unsigned, QueryLanguageFunctionUtils.shortCast(src.get(ii))));
+                            }
+                        });
             case 16:
                 if (unsigned) {
-                    return ShortChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                    return ShortChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(src.get(ii)));
+                                }
+                            });
                 }
                 return new ShortChunkReader(options);
             case 32:
                 // note ints may overflow; but user has asked for this
-                return ShortChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                return ShortChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(src.get(ii)));
+                            }
+                        });
             case 64:
                 // note longs may overflow; but user has asked for this
-                return ShortChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.shortCast(chunk.get(ii)));
+                return ShortChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.shortCast(src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -748,25 +1192,42 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return IntChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned, Byte.BYTES,
-                                QueryLanguageFunctionUtils.intCast(chunk.get(ii))));
+                return IntChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, maskIfOverflow(unsigned, Byte.BYTES,
+                                        QueryLanguageFunctionUtils.intCast(src.get(ii))));
+                            }
+                        });
             case 16:
                 if (unsigned) {
-                    return IntChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
+                    return IntChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, QueryLanguageFunctionUtils.intCast(src.get(ii)));
+                                }
+                            });
                 }
-                return IntChunkReader.transformTo(new ShortChunkReader(options), (chunk, ii) -> maskIfOverflow(unsigned,
-                        Short.BYTES, QueryLanguageFunctionUtils.intCast(chunk.get(ii))));
+                return IntChunkReader.transformFrom(new ShortChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, maskIfOverflow(unsigned, Short.BYTES,
+                                        QueryLanguageFunctionUtils.intCast(src.get(ii))));
+                            }
+                        });
             case 32:
                 // note unsigned int may overflow; but user has asked for this
                 return new IntChunkReader(options);
             case 64:
                 // note longs may overflow; but user has asked for this
-                return IntChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.intCast(chunk.get(ii)));
+                return IntChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.intCast(src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -780,25 +1241,42 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return LongChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned, Byte.BYTES,
-                                QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
+                return LongChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, maskIfOverflow(unsigned, Byte.BYTES,
+                                        QueryLanguageFunctionUtils.longCast(src.get(ii))));
+                            }
+                        });
             case 16:
                 if (unsigned) {
-                    return LongChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
+                    return LongChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, QueryLanguageFunctionUtils.longCast(src.get(ii)));
+                                }
+                            });
                 }
-                return LongChunkReader.transformTo(new ShortChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned,
-                                Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
+                return LongChunkReader.transformFrom(new ShortChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, maskIfOverflow(unsigned, Short.BYTES,
+                                        QueryLanguageFunctionUtils.longCast(src.get(ii))));
+                            }
+                        });
             case 32:
-                return LongChunkReader.transformTo(new IntChunkReader(options), (chunk, ii) -> maskIfOverflow(unsigned,
-                        Integer.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
+                return LongChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, maskIfOverflow(unsigned, Integer.BYTES,
+                                        QueryLanguageFunctionUtils.longCast(src.get(ii))));
+                            }
+                        });
             case 64:
                 // note unsigned long may overflow; but user has asked for this
                 return new LongChunkReader(options);
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -812,23 +1290,41 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return transformToObject(new ByteChunkReader(options), (chunk, ii) -> toBigInt(maskIfOverflow(
-                        unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new ByteChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigInt(maskIfOverflow(
+                                unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 16:
                 if (unsigned) {
-                    return transformToObject(new CharChunkReader(options),
-                            (chunk, ii) -> toBigInt(QueryLanguageFunctionUtils.longCast(chunk.get(ii))));
+                    return transformToObject(new CharChunkReader(options), (src, dst, dstOffset) -> {
+                        for (int ii = 0; ii < src.size(); ++ii) {
+                            dst.set(dstOffset + ii, toBigInt(QueryLanguageFunctionUtils.longCast(src.get(ii))));
+                        }
+                    });
                 }
-                return transformToObject(new ShortChunkReader(options), (chunk, ii) -> toBigInt(maskIfOverflow(
-                        unsigned, Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigInt(maskIfOverflow(
+                                false, Short.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 32:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> toBigInt(maskIfOverflow(
-                        unsigned, Integer.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigInt(maskIfOverflow(
+                                unsigned, Integer.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 64:
-                return transformToObject(new LongChunkReader(options),
-                        (chunk, ii) -> maskIfOverflow(unsigned, Long.BYTES, toBigInt(chunk.get(ii))));
+                return transformToObject(new LongChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigInt(unsigned, src.get(ii)));
+                    }
+                });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -842,23 +1338,43 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return FloatChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> floatCast(chunk.isNull(ii), chunk.get(ii)));
+                return FloatChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, floatCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 16:
                 if (!signed) {
-                    return FloatChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> floatCast(chunk.isNull(ii), chunk.get(ii)));
+                    return FloatChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, floatCast(src.isNull(ii), src.get(ii)));
+                                }
+                            });
                 }
-                return FloatChunkReader.transformTo(new ShortChunkReader(options),
-                        (chunk, ii) -> floatCast(chunk.isNull(ii), chunk.get(ii)));
+                return FloatChunkReader.transformFrom(new ShortChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, floatCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 32:
-                return FloatChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> floatCast(chunk.isNull(ii), chunk.get(ii)));
+                return FloatChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, floatCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 64:
-                return FloatChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> floatCast(chunk.isNull(ii), chunk.get(ii)));
+                return FloatChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, floatCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -882,23 +1398,43 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return DoubleChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> doubleCast(chunk.isNull(ii), chunk.get(ii)));
+                return DoubleChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, doubleCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 16:
                 if (!signed) {
-                    return DoubleChunkReader.transformTo(new CharChunkReader(options),
-                            (chunk, ii) -> doubleCast(chunk.isNull(ii), chunk.get(ii)));
+                    return DoubleChunkReader.transformFrom(new CharChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, doubleCast(src.isNull(ii), src.get(ii)));
+                                }
+                            });
                 }
-                return DoubleChunkReader.transformTo(new ShortChunkReader(options),
-                        (chunk, ii) -> doubleCast(chunk.isNull(ii), chunk.get(ii)));
+                return DoubleChunkReader.transformFrom(new ShortChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, doubleCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 32:
-                return DoubleChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> doubleCast(chunk.isNull(ii), chunk.get(ii)));
+                return DoubleChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, doubleCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             case 64:
-                return DoubleChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> doubleCast(chunk.isNull(ii), chunk.get(ii)));
+                return DoubleChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, doubleCast(src.isNull(ii), src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -922,25 +1458,41 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return transformToObject(new ByteChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
-                        unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new ByteChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigDecimal(maskIfOverflow(
+                                unsigned, Byte.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 16:
                 if (unsigned) {
-                    return transformToObject(new CharChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
-                            unsigned, Character.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                    return transformToObject(new CharChunkReader(options), (src, dst, dstOffset) -> {
+                        for (int ii = 0; ii < src.size(); ++ii) {
+                            dst.set(dstOffset + ii, toBigDecimal(QueryLanguageFunctionUtils.longCast(src.get(ii))));
+                        }
+                    });
                 }
-                return transformToObject(new ShortChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
-                        unsigned, Short.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new ShortChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigDecimal(maskIfOverflow(
+                                unsigned, Short.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 32:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> toBigDecimal(maskIfOverflow(
-                        unsigned, Integer.BYTES, QueryLanguageFunctionUtils.longCast(chunk.get(ii)))));
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigDecimal(maskIfOverflow(
+                                unsigned, Integer.BYTES, QueryLanguageFunctionUtils.longCast(src.get(ii)))));
+                    }
+                });
             case 64:
-                return transformToObject(new LongChunkReader(options), (chunk, ii) -> {
-                    final BigInteger bi = maskIfOverflow(unsigned, Long.BYTES, toBigInt(chunk.get(ii)));
-                    return bi == null ? null : new BigDecimal(bi);
+                return transformToObject(new LongChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        dst.set(dstOffset + ii, toBigDecimal(unsigned, src.get(ii)));
+                    }
                 });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -954,25 +1506,41 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         switch (bitWidth) {
             case 8:
-                return CharChunkReader.transformTo(new ByteChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
+                return CharChunkReader.transformFrom(new ByteChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(src.get(ii)));
+                            }
+                        });
             case 16:
                 if (unsigned) {
                     return new CharChunkReader(options);
                 } else {
-                    return CharChunkReader.transformTo(new ShortChunkReader(options),
-                            (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
+                    return CharChunkReader.transformFrom(new ShortChunkReader(options),
+                            (src, dst, dstOffset) -> {
+                                for (int ii = 0; ii < src.size(); ++ii) {
+                                    dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(src.get(ii)));
+                                }
+                            });
                 }
             case 32:
                 // note int mappings to char will overflow; but user has asked for this
-                return CharChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
+                return CharChunkReader.transformFrom(new IntChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(src.get(ii)));
+                            }
+                        });
             case 64:
                 // note long mappings to short will overflow; but user has asked for this
-                return CharChunkReader.transformTo(new LongChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.charCast(chunk.get(ii)));
+                return CharChunkReader.transformFrom(new LongChunkReader(options),
+                        (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                dst.set(dstOffset + ii, QueryLanguageFunctionUtils.charCast(src.get(ii)));
+                            }
+                        });
             default:
-                throw new IllegalArgumentException("Unexpected bit width: " + bitWidth);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected bit width: " + bitWidth);
         }
     }
 
@@ -996,45 +1564,30 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         });
     }
 
-    private static ChunkReader<WritableIntChunk<Values>> dateToInt(
+    private static ChunkReader<WritableObjectChunk<ByteVector, Values>> fixedSizeBinaryToByteVector(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        // see dateToLocalDate's comment for more information on wire format
-        final ArrowType.Date dateType = (ArrowType.Date) arrowType;
-        switch (dateType.getUnit()) {
-            case DAY:
-                return new IntChunkReader(options);
-            case MILLISECOND:
-                final long factor = Duration.ofDays(1).toMillis();
-                return IntChunkReader.transformTo(new LongChunkReader(options), (chunk, ii) -> {
-                    long value = chunk.get(ii);
-                    return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_INT : (int) (value / factor);
-                });
-            default:
-                throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
-        }
+        final ArrowType.FixedSizeBinary fixedSizeBinary = (ArrowType.FixedSizeBinary) arrowType;
+        final int elementWidth = fixedSizeBinary.getByteWidth();
+        return new FixedWidthChunkReader<>(elementWidth, false, options, (dataInput) -> {
+            final byte[] value = new byte[elementWidth];
+            dataInput.readFully(value);
+            return new ByteVectorDirect(value);
+        });
     }
 
-    private static ChunkReader<WritableLongChunk<Values>> dateToLong(
+    private static ChunkReader<WritableObjectChunk<ByteBuffer, Values>> fixedSizeBinaryToByteBuffer(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
-        // see dateToLocalDate's comment for more information on wire format
-        final ArrowType.Date dateType = (ArrowType.Date) arrowType;
-        switch (dateType.getUnit()) {
-            case DAY:
-                return LongChunkReader.transformTo(new IntChunkReader(options),
-                        (chunk, ii) -> QueryLanguageFunctionUtils.longCast(chunk.get(ii)));
-            case MILLISECOND:
-                final long factor = Duration.ofDays(1).toMillis();
-                return LongChunkReader.transformTo(new LongChunkReader(options), (chunk, ii) -> {
-                    long value = chunk.get(ii);
-                    return value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor;
-                });
-            default:
-                throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
-        }
+        final ArrowType.FixedSizeBinary fixedSizeBinary = (ArrowType.FixedSizeBinary) arrowType;
+        final int elementWidth = fixedSizeBinary.getByteWidth();
+        return new FixedWidthChunkReader<>(elementWidth, false, options, (dataInput) -> {
+            final byte[] value = new byte[elementWidth];
+            dataInput.readFully(value);
+            return ByteBuffer.wrap(value);
+        });
     }
 
     private static ChunkReader<WritableObjectChunk<LocalDate, Values>> dateToLocalDate(
@@ -1054,20 +1607,26 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final ArrowType.Date dateType = (ArrowType.Date) arrowType;
         switch (dateType.getUnit()) {
             case DAY:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> {
-                    int value = chunk.get(ii);
-                    return value == QueryConstants.NULL_INT ? null : DateTimeUtils.epochDaysToLocalDate(value);
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final int value = src.get(ii);
+                        dst.set(dstOffset + ii,
+                                value == QueryConstants.NULL_INT ? null : DateTimeUtils.epochDaysToLocalDate(value));
+                    }
                 });
             case MILLISECOND:
                 final long factor = Duration.ofDays(1).toMillis();
-                return transformToObject(new LongChunkReader(options), (chunk, ii) -> {
-                    long value = chunk.get(ii);
-                    return value == QueryConstants.NULL_LONG
-                            ? null
-                            : DateTimeUtils.epochDaysToLocalDate(value / factor);
+                return transformToObject(new LongChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final long value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_LONG
+                                ? null
+                                : DateTimeUtils.epochDaysToLocalDate(value / factor));
+                    }
                 });
             default:
-                throw new IllegalArgumentException("Unexpected date unit: " + dateType.getUnit());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected date unit: " + dateType.getUnit());
         }
     }
 
@@ -1081,22 +1640,25 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
             case MONTH_DAY_NANO:
-                throw new IllegalArgumentException(String.format(
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Do not support %s interval to Duration as long conversion", intervalType));
 
             case DAY_TIME:
                 return LongChunkReader
-                        .transformTo(new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
+                        .transformFrom(new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
                             final int days = dataInput.readInt();
                             final int millis = dataInput.readInt();
                             return Duration.ofDays(days).plusMillis(millis);
-                        }), (chunk, ii) -> {
-                            final Duration value = chunk.get(ii);
-                            return value == null ? QueryConstants.NULL_LONG : value.toNanos();
+                        }), (src, dst, dstOffset) -> {
+                            for (int ii = 0; ii < src.size(); ++ii) {
+                                final Duration value = src.get(ii);
+                                dst.set(dstOffset + ii, value == null ? QueryConstants.NULL_LONG : value.toNanos());
+                            }
                         });
 
             default:
-                throw new IllegalArgumentException("Unexpected interval unit: " + intervalType.getUnit());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected interval unit: " + intervalType.getUnit());
         }
     }
 
@@ -1110,7 +1672,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
             case MONTH_DAY_NANO:
-                throw new IllegalArgumentException(String.format(
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Do not support %s interval to Duration conversion", intervalType));
 
             case DAY_TIME:
@@ -1121,7 +1683,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 });
 
             default:
-                throw new IllegalArgumentException("Unexpected interval unit: " + intervalType.getUnit());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected interval unit: " + intervalType.getUnit());
         }
     }
 
@@ -1154,9 +1717,11 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> {
-                    int value = chunk.get(ii);
-                    return value == QueryConstants.NULL_INT ? null : Period.ofMonths(value);
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final int value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_INT ? null : Period.ofMonths(value));
+                    }
                 });
             case DAY_TIME:
                 final long factor = Duration.ofDays(1).toMillis();
@@ -1174,7 +1739,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     return Period.of(0, months, days).plusDays(nanos / (nsPerDay));
                 });
             default:
-                throw new IllegalArgumentException("Unexpected interval unit: " + intervalType.getUnit());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected interval unit: " + intervalType.getUnit());
         }
     }
 
@@ -1187,11 +1753,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
         switch (intervalType.getUnit()) {
             case YEAR_MONTH:
-                return transformToObject(new IntChunkReader(options), (chunk, ii) -> {
-                    int value = chunk.get(ii);
-                    return value == QueryConstants.NULL_INT
-                            ? null
-                            : new PeriodDuration(Period.ofMonths(value), Duration.ZERO);
+                return transformToObject(new IntChunkReader(options), (src, dst, dstOffset) -> {
+                    for (int ii = 0; ii < src.size(); ++ii) {
+                        final int value = src.get(ii);
+                        dst.set(dstOffset + ii, value == QueryConstants.NULL_INT
+                                ? null
+                                : new PeriodDuration(Period.ofMonths(value), Duration.ZERO));
+                    }
                 });
             case DAY_TIME:
                 return new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
@@ -1207,7 +1775,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                     return new PeriodDuration(Period.of(0, months, days), Duration.ofNanos(nanos));
                 });
             default:
-                throw new IllegalArgumentException("Unexpected interval unit: " + intervalType.getUnit());
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected interval unit: " + intervalType.getUnit());
         }
     }
 
@@ -1215,8 +1784,37 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return value == QueryConstants.NULL_LONG ? null : BigInteger.valueOf(value);
     }
 
+    private static BigInteger toBigInt(final boolean unsigned, final long value) {
+        if (!unsigned) {
+            return toBigInt(value);
+        }
+        if (value == QueryConstants.NULL_LONG) {
+            return null;
+        }
+
+        BigInteger rv = BigInteger.valueOf(value);
+        if (value < 0) {
+            rv = rv.add(BigInteger.ONE.shiftLeft(64));
+        }
+        return rv;
+    }
+
     private static BigDecimal toBigDecimal(final long value) {
         return value == QueryConstants.NULL_LONG ? null : BigDecimal.valueOf(value);
+    }
+
+    private static BigDecimal toBigDecimal(final boolean unsigned, final long value) {
+        if (!unsigned) {
+            return toBigDecimal(value);
+        }
+        if (value == QueryConstants.NULL_LONG) {
+            return null;
+        }
+        BigDecimal rv = BigDecimal.valueOf(value);
+        if (value < 0) {
+            rv = rv.add(new BigDecimal(BigInteger.ONE.shiftLeft(64)));
+        }
+        return rv;
     }
 
     /**
@@ -1290,42 +1888,13 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         return value;
     }
 
-    /**
-     * Applies a mask to handle overflow for unsigned values by constraining the value to the range that can be
-     * represented with the specified number of bytes.
-     * <p>
-     * This method ensures that negative values (in the case of unsigned inputs) are masked to fit within the valid
-     * range for the given number of bytes, effectively wrapping them around to their equivalent unsigned
-     * representation.
-     * <p>
-     * Special handling is included to preserve the value of null-equivalent constants and to skip masking for signed
-     * values.
-     *
-     * @param unsigned Whether the value should be treated as unsigned.
-     * @param numBytes The number of bytes to constrain the value to (e.g., 1 for byte, 2 for short).
-     * @param value The input value to potentially mask.
-     * @return The masked value if unsigned and overflow occurs; otherwise, the original value.
-     */
-    @SuppressWarnings("SameParameterValue")
-    static BigInteger maskIfOverflow(final boolean unsigned, final int numBytes, final BigInteger value) {
-        if (unsigned && value != null && value.compareTo(BigInteger.ZERO) < 0) {
-            return value.and(BigInteger.ONE.shiftLeft(numBytes * 8).subtract(BigInteger.ONE));
-        }
-        return value;
-    }
-
-    private interface ToObjectTransformFunction<T, WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
-        T get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
-    }
-
-    private static <T, WIRE_CHUNK_TYPE extends WritableChunk<Values>, CR extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(
+    public static <T, WIRE_CHUNK_TYPE extends WritableChunk<Values>, CR extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableObjectChunk<T, Values>> transformToObject(
             final CR wireReader,
-            final ToObjectTransformFunction<T, WIRE_CHUNK_TYPE> wireTransform) {
+            final BaseChunkReader.ChunkTransformer<WIRE_CHUNK_TYPE, WritableObjectChunk<T, Values>> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableObjectChunk::makeWritableChunk,
                 WritableChunk::asWritableObjectChunk,
-                (wireValues, outChunk, wireOffset, outOffset) -> outChunk.set(
-                        outOffset, wireTransform.get(wireValues, wireOffset)));
+                wireTransform);
     }
 }

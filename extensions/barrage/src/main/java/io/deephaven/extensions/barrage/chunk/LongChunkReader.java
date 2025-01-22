@@ -11,7 +11,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -22,72 +21,24 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
-import java.util.function.Function;
-
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> {
     private static final String DEBUG_NAME = "LongChunkReader";
 
-    @FunctionalInterface
-    public interface ToLongTransformFunction<WIRE_CHUNK_TYPE extends WritableChunk<Values>> {
-        long get(WIRE_CHUNK_TYPE wireValues, int wireOffset);
-    }
-
-    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableLongChunk<Values>> transformTo(
+    public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableLongChunk<Values>> transformFrom(
             final T wireReader,
-            final ToLongTransformFunction<WIRE_CHUNK_TYPE> wireTransform) {
+            final ChunkTransformer<WIRE_CHUNK_TYPE, WritableLongChunk<Values>> wireTransform) {
         return new TransformingChunkReader<>(
                 wireReader,
                 WritableLongChunk::makeWritableChunk,
                 WritableChunk::asWritableLongChunk,
-                (wireValues, outChunk, wireOffset, outOffset) -> outChunk.set(
-                        outOffset, wireTransform.get(wireValues, wireOffset)));
+                wireTransform);
     }
 
     private final BarrageOptions options;
-    private final LongConversion conversion;
-
-    @FunctionalInterface
-    public interface LongConversion {
-        long apply(long in);
-
-        LongConversion IDENTITY = (long a) -> a;
-    }
 
     public LongChunkReader(BarrageOptions options) {
-        this(options, LongConversion.IDENTITY);
-    }
-
-    public LongChunkReader(BarrageOptions options, LongConversion conversion) {
         this.options = options;
-        this.conversion = conversion;
-    }
-
-    public <T> ChunkReader<WritableObjectChunk<T, Values>> transform(Function<Long, T> transform) {
-        return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
-            try (final WritableLongChunk<Values> inner = LongChunkReader.this.readChunk(
-                    fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
-
-                final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
-                        outChunk,
-                        Math.max(totalRows, inner.size()),
-                        WritableObjectChunk::makeWritableChunk,
-                        WritableChunk::asWritableObjectChunk);
-
-                if (outChunk == null) {
-                    // if we're not given an output chunk then we better be writing at the front of the new one
-                    Assert.eqZero(outOffset, "outOffset");
-                }
-
-                for (int ii = 0; ii < inner.size(); ++ii) {
-                    long value = inner.get(ii);
-                    chunk.set(outOffset + ii, transform.apply(value));
-                }
-
-                return chunk;
-            }
-        };
     }
 
     @Override
@@ -121,9 +72,9 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
 
             if (options.useDeephavenNulls()) {
-                useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
+                useDeephavenNulls(is, nodeInfo, chunk, outOffset);
             } else {
-                useValidityBuffer(conversion, is, nodeInfo, chunk, outOffset, isValid);
+                useValidityBuffer(is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -136,26 +87,16 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
     }
 
     private static void useDeephavenNulls(
-            final LongConversion conversion,
             final DataInput is,
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableLongChunk<Values> chunk,
             final int offset) throws IOException {
-        if (conversion == LongConversion.IDENTITY) {
-            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                chunk.set(offset + ii, is.readLong());
-            }
-        } else {
-            for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                final long in = is.readLong();
-                final long out = in == NULL_LONG ? in : conversion.apply(in);
-                chunk.set(offset + ii, out);
-            }
+        for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
+            chunk.set(offset + ii, is.readLong());
         }
     }
 
     private static void useValidityBuffer(
-            final LongConversion conversion,
             final DataInput is,
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableLongChunk<Values> chunk,
@@ -178,7 +119,7 @@ public class LongChunkReader extends BaseChunkReader<WritableLongChunk<Values>> 
                         ei += pendingSkips;
                         pendingSkips = 0;
                     }
-                    chunk.set(offset + ei++, conversion.apply(is.readLong()));
+                    chunk.set(offset + ei++, is.readLong());
                     validityWord >>= 1;
                     bitsLeftInThisWord--;
                 } else {

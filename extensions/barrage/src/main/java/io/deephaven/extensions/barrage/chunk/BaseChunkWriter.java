@@ -37,7 +37,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
     /** whether we can use the wire value as a deephaven null for clients that support dh nulls */
     protected final boolean dhNullable;
     /** whether the field is nullable */
-    private final boolean fieldNullable;
+    protected final boolean fieldNullable;
 
     BaseChunkWriter(
             @Nullable final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer,
@@ -71,6 +71,11 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 ((PoolableChunk<?>) chunk).close();
             }
         }
+    }
+
+    @Override
+    public boolean isFieldNullable() {
+        return fieldNullable;
     }
 
     /**

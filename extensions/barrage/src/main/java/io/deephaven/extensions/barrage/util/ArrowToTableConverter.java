@@ -11,6 +11,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
@@ -175,8 +176,8 @@ public class ArrowToTableConverter {
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
-        resultTable = BarrageTable.make(null, result, true, null);
-        resultTable.setFlat();
+        final BarrageTable res = BarrageTable.make(null, result, true, null);
+        res.setFlat();
 
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
@@ -186,7 +187,8 @@ public class ArrowToTableConverter {
         }
 
         // retain reference until the resultTable can be sealed
-        resultTable.retainReference();
+        res.retainReference();
+        resultTable = res;
     }
 
     protected BarrageMessage createBarrageMessage(BarrageProtoUtil.MessageInfo mi, int numColumns) {

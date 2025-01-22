@@ -22,10 +22,10 @@ public class ReplicateBarrageUtils {
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharChunkWriter.java");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats("replicateBarrageUtils",
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharChunkReader.java");
-        ReplicatePrimitiveCode.floatToAllFloatingPoints("replicateBarrageUtils",
-                CHUNK_PACKAGE + "/FloatChunkReader.java", "Float16");
+        // ReplicatePrimitiveCode.floatToAllFloatingPoints("replicateBarrageUtils",
+        // CHUNK_PACKAGE + "/FloatChunkReader.java", "Float16");
         fixupDoubleChunkReader(CHUNK_PACKAGE + "/DoubleChunkReader.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",

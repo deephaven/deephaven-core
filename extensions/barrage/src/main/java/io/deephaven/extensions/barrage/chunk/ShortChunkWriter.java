@@ -54,6 +54,32 @@ public class ShortChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
         super(transformer, emptyChunkSupplier, Short.BYTES, true, fieldNullable);
     }
 
+    public static ChunkWriter<ObjectChunk<Short, Values>> makeBoxed(
+            @NotNull final ChunkWriter<ShortChunk<Values>> innerWriter) {
+        return new ChunkWriter<>() {
+            @Override
+            public Context makeContext(@NotNull final ObjectChunk<Short, Values> chunk, final long rowOffset) {
+                return innerWriter.makeContext(chunkUnboxer(chunk), rowOffset);
+            }
+
+            @Override
+            public DrainableColumn getInputStream(@NotNull Context context, @Nullable RowSet subset,
+                    @NotNull BarrageOptions options) throws IOException {
+                return innerWriter.getInputStream(context, subset, options);
+            }
+
+            @Override
+            public DrainableColumn getEmptyInputStream(@NotNull BarrageOptions options) throws IOException {
+                return innerWriter.getEmptyInputStream(options);
+            }
+
+            @Override
+            public boolean isFieldNullable() {
+                return innerWriter.isFieldNullable();
+            }
+        };
+    }
+
     @Override
     public DrainableColumn getInputStream(
             @NotNull final Context context,

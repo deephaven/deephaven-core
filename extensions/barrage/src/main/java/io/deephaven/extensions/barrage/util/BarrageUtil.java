@@ -13,7 +13,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
@@ -52,6 +51,7 @@ import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
@@ -534,7 +534,7 @@ public class BarrageUtil {
                         case 8:
                             return short.class;
                         case 16:
-                            return int.class;
+                            return char.class;
                         case 32:
                             return long.class;
                         case 64:
@@ -544,41 +544,46 @@ public class BarrageUtil {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return Boolean.class;
+                if (arrowField.isNullable()) {
+                    return Boolean.class;
+                }
+                return boolean.class;
             case Duration:
                 return long.class;
             case Timestamp:
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowField.getType();
                 final String tz = timestampType.getTimezone();
-                final TimeUnit timestampUnit = timestampType.getUnit();
                 if ((tz == null || "UTC".equals(tz))) {
                     return Instant.class;
+                } else {
+                    return ZonedDateTime.class;
                 }
-                if (explicitType != null) {
-                    return explicitType;
-                }
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                        " of timestampType(Timezone=" + tz +
-                        ", Unit=" + timestampUnit.toString() + ")");
             case FloatingPoint:
                 final ArrowType.FloatingPoint floatingPointType = (ArrowType.FloatingPoint) arrowField.getType();
                 switch (floatingPointType.getPrecision()) {
+                    case HALF:
                     case SINGLE:
                         return float.class;
                     case DOUBLE:
                         return double.class;
-                    case HALF:
                     default:
+                        if (explicitType != null) {
+                            return explicitType;
+                        }
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                                 " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
                 }
+            case Decimal:
+                return BigDecimal.class;
             case Utf8:
                 return java.lang.String.class;
             default:
                 if (explicitType != null) {
                     return explicitType;
                 }
-                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List
+                        || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.ListView
+                        || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.FixedSizeList) {
                     final Class<?> childType = getDefaultType(arrowField.getChildren().get(0), null);
                     return Array.newInstance(childType, 0).getClass();
                 }
@@ -737,11 +742,11 @@ public class BarrageUtil {
             if (type.getValue() == null) {
                 type.setValue(defaultType);
             } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
-                // check existing barrage clients that might be sending int8 instead of bool
-                // TODO (deephaven-core#3403) widen this check for better assurances
-                Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
+            }
+            if (defaultType == ObjectVector.class && componentType.getValue() == null) {
+                componentType.setValue(getDefaultType(field.getChildren().get(0), null));
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
@@ -933,7 +938,11 @@ public class BarrageUtil {
 
         // Vectors are always lists.
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
-        final Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
+        // if (componentType == Object.class) {
+        // getDefaultType()
+        // }
+
         final List<Field> children = Collections.singletonList(arrowFieldFor(
                 "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
 
@@ -971,7 +980,7 @@ public class BarrageUtil {
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
-                        cd.getDataType(),
+                        ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
                         fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
                 .toArray(ChunkWriter[]::new);
