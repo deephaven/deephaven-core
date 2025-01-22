@@ -3,6 +3,8 @@
 //
 package io.deephaven.base.stats;
 
+import io.deephaven.base.AtomicUtil;
+
 import java.text.DecimalFormat;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -12,13 +14,17 @@ public abstract class Value {
             AtomicLongFieldUpdater.newUpdater(Value.class, "sum");
     private static final AtomicLongFieldUpdater<Value> SUM2_UPDATER =
             AtomicLongFieldUpdater.newUpdater(Value.class, "sum2");
+    private static final AtomicLongFieldUpdater<Value> MAX_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(Value.class, "max");
+    private static final AtomicLongFieldUpdater<Value> MIN_UPDATER =
+            AtomicLongFieldUpdater.newUpdater(Value.class, "min");
 
-    volatile protected long n = 0;
-    volatile protected long last = 0;
-    volatile protected long sum = 0;
-    volatile protected long sum2 = 0;
-    volatile protected long max = Long.MIN_VALUE;
-    volatile protected long min = Long.MAX_VALUE;
+    protected volatile long n = 0;
+    protected volatile long last = 0;
+    protected volatile long sum = 0;
+    protected volatile long sum2 = 0;
+    protected volatile long max = Long.MIN_VALUE;
+    protected volatile long min = Long.MAX_VALUE;
 
     private boolean alwaysUpdated = false;
 
@@ -65,10 +71,10 @@ public abstract class Value {
         SUM2_UPDATER.addAndGet(this, x * x);
         last = x;
         if (x > max) {
-            max = x;
+            AtomicUtil.setMax(this, MAX_UPDATER, x);
         }
         if (x < min) {
-            min = x;
+            AtomicUtil.setMin(this, MAX_UPDATER, x);
         }
     }
 
@@ -113,17 +119,14 @@ public abstract class Value {
         final DecimalFormat format = new DecimalFormat("#,###");
         final DecimalFormat avgFormat = new DecimalFormat("#,###.###");
 
-        final double variance = n > 1 ? (sum2 - ((double) sum * sum / (double) n)) / (n - 1) : Double.NaN;
 
-        return "Value{" +
-                "n=" + format.format(n) +
-                (n > 0 ? ", sum=" + format.format(sum) +
-                        ", max=" + format.format(max) +
-                        ", min=" + format.format(min) +
-                        ", avg=" + avgFormat.format((n > 0 ? (double) sum / n : Double.NaN)) +
-                        ", std=" + avgFormat.format(Math.sqrt(variance))
-                        : "")
-                +
-                '}';
+        if (n > 0) {
+            final double std = Math.sqrt(n > 1 ? (sum2 - ((double) sum * sum / (double) n)) / (n - 1) : Double.NaN);
+            final double avg = (double) sum / n;
+            return String.format("Value{n=%,d, sum=%,d, max=%,d, min=%,d, avg=%,.3f, std=%,.3f}", n, sum, max, min, avg,
+                    std);
+        } else {
+            return String.format("Value{n=%,d}", n);
+        }
     }
 }

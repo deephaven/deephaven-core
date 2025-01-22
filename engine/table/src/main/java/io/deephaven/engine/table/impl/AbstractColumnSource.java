@@ -57,28 +57,28 @@ public abstract class AbstractColumnSource<T> implements
     public static boolean USE_PARTIAL_TABLE_DATA_INDEX = Configuration.getInstance()
             .getBooleanWithDefault("AbstractColumnSource.usePartialDataIndex", true);
     /**
-     * After generating a DataIndex table and identifying which row keys are responsive to the filter, the result Index
+     * After generating a DataIndex table and identifying which row keys are responsive to the filter, the result RowSet
      * can be built in serial or in parallel. By default, the index is built in parallel which may take advantage of
      * using more threads for I/O of the index data structure. Parallel builds do require more setup and thread
      * synchronization, so they can be disabled by setting the Configuration property
      * "AbstractColumnSource.useParallelIndexBuild" to false.
      */
-    public static boolean USE_PARALLEL_INDEX_BUILD = Configuration.getInstance()
-            .getBooleanWithDefault("AbstractColumnSource.useParallelIndexBuild", true);
+    public static boolean USE_PARALLEL_ROWSET_BUILD = Configuration.getInstance()
+            .getBooleanWithDefault("AbstractColumnSource.useParallelRowSetBuild", true);
 
     /**
      * Duration of match() calls using a DataIndex (also provides the count).
      */
-    public static final Value indexFilter =
+    public static final Value INDEX_FILTER_MILLIS =
             Stats.makeItem("AbstractColumnSource", "indexFilter", Counter.FACTORY,
-                    "Duration of match() with a DataIndex in nanos")
+                    "Duration of match() with a DataIndex in millis")
                     .getValue();
     /**
      * Duration of match() calls using a chunk filter (i.e. no DataIndex).
      */
-    public static final Value chunkFilter =
+    public static final Value CHUNK_FILTER_MILLIS =
             Stats.makeItem("AbstractColumnSource", "chunkFilter", Counter.FACTORY,
-                    "Duration of match() without a DataIndex in nanos")
+                    "Duration of match() without a DataIndex in millis")
                     .getValue();
 
     /**
@@ -88,13 +88,6 @@ public abstract class AbstractColumnSource<T> implements
     public static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
 
     private static final int CHUNK_SIZE = 1 << 11;
-
-    /**
-     * The match operation does not use the complete table, it just picks out the relevant indices so there is no reason
-     * to actually read it fully.
-     */
-    private static final DataIndexOptions PARTIAL_TABLE_DATA_INDEX =
-            DataIndexOptions.builder().operationUsesPartialTable(true).build();
 
     protected final Class<T> type;
     protected final Class<?> componentType;
@@ -173,7 +166,7 @@ public abstract class AbstractColumnSource<T> implements
             return doDataIndexFilter(invertMatch, usePrev, caseInsensitive, dataIndex, rowsetToFilter, keys);
         } finally {
             final long t1 = System.nanoTime();
-            indexFilter.sample(t1 - t0);
+            INDEX_FILTER_MILLIS.sample((t1 - t0) / 1_000_000);
         }
     }
 
@@ -184,7 +177,7 @@ public abstract class AbstractColumnSource<T> implements
             @NotNull final RowSet rowsetToFilter,
             final Object[] keys) {
         final DataIndexOptions partialOption =
-                USE_PARTIAL_TABLE_DATA_INDEX ? PARTIAL_TABLE_DATA_INDEX : DataIndexOptions.DEFAULT;
+                USE_PARTIAL_TABLE_DATA_INDEX ? DataIndexOptions.USE_PARTIAL_TABLE : DataIndexOptions.DEFAULT;
 
         final Table indexTable = dataIndex.table(partialOption);
 
@@ -242,7 +235,7 @@ public abstract class AbstractColumnSource<T> implements
                         ? dataIndex.rowSetColumn(partialOption).getPrevSource()
                         : dataIndex.rowSetColumn(partialOption);
 
-                if (USE_PARALLEL_INDEX_BUILD) {
+                if (USE_PARALLEL_ROWSET_BUILD) {
                     final long[] rowKeyArray = new long[matchingIndexRows.intSize()];
                     matchingIndexRows.toRowKeyArray(rowKeyArray);
                     Arrays.stream(rowKeyArray).parallel().forEach((final long rowKey) -> {
@@ -290,7 +283,7 @@ public abstract class AbstractColumnSource<T> implements
                     ChunkMatchFilterFactory.getChunkFilter(type, caseInsensitive, invertMatch, keys));
         } finally {
             final long t1 = System.nanoTime();
-            chunkFilter.sample(t1 - t0);
+            CHUNK_FILTER_MILLIS.sample((t1 - t0) / 1_000_000);
         }
     }
 

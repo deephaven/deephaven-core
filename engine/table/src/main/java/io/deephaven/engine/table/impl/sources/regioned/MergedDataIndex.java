@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -54,8 +53,8 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     /**
      * The duration in nanos to build a DataIndex table.
      */
-    public static final Value buildIndexTable = Stats
-            .makeItem("DataIndex", "buildTable", Counter.FACTORY, "Duration in nanos of building an index").getValue();
+    public static final Value BUILD_INDEX_TABLE_MILLIS = Stats
+            .makeItem("DataIndex", "buildTable", Counter.FACTORY, "Duration in millis of building an index").getValue();
 
     /**
      * When merging row sets from multiple component DataIndex structures, reading each individual component can be
@@ -85,8 +84,8 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     private volatile Table indexTable;
 
     /**
-     * A lazy version of the table, note this value is never set if indexTable is set. A lazy table can be converted to
-     * an indexTable by selecting the rowset column.
+     * A lazy version of the table. This value is never set if indexTable is set. Can be converted to indexTable by
+     * selecting the RowSet column.
      */
     private volatile Table lazyTable;
 
@@ -145,8 +144,8 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         if ((localIndexTable = indexTable) != null) {
             return localIndexTable;
         }
-        final boolean lazyRowsetMerge = options.operationUsesPartialTable();
-        if (lazyRowsetMerge) {
+        final boolean lazyRowSetMerge = options.operationUsesPartialTable();
+        if (lazyRowSetMerge) {
             if ((localIndexTable = lazyTable) != null) {
                 return localIndexTable;
             }
@@ -154,7 +153,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         synchronized (this) {
             if ((localIndexTable = indexTable) != null) {
                 return localIndexTable;
-            } else if (lazyRowsetMerge) {
+            } else if (lazyRowSetMerge) {
                 if ((localIndexTable = lazyTable) != null) {
                     return localIndexTable;
                 }
@@ -162,7 +161,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             try {
                 return QueryPerformanceRecorder.withNugget(
                         String.format("Merge Data Indexes [%s]", String.join(", ", keyColumnNames)),
-                        ForkJoinPoolOperationInitializer.ensureParallelizable(() -> buildTable(lazyRowsetMerge)));
+                        ForkJoinPoolOperationInitializer.ensureParallelizable(() -> buildTable(lazyRowSetMerge)));
             } catch (Throwable t) {
                 isCorrupt = true;
                 throw t;
@@ -182,11 +181,11 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
      * array to avoid duplicated work.
      * </p>
      */
-    private static class RowsetCacher {
+    private static class RowSetCacher {
         final ColumnSource<ObjectVector<RowSet>> source;
         final AtomicReferenceArray<Object> results;
 
-        private RowsetCacher(final ColumnSource<ObjectVector<RowSet>> source, final int capacity) {
+        private RowSetCacher(final ColumnSource<ObjectVector<RowSet>> source, final int capacity) {
             this.source = source;
             this.results = new AtomicReferenceArray<>(capacity);
         }
@@ -216,7 +215,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 }
 
                 // we need to create our own placeholder, and synchronize on it first
-                final ReentrantLock placeholder = new ReentrantLock();
+                final Object placeholder = new Object();
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (placeholder) {
                     if (!results.compareAndSet(iRowKey, null, placeholder)) {
@@ -226,22 +225,17 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                     // it is our responsibility to get the right answer
                     final ObjectVector<RowSet> inputRowsets = source.get(rowKey);
                     Assert.neqNull(inputRowsets, "inputRowsets");
-                    assert inputRowsets != null;
 
                     // need to get the value and set it into our own value
                     final RowSet computedResult;
                     try {
+                        // noinspection DataFlowIssue
                         computedResult = mergeRowSets(rowKey, inputRowsets);
                     } catch (Exception e) {
-                        if (!results.compareAndSet(iRowKey, placeholder, e)) {
-                            throw new IllegalStateException("another thread changed our cache placeholder!");
-                        }
+                        results.set(iRowKey, e);
                         throw e;
                     }
-                    if (!results.compareAndSet(iRowKey, placeholder, computedResult)) {
-                        throw new IllegalStateException("another thread changed our cache placeholder!");
-                    }
-
+                    results.set(iRowKey, computedResult);
                     return computedResult;
                 }
             } while (true);
@@ -252,11 +246,10 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         if (lazyTable != null) {
             if (lazyRowsetMerge) {
                 return lazyTable;
-            } else {
-                indexTable = lazyTable.select();
-                lazyTable = null;
-                return indexTable;
             }
+            indexTable = lazyTable.select();
+            lazyTable = null;
+            return indexTable;
         }
 
         final long t0 = System.nanoTime();
@@ -264,8 +257,9 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             final Table locationTable = columnSourceManager.locationTable().coalesce();
 
             // Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by
-            // the appropriate region offset. The row sets are not forced into memory; but keys are to enable efficient
-            // grouping. The rowsets are read into memory as part of the {@link #mergeRowSets} call.
+            // the appropriate region offset. The row sets are not forced into memory, but keys are in order to enable
+            // efficient
+            // grouping. The rowsets are read into memory as part of the mergeRowSets call.
             final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
             final Table locationDataIndexes = locationTable
                     .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
@@ -288,9 +282,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
 
                 // we are using a regular array here; so we must ensure that we are flat; or we'll have a bad time
                 Assert.assertion(groupedByKeyColumns.isFlat(), "groupedByKeyColumns.isFlat()");
-                final RowsetCacher rowsetCacher = new RowsetCacher(vectorColumnSource, groupedByKeyColumns.intSize());
-                // need to do something better with a magic holder that looks at the rowset column source and lazily
-                // merges them instead of this version that actually wants to have an input and doesn't cache anything
+                final RowSetCacher rowsetCacher = new RowSetCacher(vectorColumnSource, groupedByKeyColumns.intSize());
                 combined = groupedByKeyColumns
                         .view(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
                                 ROW_SET_COLUMN_NAME, RowSet.class, (k, v) -> rowsetCacher.get(k)))));
@@ -317,7 +309,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             return combined;
         } finally {
             final long t1 = System.nanoTime();
-            buildIndexTable.sample(t1 - t0);
+            BUILD_INDEX_TABLE_MILLIS.sample((t1 - t0) / 1_000_000);
         }
     }
 
@@ -335,7 +327,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         final Table coalesced = indexTable.coalesce();
 
         // pull the key columns into memory while we are parallel;
-        final Table withInMemorykeyColumns = coalesced.update(keyColumnNames);
+        final Table withInMemoryKeyColumns = coalesced.update(keyColumnNames);
 
         final Selectable shiftFunction;
         if (shiftAmount == 0) {
@@ -349,7 +341,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         }
         // the rowset column shift need not occur until we perform the rowset merge operation - which is either
         // lazy or part of an update [which itself can be parallel].
-        return withInMemorykeyColumns.updateView(List.of(SelectColumn.ofStateless(shiftFunction)));
+        return withInMemoryKeyColumns.updateView(List.of(SelectColumn.ofStateless(shiftFunction)));
     }
 
     private static RowSet mergeRowSets(

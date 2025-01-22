@@ -56,7 +56,7 @@ For more information, see:
 
 ## Labels
 
-- Each pull request msut have a `ReleaseNotesNeeded` label if a user can perceive the changes.  Build or testing-only changes should have a `NoReleaseNotesNeeded` label.
+- Each pull request must have a `ReleaseNotesNeeded` label if a user can perceive the changes.  Build or testing-only changes should have a `NoReleaseNotesNeeded` label.
 - Each pull request must have a `DocumentationNeeded` label if the user guide should be updated.  Pull requests that do not require a user guide update should have a `NoDocumentationNeeded` label.
 
 ## Styleguide
