@@ -462,7 +462,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         captureIndexes(SUT.initialize());
 
         // Force us to build the merged index *before* we check satisfaction
-        // the checkIndexes method will call table() a second time with the DEFAULT options; which exercises lazy conversion
+        // the checkIndexes method will call table() a second time with the DEFAULT options; which exercises lazy
+        // conversion
         capturedGroupingColumnIndex.table(options);
 
         checkIndexes();

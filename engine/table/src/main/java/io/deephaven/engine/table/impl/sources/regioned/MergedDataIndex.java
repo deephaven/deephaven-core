@@ -237,10 +237,10 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                     final RowSet computedResult;
                     try {
                         if (USE_PARALLEL_LAZY_FETCH) {
-                            //noinspection DataFlowIssue
+                            // noinspection DataFlowIssue
                             computedResult = mergeRowSetsParallel(rowKey, inputRowSets);
                         } else {
-                            //noinspection DataFlowIssue
+                            // noinspection DataFlowIssue
                             computedResult = mergeRowSetsSerial(rowKey, inputRowSets);
                         }
                     } catch (Exception e) {
@@ -266,7 +266,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             final PartitionedTable partitionedTable;
             if (lazyPartitionedTable != null) {
                 // We are synchronized, and can begin processing from the PartitionedTable rather than starting from
-                // scratch.  The first step is to force our rowsets into memory, in parallel.
+                // scratch. The first step is to force our rowsets into memory, in parallel.
                 partitionedTable = lazyPartitionedTable.transform(t -> t.update(ROW_SET_COLUMN_NAME));
             } else {
                 partitionedTable = buildPartitionedTable(lazyRowsetMerge);
