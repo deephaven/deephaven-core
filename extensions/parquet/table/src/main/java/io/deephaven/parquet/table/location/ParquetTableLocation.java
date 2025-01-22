@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTools;
@@ -34,7 +35,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
@@ -59,6 +59,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final ParquetInstructions readInstructions;
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
+
+    private final ParquetColumnResolver resolver;
 
     private final RowGroup[] rowGroups;
     private final RegionedPageStore.Parameters regionParameters;
@@ -88,7 +90,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
-
+        resolver = readInstructions.getColumnResolverFactory()
+                .map(factory -> factory.of(tableKey, tableLocationKey))
+                .orElse(null);
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
                 .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
@@ -99,8 +103,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
-        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
-            final String[] path = column.getPath();
+        for (String[] path : ParquetSchemaUtil.paths(parquetFileReader.getSchema())) {
             if (path.length > 1) {
                 parquetColumnNameToPath.put(path[0], path);
             }
@@ -182,14 +185,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        final List<String> columnPath = getColumnPath(columnName, parquetColumnName);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
+                .toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);
+    }
+
+    private List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
+        if (resolver != null) {
+            // empty list will result in exists=false
+            return resolver.of(columnName).orElse(List.of());
+        }
+        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnNameOrDefault);
+        // noinspection Java9CollectionFactory
+        return columnPath == null
+                ? Collections.singletonList(parquetColumnNameOrDefault)
+                : Collections.unmodifiableList(Arrays.asList(columnPath));
     }
 
     private RowSet computeIndex() {
