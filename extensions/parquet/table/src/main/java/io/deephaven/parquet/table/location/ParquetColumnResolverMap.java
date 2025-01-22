@@ -4,17 +4,15 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.parquet.impl.ParquetSchemaUtil;
-import org.apache.parquet.column.ColumnDescriptor;
-import org.apache.parquet.schema.MessageType;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.immutables.value.Value;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * A {@link ParquetColumnResolver} implementation based on a map from Deephaven column names to Parquet
- * {@link ColumnDescriptor column descriptors}.
+ * A simple {@link ParquetColumnResolver} implementation from a {@link Map}.
  */
 @Value.Immutable
 @BuildableStyle
@@ -24,41 +22,37 @@ public abstract class ParquetColumnResolverMap implements ParquetColumnResolver 
         return ImmutableParquetColumnResolverMap.builder();
     }
 
-    /**
-     * The Parquet schema.
-     */
-    public abstract MessageType schema();
+    abstract Map<String, List<String>> mapUnsafe();
 
     /**
-     * The map from Deephaven column name to {@link ColumnDescriptor}. The {@link #schema()} must contain each column
-     * descriptor.
+     * A map from Deephaven column name to Parquet path.
      */
-    public abstract Map<String, ColumnDescriptor> mapping();
+    public final Map<String, List<String>> map() {
+        return mapUnsafe();
+    }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Equivalent to {@code Optional.ofNullable(map().get(columnName))}.
+     */
     @Override
-    public final Optional<String[]> of(String columnName) {
-        return Optional.ofNullable(mapping().get(columnName)).map(ColumnDescriptor::getPath);
+    public Optional<List<String>> of(String columnName) {
+        return Optional.ofNullable(map().get(columnName));
     }
 
     public interface Builder {
-        Builder schema(MessageType schema);
 
-        Builder putMapping(String key, ColumnDescriptor value);
+        // Ideally, not part of the public interface.
+        // See https://github.com/immutables/immutables/issues/1534
+        @InternalUseOnly
+        Builder putMapUnsafe(String key, List<String> value);
 
-        Builder putAllMapping(Map<String, ? extends ColumnDescriptor> entries);
+        default Builder putMap(String key, List<String> value) {
+            return putMapUnsafe(key, List.copyOf(value));
+        }
 
         ParquetColumnResolverMap build();
-    }
-
-    @Value.Check
-    final void checkMapping() {
-        for (Map.Entry<String, ColumnDescriptor> e : mapping().entrySet()) {
-            final ColumnDescriptor columnDescriptor = e.getValue();
-            if (!ParquetSchemaUtil.contains(schema(), columnDescriptor)) {
-                throw new IllegalArgumentException(
-                        String.format("schema does not contain Deephaven columnName=%s columnDescriptor=%s", e.getKey(),
-                                columnDescriptor));
-            }
-        }
     }
 }

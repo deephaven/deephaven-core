@@ -3,12 +3,15 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
+import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -49,10 +52,9 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                 .addFields(FOO_42, BAR_43, BAZ_44)
                 .named("root");
         final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putMapping("DeepFoo", schema.getColumnDescription(p("foo")))
-                .putMapping("DeepBar", schema.getColumnDescription(p("bar", "list", "element")))
-                .putMapping("DeepBaz", schema.getColumnDescription(p("baz", "list", "element")))
+                .putMap("DeepFoo", List.of("foo"))
+                .putMap("DeepBar", List.of("bar", "list", "element"))
+                .putMap("DeepBaz", List.of("baz", "list", "element"))
                 .build();
         assertThat(FACTORY.of(schema)).isEqualTo(expected);
     }
@@ -65,10 +67,9 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                         .named("my_group"))
                 .named("root");
         final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putMapping("DeepFoo", schema.getColumnDescription(p("my_group", "foo")))
-                .putMapping("DeepBar", schema.getColumnDescription(p("my_group", "bar", "list", "element")))
-                .putMapping("DeepBaz", schema.getColumnDescription(p("my_group", "baz", "list", "element")))
+                .putMap("DeepFoo", List.of("my_group", "foo"))
+                .putMap("DeepBar", List.of("my_group", "bar", "list", "element"))
+                .putMap("DeepBaz", List.of("my_group", "baz", "list", "element"))
                 .build();
         assertThat(FACTORY.of(schema)).isEqualTo(expected);
     }
@@ -82,10 +83,9 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                         Types.requiredList().element(BAZ_44).named("my_list3"))
                 .named("root");
         final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putMapping("DeepFoo", schema.getColumnDescription(p("my_list1", "list", "foo")))
-                .putMapping("DeepBar", schema.getColumnDescription(p("my_list2", "list", "bar", "list", "element")))
-                .putMapping("DeepBaz", schema.getColumnDescription(p("my_list3", "list", "baz", "list", "element")))
+                .putMap("DeepFoo", List.of("my_list1", "list", "foo"))
+                .putMap("DeepBar", List.of("my_list2", "list", "bar", "list", "element"))
+                .putMap("DeepBaz", List.of("my_list3", "list", "baz", "list", "element"))
                 .build();
         assertThat(FACTORY.of(schema)).isEqualTo(expected);
     }
@@ -105,9 +105,8 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                 .named("root");
 
         final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putMapping("Col1", schema.getColumnDescription(p("BothCols", "list", "element")))
-                .putMapping("Col2", schema.getColumnDescription(p("BothCols", "list", "element")))
+                .putMap("Col1", List.of("BothCols", "list", "element"))
+                .putMap("Col2", List.of("BothCols", "list", "element"))
                 .build();
 
         assertThat(factory.of(schema)).isEqualTo(expected);
@@ -125,8 +124,7 @@ public class ParquetFieldIdColumnResolverFactoryTest {
                 .named("root");
 
         final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putMapping("Col1", schema.getColumnDescription(p("X", "list", "element")))
+                .putMap("Col1", List.of("X", "list", "element"))
                 .build();
 
         // This resolution strategy is a little bit questionable... but it is unambiguous. If instead we needed to also
@@ -154,8 +152,7 @@ public class ParquetFieldIdColumnResolverFactoryTest {
         // Does not fail if ambiguous id is not referenced
         {
             final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                    .schema(schema)
-                    .putMapping("ColZ", schema.getColumnDescription(p("Z")))
+                    .putMap("ColZ", List.of("Z"))
                     .build();
             final ParquetColumnResolverMap actual =
                     ParquetFieldIdColumnResolverFactory.of(Map.of("ColZ", 2)).of(schema);
@@ -187,8 +184,7 @@ public class ParquetFieldIdColumnResolverFactoryTest {
         // Does not fail if ambiguous id is not referenced
         {
             final ParquetColumnResolverMap expected = ParquetColumnResolverMap.builder()
-                    .schema(schema)
-                    .putMapping("ColZ", schema.getColumnDescription(p("Z")))
+                    .putMap("ColZ", List.of("Z"))
                     .build();
             final ParquetColumnResolverMap actual =
                     ParquetFieldIdColumnResolverFactory.of(Map.of("ColZ", 3)).of(schema);

@@ -141,7 +141,7 @@ public class ParquetSchemaReader {
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
         final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
-        for (final ColumnDescriptor column : ParquetSchemaUtil.getColumns(schema)) {
+        for (final ColumnDescriptor column : ParquetSchemaUtil.columns(schema)) {
             if (column.getMaxRepetitionLevel() > 1) {
                 // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
                 throw new UnsupportedOperationException("Unsupported maximum repetition level "

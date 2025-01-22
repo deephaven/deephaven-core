@@ -4,6 +4,7 @@
 package io.deephaven.parquet.impl;
 
 import org.apache.parquet.column.ColumnDescriptor;
+import org.apache.parquet.io.InvalidRecordException;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -21,6 +22,7 @@ import static org.apache.parquet.schema.Types.optional;
 import static org.apache.parquet.schema.Types.repeated;
 import static org.apache.parquet.schema.Types.required;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 class ParquetSchemaUtilTest {
 
@@ -101,37 +103,48 @@ class ParquetSchemaUtilTest {
     }
 
     @Test
-    void getColumnsEmpty() {
+    void columnsEmpty() {
         final MessageType schema = Types.buildMessage().named("root");
-        final List<ColumnDescriptor> columns = ParquetSchemaUtil.getColumns(schema);
+        final List<ColumnDescriptor> columns = ParquetSchemaUtil.columns(schema);
         assertThat(columns)
-                .usingElementComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
+                .usingElementComparator(equalityMethod(ColumnDescriptorUtil::equals))
                 .isEqualTo(schema.getColumns());
     }
 
     @Test
-    void getColumns() {
-        final List<ColumnDescriptor> columns = ParquetSchemaUtil.getColumns(SCHEMA);
+    void columns() {
+        final List<ColumnDescriptor> columns = ParquetSchemaUtil.columns(SCHEMA);
         assertThat(columns)
-                .usingElementComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
+                .usingElementComparator(equalityMethod(ColumnDescriptorUtil::equals))
                 .isEqualTo(SCHEMA.getColumns());
     }
 
     @Test
-    void getColumnDescriptor() {
-        for (ColumnDescriptor expected : ParquetSchemaUtil.getColumns(SCHEMA)) {
-            assertThat(ParquetSchemaUtil.getColumnDescriptor(SCHEMA, expected.getPath()))
-                    .usingComparator(equalityMethod(ParquetSchemaUtil::columnDescriptorEquals))
+    void columnDescriptor() {
+        for (ColumnDescriptor expected : ParquetSchemaUtil.columns(SCHEMA)) {
+            assertThat(ParquetSchemaUtil.columnDescriptor(SCHEMA, expected.getPath()))
+                    .usingValueComparator(equalityMethod(ColumnDescriptorUtil::equals))
+                    .hasValue(expected);
+            // verify Parquet library has same behavior
+            assertThat(SCHEMA.getColumnDescription(expected.getPath()))
+                    .usingComparator(equalityMethod(ColumnDescriptorUtil::equals))
                     .isEqualTo(expected);
         }
         for (String[] nonExistentPath : NON_EXISTENT_LEAF_PATHS) {
-            assertThat(ParquetSchemaUtil.getColumnDescriptor(SCHEMA, nonExistentPath)).isNull();
+            assertThat(ParquetSchemaUtil.columnDescriptor(SCHEMA, nonExistentPath)).isEmpty();
+            // verify Parquet library has similar behavior
+            try {
+                SCHEMA.getColumnDescription(nonExistentPath);
+                failBecauseExceptionWasNotThrown(Throwable.class);
+            } catch (InvalidRecordException | ClassCastException e) {
+                // good enough
+            }
         }
     }
 
     @Test
     void contains() {
-        for (ColumnDescriptor column : ParquetSchemaUtil.getColumns(SCHEMA)) {
+        for (ColumnDescriptor column : ParquetSchemaUtil.columns(SCHEMA)) {
             assertThat(ParquetSchemaUtil.contains(SCHEMA, column)).isTrue();
         }
         for (ColumnDescriptor column : NON_EXISTENT_COLUMNS) {

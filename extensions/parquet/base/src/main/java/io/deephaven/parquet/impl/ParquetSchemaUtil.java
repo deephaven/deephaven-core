@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -35,18 +36,18 @@ public final class ParquetSchemaUtil {
          * particular, it is useful when the consumer wants to iterate the Typed-path from MessageType root to leaf
          * without needing to resort to extraneous allocation of {@link MessageType#getType(String...)} or state
          * management needed via {@link GroupType#getType(String)}. The arguments of this method can be made into a
-         * {@link ColumnDescriptor} using {@link #makeColumnDescriptor(Collection, PrimitiveType)}.
+         * {@link ColumnDescriptor} using {@link ParquetSchemaUtil#makeColumnDescriptor(Collection, PrimitiveType)}.
          *
-         * @param path the full path
+         * @param typePath the fully typed path
          * @param primitiveType the leaf primitiveType, guaranteed to be the last element of path
          */
-        void accept(Collection<Type> path, PrimitiveType primitiveType);
+        void accept(Collection<Type> typePath, PrimitiveType primitiveType);
     }
 
     /**
      * A more efficient implementation of {@link MessageType#getColumns()}.
      */
-    public static List<ColumnDescriptor> getColumns(MessageType schema) {
+    public static List<ColumnDescriptor> columns(MessageType schema) {
         final List<ColumnDescriptor> out = new ArrayList<>();
         walkColumnDescriptors(schema, out::add);
         return out;
@@ -55,40 +56,43 @@ public final class ParquetSchemaUtil {
     /**
      * A more efficient implementation of {@link MessageType#getPaths()}.
      */
-    public static List<String[]> getPaths(MessageType schema) {
+    public static List<String[]> paths(MessageType schema) {
         final List<String[]> out = new ArrayList<>();
-        walk(schema, (path, primitiveType) -> out.add(makeNamePath(path)));
+        walk(schema, (typePath, primitiveType) -> out.add(makePath(typePath)));
         return out;
     }
 
-    public static void walkColumnDescriptors(MessageType type, Consumer<ColumnDescriptor> consumer) {
-        walk(type, new ColumnDescriptorVisitor(consumer));
+    /**
+     * An alternative interface for traversing the column descriptors of a Parquet {@code schema}.
+     */
+    public static void walkColumnDescriptors(MessageType schema, Consumer<ColumnDescriptor> consumer) {
+        walk(schema, new ColumnDescriptorVisitor(consumer));
     }
 
     /**
-     * An alternative interface for traversing the leaf fields of a Parquet schema.
+     * An alternative interface for traversing the leaf fields of a Parquet {@code schema}.
      */
-    public static void walk(MessageType type, Visitor visitor) {
-        walk(type, visitor, new ArrayDeque<>());
+    public static void walk(MessageType schema, Visitor visitor) {
+        walk(schema, visitor, new ArrayDeque<>());
     }
 
     /**
      * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}.
      */
-    public static ColumnDescriptor getColumnDescriptor(MessageType schema, String[] path) {
+    public static Optional<ColumnDescriptor> columnDescriptor(MessageType schema, String[] path) {
         if (path.length == 0) {
-            return null;
+            return Optional.empty();
         }
         int repeatedCount = 0;
         int notRequiredCount = 0;
         GroupType current = schema;
         for (int i = 0; i < path.length - 1; ++i) {
             if (!current.containsField(path[i])) {
-                return null;
+                return Optional.empty();
             }
             final Type field = current.getFields().get(current.getFieldIndex(path[i]));
             if (field == null || field.isPrimitive()) {
-                return null;
+                return Optional.empty();
             }
             current = field.asGroupType();
             if (isRepeated(current)) {
@@ -101,11 +105,11 @@ public final class ParquetSchemaUtil {
         final PrimitiveType primitiveType;
         {
             if (!current.containsField(path[path.length - 1])) {
-                return null;
+                return Optional.empty();
             }
             final Type field = current.getFields().get(current.getFieldIndex(path[path.length - 1]));
             if (field == null || !field.isPrimitive()) {
-                return null;
+                return Optional.empty();
             }
             primitiveType = field.asPrimitiveType();
             if (isRepeated(primitiveType)) {
@@ -115,40 +119,35 @@ public final class ParquetSchemaUtil {
                 ++notRequiredCount;
             }
         }
-        return new ColumnDescriptor(path, primitiveType, repeatedCount, notRequiredCount);
+        return Optional.of(new ColumnDescriptor(path, primitiveType, repeatedCount, notRequiredCount));
     }
 
     /**
      * A more efficient implementation of {@link MessageType#getColumnDescription(String[])}.
      */
-    public static ColumnDescriptor getColumnDescriptor(MessageType schema, List<String> path) {
-        return getColumnDescriptor(schema, path.toArray(new String[0]));
+    public static Optional<ColumnDescriptor> columnDescriptor(MessageType schema, List<String> path) {
+        return columnDescriptor(schema, path.toArray(new String[0]));
     }
 
-    public static ColumnDescriptor makeColumnDescriptor(Collection<Type> path, PrimitiveType primitiveType) {
-        final String[] namePath = makeNamePath(path);
-        final int maxRep = (int) path.stream().filter(ParquetSchemaUtil::isRepeated).count();
-        final int maxDef = (int) path.stream().filter(Predicate.not(ParquetSchemaUtil::isRequired)).count();
-        return new ColumnDescriptor(namePath, primitiveType, maxRep, maxDef);
+    public static ColumnDescriptor makeColumnDescriptor(Collection<Type> typePath, PrimitiveType primitiveType) {
+        final String[] path = makePath(typePath);
+        final int maxRep = (int) typePath.stream().filter(ParquetSchemaUtil::isRepeated).count();
+        final int maxDef = (int) typePath.stream().filter(Predicate.not(ParquetSchemaUtil::isRequired)).count();
+        return new ColumnDescriptor(path, primitiveType, maxRep, maxDef);
     }
 
-    public static boolean columnDescriptorEquals(ColumnDescriptor a, ColumnDescriptor b) {
-        return a.equals(b)
-                && a.getPrimitiveType().equals(b.getPrimitiveType())
-                && a.getMaxRepetitionLevel() == b.getMaxRepetitionLevel()
-                && a.getMaxDefinitionLevel() == b.getMaxDefinitionLevel();
-    }
-
+    /**
+     * Checks if {@code schema} contains {@code descriptor} based on
+     * {@link ColumnDescriptorUtil#equals(ColumnDescriptor, ColumnDescriptor)}.
+     */
     public static boolean contains(MessageType schema, ColumnDescriptor descriptor) {
-        final ColumnDescriptor cd = getColumnDescriptor(schema, descriptor.getPath());
-        if (cd == null) {
-            return false;
-        }
-        return columnDescriptorEquals(descriptor, cd);
+        return columnDescriptor(schema, descriptor.getPath())
+                .filter(cd -> ColumnDescriptorUtil.equals(descriptor, cd))
+                .isPresent();
     }
 
-    private static String[] makeNamePath(Collection<Type> path) {
-        return path.stream().map(Type::getName).toArray(String[]::new);
+    public static String[] makePath(Collection<Type> typePath) {
+        return typePath.stream().map(Type::getName).toArray(String[]::new);
     }
 
     private static void walk(Type type, Visitor visitor, Deque<Type> stack) {
@@ -184,8 +183,8 @@ public final class ParquetSchemaUtil {
         }
 
         @Override
-        public void accept(Collection<Type> path, PrimitiveType primitiveType) {
-            consumer.accept(makeColumnDescriptor(path, primitiveType));
+        public void accept(Collection<Type> typePath, PrimitiveType primitiveType) {
+            consumer.accept(makeColumnDescriptor(typePath, primitiveType));
         }
     }
 }

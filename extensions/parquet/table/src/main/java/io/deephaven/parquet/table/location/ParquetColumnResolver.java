@@ -8,6 +8,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.MessageType;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -41,5 +42,5 @@ public interface ParquetColumnResolver {
      * @see ColumnDescriptor#getPath()
      * @see MessageType#getColumnDescription(String[])
      */
-    Optional<String[]> of(String columnName);
+    Optional<List<String>> of(String columnName);
 }

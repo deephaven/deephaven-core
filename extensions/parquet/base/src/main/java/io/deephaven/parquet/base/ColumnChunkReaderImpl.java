@@ -69,7 +69,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.columnName = columnName;
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
-        this.path = ParquetSchemaUtil.getColumnDescriptor(type, columnChunk.meta_data.getPath_in_schema());
+        this.path =
+                ParquetSchemaUtil.columnDescriptor(type, columnChunk.meta_data.getPath_in_schema()).orElseThrow();
         if (columnChunk.getMeta_data().isSetCodec()) {
             decompressor = DeephavenCompressorAdapterFactory.getInstance()
                     .getByName(columnChunk.getMeta_data().getCodec().name());

@@ -5,14 +5,13 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
-import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -97,10 +96,7 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
     public ParquetColumnResolverMap of(MessageType schema) {
         final FieldIdMappingVisitor visitor = new FieldIdMappingVisitor();
         ParquetSchemaUtil.walk(schema, visitor);
-        return ParquetColumnResolverMap.builder()
-                .schema(schema)
-                .putAllMapping(visitor.nameToColumnDescriptor)
-                .build();
+        return visitor.toResolver();
     }
 
     /**
@@ -117,14 +113,23 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
     }
 
     private class FieldIdMappingVisitor implements ParquetSchemaUtil.Visitor {
-        private final Map<String, ColumnDescriptor> nameToColumnDescriptor = new HashMap<>();
+        private final Map<String, List<String>> nameToPath = new HashMap<>();
+
+        public ParquetColumnResolverMap toResolver() {
+            ParquetColumnResolverMap.Builder builder = ParquetColumnResolverMap.builder();
+            for (Map.Entry<String, List<String>> e : nameToPath.entrySet()) {
+                builder.putMap(e.getKey(), e.getValue());
+            }
+            return builder.build();
+        }
 
         @Override
-        public void accept(Collection<Type> path, PrimitiveType primitiveType) {
+        public void accept(Collection<Type> typePath, PrimitiveType primitiveType) {
             // There are different resolution strategies that could all be reasonable. We could consider using only the
             // field id closest to the leaf. This version, however, takes the most general approach and considers field
             // ids wherever they appear; ultimately, only being resolvable if the field id mapping is unambiguous.
-            for (Type type : path) {
+            List<String> path = null;
+            for (Type type : typePath) {
                 final Type.ID id = type.getId();
                 if (id == null) {
                     continue;
@@ -134,14 +139,16 @@ public final class ParquetFieldIdColumnResolverFactory implements ParquetColumnR
                 if (set == null) {
                     continue;
                 }
-                final ColumnDescriptor columnDescriptor = ParquetSchemaUtil.makeColumnDescriptor(path, primitiveType);
+                if (path == null) {
+                    path = typePath.stream().map(Type::getName).collect(Collectors.toUnmodifiableList());
+                }
                 for (String columnName : set) {
-                    final ColumnDescriptor existing = nameToColumnDescriptor.putIfAbsent(columnName, columnDescriptor);
-                    if (existing != null && !existing.equals(columnDescriptor)) {
+                    final List<String> existing = nameToPath.putIfAbsent(columnName, path);
+                    if (existing != null && !existing.equals(path)) {
                         throw new IllegalArgumentException(String.format(
-                                "Parquet columns can't be unambigously mapped. %s -> %d has multiple paths %s, %s",
-                                columnName, fieldId, Arrays.toString(existing.getPath()),
-                                Arrays.toString(columnDescriptor.getPath())));
+                                "Parquet columns can't be unambigously mapped. %s -> %d has multiple paths [%s], [%s]",
+                                columnName, fieldId, String.join(", ", existing),
+                                String.join(", ", path)));
                     }
                 }
             }

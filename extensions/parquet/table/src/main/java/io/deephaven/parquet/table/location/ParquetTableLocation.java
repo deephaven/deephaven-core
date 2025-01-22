@@ -103,7 +103,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
-        for (String[] path : ParquetSchemaUtil.getPaths(parquetFileReader.getSchema())) {
+        for (String[] path : ParquetSchemaUtil.paths(parquetFileReader.getSchema())) {
             if (path.length > 1) {
                 parquetColumnNameToPath.put(path[0], path);
             }
@@ -197,12 +197,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
         if (resolver != null) {
             // empty list will result in exists=false
-            return resolver.of(columnName).map(Arrays::asList).orElse(List.of());
+            return resolver.of(columnName).orElse(List.of());
         }
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnNameOrDefault);
+        // noinspection Java9CollectionFactory
         return columnPath == null
                 ? Collections.singletonList(parquetColumnNameOrDefault)
-                : Arrays.asList(columnPath);
+                : Collections.unmodifiableList(Arrays.asList(columnPath));
     }
 
     private RowSet computeIndex() {

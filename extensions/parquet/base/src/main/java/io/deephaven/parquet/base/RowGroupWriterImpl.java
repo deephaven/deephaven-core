@@ -21,7 +21,7 @@ import java.util.Objects;
 
 final class RowGroupWriterImpl implements RowGroupWriter {
     private final CountingOutputStream countingOutput;
-    private final MessageType type;
+    private final MessageType schema;
     private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private ColumnWriterImpl activeWriter;
@@ -30,22 +30,22 @@ final class RowGroupWriterImpl implements RowGroupWriter {
     private final CompressorAdapter compressorAdapter;
 
     RowGroupWriterImpl(CountingOutputStream countingOutput,
-            MessageType type,
+            MessageType schema,
             int targetPageSize,
             ByteBufferAllocator allocator,
             CompressorAdapter compressorAdapter) {
-        this(countingOutput, type, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
+        this(countingOutput, schema, targetPageSize, allocator, new BlockMetaData(), compressorAdapter);
     }
 
 
     private RowGroupWriterImpl(CountingOutputStream countingOutput,
-            MessageType type,
+            MessageType schema,
             int targetPageSize,
             ByteBufferAllocator allocator,
             BlockMetaData blockMetaData,
             CompressorAdapter compressorAdapter) {
         this.countingOutput = Objects.requireNonNull(countingOutput);
-        this.type = Objects.requireNonNull(type);
+        this.schema = Objects.requireNonNull(schema);
         this.targetPageSize = targetPageSize;
         this.allocator = Objects.requireNonNull(allocator);
         this.blockMetaData = Objects.requireNonNull(blockMetaData);
@@ -56,7 +56,7 @@ final class RowGroupWriterImpl implements RowGroupWriter {
         String[] result = {columnName};
 
         Type rollingType;
-        while (!(rollingType = type.getType(result)).isPrimitive()) {
+        while (!(rollingType = schema.getType(result)).isPrimitive()) {
             GroupType groupType = rollingType.asGroupType();
             if (groupType.getFieldCount() != 1) {
                 throw new UnsupportedOperationException("Encountered struct at:" + Arrays.toString(result));
@@ -76,7 +76,7 @@ final class RowGroupWriterImpl implements RowGroupWriter {
         }
         activeWriter = new ColumnWriterImpl(this,
                 countingOutput,
-                ParquetSchemaUtil.getColumnDescriptor(type, getPrimitivePath(columnName)),
+                ParquetSchemaUtil.columnDescriptor(schema, getPrimitivePath(columnName)).orElseThrow(),
                 compressorAdapter,
                 targetPageSize,
                 allocator);
