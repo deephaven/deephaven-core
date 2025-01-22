@@ -73,6 +73,14 @@ public abstract class AbstractTableLocation
         };
     }
 
+    /**
+     * This method is called before every public method so that the child classes can initialize the location lazily, if
+     * necessary.
+     */
+    protected void initialize() {
+        // Do nothing
+    }
+
     @Override
     public final String toString() {
         return toStringHelper();
@@ -90,21 +98,25 @@ public abstract class AbstractTableLocation
     @Override
     @NotNull
     public final Object getStateLock() {
+        initialize();
         return state.getStateLock();
     }
 
     @Override
     public final RowSet getRowSet() {
+        initialize();
         return state.getRowSet();
     }
 
     @Override
     public final long getSize() {
+        initialize();
         return state.getSize();
     }
 
     @Override
     public final long getLastModifiedTimeMillis() {
+        initialize();
         return state.getLastModifiedTimeMillis();
     }
 
@@ -137,6 +149,7 @@ public abstract class AbstractTableLocation
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final RowSet rowSet, final long lastModifiedTimeMillis) {
+        initialize();
         if (state.setValues(rowSet, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -149,6 +162,7 @@ public abstract class AbstractTableLocation
      * @param source The source to copy state values from
      */
     public void handleUpdate(@NotNull final TableLocationState source) {
+        initialize();
         if (source.copyStateValuesTo(state) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -165,6 +179,7 @@ public abstract class AbstractTableLocation
     @Override
     @NotNull
     public final ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
+        initialize();
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 

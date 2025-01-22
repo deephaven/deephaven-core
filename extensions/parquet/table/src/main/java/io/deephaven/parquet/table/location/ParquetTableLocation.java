@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -56,21 +57,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
+    private boolean isInitialized;
+
     private final ParquetInstructions readInstructions;
-    private final ParquetFileReader parquetFileReader;
-    private final int[] rowGroupIndices;
+    private ParquetFileReader parquetFileReader;
+    private int[] rowGroupIndices;
 
-    private final RowGroup[] rowGroups;
-    private final RegionedPageStore.Parameters regionParameters;
-    private final Map<String, String[]> parquetColumnNameToPath;
+    private RowGroup[] rowGroups;
+    private RegionedPageStore.Parameters regionParameters;
+    private Map<String, String[]> parquetColumnNameToPath;
 
-    private final TableInfo tableInfo;
-    private final Map<String, GroupingColumnInfo> groupingColumns;
-    private final List<DataIndexInfo> dataIndexes;
-    private final Map<String, ColumnTypeInfo> columnTypes;
-    private final List<SortColumn> sortingColumns;
+    private TableInfo tableInfo;
+    private Map<String, GroupingColumnInfo> groupingColumns;
+    private List<DataIndexInfo> dataIndexes;
+    private Map<String, ColumnTypeInfo> columnTypes;
+    private List<SortColumn> sortingColumns;
 
-    private final String version;
+    private String version;
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -79,8 +82,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
+        isInitialized = false;
+    }
+
+    protected void initialize() {
+        if (isInitialized) {
+            return;
+        }
+        isInitialized = true;
         final ParquetMetadata parquetMetadata;
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+        final ParquetTableLocationKey tableLocationKey = getParquetKey();
         synchronized (tableLocationKey) {
             // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
             // calls
@@ -145,18 +156,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     SeekableChannelsProvider getChannelProvider() {
+        initialize();
         return parquetFileReader.getChannelsProvider();
     }
 
     RegionedPageStore.Parameters getRegionParameters() {
+        initialize();
         return regionParameters;
     }
 
     public Map<String, ColumnTypeInfo> getColumnTypes() {
+        initialize();
         return columnTypes;
     }
 
     private RowGroupReader[] getRowGroupReaders() {
+        initialize();
         RowGroupReader[] local;
         if ((local = rowGroupReaders) != null) {
             return local;
@@ -175,12 +190,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<SortColumn> getSortedColumns() {
+        initialize();
         return sortingColumns;
     }
 
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
+        initialize();
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
@@ -211,6 +228,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<String[]> getDataIndexColumns() {
+        initialize();
         if (dataIndexes.isEmpty() && groupingColumns.isEmpty()) {
             return List.of();
         }
@@ -224,6 +242,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
+        initialize();
         // Check if the column name matches any of the grouping columns
         if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
             // Validate the index file exists (without loading and parsing it)
@@ -252,6 +271,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+        initialize();
         if (tableInfo == null) {
             return null;
         }
