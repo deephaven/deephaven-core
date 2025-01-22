@@ -3,12 +3,11 @@
 //
 package io.deephaven.base.stats;
 
-import io.deephaven.base.AtomicUtil;
-
-import java.text.DecimalFormat;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 public abstract class Value {
+    /**
+     * These members are volatile, the sample(long) method is not thread safe; and you can get wrong answers out of it.
+     * If you require safety, you should instead use a ThreadSafeValue.
+     */
     protected volatile long n = 0;
     protected volatile long last = 0;
     protected volatile long sum = 0;

@@ -7,6 +7,14 @@ import io.deephaven.base.AtomicUtil;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+/**
+ * A thread-safe extension of the {@link Value} class.
+ *
+ * <p>
+ * The {@link #sample(long)} method uses atomic CAS operations, so may introduce contention compared to the unsafe Value
+ * version of sample.
+ * </p>
+ */
 public abstract class ThreadSafeValue extends Value {
     private static final AtomicLongFieldUpdater<Value> N_UPDATER = AtomicLongFieldUpdater.newUpdater(Value.class, "n");
     private static final AtomicLongFieldUpdater<Value> SUM_UPDATER =
