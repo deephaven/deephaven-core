@@ -253,9 +253,9 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         }
     }
 
-    private Table buildTable(final boolean lazyRowsetMerge) {
+    private Table buildTable(final boolean lazyRowSetMerge) {
         if (lazyTable != null) {
-            if (lazyRowsetMerge) {
+            if (lazyRowSetMerge) {
                 return lazyTable;
             }
         }
@@ -268,7 +268,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 // scratch. The first step is to force our rowsets into memory, in parallel.
                 partitionedTable = lazyPartitionedTable.transform(t -> t.update(ROW_SET_COLUMN_NAME));
             } else {
-                partitionedTable = buildPartitionedTable(lazyRowsetMerge);
+                partitionedTable = buildPartitionedTable(lazyRowSetMerge);
             }
 
             // Merge all the location index tables into a single table
@@ -278,7 +278,7 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             lookupFunction = AggregationProcessor.getRowLookup(groupedByKeyColumns);
 
             final Table combined;
-            if (lazyRowsetMerge) {
+            if (lazyRowSetMerge) {
                 final ColumnSource<ObjectVector<RowSet>> vectorColumnSource =
                         groupedByKeyColumns.getColumnSource(ROW_SET_COLUMN_NAME);
 
