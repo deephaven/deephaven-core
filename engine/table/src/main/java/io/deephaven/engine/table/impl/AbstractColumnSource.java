@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
+import io.deephaven.base.stats.ThreadSafeCounter;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.base.verify.Assert;
@@ -70,14 +71,14 @@ public abstract class AbstractColumnSource<T> implements
      * Duration of match() calls using a DataIndex (also provides the count).
      */
     public static final Value INDEX_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "indexFilter", Counter.FACTORY,
+            Stats.makeItem("AbstractColumnSource", "indexFilter", ThreadSafeCounter.FACTORY,
                     "Duration of match() with a DataIndex in millis")
                     .getValue();
     /**
      * Duration of match() calls using a chunk filter (i.e. no DataIndex).
      */
     public static final Value CHUNK_FILTER_MILLIS =
-            Stats.makeItem("AbstractColumnSource", "chunkFilter", Counter.FACTORY,
+            Stats.makeItem("AbstractColumnSource", "chunkFilter", ThreadSafeCounter.FACTORY,
                     "Duration of match() without a DataIndex in millis")
                     .getValue();
 

@@ -51,9 +51,16 @@ public class TestValue extends TestCase {
     }
 
     public void testToString() {
+        // this is purposefully a heisentest, this should make it fail if it is really broken
+        for (int ii = 0; ii < 10; ++ii) {
+            doTestToString();
+        }
+    }
+
+    public void doTestToString() {
         // we are testing toString, but also creating a pile of threads to exercise some of the AtomicFieldUpdater
         // behavior of the value
-        final Counter counter = Counter.FACTORY.apply(0L);
+        final Value counter = ThreadSafeCounter.FACTORY.apply(0L);
 
         final String emptyString = counter.toString();
         assertEquals("Value{n=0}", emptyString);
