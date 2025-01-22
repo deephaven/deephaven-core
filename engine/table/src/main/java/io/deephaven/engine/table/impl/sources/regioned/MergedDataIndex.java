@@ -92,6 +92,12 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     private volatile Table lazyTable;
 
     /**
+     * If we have a lazy version of the table, we hold onto the partitioned table, which permits us to select the
+     * underlying rowsets without needing to reselect the key columns.
+     */
+    private volatile PartitionedTable lazyPartitionedTable;
+
+    /**
      * Whether this index is known to be corrupt.
      */
     private volatile boolean isCorrupt;
@@ -172,14 +178,14 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
     }
 
     /**
-     * The RowSetCacher is a bit of a hack that allows us to avoid reading actual rowsets from disk until they are
+     * The RowSetCacher is a bit of a hack that allows us to avoid reading actual RowSets from disk until they are
      * actually required for a query operation. We are breaking engine rules in that we reference the source
      * ColumnSource directly and do not have correct dependencies encoded in a select. MergedDataIndexes are only
      * permitted for a static table, so we can get away with this.
      *
      * <p>
      * Once a RowSet has been written, we write down the result into an AtomicReferenceArray so that it need not be read
-     * repeatedly. If two threads attempt to concurrently fetch the same rowset, then we use a placeholder object in the
+     * repeatedly. If two threads attempt to concurrently fetch the same RowSet, then we use a placeholder object in the
      * array to avoid duplicated work.
      * </p>
      */
@@ -224,15 +230,19 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                         // we must try again, someone else has claimed the placeholder
                         continue;
                     }
-                    // it is our responsibility to get the right answer
-                    final ObjectVector<RowSet> inputRowsets = source.get(rowKey);
-                    Assert.neqNull(inputRowsets, "inputRowsets");
+                    // We won the race, so it is our responsibility to get the right answer
 
-                    // need to get the value and set it into our own value
+                    final ObjectVector<RowSet> inputRowSets = source.get(rowKey);
+                    Assert.neqNull(inputRowSets, "inputRowSets");
                     final RowSet computedResult;
                     try {
-                        // noinspection DataFlowIssue
-                        computedResult = mergeRowSets(rowKey, inputRowsets);
+                        if (USE_PARALLEL_LAZY_FETCH) {
+                            //noinspection DataFlowIssue
+                            computedResult = mergeRowSetsParallel(rowKey, inputRowSets);
+                        } else {
+                            //noinspection DataFlowIssue
+                            computedResult = mergeRowSetsSerial(rowKey, inputRowSets);
+                        }
                     } catch (Exception e) {
                         results.set(iRowKey, e);
                         throw e;
@@ -249,33 +259,24 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             if (lazyRowsetMerge) {
                 return lazyTable;
             }
-            indexTable = lazyTable.select();
-            lazyTable = null;
-            return indexTable;
         }
 
         final long t0 = System.nanoTime();
         try {
-            final Table locationTable = columnSourceManager.locationTable().coalesce();
-
-            // Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by
-            // the appropriate region offset. The row sets are not forced into memory, but keys are in order to enable
-            // efficient
-            // grouping. The rowsets are read into memory as part of the mergeRowSets call.
-            final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
-            final Table locationDataIndexes = locationTable
-                    .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
-                            columnSourceManager.locationColumnName(), TableLocation.class,
-                            LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
-                            (final long locationRowKey, final TableLocation location) -> loadIndexTableAndShiftRowSets(
-                                    locationRowKey, location, keyColumnNamesArray)))))
-                    .dropColumns(columnSourceManager.locationColumnName());
+            final PartitionedTable partitionedTable;
+            if (lazyPartitionedTable != null) {
+                // We are synchronized, and can begin processing from the PartitionedTable rather than starting from
+                // scratch.  The first step is to force our rowsets into memory, in parallel.
+                partitionedTable = lazyPartitionedTable.transform(t -> t.update(ROW_SET_COLUMN_NAME));
+            } else {
+                partitionedTable = buildPartitionedTable(lazyRowsetMerge);
+            }
 
             // Merge all the location index tables into a single table
-            final Table mergedDataIndexes = PartitionedTableFactory.of(locationDataIndexes).merge();
-
+            final Table mergedDataIndexes = partitionedTable.merge();
             // Group the merged data indexes by the keys
-            final Table groupedByKeyColumns = mergedDataIndexes.groupBy(keyColumnNamesArray);
+            final Table groupedByKeyColumns = mergedDataIndexes.groupBy(keyColumnNames.toArray(String[]::new));
+            lookupFunction = AggregationProcessor.getRowLookup(groupedByKeyColumns);
 
             final Table combined;
             if (lazyRowsetMerge) {
@@ -288,25 +289,25 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 combined = groupedByKeyColumns
                         .view(List.of(SelectColumn.ofStateless(new MultiSourceFunctionalColumn<>(List.of(),
                                 ROW_SET_COLUMN_NAME, RowSet.class, (k, v) -> rowsetCacher.get(k)))));
+
+                lazyPartitionedTable = partitionedTable;
+                lazyTable = combined;
             } else {
                 // Combine the row sets from each group into a single row set
                 final List<SelectColumn> mergeFunction = List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         ROW_SET_COLUMN_NAME, ObjectVector.class,
                         ROW_SET_COLUMN_NAME, RowSet.class,
-                        MergedDataIndex::mergeRowSets)));
+                        MergedDataIndex::mergeRowSetsSerial)));
 
                 combined = groupedByKeyColumns.update(mergeFunction);
+
+                indexTable = combined;
+                // if we were built off a lazy table, null it out now that we've setup the indexTable
+                lazyPartitionedTable = null;
+                lazyTable = null;
             }
             Assert.assertion(combined.isFlat(), "combined.isFlat()");
             Assert.eq(groupedByKeyColumns.size(), "groupedByKeyColumns.size()", combined.size(), "combined.size()");
-
-            lookupFunction = AggregationProcessor.getRowLookup(groupedByKeyColumns);
-
-            if (lazyRowsetMerge) {
-                lazyTable = combined;
-            } else {
-                indexTable = combined;
-            }
 
             return combined;
         } finally {
@@ -315,10 +316,28 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         }
     }
 
+    private PartitionedTable buildPartitionedTable(boolean lazyRowsetMerge) {
+        final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
+        final Table locationTable = columnSourceManager.locationTable().coalesce();
+        // Perform a parallelizable update to produce coalesced location index tables with their row sets shifted by
+        // the appropriate region offset. The row sets are not forced into memory, but keys are in order to enable
+        // efficient grouping. The rowsets are read into memory as part of the mergeRowSets call.
+        final Table locationDataIndexes = locationTable
+                .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
+                        columnSourceManager.locationColumnName(), TableLocation.class,
+                        LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
+                        (final long locationRowKey, final TableLocation location) -> loadIndexTableAndShiftRowSets(
+                                locationRowKey, location, keyColumnNamesArray, !lazyRowsetMerge)))))
+                .dropColumns(columnSourceManager.locationColumnName());
+
+        return PartitionedTableFactory.of(locationDataIndexes);
+    }
+
     private static Table loadIndexTableAndShiftRowSets(
             final long locationRowKey,
             @NotNull final TableLocation location,
-            @NotNull final String[] keyColumnNames) {
+            @NotNull final String[] keyColumnNames,
+            final boolean selectRowSets) {
         final BasicDataIndex dataIndex = location.getDataIndex(keyColumnNames);
         if (dataIndex == null) {
             throw new UncheckedDeephavenException(String.format("Failed to load data index [%s] for location %s",
@@ -328,25 +347,61 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         final long shiftAmount = RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey));
         final Table coalesced = indexTable.coalesce();
 
-        // pull the key columns into memory while we are parallel;
-        final Table withInMemoryKeyColumns = coalesced.update(keyColumnNames);
-
         final Selectable shiftFunction;
         if (shiftAmount == 0) {
-            shiftFunction =
-                    Selectable.of(ColumnName.of(ROW_SET_COLUMN_NAME), ColumnName.of(dataIndex.rowSetColumnName()));
+            // A source column would be more convenient, but we are going to close the RowSet after we are done merging
+            // it and should not allow that close call to pass through to the original table.
+            shiftFunction = new FunctionalColumn<>(
+                    dataIndex.rowSetColumnName(), RowSet.class,
+                    ROW_SET_COLUMN_NAME, RowSet.class,
+                    RowSet::copy);
         } else {
             shiftFunction = new FunctionalColumn<>(
                     dataIndex.rowSetColumnName(), RowSet.class,
                     ROW_SET_COLUMN_NAME, RowSet.class,
                     (final RowSet rowSet) -> rowSet.shift(shiftAmount));
         }
-        // the rowset column shift need not occur until we perform the rowset merge operation - which is either
-        // lazy or part of an update [which itself can be parallel].
-        return withInMemoryKeyColumns.updateView(List.of(SelectColumn.ofStateless(shiftFunction)));
+        if (selectRowSets) {
+            // pull the key columns into memory while we are parallel; and read all the rowsets (by virtue of the shift)
+            final List<Selectable> columns = new ArrayList<>(keyColumnNames.length + 1);
+            Arrays.stream(keyColumnNames).map(ColumnName::of).forEach(columns::add);
+            columns.add(SelectColumn.ofStateless(shiftFunction));
+            return coalesced.update(columns);
+        } else {
+            // pull the key columns into memory while we are parallel; but do not read all the RowSets
+            final Table withInMemoryKeyColumns = coalesced.update(keyColumnNames);
+            return withInMemoryKeyColumns.update(List.of(SelectColumn.ofStateless(shiftFunction)));
+        }
     }
 
-    private static RowSet mergeRowSets(
+    /**
+     * The returned RowSet is owned by the caller. The input RowSets are closed.
+     */
+    private static RowSet mergeRowSetsSerial(
+            @SuppressWarnings("unused") final long unusedRowKey,
+            @NotNull final ObjectVector<RowSet> keyRowSets) {
+        final long numRowSets = keyRowSets.size();
+
+        if (numRowSets == 1) {
+            // we steal the reference, the input is never used again
+            return keyRowSets.get(0);
+        }
+
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        try (final CloseableIterator<RowSet> rowSets = keyRowSets.iterator()) {
+            rowSets.forEachRemaining(rs -> {
+                builder.appendRowSequence(rs);
+                rs.close();
+            });
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * The returned RowSet is owned by the caller. The input RowSets are closed.
+     */
+    private static RowSet mergeRowSetsParallel(
             @SuppressWarnings("unused") final long unusedRowKey,
             @NotNull final ObjectVector<RowSet> keyRowSets) {
         final long numRowSets = keyRowSets.size();
@@ -357,20 +412,12 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
         }
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
-        if (USE_PARALLEL_LAZY_FETCH) {
-            LongStream.range(0, numRowSets).parallel().mapToObj(keyRowSets::get)
-                    .sorted(Comparator.comparingLong(RowSet::firstRowKey)).forEachOrdered(rs -> {
-                        builder.appendRowSequence(rs);
-                        rs.close();
-                    });
-        } else {
-            try (final CloseableIterator<RowSet> rowSets = keyRowSets.iterator()) {
-                rowSets.forEachRemaining(rs -> {
+        LongStream.range(0, numRowSets).parallel().mapToObj(keyRowSets::get)
+                .sorted(Comparator.comparingLong(RowSet::firstRowKey)).forEachOrdered(rs -> {
                     builder.appendRowSequence(rs);
                     rs.close();
                 });
-            }
-        }
+
         return builder.build();
     }
 
