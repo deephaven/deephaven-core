@@ -211,6 +211,13 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean USE_DATA_INDEX_FOR_AGGREGATION =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForAggregation", true);
 
+    /**
+     * If the Configuration property "QueryTable.useDataIndexForJoins" is set to true (default), then permit
+     * naturalJoin and aj to use a data index, when applicable. If false, data indexes are not used even if present.
+     */
+    public static boolean USE_DATA_INDEX_FOR_JOINS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
+
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
@@ -279,16 +286,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static long MINIMUM_PARALLEL_SNAPSHOT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSnapshotRows", 1L << 20);
 
-    // Whether we should track the entire RowSet of firstBy and lastBy operations
-    @VisibleForTesting
-    public static boolean TRACKED_LAST_BY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
-    @VisibleForTesting
-    public static boolean TRACKED_FIRST_BY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackFirstBy", false);
-
-    @VisibleForTesting
-    public static boolean USE_OLDER_CHUNKED_BY = false;
     @VisibleForTesting
     public static boolean USE_CHUNKED_CROSS_JOIN =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
