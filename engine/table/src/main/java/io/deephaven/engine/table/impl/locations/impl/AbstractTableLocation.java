@@ -138,6 +138,7 @@ public abstract class AbstractTableLocation
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final Listener listener) {
+        initialize();
         listener.handleUpdate();
     }
 
@@ -179,7 +180,6 @@ public abstract class AbstractTableLocation
     @Override
     @NotNull
     public final ColumnLocation getColumnLocation(@NotNull final CharSequence name) {
-        initialize();
         return columnLocations.putIfAbsent(name, n -> makeColumnLocation(n.toString()));
     }
 
@@ -238,6 +238,7 @@ public abstract class AbstractTableLocation
     @Override
     @Nullable
     public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
+        initialize();
         final List<String> columnNames = new ArrayList<>(columns.length);
         Collections.addAll(columnNames, columns);
         columnNames.sort(String::compareTo);

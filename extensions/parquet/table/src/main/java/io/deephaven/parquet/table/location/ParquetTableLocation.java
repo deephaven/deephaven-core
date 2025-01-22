@@ -155,11 +155,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return readInstructions;
     }
 
-    SeekableChannelsProvider getChannelProvider() {
-        initialize();
-        return parquetFileReader.getChannelsProvider();
-    }
-
     RegionedPageStore.Parameters getRegionParameters() {
         initialize();
         return regionParameters;
@@ -170,7 +165,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return columnTypes;
     }
 
-    private RowGroupReader[] getRowGroupReaders() {
+    RowGroupReader[] getRowGroupReaders() {
         initialize();
         RowGroupReader[] local;
         if ((local = rowGroupReaders) != null) {
@@ -194,19 +189,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return sortingColumns;
     }
 
+    @NotNull
+    Map<String, String[]> getParquetColumnNameToPath() {
+        initialize();
+        return parquetColumnNameToPath;
+    }
+
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
-        initialize();
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
-        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
-        return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? columnChunkReaders : null);
+        return new ParquetColumnLocation<>(this, columnName, parquetColumnName);
     }
 
     private RowSet computeIndex() {
