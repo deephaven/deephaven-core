@@ -64,7 +64,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final String columnName;
     private final String parquetColumnName;
 
-    private boolean isInitialized;
+    private volatile boolean isInitialized;
 
     /**
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to
@@ -100,15 +100,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         if (isInitialized) {
             return;
         }
-        isInitialized = true;
-        tl().initialize();
-        final String[] columnPath = tl().getParquetColumnNameToPath().get(parquetColumnName);
-        final List<String> nameList =
-                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
-        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
-        this.columnChunkReaders = exists ? columnChunkReaders : null;
+        synchronized (this) {
+            if (isInitialized) {
+                return;
+            }
+            tl().initialize();
+            final String[] columnPath = tl().getParquetColumnNameToPath().get(parquetColumnName);
+            final List<String> nameList =
+                    columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+            final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
+                    .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
+            final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
+            this.columnChunkReaders = exists ? columnChunkReaders : null;
+            isInitialized = true;
+        }
     }
 
     private PageCache<ATTR> ensurePageCache() {

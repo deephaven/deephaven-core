@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -23,7 +22,6 @@ import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
-import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -34,7 +32,6 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -57,7 +54,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
-    private boolean isInitialized;
+    // TODO Maybe I should add a local non-volatile
+    private volatile boolean isInitialized;
 
     private final ParquetInstructions readInstructions;
     private ParquetFileReader parquetFileReader;
@@ -82,60 +80,69 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
-        isInitialized = false;
+        this.isInitialized = false;
     }
 
     protected void initialize() {
         if (isInitialized) {
             return;
         }
-        isInitialized = true;
-        final ParquetMetadata parquetMetadata;
-        final ParquetTableLocationKey tableLocationKey = getParquetKey();
-        synchronized (tableLocationKey) {
-            // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
-            // calls
-            parquetFileReader = tableLocationKey.getFileReader();
-            parquetMetadata = tableLocationKey.getMetadata();
-            rowGroupIndices = tableLocationKey.getRowGroupIndices();
-        }
-
-        final int rowGroupCount = rowGroupIndices.length;
-        rowGroups = IntStream.of(rowGroupIndices)
-                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
-                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
-                .toArray(RowGroup[]::new);
-        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
-        regionParameters = new RegionedPageStore.Parameters(
-                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
-
-        parquetColumnNameToPath = new HashMap<>();
-        for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
-            final String[] path = column.getPath();
-            if (path.length > 1) {
-                parquetColumnNameToPath.put(path[0], path);
+        synchronized (this) {
+            if (isInitialized) {
+                return;
             }
-        }
+            final ParquetMetadata parquetMetadata;
+            final ParquetTableLocationKey tableLocationKey = getParquetKey();
+            synchronized (tableLocationKey) {
+                // Following methods are internally synchronized, we synchronize them together here to minimize
+                // lock/unlock calls
+                parquetFileReader = tableLocationKey.getFileReader();
+                parquetMetadata = tableLocationKey.getMetadata();
+                rowGroupIndices = tableLocationKey.getRowGroupIndices();
+            }
 
-        // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
-        // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-        // Obvious issues included data index table paths, codecs, etc.
-        // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
-        tableInfo = ParquetSchemaReader
-                .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
-                .orElse(TableInfo.builder().build());
-        version = tableInfo.version();
-        groupingColumns = tableInfo.groupingColumnMap();
-        dataIndexes = tableInfo.dataIndexes();
-        columnTypes = tableInfo.columnTypeMap();
-        sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            final int rowGroupCount = rowGroupIndices.length;
+            rowGroups = IntStream.of(rowGroupIndices)
+                    .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
+                    .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
+                    .toArray(RowGroup[]::new);
+            final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
+            regionParameters = new RegionedPageStore.Parameters(
+                    RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
-        if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
-            // We do not have the last modified time for non-file URIs
-            handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
-        } else {
-            handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
+            parquetColumnNameToPath = new HashMap<>();
+            for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
+                final String[] path = column.getPath();
+                if (path.length > 1) {
+                    parquetColumnNameToPath.put(path[0], path);
+                }
+            }
+
+            // TODO (https://github.com/deephaven/deephaven-core/issues/958):
+            // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
+            // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
+            // Obvious issues included data index table paths, codecs, etc.
+            // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
+            tableInfo = ParquetSchemaReader
+                    .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
+                    .orElse(TableInfo.builder().build());
+            version = tableInfo.version();
+            groupingColumns = tableInfo.groupingColumnMap();
+            dataIndexes = tableInfo.dataIndexes();
+            columnTypes = tableInfo.columnTypeMap();
+            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+
+            isInitialized = true;
+
+            // The following calls might internally call initialize() again, but that's fine because we're already
+            // initialized at this point.
+
+            if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
+                // We do not have the last modified time for non-file URIs
+                handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
+            } else {
+                handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
+            }
         }
     }
 
