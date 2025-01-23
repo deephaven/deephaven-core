@@ -374,8 +374,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }).then(result -> {
             ClientTableState state = new ClientTableState(connection,
                     new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
-                callback.apply("fail, trees dont reconnect like this", null);
-            }, "");
+                        callback.apply("fail, trees dont reconnect like this", null);
+                    }, "");
             state.retain(JsTreeTable.this);
             ExportedTableCreationResponse def = new ExportedTableCreationResponse();
             HierarchicalTableDescriptor treeDescriptor =
