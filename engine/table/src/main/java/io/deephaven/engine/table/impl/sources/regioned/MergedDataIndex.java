@@ -371,10 +371,11 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             final List<Selectable> columns = new ArrayList<>(keyColumnNames.length + 1);
             Arrays.stream(keyColumnNames).map(ColumnName::of).forEach(columns::add);
             columns.add(SelectColumn.ofStateless(shiftFunction));
-            return coalesced.update(columns);
+            return ForkJoinPoolOperationInitializer.ensureParallelizable(() -> coalesced.update(columns)).get();
         } else {
             // pull the key columns into memory while we are parallel; but do not read all the RowSets
-            final Table withInMemoryKeyColumns = coalesced.update(keyColumnNames);
+            final Table withInMemoryKeyColumns =
+                    ForkJoinPoolOperationInitializer.ensureParallelizable(() -> coalesced.update(keyColumnNames)).get();
             return withInMemoryKeyColumns.updateView(List.of(SelectColumn.ofStateless(shiftFunction)));
         }
     }
