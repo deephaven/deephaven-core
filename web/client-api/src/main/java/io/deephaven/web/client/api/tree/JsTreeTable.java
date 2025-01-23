@@ -150,7 +150,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
-    private TicketAndPromise<?> viewTicket;
+    private TicketAndPromise<ClientTableState> viewTicket;
     private Promise<TreeSubscription> stream;
 
     // the "next" set of filters/sorts that we'll use. these either are "==" to the above fields, or are scheduled
@@ -348,7 +348,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return keyTable;
     }
 
-    private TicketAndPromise<?> makeView(TicketAndPromise<?> prevTicket) {
+    private TicketAndPromise<ClientTableState> makeView(TicketAndPromise<?> prevTicket) {
         if (viewTicket != null) {
             return viewTicket;
         }
@@ -371,7 +371,30 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 c.apply(error, null);
                 return null;
             });
-        }), connection);
+        }).then(result -> {
+            ClientTableState state = new ClientTableState(connection,
+                    new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
+                callback.apply("fail, trees dont reconnect like this", null);
+            }, "");
+            state.retain(JsTreeTable.this);
+            ExportedTableCreationResponse def = new ExportedTableCreationResponse();
+            HierarchicalTableDescriptor treeDescriptor =
+                    HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
+            def.setSchemaHeader(treeDescriptor.getSnapshotSchema_asU8());
+            def.setResultId(new TableReference());
+            def.getResultId().setTicket(viewTicket.ticket());
+            state.applyTableCreationResponse(def);
+            return Promise.resolve(state);
+        }), connection) {
+            @Override
+            public void release() {
+                super.release();
+                then(state -> {
+                    state.unretain(JsTreeTable.this);
+                    return null;
+                });
+            }
+        };
         return viewTicket;
     }
 
@@ -622,16 +645,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         Promise<TreeSubscription> stream = Promise.resolve(defer())
                 .then(ignore -> {
                     makeKeyTable();
-                    TicketAndPromise filter = prepareFilter();
-                    TicketAndPromise sort = prepareSort(filter);
-                    TicketAndPromise view = makeView(sort);
+                    TicketAndPromise<?> filter = prepareFilter();
+                    TicketAndPromise<?> sort = prepareSort(filter);
+                    TicketAndPromise<ClientTableState> view = makeView(sort);
                     return Promise.all(
                             keyTable,
                             filter.promise(),
-                            sort.promise(),
-                            view.promise());
+                            sort.promise())
+                            .then(others -> view.promise());
                 })
-                .then(results -> {
+                .then(state -> {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
                     RangeSet range = RangeSet.ofRange((long) (double) firstRow, (long) (double) lastRow);
 
@@ -643,18 +666,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                             columnsBitset,
                             range,
                             alwaysFireEvent);
-
-                    ClientTableState state = new ClientTableState(connection,
-                            new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
-                                callback.apply("fail, trees dont reconnect like this", null);
-                            }, "");
-                    ExportedTableCreationResponse def = new ExportedTableCreationResponse();
-                    HierarchicalTableDescriptor treeDescriptor =
-                            HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
-                    def.setSchemaHeader(treeDescriptor.getSnapshotSchema_asU8());
-                    def.setResultId(new TableReference());
-                    def.getResultId().setTicket(viewTicket.ticket());
-                    state.applyTableCreationResponse(def);
 
                     TreeSubscription subscription = new TreeSubscription(state, connection);
 
