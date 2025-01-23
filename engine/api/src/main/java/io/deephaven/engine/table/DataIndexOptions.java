@@ -15,7 +15,7 @@ import org.immutables.value.Value;
 @BuildableStyle
 public interface DataIndexOptions {
     /**
-     * Static default options, which uses a full table.
+     * Static default options, which expect that operations will use the full table.
      */
     DataIndexOptions DEFAULT = DataIndexOptions.builder().build();
 
