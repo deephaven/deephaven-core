@@ -102,7 +102,8 @@ public interface BasicDataIndex extends LivenessReferent {
     /**
      * Get the {@link RowSet} {@link ColumnSource} of the index {@link #table() table}.
      *
-     * @param options parameters for controlling how the the table will be built (if necessary) in order to retrieve the result {@link RowSet} {@link ColumnSource}
+     * @param options parameters for controlling how the the table will be built (if necessary) in order to retrieve the
+     *        result {@link RowSet} {@link ColumnSource}
      *
      * @return The {@link RowSet} {@link ColumnSource}
      */
