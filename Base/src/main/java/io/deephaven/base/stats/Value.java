@@ -5,8 +5,8 @@ package io.deephaven.base.stats;
 
 public abstract class Value {
     /**
-     * The sample(long) method is not thread safe; and you can get wrong answers out of it.
-     * If you require safety, you should instead use a ThreadSafeValue.
+     * The sample(long) method is not thread safe; and you can get wrong answers out of it. If you require safety, you
+     * should instead use a ThreadSafeValue.
      */
     protected long n = 0;
     protected long last = 0;
