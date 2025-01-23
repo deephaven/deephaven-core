@@ -8,12 +8,12 @@ public abstract class Value {
      * These members are volatile, the sample(long) method is not thread safe; and you can get wrong answers out of it.
      * If you require safety, you should instead use a ThreadSafeValue.
      */
-    protected volatile long n = 0;
-    protected volatile long last = 0;
-    protected volatile long sum = 0;
-    protected volatile long sum2 = 0;
-    protected volatile long max = Long.MIN_VALUE;
-    protected volatile long min = Long.MAX_VALUE;
+    protected long n = 0;
+    protected long last = 0;
+    protected long sum = 0;
+    protected long sum2 = 0;
+    protected long max = Long.MIN_VALUE;
+    protected long min = Long.MAX_VALUE;
 
     private boolean alwaysUpdated = false;
 
@@ -54,7 +54,6 @@ public abstract class Value {
         this.history = history;
     }
 
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     public void sample(final long x) {
         n++;
         last = x;
@@ -111,8 +110,7 @@ public abstract class Value {
             final double avg = (double) sum / n;
             return String.format("Value{n=%,d, sum=%,d, max=%,d, min=%,d, avg=%,.3f, std=%,.3f}", n, sum, max, min, avg,
                     std);
-        } else {
-            return String.format("Value{n=%,d}", n);
         }
+        return String.format("Value{n=%,d}", n);
     }
 }
