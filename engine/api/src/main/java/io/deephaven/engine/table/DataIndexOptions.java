@@ -20,7 +20,7 @@ public interface DataIndexOptions {
     DataIndexOptions DEFAULT = DataIndexOptions.builder().build();
 
     /**
-     * Static options that uses a partial table instead of the full table.
+     * Static options for operations that use a partial table instead of the full table.
      */
     DataIndexOptions USING_PARTIAL_TABLE = DataIndexOptions.builder().operationUsesPartialTable(true).build();
 
