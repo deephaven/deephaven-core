@@ -163,7 +163,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     RegionedPageStore.Parameters getRegionParameters() {
-        initialize();
         return regionParameters;
     }
 
@@ -173,7 +172,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     RowGroupReader[] getRowGroupReaders() {
-        initialize();
         RowGroupReader[] local;
         if ((local = rowGroupReaders) != null) {
             return local;
@@ -198,7 +196,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @NotNull
     Map<String, String[]> getParquetColumnNameToPath() {
-        initialize();
         return parquetColumnNameToPath;
     }
 

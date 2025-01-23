@@ -293,9 +293,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @return The page stores
      */
     @NotNull
-    public ColumnChunkPageStore<ATTR>[] getPageStores(
+    private ColumnChunkPageStore<ATTR>[] getPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         fetchValues(columnDefinition);
         return pageStores;
     }
@@ -306,9 +305,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionary values chunk suppliers, or null if none exist
      */
-    public Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
+    private Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         fetchValues(columnDefinition);
         return dictionaryChunkSuppliers;
     }
