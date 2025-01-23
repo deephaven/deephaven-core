@@ -266,7 +266,8 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
             if (lazyPartitionedTable != null) {
                 // We are synchronized, and can begin processing from the PartitionedTable rather than starting from
                 // scratch. The first step is to force our rowsets into memory, in parallel.
-                partitionedTable = lazyPartitionedTable.transform(t -> t.update(ROW_SET_COLUMN_NAME));
+                partitionedTable = lazyPartitionedTable.transform(t -> ForkJoinPoolOperationInitializer
+                        .ensureParallelizable(() -> t.update(ROW_SET_COLUMN_NAME)).get());
             } else {
                 partitionedTable = buildPartitionedTable(lazyRowSetMerge);
             }
