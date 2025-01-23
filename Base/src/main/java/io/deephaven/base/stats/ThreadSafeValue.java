@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * A thread-safe extension of the {@link Value} class.
  *
  * <p>
- * The {@link #sample(long)} method uses atomic CAS operations, so may introduce contention compared to the unsafe Value
+ * The {@link #sample(long)} method is synchronized, so may introduce contention compared to the unsafe Value
  * version of sample.
  * </p>
  */
