@@ -57,7 +57,7 @@ public interface DataIndex extends BasicDataIndex {
      * {@code true}, this lookup function is only guaranteed to be accurate for the current cycle. Lookup keys should be
      * in the order of the index's key columns.
      *
-     * @param options required for building the table, if required by this RowKeyLookup
+     * @param options parameters for building the table, if required by this RowKeyLookup
      *
      * @return A function that provides map-like lookup of index {@link #table()} row keys from an index lookup key
      */
