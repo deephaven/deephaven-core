@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -27,11 +28,12 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
 
     public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources);
 
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
-            InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
+            NaturalJoinType joinType, InitialBuildContext initialBuildContext,
+            JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
-            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
+            ColumnSource<RowSet> rowSetSource, int groupingSize, NaturalJoinType joinType,
             InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
     // modification probes

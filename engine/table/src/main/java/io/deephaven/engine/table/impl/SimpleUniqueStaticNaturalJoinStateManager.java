@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
@@ -112,8 +113,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @NotNull
-    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch,
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
+        return buildRowRedirection(leftTable, joinType, leftRedirections::getLong, redirectionType);
     }
 }

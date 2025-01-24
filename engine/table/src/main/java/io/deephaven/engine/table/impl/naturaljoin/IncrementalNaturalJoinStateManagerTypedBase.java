@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -466,7 +467,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     public WritableRowRedirection buildIndexedRowRedirection(
             QueryTable leftTable,
-            boolean exactMatch,
+            NaturalJoinType joinType,
             InitialBuildContext ibc,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
@@ -489,7 +490,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         // Reset mainLeftRowSet to contain the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
                         final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         leftRowSetForKey.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
                     }
                 }
@@ -510,7 +511,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSetForKey.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }
@@ -531,7 +532,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSetForKey.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }
@@ -541,7 +542,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, NaturalJoinType joinType,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         Assert.eqZero(rehashPointer, "rehashPointer");
 
@@ -557,7 +558,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {
                         final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
                     }
                 }
@@ -573,7 +574,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }
@@ -589,7 +590,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
                             leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         }
                     }
                 }

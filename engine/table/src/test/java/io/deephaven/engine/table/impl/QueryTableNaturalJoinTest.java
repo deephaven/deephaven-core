@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.context.ExecutionContext;
@@ -318,21 +319,22 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
                                 MatchPairFactory.getExpressions("I1"),
-                                MatchPairFactory.getExpressions("RI1=I1", "RC1=C1", "RC2=C2"), false, control);
+                                MatchPairFactory.getExpressions("RI1=I1", "RC1=C1", "RC2=C2"),
+                                NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
                                 MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("RC2=C2"),
-                                false, control);
+                                NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable) rightTable.update("Exists=true"),
                                 MatchPairFactory.getExpressions("C1", "C2", "I1"),
-                                MatchPairFactory.getExpressions("Exists"), false, control);
+                                MatchPairFactory.getExpressions("Exists"), NaturalJoinType.ERROR_ON_DUPLICATE, control);
                     }
                 },
         };

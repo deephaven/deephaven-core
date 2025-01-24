@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -227,7 +228,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
 
         switch (redirectionType) {
@@ -242,7 +243,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                         leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
                     }
                 }
@@ -256,7 +257,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                             leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
                         }
                     }
@@ -271,7 +272,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
                         if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
                             leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
                         }
                     }
@@ -285,9 +286,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
-            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
+            ColumnSource<RowSet> rowSetSource, int groupingSize, NaturalJoinType joinType,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
+        return buildRowRedirectionFromHashSlot(leftTable, joinType, ibc, redirectionType);
     }
 
     @Override

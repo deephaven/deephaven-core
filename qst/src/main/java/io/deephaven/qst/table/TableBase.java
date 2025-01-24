@@ -97,7 +97,8 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final TableSpec naturalJoin(TableSpec rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType naturalJoinType) {
         return NaturalJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
                 .addAllAdditions(columnsToAdd).build();
     }

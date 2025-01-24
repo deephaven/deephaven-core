@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -28,19 +29,20 @@ class NaturalJoinHelper {
     private NaturalJoinHelper() {} // static use only
 
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch) {
-        return naturalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, new JoinControl());
+            MatchPair[] columnsToAdd, NaturalJoinType joinType) {
+        return naturalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, joinType, new JoinControl());
     }
 
     @VisibleForTesting
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+            MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
         final QueryTable result =
-                naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
+                naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, joinType, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
         // note in exact match we require that the right table can match as soon as a row is added to the left
-        boolean rightDoesNotGenerateModifies = !rightTable.isRefreshing() || (exactMatch && rightTable.isAddOnly());
+        boolean rightDoesNotGenerateModifies =
+                !rightTable.isRefreshing() || (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isAddOnly());
         if (leftTable.isAddOnly() && rightDoesNotGenerateModifies) {
             result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
         }
@@ -51,7 +53,7 @@ class NaturalJoinHelper {
     }
 
     private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
-            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bc = new BucketingContext("naturalJoin",
@@ -71,7 +73,7 @@ class NaturalJoinHelper {
                 leftRedirections.ensureCapacity(leftTable.getRowSet().size());
                 jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
 
-                final WritableRowRedirection rowRedirection = jsm.buildRowRedirection(leftTable, exactMatch,
+                final WritableRowRedirection rowRedirection = jsm.buildRowRedirection(leftTable, joinType,
                         leftRedirections, control.getRedirectionType(leftTable));
 
                 final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
@@ -83,7 +85,7 @@ class NaturalJoinHelper {
             }
 
             if (bc.leftSources.length == 0) {
-                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, exactMatch, bc.listenerDescription);
+                return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, joinType, bc.listenerDescription);
             }
 
             final WritableRowRedirection rowRedirection;
@@ -102,12 +104,12 @@ class NaturalJoinHelper {
 
                     if (bc.leftDataIndexTable != null) {
                         jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, ibc);
-                        rowRedirection = jsm.buildIndexedRowRedirection(leftTable, exactMatch, ibc,
+                        rowRedirection = jsm.buildIndexedRowRedirection(leftTable, joinType, ibc,
                                 bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
                     } else {
                         jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, ibc);
                         jsm.compactAll();
-                        rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, ibc,
+                        rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, joinType, ibc,
                                 control.getRedirectionType(leftTable));
                     }
                 }
@@ -121,7 +123,7 @@ class NaturalJoinHelper {
 
                 final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
                         leftTable, rightTable, bc.leftSources, bc.rightSources, columnsToMatch, columnsToAdd,
-                        leftRecorder, rightRecorder, result, rowRedirection, jsm, exactMatch, bc.listenerDescription);
+                        leftRecorder, rightRecorder, result, rowRedirection, jsm, joinType, bc.listenerDescription);
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
@@ -145,12 +147,12 @@ class NaturalJoinHelper {
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 if (bc.leftDataIndexTable != null) {
                     jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, leftRedirections);
-                    rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable, exactMatch,
+                    rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable, joinType,
                             bc.leftDataIndexTable.getRowSet(), leftRedirections, bc.leftDataIndexRowSetSource,
                             control.getRedirectionType(leftTable));
                 } else {
                     jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
-                    rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftRedirections,
+                    rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, joinType, leftRedirections,
                             control.getRedirectionType(leftTable));
                 }
 
@@ -193,9 +195,9 @@ class NaturalJoinHelper {
                 if (firstBuildFrom == LeftDataIndex) {
                     rowRedirection = jsm.buildRowRedirectionFromHashSlotIndexed(leftTable,
                             bc.leftDataIndexRowSetSource, bc.leftDataIndexTable.intSize(),
-                            exactMatch, ibc, control.getRedirectionType(leftTable));
+                            joinType, ibc, control.getRedirectionType(leftTable));
                 } else {
-                    rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc,
+                    rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, joinType, ibc,
                             control.getRedirectionType(leftTable));
                 }
 
@@ -211,7 +213,7 @@ class NaturalJoinHelper {
                                 rowRedirection,
                                 jsm,
                                 bc.rightSources,
-                                exactMatch));
+                                joinType));
                 return result;
             }
 
@@ -226,7 +228,7 @@ class NaturalJoinHelper {
                 jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
                         leftHashSlots);
                 jsm.decorateWithRightSide(rightTable, bc.rightSources);
-                rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable, exactMatch,
+                rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable, joinType,
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
             } else if (firstBuildFrom == LeftInput) {
@@ -243,7 +245,7 @@ class NaturalJoinHelper {
                 } catch (DuplicateRightRowDecorationException e) {
                     jsm.errorOnDuplicatesSingle(leftHashSlots, leftTable.size(), leftTable.getRowSet());
                 }
-                rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, leftHashSlots,
+                rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, joinType, leftHashSlots,
                         control.getRedirectionType(leftTable));
             } else {
                 final LongArraySource leftRedirections = new LongArraySource();
@@ -254,7 +256,7 @@ class NaturalJoinHelper {
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
-                rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, exactMatch, leftRedirections,
+                rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, joinType, leftRedirections,
                         control.getRedirectionType(leftTable));
             }
             return makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, false);
@@ -263,7 +265,7 @@ class NaturalJoinHelper {
 
     @NotNull
     private static QueryTable zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
-            boolean exactMatch, String listenerDescription) {
+            NaturalJoinType joinType, String listenerDescription) {
         // we are a single value join, we do not need to do any work
         final SingleValueRowRedirection rowRedirection;
 
@@ -279,7 +281,7 @@ class NaturalJoinHelper {
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
-            if (exactMatch && !leftTable.isEmpty()) {
+            if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && !leftTable.isEmpty()) {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
@@ -310,7 +312,7 @@ class NaturalJoinHelper {
                         final boolean rightChanged = rightRecorder.recordedVariablesAreValid();
                         final boolean leftChanged = leftRecorder.recordedVariablesAreValid();
 
-                        checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
+                        checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
 
                         if (rightChanged) {
                             final boolean rightUpdated = updateRightRedirection(rightTable, rowRedirection);
@@ -352,7 +354,7 @@ class NaturalJoinHelper {
                         .addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
-                                checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
+                                checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
                                 final TableUpdateImpl downstream =
                                         TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                                 leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
@@ -367,7 +369,7 @@ class NaturalJoinHelper {
                         new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
-                                checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
+                                checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
                                 final boolean changed = updateRightRedirection(rightTable, rowRedirection);
                                 final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                                 if (!changed) {
@@ -407,12 +409,15 @@ class NaturalJoinHelper {
         return changed;
     }
 
-    private static void checkRightTableSizeZeroKeys(final Table leftTable, final Table rightTable, boolean exactMatch) {
+    private static void checkRightTableSizeZeroKeys(
+            final Table leftTable,
+            final Table rightTable,
+            final NaturalJoinType joinType) {
         if (!leftTable.isEmpty()) {
             if (rightTable.size() > 1) {
                 throw new RuntimeException(
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-            } else if (rightTable.isEmpty() && exactMatch) {
+            } else if (rightTable.isEmpty() && joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
                 throw new RuntimeException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
@@ -529,7 +534,7 @@ class NaturalJoinHelper {
         private final WritableRowRedirection rowRedirection;
         private final RightIncrementalNaturalJoinStateManager jsm;
         private final ColumnSource<?>[] rightSources;
-        private final boolean exactMatch;
+        private final NaturalJoinType joinType;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
@@ -538,13 +543,13 @@ class NaturalJoinHelper {
         RightTickingListener(String description, QueryTable rightTable, MatchPair[] columnsToMatch,
                 MatchPair[] columnsToAdd, QueryTable result, WritableRowRedirection rowRedirection,
                 RightIncrementalNaturalJoinStateManager jsm, ColumnSource<?>[] rightSources,
-                boolean exactMatch) {
+                NaturalJoinType joinType) {
             super(description, rightTable, result);
             this.result = result;
             this.rowRedirection = rowRedirection;
             this.jsm = jsm;
             this.rightSources = rightSources;
-            this.exactMatch = exactMatch;
+            this.joinType = joinType;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
@@ -615,7 +620,7 @@ class NaturalJoinHelper {
 
             final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactory.builderRandom();
             final ModifiedSlotUpdater slotUpdater = new ModifiedSlotUpdater(jsm, modifiedLeftBuilder, rowRedirection,
-                    exactMatch, addedRightColumnsChanged);
+                    joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
             final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             if (slotUpdater.changedRedirection) {
@@ -636,16 +641,16 @@ class NaturalJoinHelper {
         private final IncrementalNaturalJoinStateManager jsm;
         private final RowSetBuilderRandom modifiedLeftBuilder;
         private final WritableRowRedirection rowRedirection;
-        private final boolean exactMatch;
+        private final NaturalJoinType joinType;
         private final boolean rightAddedColumnsChanged;
         boolean changedRedirection = false;
 
         private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
-                WritableRowRedirection rowRedirection, boolean exactMatch, boolean rightAddedColumnsChanged) {
+                WritableRowRedirection rowRedirection, NaturalJoinType joinType, boolean rightAddedColumnsChanged) {
             this.jsm = jsm;
             this.modifiedLeftBuilder = modifiedLeftBuilder;
             this.rowRedirection = rowRedirection;
-            this.exactMatch = exactMatch;
+            this.joinType = joinType;
             this.rightAddedColumnsChanged = rightAddedColumnsChanged;
         }
 
@@ -688,7 +693,7 @@ class NaturalJoinHelper {
             changedRedirection = true;
 
             if (rightIndex == RowSequence.NULL_ROW_KEY) {
-                jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
+                jsm.checkExactMatch(joinType, leftIndices.firstRowKey(), rightIndex);
                 rowRedirection.removeAll(leftIndices);
             } else {
                 leftIndices.forAllRowKeys((long key) -> rowRedirection.putVoid(key, rightIndex));
@@ -703,7 +708,7 @@ class NaturalJoinHelper {
         private final JoinListenerRecorder rightRecorder;
         private final WritableRowRedirection rowRedirection;
         private final BothIncrementalNaturalJoinStateManager jsm;
-        private final boolean exactMatch;
+        private final NaturalJoinType joinType;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet leftKeyColumns;
         private final ModifiedColumnSet allRightColumns;
@@ -712,7 +717,8 @@ class NaturalJoinHelper {
         private final NaturalJoinModifiedSlotTracker modifiedSlotTracker;
 
 
-        private ChunkedMergedJoinListener(QueryTable leftTable,
+        private ChunkedMergedJoinListener(
+                QueryTable leftTable,
                 QueryTable rightTable,
                 ColumnSource<?>[] leftSources,
                 ColumnSource<?>[] rightSources,
@@ -723,7 +729,7 @@ class NaturalJoinHelper {
                 QueryTable result,
                 WritableRowRedirection rowRedirection,
                 BothIncrementalNaturalJoinStateManager jsm,
-                boolean exactMatch,
+                NaturalJoinType joinType,
                 String listenerDescription) {
             super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
             this.leftSources = leftSources;
@@ -732,7 +738,7 @@ class NaturalJoinHelper {
             this.rightRecorder = rightRecorder;
             this.rowRedirection = rowRedirection;
             this.jsm = jsm;
-            this.exactMatch = exactMatch;
+            this.joinType = joinType;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             leftKeyColumns = leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
@@ -925,7 +931,7 @@ class NaturalJoinHelper {
             }
 
             final ModifiedSlotUpdater slotUpdater = new ModifiedSlotUpdater(jsm, modifiedLeftBuilder, rowRedirection,
-                    exactMatch, addedRightColumnsChanged);
+                    joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
             if (slotUpdater.changedRedirection) {
                 modifiedColumnSet.setAll(allRightColumns);
@@ -943,7 +949,7 @@ class NaturalJoinHelper {
             final MutableInt position = new MutableInt(0);
             leftRows.forAllRowKeys((long ll) -> {
                 final long rightKey = leftRedirections.getLong(position.get());
-                jsm.checkExactMatch(exactMatch, ll, rightKey);
+                jsm.checkExactMatch(joinType, ll, rightKey);
                 if (rightKey == RowSequence.NULL_ROW_KEY) {
                     rowRedirection.removeVoid(ll);
                 } else {

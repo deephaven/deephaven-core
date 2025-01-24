@@ -532,9 +532,12 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy naturalJoin(TableOperations<?, ?> rightTable,
-            Collection<? extends JoinMatch> columnsToMatch, Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd),
+    public PartitionedTable.Proxy naturalJoin(
+            final TableOperations<?, ?> rightTable,
+            final Collection<? extends JoinMatch> columnsToMatch,
+            final Collection<? extends JoinAddition> columnsToAdd,
+            final NaturalJoinType joinType) {
+        return complexTransform(rightTable, (ct, ot) -> ct.naturalJoin(ot, columnsToMatch, columnsToAdd, joinType),
                 columnsToMatch);
     }
 

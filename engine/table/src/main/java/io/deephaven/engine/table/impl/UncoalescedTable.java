@@ -3,15 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.AsOfJoinMatch;
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -335,8 +328,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     public Table naturalJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
+        return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd, joinType);
     }
 
     @Override

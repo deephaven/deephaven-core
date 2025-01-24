@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -26,8 +27,8 @@ public abstract class StaticNaturalJoinStateManager {
     }
 
     @SuppressWarnings("WeakerAccess")
-    public void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide) {
-        if (exactMatch && rightSide == NO_RIGHT_ENTRY_VALUE) {
+    public void checkExactMatch(NaturalJoinType joinType, long leftKeyIndex, long rightSide) {
+        if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightSide == NO_RIGHT_ENTRY_VALUE) {
             throw new RuntimeException("Tables don't have one-to-one mapping - no mappings for key "
                     + extractKeyStringFromSourceTable(leftKeyIndex) + ".");
         }
@@ -42,7 +43,7 @@ public abstract class StaticNaturalJoinStateManager {
                 .collect(Collectors.joining(", ")) + "]";
     }
 
-    public WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
             LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
@@ -53,7 +54,7 @@ public abstract class StaticNaturalJoinStateManager {
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < innerIndex.length; ++ii) {
                     final long rightSide = rightSideFromSlot.applyAsLong(ii);
-                    checkExactMatch(exactMatch, leftTable.getRowSet().get(ii), rightSide);
+                    checkExactMatch(joinType, leftTable.getRowSet().get(ii), rightSide);
                     innerIndex[ii] = rightSide;
                 }
                 return new ContiguousWritableRowRedirection(innerIndex);
@@ -65,7 +66,7 @@ public abstract class StaticNaturalJoinStateManager {
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext();) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
+                    checkExactMatch(joinType, leftTable.getRowSet().get(next), rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         sparseRedirections.set(next, rightSide);
                     }
@@ -80,7 +81,7 @@ public abstract class StaticNaturalJoinStateManager {
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext();) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(exactMatch, leftTable.getRowSet().get(next), rightSide);
+                    checkExactMatch(joinType, leftTable.getRowSet().get(next), rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         rowRedirection.put(next, rightSide);
                     }

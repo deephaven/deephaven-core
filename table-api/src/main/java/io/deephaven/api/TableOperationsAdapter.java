@@ -121,8 +121,9 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     @Override
     public final TOPS_1 naturalJoin(TABLE_1 rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
+        return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd, joinType));
     }
 
     @Override

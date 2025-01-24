@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -21,10 +22,10 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
 
     void compactAll();
 
-    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, boolean exactMatch, InitialBuildContext ibc,
-            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
+            InitialBuildContext ibc, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, NaturalJoinType joinType,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType);
 
     Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);

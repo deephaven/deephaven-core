@@ -120,13 +120,31 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS naturalJoin(TABLE rightTable, String columnsToMatch) {
-        return naturalJoin(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)), Collections.emptyList());
+        return naturalJoin(rightTable, columnsToMatch, NaturalJoinType.ERROR_ON_DUPLICATE);
     }
 
     @Override
     default TOPS naturalJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
         return naturalJoin(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
-                JoinAddition.from(splitToCollection(columnsToAdd)));
+                JoinAddition.from(splitToCollection(columnsToAdd)), NaturalJoinType.ERROR_ON_DUPLICATE);
+    }
+
+    @Override
+    default TOPS naturalJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return naturalJoin(rightTable, columnsToMatch, columnsToAdd, NaturalJoinType.ERROR_ON_DUPLICATE);
+    }
+
+    @Override
+    default TOPS naturalJoin(TABLE rightTable, String columnsToMatch, NaturalJoinType joinType) {
+        return naturalJoin(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
+                Collections.emptyList(), joinType);
+    }
+
+    @Override
+    default TOPS naturalJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd, NaturalJoinType joinType) {
+        return naturalJoin(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
+                JoinAddition.from(splitToCollection(columnsToAdd)), joinType);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

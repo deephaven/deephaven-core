@@ -737,11 +737,22 @@ message CrossJoinTablesRequest {
 }
 
 message NaturalJoinTablesRequest {
+  enum JoinType {
+     // Throw an error if a duplicate right hand table row is found. This is the default behavior if not specified.
+    ERROR_ON_DUPLICATE = 0;
+    // Match the first right hand table row and ignore later duplicates.
+    FIRST_MATCH = 1;
+    // Match the last right hand table row and ignore earlier duplicates.
+    LAST_MATCH = 2;
+    // Match exactly one right hand table row; throw an error if there are zero or more than one matches.
+    EXACTLY_ONE_MATCH = 3;
+  }
   Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
   repeated string columns_to_add = 5;
+  JoinType join_type = 6;
 }
 
 message ExactJoinTablesRequest {

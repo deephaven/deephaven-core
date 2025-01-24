@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSet;
 
 public interface IncrementalNaturalJoinStateManager {
@@ -12,5 +13,5 @@ public interface IncrementalNaturalJoinStateManager {
 
     String keyString(int slot);
 
-    void checkExactMatch(boolean exactMatch, long leftKeyIndex, long rightSide);
+    void checkExactMatch(NaturalJoinType joinType, long leftKeyIndex, long rightSide);
 }

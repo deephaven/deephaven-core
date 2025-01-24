@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -229,36 +230,36 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return hash & (tableSize - 1);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
             IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch,
+        return buildRowRedirection(leftTable, joinType,
                 position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, NaturalJoinType joinType,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
+        return buildRowRedirection(leftTable, joinType, leftRedirections::getUnsafe, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromRedirections(
             QueryTable leftTable,
-            boolean exactMatch,
+            NaturalJoinType joinType,
             RowSet indexTableRowSet,
             LongArraySource leftRedirections,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, joinType, indexTableRowSet,
                 leftRedirections::getUnsafe, indexRowSets, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
             QueryTable leftTable,
-            boolean exactMatch,
+            NaturalJoinType joinType,
             RowSet indexTableRowSet,
             IntegerArraySource leftHashSlots,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, joinType, indexTableRowSet,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
                 redirectionType);
     }
