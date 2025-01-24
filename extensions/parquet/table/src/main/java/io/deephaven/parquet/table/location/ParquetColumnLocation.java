@@ -64,7 +64,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final String columnName;
     private final String parquetColumnName;
 
-    private volatile boolean isInitialized;
+    private boolean isInitialized;
+    private volatile boolean isInitializedVolatile;
 
     /**
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to
@@ -94,6 +95,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         this.columnName = columnName;
         this.parquetColumnName = parquetColumnName;
         this.isInitialized = false;
+        this.isInitializedVolatile = false;
     }
 
     private void initialize() {
@@ -101,6 +103,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return;
         }
         synchronized (this) {
+            isInitialized = isInitializedVolatile;
             if (isInitialized) {
                 return;
             }
@@ -113,6 +116,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
             this.columnChunkReaders = exists ? columnChunkReaders : null;
             isInitialized = true;
+            isInitializedVolatile = true;
         }
     }
 

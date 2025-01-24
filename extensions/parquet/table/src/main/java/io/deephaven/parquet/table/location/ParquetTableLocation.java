@@ -54,8 +54,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
-    // TODO Maybe I should add a local non-volatile
-    private volatile boolean isInitialized;
+    private boolean isInitialized;
+    private volatile boolean isInitializedVolatile;
 
     private final ParquetInstructions readInstructions;
     private ParquetFileReader parquetFileReader;
@@ -81,6 +81,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         this.isInitialized = false;
+        this.isInitializedVolatile = false;
     }
 
     protected void initialize() {
@@ -88,6 +89,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return;
         }
         synchronized (this) {
+            isInitialized = isInitializedVolatile;
             if (isInitialized) {
                 return;
             }
@@ -133,6 +135,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
 
             isInitialized = true;
+            isInitializedVolatile = true;
 
             // The following calls might internally call initialize() again, but that's fine because we're already
             // initialized at this point.
