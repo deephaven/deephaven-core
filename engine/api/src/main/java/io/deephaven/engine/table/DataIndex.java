@@ -48,7 +48,21 @@ public interface DataIndex extends BasicDataIndex {
      * @return A function that provides map-like lookup of index {@link #table()} row keys from an index lookup key
      */
     @NotNull
-    RowKeyLookup rowKeyLookup();
+    default RowKeyLookup rowKeyLookup() {
+        return rowKeyLookup(DataIndexOptions.DEFAULT);
+    }
+
+    /**
+     * Build a {@link RowKeyLookup lookup function} of row keys for this index. If {@link #isRefreshing()} is
+     * {@code true}, this lookup function is only guaranteed to be accurate for the current cycle. Lookup keys should be
+     * in the order of the index's key columns.
+     *
+     * @param options parameters for building the table, if required by this RowKeyLookup
+     *
+     * @return A function that provides map-like lookup of index {@link #table()} row keys from an index lookup key
+     */
+    @NotNull
+    RowKeyLookup rowKeyLookup(DataIndexOptions options);
 
     /**
      * Return a {@link RowKeyLookup lookup function} function of index row keys for this index. If
