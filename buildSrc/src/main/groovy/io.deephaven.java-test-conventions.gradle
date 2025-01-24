@@ -5,7 +5,6 @@ plugins {
 // Apply Jacoco instrumentation and coverage reporting 
 if (project.findProperty('coverage.enabled') == 'true') {
     project.apply plugin: 'io.deephaven.java-jacoco-conventions'
-    rootProject.apply plugin: 'io.deephaven.coverage-merge'
 }
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->

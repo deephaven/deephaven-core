@@ -1,5 +1,6 @@
 plugins {
-    id 'base'
+    id 'io.deephaven.project.register'
+    id 'java'
     id 'jacoco-report-aggregation'
 }
 
@@ -7,8 +8,8 @@ jacoco {
     toolVersion = '0.8.12'
 }
 
-tasks.register("coverage-merge", JacocoReport) {
-    def jprojects = allprojects.findAll { p-> p.plugins.hasPlugin('java') }
+tasks.register("jacoco-merge", JacocoReport) {
+    def jprojects = rootProject.allprojects.findAll { p-> p.plugins.hasPlugin('java') }
     additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
     classDirectories = files(jprojects.sourceSets.main.output)
@@ -17,6 +18,15 @@ tasks.register("coverage-merge", JacocoReport) {
         csv.required = true
         xml.required = false
     }
-    def projRootDir = project.rootDir.absolutePath
+    def projRootDir = rootProject.rootDir.absolutePath
     executionData fileTree(projRootDir).include("**/build/jacoco/*.exec")
 }
+
+tasks.register("coverage-merge", Exec) {
+    dependsOn("jacoco-merge")
+    def projDir = projectDir.absolutePath
+    def script = projDir + '/gather-coverage.py'
+    commandLine 'python', script, projDir
+    standardOutput = System.out
+}
+
