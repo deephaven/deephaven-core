@@ -5,23 +5,26 @@ package io.deephaven.engine.testutil.locations;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.engine.table.impl.locations.UnknownPartitionKeyException;
+import io.deephaven.engine.table.impl.locations.impl.PartitionedTableLocationKey;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 
-public final class TableBackedTableLocationKey implements ImmutableTableLocationKey {
+import static io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider.LOCATION_ID_ATTR;
+
+public final class TableBackedTableLocationKey extends PartitionedTableLocationKey {
 
     private static final String NAME = TableBackedTableLocationKey.class.getSimpleName();
 
     final QueryTable table;
 
-    public TableBackedTableLocationKey(@NotNull final QueryTable table) {
+    public TableBackedTableLocationKey(
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final QueryTable table) {
+        super(partitions);
         this.table = table;
     }
 
@@ -46,38 +49,55 @@ public final class TableBackedTableLocationKey implements ImmutableTableLocation
 
     @Override
     public int compareTo(@NotNull final TableLocationKey other) {
+        if (this == other) {
+            return 0;
+        }
         if (other instanceof TableBackedTableLocationKey) {
             final TableBackedTableLocationKey otherTyped = (TableBackedTableLocationKey) other;
-            // noinspection DataFlowIssue
-            final int idComparisonResult =
-                    Integer.compare((int) table.getAttribute("ID"), (int) otherTyped.table.getAttribute("ID"));
+            final int partitionComparisonResult =
+                    PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions);
+            if (partitionComparisonResult != 0) {
+                return partitionComparisonResult;
+            }
+            if (table == otherTyped.table) {
+                return 0;
+            }
+            final int idComparisonResult = Integer.compare(getId(), otherTyped.getId());
             if (idComparisonResult != 0) {
                 return idComparisonResult;
             }
+            throw new UnsupportedOperationException(getImplementationName() +
+                    " cannot be compared to instances that have different tables but the same \"" + LOCATION_ID_ATTR +
+                    "\" attribute");
         }
-        return ImmutableTableLocationKey.super.compareTo(other);
+        return super.compareTo(other);
+    }
+
+    private int getId() {
+        // noinspection DataFlowIssue
+        return (int) table.getAttribute(LOCATION_ID_ATTR);
     }
 
     @Override
     public int hashCode() {
-        return System.identityHashCode(table);
+        if (cachedHashCode == 0) {
+            final int computedHashCode = 31 * partitions.hashCode() + Integer.hashCode(getId());
+            // Don't use 0; that's used by StandaloneTableLocationKey, and also our sentinel for the need to compute
+            if (computedHashCode == 0) {
+                final int fallbackHashCode = TableBackedTableLocationKey.class.hashCode();
+                cachedHashCode = fallbackHashCode == 0 ? 1 : fallbackHashCode;
+            } else {
+                cachedHashCode = computedHashCode;
+            }
+        }
+        return cachedHashCode;
     }
 
     @Override
     public boolean equals(@Nullable final Object other) {
         return other == this ||
                 (other instanceof TableBackedTableLocationKey
-                        && ((TableBackedTableLocationKey) other).table == table);
-    }
-
-    @Override
-    public <PARTITION_VALUE_TYPE extends Comparable<PARTITION_VALUE_TYPE>> PARTITION_VALUE_TYPE getPartitionValue(
-            @NotNull final String partitionKey) {
-        throw new UnknownPartitionKeyException(partitionKey, this);
-    }
-
-    @Override
-    public Set<String> getPartitionKeys() {
-        return Collections.emptySet();
+                        && ((TableBackedTableLocationKey) other).table == table
+                        && partitions.equals(((TableBackedTableLocationKey) other).partitions));
     }
 }

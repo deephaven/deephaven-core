@@ -5,19 +5,18 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -139,8 +138,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created {@link ParquetMetadata} for this
-     * location key's {@code file}.
+     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or the {@link ParquetMetadata} for this location key's
+     * {@code file}.
      *
      * @return A {@link ParquetMetadata} for this location key's {@code file}.
      */
@@ -148,11 +147,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (metadata != null) {
             return metadata;
         }
-        try {
-            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getURI(), e);
-        }
+        // No need to cache the metadata; it is already present on the fileReader
+        return getFileReader().getMetadata();
     }
 
     /**
@@ -163,6 +159,28 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      */
     public synchronized void setMetadata(final ParquetMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Equivalent to {@code getMetadata().getFileMetaData()}.
+     *
+     * @return the file metadata
+     * @see #getMetadata()
+     * @see ParquetMetadata#getFileMetaData()
+     */
+    public FileMetaData getFileMetadata() {
+        return getMetadata().getFileMetaData();
+    }
+
+    /**
+     * Equivalent to {@code getFileMetadata().getSchema()}.
+     *
+     * @return the file metadata
+     * @see #getFileMetadata()
+     * @see FileMetaData#getSchema()
+     */
+    public MessageType getSchema() {
+        return getFileMetadata().getSchema();
     }
 
     /**

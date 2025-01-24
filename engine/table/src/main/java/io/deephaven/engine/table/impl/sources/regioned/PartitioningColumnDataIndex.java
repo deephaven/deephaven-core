@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -17,6 +18,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -30,7 +32,7 @@ import java.util.Map;
 /**
  * DataIndex over a partitioning column of a {@link Table} backed by a {@link RegionedColumnSourceManager}.
  */
-class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
+class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements DataIndexer.RetainableDataIndex {
 
     private static final int KEY_NOT_FOUND = (int) RowSequence.NULL_ROW_KEY;
 
@@ -299,13 +301,13 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         return indexTable;
     }
 
     @Override
     @NotNull
-    public RowKeyLookup rowKeyLookup() {
+    public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
         return (final Object key, final boolean usePrev) -> keyPositionMap.get(key);
     }
 
@@ -316,6 +318,11 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
 
     @Override
     public boolean isValid() {
+        return true;
+    }
+
+    @Override
+    public boolean shouldRetain() {
         return true;
     }
 }

@@ -96,16 +96,46 @@ public interface BasicDataIndex extends LivenessReferent {
     @FinalDefault
     @NotNull
     default ColumnSource<RowSet> rowSetColumn() {
-        return table().getColumnSource(rowSetColumnName(), RowSet.class);
+        return rowSetColumn(DataIndexOptions.DEFAULT);
+    }
+
+    /**
+     * Get the {@link RowSet} {@link ColumnSource} of the index {@link #table() table}.
+     *
+     * @param options parameters for controlling how the the table will be built (if necessary) in order to retrieve the
+     *        result {@link RowSet} {@link ColumnSource}
+     *
+     * @return The {@link RowSet} {@link ColumnSource}
+     */
+    @FinalDefault
+    @NotNull
+    default ColumnSource<RowSet> rowSetColumn(final DataIndexOptions options) {
+        return table(options).getColumnSource(rowSetColumnName(), RowSet.class);
     }
 
     /**
      * Get the {@link Table} backing this data index.
+     *
+     * <p>
+     * The returned table is fully in-memory, equivalent to {@link #table(DataIndexOptions)} with default options.
+     * </p>
      * 
      * @return The {@link Table}
      */
     @NotNull
-    Table table();
+    default Table table() {
+        return table(DataIndexOptions.DEFAULT);
+    }
+
+    /**
+     * Get the {@link Table} backing this data index.
+     *
+     * @param options parameters to control the returned table
+     *
+     * @return The {@link Table}
+     */
+    @NotNull
+    Table table(DataIndexOptions options);
 
     /**
      * Whether the index {@link #table()} {@link Table#isRefreshing() is refreshing}. Some transformations will force
@@ -115,4 +145,5 @@ public interface BasicDataIndex extends LivenessReferent {
      *         otherwise
      */
     boolean isRefreshing();
+
 }

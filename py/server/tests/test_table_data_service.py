@@ -230,6 +230,14 @@ class TableDataServiceTestCase(BaseTestCase):
         self.assertIsNotNone(table)
         self.assertEqual(table.columns, self.test_table.columns)
 
+    def test_make_partitioned_table_without_partition_schema(self):
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema)
+        data_service = TableDataService(backend)
+        partitioned_table = data_service.make_partitioned_table(TableKeyImpl("test"), refreshing=False)
+        self.assertIsNotNone(partitioned_table)
+        for constituent_table in partitioned_table.constituent_tables:
+            self.assertEqual(constituent_table.columns, self.test_table.columns)
+
     def test_make_static_table_with_partition_schema(self):
         pc_schema = pa.schema(
             [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
@@ -241,6 +249,19 @@ class TableDataServiceTestCase(BaseTestCase):
         self.assertTrue(table.columns[1].column_type == ColumnType.PARTITIONING)
         self.assertEqual(table.columns[2:], self.test_table.columns[2:])
         self.assertEqual(table.size, 2)
+        self.assertEqual(backend.existing_partitions_called, 1)
+        self.assertEqual(backend.partition_size_called, 1)
+
+    def test_make_static_partitioned_table_with_partition_schema(self):
+        pc_schema = pa.schema(
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
+        data_service = TableDataService(backend)
+        partitioned_table = data_service.make_partitioned_table(TableKeyImpl("test"), refreshing=False)
+        self.assertIsNotNone(partitioned_table)
+        merged = partitioned_table.merge()
+        self.assertEqual(merged.columns, self.test_table.columns)
+        self.assertEqual(merged.size, 2)
         self.assertEqual(backend.existing_partitions_called, 1)
         self.assertEqual(backend.partition_size_called, 1)
 
@@ -258,6 +279,22 @@ class TableDataServiceTestCase(BaseTestCase):
         self.wait_ticking_table_update(table, 20, 5)
 
         self.assertGreaterEqual(table.size, 20)
+        self.assertEqual(backend.existing_partitions_called, 0)
+        self.assertEqual(backend.partition_size_called, 0)
+
+    def test_make_live_partitioned_table_with_partition_schema(self):
+        pc_schema = pa.schema(
+            [pa.field(name="Ticker", type=pa.string()), pa.field(name="Exchange", type=pa.string())])
+        backend = TestBackend(self.gen_pa_table(), pt_schema=self.pa_table.schema, pc_schema=pc_schema)
+        data_service = TableDataService(backend)
+        partitioned_table = data_service.make_partitioned_table(TableKeyImpl("test"), refreshing=True)
+        self.assertIsNotNone(partitioned_table)
+        merged = partitioned_table.merge()
+        self.assertEqual(merged.columns, self.test_table.columns)
+
+        self.wait_ticking_table_update(merged, 20, 5)
+
+        self.assertGreaterEqual(merged.size, 20)
         self.assertEqual(backend.existing_partitions_called, 0)
         self.assertEqual(backend.partition_size_called, 0)
 
@@ -309,8 +346,8 @@ class TableDataServiceTestCase(BaseTestCase):
         backend.sub_new_partition_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
         with self.assertRaises(Exception) as cm:
-            # failure_cb will be called in the background thread after 2 PUG cycles
-            self.wait_ticking_table_update(table, 600, 2)
+            # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
+            self.wait_ticking_table_update(table, 600, 3)
         self.assertTrue(table.j_table.isFailed())
 
     def test_partition_size_sub_failure(self):
@@ -321,8 +358,8 @@ class TableDataServiceTestCase(BaseTestCase):
         backend.sub_partition_size_fail_test = True
         table = data_service.make_table(TableKeyImpl("test"), refreshing=True)
         with self.assertRaises(Exception) as cm:
-            # failure_cb will be called in the background thread after 2 PUG cycles
-            self.wait_ticking_table_update(table, 600, 2)
+            # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
+            self.wait_ticking_table_update(table, 600, 3)
 
         self.assertTrue(table.j_table.isFailed())
 

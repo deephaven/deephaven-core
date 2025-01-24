@@ -5,7 +5,7 @@ package io.deephaven.web.client.api.impl;
 
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.shared.fu.JsFunction;
 

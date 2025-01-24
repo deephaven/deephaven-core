@@ -6,6 +6,11 @@ plugins {
 description = 'The Deephaven Flight SQL library'
 
 sourceSets {
+    adbcTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+
     jdbcTest {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
@@ -13,6 +18,9 @@ sourceSets {
 }
 
 configurations {
+    adbcTestImplementation.extendsFrom implementation
+    adbcTestRuntimeOnly.extendsFrom runtimeOnly
+
     jdbcTestImplementation.extendsFrom implementation
     jdbcTestRuntimeOnly.extendsFrom runtimeOnly
 }
@@ -42,8 +50,23 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
+    // ADBC testing needs an actually server instance bound to a port because it can only connect over ADBC URIs like
+    // grpc://localhost:10000
+    adbcTestImplementation project(':server-jetty')
+    adbcTestImplementation libs.adbc.flight.sql
+
+    adbcTestImplementation project(':server-test-utils')
+    adbcTestAnnotationProcessor libs.dagger.compiler
+    adbcTestImplementation libs.assertj
+    adbcTestImplementation platform(libs.junit.bom)
+    adbcTestImplementation libs.junit.jupiter
+    adbcTestRuntimeOnly libs.junit.platform.launcher
+    adbcTestRuntimeOnly libs.junit.vintage.engine
+    adbcTestRuntimeOnly project(':log-to-slf4j')
+    adbcTestRuntimeOnly libs.slf4j.simple
+
     // JDBC testing needs an actually server instance bound to a port because it can only connect over JDBC URIs like
-    // jdbc:arrow-flight-sql://localhost:1000.
+    // jdbc:arrow-flight-sql://localhost:10000.
     jdbcTestImplementation project(':server-jetty')
     jdbcTestRuntimeOnly libs.arrow.flight.sql.jdbc
 
@@ -62,6 +85,17 @@ test {
     useJUnitPlatform()
 }
 
+def adbcTest = tasks.register('adbcTest', Test) {
+    description = 'Runs ADBC tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.adbcTest.output.classesDirs
+    classpath = sourceSets.adbcTest.runtimeClasspath
+    shouldRunAfter test
+
+    useJUnitPlatform()
+}
+
 def jdbcTest = tasks.register('jdbcTest', Test) {
     description = 'Runs JDBC tests.'
     group = 'verification'
@@ -73,6 +107,7 @@ def jdbcTest = tasks.register('jdbcTest', Test) {
     useJUnitPlatform()
 }
 
+check.dependsOn adbcTest
 check.dependsOn jdbcTest
 
 apply plugin: 'io.deephaven.java-open-nio'

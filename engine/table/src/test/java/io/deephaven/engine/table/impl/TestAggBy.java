@@ -341,6 +341,21 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(6L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "filter15");
         assertEquals(6L, counts.get(0));
+
+        // Get a static set table for use in dynamic where filters (contains 0-3)
+        final QueryTable setTable = (QueryTable) TableTools.newTable(col("sym", 1, 2, 3));
+
+        doubleCounted = table.aggBy(
+                List.of(AggCountWhere("normal",
+                        new DynamicWhereFilter(setTable, true, new MatchPair("B", "sym"))),
+                        AggCountWhere("invert",
+                                new DynamicWhereFilter(setTable, false, new MatchPair("B", "sym")))));
+        show(doubleCounted);
+        assertEquals(1, doubleCounted.size());
+        counts = ColumnVectors.ofLong(doubleCounted, "normal");
+        assertEquals(3L, counts.get(0));
+        counts = ColumnVectors.ofLong(doubleCounted, "invert");
+        assertEquals(7L, counts.get(0));
     }
 
     @Test

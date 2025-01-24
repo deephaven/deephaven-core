@@ -97,7 +97,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
         private final Runnable processNewLocationsUpdateRoot;
 
-        private final UpdateCommitter<UnderlyingTableMaintainer> removedLocationsComitter;
+        private final UpdateCommitter<UnderlyingTableMaintainer> removedLocationsCommitter;
         private List<Table> removedConstituents = null;
 
         private UnderlyingTableMaintainer(
@@ -156,12 +156,12 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 };
                 refreshCombiner.addSource(processNewLocationsUpdateRoot);
 
-                this.removedLocationsComitter = new UpdateCommitter<>(
+                this.removedLocationsCommitter = new UpdateCommitter<>(
                         this,
                         result.getUpdateGraph(),
                         ignored -> {
                             Assert.neqNull(removedConstituents, "removedConstituents");
-                            removedConstituents.forEach(result::unmanage);
+                            result.unmanage(removedConstituents.stream());
                             removedConstituents = null;
                         });
                 processPendingLocations(false);
@@ -170,7 +170,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 pendingLocationStates = null;
                 readyLocationStates = null;
                 processNewLocationsUpdateRoot = null;
-                removedLocationsComitter = null;
+                removedLocationsCommitter = null;
                 tableLocationProvider.refresh();
 
                 final Collection<TableLocation> locations = new ArrayList<>();
@@ -203,7 +203,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         private RowSet sortAndAddLocations(@NotNull final Stream<TableLocation> locations) {
             final long initialLastRowKey = resultRows.lastRowKey();
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
-            locations.sorted(Comparator.comparing(TableLocation::getKey)).forEach(tl -> {
+            // Note that makeConstituentTable expects us to subsequently unmanage the TableLocations
+            unmanage(locations.sorted(Comparator.comparing(TableLocation::getKey)).peek(tl -> {
                 final long constituentRowKey = lastInsertedRowKey.incrementAndGet();
                 final Table constituentTable = makeConstituentTable(tl);
 
@@ -216,7 +217,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 if (result.isRefreshing()) {
                     result.manage(constituentTable);
                 }
-            });
+            }));
             return initialLastRowKey == lastInsertedRowKey.get()
                     ? RowSetFactory.empty()
                     : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.get());
@@ -235,7 +236,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             // Transfer management to the constituent CSM. NOTE: this is likely to end up double-managed
             // after the CSM adds the location to the table, but that's acceptable.
             constituent.columnSourceManager.manage(tableLocation);
-            unmanage(tableLocation);
+            // Note that the caller is now responsible for unmanaging tableLocation on behalf of this.
 
             // Be careful to propagate the systemic attribute properly to child tables
             constituent.setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, result.isSystemicObject());
@@ -248,25 +249,43 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     subscriptionBuffer.processPending()) {
-                removed = processRemovals(locationUpdate);
-                added = processAdditions(locationUpdate);
+                if (locationUpdate == null) {
+                    removed = null;
+                } else {
+                    removed = processRemovals(locationUpdate);
+                    processAdditions(locationUpdate);
+                }
+                added = checkPendingLocations();
             }
 
-            resultRows.update(added, removed);
+            if (removed == null) {
+                if (added == null) {
+                    return;
+                }
+                resultRows.insert(added);
+            } else if (added == null) {
+                resultRows.remove(removed);
+            } else {
+                resultRows.update(added, removed);
+            }
             if (notifyListeners) {
                 result.notifyListeners(new TableUpdateImpl(
-                        added,
-                        removed,
+                        added == null ? RowSetFactory.empty() : added,
+                        removed == null ? RowSetFactory.empty() : removed,
                         RowSetFactory.empty(),
                         RowSetShiftData.EMPTY,
                         ModifiedColumnSet.EMPTY));
             } else {
-                added.close();
-                removed.close();
+                if (added != null) {
+                    added.close();
+                }
+                if (removed != null) {
+                    removed.close();
+                }
             }
         }
 
-        private RowSet processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
+        private void processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
             /*
              * This block of code is unfortunate, because it largely duplicates the intent and effort of similar code in
              * RegionedColumnSourceManager. I think that the RegionedColumnSourceManager could be changed to
@@ -276,13 +295,18 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              * population in STM ColumnSources.
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
-            locationUpdate.getPendingAddedLocationKeys().stream()
-                    .map(LiveSupplier::get)
-                    .filter(locationKeyMatcher)
-                    .map(tableLocationProvider::getTableLocation)
-                    .peek(this::manage)
-                    .map(PendingLocationState::new)
-                    .forEach(pendingLocationStates::offer);
+            if (locationUpdate != null) {
+                locationUpdate.getPendingAddedLocationKeys().stream()
+                        .map(LiveSupplier::get)
+                        .filter(locationKeyMatcher)
+                        .map(tableLocationProvider::getTableLocation)
+                        .peek(this::manage)
+                        .map(PendingLocationState::new)
+                        .forEach(pendingLocationStates::offer);
+            }
+        }
+
+        private RowSet checkPendingLocations() {
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
                 final PendingLocationState pendingLocationState = iter.next();
                 if (pendingLocationState.exists()) {
@@ -290,8 +314,12 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                     readyLocationStates.offer(pendingLocationState);
                 }
             }
-            final RowSet added = sortAndAddLocations(readyLocationStates.stream()
-                    .map(PendingLocationState::release));
+
+            if (readyLocationStates.isEmpty()) {
+                return null;
+            }
+
+            final RowSet added = sortAndAddLocations(readyLocationStates.stream().map(PendingLocationState::release));
             readyLocationStates.clearFast();
             return added;
         }
@@ -309,13 +337,22 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             // Iterate through the pending locations and remove any that are in the removed set.
+            List<LivenessReferent> toUnmanage = null;
             for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
                 final PendingLocationState pendingLocationState = iter.next();
                 if (relevantRemovedLocations.contains(pendingLocationState.location.getKey())) {
                     iter.remove();
-                    // Release the state and unmanage the location
-                    unmanage(pendingLocationState.release());
+                    // Release the state and plan to unmanage the location
+                    if (toUnmanage == null) {
+                        toUnmanage = new ArrayList<>();
+                    }
+                    toUnmanage.add(pendingLocationState.release());
                 }
+            }
+            if (toUnmanage != null) {
+                unmanage(toUnmanage.stream());
+                // noinspection UnusedAssignment
+                toUnmanage = null;
             }
 
             // At the end of the cycle we need to make sure we unmanage any removed constituents.
@@ -347,7 +384,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 removedConstituents = null;
                 return RowSetFactory.empty();
             }
-            this.removedLocationsComitter.maybeActivate();
+            this.removedLocationsCommitter.maybeActivate();
 
             final WritableRowSet deletedRows = deleteBuilder.build();
             resultTableLocationKeys.setNull(deletedRows);

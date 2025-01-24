@@ -152,8 +152,10 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     manage(locationBuffer);
                     try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending()) {
-                        maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-                        maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                        if (locationUpdate != null) {
+                            maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                            maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                        }
                     }
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
@@ -235,16 +237,19 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         protected void instrumentedRefresh() {
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
-                if (!locationProvider.getUpdateMode().removeAllowed()
-                        && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
-                    // This TLP doesn't support removed locations, we need to throw an exception.
-                    final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
-                            .map(LiveSupplier::get).toArray(ImmutableTableLocationKey[]::new);
-                    throw new TableLocationRemovedException("Source table does not support removed locations", keys);
-                }
+                if (locationUpdate != null) {
+                    if (!locationProvider.getUpdateMode().removeAllowed()
+                            && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
+                        // This TLP doesn't support removed locations, we need to throw an exception.
+                        final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
+                                .map(LiveSupplier::get).toArray(ImmutableTableLocationKey[]::new);
+                        throw new TableLocationRemovedException(
+                                "Source table does not support removed locations", keys);
+                    }
 
-                maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-                maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                    maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
+                }
             }
 
             // This class previously had functionality to notify "location listeners", but it was never used.

@@ -15,7 +15,7 @@ import pyarrow as pa
 
 from deephaven.dherror import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.table import Table
+from deephaven.table import Table, PartitionedTable
 
 _JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService")
 _JTableKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableKeyImpl")
@@ -273,6 +273,25 @@ class TableDataService(JObjectWrapper):
             return Table(self._j_tbl_service.makeTable(j_table_key, refreshing))
         except Exception as e:
             raise DHError(e, message=f"failed to make a table for the key {table_key}") from e
+
+    def make_partitioned_table(self, table_key: TableKey, *, refreshing: bool) -> PartitionedTable:
+        """ Creates a PartitionedTable backed by the backend service with the given table key.
+
+        Args:
+            table_key (TableKey): the table key
+            refreshing (bool): whether the partitioned table is live or static
+
+        Returns:
+            PartitionedTable: a new partitioned table
+
+        Raises:
+            DHError
+        """
+        j_table_key = _JTableKeyImpl(table_key)
+        try:
+            return PartitionedTable(self._j_tbl_service.makePartitionedTable(j_table_key, refreshing))
+        except Exception as e:
+            raise DHError(e, message=f"failed to make a partitioned table for the key {table_key}") from e
 
     def _table_schema(self, table_key: TableKey, schema_cb: jpy.JType, failure_cb: jpy.JType) -> None:
         """ Provides the table data schema and the partitioning values schema for the table with the given table key as

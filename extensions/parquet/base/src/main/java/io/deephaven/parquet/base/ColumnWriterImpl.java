@@ -32,6 +32,7 @@ import java.nio.IntBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.parquet.bytes.BytesUtils.getWidthFromMaxInt;
@@ -76,11 +77,11 @@ final class ColumnWriterImpl implements ColumnWriter {
             final CompressorAdapter compressorAdapter,
             final int targetPageSize,
             final ByteBufferAllocator allocator) {
-        this.countingOutput = countingOutput;
-        this.column = column;
-        this.compressorAdapter = compressorAdapter;
+        this.countingOutput = Objects.requireNonNull(countingOutput);
+        this.column = Objects.requireNonNull(column);
+        this.compressorAdapter = Objects.requireNonNull(compressorAdapter);
         this.targetPageSize = targetPageSize;
-        this.allocator = allocator;
+        this.allocator = Objects.requireNonNull(allocator);
         dlEncoder = column.getMaxDefinitionLevel() == 0 ? null
                 : new RunLengthBitPackingHybridEncoder(
                         getWidthFromMaxInt(column.getMaxDefinitionLevel()), MIN_SLAB_SIZE, targetPageSize, allocator);

@@ -4,9 +4,14 @@
 package io.deephaven.web.client.api.batch;
 
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.DropColumnsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FilterTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.web.client.api.Sort;
 import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.api.filter.FilterCondition;

@@ -33,7 +33,7 @@ import java.util.Map;
  * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
- * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int, int)}
  * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
@@ -99,18 +99,48 @@ public abstract class UpdateByOperator {
             throw new UnsupportedOperationException("pop() must be overriden by rolling operators");
         }
 
-        public abstract void accumulateCumulative(RowSequence inputKeys,
+        /**
+         * For cumulative operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param valueChunkArr the input data chunks needed by the operator for internal calculations
+         * @param tsChunk the timestamp chunk for the input data (if applicable)
+         * @param len the number of items in the input data chunks
+         */
+        public abstract void accumulateCumulative(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len);
 
-        public abstract void accumulateRolling(RowSequence inputKeys,
+        /**
+         * For windowed operators only, this method will be called to pass the input chunk data to the operator and
+         * produce the output data values. It is important to note that the size of the influencer (input) and affected
+         * (output) chunks are not likely be the same. We pass these sizes explicitly to the operators for the sake of
+         * the operators (such as {@link io.deephaven.engine.table.impl.updateby.countwhere.CountWhereOperator} with
+         * zero input columns) where no input chunks are provided but we must still process the exact number of input
+         * rows.
+         *
+         * @param inputKeys the keys for the input data rows (also matches the output keys)
+         * @param influencerValueChunkArr the input data chunks needed by the operator for internal calculations, these
+         *        values will be pushed and popped into the current window
+         * @param affectedPosChunk the row positions of the affected rows
+         * @param influencerPosChunk the row positions of the influencer rows
+         * @param pushChunk a chunk containing the push instructions for each output row to be calculated
+         * @param popChunk a chunk containing the pop instructions for each output row to be calculated
+         * @param affectedCount how many affected (output) rows are being computed
+         * @param influencerCount how many influencer (input) rows are needed for the computation
+         */
+        public abstract void accumulateRolling(
+                RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
                 LongChunk<OrderedRowKeys> affectedPosChunk,
                 LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
-                int len);
+                int affectedCount,
+                int influencerCount);
 
         /**
          * Write the current value for this row to the output chunk

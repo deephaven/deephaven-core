@@ -3,7 +3,7 @@
 //
 package io.deephaven.web.client.api.state;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.state.ClientTableState;
 

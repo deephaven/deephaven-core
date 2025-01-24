@@ -8,12 +8,12 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.SimpleTypeMap;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
@@ -23,7 +23,6 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -110,8 +109,7 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
-     *        {@link ParquetFileReader}!
+     * @param schema Parquet schema
      * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
      *        Note a new read instructions based on this one may be returned by this method to provide necessary
@@ -143,7 +141,7 @@ public class ParquetSchemaReader {
         };
         final ParquetMessageDefinition colDef = new ParquetMessageDefinition();
         final Map<String, String[]> parquetColumnNameToFirstPath = new HashMap<>();
-        for (final ColumnDescriptor column : schema.getColumns()) {
+        for (final ColumnDescriptor column : ParquetSchemaUtil.columns(schema)) {
             if (column.getMaxRepetitionLevel() > 1) {
                 // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
                 throw new UnsupportedOperationException("Unsupported maximum repetition level "
@@ -274,8 +272,7 @@ public class ParquetSchemaReader {
     /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
-     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
-     *        {@link ParquetFileReader}!
+     * @param schema Parquet schema
      * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructionsIn Input conversion {@link ParquetInstructions}
      * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}

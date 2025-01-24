@@ -40,7 +40,22 @@ public interface ConsoleSession extends Closeable {
      * @throws ExecutionException if the request has an exception
      * @throws TimeoutException if the request times out
      */
-    Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException;
+    default Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
+        return executeCode(code, ExecuteCodeOptions.DEFAULT);
+    }
+
+    /**
+     * Execute the given {@code code} against the script session.
+     *
+     * @param code the code
+     * @param options an {@link ExecuteCodeOptions} to control behavior
+     * @return the changes
+     * @throws InterruptedException if the current thread is interrupted
+     * @throws ExecutionException if the request has an exception
+     * @throws TimeoutException if the request times out
+     */
+    Changes executeCode(String code, ExecuteCodeOptions options)
+            throws InterruptedException, ExecutionException, TimeoutException;
 
     /**
      * Execute the given {@code path path's} code against the script session.
@@ -51,7 +66,23 @@ public interface ConsoleSession extends Closeable {
      * @throws ExecutionException if the request has an exception
      * @throws TimeoutException if the request times out
      */
-    Changes executeScript(Path path) throws IOException, InterruptedException, ExecutionException, TimeoutException;
+    default Changes executeScript(Path path)
+            throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        return executeScript(path, ExecuteCodeOptions.DEFAULT);
+    }
+
+    /**
+     * Execute the given {@code path path's} code against the script session.
+     *
+     * @param path the path to the code
+     * @param options an {@link ExecuteCodeOptions} to control behavior
+     * @return the changes
+     * @throws InterruptedException if the current thread is interrupted
+     * @throws ExecutionException if the request has an exception
+     * @throws TimeoutException if the request times out
+     */
+    Changes executeScript(Path path, ExecuteCodeOptions options)
+            throws IOException, InterruptedException, ExecutionException, TimeoutException;
 
     /**
      * Execute the given {@code code} against the script session.
@@ -59,7 +90,18 @@ public interface ConsoleSession extends Closeable {
      * @param code the code
      * @return the changes future
      */
-    CompletableFuture<Changes> executeCodeFuture(String code);
+    default CompletableFuture<Changes> executeCodeFuture(String code) {
+        return executeCodeFuture(code, ExecuteCodeOptions.DEFAULT);
+    }
+
+    /**
+     * Execute the given {@code code} against the script session.
+     *
+     * @param code the code
+     * @param options an {@link ExecuteCodeOptions} to control behavior
+     * @return the changes future
+     */
+    CompletableFuture<Changes> executeCodeFuture(String code, ExecuteCodeOptions options);
 
     /**
      * Execute the given {@code path path's} code against the script session.
@@ -67,7 +109,18 @@ public interface ConsoleSession extends Closeable {
      * @param path the path to the code
      * @return the changes future
      */
-    CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException;
+    default CompletableFuture<Changes> executeScriptFuture(Path path) throws IOException {
+        return executeScriptFuture(path, ExecuteCodeOptions.DEFAULT);
+    }
+
+    /**
+     * Execute the given {@code path path's} code against the script session.
+     *
+     * @param path the path to the code
+     * @param options an {@link ExecuteCodeOptions} to control behavior
+     * @return the changes future
+     */
+    CompletableFuture<Changes> executeScriptFuture(Path path, ExecuteCodeOptions options) throws IOException;
 
     /**
      * Closes {@code this} console session.
