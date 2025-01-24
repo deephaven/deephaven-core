@@ -119,7 +119,9 @@ def count_where(col: str, filters: Union[str, Filter, Sequence[str], Sequence[Fi
     filters.
 
     Args:
-        col (str): the column to hold the counts of each distinct group
+        col (str): the column to hold the counts of rows that pass the filter condition
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+            expression(s) or Filter object(s)
 
     Returns:
         an aggregation

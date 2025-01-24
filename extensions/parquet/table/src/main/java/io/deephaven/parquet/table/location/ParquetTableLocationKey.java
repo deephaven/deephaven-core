@@ -11,7 +11,9 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.RowGroup;
+import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,8 +138,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created {@link ParquetMetadata} for this
-     * location key's {@code file}.
+     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or the {@link ParquetMetadata} for this location key's
+     * {@code file}.
      *
      * @return A {@link ParquetMetadata} for this location key's {@code file}.
      */
@@ -157,6 +159,28 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      */
     public synchronized void setMetadata(final ParquetMetadata metadata) {
         this.metadata = metadata;
+    }
+
+    /**
+     * Equivalent to {@code getMetadata().getFileMetaData()}.
+     *
+     * @return the file metadata
+     * @see #getMetadata()
+     * @see ParquetMetadata#getFileMetaData()
+     */
+    public FileMetaData getFileMetadata() {
+        return getMetadata().getFileMetaData();
+    }
+
+    /**
+     * Equivalent to {@code getFileMetadata().getSchema()}.
+     *
+     * @return the file metadata
+     * @see #getFileMetadata()
+     * @see FileMetaData#getSchema()
+     */
+    public MessageType getSchema() {
+        return getFileMetadata().getSchema();
     }
 
     /**

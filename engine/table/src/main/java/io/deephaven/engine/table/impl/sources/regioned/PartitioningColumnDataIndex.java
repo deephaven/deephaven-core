@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -300,13 +301,13 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
 
     @Override
     @NotNull
-    public Table table() {
+    public Table table(final DataIndexOptions unused) {
         return indexTable;
     }
 
     @Override
     @NotNull
-    public RowKeyLookup rowKeyLookup() {
+    public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
         return (final Object key, final boolean usePrev) -> keyPositionMap.get(key);
     }
 

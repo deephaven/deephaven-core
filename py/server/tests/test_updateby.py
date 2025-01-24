@@ -4,13 +4,15 @@
 
 import unittest
 
-from deephaven import read_csv, time_table, update_graph
+from deephaven import read_csv, time_table, update_graph, empty_table
 from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick, ema_time, \
     ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, emstd_tick, emstd_time,\
     cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
-    rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time, rolling_formula_tick, rolling_formula_time
+    rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time, rolling_formula_tick, rolling_formula_time, \
+    cum_count_where, rolling_count_where_tick, rolling_count_where_time
+from deephaven.pandas import to_pandas
 from tests.testbase import BaseTestCase
 from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
 
@@ -79,6 +81,12 @@ class UpdateByTestCase(BaseTestCase):
             delta(cols=simple_op_pairs, delta_control=DeltaControl.NULL_DOMINATES),
             delta(cols=simple_op_pairs, delta_control=DeltaControl.VALUE_DOMINATES),
             delta(cols=simple_op_pairs, delta_control=DeltaControl.ZERO_DOMINATES),
+        ]
+
+        cls.simple_ops_one_output = [
+            cum_count_where(col='count_1', filters='a > 5'),
+            cum_count_where(col='count_2', filters='a > 0 && a < 5'),
+            cum_count_where(col='count_3', filters=['a > 0', 'a < 5']),
         ]
 
         # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy
@@ -168,6 +176,11 @@ class UpdateByTestCase(BaseTestCase):
             rolling_formula_time(formula="formula_be=sum(b) + sum(e)", ts_col="Timestamp", rev_time="PT00:00:10"),
             rolling_formula_time(formula="formula_be=avg(b) + avg(e)", ts_col="Timestamp", rev_time=10_000_000_000, fwd_time=-10_000_000_00),
             rolling_formula_time(formula="formula_be=sum(b) + sum(b)", ts_col="Timestamp", rev_time="PT30S", fwd_time="-PT00:00:20"),
+            rolling_count_where_tick(col="count_1", filters="a > 50", rev_ticks=10),
+            rolling_count_where_tick(col="count_2", filters=["a > 0", "a <= 50"], rev_ticks=10, fwd_ticks=10),
+            rolling_count_where_time(col="count_3", filters="a > 50", ts_col="Timestamp", rev_time="PT00:00:10"),
+            rolling_count_where_time(col="count_4", filters="a > 0 && a <= 50", ts_col="Timestamp", rev_time=10_000_000_000, fwd_time=-10_000_000_00),
+            rolling_count_where_time(col="count_5", filters="a < 0 || a > 50", ts_col="Timestamp", rev_time="PT30S", fwd_time="-PT00:00:20"),
         ]
 
 
@@ -227,6 +240,34 @@ class UpdateByTestCase(BaseTestCase):
                     self.assertTrue(rt_proxy.is_refreshing is pt_proxy.is_refreshing)
                     self.assertEqual(len(rt_proxy.target.constituent_table_columns),
                                      2 + len(pt_proxy.target.constituent_table_columns))
+
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
+                        with update_graph.exclusive_lock(self.test_update_graph):
+                            self.assertEqual(ct.size, rct.size)
+
+    def test_simple_ops_one_output(self):
+        for op in self.simple_ops_one_output:
+            with self.subTest(op):
+                for t in (self.static_table, self.ticking_table):
+                    rt = t.update_by(ops=op, by="e")
+                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
+                    self.assertEqual(len(rt.definition), 1 + len(t.definition))
+                    with update_graph.exclusive_lock(self.test_update_graph):
+                        self.assertEqual(rt.size, t.size)
+
+    def test_simple_ops_one_output_proxy(self):
+        pt_proxies = [self.static_table.partition_by("c").proxy(),
+                      self.ticking_table.partition_by("c").proxy(),
+                      ]
+
+        for op in self.simple_ops_one_output:
+            with self.subTest(op):
+                for pt_proxy in pt_proxies:
+                    rt_proxy = pt_proxy.update_by(ops=op, by="e")
+
+                    self.assertTrue(rt_proxy.is_refreshing is pt_proxy.is_refreshing)
+                    self.assertEqual(len(rt_proxy.target.constituent_table_columns),
+                                     1 + len(pt_proxy.target.constituent_table_columns))
 
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         with update_graph.exclusive_lock(self.test_update_graph):
@@ -292,6 +333,56 @@ class UpdateByTestCase(BaseTestCase):
             self.assertEqual(len(rt.definition), 10 + len(t.definition))
             with update_graph.exclusive_lock(self.test_update_graph):
                 self.assertEqual(rt.size, t.size)
+
+    def test_cum_count_where_output(self):
+        """
+        Test and validation of the cum_count_where feature
+        """
+        test_table = empty_table(4).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            cum_count_where(col="count1", filters="a >= 1"),
+            cum_count_where(col="count2", filters="a >= 1 && b == 0"),
+        ]
+        result_table = test_table.update_by(ops=count_aggs)
+        self.assertEqual(result_table.size, 4)
+
+        # get the table as a local pandas dataframe
+        df = to_pandas(result_table)
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 0)
+        self.assertEqual(df.loc[1, "count1"], 1)
+        self.assertEqual(df.loc[2, "count1"], 2)
+        self.assertEqual(df.loc[3, "count1"], 3)
+
+        self.assertEqual(df.loc[0, "count2"], 0)
+        self.assertEqual(df.loc[1, "count2"], 0)
+        self.assertEqual(df.loc[2, "count2"], 1)
+        self.assertEqual(df.loc[3, "count2"], 1)
+
+    def test_rolling_count_where_output(self):
+        """
+        Test and validation of the rolling_count_where feature
+        """
+        test_table = empty_table(4).update(["a=ii", "b=ii%2"])
+        count_aggs = [
+            rolling_count_where_tick(col="count1", filters="a >= 1", rev_ticks=2),
+            rolling_count_where_tick(col="count2", filters="a >= 1 && b == 0", rev_ticks=2),
+        ]
+        result_table = test_table.update_by(ops=count_aggs)
+        self.assertEqual(result_table.size, 4)
+
+        # get the table as a local pandas dataframe
+        df = to_pandas(result_table)
+        # assert the values meet expectations
+        self.assertEqual(df.loc[0, "count1"], 0)
+        self.assertEqual(df.loc[1, "count1"], 1)
+        self.assertEqual(df.loc[2, "count1"], 2)
+        self.assertEqual(df.loc[3, "count1"], 2)
+
+        self.assertEqual(df.loc[0, "count2"], 0)
+        self.assertEqual(df.loc[1, "count2"], 0)
+        self.assertEqual(df.loc[2, "count2"], 1)
+        self.assertEqual(df.loc[3, "count2"], 1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -136,6 +136,17 @@ public class TstUtils {
         return RowSetFactory.fromKeys(keys);
     }
 
+    /**
+     * A shorthand for {@link RowSetFactory#fromRange(long, long)} for use in unit tests.
+     *
+     * @param firstRowKey the first key of the new RowSet
+     * @param lastRowKey the last key (inclusive) of the new RowSet
+     * @return a new RowSet with the given key range
+     */
+    public static WritableRowSet ir(final long firstRowKey, final long lastRowKey) {
+        return RowSetFactory.fromRange(firstRowKey, lastRowKey);
+    }
+
     public static void addToTable(final Table table, final RowSet rowSet, final ColumnHolder<?>... columnHolders) {
         if (rowSet.isEmpty()) {
             return;

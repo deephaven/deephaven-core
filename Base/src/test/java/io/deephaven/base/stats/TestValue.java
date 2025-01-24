@@ -5,6 +5,7 @@ package io.deephaven.base.stats;
 
 import junit.framework.TestCase;
 
+import java.util.concurrent.Semaphore;
 import java.util.function.LongFunction;
 
 // --------------------------------------------------------------------
@@ -47,6 +48,44 @@ public class TestValue extends TestCase {
         assertEquals(4, counter.getMax());
 
         checkValue(Counter.FACTORY);
+    }
+
+    public void testToString() {
+        // this is purposefully a heisentest, this should make it fail if it is really broken
+        for (int ii = 0; ii < 10; ++ii) {
+            doTestToString();
+        }
+    }
+
+    public void doTestToString() {
+        // we are testing toString, but also creating a pile of threads to exercise some of the AtomicFieldUpdater
+        // behavior of the value
+        final Value counter = ThreadSafeCounter.FACTORY.apply(0L);
+
+        final String emptyString = counter.toString();
+        assertEquals("Value{n=0}", emptyString);
+
+        final Semaphore semaphore = new Semaphore(0);
+        final Semaphore completion = new Semaphore(0);
+        final int n = 100;
+        for (int ii = 0; ii < n; ++ii) {
+            final int fii = ii;
+            new Thread(() -> {
+                semaphore.acquireUninterruptibly();
+                counter.sample(fii);
+                completion.release();
+            }).start();
+        }
+        semaphore.release(100);
+        completion.acquireUninterruptibly(100);
+
+        assertEquals(n, counter.getN());
+        assertEquals(((n - 1) * n) / 2, counter.getSum());
+        assertEquals(0, counter.getMin());
+        assertEquals(99, counter.getMax());
+
+        final String asString = counter.toString();
+        assertEquals("Value{n=100, sum=4,950, max=99, min=0, avg=49.500, std=29.011}", asString);
     }
 
     // ----------------------------------------------------------------
