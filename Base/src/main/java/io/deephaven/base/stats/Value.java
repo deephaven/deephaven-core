@@ -4,7 +4,10 @@
 package io.deephaven.base.stats;
 
 public abstract class Value {
-
+    /**
+     * The sample(long) method is not thread safe; and you can get wrong answers out of it. If you require safety, you
+     * should instead use a ThreadSafeValue.
+     */
     protected long n = 0;
     protected long last = 0;
     protected long sum = 0;
@@ -51,7 +54,7 @@ public abstract class Value {
         this.history = history;
     }
 
-    public void sample(long x) {
+    public void sample(final long x) {
         n++;
         last = x;
         sum += x;
@@ -98,5 +101,16 @@ public abstract class Value {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        if (n > 0) {
+            final double std = Math.sqrt(n > 1 ? (sum2 - ((double) sum * sum / (double) n)) / (n - 1) : Double.NaN);
+            final double avg = (double) sum / n;
+            return String.format("Value{n=%,d, sum=%,d, max=%,d, min=%,d, avg=%,.3f, std=%,.3f}", n, sum, max, min, avg,
+                    std);
+        }
+        return String.format("Value{n=%,d}", n);
     }
 }

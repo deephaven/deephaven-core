@@ -191,7 +191,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             // If we have shifts, that makes everything nasty; so we do not want to deal with it
             final boolean hasShifts = upstream.shifted().nonempty();
 
-            final boolean serialTableOperationsSafe = updateGraph.serialTableOperationsSafe()
+            // liveResultOwner is only null when we are static; in the static case there is no need to
+            // worry about serial table operation checking
+            final boolean serialTableOperationsSafe = liveResultOwner == null
+                    || updateGraph.serialTableOperationsSafe()
                     || updateGraph.sharedLock().isHeldByCurrentThread()
                     || updateGraph.exclusiveLock().isHeldByCurrentThread();
 

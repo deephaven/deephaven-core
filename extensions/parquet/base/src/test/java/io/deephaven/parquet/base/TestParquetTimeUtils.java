@@ -5,52 +5,53 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
-import junit.framework.TestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-public class TestParquetTimeUtils {
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+class TestParquetTimeUtils {
 
     @Test
-    public void testEpochNanosUTC() {
+    void testEpochNanosUTC() {
         final long nanos = 123456789123456789L;
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(nanos, ParquetTimeUtils.epochNanosUTC(ldt));
-        TestCase.assertEquals(QueryConstants.NULL_LONG, ParquetTimeUtils.epochNanosUTC(null));
+        assertThat(ParquetTimeUtils.epochNanosUTC(ldt)).isEqualTo(nanos);
+        assertThat(ParquetTimeUtils.epochNanosUTC(null)).isEqualTo(QueryConstants.NULL_LONG);
     }
 
     @Test
-    public void testEpochNanosTo() {
+    void testEpochNanosTo() {
         final long nanos = 123456789123456789L;
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, ParquetTimeUtils.epochNanosToLocalDateTimeUTC(nanos));
-        TestCase.assertNull(ParquetTimeUtils.epochNanosToLocalDateTimeUTC(QueryConstants.NULL_LONG));
+        assertThat(ParquetTimeUtils.epochNanosToLocalDateTimeUTC(nanos)).isEqualTo(ldt);
+        assertThat(ParquetTimeUtils.epochNanosToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 
     @Test
-    public void testEpochMicrosTo() {
+    void testEpochMicrosTo() {
         long nanos = 123456789123456789L;
         final long micros = DateTimeUtils.nanosToMicros(nanos);
         nanos = DateTimeUtils.microsToNanos(micros);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(micros));
-        TestCase.assertNull(ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(QueryConstants.NULL_LONG));
+        assertThat(ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(micros)).isEqualTo(ldt);
+        assertThat(ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 
     @Test
-    public void testEpochMillisTo() {
+    void testEpochMillisTo() {
         long nanos = 123456789123456789L;
         final long millis = DateTimeUtils.nanosToMillis(nanos);
         nanos = DateTimeUtils.millisToNanos(millis);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final LocalDateTime ldt = LocalDateTime.ofInstant(dt2, ZoneId.of("UTC"));
-        TestCase.assertEquals(ldt, ParquetTimeUtils.epochMillisToLocalDateTimeUTC(millis));
-        TestCase.assertNull(ParquetTimeUtils.epochMillisToLocalDateTimeUTC(QueryConstants.NULL_LONG));
+        assertThat(ParquetTimeUtils.epochMillisToLocalDateTimeUTC(millis)).isEqualTo(ldt);
+        assertThat(ParquetTimeUtils.epochMillisToLocalDateTimeUTC(QueryConstants.NULL_LONG)).isNull();
     }
 }

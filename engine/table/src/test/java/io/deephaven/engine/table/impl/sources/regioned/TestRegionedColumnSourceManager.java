@@ -388,6 +388,15 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     @Test
     public void testStaticBasics() {
+        testStaticBasics(DataIndexOptions.DEFAULT);
+    }
+
+    @Test
+    public void testStaticBasicsPartial() {
+        testStaticBasics(DataIndexOptions.USING_PARTIAL_TABLE);
+    }
+
+    private void testStaticBasics(final DataIndexOptions options) {
         SUT = new RegionedColumnSourceManager(false, componentFactory, ColumnToCodecMappings.EMPTY, columnDefinitions);
         assertEquals(makeColumnSourceMap(), SUT.getColumnSources());
 
@@ -451,7 +460,11 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
 
         captureIndexes(SUT.initialize());
-        capturedGroupingColumnIndex.table(); // Force us to build the merged index *before* we check satisfaction
+
+        // Force us to build the merged index *before* we check satisfaction
+        // the checkIndexes method will call table() a second time with the DEFAULT options; which exercises lazy
+        // conversion
+        capturedGroupingColumnIndex.table(options);
 
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation1A, tableLocation1B), SUT.includedLocations());
@@ -482,7 +495,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         }
 
         @Override
-        public @NotNull Table table() {
+        public @NotNull Table table(DataIndexOptions ignored) {
             return table;
         }
 

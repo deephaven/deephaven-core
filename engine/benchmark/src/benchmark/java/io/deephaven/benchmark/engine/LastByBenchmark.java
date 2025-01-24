@@ -59,9 +59,6 @@ public class LastByBenchmark {
     @Param({"1"})
     private int valueCount;
 
-    @Param({"true"})
-    private boolean tracked;
-
     private Table table;
 
     private String keyName;
@@ -171,8 +168,6 @@ public class LastByBenchmark {
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         table = bmt.getTable().coalesce().dropColumns("PartCol");
-
-        QueryTable.TRACKED_FIRST_BY = QueryTable.TRACKED_LAST_BY = tracked;
     }
 
     @TearDown(Level.Trial)

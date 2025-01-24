@@ -12,7 +12,7 @@ numba==0.60.0
 numpy==2.0.2
 pandas==2.2.3
 parso==0.8.4
-pyarrow==18.1.0
+pyarrow==19.0.0
 python-dateutil==2.9.0.post0
 pytz==2024.2
 six==1.17.0

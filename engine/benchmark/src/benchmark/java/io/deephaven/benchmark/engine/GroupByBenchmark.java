@@ -38,9 +38,6 @@ public class GroupByBenchmark {
     @Param({"Historical"})
     private String tableType;
 
-    @Param({"operator"})
-    private String mode;
-
     @Param({"String", "Int", "Composite"})
     private String keyType;
 
@@ -122,17 +119,6 @@ public class GroupByBenchmark {
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         table = bmt.getTable().coalesce().dropColumns("PartCol");
-
-        switch (mode) {
-            case "chunked":
-                QueryTable.USE_OLDER_CHUNKED_BY = true;
-                break;
-            case "operator":
-                QueryTable.USE_OLDER_CHUNKED_BY = false;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown mode " + mode);
-        }
     }
 
     @TearDown(Level.Trial)

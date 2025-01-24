@@ -5,6 +5,7 @@ package io.deephaven.base;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public abstract class AtomicUtil {
 
@@ -266,5 +267,45 @@ public abstract class AtomicUtil {
             update = expect & ~mask;
         } while (!i.compareAndSet(expect, update));
         return update;
+    }
+
+    /**
+     * Sets the field to the minimum of the current value and the passed in value
+     * 
+     * @param o the object to update
+     * @param fu the field updater
+     * @param value the value that is a candidate for the minumum
+     * @return true if the minimum was set
+     * @param <T> the type of o
+     */
+    public static <T> boolean setMin(final T o, final AtomicLongFieldUpdater<T> fu, final long value) {
+        long current = fu.get(o);
+        while (current > value) {
+            if (fu.compareAndSet(o, current, value)) {
+                return true;
+            }
+            current = fu.get(o);
+        }
+        return false;
+    }
+
+    /**
+     * Sets the field to the maximum of the current value and the passed in value
+     * 
+     * @param o the object to update
+     * @param fu the field updater
+     * @param value the value that is a candidate for the maximum
+     * @return true if the maximum was set
+     * @param <T> the type of o
+     */
+    public static <T> boolean setMax(final T o, final AtomicLongFieldUpdater<T> fu, final long value) {
+        long current = fu.get(o);
+        while (value > current) {
+            if (fu.compareAndSet(o, current, value)) {
+                return true;
+            }
+            current = fu.get(o);
+        }
+        return false;
     }
 }
