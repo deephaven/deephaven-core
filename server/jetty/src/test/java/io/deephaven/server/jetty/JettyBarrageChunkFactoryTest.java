@@ -109,7 +109,7 @@ import org.apache.arrow.vector.holders.NullableTimeStampNanoTZHolder;
 import org.apache.arrow.vector.holders.NullableTimeStampSecTZHolder;
 import org.apache.arrow.vector.holders.TimeStampMicroHolder;
 import org.apache.arrow.vector.holders.TimeStampMilliHolder;
-import org.apache.arrow.vector.holders.TimeStampNanoHolder;
+import org.apache.arrow.vector.holders.TimeStampNanoTZHolder;
 import org.apache.arrow.vector.holders.TimeStampSecHolder;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.TimeUnit;
@@ -877,11 +877,10 @@ public class JettyBarrageChunkFactoryTest {
         new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND, null).runTest();
         new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND, null).runTest();
 
-        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND,
-        // "America/New_York").isDefault().runTest();
-        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
-        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
-        // new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND, "America/New_York").isDefault().runTest();
+        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
     }
 
     @Test
@@ -999,7 +998,7 @@ public class JettyBarrageChunkFactoryTest {
         }
 
         public void runTest() throws Exception {
-            runTest(TestNullMode.NONE, TestArrayMode.FIXED_ARRAY);
+            runTest(TestNullMode.NONE, TestArrayMode.VIEW_ARRAY);
             for (TestArrayMode arrayMode : TestArrayMode.values()) {
                 for (TestNullMode mode : TestNullMode.values()) {
                     runTest(mode, arrayMode);
@@ -1214,11 +1213,45 @@ public class JettyBarrageChunkFactoryTest {
                                 Assert.geqZero(totalLen, "totalLen");
 
                                 newView.getDataVector().setValueCount(totalLen);
-                                for (int ii = 0; ii < source.getRowCount(); ++ii) {
-                                    if (sourceArr.isNull(ii)) {
-                                        newView.setNull(ii);
-                                    } else {
-                                        copyListItem(newView, sourceArr, ii);
+                                if (dhType == ZonedDateTime.class) {
+                                    // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
+
+                                    int newChildOffset = 0;
+                                    final TimeStampVector srcChild =
+                                            (TimeStampVector) sourceArr.getChildrenFromFields().get(0);
+                                    final TimeStampVector newChild =
+                                            (TimeStampVector) newView.getChildrenFromFields().get(0);
+                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                                        if (sourceArr.isNull(ii)) {
+                                            newView.setNull(ii);
+                                            if (!arrayMode.isVariableLength()) {
+                                                newChildOffset += listItemLength;
+                                            }
+                                        } else {
+                                            final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                                            // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
+                                            // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                                            final int len = sourceArr.getObject(ii).size();
+                                            newView.startNewValue(ii);
+                                            newView.endValue(ii, len);
+                                            for (int jj = 0; jj < len; ++jj) {
+                                                final int so = srcStartOffset + jj;
+                                                if (srcChild.isNull(so)) {
+                                                    newChild.setNull(newChildOffset + jj);
+                                                } else {
+                                                    newChild.set(newChildOffset + jj, srcChild.get(so));
+                                                }
+                                            }
+                                            newChildOffset += len;
+                                        }
+                                    }
+                                } else {
+                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
+                                        if (sourceArr.isNull(ii)) {
+                                            newView.setNull(ii);
+                                        } else {
+                                            copyListItem(newView, sourceArr, ii);
+                                        }
                                     }
                                 }
 
@@ -1248,11 +1281,37 @@ public class JettyBarrageChunkFactoryTest {
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
                                 if (dhType == ZonedDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
+
+                                    int newChildOffset = 0;
+                                    final TimeStampVector srcChild =
+                                            (TimeStampVector) sourceArr.getChildrenFromFields().get(0);
+                                    final TimeStampVector newChild =
+                                            (TimeStampVector) newView.getChildrenFromFields().get(0);
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
                                             newView.setNull(ii);
+                                            if (!arrayMode.isVariableLength()) {
+                                                newChildOffset += listItemLength;
+                                            }
                                         } else {
-                                            copyListItem(newView, sourceArr, ii);
+                                            final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                                            final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                                            if (arrayMode.isVariableLength()) {
+                                                ListVector newAsLV = (ListVector) newView;
+                                                newAsLV.startNewValue(ii);
+                                                newAsLV.endValue(ii, len);
+                                            } else {
+                                                ((FixedSizeListVector) newView).setNotNull(ii);
+                                            }
+                                            for (int jj = 0; jj < len; ++jj) {
+                                                final int so = srcStartOffset + jj;
+                                                if (srcChild.isNull(so)) {
+                                                    newChild.setNull(newChildOffset + jj);
+                                                } else {
+                                                    newChild.set(newChildOffset + jj, srcChild.get(so));
+                                                }
+                                            }
+                                            newChildOffset += len;
                                         }
                                     }
                                 } else {
@@ -1304,76 +1363,12 @@ public class JettyBarrageChunkFactoryTest {
         for (int ii = 0; ii < in.size(); ++ii) {
             childReader.setPosition(source.getElementStartIndex(index) + ii);
             if (childReader.isSet()) {
-                copyValue(childReader, childWriter);
+                ComplexCopier.copy(childReader, childWriter);
             } else {
                 childWriter.writeNull();
             }
         }
         out.endList();
-    }
-
-    private static void copyValue(FieldReader reader, FieldWriter writer) {
-        // TODO: call ComplexCopier directly when https://github.com/apache/arrow-java/issues/551 is fixed
-        final Types.MinorType mt = reader.getMinorType();
-
-        // note that these TZ impls are not support properly in arrow-java, so we need to "strip" them of their TZ
-        switch (mt) {
-            case TIMESTAMPSECTZ:
-                if (reader.isSet()) {
-                    final NullableTimeStampSecTZHolder h1 = new NullableTimeStampSecTZHolder();
-                    reader.read(h1);
-                    final TimeStampSecHolder h2 = new TimeStampSecHolder();
-                    h2.value = h1.value;
-                    writer.write(h2);
-                } else {
-                    writer.writeNull();
-                }
-                break;
-
-            case TIMESTAMPMILLITZ:
-                if (reader.isSet()) {
-                    final NullableTimeStampMilliTZHolder h1 = new NullableTimeStampMilliTZHolder();
-                    reader.read(h1);
-                    final TimeStampMilliHolder h2 = new TimeStampMilliHolder();
-                    h2.value = h1.value;
-                    writer.write(h2);
-                } else {
-                    writer.writeNull();
-                }
-                break;
-
-
-            case TIMESTAMPMICROTZ:
-                if (reader.isSet()) {
-                    final NullableTimeStampMicroTZHolder h1 = new NullableTimeStampMicroTZHolder();
-                    reader.read(h1);
-                    final TimeStampMicroHolder h2 = new TimeStampMicroHolder();
-                    h2.value = h1.value;
-                    writer.write(h2);
-                } else {
-                    writer.writeNull();
-                }
-                break;
-
-
-            case TIMESTAMPNANOTZ:
-                if (reader.isSet()) {
-                    final NullableTimeStampNanoTZHolder h1 = new NullableTimeStampNanoTZHolder();
-                    reader.read(h1);
-                    final TimeStampNanoHolder h2 = new TimeStampNanoHolder();
-                    h2.value = h1.value;
-                    writer.write(h2);
-                } else {
-                    writer.writeNull();
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        // other types already supported
-        ComplexCopier.copy(reader, writer);
     }
 
     private static FieldWriter getListWriter(
@@ -1423,18 +1418,22 @@ public class JettyBarrageChunkFactoryTest {
                 return (FieldWriter) writer.float8();
             case DATEMILLI:
                 return (FieldWriter) writer.dateMilli();
-            case TIMESTAMPSECTZ:
             case TIMESTAMPSEC:
                 return (FieldWriter) writer.timeStampSec();
-            case TIMESTAMPMILLITZ:
             case TIMESTAMPMILLI:
                 return (FieldWriter) writer.timeStampMilli();
-            case TIMESTAMPMICROTZ:
             case TIMESTAMPMICRO:
                 return (FieldWriter) writer.timeStampMicro();
-            case TIMESTAMPNANOTZ:
             case TIMESTAMPNANO:
                 return (FieldWriter) writer.timeStampNano();
+            case TIMESTAMPSECTZ:
+                return (FieldWriter) writer.timeStampSecTZ();
+            case TIMESTAMPMILLITZ:
+                return (FieldWriter) writer.timeStampMilliTZ();
+            case TIMESTAMPMICROTZ:
+                return (FieldWriter) writer.timeStampMicroTZ();
+            case TIMESTAMPNANOTZ:
+                return (FieldWriter) writer.timeStampNanoTZ();
             case TIMEMICRO:
                 return (FieldWriter) writer.timeMicro();
             case TIMENANO:
@@ -1905,7 +1904,8 @@ public class JettyBarrageChunkFactoryTest {
             }
 
             for (int ii = 0; ii < NUM_ROWS; ++ii) {
-                source.set(ii, rnd.nextLong() / factor);
+                // source.set(ii, rnd.nextLong() / factor);
+                source.set(ii, ii);
                 if (source.get(ii) == QueryConstants.NULL_LONG) {
                     --ii;
                 }

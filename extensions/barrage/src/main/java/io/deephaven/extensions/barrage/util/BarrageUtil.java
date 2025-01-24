@@ -939,9 +939,6 @@ public class BarrageUtil {
         // Vectors are always lists.
         final FieldType fieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, metadata);
         Class<?> componentType = VectorExpansionKernel.getComponentType(type, knownComponentType);
-        // if (componentType == Object.class) {
-        // getDefaultType()
-        // }
 
         final List<Field> children = Collections.singletonList(arrowFieldFor(
                 "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
