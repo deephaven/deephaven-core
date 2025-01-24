@@ -6,15 +6,13 @@ package io.deephaven.web.client.api.widget.plot;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
-
-import java.util.Arrays;
 
 @TsInterface
 @TsName(name = "FigureDataUpdatedEvent", namespace = "dh.plot")

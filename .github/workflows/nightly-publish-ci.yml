@@ -55,13 +55,14 @@ jobs:
           ORG_GRADLE_PROJECT_signingRequired: true
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         id: slack-nightly-failure
         if: failure()
         with:
+          webhook-type: webhook-trigger
           payload: |
             {
-              "slack_message": "Nightly publish failure @ ${{ github.head_ref }} ${{ github.sha }}"
+              "slack_message": "Nightly publish failure @ ${{ github.head_ref }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

@@ -1,4 +1,5 @@
 [versions]
+adbc = "0.15.0"
 airlift = "2.0.2"
 arrow = "18.0.0"
 autoservice = "1.1.1"
@@ -14,8 +15,8 @@ commons-lang3 = "3.17.0"
 commons-math3 = "3.6.1"
 commons-text = "1.13.0"
 # confluent and confluent-kafak-clients should be kept in-sync
-confluent = "7.6.0"
-confluent-kafka-clients = "7.6.0-ccs"
+confluent = "7.8.0"
+confluent-kafka-clients = "7.8.0-ccs"
 dagger = "2.54"
 deephaven-barrage = "0.7.2"
 deephaven-csv = "0.15.0"
@@ -51,11 +52,11 @@ javax-validation = "2.0.1.Final"
 jdom2 = "2.0.6.1"
 jetbrains = "26.0.1"
 jetty = "11.0.20"
-jpy = "1.0.0"
+jpy = "1.1.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.3"
-logback = "1.5.15"
+logback = "1.5.16"
 lz4 = "1.8.0"
 mindrot = "0.4"
 nidi = "0.18.1"
@@ -79,10 +80,10 @@ univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "24.3.25-1"
 vertispan-ts-defs = "1.0.0-RC4"
-xerial = "3.47.1.0"
+xerial = "3.47.2.0"
 
 # test versions
-assertj = "3.27.0"
+assertj = "3.27.2"
 h2database = "2.3.232"
 jmock = "2.13.1"
 junit = "5.11.4"
@@ -92,6 +93,8 @@ jmh = "1.37"
 spockframework = "2.3-groovy-3.0"
 
 [libraries]
+adbc-flight-sql = { module = "org.apache.arrow.adbc:adbc-driver-flight-sql", version.ref = "adbc" }
+
 airlift-aircompressor = { module = "io.airlift:aircompressor", version.ref = "airlift"}
 
 arrow-compression = { module = "org.apache.arrow:arrow-compression", version.ref = "arrow" }

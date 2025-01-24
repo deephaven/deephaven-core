@@ -6,7 +6,7 @@ package io.deephaven.web.client.api.console;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.application_pb.FieldInfo;
 import jsinterop.annotations.JsProperty;
 
 /**

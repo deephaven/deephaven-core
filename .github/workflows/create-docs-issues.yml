@@ -12,7 +12,7 @@ jobs:
   create-docs-ticket:
     # Only on merged PRs that contain the DocumentationNeeded flag
     if: github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded')
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -26,12 +26,13 @@ jobs:
             await script({github, context});
 
       - name: Slack Failure Message
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         id: slack-failure-message
         if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL }}
         with:
+          webhook-type: webhook-trigger
           payload: |
             {
               "repository": "${{ github.repository }}",

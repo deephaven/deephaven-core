@@ -4,7 +4,7 @@ name: Update web version
 on: workflow_dispatch
 jobs:
   update-web:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout latest
         uses: actions/checkout@v4

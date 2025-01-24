@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   quick:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           if-no-files-found: ignore
 
   verify-python-min-version:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

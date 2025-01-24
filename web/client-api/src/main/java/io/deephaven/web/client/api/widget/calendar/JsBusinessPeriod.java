@@ -5,7 +5,7 @@ package io.deephaven.web.client.api.widget.calendar;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.businesscalendardescriptor.BusinessPeriod;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.businesscalendardescriptor.BusinessPeriod;
 import jsinterop.annotations.JsProperty;
 
 @TsInterface

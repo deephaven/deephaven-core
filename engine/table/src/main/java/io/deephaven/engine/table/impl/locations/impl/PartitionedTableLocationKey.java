@@ -27,7 +27,7 @@ public abstract class PartitionedTableLocationKey implements ImmutableTableLocat
 
     protected final Map<String, Comparable<?>> partitions;
 
-    private int cachedHashCode;
+    protected int cachedHashCode;
 
     /**
      * Construct a new PartitionedTableLocationKey for the supplied {@code partitions}.

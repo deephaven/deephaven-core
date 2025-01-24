@@ -7,7 +7,7 @@ on:
 
 jobs:
   compare:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'deephaven' }}
     steps:
       - name: Checkout
@@ -35,10 +35,11 @@ jobs:
         run: ./gradlew --continue pullImage compareImage
 
       - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         id: notify-slack
         if: ${{ failure() }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DHC_NOTIFY }}
         with:
+          webhook-type: webhook-trigger
           payload: '{"repository": "${{ github.repository }}", "message": "${{ github.workflow }}/${{ github.job }} failure, some image is out of date", "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'

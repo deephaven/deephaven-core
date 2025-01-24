@@ -15,7 +15,7 @@ import pyarrow as pa
 
 from deephaven.dherror import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.table import Table
+from deephaven.table import Table, PartitionedTable
 
 _JPythonTableDataService = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService")
 _JTableKeyImpl = jpy.get_type("io.deephaven.extensions.barrage.util.PythonTableDataService$TableKeyImpl")
@@ -274,6 +274,25 @@ class TableDataService(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message=f"failed to make a table for the key {table_key}") from e
 
+    def make_partitioned_table(self, table_key: TableKey, *, refreshing: bool) -> PartitionedTable:
+        """ Creates a PartitionedTable backed by the backend service with the given table key.
+
+        Args:
+            table_key (TableKey): the table key
+            refreshing (bool): whether the partitioned table is live or static
+
+        Returns:
+            PartitionedTable: a new partitioned table
+
+        Raises:
+            DHError
+        """
+        j_table_key = _JTableKeyImpl(table_key)
+        try:
+            return PartitionedTable(self._j_tbl_service.makePartitionedTable(j_table_key, refreshing))
+        except Exception as e:
+            raise DHError(e, message=f"failed to make a partitioned table for the key {table_key}") from e
+
     def _table_schema(self, table_key: TableKey, schema_cb: jpy.JType, failure_cb: jpy.JType) -> None:
         """ Provides the table data schema and the partitioning values schema for the table with the given table key as
         two serialized byte buffers to the PythonTableDataService (Java) via callbacks. Only called by the
@@ -310,7 +329,7 @@ class TableDataService(JObjectWrapper):
             success_cb (jpy.JType): the success Java callback function with no arguments
             failure_cb (jpy.JType): the failure Java callback function with one argument: an exception string
         """
-        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: pa.Table):
+        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
                 location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))
@@ -347,7 +366,7 @@ class TableDataService(JObjectWrapper):
         Returns:
             Callable[[], None]: a function that can be called to unsubscribe from this subscription
         """
-        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: pa.Table):
+        def location_cb_proxy(pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:
                 location_cb.apply(j_tbl_location_key, jpy.array("java.nio.ByteBuffer", []))

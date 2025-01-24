@@ -30,8 +30,6 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
     protected final URI uri;
     protected final int order;
 
-    private int cachedHashCode;
-
     /**
      * Construct a new URITableLocationKey for the supplied {@code uri} and {@code partitions}.
      *

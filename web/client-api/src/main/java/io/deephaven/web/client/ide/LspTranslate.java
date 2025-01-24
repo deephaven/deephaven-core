@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.core.JsArray;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHoverResponse;
 import io.deephaven.web.shared.ide.lsp.*;
 
 /**
@@ -18,7 +19,7 @@ import io.deephaven.web.shared.ide.lsp.*;
 public class LspTranslate {
 
     public static CompletionItem toJs(
-            io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CompletionItem src) {
+            io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.CompletionItem src) {
         final CompletionItem item = new CompletionItem();
         item.setStart((int) src.getStart());
         item.setLength((int) src.getLength());
@@ -47,7 +48,7 @@ public class LspTranslate {
         }
 
         final JsArray<TextEdit> edits = new JsArray<>();
-        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.TextEdit> textEdits =
+        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextEdit> textEdits =
                 src.getAdditionalTextEditsList();
         for (int i = 0; i < textEdits.getLength(); i++) {
             edits.push(toJs(textEdits.getAt(i)));
@@ -57,7 +58,7 @@ public class LspTranslate {
     }
 
     private static TextEdit toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.TextEdit src) {
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.TextEdit src) {
         final TextEdit item = new TextEdit();
         item.text = src.getText();
         item.range = toJs(src.getRange());
@@ -65,7 +66,7 @@ public class LspTranslate {
     }
 
     private static DocumentRange toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.DocumentRange range) {
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.DocumentRange range) {
         final DocumentRange item = new DocumentRange();
         item.start = toJs(range.getStart());
         item.end = toJs(range.getEnd());
@@ -73,7 +74,7 @@ public class LspTranslate {
     }
 
     private static Position toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Position src) {
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.Position src) {
         final Position item = new Position();
         item.line = (int) src.getLine();
         item.character = (int) src.getCharacter();
@@ -81,7 +82,7 @@ public class LspTranslate {
     }
 
     private static MarkupContent toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.MarkupContent src) {
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.MarkupContent src) {
         final MarkupContent content = new MarkupContent();
 
         content.kind = src.getKind();
@@ -90,7 +91,7 @@ public class LspTranslate {
     }
 
     public static SignatureInformation toJs(
-            io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.SignatureInformation src) {
+            io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.SignatureInformation src) {
         final SignatureInformation item = new SignatureInformation();
         item.label = src.getLabel();
         if (src.hasDocumentation()) {
@@ -101,7 +102,7 @@ public class LspTranslate {
         }
 
         final JsArray<ParameterInformation> params = new JsArray<>();
-        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ParameterInformation> paramsList =
+        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ParameterInformation> paramsList =
                 src.getParametersList();
         for (int i = 0; i < paramsList.getLength(); i++) {
             params.push(toJs(paramsList.getAt(i)));
@@ -111,7 +112,7 @@ public class LspTranslate {
     }
 
     private static ParameterInformation toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ParameterInformation src) {
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.ParameterInformation src) {
         final ParameterInformation item = new ParameterInformation();
         item.label = src.getLabel();
         item.documentation = toJs(src.getDocumentation());
@@ -119,7 +120,7 @@ public class LspTranslate {
     }
 
     public static Hover toJs(
-            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHoverResponse src) {
+            final GetHoverResponse src) {
         final Hover item = new Hover();
 
         if (src.hasContents()) {
