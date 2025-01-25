@@ -54,6 +54,11 @@ For more information, see:
 * [gh pr create](https://cli.github.com/manual/gh_pr_create)
 * [CLI In Use](https://cli.github.com/manual/examples.html)
 
+## Labels
+
+- Each pull request must have a `ReleaseNotesNeeded` label if a user can perceive the changes.  Build or testing-only changes should have a `NoReleaseNotesNeeded` label.
+- Each pull request must have a `DocumentationNeeded` label if the user guide should be updated.  Pull requests that do not require a user guide update should have a `NoDocumentationNeeded` label.
+
 ## Styleguide
 The [styleguide](style/README.md) is applied globally to the entire project, except for generated code that gets checked in.
 To apply the styleguide, run `./gradlew spotlessApply`.
