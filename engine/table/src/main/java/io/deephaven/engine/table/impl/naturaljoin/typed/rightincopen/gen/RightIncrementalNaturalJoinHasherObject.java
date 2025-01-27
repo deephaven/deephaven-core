@@ -9,6 +9,7 @@ package io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen;
 
 import static io.deephaven.util.compare.ObjectComparisons.eq;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -74,7 +75,8 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
         }
     }
 
-    protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -99,7 +101,7 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
     }
 
     protected void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -122,7 +124,7 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
     }
 
     protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -148,7 +150,7 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
     }
 
     protected void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -171,7 +173,8 @@ final class RightIncrementalNaturalJoinHasherObject extends RightIncrementalNatu
     }
 
     protected void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            NaturalJoinType joinType) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();

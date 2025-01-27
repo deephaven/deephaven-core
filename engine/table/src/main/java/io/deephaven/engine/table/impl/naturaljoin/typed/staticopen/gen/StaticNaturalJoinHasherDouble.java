@@ -9,6 +9,7 @@ package io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen;
 
 import static io.deephaven.util.compare.DoubleComparisons.eq;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
@@ -68,7 +69,8 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
         }
     }
 
-    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -86,7 +88,14 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
                     mainRightRowKey.set(tableLocation, rightRowKeyToInsert);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                    if (joinType == NaturalJoinType.FIRST_MATCH) {
+                        // no-op, we already have the first match;
+                    } else if (joinType == NaturalJoinType.LAST_MATCH) {
+                        // we are processing sequentially so this is the latest;
+                        mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                    } else {
+                        mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                    }
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -126,7 +135,8 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
         }
     }
 
-    protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -139,8 +149,15 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
             while (!isStateEmpty(existingStateValue = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingStateValue != NO_RIGHT_STATE_VALUE) {
-                        mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
-                        throw new DuplicateRightRowDecorationException(tableLocation);
+                        if (joinType == NaturalJoinType.FIRST_MATCH) {
+                            // no-op, we already have the first match;
+                        } else if (joinType == NaturalJoinType.LAST_MATCH) {
+                            // we are processing sequentially so this is the latest;
+                            mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        } else {
+                            mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
+                            throw new DuplicateRightRowDecorationException(tableLocation);
+                        }
                     } else {
                         final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
                         mainRightRowKey.set(tableLocation, rightRowKeyToInsert);

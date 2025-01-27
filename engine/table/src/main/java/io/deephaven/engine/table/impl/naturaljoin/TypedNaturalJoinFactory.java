@@ -32,7 +32,14 @@ public class TypedNaturalJoinFactory {
 
     public static void staticBuildRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
+        builder.beginControlFlow("if (joinType == NaturalJoinType.FIRST_MATCH)");
+        builder.addStatement("// no-op, we already have the first match");
+        builder.nextControlFlow("else if (joinType == NaturalJoinType.LAST_MATCH)");
+        builder.addStatement("// we are processing sequentially so this is the latest");
+        builder.addStatement("mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition))");
+        builder.nextControlFlow("else");
         builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
+        builder.endControlFlow();
     }
 
     public static void staticBuildRightInsert(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
@@ -59,8 +66,16 @@ public class TypedNaturalJoinFactory {
     public static void staticProbeDecorateRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.beginControlFlow("if (existingStateValue != NO_RIGHT_STATE_VALUE)");
+
+        builder.beginControlFlow("if (joinType == NaturalJoinType.FIRST_MATCH)");
+        builder.addStatement("// no-op, we already have the first match");
+        builder.nextControlFlow("else if (joinType == NaturalJoinType.LAST_MATCH)");
+        builder.addStatement("// we are processing sequentially so this is the latest");
+        builder.addStatement("mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition))");
+        builder.nextControlFlow("else");
         builder.addStatement("mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE)");
         builder.addStatement("throw new $T(tableLocation)", DuplicateRightRowDecorationException.class);
+        builder.endControlFlow();
         builder.nextControlFlow("else");
         builder.addStatement("final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition)");
         builder.addStatement("mainRightRowKey.set(tableLocation, rightRowKeyToInsert)");

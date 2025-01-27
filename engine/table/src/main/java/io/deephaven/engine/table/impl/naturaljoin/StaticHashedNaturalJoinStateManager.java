@@ -24,15 +24,25 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         super(keySourcesForErrorMessages);
     }
 
-    public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
+    public abstract void buildFromLeftSide(
+            final Table leftTable,
+            final ColumnSource<?>[] leftSources,
             final IntegerArraySource leftHashSlots);
 
-    public abstract void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
+    public abstract void buildFromRightSide(
+            final Table rightTable,
+            final ColumnSource<?>[] rightSources,
+            final NaturalJoinType joinType);
 
-    public abstract void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,
+    public abstract void decorateLeftSide(
+            final RowSet leftRowSet,
+            final ColumnSource<?>[] leftSources,
             final LongArraySource leftRedirections);
 
-    public abstract void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources);
+    public abstract void decorateWithRightSide(
+            final Table rightTable,
+            final ColumnSource<?>[] rightSources,
+            final NaturalJoinType joinType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             NaturalJoinType joinType, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);

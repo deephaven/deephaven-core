@@ -132,16 +132,18 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             IntegerArraySource leftHashSlots, long hashSlotOffset);
 
     @Override
-    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
+    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
         if (rightTable.isEmpty()) {
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
-            buildTable(bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide);
+            buildTable(bc, rightTable.getRowSet(), rightSources,
+                    (chunkOk, sourceKeyChunks) -> buildFromRightSide(chunkOk, sourceKeyChunks, joinType));
         }
     }
 
-    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType);
 
     @Override
     public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
@@ -157,16 +159,18 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             LongArraySource leftRedirections, long redirectionsOffset);
 
     @Override
-    public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
+    public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
         if (rightTable.isEmpty()) {
             return;
         }
         try (final ProbeContext pc = makeProbeContext(rightSources, rightTable.size())) {
-            probeTable(pc, rightTable.getRowSet(), false, rightSources, this::decorateWithRightSide);
+            probeTable(pc, rightTable.getRowSet(), false, rightSources,
+                    (chunkOk, sourceKeyChunks) -> decorateWithRightSide(chunkOk, sourceKeyChunks, joinType));
         }
     }
 
-    abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType);
 
 
     protected void buildTable(

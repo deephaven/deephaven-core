@@ -26,7 +26,7 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
     public abstract void convertLeftDataIndex(int groupingSize, InitialBuildContext initialBuildContext,
             ColumnSource<RowSet> rowSetSource);
 
-    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources);
+    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, NaturalJoinType joinType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             NaturalJoinType joinType, InitialBuildContext initialBuildContext,
@@ -38,16 +38,17 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
 
     // modification probes
     public abstract void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet,
-            long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            NaturalJoinType joinType);
 
     public abstract void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     public abstract void removeRight(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     public abstract void addRightSide(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     public abstract Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 

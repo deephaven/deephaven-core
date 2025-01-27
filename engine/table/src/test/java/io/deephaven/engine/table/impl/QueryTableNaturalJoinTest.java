@@ -7,7 +7,6 @@ import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
@@ -41,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -749,7 +749,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(cj2);
         assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
     }
-
 
     public void testNaturalJoinZeroKeys() {
         setExpectError(false);
@@ -1523,6 +1522,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        Table njTable = table1.naturalJoin(table2, "String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
+
         pairMatch = table2.exactJoin(table1, "String");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
@@ -1533,6 +1536,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table1.exactJoin(table2, "String=String");
         assertEquals(3, pairMatch.size());
@@ -1545,8 +1552,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
-        pairMatch = table2.exactJoin(table1, "String=String");
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table1.naturalJoin(table2, "String=String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
+        pairMatch = table2.exactJoin(table1, "String=String");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
         assertEquals("String", pairMatch.getDefinition().getColumns().get(0).getName());
@@ -1556,6 +1566,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String=String", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         table1 = testRefreshingTable(col("String1", "c", "e", "g"));
 
@@ -1577,9 +1591,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3},
                 ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table1.naturalJoin(table2, "String1=String2", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
 
         pairMatch = table2.exactJoin(table1, "String2=String1");
-
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.numColumns());
         assertEquals("String2", pairMatch.getDefinition().getColumns().get(0).getName());
@@ -1593,6 +1609,62 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "e", "g"},
                 ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray());
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
+
+        // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
+        njTable = table2.naturalJoin(table1, "String2=String1", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(pairMatch, njTable);
+    }
+
+    private ColumnInfo[] createTestColumnInfos(final float nullFraction) {
+        final List<String> colsList = new ArrayList<>();
+        final List<TestDataGenerator> generators = new ArrayList<>();
+        colsList.addAll(Arrays.asList("intCol", "longCol", "doubleCol"));
+        generators.addAll(Arrays.asList(
+                new IntGenerator(10, 100, nullFraction),
+                new LongGenerator(10, 100, nullFraction),
+                new DoubleGenerator(10.1, 20.1, nullFraction)));
+
+        final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY),
+                generators.toArray(new TestDataGenerator[0]));
+        return columnInfos;
+    }
+
+    public void testNaturalJoinFirstByStatic() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
+            final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
+            final QueryTable rhs_raw = getTable(false, size, rhs_random, columnInfos);
+            final Table rhs = rhs_raw.firstBy("intCol");
+
+            final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+            final Table actual = lhs.naturalJoin(rhs_raw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                    NaturalJoinType.FIRST_MATCH);
+
+            assertTableEquals(expected, actual);
+        }
+    }
+
+    public void testNaturalJoinLastByStatic() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
+            final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
+            final QueryTable rhs_raw = getTable(false, size, rhs_random, columnInfos);
+            final Table rhs = rhs_raw.lastBy("intCol");
+
+            final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+            final Table actual = lhs.naturalJoin(rhs_raw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                    NaturalJoinType.LAST_MATCH);
+
+            assertTableEquals(expected, actual);
+        }
     }
 
     public void testSymbolTableJoin() throws IOException {

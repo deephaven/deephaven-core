@@ -214,18 +214,18 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources) {
+    public void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
         try (ProbeContext pc = makeProbeContext(rightSources, chunkSize)) {
             probeTable(pc, rightRowSet, false, rightSources,
-                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks));
+                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, joinType));
         }
     }
 
-    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinType joinType);
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
@@ -293,55 +293,56 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
         probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
-                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker));
+                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker,
+                        joinType));
     }
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     @Override
     public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         if (modified.isEmpty()) {
             return;
         }
         probeTable((ProbeContext) pc, modified, false, rightSources,
-                (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+                (chunkOk, sourceKeyChunks) -> modifyByRight(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType));
     }
 
     protected abstract void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     @Override
     public void removeRight(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         probeTable((ProbeContext) pc, rightRowSet, true, rightSources,
-                (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+                (chunkOk, sourceKeyChunks) -> removeRight(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType));
     }
 
     protected abstract void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     @Override
     public void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         probeTable((ProbeContext) pc, rightRowSet, false, rightSources,
-                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType));
     }
 
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     @Override
     protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,

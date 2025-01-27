@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by.typed;
 
 import com.squareup.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -101,6 +102,9 @@ public class TypedHasherFactory {
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
+            final ParameterSpec joinTypeParam =
+                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
+
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
                     .stateType(long.class).mainStateName("mainRightRowKey")
@@ -122,11 +126,16 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,
-                    TypedNaturalJoinFactory::staticBuildRightInsert));
+                    TypedNaturalJoinFactory::staticBuildRightInsert, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
-                    true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null));
+                    true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null, joinTypeParam));
         } else if (baseClass.equals(RightIncrementalNaturalJoinStateManagerTypedBase.class)) {
+            final ParameterSpec modifiedSlotTrackerParam =
+                    ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+            final ParameterSpec joinTypeParam =
+                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
+
             builder.classPrefix("RightIncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("rightincopen")
                     .openAddressedAlternate(false)
@@ -146,36 +155,33 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRightFound,
-                    null));
-
-
-            final TypeName modifiedSlotTracker = TypeName.get(NaturalJoinModifiedSlotTracker.class);
-            final ParameterSpec modifiedSlotTrackerParam =
-                    ParameterSpec.builder(modifiedSlotTracker, "modifiedSlotTracker").build();
+                    null, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
                     null,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalAddFound,
                     null,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalModify,
                     null,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", null, true,
                     TypedNaturalJoinFactory::rightIncrementalShift,
                     null,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
             final ParameterSpec modifiedSlotTrackerParam =
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
+            final ParameterSpec joinTypeParam =
+                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
 
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
@@ -199,22 +205,22 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
                     false, false, TypedNaturalJoinFactory::incrementalRightFound,
-                    TypedNaturalJoinFactory::incrementalRightInsert));
+                    TypedNaturalJoinFactory::incrementalRightInsert, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
                     TypedNaturalJoinFactory::incrementalRemoveRightMissing,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
                     true, true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
                     TypedNaturalJoinFactory::incrementalModifyRightFound,
                     TypedNaturalJoinFactory::incrementalModifyRightMissing,
-                    modifiedSlotTrackerParam));
+                    modifiedSlotTrackerParam, joinTypeParam));
 
             ParameterSpec probeContextParam =
                     ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
@@ -222,12 +228,12 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalApplyRightShift,
                     TypedNaturalJoinFactory::incrementalApplyRightShiftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam, probeContextParam));
+                    modifiedSlotTrackerParam, probeContextParam, joinTypeParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
                     true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
-                    ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
+                    ParameterSpec.builder(LongArraySource.class, "leftRedirections").build(),
                     ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
