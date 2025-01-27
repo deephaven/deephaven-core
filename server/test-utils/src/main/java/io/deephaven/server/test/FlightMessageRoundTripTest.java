@@ -56,6 +56,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -73,6 +74,7 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.DateMilliVector;
+import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.TimeStampMicroVector;
@@ -103,6 +105,7 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -1103,9 +1106,9 @@ public abstract class FlightMessageRoundTripTest {
 
     private void testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit timeUnit, long factor) {
         final int exportId = nextTicket++;
-        final Field field = Field.notNullable("Duration", new ArrowType.Duration(timeUnit));
+        final Field field = Field.nullable("Duration", new ArrowType.Duration(timeUnit));
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final BigIntVector vector = new BigIntVector(field, allocator);
+                final DurationVector vector = new DurationVector(field, allocator);
                 final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
@@ -1113,7 +1116,11 @@ public abstract class FlightMessageRoundTripTest {
             final int numRows = 12;
             vector.allocateNew(numRows);
             for (int ii = 0; ii < numRows; ++ii) {
-                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+                if (ii % 3 == 0) {
+                    vector.setNull(ii);
+                } else {
+                    vector.set(ii, ii);
+                }
             }
 
             root.setRowCount(numRows);
@@ -1125,14 +1132,13 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(result.getState(), "result.getState()",
                     ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
             Assert.eq(result.get().size(), "result.get().size()", numRows);
-            final ColumnSource<Long> duration = result.get().getColumnSource("Duration");
+            final ColumnSource<Duration> duration = result.get().getColumnSource("Duration");
 
             for (int ii = 0; ii < numRows; ++ii) {
                 if (ii % 3 == 0) {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", QueryConstants.NULL_LONG,
-                            "QueryConstants.NULL_LONG");
+                    Assert.eqNull(duration.get(ii), "duration.get(ii)");
                 } else {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", ii * factor, "ii * factor");
+                    Assert.eq(duration.get(ii).toNanos(), "duration.get(ii).toNanos()", ii * factor, "ii * factor");
                 }
             }
         }

@@ -57,6 +57,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
+import org.apache.arrow.vector.PeriodDuration;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -72,9 +73,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -549,7 +552,11 @@ public class BarrageUtil {
                 }
                 return boolean.class;
             case Duration:
-                return long.class;
+                return Duration.class;
+            case Time:
+                return LocalTime.class;
+            case Date:
+                return LocalDate.class;
             case Timestamp:
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowField.getType();
                 final String tz = timestampType.getTimezone();
@@ -571,12 +578,32 @@ public class BarrageUtil {
                             return explicitType;
                         }
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
-                                " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
+                                " of floatingPointType(Precision=" + floatingPointType.getPrecision() + ")");
                 }
             case Decimal:
                 return BigDecimal.class;
             case Utf8:
                 return java.lang.String.class;
+            case Binary:
+            case FixedSizeBinary:
+                return byte[].class;
+            case Interval:
+                final ArrowType.Interval intervalType = (ArrowType.Interval) arrowField.getType();
+                switch (intervalType.getUnit()) {
+                    case DAY_TIME:
+                        return Duration.class;
+                    case YEAR_MONTH:
+                        return Period.class;
+                    case MONTH_DAY_NANO:
+                        return PeriodDuration.class;
+                    default:
+                        if (explicitType != null) {
+                            return explicitType;
+                        }
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                                " of intervalType(IntervalUnit=" + intervalType.getUnit() + ")");
+                }
+
             default:
                 if (explicitType != null) {
                     return explicitType;

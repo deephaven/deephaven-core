@@ -53,6 +53,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.VectorFactory;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -75,26 +76,7 @@ import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.util.Preconditions;
-import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.BitVector;
-import org.apache.arrow.vector.Decimal256Vector;
-import org.apache.arrow.vector.DecimalVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float2Vector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.FloatingPointVector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampVector;
-import org.apache.arrow.vector.TinyIntVector;
-import org.apache.arrow.vector.UInt1Vector;
-import org.apache.arrow.vector.UInt2Vector;
-import org.apache.arrow.vector.UInt4Vector;
-import org.apache.arrow.vector.UInt8Vector;
-import org.apache.arrow.vector.ValueVector;
-import org.apache.arrow.vector.VarCharVector;
-import org.apache.arrow.vector.VectorSchemaRoot;
+import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.complex.BaseListVector;
 import org.apache.arrow.vector.complex.FixedSizeListVector;
 import org.apache.arrow.vector.complex.ListVector;
@@ -103,7 +85,10 @@ import org.apache.arrow.vector.complex.impl.ComplexCopier;
 import org.apache.arrow.vector.complex.reader.FieldReader;
 import org.apache.arrow.vector.complex.writer.BaseWriter;
 import org.apache.arrow.vector.complex.writer.FieldWriter;
+import org.apache.arrow.vector.holders.NullableDurationHolder;
+import org.apache.arrow.vector.types.DateUnit;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
+import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -123,11 +108,16 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -141,6 +131,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -808,6 +799,7 @@ public class JettyBarrageChunkFactoryTest {
         new DecimalRoundTripTest(BigDecimal.class, 38, 0).runTest();
         new DecimalRoundTripTest(BigDecimal.class, 38, 19).runTest();
         new DecimalRoundTripTest(BigDecimal.class, 38, 37).runTest();
+        new DecimalRoundTripTest(BigInteger.class, 38, 0).runTest();
 
         // test dh coercion
         new DecimalRoundTripTest(byte.class).runTest();
@@ -831,6 +823,7 @@ public class JettyBarrageChunkFactoryTest {
         new Decimal256RoundTripTest(BigDecimal.class, 76, 0).runTest();
         new Decimal256RoundTripTest(BigDecimal.class, 76, 38).runTest();
         new Decimal256RoundTripTest(BigDecimal.class, 76, 75).runTest();
+        new Decimal256RoundTripTest(BigInteger.class, 76, 0).runTest();
 
         // test dh coercion
         new Decimal256RoundTripTest(byte.class).runTest();
@@ -843,6 +836,25 @@ public class JettyBarrageChunkFactoryTest {
         new DecimalRoundTripTest(float.class, floatDigits, floatDigits / 2).runTest();
         final int doubleDigits = (int) Math.floor(Math.log10(1L << 53));
         new DecimalRoundTripTest(double.class, doubleDigits, doubleDigits / 2).runTest();
+    }
+
+    @Test
+    public void testBinary() throws Exception {
+        new BinaryRoundTripTest(byte[].class).isDefault().runTest();
+        new BinaryRoundTripTest(ByteVector.class).runTest();
+        new BinaryRoundTripTest(ByteBuffer.class).runTest();
+    }
+
+    @Test
+    public void testFixedSizeBinary() throws Exception {
+        new FixedSizeBinaryRoundTripTest(byte[].class, 16).isDefault().runTest();
+        new FixedSizeBinaryRoundTripTest(ByteVector.class, 12).runTest();
+        new FixedSizeBinaryRoundTripTest(ByteBuffer.class, 21).runTest();
+    }
+
+    @Test
+    public void testUtf8() throws Exception {
+        new Utf8RoundTripTest(String.class).isDefault().runTest();
     }
 
     @Test
@@ -863,10 +875,10 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testTimestamp() throws Exception {
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.NANOSECOND, null).isDefault().runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.MICROSECOND, null).runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND, null).runTest();
-        new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND, null).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.NANOSECOND).isDefault().runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MICROSECOND).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.MILLISECOND).runTest();
+        new TimeStampRoundTripTest(Instant.class, TimeUnit.SECOND).runTest();
 
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.NANOSECOND, "America/New_York").isDefault().runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
@@ -876,27 +888,49 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testDuration() throws Exception {
-        // TODO NATE NOCOMMIT
+        new DurationRoundTripTest(Duration.class, TimeUnit.NANOSECOND).isDefault().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.MICROSECOND).isDefault().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.MILLISECOND).isDefault().runTest();
+        new DurationRoundTripTest(Duration.class, TimeUnit.SECOND).isDefault().runTest();
     }
 
     @Test
     public void testTime() throws Exception {
-        // TODO NATE NOCOMMIT
-        // local time
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.NANOSECOND).isDefault().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.MICROSECOND).isDefault().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.MILLISECOND).isDefault().runTest();
+        new TimeRoundTripTest(LocalTime.class, TimeUnit.SECOND).isDefault().runTest();
     }
 
     @Test
     public void testDate() throws Exception {
-        // TODO NATE NOCOMMIT
-        // local date
+        new DateRoundTripTest(LocalDate.class, DateUnit.DAY).isDefault().runTest();
+        new DateRoundTripTest(LocalDate.class, DateUnit.MILLISECOND).isDefault().runTest();
     }
 
     @Test
     public void testInterval() throws Exception {
+        // new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefault().runTest();
+        // new IntervalRoundTripTest(Period.class, IntervalUnit.YEAR_MONTH).isDefault().runTest();
+        // new IntervalRoundTripTest(Period.class, IntervalUnit.DAY_TIME).runTest();
+        // new IntervalRoundTripTest(Period.class, IntervalUnit.MONTH_DAY_NANO).runTest();
+        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.YEAR_MONTH).runTest();
+        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.DAY_TIME).runTest();
+        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.MONTH_DAY_NANO).isDefault().runTest();
+    }
+
+    @Test
+    public void testMultiUnion() throws Exception {
         // TODO NATE NOCOMMIT
-        // duration
-        // period
-        // period duration
+    }
+
+    @Test
+    public void testBinaryCustomMappings() throws Exception {
+        // TODO NATE NOCOMMIT
+        // String
+        // BigDecimal
+        // BigInteger
+        // Schema
     }
 
     @SafeVarargs
@@ -989,7 +1023,6 @@ public class JettyBarrageChunkFactoryTest {
         }
 
         public void runTest() throws Exception {
-            runTest(TestNullMode.NONE, TestArrayMode.VIEW_ARRAY);
             for (TestArrayMode arrayMode : TestArrayMode.values()) {
                 for (TestNullMode mode : TestNullMode.values()) {
                     runTest(mode, arrayMode);
@@ -1206,36 +1239,10 @@ public class JettyBarrageChunkFactoryTest {
                                 newView.getDataVector().setValueCount(totalLen);
                                 if (dhType == ZonedDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-
-                                    int newChildOffset = 0;
-                                    final TimeStampVector srcChild =
-                                            (TimeStampVector) sourceArr.getChildrenFromFields().get(0);
-                                    final TimeStampVector newChild =
-                                            (TimeStampVector) newView.getChildrenFromFields().get(0);
-                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
-                                        if (sourceArr.isNull(ii)) {
-                                            newView.setNull(ii);
-                                            if (!arrayMode.isVariableLength()) {
-                                                newChildOffset += listItemLength;
-                                            }
-                                        } else {
-                                            final int srcStartOffset = sourceArr.getElementStartIndex(ii);
-                                            // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
-                                            // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
-                                            final int len = sourceArr.getObject(ii).size();
-                                            newView.startNewValue(ii);
-                                            newView.endValue(ii, len);
-                                            for (int jj = 0; jj < len; ++jj) {
-                                                final int so = srcStartOffset + jj;
-                                                if (srcChild.isNull(so)) {
-                                                    newChild.setNull(newChildOffset + jj);
-                                                } else {
-                                                    newChild.set(newChildOffset + jj, srcChild.get(so));
-                                                }
-                                            }
-                                            newChildOffset += len;
-                                        }
-                                    }
+                                    filterZoneDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
+                                } else if (dhType == Duration.class) {
+                                    // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
+                                    filterDurationSource(arrayMode, sourceArr, newView, source, listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
@@ -1272,45 +1279,18 @@ public class JettyBarrageChunkFactoryTest {
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
                                 if (dhType == ZonedDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-
-                                    int newChildOffset = 0;
-                                    final TimeStampVector srcChild =
-                                            (TimeStampVector) sourceArr.getChildrenFromFields().get(0);
-                                    final TimeStampVector newChild =
-                                            (TimeStampVector) newView.getChildrenFromFields().get(0);
-                                    for (int ii = 0; ii < source.getRowCount(); ++ii) {
-                                        if (sourceArr.isNull(ii)) {
-                                            newView.setNull(ii);
-                                            if (!arrayMode.isVariableLength()) {
-                                                newChildOffset += listItemLength;
-                                            }
-                                        } else {
-                                            final int srcStartOffset = sourceArr.getElementStartIndex(ii);
-                                            final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
-                                            if (arrayMode.isVariableLength()) {
-                                                ListVector newAsLV = (ListVector) newView;
-                                                newAsLV.startNewValue(ii);
-                                                newAsLV.endValue(ii, len);
-                                            } else {
-                                                ((FixedSizeListVector) newView).setNotNull(ii);
-                                            }
-                                            for (int jj = 0; jj < len; ++jj) {
-                                                final int so = srcStartOffset + jj;
-                                                if (srcChild.isNull(so)) {
-                                                    newChild.setNull(newChildOffset + jj);
-                                                } else {
-                                                    newChild.set(newChildOffset + jj, srcChild.get(so));
-                                                }
-                                            }
-                                            newChildOffset += len;
-                                        }
-                                    }
+                                    filterZoneDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
+                                } else if (dhType == Duration.class) {
+                                    // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
+                                    filterDurationSource(arrayMode, sourceArr, newView, source, listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
                                             newView.setNull(ii);
                                         } else {
-                                            newView.copyFrom(ii, ii, sourceArr);
+                                            // TODO: use when https://github.com/apache/arrow-java/issues/559 is fixed
+                                            // newView.copyFrom(ii, ii, sourceArr);
+                                            copyListItem(newView, sourceArr, ii);
                                         }
                                     }
                                 }
@@ -1333,11 +1313,127 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
 
+    private static void filterZoneDateTimeSource(
+            final TestArrayMode arrayMode,
+            @NotNull final BaseListVector sourceArr,
+            @NotNull final BaseListVector newView,
+            @NotNull final VectorSchemaRoot source,
+            final int listItemLength) {
+        int newChildOffset = 0;
+        final TimeStampVector srcChild =
+                (TimeStampVector) sourceArr.getChildrenFromFields().get(0);
+        final TimeStampVector newChild =
+                (TimeStampVector) newView.getChildrenFromFields().get(0);
+        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+            if (sourceArr.isNull(ii)) {
+                newView.setNull(ii);
+                if (!arrayMode.isVariableLength()) {
+                    newChildOffset += listItemLength;
+                }
+            } else {
+                final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
+                // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                final int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                if (listItemLength != 0) {
+                    ((FixedSizeListVector) newView).setNotNull(ii);
+                } else if (arrayMode.isVariableLength()) {
+                    ListVector newAsLV = (ListVector) newView;
+                    newAsLV.startNewValue(ii);
+                    newAsLV.endValue(ii, len);
+                }
+                for (int jj = 0; jj < len; ++jj) {
+                    final int so = srcStartOffset + jj;
+                    if (srcChild.isNull(so)) {
+                        newChild.setNull(newChildOffset + jj);
+                    } else {
+                        newChild.set(newChildOffset + jj, srcChild.get(so));
+                    }
+                }
+                newChildOffset += len;
+            }
+        }
+    }
+
+    private static void filterDurationSource(
+            final TestArrayMode arrayMode,
+            @NotNull final BaseListVector sourceArr,
+            @NotNull final BaseListVector newView,
+            @NotNull final VectorSchemaRoot source,
+            final int listItemLength) {
+        int newChildOffset = 0;
+        final DurationVector srcChild =
+                (DurationVector) sourceArr.getChildrenFromFields().get(0);
+        final DurationVector newChild =
+                (DurationVector) newView.getChildrenFromFields().get(0);
+        for (int ii = 0; ii < source.getRowCount(); ++ii) {
+            if (sourceArr.isNull(ii)) {
+                newView.setNull(ii);
+                if (!arrayMode.isVariableLength()) {
+                    newChildOffset += listItemLength;
+                }
+            } else {
+                final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
+                // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                final int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                if (listItemLength != 0) {
+                    ((FixedSizeListVector) newView).setNotNull(ii);
+                } else if (arrayMode.isVariableLength()) {
+                    ListVector newAsLV = (ListVector) newView;
+                    newAsLV.startNewValue(ii);
+                    newAsLV.endValue(ii, len);
+                }
+                for (int jj = 0; jj < len; ++jj) {
+                    final int so = srcStartOffset + jj;
+                    if (srcChild.isNull(so)) {
+                        newChild.setNull(newChildOffset + jj);
+                    } else {
+                        final NullableDurationHolder h = new NullableDurationHolder();
+                        srcChild.get(so, h);
+                        newChild.set(newChildOffset + jj, h.value);
+                    }
+                }
+                newChildOffset += len;
+            }
+        }
+    }
+
     private static void copyListItem(
             @NotNull final BaseListVector dest,
             @NotNull final BaseListVector source,
             final int index) {
         Preconditions.checkArgument(dest.getMinorType() == source.getMinorType());
+
+        final FieldVector srcChildVector = source.getChildrenFromFields().get(0);
+        if (srcChildVector instanceof FixedSizeBinaryVector) {
+            // TODO: remove branch when https://github.com/apache/arrow-java/issues/559 is fixed
+            final FixedSizeBinaryVector srcChild = (FixedSizeBinaryVector) srcChildVector;
+            final FixedSizeBinaryVector dstChild = (FixedSizeBinaryVector) dest.getChildrenFromFields().get(0);
+            final int len = ((Collection<?>) source.getObject(index)).size();
+
+            if (dest instanceof FixedSizeListVector) {
+                ((FixedSizeListVector) dest).setNotNull(index);
+            } else if (dest instanceof ListVector) {
+                ((ListVector) dest).startNewValue(index);
+                ((ListVector) dest).endValue(index, len);
+            } else {
+                ((ListViewVector) dest).startNewValue(index);
+                ((ListViewVector) dest).endValue(index, len);
+            }
+
+            final int srcOffset = source.getElementStartIndex(index);
+            final int dstOffset = dest.getElementStartIndex(index);
+            for (int jj = 0; jj < len; ++jj) {
+                if (srcChild.isNull(srcOffset + jj)) {
+                    dstChild.setNull(dstOffset + jj);
+                } else {
+                    dstChild.set(dstOffset + jj, srcChild.get(srcOffset + jj));
+                }
+            }
+            return;
+        }
+
         FieldReader in = source.getReader();
         in.setPosition(index);
         FieldWriter out = getListWriter(dest);
@@ -1895,8 +1991,7 @@ public class JettyBarrageChunkFactoryTest {
             }
 
             for (int ii = 0; ii < NUM_ROWS; ++ii) {
-                // source.set(ii, rnd.nextLong() / factor);
-                source.set(ii, ii);
+                source.set(ii, rnd.nextLong() / factor);
                 if (source.get(ii) == QueryConstants.NULL_LONG) {
                     --ii;
                 }
@@ -1911,6 +2006,325 @@ public class JettyBarrageChunkFactoryTest {
                     assertTrue(dest.isNull(ii));
                 } else {
                     assertEquals(source.get(ii), dest.get(ii));
+                }
+            }
+        }
+    }
+
+    private class DurationRoundTripTest extends RoundTripTest<DurationVector> {
+        private final TimeUnit timeUnit;
+
+        public DurationRoundTripTest(
+                @NotNull Class<?> dhType,
+                final TimeUnit timeUnit) {
+            super(dhType);
+            this.timeUnit = timeUnit;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Duration(timeUnit), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final DurationVector source) {
+            final long factor;
+            if (timeUnit == TimeUnit.NANOSECOND) {
+                factor = 1;
+            } else if (timeUnit == TimeUnit.MICROSECOND) {
+                factor = 1_000;
+            } else if (timeUnit == TimeUnit.MILLISECOND) {
+                factor = 1_000_000;
+            } else if (timeUnit == TimeUnit.SECOND) {
+                factor = 1_000_000_000;
+            } else {
+                throw new IllegalArgumentException("Unexpected time unit: " + timeUnit);
+            }
+
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                final long nextValue = rnd.nextLong() / factor;
+                source.set(ii, nextValue);
+                if (nextValue == QueryConstants.NULL_LONG) {
+                    --ii;
+                }
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull DurationVector source, @NotNull DurationVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertEquals(source.getObject(ii), dest.getObject(ii));
+                }
+            }
+        }
+    }
+
+    private class TimeRoundTripTest extends RoundTripTest<BaseFixedWidthVector> {
+        private final TimeUnit timeUnit;
+
+        public TimeRoundTripTest(
+                @NotNull Class<?> dhType,
+                final TimeUnit timeUnit) {
+            super(dhType);
+            this.timeUnit = timeUnit;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            final int bw;
+            if (timeUnit == TimeUnit.SECOND || timeUnit == TimeUnit.MILLISECOND) {
+                bw = 32;
+            } else {
+                bw = 64;
+            }
+            return createSchema(isNullable, isDefault, new ArrowType.Time(timeUnit, bw), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final BaseFixedWidthVector source) {
+            final long factor;
+            final BiConsumer<Integer, Long> setFunc;
+            if (timeUnit == TimeUnit.NANOSECOND) {
+                factor = 1;
+                setFunc = (ii, val) -> ((TimeNanoVector) source).set(ii, val.longValue());
+            } else if (timeUnit == TimeUnit.MICROSECOND) {
+                factor = 1_000;
+                setFunc = (ii, val) -> ((TimeMicroVector) source).set(ii, val.longValue());
+            } else if (timeUnit == TimeUnit.MILLISECOND) {
+                factor = 1_000_000;
+                setFunc = (ii, val) -> ((TimeMilliVector) source).set(ii, val.intValue());
+            } else if (timeUnit == TimeUnit.SECOND) {
+                factor = 1_000_000_000;
+                setFunc = (ii, val) -> ((TimeSecVector) source).set(ii, val.intValue());
+            } else {
+                throw new IllegalArgumentException("Unexpected time unit: " + timeUnit);
+            }
+
+            // this gets propagated to LocalTime#ofNanoOfDay; so we're limited to max nanos in a day
+            final long nanosInDay = 24L * 60 * 60 * 1_000_000_000;
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                final long nextValue = (Math.abs(rnd.nextLong()) % nanosInDay) / factor;
+                setFunc.accept(ii, nextValue);
+                Assert.neq(nextValue, "nextValue", QueryConstants.NULL_LONG, "QueryConstants.NULL_LONG");
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull BaseFixedWidthVector source,
+                @NotNull BaseFixedWidthVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertEquals(source.getObject(ii), dest.getObject(ii));
+                }
+            }
+        }
+    }
+
+    private class DateRoundTripTest extends RoundTripTest<BaseFixedWidthVector> {
+        private final DateUnit dateUnit;
+
+        public DateRoundTripTest(
+                @NotNull Class<?> dhType,
+                final DateUnit dateUnit) {
+            super(dhType);
+            this.dateUnit = dateUnit;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Date(dateUnit), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final BaseFixedWidthVector source) {
+            final long factor;
+            final BiConsumer<Integer, Long> setFunc;
+            if (dateUnit == DateUnit.DAY) {
+                factor = 1;
+                setFunc = (ii, val) -> ((DateDayVector) source).set(ii, val.intValue());
+            } else if (dateUnit == DateUnit.MILLISECOND) {
+                factor = 86_400_000;
+                setFunc = (ii, val) -> ((DateMilliVector) source).set(ii, val * factor);
+            } else {
+                throw new IllegalArgumentException("Unexpected date unit: " + dateUnit);
+            }
+
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                final long nextValue = rnd.nextLong() / factor;
+                setFunc.accept(ii, nextValue);
+                if (nextValue == QueryConstants.NULL_LONG) {
+                    --ii;
+                }
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull BaseFixedWidthVector source,
+                @NotNull BaseFixedWidthVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertEquals(source.getObject(ii), dest.getObject(ii));
+                }
+            }
+        }
+    }
+
+    private class IntervalRoundTripTest extends RoundTripTest<BaseFixedWidthVector> {
+        private final IntervalUnit intervalUnit;
+
+        public IntervalRoundTripTest(
+                @NotNull Class<?> dhType,
+                final IntervalUnit intervalUnit) {
+            super(dhType);
+            this.intervalUnit = intervalUnit;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Interval(intervalUnit), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull final BaseFixedWidthVector source) {
+            // We'll populate random values depending on the interval type:
+            // - YEAR_MONTH => single int (months)
+            // - DAY_TIME => two ints (days, milliseconds)
+            // - MONTH_DAY_NANO => (months, days, nanos)
+
+            for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                switch (intervalUnit) {
+                    case YEAR_MONTH: {
+                        final IntervalYearVector iv = (IntervalYearVector) source;
+                        final int months = rnd.nextInt();
+                        iv.set(ii, months);
+                        break;
+                    }
+                    case DAY_TIME: {
+                        final IntervalDayVector iv = (IntervalDayVector) source;
+                        final int days = rnd.nextInt();
+                        final int milliseconds = rnd.nextInt();
+                        iv.set(ii, days, milliseconds);
+                        break;
+                    }
+                    case MONTH_DAY_NANO: {
+                        final IntervalMonthDayNanoVector iv = (IntervalMonthDayNanoVector) source;
+                        final int months = rnd.nextInt();
+                        final int days = rnd.nextInt();
+                        final long nanos = rnd.nextLong();
+                        iv.set(ii, months, days, nanos);
+                        break;
+                    }
+                    default:
+                        throw new IllegalArgumentException("Unexpected interval unit: " + intervalUnit);
+                }
+            }
+
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull BaseFixedWidthVector source,
+                @NotNull BaseFixedWidthVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertEquals(source.getObject(ii), dest.getObject(ii));
+                }
+            }
+        }
+    }
+
+    private class BinaryRoundTripTest extends RoundTripTest<VarBinaryVector> {
+
+        public BinaryRoundTripTest(@NotNull Class<?> dhType) {
+            super(dhType);
+            if (dhType != ByteBuffer.class) {
+                this.componentType = byte.class;
+            }
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Binary(), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull VarBinaryVector source) {
+            for (int i = 0; i < NUM_ROWS; i++) {
+                int len = rnd.nextInt(16);
+                byte[] data = new byte[len];
+                rnd.nextBytes(data);
+                source.setSafe(i, data);
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(
+                final TestNullMode nullMode,
+                @NotNull final VarBinaryVector source,
+                @NotNull final VarBinaryVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ii++) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertArrayEquals(source.getObject(ii), dest.getObject(ii));
+                }
+            }
+        }
+    }
+
+    private class FixedSizeBinaryRoundTripTest extends RoundTripTest<FixedSizeBinaryVector> {
+        final int fixedLength;
+
+        public FixedSizeBinaryRoundTripTest(@NotNull Class<?> dhType, int fixedLength) {
+            super(dhType);
+            if (dhType != ByteBuffer.class) {
+                this.componentType = byte.class;
+            }
+            this.fixedLength = fixedLength;
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.FixedSizeBinary(fixedLength), dhType);
+        }
+
+        @Override
+        public int initializeRoot(@NotNull FixedSizeBinaryVector source) {
+            for (int i = 0; i < NUM_ROWS; i++) {
+                byte[] data = new byte[fixedLength];
+                rnd.nextBytes(data);
+                source.setSafe(i, data);
+            }
+            return NUM_ROWS;
+        }
+
+        @Override
+        public void validate(
+                final TestNullMode nullMode,
+                @NotNull final FixedSizeBinaryVector source,
+                @NotNull final FixedSizeBinaryVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ii++) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    try {
+                        assertArrayEquals(source.getObject(ii), dest.getObject(ii));
+                    } catch (Error e) {
+                        throw e;
+                    }
                 }
             }
         }

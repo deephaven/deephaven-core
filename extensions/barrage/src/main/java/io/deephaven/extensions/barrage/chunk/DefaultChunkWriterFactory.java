@@ -1501,8 +1501,12 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     @NotNull final DataOutput dos,
                     @NotNull final RowSequence subset) {
                 final ObjectChunk<byte[], Values> objectChunk = context.getChunk().asObjectChunk();
+                final byte[] nullValue = new byte[elementWidth];
                 subset.forAllRowKeys(row -> {
-                    final byte[] data = objectChunk.get((int) row);
+                    byte[] data = objectChunk.get((int) row);
+                    if (data == null) {
+                        data = nullValue;
+                    }
                     if (data.length != elementWidth) {
                         throw new IllegalArgumentException(String.format(
                                 "Expected fixed size binary of %d bytes, but got %d bytes when serializing %s",
@@ -1531,8 +1535,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     @NotNull final DataOutput dos,
                     @NotNull final RowSequence subset) {
                 final ObjectChunk<ByteVector, Values> objectChunk = context.getChunk().asObjectChunk();
+                final byte[] nullValue = new byte[elementWidth];
                 subset.forAllRowKeys(row -> {
-                    final byte[] data = objectChunk.get((int) row).toArray();
+                    final ByteVector rowValue = objectChunk.get((int) row);
+                    final byte[] data = rowValue == null ? nullValue : rowValue.toArray();
                     if (data.length != elementWidth) {
                         throw new IllegalArgumentException(String.format(
                                 "Expected fixed size binary of %d bytes, but got %d bytes when serializing %s",
@@ -1561,8 +1567,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     @NotNull final DataOutput dos,
                     @NotNull final RowSequence subset) {
                 final ObjectChunk<ByteBuffer, Values> objectChunk = context.getChunk().asObjectChunk();
+                final byte[] nullValue = new byte[elementWidth];
                 subset.forAllRowKeys(row -> {
-                    final byte[] data = objectChunk.get((int) row).array();
+                    final ByteBuffer rowValue = objectChunk.get((int) row);
+                    final byte[] data = rowValue == null ? nullValue : rowValue.array();
                     if (data.length != elementWidth) {
                         throw new IllegalArgumentException(String.format(
                                 "Expected fixed size binary of %d bytes, but got %d bytes when serializing %s",

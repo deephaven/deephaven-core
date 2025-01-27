@@ -147,7 +147,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         register(ArrowType.ArrowTypeID.FixedSizeBinary, ByteBuffer.class,
                 DefaultChunkReaderFactory::fixedSizeBinaryToByteBuffer);
         register(ArrowType.ArrowTypeID.Date, LocalDate.class, DefaultChunkReaderFactory::dateToLocalDate);
-        register(ArrowType.ArrowTypeID.Interval, long.class, DefaultChunkReaderFactory::intervalToDurationLong);
         register(ArrowType.ArrowTypeID.Interval, Duration.class, DefaultChunkReaderFactory::intervalToDuration);
         register(ArrowType.ArrowTypeID.Interval, Period.class, DefaultChunkReaderFactory::intervalToPeriod);
         register(ArrowType.ArrowTypeID.Interval, PeriodDuration.class,
@@ -1630,38 +1629,6 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
     }
 
-    private static ChunkReader<WritableLongChunk<Values>> intervalToDurationLong(
-            final ArrowType arrowType,
-            final BarrageTypeInfo<Field> typeInfo,
-            final BarrageOptions options) {
-        // See intervalToPeriod's comment for more information on wire format.
-
-        final ArrowType.Interval intervalType = (ArrowType.Interval) arrowType;
-        switch (intervalType.getUnit()) {
-            case YEAR_MONTH:
-            case MONTH_DAY_NANO:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
-                        "Do not support %s interval to Duration as long conversion", intervalType));
-
-            case DAY_TIME:
-                return LongChunkReader
-                        .transformFrom(new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
-                            final int days = dataInput.readInt();
-                            final int millis = dataInput.readInt();
-                            return Duration.ofDays(days).plusMillis(millis);
-                        }), (src, dst, dstOffset) -> {
-                            for (int ii = 0; ii < src.size(); ++ii) {
-                                final Duration value = src.get(ii);
-                                dst.set(dstOffset + ii, value == null ? QueryConstants.NULL_LONG : value.toNanos());
-                            }
-                        });
-
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Unexpected interval unit: " + intervalType.getUnit());
-        }
-    }
-
     private static ChunkReader<WritableObjectChunk<Duration, Values>> intervalToDuration(
             final ArrowType arrowType,
             final BarrageTypeInfo<Field> typeInfo,
@@ -1676,7 +1643,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         "Do not support %s interval to Duration conversion", intervalType));
 
             case DAY_TIME:
-                return new FixedWidthChunkReader<>(Integer.BYTES * 2 + Long.BYTES, false, options, dataInput -> {
+                return new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
                     final int days = dataInput.readInt();
                     final int millis = dataInput.readInt();
                     return Duration.ofDays(days).plusMillis(millis);
