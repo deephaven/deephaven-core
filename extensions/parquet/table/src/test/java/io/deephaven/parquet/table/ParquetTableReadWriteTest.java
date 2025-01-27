@@ -3671,12 +3671,12 @@ public final class ParquetTableReadWriteTest {
         final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         writeTable(table, dest.getPath());
 
-        final ParquetTableLocationKey tableLocationKey =
+        final ParquetTableLocationKey newTableLocationKey =
                 new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
-        final ParquetTableLocation tableLocation =
-                new ParquetTableLocation(StandaloneTableKey.getInstance(), tableLocationKey, EMPTY);
+        final ParquetTableLocation newTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
         try {
-            parquetTableLocationConsumer.accept(tableLocation);
+            parquetTableLocationConsumer.accept(newTableLocation);
         } catch (final Exception e) {
             if (e instanceof UncheckedIOException && e.getMessage().contains("makeHandle encountered exception")) {
                 fail("Unexpected exception: " + e);
@@ -3704,6 +3704,7 @@ public final class ParquetTableReadWriteTest {
         nonExistentTableLocation.getLastModifiedTimeMillis();
         nonExistentTableLocation.refresh();
         nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0);
+        makeNewTableLocationAndVerifyNoMakeHandleException(nonExistentTableLocation::handleUpdate);
         {
             // To test the following make a new temporary table location
             final File tempDest = new File(rootFile, "testLocation.parquet");

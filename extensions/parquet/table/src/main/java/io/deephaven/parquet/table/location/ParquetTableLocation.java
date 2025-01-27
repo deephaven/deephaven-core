@@ -134,18 +134,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
             columnTypes = tableInfo.columnTypeMap();
             sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
 
-            isInitialized = true;
-            isInitializedVolatile = true;
-
-            // The following calls might internally call initialize() again, but that's fine because we're already
-            // initialized at this point.
-
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
                 handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
             } else {
                 handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
             }
+
+            isInitialized = true;
+            isInitializedVolatile = true;
         }
     }
 
