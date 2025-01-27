@@ -54,13 +54,23 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
     @Override
     public void requestRefresh() {
         maybeStart();
-        // do the work to refresh everything, on this thread
-        isUpdateThread.set(true);
-        try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open()) {
-            refreshAllTables();
-        } finally {
-            isUpdateThread.remove();
-        }
+        // Do the work to refresh everything, driven by this thread. Note that we acquire the lock "early" in order to
+        // avoid any inconsistencies w.r.t. assumptions about clock, lock, and update-thread state.
+        final long lockStartTimeNanos = System.nanoTime();
+        exclusiveLock().doLocked(() -> {
+            reportLockWaitNanos(System.nanoTime() - lockStartTimeNanos);
+            final boolean wasUpdateThread = isUpdateThread.get();
+            if (!wasUpdateThread) {
+                isUpdateThread.set(true);
+            }
+            try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open()) {
+                refreshAllTables();
+            } finally {
+                if (!wasUpdateThread) {
+                    isUpdateThread.remove();
+                }
+            }
+        });
         final long nowNanos = System.nanoTime();
         synchronized (this) {
             maybeFlushUpdatePerformance(nowNanos, nowNanos);
