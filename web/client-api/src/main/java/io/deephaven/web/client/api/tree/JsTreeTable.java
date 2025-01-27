@@ -10,6 +10,7 @@ import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
+import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -18,6 +19,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarch
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableSourceExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableViewKeyTableDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.HierarchicalTableViewRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb_service.UnaryResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Condition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortDescriptor;
@@ -354,24 +356,34 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         Ticket ticket = connection.getConfig().newTicket();
         Promise<JsTable> keyTable = makeKeyTable();
+        AbortController controller = new AbortController();
+
         viewTicket = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableViewRequest viewRequest = new HierarchicalTableViewRequest();
             viewRequest.setHierarchicalTableId(prevTicket.ticket());
             viewRequest.setResultViewId(ticket);
             keyTable.then(t -> {
+                if (controller.signal.aborted) {
+                    return Promise.resolve(controller.signal.reason);
+                }
                 if (keyTableData[0].length > 0) {
                     HierarchicalTableViewKeyTableDescriptor expansions = new HierarchicalTableViewKeyTableDescriptor();
                     expansions.setKeyTableId(t.getHandle().makeTicket());
                     expansions.setKeyTableActionColumn(actionCol.getName());
                     viewRequest.setExpansions(expansions);
                 }
-                connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
+                UnaryResponse viewCreationCall =
+                        connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
+                controller.signal.addEventListener("abort", e -> viewCreationCall.cancel());
                 return null;
             }, error -> {
                 c.apply(error, null);
                 return null;
             });
         }).then(result -> {
+            if (controller.signal.aborted) {
+                return Promise.reject(controller.signal.reason);
+            }
             ClientTableState state = new ClientTableState(connection,
                     new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
                         callback.apply("fail, trees dont reconnect like this", null);
@@ -389,6 +401,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             @Override
             public void release() {
                 super.release();
+                controller.abort();
                 then(state -> {
                     state.unretain(JsTreeTable.this);
                     return null;
