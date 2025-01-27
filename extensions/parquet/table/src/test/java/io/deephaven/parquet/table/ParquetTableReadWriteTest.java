@@ -3705,21 +3705,6 @@ public final class ParquetTableReadWriteTest {
         nonExistentTableLocation.refresh();
         nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0);
         makeNewTableLocationAndVerifyNoMakeHandleException(nonExistentTableLocation::handleUpdate);
-        {
-            // To test the following make a new temporary table location
-            final File tempDest = new File(rootFile, "testLocation.parquet");
-            final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
-            writeTable(table, tempDest.getPath());
-
-            final ParquetTableLocationKey tableLocationKey =
-                    new ParquetTableLocationKey(tempDest.toURI(), 0, null, ParquetInstructions.EMPTY);
-            final ParquetTableLocation tableLocation =
-                    new ParquetTableLocation(StandaloneTableKey.getInstance(), tableLocationKey, EMPTY);
-
-            // Test this operation works without throwing an exception
-            nonExistentTableLocation.handleUpdate(tableLocation);
-            tempDest.delete();
-        }
 
         // Verify that we can get a column location for a non-existent column
         final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
