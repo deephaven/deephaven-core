@@ -73,14 +73,6 @@ public abstract class AbstractTableLocation
         };
     }
 
-    /**
-     * This method is called before every public method so that the child classes can initialize the location lazily, if
-     * necessary.
-     */
-    protected void initialize() {
-        // Do nothing
-    }
-
     @Override
     public final String toString() {
         return toStringHelper();
@@ -98,25 +90,21 @@ public abstract class AbstractTableLocation
     @Override
     @NotNull
     public final Object getStateLock() {
-        initialize();
         return state.getStateLock();
     }
 
     @Override
-    public final RowSet getRowSet() {
-        initialize();
+    public RowSet getRowSet() {
         return state.getRowSet();
     }
 
     @Override
-    public final long getSize() {
-        initialize();
+    public long getSize() {
         return state.getSize();
     }
 
     @Override
     public final long getLastModifiedTimeMillis() {
-        initialize();
         return state.getLastModifiedTimeMillis();
     }
 
@@ -138,7 +126,6 @@ public abstract class AbstractTableLocation
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final Listener listener) {
-        initialize();
         listener.handleUpdate();
     }
 
@@ -150,7 +137,6 @@ public abstract class AbstractTableLocation
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final RowSet rowSet, final long lastModifiedTimeMillis) {
-        initialize();
         if (state.setValues(rowSet, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -163,7 +149,6 @@ public abstract class AbstractTableLocation
      * @param source The source to copy state values from
      */
     public void handleUpdate(@NotNull final TableLocationState source) {
-        initialize();
         if (source.copyStateValuesTo(state) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -237,8 +222,7 @@ public abstract class AbstractTableLocation
 
     @Override
     @Nullable
-    public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
-        initialize();
+    public BasicDataIndex getDataIndex(@NotNull final String... columns) {
         final List<String> columnNames = new ArrayList<>(columns.length);
         Collections.addAll(columnNames, columns);
         columnNames.sort(String::compareTo);

@@ -3687,22 +3687,38 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void testTableLocationReading() {
+        // Make a new ParquetTableLocation for a non-existent parquet file
         final File nonExistentParquetFile = new File(rootFile, "non-existent.parquet");
-
+        assertFalse(nonExistentParquetFile.exists());
         final ParquetTableLocationKey nonExistentTableLocationKey =
                 new ParquetTableLocationKey(nonExistentParquetFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         final ParquetTableLocation nonExistentTableLocation =
                 new ParquetTableLocation(StandaloneTableKey.getInstance(), nonExistentTableLocationKey, EMPTY);
 
-        // Make sure the file does not exist
-        assertFalse(nonExistentParquetFile.exists());
-
-        // Verify that we can perform all these operations without actually touching the file
+        // Ensure operations don't touch the file or throw exceptions
         assertEquals(nonExistentTableLocation.getTableKey(), StandaloneTableKey.getInstance());
         assertEquals(nonExistentTableLocation.getKey(), nonExistentTableLocationKey);
         assertNotNull(nonExistentTableLocation.toString());
         assertNotNull(nonExistentTableLocation.asLivenessReferent());
+        assertNotNull(nonExistentTableLocation.getStateLock());
+        nonExistentTableLocation.getLastModifiedTimeMillis();
         nonExistentTableLocation.refresh();
+        nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0);
+        {
+            // To test the following make a new temporary table location
+            final File tempDest = new File(rootFile, "testLocation.parquet");
+            final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+            writeTable(table, tempDest.getPath());
+
+            final ParquetTableLocationKey tableLocationKey =
+                    new ParquetTableLocationKey(tempDest.toURI(), 0, null, ParquetInstructions.EMPTY);
+            final ParquetTableLocation tableLocation =
+                    new ParquetTableLocation(StandaloneTableKey.getInstance(), tableLocationKey, EMPTY);
+
+            // Test this operation works without throwing an exception
+            nonExistentTableLocation.handleUpdate(tableLocation);
+            tempDest.delete();
+        }
 
         // Verify that we can get a column location for a non-existent column
         final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
@@ -3713,7 +3729,6 @@ public final class ParquetTableReadWriteTest {
         assertNotNull(nonExistentColumnLocation.getImplementationName());
 
         // Verify that all the following operations will fail when the file does not exist and pass when it does
-
         // APIs from TableLocation
         verifyMakeHandleException(nonExistentTableLocation::getDataIndexColumns);
         makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getDataIndexColumns);
@@ -3734,26 +3749,11 @@ public final class ParquetTableReadWriteTest {
         makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::hasDataIndex);
 
         // APIs from TableLocationState
-        verifyMakeHandleException(nonExistentTableLocation::getStateLock);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getStateLock);
-
         verifyMakeHandleException(nonExistentTableLocation::getRowSet);
         makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getRowSet);
 
         verifyMakeHandleException(nonExistentTableLocation::getSize);
         makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getSize);
-
-        verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getLastModifiedTimeMillis);
-
-        // APIs from AbstractTableLocation
-        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(nonExistentTableLocation));
-        makeNewTableLocationAndVerifyNoMakeHandleException(
-                (parquetTableLocation) -> parquetTableLocation.handleUpdate(parquetTableLocation));
-
-        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
-        makeNewTableLocationAndVerifyNoMakeHandleException(
-                (parquetTableLocation) -> parquetTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
 
         // APIs from ColumnLocation
         verifyMakeHandleException(nonExistentColumnLocation::exists);

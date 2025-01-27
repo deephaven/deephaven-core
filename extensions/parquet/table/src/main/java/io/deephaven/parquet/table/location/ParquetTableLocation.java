@@ -84,7 +84,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         this.isInitializedVolatile = false;
     }
 
-    protected void initialize() {
+    final void initialize() {
         if (isInitialized) {
             return;
         }
@@ -203,6 +203,18 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
+    public final RowSet getRowSet() {
+        initialize();
+        return super.getRowSet();
+    }
+
+    @Override
+    public final long getSize() {
+        initialize();
+        return super.getSize();
+    }
+
+    @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
@@ -266,6 +278,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static boolean parquetFileExists(@NotNull final URI fileURI) {
         // We assume non-file URIs are always present
         return !fileURI.getScheme().equals(FILE_URI_SCHEME) || Files.exists(Path.of(fileURI));
+    }
+
+    @Override
+    @Nullable
+    public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
+        initialize();
+        return super.getDataIndex(columns);
     }
 
     @Override
