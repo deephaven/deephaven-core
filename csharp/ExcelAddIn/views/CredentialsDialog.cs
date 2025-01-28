@@ -1,4 +1,5 @@
-﻿using Deephaven.ExcelAddIn.ViewModels;
+﻿using Deephaven.ExcelAddIn.Util;
+using Deephaven.ExcelAddIn.ViewModels;
 
 namespace ExcelAddIn.views {
   public partial class CredentialsDialog : Form {
@@ -47,6 +48,9 @@ namespace ExcelAddIn.views {
       // Bind the IsDefault property
       makeDefaultCheckBox.DataBindings.Add(nameof(makeDefaultCheckBox.Checked),
         vm, nameof(vm.IsDefault));
+
+      // Set the version label
+      versionLabel.Text = Utility.VersionString;
     }
 
     public void SetTestResultsBox(string testResultsState) {
