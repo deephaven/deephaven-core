@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
@@ -26,7 +27,9 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static io.deephaven.engine.context.TestExecutionContext.OPERATION_INITIALIZATION;
@@ -170,6 +173,7 @@ public class TestEventDrivenUpdateGraph {
     @Test
     public void testRefreshRace() throws ExecutionException, InterruptedException, TimeoutException {
         final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
+        final List<Runnable> retainedReferences = new ArrayList<>();
 
         final MutableInt sourceRefreshCount = new MutableInt(0);
         final Runnable sleepingSource = () -> {
@@ -180,6 +184,7 @@ public class TestEventDrivenUpdateGraph {
                 Assert.fail("Interrupted while sleeping");
             }
         };
+        retainedReferences.add(sleepingSource);
         eventDrivenUpdateGraph.addSource(sleepingSource);
 
         final int numConcurrentRefreshes = 10;
@@ -199,6 +204,21 @@ public class TestEventDrivenUpdateGraph {
         }
 
         Assert.assertEquals(numConcurrentRefreshes, sourceRefreshCount.intValue());
+        Assert.assertEquals(sleepingSource, retainedReferences.get(0));
+    }
+
+    @Test
+    public void testIllegalRefresh() {
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
+
+        eventDrivenUpdateGraph.addNotification(new TerminalNotification() {
+            @Override
+            public void run() {
+                Assert.assertThrows(IllegalStateException.class, eventDrivenUpdateGraph::requestRefresh);
+            }
+        });
+
+        eventDrivenUpdateGraph.requestRefresh();
     }
 
     @Test
