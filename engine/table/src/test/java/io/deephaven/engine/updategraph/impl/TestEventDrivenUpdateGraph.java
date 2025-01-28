@@ -196,7 +196,7 @@ public class TestEventDrivenUpdateGraph {
                 Thread.sleep(10);
             }
             for (final Future<?> refreshFuture : refreshFutures) {
-                refreshFuture.get();// 1, TimeUnit.SECONDS);
+                refreshFuture.get(10, TimeUnit.SECONDS);
             }
         } finally {
             executor.shutdown();
