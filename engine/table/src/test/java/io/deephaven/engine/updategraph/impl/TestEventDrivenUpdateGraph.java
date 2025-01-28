@@ -17,15 +17,20 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.LongSingleValueSource;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.*;
 
 import static io.deephaven.engine.context.TestExecutionContext.OPERATION_INITIALIZATION;
 import static io.deephaven.engine.util.TableTools.*;
@@ -163,6 +168,57 @@ public class TestEventDrivenUpdateGraph {
             } while (steps++ < 100);
             TestCase.assertEquals(1, updated.size());
         }
+    }
+
+    @Test
+    public void testRefreshRace() throws ExecutionException, InterruptedException, TimeoutException {
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
+        final List<Runnable> retainedReferences = new ArrayList<>();
+
+        final MutableInt sourceRefreshCount = new MutableInt(0);
+        final Runnable sleepingSource = () -> {
+            try {
+                Thread.sleep(100);
+                sourceRefreshCount.increment();
+            } catch (InterruptedException e) {
+                Assert.fail("Interrupted while sleeping");
+            }
+        };
+        retainedReferences.add(sleepingSource);
+        eventDrivenUpdateGraph.addSource(sleepingSource);
+
+        final int numConcurrentRefreshes = 10;
+        final Future<?>[] refreshFutures = new Future[numConcurrentRefreshes];
+        final ExecutorService executor = Executors.newFixedThreadPool(numConcurrentRefreshes);
+        try {
+            for (int cri = 0; cri < numConcurrentRefreshes; ++cri) {
+                refreshFutures[cri] = executor.submit(eventDrivenUpdateGraph::requestRefresh);
+                Thread.sleep(10);
+            }
+            for (final Future<?> refreshFuture : refreshFutures) {
+                refreshFuture.get(10, TimeUnit.SECONDS);
+            }
+        } finally {
+            executor.shutdown();
+            Assert.assertTrue(executor.awaitTermination(1, TimeUnit.SECONDS));
+        }
+
+        Assert.assertEquals(numConcurrentRefreshes, sourceRefreshCount.intValue());
+        Assert.assertEquals(sleepingSource, retainedReferences.get(0));
+    }
+
+    @Test
+    public void testIllegalRefresh() {
+        final EventDrivenUpdateGraph eventDrivenUpdateGraph = EventDrivenUpdateGraph.newBuilder("TestEDUG").build();
+
+        eventDrivenUpdateGraph.addNotification(new TerminalNotification() {
+            @Override
+            public void run() {
+                Assert.assertThrows(IllegalStateException.class, eventDrivenUpdateGraph::requestRefresh);
+            }
+        });
+
+        eventDrivenUpdateGraph.requestRefresh();
     }
 
     @Test
