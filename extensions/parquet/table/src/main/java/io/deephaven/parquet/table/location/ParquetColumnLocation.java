@@ -60,18 +60,24 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
-    private final ParquetTableLocation parquetTableLocation;
     private final String columnName;
     private final String parquetColumnName;
 
-    private boolean isInitialized;
-    private volatile boolean isInitializedVolatile;
 
+    private volatile boolean readersInitialized;
+
+    // Access to following variables must be guarded by initializeReaders()
     /**
      * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to
-     * ensure visibility of the derived fields.
+     * ensure visibility of the derived fields. We delay initializing this field till we need to read the column data.
      */
     private volatile ColumnChunkReader[] columnChunkReaders;
+
+    /**
+     * Whether the column location actually exists.
+     */
+    private boolean exists;
+    // -----------------------------------------------------------------------
 
     // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
     private volatile PageCache<ATTR> pageCache;
@@ -91,32 +97,27 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final String columnName,
             @NotNull final String parquetColumnName) {
         super(tableLocation, columnName);
-        this.parquetTableLocation = tableLocation;
         this.columnName = columnName;
         this.parquetColumnName = parquetColumnName;
-        this.isInitialized = false;
-        this.isInitializedVolatile = false;
+        this.readersInitialized = false;
     }
 
-    private void initialize() {
-        if (isInitialized) {
+    private void initializeReaders() {
+        if (readersInitialized) {
             return;
         }
         synchronized (this) {
-            isInitialized = isInitializedVolatile;
-            if (isInitialized) {
+            if (readersInitialized) {
                 return;
             }
-            tl().initialize();
             final String[] columnPath = tl().getParquetColumnNameToPath().get(parquetColumnName);
             final List<String> nameList =
                     columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
             final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
                     .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
-            final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
+            exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
             this.columnChunkReaders = exists ? columnChunkReaders : null;
-            isInitialized = true;
-            isInitializedVolatile = true;
+            readersInitialized = true;
         }
     }
 
@@ -145,14 +146,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     @Override
     public boolean exists() {
-        initialize();
-        // If we see a null columnChunkReaders array, either we don't exist or we are guaranteed to
-        // see a non-null pageStores array
-        return columnChunkReaders != null || pageStores != null;
+        initializeReaders();
+        return exists;
     }
 
     private ParquetTableLocation tl() {
-        return parquetTableLocation;
+        return (ParquetTableLocation) getTableLocation();
     }
 
     private <SOURCE, REGION_TYPE> REGION_TYPE makeColumnRegion(
@@ -178,7 +177,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionChar<Values> makeColumnRegionChar(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
@@ -189,7 +187,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionByte<Values> makeColumnRegionByte(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
@@ -200,7 +197,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionShort<Values> makeColumnRegionShort(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
@@ -211,7 +207,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionInt<Values> makeColumnRegionInt(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
@@ -222,7 +217,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionLong<Values> makeColumnRegionLong(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
@@ -233,7 +227,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionFloat<Values> makeColumnRegionFloat(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
@@ -244,7 +237,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public ColumnRegionDouble<Values> makeColumnRegionDouble(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        initialize();
         // noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
                 ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
@@ -255,7 +247,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     @Override
     public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
             @NotNull final ColumnDefinition<TYPE> columnDefinition) {
-        initialize();
         final Class<TYPE> dataType = columnDefinition.getDataType();
         final ColumnChunkPageStore<ATTR>[] sources = getPageStores(columnDefinition);
         final ColumnChunkPageStore<DictionaryKeys>[] dictKeySources =
@@ -330,6 +321,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     @SuppressWarnings("unchecked")
     private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
+        initializeReaders();
         if (columnChunkReaders == null) {
             return;
         }

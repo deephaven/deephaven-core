@@ -222,7 +222,7 @@ public abstract class AbstractTableLocation
 
     @Override
     @Nullable
-    public BasicDataIndex getDataIndex(@NotNull final String... columns) {
+    public final BasicDataIndex getDataIndex(@NotNull final String... columns) {
         final List<String> columnNames = new ArrayList<>(columns.length);
         Collections.addAll(columnNames, columns);
         columnNames.sort(String::compareTo);
