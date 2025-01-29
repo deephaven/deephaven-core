@@ -1,5 +1,5 @@
 [versions]
-adbc = "0.15.0"
+adbc = "0.16.0"
 airlift = "2.0.2"
 arrow = "18.0.0"
 autoservice = "1.1.1"
