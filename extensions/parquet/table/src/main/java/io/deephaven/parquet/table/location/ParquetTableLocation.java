@@ -125,10 +125,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             tableInfo = ParquetSchemaReader
                     .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
                     .orElse(TableInfo.builder().build());
-            version = tableInfo.version();
             groupingColumns = tableInfo.groupingColumnMap();
             columnTypes = tableInfo.columnTypeMap();
             sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            version = tableInfo.version();
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -254,17 +254,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Check if the column name matches any of the grouping columns
         if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
             // Validate the index file exists (without loading and parsing it)
-            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), tableInfo, columns);
+            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), columns);
             return metadata != null && parquetFileExists(metadata.fileURI);
         }
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : tableInfo.dataIndexes()) {
             if (dataIndex.matchesColumns(columns)) {
                 // Validate the index file exists (without loading and parsing it)
-                final IndexFileMetadata metadata = getIndexFileMetadata(
-                        getParquetKey().getURI(),
-                        tableInfo,
-                        columns);
+                final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), columns);
                 return metadata != null && parquetFileExists(metadata.fileURI);
             }
         }
@@ -280,7 +277,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         initialize();
-        final IndexFileMetadata indexFileMetaData = getIndexFileMetadata(getParquetKey().getURI(), tableInfo, columns);
+        final IndexFileMetadata indexFileMetaData = getIndexFileMetadata(getParquetKey().getURI(), columns);
         if (indexFileMetaData == null) {
             throw new TableDataException(
                     String.format(
@@ -326,13 +323,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    private static IndexFileMetadata getIndexFileMetadata(
+    private IndexFileMetadata getIndexFileMetadata(
             @NotNull final URI parentFileURI,
-            @NotNull final TableInfo info,
             @NotNull final String... keyColumnNames) {
         if (keyColumnNames.length == 1) {
             // If there's only one key column, there might be (legacy) grouping info
-            final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
+            final GroupingColumnInfo groupingColumnInfo = groupingColumns.get(keyColumnNames[0]);
             if (groupingColumnInfo != null) {
                 return new IndexFileMetadata(
                         makeRelativeURI(parentFileURI, groupingColumnInfo.groupingTablePath()),
@@ -343,7 +339,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
         // DataIndex.
-        final DataIndexInfo dataIndexInfo = info.dataIndexes().stream()
+        final DataIndexInfo dataIndexInfo = tableInfo.dataIndexes().stream()
                 .filter(item -> item.matchesColumns(keyColumnNames))
                 .findFirst()
                 .orElse(null);
