@@ -51,7 +51,8 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
         return (tableLocation + 1) & (alternateTableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType) {
         Assert.eqZero(rehashPointer, "rehashPointer");
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
@@ -72,7 +73,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (rightRowKeyForState <= FIRST_DUPLICATE) {
+                    if (rightRowKeyForState <= FIRST_DUPLICATE && (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
@@ -85,8 +86,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
         }
     }
 
-    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType) {
+    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         Assert.eqZero(rehashPointer, "rehashPointer");
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
@@ -160,8 +160,14 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                                 final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                                 final long duplicateSize = duplicates.size();
-                                duplicates.insert(rowKeyChunk.get(chunkPosition));
+                                final long inputKey = rowKeyChunk.get(chunkPosition);
+                                final long newKey = addRightRowKey(duplicates, inputKey, joinType);
                                 Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
+                                final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
+                                if (!leftEmpty && inputKey == newKey) {
+                                    // we have a new output key for the LHS rows;
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                }
                             } else {
                                 final long duplicateLocation = allocateDuplicateLocation();
                                 rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
@@ -202,8 +208,14 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                         final long duplicateSize = duplicates.size();
-                        duplicates.insert(rowKeyChunk.get(chunkPosition));
+                        final long inputKey = rowKeyChunk.get(chunkPosition);
+                        final long newKey = addRightRowKey(duplicates, inputKey, joinType);
                         Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
+                        final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
+                        if (!leftEmpty && inputKey == newKey) {
+                            // we have a new output key for the LHS rows;
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        }
                     } else {
                         final long duplicateLocation = allocateDuplicateLocation();
                         rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(existingRightRowKey, rowKeyChunk.get(chunkPosition)));
@@ -220,7 +232,8 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
     }
 
     protected void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long leftRedirectionOffset) {
+            LongArraySource leftRedirections, long leftRedirectionOffset,
+            NaturalJoinType joinType) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -246,11 +259,19 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                             if (isStateDeleted(rightRowKeyForState)) {
                                 break;
                             }
+                            final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
-                                throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                                if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                                }
+                                final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
+                                final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                                rightRowKey = getRightRowKey(duplicates, joinType);
+                            } else {
+                                rightRowKey = rightRowKeyForState;
                             }
                             alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
-                            leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState);
+                            leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
@@ -280,11 +301,19 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                         leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                         break;
                     }
+                    final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                        }
+                        final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
+                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                        rightRowKey = getRightRowKey(duplicates, joinType);
+                    } else {
+                        rightRowKey = rightRowKeyForState;
                     }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
-                    leftRedirections.set(leftRedirectionOffset++, rightRowKeyForState);
+                    leftRedirections.set(leftRedirectionOffset++, rightRowKey);
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -317,8 +346,14 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                         final long duplicateSize = duplicates.size();
-                        duplicates.remove(rowKeyChunk.get(chunkPosition));
+                        final long inputKey = rowKeyChunk.get(chunkPosition);
+                        final long originalKey = removeRightRowKey(duplicates, inputKey, joinType);
                         Assert.eq(duplicateSize, "duplicateSize", duplicates.size() + 1, "duplicates.size() + 1");
+                        final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
+                        if (!leftEmpty && originalKey == inputKey) {
+                            // we have a new output key for the LHS rows;
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        }
                         if (duplicates.size() == 1) {
                             mainRightRowKey.set(tableLocation, duplicates.firstRowKey());
                             freeDuplicateLocation(duplicateLocation);
@@ -358,8 +393,14 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                                     final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                                     final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                                     final long duplicateSize = duplicates.size();
-                                    duplicates.remove(rowKeyChunk.get(chunkPosition));
+                                    final long inputKey = rowKeyChunk.get(chunkPosition);
+                                    final long originalKey = removeRightRowKey(duplicates, inputKey, joinType);
                                     Assert.eq(duplicateSize, "duplicateSize", duplicates.size() + 1, "duplicates.size() + 1");
+                                    final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
+                                    if (!leftEmpty && originalKey == inputKey) {
+                                        // we have a new output key for the LHS rows;
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                    }
                                     if (duplicates.size() == 1) {
                                         alternateRightRowKey.set(alternateTableLocation, duplicates.firstRowKey());
                                         freeDuplicateLocation(duplicateLocation);
@@ -392,7 +433,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
     }
 
     protected void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -447,7 +488,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
 
     protected void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
-            IncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc, NaturalJoinType joinType) {
+            IncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -477,6 +518,11 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                         } else {
                             pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
                             pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
+                        }
+                        final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
+                        if (!leftEmpty) {
+                            // we may have a new output key for the LHS rows;
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
                         }
                     } else {
                         throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");
@@ -512,6 +558,11 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                                     } else {
                                         pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
                                         pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
+                                    }
+                                    final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
+                                    if (!leftEmpty) {
+                                        // we may have a new output key for the LHS rows;
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
                                     }
                                 } else {
                                     throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");

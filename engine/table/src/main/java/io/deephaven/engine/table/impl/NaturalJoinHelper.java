@@ -97,17 +97,17 @@ class NaturalJoinHelper {
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
                         initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
-                jsm.buildFromRightSide(rightTable, bc.rightSources, joinType);
+                jsm.buildFromRightSide(rightTable, bc.rightSources);
 
                 try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
                         jsm.makeInitialBuildContext()) {
 
                     if (bc.leftDataIndexTable != null) {
-                        jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, ibc);
+                        jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, ibc, joinType);
                         rowRedirection = jsm.buildIndexedRowRedirection(leftTable, joinType, ibc,
                                 bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
                     } else {
-                        jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, ibc);
+                        jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, ibc, joinType);
                         jsm.compactAll();
                         rowRedirection = jsm.buildRowRedirectionFromRedirections(leftTable, joinType, ibc,
                                 control.getRedirectionType(leftTable));
@@ -658,17 +658,25 @@ class NaturalJoinHelper {
 
         @Override
         public void accept(int updatedSlot, long originalRightValue, byte flag) {
-            final RowSet leftIndices = jsm.getLeftIndex(updatedSlot);
+            final RowSet leftIndices = jsm.getLeftRowSet(updatedSlot);
             if (leftIndices == null || leftIndices.isEmpty()) {
                 return;
             }
 
-            final long rightIndex = jsm.getRightIndex(updatedSlot);
-
-            if (rightIndex == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException(
-                        "Natural Join found duplicate right key for " + jsm.keyString(updatedSlot));
+            long index = jsm.getRightIndex(updatedSlot);
+            if (index == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
+                if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE
+                        || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                    throw new IllegalStateException(
+                            "Natural Join found duplicate right key for " + jsm.keyString(updatedSlot));
+                }
+                // Get the correct row key from the duplicates on the RHS
+                final RowSet rightRowSet = jsm.getRightRowSet(updatedSlot);
+                index = joinType == NaturalJoinType.FIRST_MATCH
+                        ? rightRowSet.firstRowKey()
+                        : rightRowSet.lastRowKey();
             }
+            final long rightIndex = index;
 
             final boolean unchangedRedirection = rightIndex == originalRightValue;
 
@@ -685,7 +693,6 @@ class NaturalJoinHelper {
                 // otherwise we know the left side is modified
                 modifiedLeftBuilder.addRowSet(leftIndices);
             }
-
 
             // but we might not need to update the row redirection
             if (unchangedRedirection && (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_ADD) == 0) {
@@ -815,7 +822,7 @@ class NaturalJoinHelper {
                                         previousToShift.subSetByKeyRange(beginRange, endRange)) {
                                     shiftedRowSet.shiftInPlace(shiftDelta);
                                     jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
-                                            modifiedSlotTracker, joinType);
+                                            modifiedSlotTracker);
                                 }
                             });
                         }
@@ -824,7 +831,7 @@ class NaturalJoinHelper {
                     if (rightKeysModified) {
                         jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker, joinType);
                     } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
-                        jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker, joinType);
+                        jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
                     }
 
                     if (rightAdded.isNonempty()) {
@@ -902,7 +909,7 @@ class NaturalJoinHelper {
 
                     if (leftKeyModifications) {
                         // add post-shift modified
-                        jsm.addLeftSide(bc, leftModified, leftSources, leftRedirections, modifiedSlotTracker);
+                        jsm.addLeftSide(bc, leftModified, leftSources, leftRedirections, modifiedSlotTracker, joinType);
                         copyRedirections(leftModified, leftRedirections);
 
                         // TODO: This column mask could be made better if we were to keep more careful track of the
@@ -921,7 +928,7 @@ class NaturalJoinHelper {
                     }
 
                     if (leftAdditions) {
-                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker);
+                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker, joinType);
                         copyRedirections(leftAdded, leftRedirections);
                     }
                 }

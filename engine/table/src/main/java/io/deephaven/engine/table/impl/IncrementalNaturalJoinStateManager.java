@@ -9,7 +9,9 @@ import io.deephaven.engine.rowset.RowSet;
 public interface IncrementalNaturalJoinStateManager {
     long getRightIndex(int slot);
 
-    RowSet getLeftIndex(int slot);
+    RowSet getRightRowSet(int slot);
+
+    RowSet getLeftRowSet(int slot);
 
     String keyString(int slot);
 

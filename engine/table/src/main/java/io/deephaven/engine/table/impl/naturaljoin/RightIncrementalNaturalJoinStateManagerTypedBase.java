@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
+import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -24,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySour
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -173,8 +175,14 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public RowSet getLeftIndex(int slot) {
+    public RowSet getLeftRowSet(int slot) {
         return leftRowSet.getUnsafe(slot);
+    }
+
+    @Override
+    public RowSet getRightRowSet(int slot) {
+        // TODO: make this work! Need to track duplicates on the right side which isn't being done.
+        throw new NotImplementedException("getRightRowSet not implemented for RightIncrementalNaturalJoinStateManager");
     }
 
     @Override

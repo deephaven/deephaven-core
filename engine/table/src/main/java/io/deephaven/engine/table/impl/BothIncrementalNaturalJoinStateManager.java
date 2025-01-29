@@ -16,9 +16,10 @@ import org.jetbrains.annotations.NotNull;
 public interface BothIncrementalNaturalJoinStateManager extends IncrementalNaturalJoinStateManager {
     InitialBuildContext makeInitialBuildContext();
 
-    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType);
+    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
 
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc);
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc,
+            NaturalJoinType joinType);
 
     void compactAll();
 
@@ -39,13 +40,14 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            NaturalJoinType joinType);
 
     void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources);
 

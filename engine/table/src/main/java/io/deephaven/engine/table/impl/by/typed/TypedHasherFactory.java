@@ -201,11 +201,11 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightRowKeyForState",
                     true, false, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
-                    TypedNaturalJoinFactory::incrementalBuildLeftInsert));
+                    TypedNaturalJoinFactory::incrementalBuildLeftInsert, joinTypeParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
                     false, false, TypedNaturalJoinFactory::incrementalRightFound,
-                    TypedNaturalJoinFactory::incrementalRightInsert, joinTypeParam));
+                    TypedNaturalJoinFactory::incrementalRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
@@ -220,7 +220,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
                     TypedNaturalJoinFactory::incrementalModifyRightFound,
                     TypedNaturalJoinFactory::incrementalModifyRightMissing,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam));
 
             ParameterSpec probeContextParam =
                     ParameterSpec.builder(IncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc").build();
@@ -228,13 +228,13 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::incrementalApplyRightShift,
                     TypedNaturalJoinFactory::incrementalApplyRightShiftMissing,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam, probeContextParam, joinTypeParam));
+                    modifiedSlotTrackerParam, probeContextParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
                     true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(LongArraySource.class, "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
+                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build(), joinTypeParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,

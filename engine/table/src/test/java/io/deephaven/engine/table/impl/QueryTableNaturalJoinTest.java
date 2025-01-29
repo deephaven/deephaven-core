@@ -1637,11 +1637,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
         for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
             final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
-            final QueryTable rhs_raw = getTable(false, size, rhs_random, columnInfos);
-            final Table rhs = rhs_raw.firstBy("intCol");
+            final QueryTable rhsRaw = getTable(false, size, rhs_random, columnInfos);
+            final Table rhs = rhsRaw.firstBy("intCol");
 
             final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
-            final Table actual = lhs.naturalJoin(rhs_raw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+            final Table actual = lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
                     NaturalJoinType.FIRST_MATCH);
 
             assertTableEquals(expected, actual);
@@ -1656,14 +1656,146 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
         for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
             final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
-            final QueryTable rhs_raw = getTable(false, size, rhs_random, columnInfos);
-            final Table rhs = rhs_raw.lastBy("intCol");
+            final QueryTable rhsRaw = getTable(false, size, rhs_random, columnInfos);
+            final Table rhs = rhsRaw.lastBy("intCol");
 
             final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
-            final Table actual = lhs.naturalJoin(rhs_raw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+            final Table actual = lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
                     NaturalJoinType.LAST_MATCH);
 
             assertTableEquals(expected, actual);
+        }
+    }
+
+    final int INITIAL_SIZE = 10_000;
+    final int NUM_STEPS = 100;
+    final int STEP_SIZE = 100;
+
+    public void testNaturalJoinTypeIncremental() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhs = getTable(true, INITIAL_SIZE, lhs_random, columnInfos);
+
+        final QueryTable rhsRaw = getTable(true, INITIAL_SIZE, rhs_random, columnInfos);
+        final Table rhsFirstBy = rhsRaw.firstBy("intCol");
+        final Table rhsLastBy = rhsRaw.lastBy("intCol");
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhs.naturalJoin(rhsFirstBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.FIRST_MATCH),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhs.naturalJoin(rhsLastBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.LAST_MATCH),
+                        "nj + LAST_MATCH"),
+        };
+
+        for (int i = 0; i < NUM_STEPS; i++) {
+            leftRightStep.step(STEP_SIZE, STEP_SIZE, lhs, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
+        }
+    }
+
+    public void testNaturalJoinTypeShiftIncremental() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhs = getTable(true, INITIAL_SIZE, lhs_random, columnInfos);
+
+        final QueryTable rhsRaw = getTable(true, INITIAL_SIZE, rhs_random, columnInfos);
+        final Table rhsFirstBy = rhsRaw.firstBy("intCol");
+        final Table rhsLastBy = rhsRaw.lastBy("intCol");
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhs.naturalJoin(rhsFirstBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.FIRST_MATCH),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhs.naturalJoin(rhsLastBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.LAST_MATCH),
+                        "nj + LAST_MATCH"),
+        };
+
+        for (int i = 0; i < NUM_STEPS; i++) {
+            leftRightStepShift.step(STEP_SIZE, STEP_SIZE, lhs, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
+        }
+    }
+
+    public void testNaturalJoinTypeRightIncremental() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhs = getTable(false, INITIAL_SIZE, lhs_random, columnInfos);
+
+        final QueryTable rhsRaw = getTable(true, INITIAL_SIZE, rhs_random, columnInfos);
+        final Table rhsFirstBy = rhsRaw.firstBy("intCol");
+        final Table rhsLastBy = rhsRaw.lastBy("intCol");
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhs.naturalJoin(rhsFirstBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.FIRST_MATCH),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhs.naturalJoin(rhsLastBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.LAST_MATCH),
+                        "nj + LAST_MATCH"),
+        };
+
+        for (int i = 0; i < NUM_STEPS; i++) {
+            rightStep.step(0, STEP_SIZE, lhs, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
+        }
+    }
+
+    public void testNaturalJoinTypeRightShiftIncremental() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhs = getTable(false, INITIAL_SIZE, lhs_random, columnInfos);
+
+        final QueryTable rhsRaw = getTable(true, INITIAL_SIZE, rhs_random, columnInfos);
+        final Table rhsFirstBy = rhsRaw.firstBy("intCol");
+        final Table rhsLastBy = rhsRaw.lastBy("intCol");
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhs.naturalJoin(rhsFirstBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.FIRST_MATCH),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhs.naturalJoin(rhsLastBy, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
+                                NaturalJoinType.LAST_MATCH),
+                        "nj + LAST_MATCH"),
+        };
+
+        for (int i = 0; i < NUM_STEPS; i++) {
+            rightStepShift.step(0, STEP_SIZE, lhs, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
         }
     }
 
