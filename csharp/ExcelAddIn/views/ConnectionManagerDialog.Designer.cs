@@ -23,7 +23,6 @@
     /// the contents of this method with the code editor.
     /// </summary>
     private void InitializeComponent() {
-      colorDialog1 = new ColorDialog();
       dataGridView1 = new DataGridView();
       newButton = new Button();
       connectionsLabel = new Label();
@@ -31,6 +30,7 @@
       deleteButton = new Button();
       reconnectButton = new Button();
       makeDefaultButton = new Button();
+      versionLabel = new Label();
       ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
       SuspendLayout();
       // 
@@ -114,11 +114,21 @@
       makeDefaultButton.UseVisualStyleBackColor = true;
       makeDefaultButton.Click += makeDefaultButton_Click;
       // 
+      // versionLabel
+      // 
+      versionLabel.AutoSize = true;
+      versionLabel.Location = new Point(12, 581);
+      versionLabel.Name = "versionLabel";
+      versionLabel.Size = new Size(59, 25);
+      versionLabel.TabIndex = 6;
+      versionLabel.Text = "label1";
+      // 
       // ConnectionManagerDialog
       // 
       AutoScaleDimensions = new SizeF(10F, 25F);
       AutoScaleMode = AutoScaleMode.Font;
       ClientSize = new Size(1115, 615);
+      Controls.Add(versionLabel);
       Controls.Add(makeDefaultButton);
       Controls.Add(reconnectButton);
       Controls.Add(deleteButton);
@@ -134,8 +144,6 @@
     }
 
     #endregion
-
-    private ColorDialog colorDialog1;
     private DataGridView dataGridView1;
     private Button newButton;
     private Label connectionsLabel;
@@ -143,5 +151,6 @@
     private Button deleteButton;
     private Button reconnectButton;
     private Button makeDefaultButton;
+    private Label versionLabel;
   }
 }
