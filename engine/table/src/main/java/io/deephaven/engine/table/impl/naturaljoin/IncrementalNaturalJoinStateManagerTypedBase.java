@@ -425,37 +425,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         freeDuplicateValues.add(duplicateLocation);
     }
 
-    /**
-     * Given the join type, return the correct row key for the set of duplicate RHS rows.
-     */
-    protected long getRightRowKey(final WritableRowSet duplicates, final NaturalJoinType joinType) {
-        if (joinType == NaturalJoinType.LAST_MATCH) {
-            return duplicates.lastRowKey();
-        }
-        return duplicates.firstRowKey();
-    }
-
-    /**
-     * Add a key to the RHS duplicate rowset, following the rules for NaturalJoinType to return the new row key for this
-     * set after the addition.
-     */
-    protected long addRightRowKey(final WritableRowSet duplicates, final long keyToRemove,
-            final NaturalJoinType joinType) {
-        duplicates.insert(keyToRemove);
-        return getRightRowKey(duplicates, joinType);
-    }
-
-    /**
-     * Remove the key from the RHS duplicate rowset, following the rules for NaturalJoinType to return the original row
-     * key for this set before the removal.
-     */
-    protected long removeRightRowKey(final WritableRowSet duplicates, final long keyToRemove,
-            final NaturalJoinType joinType) {
-        final long originalRowKey = getRightRowKey(duplicates, joinType);
-        duplicates.remove(keyToRemove);
-        return originalRowKey;
-    }
-
     @Override
     public long getRightIndex(int slot) {
         final long rightRowKey;

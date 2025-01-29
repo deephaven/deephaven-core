@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -20,6 +22,7 @@ import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColu
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
@@ -34,6 +37,7 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
+    public static final long FIRST_DUPLICATE = RowSet.NULL_ROW_KEY - 1;
 
     // the number of slots in our table
     protected int tableSize;
@@ -51,6 +55,10 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected ImmutableObjectArraySource<WritableRowSet> leftRowSet =
             new ImmutableObjectArraySource<>(WritableRowSet.class, null);
     protected ImmutableLongArraySource rightRowKey = new ImmutableLongArraySource();
+    protected ObjectArraySource<WritableRowSet> rightSideDuplicateRowSets =
+            new ObjectArraySource<>(WritableRowSet.class);
+    protected long nextDuplicateRightSide = 0;
+    protected TLongArrayList freeDuplicateValues = new TLongArrayList();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
     protected RightIncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
@@ -77,7 +85,6 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
         ensureCapacity(tableSize);
     }
-
 
     private void ensureCapacity(int tableSize) {
         leftRowSet.ensureCapacity(tableSize);
@@ -169,9 +176,38 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         return hash & (tableSize - 1);
     }
 
+    protected long duplicateLocationFromRowKey(long rowKey) {
+        Assert.leq(rowKey, "rowKey", FIRST_DUPLICATE);
+        return -rowKey + FIRST_DUPLICATE;
+    }
+
+    protected long rowKeyFromDuplicateLocation(long duplicateLocation) {
+        return -duplicateLocation + FIRST_DUPLICATE;
+    }
+
+    protected long allocateDuplicateLocation() {
+        if (freeDuplicateValues.isEmpty()) {
+            rightSideDuplicateRowSets.ensureCapacity(nextDuplicateRightSide + 1);
+            return nextDuplicateRightSide++;
+        } else {
+            final int offset = freeDuplicateValues.size() - 1;
+            final long value = freeDuplicateValues.get(offset);
+            freeDuplicateValues.remove(offset, 1);
+            return value;
+        }
+    }
+
+    protected void freeDuplicateLocation(long duplicateLocation) {
+        freeDuplicateValues.add(duplicateLocation);
+    }
+
     @Override
     public long getRightIndex(int slot) {
-        return rightRowKey.getUnsafe(slot);
+        final long key = rightRowKey.getUnsafe(slot);
+        if (key <= FIRST_DUPLICATE) {
+            return DUPLICATE_RIGHT_VALUE;
+        }
+        return key;
     }
 
     @Override
@@ -181,8 +217,8 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public RowSet getRightRowSet(int slot) {
-        // TODO: make this work! Need to track duplicates on the right side which isn't being done.
-        throw new NotImplementedException("getRightRowSet not implemented for RightIncrementalNaturalJoinStateManager");
+        final long key = rightRowKey.getUnsafe(slot);
+        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(key));
     }
 
     @Override
@@ -264,8 +300,24 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
+
+                        if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
                             checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
+                        } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
+                            // Multiple RHS rows, we may have an error state
+                            if (joinType == NaturalJoinType.FIRST_MATCH) {
+                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+                                final long firstKey = rightSideDuplicateRowSets.getUnsafe(location).firstRowKey();
+                                leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, firstKey));
+                            } else if (joinType == NaturalJoinType.LAST_MATCH) {
+                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+                                final long lastKey = rightSideDuplicateRowSets.getUnsafe(location).lastRowKey();
+                                leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, lastKey));
+                            } else {
+                                throw new IllegalStateException("Natural Join found duplicate right key for "
+                                        + extractKeyStringFromSourceTable(leftRowSet.firstRowKey()));
+                            }
+                        } else {
                             leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
                         }
                     }
