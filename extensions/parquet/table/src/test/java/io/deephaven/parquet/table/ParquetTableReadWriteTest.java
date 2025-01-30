@@ -3701,10 +3701,7 @@ public final class ParquetTableReadWriteTest {
         assertNotNull(nonExistentTableLocation.toString());
         assertNotNull(nonExistentTableLocation.asLivenessReferent());
         assertNotNull(nonExistentTableLocation.getStateLock());
-        nonExistentTableLocation.getLastModifiedTimeMillis();
         nonExistentTableLocation.refresh();
-        nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0);
-        makeNewTableLocationAndVerifyNoMakeHandleException(nonExistentTableLocation::handleUpdate);
 
         // Verify that we can get a column location for a non-existent column
         final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
@@ -3740,6 +3737,11 @@ public final class ParquetTableReadWriteTest {
 
         verifyMakeHandleException(nonExistentTableLocation::getSize);
         makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getSize);
+
+        verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
+        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getLastModifiedTimeMillis);
+
+        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
 
         // APIs from ColumnLocation
         verifyMakeHandleException(nonExistentColumnLocation::exists);

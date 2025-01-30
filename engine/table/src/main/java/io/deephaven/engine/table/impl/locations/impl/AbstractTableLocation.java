@@ -87,6 +87,10 @@ public abstract class AbstractTableLocation
     // TableLocationState implementation
     // ------------------------------------------------------------------------------------------------------------------
 
+    protected void initializeState() {
+        // No-op by default, can be overridden by subclasses to initialize state on first access
+    }
+
     @Override
     @NotNull
     public final Object getStateLock() {
@@ -94,17 +98,20 @@ public abstract class AbstractTableLocation
     }
 
     @Override
-    public RowSet getRowSet() {
+    public final RowSet getRowSet() {
+        initializeState();
         return state.getRowSet();
     }
 
     @Override
-    public long getSize() {
+    public final long getSize() {
+        initializeState();
         return state.getSize();
     }
 
     @Override
     public final long getLastModifiedTimeMillis() {
+        initializeState();
         return state.getLastModifiedTimeMillis();
     }
 
@@ -137,6 +144,7 @@ public abstract class AbstractTableLocation
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final RowSet rowSet, final long lastModifiedTimeMillis) {
+        initializeState();
         if (state.setValues(rowSet, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -149,6 +157,7 @@ public abstract class AbstractTableLocation
      * @param source The source to copy state values from
      */
     public void handleUpdate(@NotNull final TableLocationState source) {
+        initializeState();
         if (source.copyStateValuesTo(state) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }

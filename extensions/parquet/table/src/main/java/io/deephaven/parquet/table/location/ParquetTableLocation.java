@@ -59,6 +59,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private volatile boolean isInitialized;
 
     // Access to all the following variables must be guarded by initialize()
+    // -----------------------------------------------------------------------
     private ParquetFileReader parquetFileReader;
     private int[] rowGroupIndices;
 
@@ -66,6 +67,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private Map<String, String[]> parquetColumnNameToPath;
 
     private TableInfo tableInfo;
+
+    // Following are initialized on first access, so should only be accessed via their getters
     private Map<String, GroupingColumnInfo> groupingColumns;
     private Map<String, ColumnTypeInfo> columnTypes;
     private List<SortColumn> sortingColumns;
@@ -125,10 +128,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             tableInfo = ParquetSchemaReader
                     .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
                     .orElse(TableInfo.builder().build());
-            groupingColumns = tableInfo.groupingColumnMap();
-            columnTypes = tableInfo.columnTypeMap();
-            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
-            version = tableInfo.version();
+
+            isInitialized = true;
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -136,8 +137,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else {
                 handleUpdate(computeIndex(rowGroups), new File(tableLocationKey.getURI()).lastModified());
             }
-
-            isInitialized = true;
         }
     }
 
@@ -164,6 +163,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     public Map<String, ColumnTypeInfo> getColumnTypes() {
         initialize();
+        if (columnTypes == null) {
+            columnTypes = Collections.unmodifiableMap(tableInfo.columnTypeMap());
+        }
         return columnTypes;
     }
 
@@ -177,10 +179,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return local;
             }
             initialize();
-            return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
+            local = IntStream.of(rowGroupIndices)
+                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, getVersion()))
                     .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
                     .toArray(RowGroupReader[]::new);
+            rowGroupReaders = local;
+            return local;
         }
     }
 
@@ -188,7 +192,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     public List<SortColumn> getSortedColumns() {
         initialize();
+        if (sortingColumns == null) {
+            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+        }
         return sortingColumns;
+    }
+
+    @NotNull
+    private Map<String, GroupingColumnInfo> getGroupingColumns() {
+        initialize();
+        if (groupingColumns == null) {
+            groupingColumns = Collections.unmodifiableMap(tableInfo.groupingColumnMap());
+        }
+        return groupingColumns;
+    }
+
+    private String getVersion() {
+        initialize();
+        if (version == null) {
+            version = tableInfo.version();
+        }
+        return version;
     }
 
     @NotNull
@@ -198,15 +222,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public final RowSet getRowSet() {
+    public final void initializeState() {
         initialize();
-        return super.getRowSet();
-    }
-
-    @Override
-    public final long getSize() {
-        initialize();
-        return super.getSize();
     }
 
     @Override
@@ -237,14 +254,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public List<String[]> getDataIndexColumns() {
         initialize();
         final List<DataIndexInfo> dataIndexes = tableInfo.dataIndexes();
-        if (dataIndexes.isEmpty() && groupingColumns.isEmpty()) {
+        final Map<String, GroupingColumnInfo> localGroupingColumns = getGroupingColumns();
+        if (dataIndexes.isEmpty() && localGroupingColumns.isEmpty()) {
             return List.of();
         }
-        final List<String[]> dataIndexColumns = new ArrayList<>(dataIndexes.size() + groupingColumns.size());
+        final List<String[]> dataIndexColumns = new ArrayList<>(dataIndexes.size() + localGroupingColumns.size());
         // Add the data indexes to the list
         dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).forEach(dataIndexColumns::add);
         // Add grouping columns to the list
-        groupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
+        localGroupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
         return dataIndexColumns;
     }
 
@@ -252,7 +270,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public boolean hasDataIndex(@NotNull final String... columns) {
         initialize();
         // Check if the column name matches any of the grouping columns
-        if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
+        if (columns.length == 1 && getGroupingColumns().containsKey(columns[0])) {
             // Validate the index file exists (without loading and parsing it)
             final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), columns);
             return metadata != null && parquetFileExists(metadata.fileURI);
@@ -328,7 +346,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final String... keyColumnNames) {
         if (keyColumnNames.length == 1) {
             // If there's only one key column, there might be (legacy) grouping info
-            final GroupingColumnInfo groupingColumnInfo = groupingColumns.get(keyColumnNames[0]);
+            final GroupingColumnInfo groupingColumnInfo = getGroupingColumns().get(keyColumnNames[0]);
             if (groupingColumnInfo != null) {
                 return new IndexFileMetadata(
                         makeRelativeURI(parentFileURI, groupingColumnInfo.groupingTablePath()),
