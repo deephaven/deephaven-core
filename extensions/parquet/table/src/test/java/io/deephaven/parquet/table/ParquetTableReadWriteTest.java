@@ -3665,23 +3665,18 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
-    private static void makeNewTableLocationAndVerifyNoMakeHandleException(
+    private static void makeNewTableLocationAndVerifyNoException(
             final Consumer<ParquetTableLocation> parquetTableLocationConsumer) {
         final File dest = new File(rootFile, "real.parquet");
         final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        DataIndexer.getOrCreateDataIndex(table, "A");
         writeTable(table, dest.getPath());
 
         final ParquetTableLocationKey newTableLocationKey =
                 new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
         final ParquetTableLocation newTableLocation =
                 new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
-        try {
-            parquetTableLocationConsumer.accept(newTableLocation);
-        } catch (final Exception e) {
-            if (e instanceof UncheckedIOException && e.getMessage().contains("makeHandle encountered exception")) {
-                fail("Unexpected exception: " + e);
-            }
-        }
+        parquetTableLocationConsumer.accept(newTableLocation);
         dest.delete();
     }
 
@@ -3714,32 +3709,33 @@ public final class ParquetTableReadWriteTest {
         // Verify that all the following operations will fail when the file does not exist and pass when it does
         // APIs from TableLocation
         verifyMakeHandleException(nonExistentTableLocation::getDataIndexColumns);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getDataIndexColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getDataIndexColumns);
 
         verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getSortedColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
 
         verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getColumnTypes);
-
-        verifyMakeHandleException(nonExistentTableLocation::getDataIndex);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getDataIndex);
-
-        verifyMakeHandleException(nonExistentTableLocation::loadDataIndex);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::loadDataIndex);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
 
         verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::hasDataIndex);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);
+
+        // Assuming here there will be an index on column "A"
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.getDataIndex("A"));
+
+        verifyMakeHandleException(nonExistentTableLocation::loadDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.loadDataIndex("A"));
 
         // APIs from TableLocationState
         verifyMakeHandleException(nonExistentTableLocation::getRowSet);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getRowSet);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getRowSet);
 
         verifyMakeHandleException(nonExistentTableLocation::getSize);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getSize);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSize);
 
         verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
-        makeNewTableLocationAndVerifyNoMakeHandleException(ParquetTableLocation::getLastModifiedTimeMillis);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getLastModifiedTimeMillis);
 
         verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
 
