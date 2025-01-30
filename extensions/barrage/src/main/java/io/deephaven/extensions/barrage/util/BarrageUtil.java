@@ -53,6 +53,8 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
@@ -485,7 +487,8 @@ public class BarrageUtil {
             try {
                 explicitClass = ClassUtil.lookupClass(explicitClassName);
             } catch (final ClassNotFoundException e) {
-                throw new UncheckedDeephavenException("Could not load class from schema", e);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("BarrageUtil could not find class: %s", explicitClassName));
             }
         }
 
@@ -495,7 +498,8 @@ public class BarrageUtil {
             try {
                 columnComponentType = ClassUtil.lookupClass(explicitComponentTypeName);
             } catch (final ClassNotFoundException e) {
-                throw new UncheckedDeephavenException("Could not load class from schema", e);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("BarrageUtil could not find class: %s", explicitComponentTypeName));
             }
         }
 
@@ -752,13 +756,15 @@ public class BarrageUtil {
                     try {
                         type.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                String.format("BarrageUtil could not find class: %s", value));
                     }
                 } else if (key.equals(ATTR_DH_PREFIX + ATTR_COMPONENT_TYPE_TAG)) {
                     try {
                         componentType.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                String.format("BarrageUtil could not find class: %s", value));
                     }
                 }
             });
@@ -868,7 +874,7 @@ public class BarrageUtil {
                 children = Collections.singletonList(arrowFieldFor(
                         "", componentType, componentType.getComponentType(), Collections.emptyMap(), false));
             } else {
-                throw new UnsupportedOperationException(
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "No default mapping for Arrow complex type: " + fieldType.getType());
             }
         }

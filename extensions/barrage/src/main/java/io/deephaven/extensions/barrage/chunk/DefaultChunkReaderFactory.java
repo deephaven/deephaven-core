@@ -263,7 +263,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return (ChunkReader<T>) new SingleElementListHeaderReader<>(componentReader);
             } else {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
-                        "No known barrage ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
+                        "No known Barrage ChunkReader for arrow type %s to %s. Expected destination type to be an array.",
                         field.getType().toString(),
                         typeInfo.type().getCanonicalName()));
             }
@@ -317,7 +317,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
 
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
-                "No known barrage ChunkReader for arrow type %s to %s. \nArrow types supported: \n\t%s",
+                "No known Barrage ChunkReader for arrow type %s to %s. \nArrow types supported: \n\t%s",
                 field.getType().toString(),
                 typeInfo.type().getCanonicalName(),
                 knownReaders == null ? "none"
@@ -479,7 +479,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             final BarrageTypeInfo<Field> typeInfo,
             final BarrageOptions options) {
         final ArrowType.Timestamp tsType = (ArrowType.Timestamp) arrowType;
-        final ZoneId tz = DateTimeUtils.parseTimeZone(tsType.getTimezone());
+        final String timezone = tsType.getTimezone();
+        final ZoneId tz = timezone == null ? ZoneId.of("UTC") : DateTimeUtils.parseTimeZone(timezone);
         final long factor = factorForTimeUnit(tsType.getUnit());
         return new FixedWidthChunkReader<>(Long.BYTES, true, options, io -> {
             final long value = io.readLong();
@@ -1646,7 +1647,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 return new FixedWidthChunkReader<>(Integer.BYTES * 2, false, options, dataInput -> {
                     final int days = dataInput.readInt();
                     final int millis = dataInput.readInt();
-                    return Duration.ofDays(days).plusMillis(millis);
+                    return Duration.ofSeconds(days * (24 * 60 * 60L), millis * 1_000_000L);
                 });
 
             default:

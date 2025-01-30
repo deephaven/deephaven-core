@@ -61,8 +61,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -99,6 +101,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         register(ArrowType.ArrowTypeID.Timestamp, Instant.class, DefaultChunkWriterFactory::timestampFromInstant);
         register(ArrowType.ArrowTypeID.Timestamp, ZonedDateTime.class,
                 DefaultChunkWriterFactory::timestampFromZonedDateTime);
+        register(ArrowType.ArrowTypeID.Timestamp, LocalDateTime.class,
+                DefaultChunkWriterFactory::timestampFromLocalDateTime);
         register(ArrowType.ArrowTypeID.Utf8, String.class, DefaultChunkWriterFactory::utf8FromObject);
         register(ArrowType.ArrowTypeID.Duration, Duration.class, DefaultChunkWriterFactory::durationFromDuration);
         register(ArrowType.ArrowTypeID.FloatingPoint, byte.class, DefaultChunkWriterFactory::fpFromByte);
@@ -423,6 +427,27 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             }
             return chunk;
         }, LongChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+    }
+
+    private static ChunkWriter<ObjectChunk<LocalDateTime, Values>> timestampFromLocalDateTime(
+            final BarrageTypeInfo<Field> typeInfo) {
+        final ArrowType.Timestamp tsType = (ArrowType.Timestamp) typeInfo.arrowField().getType();
+        final long factor = factorForTimeUnit(tsType.getUnit());
+        final String timezone = tsType.getTimezone();
+        final ZoneId tz = timezone == null ? ZoneId.of("UTC") : DateTimeUtils.parseTimeZone(timezone);
+        return new LongChunkWriter<>((ObjectChunk<LocalDateTime, Values> source) -> {
+            final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(source.size());
+            for (int ii = 0; ii < source.size(); ++ii) {
+                final LocalDateTime value = source.get(ii);
+                if (value == null) {
+                    chunk.set(ii, QueryConstants.NULL_LONG);
+                } else {
+                    final ZonedDateTime zdt = value.atZone(tz).withZoneSameInstant(ZoneId.of("UTC"));
+                    chunk.set(ii, DateTimeUtils.epochNanos(zdt) / factor);
+                }
+            }
+            return chunk;
+        }, ObjectChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
     }
 
     private static ChunkWriter<Chunk<Values>> timestampFromLong(
@@ -1641,7 +1666,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                         "Do not support %s interval from duration as long conversion", intervalType));
 
             case DAY_TIME:
-                final long nsPerMs = Duration.ofMillis(1).toNanos();
+                final long msPerDay = 24 * 60 * 60 * 1000L;
                 return new FixedWidthObjectChunkWriter<>(Integer.BYTES * 2, false, typeInfo.arrowField().isNullable()) {
                     @Override
                     protected void writePayload(
@@ -1657,8 +1682,10 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                                     dos.writeInt(0);
                                 } else {
                                     // days then millis
-                                    dos.writeInt((int) value.toDays());
-                                    dos.writeInt((int) (value.getNano() / nsPerMs));
+                                    final long millis = value.toMillis();
+                                    final long days = millis / msPerDay;
+                                    dos.writeInt((int) days);
+                                    dos.writeInt((int) (millis % msPerDay));
                                 }
                             } catch (final IOException e) {
                                 throw new UncheckedDeephavenException(
@@ -1792,7 +1819,8 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                 }, ObjectChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
 
             case DAY_TIME:
-                return new FixedWidthObjectChunkWriter<PeriodDuration>(Integer.BYTES * 2, false,
+                final long msPerDay = 24 * 60 * 60 * 1000L;
+                return new FixedWidthObjectChunkWriter<>(Integer.BYTES * 2, false,
                         typeInfo.arrowField().isNullable()) {
                     @Override
                     protected void writePayload(
@@ -1810,7 +1838,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                                 } else {
                                     // days then millis
                                     dos.writeInt(value.getPeriod().getDays());
-                                    dos.writeInt(value.getDuration().getNano());
+                                    dos.writeInt((int) (value.getDuration().toMillis() % msPerDay));
                                 }
                             } catch (final IOException e) {
                                 throw new UncheckedDeephavenException(
@@ -1840,7 +1868,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                                     final Period period = value.getPeriod();
                                     dos.writeInt(period.getMonths() + period.getYears() * 12);
                                     dos.writeInt(period.getDays());
-                                    dos.writeLong(value.getDuration().getNano());
+                                    dos.writeLong(value.getDuration().toNanos());
                                 }
                             } catch (final IOException e) {
                                 throw new UncheckedDeephavenException(

@@ -7,6 +7,7 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
@@ -24,7 +25,9 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
@@ -63,12 +66,14 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.AsyncPutListener;
 import org.apache.arrow.flight.CallHeaders;
 import org.apache.arrow.flight.CallStatus;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightClientMiddleware;
 import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightRuntimeException;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.flight.Location;
 import org.apache.arrow.flight.Ticket;
@@ -78,10 +83,14 @@ import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.util.Preconditions;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.complex.BaseListVector;
+import org.apache.arrow.vector.complex.DenseUnionVector;
 import org.apache.arrow.vector.complex.FixedSizeListVector;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.ListViewVector;
 import org.apache.arrow.vector.complex.impl.ComplexCopier;
+import org.apache.arrow.vector.complex.impl.UnionListReader;
+import org.apache.arrow.vector.complex.impl.UnionListWriter;
+import org.apache.arrow.vector.complex.reader.BaseReader;
 import org.apache.arrow.vector.complex.reader.FieldReader;
 import org.apache.arrow.vector.complex.writer.BaseWriter;
 import org.apache.arrow.vector.complex.writer.FieldWriter;
@@ -90,6 +99,7 @@ import org.apache.arrow.vector.types.DateUnit;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
+import org.apache.arrow.vector.types.UnionMode;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
@@ -113,14 +123,18 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -854,7 +868,7 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testUtf8() throws Exception {
-        new Utf8RoundTripTest(String.class).isDefault().runTest();
+        new Utf8RoundTripTest(String.class, new ArrowType.Utf8()).isDefault().runTest();
     }
 
     @Test
@@ -884,6 +898,16 @@ public class JettyBarrageChunkFactoryTest {
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
         new TimeStampRoundTripTest(ZonedDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
+
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.NANOSECOND).runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.MICROSECOND).runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.MILLISECOND).runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.SECOND).runTest();
+
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.NANOSECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.MICROSECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.MILLISECOND, "America/New_York").runTest();
+        new TimeStampRoundTripTest(LocalDateTime.class, TimeUnit.SECOND, "America/New_York").runTest();
     }
 
     @Test
@@ -910,27 +934,368 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testInterval() throws Exception {
-        // new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefault().runTest();
-        // new IntervalRoundTripTest(Period.class, IntervalUnit.YEAR_MONTH).isDefault().runTest();
-        // new IntervalRoundTripTest(Period.class, IntervalUnit.DAY_TIME).runTest();
-        // new IntervalRoundTripTest(Period.class, IntervalUnit.MONTH_DAY_NANO).runTest();
-        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.YEAR_MONTH).runTest();
-        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.DAY_TIME).runTest();
-        // new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.MONTH_DAY_NANO).isDefault().runTest();
+        new IntervalRoundTripTest(Duration.class, IntervalUnit.DAY_TIME).isDefault().runTest();
+        new IntervalRoundTripTest(Period.class, IntervalUnit.YEAR_MONTH).isDefault().runTest();
+        new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.MONTH_DAY_NANO).isDefault().runTest();
+
+        // coercion mappings
+        new IntervalRoundTripTest(Period.class, IntervalUnit.DAY_TIME).runTest();
+        new IntervalRoundTripTest(Period.class, IntervalUnit.MONTH_DAY_NANO).runTest();
+        new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.YEAR_MONTH).runTest();
+        new IntervalRoundTripTest(PeriodDuration.class, IntervalUnit.DAY_TIME).runTest();
     }
 
     @Test
     public void testMultiUnion() throws Exception {
-        // TODO NATE NOCOMMIT
+        final byte TYPE_ID_TIMESTAMP = 0;
+        final byte TYPE_ID_STRING = 1;
+        final byte TYPE_ID_LONG_LIST = 2;
+
+        new RoundTripTest<DenseUnionVector>(Object.class) {
+            // remember what we've assigned
+            final int[] sourceTypeIds = new int[NUM_ROWS];
+            final int[] sourceOffsets = new int[NUM_ROWS];
+
+            @Override
+            public void runTest() throws Exception {
+                // note that dense union requires a separate null column if you want null values
+                runTest(TestNullMode.NONE, TestArrayMode.NONE);
+                // for (TestArrayMode arrayMode : TestArrayMode.values()) {
+                // runTest(TestNullMode.NONE, arrayMode);
+                // }
+            }
+
+            @Override
+            public Schema newSchema(boolean isNullable) {
+                // Create child fields for the union
+                Field timestampField = Field.nullable(
+                        "timestampChild", new ArrowType.Timestamp(TimeUnit.NANOSECOND, null));
+
+                Field stringField = Field.nullable(
+                        "stringChild", new ArrowType.Utf8());
+
+                // For the list-of-long field, we must define a child item field:
+                Field longItemField =
+                        Field.nullable("longItem", new ArrowType.Int(64, /* signed */ true));
+                Field longListField = new Field(
+                        "longListChild", FieldType.nullable(new ArrowType.List()), List.of(longItemField));
+
+                // Create a dense union type
+                ArrowType.Union denseUnion = new ArrowType.Union(
+                        UnionMode.Dense,
+                        new int[] {TYPE_ID_TIMESTAMP, TYPE_ID_STRING, TYPE_ID_LONG_LIST});
+
+                // Create the union field
+                Field unionField = new Field(
+                        COLUMN_NAME, FieldType.nullable(denseUnion),
+                        List.of(timestampField, stringField, longListField));
+
+                // Return a schema with just this field
+                return new Schema(Collections.singletonList(unionField));
+            }
+
+            @Override
+            public int initializeRoot(@NotNull final DenseUnionVector unionVec) {
+                /*
+                 * The DenseUnionVector has sub-vectors for each type ID. We retrieve them so we can store data directly
+                 * into each sub-vector. For example:
+                 *
+                 * unionVec.getVectorByType(TYPE_ID_TIMESTAMP) -> TimeStampVector
+                 * unionVec.getVectorByType(TYPE_ID_STRING) -> VarCharVector unionVec.getVectorByType(TYPE_ID_LONG_LIST)
+                 * -> ListVector
+                 */
+                // Retrieve the child vectors for each type
+                TimeStampVector tsChild = (TimeStampVector) unionVec.getVectorByType(TYPE_ID_TIMESTAMP);
+                VarCharVector strChild = (VarCharVector) unionVec.getVectorByType(TYPE_ID_STRING);
+                ListVector longList = (ListVector) unionVec.getVectorByType(TYPE_ID_LONG_LIST);
+
+                // We'll keep track of how many values we've appended in each child vector
+                int tsCount = 0;
+                int strCount = 0;
+                int listCount = 0;
+
+                // Insert random data
+                for (int i = 0; i < NUM_ROWS; i++) {
+                    // Randomly pick one of the three union types
+                    int pick = rnd.nextInt(3);
+
+                    if (pick == 0) {
+                        // 1) TIMESTAMP
+                        unionVec.setTypeId(i, TYPE_ID_TIMESTAMP);
+                        unionVec.setOffset(i, tsCount);
+
+                        // Provide some random long for the timestamp (nanoseconds)
+                        long randomNanos = rnd.nextLong();
+                        // Set that into the child vector
+                        tsChild.setSafe(tsCount, randomNanos);
+
+                        sourceTypeIds[i] = TYPE_ID_TIMESTAMP;
+                        sourceOffsets[i] = tsCount;
+                        tsCount++;
+
+                    } else if (pick == 1) {
+                        // 2) STRING (UTF8)
+                        unionVec.setTypeId(i, TYPE_ID_STRING);
+                        unionVec.setOffset(i, strCount);
+
+                        String randomString = getRandomUtf8String(rnd);
+                        byte[] utf8Bytes = randomString.getBytes(StandardCharsets.UTF_8);
+                        strChild.setSafe(strCount, utf8Bytes);
+
+                        sourceTypeIds[i] = TYPE_ID_STRING;
+                        sourceOffsets[i] = strCount;
+                        strCount++;
+
+                    } else {
+                        // 3) LIST OF LONGS
+                        unionVec.setTypeId(i, TYPE_ID_LONG_LIST);
+                        unionVec.setOffset(i, listCount);
+
+                        // Let's write 2 to 5 random longs per row in this example
+                        int listSize = rnd.nextInt(4) + 2;
+                        // Start the list
+                        UnionListWriter listWriter = longList.getWriter();
+                        listWriter.setPosition(listCount);
+                        listWriter.startList();
+                        for (int j = 0; j < listSize; j++) {
+                            listWriter.bigInt().writeBigInt(rnd.nextLong());
+                        }
+                        listWriter.endList();
+
+                        sourceTypeIds[i] = TYPE_ID_LONG_LIST;
+                        sourceOffsets[i] = listCount;
+                        listCount++;
+                    }
+                }
+
+                // We need to set the final value counts
+                tsChild.setValueCount(tsCount);
+                strChild.setValueCount(strCount);
+                longList.setValueCount(listCount);
+
+                // The union itself must be set to NUM_ROWS
+                unionVec.setValueCount(NUM_ROWS);
+
+                return NUM_ROWS;
+            }
+
+            @Override
+            public void validate(TestNullMode nullMode, @NotNull DenseUnionVector sourceVec,
+                    @NotNull DenseUnionVector destVec) {
+                // Retrieve child vectors on source
+                TimeStampVector sourceTsChild = (TimeStampVector) sourceVec.getVectorByType(TYPE_ID_TIMESTAMP);
+                VarCharVector sourceStrChild = (VarCharVector) sourceVec.getVectorByType(TYPE_ID_STRING);
+                ListVector sourceList = (ListVector) sourceVec.getVectorByType(TYPE_ID_LONG_LIST);
+
+                // Retrieve child vectors on dest
+                TimeStampVector destTsChild = (TimeStampVector) destVec.getVectorByType(TYPE_ID_TIMESTAMP);
+                VarCharVector destStrChild = (VarCharVector) destVec.getVectorByType(TYPE_ID_STRING);
+                ListVector destList = (ListVector) destVec.getVectorByType(TYPE_ID_LONG_LIST);
+
+                for (int i = 0; i < NUM_ROWS; i++) {
+                    int expectedType = sourceTypeIds[i];
+                    int actualType = destVec.getTypeId(i);
+                    assertEquals(expectedType, actualType);
+
+                    int expectedOffset = sourceOffsets[i];
+                    int actualOffset = destVec.getOffset(i);
+                    assertEquals(expectedOffset, actualOffset);
+
+                    // Compare the actual data based on the type
+                    switch (expectedType) {
+                        case TYPE_ID_TIMESTAMP: {
+                            long sourceVal = sourceTsChild.get(expectedOffset);
+                            long destVal = destTsChild.get(actualOffset);
+                            assertEquals(sourceVal, destVal);
+                            break;
+                        }
+                        case TYPE_ID_STRING: {
+                            byte[] sourceBytes = sourceStrChild.get(expectedOffset);
+                            byte[] destBytes = destStrChild.get(actualOffset);
+                            String sourceStr = new String(sourceBytes, StandardCharsets.UTF_8);
+                            String destStr = new String(destBytes, StandardCharsets.UTF_8);
+                            assertEquals(sourceStr, destStr);
+                            break;
+                        }
+                        case TYPE_ID_LONG_LIST: {
+                            // Compare the contents of the list
+                            UnionListReader sourceListReader = sourceList.getReader();
+                            UnionListReader destListReader = destList.getReader();
+
+                            sourceListReader.setPosition(expectedOffset);
+                            destListReader.setPosition(actualOffset);
+
+                            // Build arrays of the child data
+                            List<Long> sourceLongs = new ArrayList<>();
+                            List<Long> destLongs = new ArrayList<>();
+
+                            if (sourceListReader.isSet()) {
+                                FieldReader sourceItemReader = sourceListReader.reader();
+                                while (sourceListReader.next()) {
+                                    sourceLongs.add(sourceItemReader.readLong());
+                                }
+                            }
+
+                            if (destListReader.isSet()) {
+                                FieldReader destItemReader = destListReader.reader();
+                                while (destListReader.next()) {
+                                    destLongs.add(destItemReader.readLong());
+                                }
+                            }
+
+                            assertEquals(sourceLongs, destLongs);
+                            break;
+                        }
+                        default:
+                            throw new IllegalStateException("Unexpected type ID: " + expectedType);
+                    }
+                }
+            }
+        }.isDefault().runTest();
     }
 
     @Test
     public void testBinaryCustomMappings() throws Exception {
-        // TODO NATE NOCOMMIT
-        // String
-        // BigDecimal
-        // BigInteger
-        // Schema
+        new Utf8RoundTripTest(String.class, new ArrowType.Binary()).runTest();
+        new CustomBinaryRoundTripTest(BigDecimal.class) {
+            @Override
+            public int initializeRoot(@NotNull final VarBinaryVector source) {
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    final BigDecimal bd = randomBigDecimal(rnd, 1 + rnd.nextInt(100), rnd.nextInt(100))
+                            .stripTrailingZeros();
+                    final int v = bd.scale();
+                    byte[] biBytes = bd.unscaledValue().toByteArray();
+                    byte[] valBytes = new byte[4 + biBytes.length];
+                    valBytes[0] = (byte) (0xFF & v);
+                    valBytes[1] = (byte) (0xFF & (v >> 8));
+                    valBytes[2] = (byte) (0xFF & (v >> 16));
+                    valBytes[3] = (byte) (0xFF & (v >> 24));
+                    System.arraycopy(biBytes, 0, valBytes, 4, biBytes.length);
+                    source.set(ii, valBytes);
+                }
+
+                return NUM_ROWS;
+            }
+        }.runTest();
+
+        new CustomBinaryRoundTripTest(BigInteger.class) {
+            @Override
+            public int initializeRoot(@NotNull final VarBinaryVector source) {
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    final BigInteger bi = new BigInteger(rnd.nextInt(100), rnd);
+                    source.set(ii, bi.toByteArray());
+                }
+
+                return NUM_ROWS;
+            }
+        }.runTest();
+
+        new CustomBinaryRoundTripTest(Schema.class) {
+            @Override
+            public int initializeRoot(@NotNull final VarBinaryVector source) {
+                source.reallocDataBuffer(NUM_ROWS * 256);
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    final Schema schema = createSchema(rnd.nextBoolean(), true, new ArrowType.Bool(), null);
+                    try (final ExposedByteArrayOutputStream os = new ExposedByteArrayOutputStream()) {
+                        ArrowIpcUtil.serialize(os, schema);
+                        source.set(ii, os.peekBuffer());
+                    } catch (IOException e) {
+                        throw new UncheckedDeephavenException(e);
+                    }
+                    source.set(ii, schema.serializeAsMessage());
+                }
+
+                return NUM_ROWS;
+            }
+        }.runTest();
+    }
+
+    @Test
+    public void testUnsupportedWireTypePropagation() throws Exception {
+        try {
+            new RoundTripTest<ViewVarCharVector>(String.class) {
+                @Override
+                public Schema newSchema(boolean isNullable) {
+                    return createSchema(isNullable, isDefault, new ArrowType.Utf8View(), String.class);
+                }
+            }.runTest();
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (FlightRuntimeException fre) {
+            assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+        }
+    }
+
+    @Test
+    public void testUnsupportedMappingPropagation() throws Exception {
+        try {
+            new Utf8RoundTripTest(JettyBarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (FlightRuntimeException fre) {
+            assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+        }
+    }
+
+    @Test
+    public void testNotAListDestinationPropagation() throws Exception {
+        try {
+            new RoundTripTest<>(Collection.class, Long.class) {
+                @Override
+                public Schema newSchema(boolean isNullable) {
+                    final Map<String, String> attrs = new HashMap<>();
+                    attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG,
+                            Collection.class.getCanonicalName());
+                    attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG,
+                            String.class.getCanonicalName());
+                    final FieldType fieldType = new FieldType(isNullable, new ArrowType.List(), null, attrs);
+                    final FieldType child = new FieldType(isNullable, new ArrowType.Int(64, true), null);
+                    return new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType,
+                            List.of(new Field("COLUMN_NAME_CHILD", child, null)))));
+                }
+            }.runTest();
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (FlightRuntimeException fre) {
+            assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+        }
+    }
+
+    @Test
+    public void testDestClassNotFoundPropagation() throws Exception {
+        try {
+            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+                @Override
+                public Schema newSchema(boolean isNullable) {
+                    final Map<String, String> attrs = new HashMap<>();
+                    attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG,
+                            "io.deephaven.test.NotARealClass");
+                    final FieldType fieldType = new FieldType(isNullable, new ArrowType.Utf8(), null, attrs);
+                    return new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)));
+                }
+            }.runTest();
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (FlightRuntimeException fre) {
+            assertTrue(fre.getMessage().contains("could not find class"));
+        }
+    }
+
+    @Test
+    public void testComponentDestClassNotFoundPropagation() throws Exception {
+        try {
+            new RoundTripTest<>(JettyBarrageChunkFactoryTest.class) {
+                @Override
+                public Schema newSchema(boolean isNullable) {
+                    final Map<String, String> attrs = new HashMap<>();
+                    attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG, List.class.getCanonicalName());
+                    attrs.put(BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG,
+                            "io.deephaven.test.NotARealClass");
+
+                    final FieldType fieldType = new FieldType(isNullable, new ArrowType.Utf8(), null, attrs);
+                    return new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)));
+                }
+            }.runTest();
+            Assert.statementNeverExecuted("Should have thrown an exception");
+        } catch (FlightRuntimeException fre) {
+            assertTrue(fre.getMessage().contains("could not find class"));
+        }
     }
 
     @SafeVarargs
@@ -1012,9 +1377,14 @@ public class JettyBarrageChunkFactoryTest {
 
         public abstract Schema newSchema(boolean isNullable);
 
-        public abstract int initializeRoot(@NotNull T source);
+        public int initializeRoot(@NotNull T source) {
+            // no-op default impl for some error cases
+            return 0;
+        }
 
-        public abstract void validate(TestNullMode nullMode, @NotNull T source, @NotNull T dest);
+        public void validate(TestNullMode nullMode, @NotNull T source, @NotNull T dest) {
+            // no-op default impl for some error cases
+        }
 
         public <RTT extends RoundTripTest<T>> RTT isDefault() {
             isDefault = true;
@@ -1024,8 +1394,8 @@ public class JettyBarrageChunkFactoryTest {
 
         public void runTest() throws Exception {
             for (TestArrayMode arrayMode : TestArrayMode.values()) {
-                for (TestNullMode mode : TestNullMode.values()) {
-                    runTest(mode, arrayMode);
+                for (TestNullMode nullMode : TestNullMode.values()) {
+                    runTest(nullMode, arrayMode);
                 }
             }
 
@@ -1096,7 +1466,6 @@ public class JettyBarrageChunkFactoryTest {
 
                     // noinspection unchecked
                     int numRows = initializeRoot((T) dataVector);
-                    source.setRowCount(numRows);
 
                     if (nullMode == TestNullMode.ALL) {
                         for (int ii = 0; ii < source.getRowCount(); ++ii) {
@@ -1164,6 +1533,10 @@ public class JettyBarrageChunkFactoryTest {
                             dataVector.setValueCount(maxItemWritten);
                         }
                     }
+
+                    // finally set the row count after the list vectors have been set, or else inner vectors might
+                    // be cleared
+                    source.setRowCount(numRows);
                 }
 
                 int flightDescriptorTicketValue = nextTicket++;
@@ -1237,10 +1610,10 @@ public class JettyBarrageChunkFactoryTest {
                                 Assert.geqZero(totalLen, "totalLen");
 
                                 newView.getDataVector().setValueCount(totalLen);
-                                if (dhType == ZonedDateTime.class) {
+                                if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZoneDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
-                                } else if (dhType == Duration.class) {
+                                    filterZonedDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
+                                } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
                                     filterDurationSource(arrayMode, sourceArr, newView, source, listItemLength);
                                 } else {
@@ -1277,10 +1650,10 @@ public class JettyBarrageChunkFactoryTest {
 
                                 final int finTotalLen = totalLen;
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
-                                if (dhType == ZonedDateTime.class) {
+                                if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZoneDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
-                                } else if (dhType == Duration.class) {
+                                    filterZonedDateTimeSource(arrayMode, sourceArr, newView, source, listItemLength);
+                                } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
                                     filterDurationSource(arrayMode, sourceArr, newView, source, listItemLength);
                                 } else {
@@ -1313,7 +1686,7 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
 
-    private static void filterZoneDateTimeSource(
+    private static void filterZonedDateTimeSource(
             final TestArrayMode arrayMode,
             @NotNull final BaseListVector sourceArr,
             @NotNull final BaseListVector newView,
@@ -1990,10 +2363,23 @@ public class JettyBarrageChunkFactoryTest {
                 throw new IllegalArgumentException("Unexpected time unit: " + timeUnit);
             }
 
+            final ZoneId zid = timeZone == null ? null : ZoneId.of(timeZone);
+            final ZoneId utc = ZoneId.of("UTC");
             for (int ii = 0; ii < NUM_ROWS; ++ii) {
-                source.set(ii, rnd.nextLong() / factor);
+                long epochNanos = rnd.nextLong();
+                source.set(ii, epochNanos / factor);
                 if (source.get(ii) == QueryConstants.NULL_LONG) {
                     --ii;
+                }
+                if (dhType == LocalDateTime.class && zid != null) {
+                    final long epochSecs = epochNanos / 1_000_000_000L;
+                    // ensure that this LDT is not affected by daylight savings time changes
+                    ZonedDateTime lzdt = ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecs), zid);
+                    // wash through LDT
+                    lzdt = lzdt.toLocalDateTime().atZone(zid);
+                    if (lzdt.withZoneSameInstant(utc).toEpochSecond() != epochSecs) {
+                        --ii;
+                    }
                 }
             }
             return NUM_ROWS;
@@ -2205,23 +2591,23 @@ public class JettyBarrageChunkFactoryTest {
                 switch (intervalUnit) {
                     case YEAR_MONTH: {
                         final IntervalYearVector iv = (IntervalYearVector) source;
-                        final int months = rnd.nextInt();
+                        final int months = Math.abs(rnd.nextInt());
                         iv.set(ii, months);
                         break;
                     }
                     case DAY_TIME: {
                         final IntervalDayVector iv = (IntervalDayVector) source;
-                        final int days = rnd.nextInt();
-                        final int milliseconds = rnd.nextInt();
+                        final int days = Math.abs(rnd.nextInt());
+                        final int milliseconds = dhType == Period.class ? 0 : rnd.nextInt(24 * 60 * 60 * 1_000);
                         iv.set(ii, days, milliseconds);
                         break;
                     }
                     case MONTH_DAY_NANO: {
                         final IntervalMonthDayNanoVector iv = (IntervalMonthDayNanoVector) source;
-                        final int months = rnd.nextInt();
-                        final int days = rnd.nextInt();
-                        final long nanos = rnd.nextLong();
-                        iv.set(ii, months, days, nanos);
+                        final int months = Math.abs(rnd.nextInt());
+                        final int days = Math.abs(rnd.nextInt());
+                        final long nanos = Math.abs(rnd.nextLong()) % (24 * 60 * 60 * 1_000_000_000L);
+                        iv.set(ii, months, days, dhType == Period.class ? 0 : nanos);
                         break;
                     }
                     default:
@@ -2330,21 +2716,25 @@ public class JettyBarrageChunkFactoryTest {
         }
     }
 
-    private class Utf8RoundTripTest extends RoundTripTest<VarCharVector> {
+    private class Utf8RoundTripTest extends RoundTripTest<BaseVariableWidthVector> {
+        private final ArrowType arrowType;
 
-        public Utf8RoundTripTest(@NotNull Class<?> dhType) {
+        public Utf8RoundTripTest(
+                @NotNull final Class<?> dhType,
+                final ArrowType arrowType) {
             super(dhType);
+            this.arrowType = arrowType;
         }
 
         @Override
         public Schema newSchema(boolean isNullable) {
-            return createSchema(isNullable, isDefault, new ArrowType.Utf8(), dhType);
+            return createSchema(isNullable, isDefault, arrowType, dhType);
         }
 
         @Override
-        public int initializeRoot(@NotNull final VarCharVector source) {
+        public int initializeRoot(@NotNull final BaseVariableWidthVector source) {
             for (int ii = 0; ii < NUM_ROWS; ++ii) {
-                String value = getRandomUtf8String();
+                String value = getRandomUtf8String(rnd);
                 byte[] utf8Bytes = value.getBytes(StandardCharsets.UTF_8);
                 source.setSafe(ii, utf8Bytes);
             }
@@ -2352,7 +2742,8 @@ public class JettyBarrageChunkFactoryTest {
         }
 
         @Override
-        public void validate(TestNullMode nullMode, @NotNull VarCharVector source, @NotNull VarCharVector dest) {
+        public void validate(TestNullMode nullMode, @NotNull BaseVariableWidthVector source,
+                @NotNull BaseVariableWidthVector dest) {
             for (int ii = 0; ii < source.getValueCount(); ++ii) {
                 if (source.isNull(ii)) {
                     assertTrue(dest.isNull(ii));
@@ -2363,15 +2754,38 @@ public class JettyBarrageChunkFactoryTest {
                 }
             }
         }
+    }
 
-        private String getRandomUtf8String() {
-            int length = rnd.nextInt(20) + 1;
-            StringBuilder sb = new StringBuilder(length);
-            for (int i = 0; i < length; i++) {
-                char ch = (char) (rnd.nextInt(26) + 'a');
-                sb.append(ch);
+    private static String getRandomUtf8String(final Random rnd) {
+        int length = rnd.nextInt(20) + 1;
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            char ch = (char) (rnd.nextInt(26) + 'a');
+            sb.append(ch);
+        }
+        return sb.toString();
+    }
+
+    private abstract class CustomBinaryRoundTripTest extends RoundTripTest<VarBinaryVector> {
+        public CustomBinaryRoundTripTest(final @NotNull Class<?> dhType) {
+            super(dhType);
+        }
+
+        @Override
+        public Schema newSchema(boolean isNullable) {
+            return createSchema(isNullable, isDefault, new ArrowType.Binary(), dhType);
+        }
+
+        @Override
+        public void validate(TestNullMode nullMode, @NotNull VarBinaryVector source,
+                @NotNull VarBinaryVector dest) {
+            for (int ii = 0; ii < source.getValueCount(); ++ii) {
+                if (source.isNull(ii)) {
+                    assertTrue(dest.isNull(ii));
+                } else {
+                    assertArrayEquals(source.getObject(ii), dest.getObject(ii));
+                }
             }
-            return sb.toString();
         }
     }
 

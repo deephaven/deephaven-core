@@ -20,6 +20,7 @@ import io.deephaven.barrage.flatbuf.*;
         description = "Start a DoExchange session with the server", version = "0.1.0")
 class DoExchange extends FlightExampleBase {
 
+
     @ArgGroup(exclusive = true, multiplicity = "1")
     Ticket ticket;
 
