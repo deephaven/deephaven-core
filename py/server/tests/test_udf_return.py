@@ -4,7 +4,7 @@
 import datetime
 import typing
 import unittest
-from typing import List, Union, Optional
+from typing import List, Union, Tuple, Sequence, Optional
 
 import numpy as np
 import numpy.typing as npt
