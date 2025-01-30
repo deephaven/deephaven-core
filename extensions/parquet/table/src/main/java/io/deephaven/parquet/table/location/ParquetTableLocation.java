@@ -61,7 +61,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     // Access to all the following variables must be guarded by initialize()
     // -----------------------------------------------------------------------
     private ParquetFileReader parquetFileReader;
-    private int[] rowGroupIndices;
 
     private RegionedPageStore.Parameters regionParameters;
     private Map<String, String[]> parquetColumnNameToPath;
@@ -92,6 +91,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
             final ParquetMetadata parquetMetadata;
             final ParquetTableLocationKey tableLocationKey = getParquetKey();
+            final int[] rowGroupIndices;
             synchronized (tableLocationKey) {
                 // Following methods are internally synchronized, we synchronize them together here to minimize
                 // lock/unlock calls
@@ -190,7 +190,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public final void initializeState() {
+    protected final void initializeState() {
         initialize();
     }
 

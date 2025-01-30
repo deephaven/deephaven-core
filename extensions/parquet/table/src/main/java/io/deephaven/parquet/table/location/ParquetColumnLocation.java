@@ -69,10 +69,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     // Access to following variables must be guarded by initializeReaders()
     // -----------------------------------------------------------------------
     /**
-     * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to
-     * ensure visibility of the derived fields. We delay initializing this field till we need to read the column data.
+     * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
+     * itself till we need to read the column data.
      */
-    private volatile ColumnChunkReader[] columnChunkReaders;
+    private ColumnChunkReader[] columnChunkReaders;
 
     /**
      * Whether the column location actually exists.
