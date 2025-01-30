@@ -3676,6 +3676,8 @@ public final class ParquetTableReadWriteTest {
                 new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
         final ParquetTableLocation newTableLocation =
                 new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
+
+        // The following operations should not throw exceptions
         parquetTableLocationConsumer.accept(newTableLocation);
         dest.delete();
     }
