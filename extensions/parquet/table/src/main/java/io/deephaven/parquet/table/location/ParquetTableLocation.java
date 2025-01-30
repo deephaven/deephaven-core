@@ -56,13 +56,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     private final ParquetInstructions readInstructions;
 
-    private ParquetColumnResolver resolver;
-
     private volatile boolean isInitialized;
 
     // Access to all the following variables must be guarded by initialize()
     // -----------------------------------------------------------------------
     private ParquetFileReader parquetFileReader;
+
+    private ParquetColumnResolver resolver;
 
     private RegionedPageStore.Parameters regionParameters;
     private Map<String, String[]> parquetColumnNameToPath;
@@ -232,14 +232,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     public List<String[]> getDataIndexColumns() {
         initialize();
-        final List<DataIndexInfo> dataIndexes = tableInfo.dataIndexes();
         final Map<String, GroupingColumnInfo> localGroupingColumns = groupingColumns;
-        if (dataIndexes.isEmpty() && localGroupingColumns.isEmpty()) {
+        if (tableInfo.dataIndexes().isEmpty() && localGroupingColumns.isEmpty()) {
             return List.of();
         }
-        final List<String[]> dataIndexColumns = new ArrayList<>(dataIndexes.size() + localGroupingColumns.size());
+        final List<String[]> dataIndexColumns =
+                new ArrayList<>(tableInfo.dataIndexes().size() + localGroupingColumns.size());
         // Add the data indexes to the list
-        dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).forEach(dataIndexColumns::add);
+        tableInfo.dataIndexes().stream()
+                .map(di -> di.columns().toArray(String[]::new))
+                .forEach(dataIndexColumns::add);
         // Add grouping columns to the list
         localGroupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
         return dataIndexColumns;
