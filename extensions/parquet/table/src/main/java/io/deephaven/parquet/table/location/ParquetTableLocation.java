@@ -232,18 +232,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     public List<String[]> getDataIndexColumns() {
         initialize();
-        final Map<String, GroupingColumnInfo> localGroupingColumns = groupingColumns;
-        if (tableInfo.dataIndexes().isEmpty() && localGroupingColumns.isEmpty()) {
+        if (tableInfo.dataIndexes().isEmpty() && groupingColumns.isEmpty()) {
             return List.of();
         }
         final List<String[]> dataIndexColumns =
-                new ArrayList<>(tableInfo.dataIndexes().size() + localGroupingColumns.size());
+                new ArrayList<>(tableInfo.dataIndexes().size() + groupingColumns.size());
         // Add the data indexes to the list
         tableInfo.dataIndexes().stream()
                 .map(di -> di.columns().toArray(String[]::new))
                 .forEach(dataIndexColumns::add);
         // Add grouping columns to the list
-        localGroupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
+        groupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
         return dataIndexColumns;
     }
 
