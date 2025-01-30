@@ -273,12 +273,18 @@ class NaturalJoinHelper {
         final boolean rightRefreshing = rightTable.isRefreshing();
 
         if (rightTable.size() > 1) {
-            if (!leftTable.isEmpty()) {
-                throw new RuntimeException(
-                        "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
+            if ((joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
+                if (!leftTable.isEmpty()) {
+                    throw new RuntimeException(
+                            "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
+                }
+                // we don't care where it goes
+                rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
+            } else {
+                rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
+                // re-direct to the appropriate RHS row
+                updateRightRedirection(rightTable, rowRedirection, joinType);
             }
-            // we don't care where it goes
-            rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
@@ -316,7 +322,7 @@ class NaturalJoinHelper {
                         checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
 
                         if (rightChanged) {
-                            final boolean rightUpdated = updateRightRedirection(rightTable, rowRedirection);
+                            final boolean rightUpdated = updateRightRedirection(rightTable, rowRedirection, joinType);
                             if (rightUpdated) {
                                 modifiedColumnSet.setAll(allRightColumns);
                             } else {
@@ -371,7 +377,7 @@ class NaturalJoinHelper {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
-                                final boolean changed = updateRightRedirection(rightTable, rowRedirection);
+                                final boolean changed = updateRightRedirection(rightTable, rowRedirection, joinType);
                                 final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                                 if (!changed) {
                                     rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
@@ -393,7 +399,10 @@ class NaturalJoinHelper {
                 : new SingleValueRowRedirection(value);
     }
 
-    private static boolean updateRightRedirection(QueryTable rightTable, SingleValueRowRedirection rowRedirection) {
+    private static boolean updateRightRedirection(
+            final QueryTable rightTable,
+            final SingleValueRowRedirection rowRedirection,
+            final NaturalJoinType joinType) {
         final boolean changed;
         if (rightTable.isEmpty()) {
             changed = rowRedirection.getValue() != RowSequence.NULL_ROW_KEY;
@@ -401,7 +410,12 @@ class NaturalJoinHelper {
                 rowRedirection.writableSingleValueCast().setValue(RowSequence.NULL_ROW_KEY);
             }
         } else {
-            final long value = rightTable.getRowSet().firstRowKey();
+            final long value;
+            if (joinType == NaturalJoinType.FIRST_MATCH) {
+                value = rightTable.getRowSet().firstRowKey();
+            } else {
+                value = rightTable.getRowSet().lastRowKey();
+            }
             changed = rowRedirection.getValue() != value;
             if (changed) {
                 rowRedirection.writableSingleValueCast().setValue(value);
@@ -415,12 +429,16 @@ class NaturalJoinHelper {
             final Table rightTable,
             final NaturalJoinType joinType) {
         if (!leftTable.isEmpty()) {
-            if (rightTable.size() > 1) {
-                throw new RuntimeException(
-                        "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-            } else if (rightTable.isEmpty() && joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                throw new RuntimeException(
-                        "exactJoin with zero key columns must have exactly one row in the right hand side table!");
+            if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE) {
+                if (rightTable.size() > 1) {
+                    throw new RuntimeException(
+                            "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
+                }
+            } else if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                if (rightTable.size() != 1) {
+                    throw new RuntimeException(
+                            "exactJoin with zero key columns must have exactly one row in the right hand side table!");
+                }
             }
         }
     }
@@ -559,7 +577,6 @@ class NaturalJoinHelper {
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
-
             modifiedSlotTracker.clear();
 
             final boolean addedRightColumnsChanged;
@@ -581,6 +598,18 @@ class NaturalJoinHelper {
                     modifiedPreShift = null;
                 }
 
+                // We must do all removes before shifting or there will be collisions in the RHS duplicate sets
+                if (upstream.removed().isNonempty()) {
+                    jsm.removeRight(pc, upstream.removed(), rightSources, modifiedSlotTracker, joinType);
+                }
+                if (rightKeysChanged) {
+                    // It should make us somewhat sad that we have to add/remove, because we are doing two hash
+                    // lookups for keys that have not actually changed.
+                    // The alternative would be to do an initial pass that would filter out key columns that have
+                    // not actually changed.
+                    jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker, joinType);
+                }
+
                 if (upstream.shifted().nonempty()) {
                     try (final WritableRowSet previousToShift =
                             getParent().getRowSet().prev().minus(upstream.removed())) {
@@ -598,23 +627,14 @@ class NaturalJoinHelper {
                     }
                 }
 
-                jsm.removeRight(pc, upstream.removed(), rightSources, modifiedSlotTracker, joinType);
-
                 final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
                 rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
                 addedRightColumnsChanged = modifiedColumnSet.size() != 0;
 
                 if (rightKeysChanged) {
-                    // It should make us somewhat sad that we have to add/remove, because we are doing two hash lookups
-                    // for keys that have not actually changed.
-                    // The alternative would be to do an initial pass that would filter out key columns that have not
-                    // actually changed.
-                    jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker, joinType);
                     jsm.addRightSide(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType);
-                } else {
-                    if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
-                        jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType);
-                    }
+                } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
+                    jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType);
                 }
 
                 jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker, joinType);

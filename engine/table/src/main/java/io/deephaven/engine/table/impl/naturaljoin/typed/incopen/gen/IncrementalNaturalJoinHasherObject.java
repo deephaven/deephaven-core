@@ -175,12 +175,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 final WritableRowSet duplicates = RowSetFactory.fromKeys(existingRightRowKey, inputKey);
                                 rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                                 alternateRightRowKey.set(alternateTableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                                final long newKey = getRightRowKeyFromDuplicates(duplicates, joinType);
-                                final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
-                                if (!leftEmpty && inputKey == newKey) {
-                                    // we have a new output key for the LHS rows;
-                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                                }
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                             break MAIN_SEARCH;
                         } else {
@@ -230,12 +225,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                         final WritableRowSet duplicates = RowSetFactory.fromKeys(existingRightRowKey, inputKey);
                         rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                         mainRightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                        final long newKey = getRightRowKeyFromDuplicates(duplicates, joinType);
-                        final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
-                        if (!leftEmpty && inputKey == newKey) {
-                            // we have a new output key for the LHS rows;
-                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                        }
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     break;
                 } else {

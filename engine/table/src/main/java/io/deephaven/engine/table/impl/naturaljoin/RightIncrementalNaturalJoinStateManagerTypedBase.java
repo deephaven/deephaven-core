@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
-import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -27,8 +26,6 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -92,6 +89,30 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         modifiedTrackerCookieSource.ensureCapacity(tableSize);
         for (WritableColumnSource<?> mainKeySource : mainKeySources) {
             mainKeySource.ensureCapacity(tableSize);
+        }
+    }
+
+    public static class ProbeContext extends TypedHasherUtil.BuildOrProbeContext {
+        private ProbeContext(ColumnSource<?>[] buildSources, int chunkSize) {
+            super(buildSources, chunkSize);
+        }
+
+        void startShifts(long shiftDelta) {
+            if (shiftDelta > 0) {
+                if (pendingShifts == null) {
+                    pendingShifts = new LongArraySource();
+                }
+            }
+            pendingShiftPointer = 0;
+        }
+
+        public int pendingShiftPointer;
+        public LongArraySource pendingShifts;
+
+        public void ensureShiftCapacity(long shiftDelta, long size) {
+            if (shiftDelta > 0) {
+                pendingShifts.ensureCapacity(pendingShiftPointer + 2 * size);
+            }
         }
     }
 
@@ -357,13 +378,25 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        probeTable((ProbeContext) pc, shiftedRowSet, false, rightSources, (chunkOk,
-                sourceKeyChunks) -> applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker,
-                        joinType));
+        final ProbeContext pc1 = (ProbeContext) pc;
+        pc1.startShifts(shiftDelta);
+        probeTable(pc1, shiftedRowSet, false, rightSources,
+                (chunkOk, sourceKeyChunks) -> {
+                    pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
+                    applyRightShift(chunkOk, sourceKeyChunks, shiftDelta, modifiedSlotTracker, pc1, joinType);
+                });
+        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
+            final long location = pc1.pendingShifts.getUnsafe(ii);
+            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
+
+            final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(location);
+            Assert.neqNull(duplicates, "duplicates");
+            shiftOneKey(duplicates, indexKey, shiftDelta);
+        }
     }
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, ProbeContext pc, NaturalJoinType joinType);
 
     @Override
     public void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,

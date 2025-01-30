@@ -177,6 +177,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
                     } else if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
                         // we have a matching LHS row, add this new RHS row;
                         rightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         // another duplicate, add it to the list;
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
@@ -190,17 +191,18 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
                             modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                         }
                     } else {
+                        // we have a duplicate, how to handle it?;
+                        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                            final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                        }
                         // create a duplicate rowset and add the new row to it;
                         final long inputKey = rowKeyChunk.get(chunkPosition);
                         final long duplicateLocation = allocateDuplicateLocation();
                         final WritableRowSet duplicates = RowSetFactory.fromKeys(rightRowKeyForState, inputKey);
                         rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                         rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                        final long newKey = getRightRowKeyFromDuplicates(duplicates, joinType);
-                        if (inputKey == newKey) {
-                            // we have a new output key for the LHS rows;
-                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                        }
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     break;
                 }
@@ -234,6 +236,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
 
     protected void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc,
             NaturalJoinType joinType) {
         final ShortChunk<Values> keyChunk0 = sourceKeyChunks[0].asShortChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -245,9 +248,24 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
-                    Assert.eq(oldRightRow + shiftDelta, "oldRightRow + shiftDelta", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
-                    modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    final long existingRightRowKey = rightRowKey.getUnsafe(tableLocation);
+                    final long keyToShift = rowKeyChunk.get(chunkPosition);
+                     if (existingRightRowKey == keyToShift - shiftDelta) {
+                        rightRowKey.set(tableLocation, keyToShift);
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    } else if (existingRightRowKey <= FIRST_DUPLICATE) {
+                        final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
+                        if (shiftDelta < 0) {
+                            final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                            shiftOneKey(duplicates, keyToShift, shiftDelta);
+                        } else {
+                            pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
+                            pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);;
+                        }
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    } else {
+                        throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");
+                    }
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);

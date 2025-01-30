@@ -172,11 +172,15 @@ public class TypedHasherFactory {
                     null,
                     modifiedSlotTrackerParam, joinTypeParam));
 
+            ParameterSpec probeContextParam =
+                    ParameterSpec.builder(RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc")
+                            .build();
+
             builder.addProbe(new HasherConfig.ProbeSpec("applyRightShift", null, true,
                     TypedNaturalJoinFactory::rightIncrementalShift,
                     null,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam, probeContextParam, joinTypeParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
             final ParameterSpec modifiedSlotTrackerParam =
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();

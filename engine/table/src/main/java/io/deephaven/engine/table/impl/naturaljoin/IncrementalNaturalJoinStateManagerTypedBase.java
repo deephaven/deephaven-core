@@ -785,13 +785,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
     }
 
-    protected void shiftOneKey(WritableRowSet existingLeftRowSet, long shiftedKey, long shiftDelta) {
-        final long sizeBefore = existingLeftRowSet.size();
-        existingLeftRowSet.remove(shiftedKey - shiftDelta);
-        existingLeftRowSet.insert(shiftedKey);
-        Assert.eq(existingLeftRowSet.size(), "existingLeftRowSet.size()", sizeBefore, "sizeBefore");
-    }
-
     protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
             ProbeContext pc);
 

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 
@@ -47,5 +48,15 @@ public interface IncrementalNaturalJoinStateManager {
         final long originalRowKey = getRightRowKeyFromDuplicates(duplicates, joinType);
         duplicates.remove(keyToRemove);
         return originalRowKey;
+    }
+
+    /**
+     * Shift a key in the RHS duplicate rowset.
+     */
+    default void shiftOneKey(WritableRowSet duplicates, long shiftedKey, long shiftDelta) {
+        final long sizeBefore = duplicates.size();
+        duplicates.remove(shiftedKey - shiftDelta);
+        duplicates.insert(shiftedKey);
+        Assert.eq(duplicates.size(), "duplicates.size()", sizeBefore, "sizeBefore");
     }
 }
