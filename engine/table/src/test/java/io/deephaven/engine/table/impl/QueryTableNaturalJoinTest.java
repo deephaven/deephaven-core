@@ -88,7 +88,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         }
 
-
         for (int step = 0; step < 40; step++) {
             System.out
                     .println("Step = " + step + ", leftSize=" + leftTable.size() + ", rightSize=" + rightTable.size());
@@ -1629,60 +1628,97 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return columnInfos;
     }
 
-    public void testNaturalJoinFirstByStatic() {
+    final int[] sizes = new int[] {10, 100, 1000, 10_000};
+    final int NUM_STEPS = 20;
+
+    public void testNaturalJoinTypeStatic(
+            final int leftSize,
+            final int rightSize,
+            final NaturalJoinType joinType,
+            final JoinControl.RedirectionType redirectionType) {
         final Random lhs_random = new Random(12345678);
         final Random rhs_random = new Random(87654321);
 
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
         // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
         final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
-        for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
-            final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
-            final QueryTable rhsRaw = getTable(false, size, rhs_random, columnInfos);
-            final Table rhs = rhsRaw.firstBy("intCol");
 
-            final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
-            final Table actual = lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                    NaturalJoinType.FIRST_MATCH);
+        final QueryTable lhsRaw = getTable(false, leftSize, lhs_random, columnInfos);
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
+        final QueryTable rhsRaw = getTable(false, rightSize, rhs_random, columnInfos);
+        final Table rhs = joinType == NaturalJoinType.FIRST_MATCH
+                ? rhsRaw.firstBy("intCol")
+                : rhsRaw.lastBy("intCol");
 
-            assertTableEquals(expected, actual);
+        final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        final Table actual = NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                joinType, control);
+
+        assertTableEquals(expected, actual);
+    }
+
+    public void testNaturalJoinFirstByStatic() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Contiguous);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.FIRST_MATCH,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
     public void testNaturalJoinLastByStatic() {
-        final Random lhs_random = new Random(12345678);
-        final Random rhs_random = new Random(87654321);
-
-        // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
-        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
-        for (final int size : new int[] {10, 100, 1000, 10_000, 100_000}) {
-            final QueryTable lhs = getTable(false, size, lhs_random, columnInfos);
-            final QueryTable rhsRaw = getTable(false, size, rhs_random, columnInfos);
-            final Table rhs = rhsRaw.lastBy("intCol");
-
-            final Table expected = lhs.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
-            final Table actual = lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                    NaturalJoinType.LAST_MATCH);
-
-            assertTableEquals(expected, actual);
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Contiguous);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeStatic(leftSize, rightSize, NaturalJoinType.LAST_MATCH,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
-    final int[] sizes = new int[] {10, 100, 1000, 10_000, 100_000};
-    final int NUM_STEPS = 100;
-
     private void testNaturalJoinType(
             final int leftSize,
-            final boolean leftRefrshing,
+            final boolean leftRefreshing,
             final int rightSize,
             final boolean rightRefreshing,
             final int steps,
-            final JoinIncrement incrementor) {
+            final JoinIncrement incrementor,
+            final JoinControl.RedirectionType redirectionType) {
         final Random lhs_random = new Random(12345678);
         final Random rhs_random = new Random(87654321);
 
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
         final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
 
-        final QueryTable lhs = getTable(leftRefrshing, leftSize, lhs_random, columnInfos);
+        final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
 
         final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
         final Table rhsFirstByIntCol = rhsRaw.firstBy("intCol");
@@ -1692,67 +1728,95 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final TableComparator[] tc = new TableComparator[] {
                 new TableComparator(
-                        lhs.naturalJoin(rhsFirstByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        lhsRaw.naturalJoin(rhsFirstByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
                         "firstBy + naturalJoin",
-                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                                NaturalJoinType.FIRST_MATCH),
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
                         "nj + FIRST_MATCH"),
                 new TableComparator(
-                        lhs.naturalJoin(rhsLastByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        lhsRaw.naturalJoin(rhsLastByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
                         "lastBy + naturalJoin",
-                        lhs.naturalJoin(rhsRaw, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                                NaturalJoinType.LAST_MATCH),
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
                         "nj + LAST_MATCH"),
                 new TableComparator(
-                        lhs.naturalJoin(rhsFirstByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        lhsRaw.naturalJoin(rhsFirstByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
                         "firstBy + naturalJoin",
-                        lhs.naturalJoin(rhsRaw, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                                NaturalJoinType.FIRST_MATCH),
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
                         "nj + FIRST_MATCH"),
                 new TableComparator(
-                        lhs.naturalJoin(rhsLastByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        lhsRaw.naturalJoin(rhsLastByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
                         "lastBy + naturalJoin",
-                        lhs.naturalJoin(rhsRaw, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol",
-                                NaturalJoinType.LAST_MATCH),
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
                         "nj + LAST_MATCH"),
         };
 
-        final int leftStepSize = leftRefrshing ? (int) Math.ceil(Math.sqrt(leftSize)) : 0;
+        final int leftStepSize = leftRefreshing ? (int) Math.ceil(Math.sqrt(leftSize)) : 0;
         final int rightStepSize = rightRefreshing ? (int) Math.ceil(Math.sqrt(rightSize)) : 0;
 
         for (int i = 0; i < steps; i++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step " + i);
             }
-            incrementor.step(leftStepSize, rightStepSize, lhs, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
+            incrementor.step(leftStepSize, rightStepSize, lhsRaw, rhsRaw, columnInfos, columnInfos, tc, rhs_random);
         }
     }
 
     public void testNaturalJoinTypeIncremental() {
-        for (int size : sizes) {
-            System.out.println("testNaturalJoinTypeIncremental: size = " + size);
-            testNaturalJoinType(size, true, size, true, NUM_STEPS, leftRightStep);
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
     public void testNaturalJoinTypeShiftIncremental() {
-        for (int size : sizes) {
-            System.out.println("testNaturalJoinTypeShiftIncremental: size = " + size);
-            testNaturalJoinType(size, true, size, true, NUM_STEPS, leftRightStepShift);
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
     public void testNaturalJoinTypeRightIncremental() {
-        for (int size : sizes) {
-            System.out.println("testNaturalJoinTypeRightIncremental: size = " + size);
-            testNaturalJoinType(size, false, size, true, NUM_STEPS, rightStep);
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
     public void testNaturalJoinTypeRightShiftIncremental() {
-        for (int size : sizes) {
-            System.out.println("testNaturalJoinTypeRightShiftIncremental: size = " + size);
-            testNaturalJoinType(size, false, size, true, NUM_STEPS, rightStepShift);
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Hash);
+            }
         }
     }
 
