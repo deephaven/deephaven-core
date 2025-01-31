@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -153,7 +154,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending()) {
                         if (locationUpdate != null) {
-                            maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                            // this is the first time we are coalescing; so we can ignore the things that were removed
+                            maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys(), true);
                             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                         }
                     }
@@ -188,14 +190,25 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.get())));
     }
 
-    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys) {
+    private void maybeRemoveLocations(@NotNull final Collection<LiveSupplier<ImmutableTableLocationKey>> removedKeys,
+            final boolean removedAllowed) {
         if (removedKeys.isEmpty()) {
             return;
         }
 
-        filterLocationKeys(removedKeys).stream()
-                .map(LiveSupplier::get)
-                .forEach(columnSourceManager::removeLocationKey);
+        final Stream<ImmutableTableLocationKey> filteredLocationStream = filterLocationKeys(removedKeys).stream()
+                .map(LiveSupplier::get);
+
+        if (!removedAllowed) {
+            final ImmutableTableLocationKey[] keys = filteredLocationStream.toArray(ImmutableTableLocationKey[]::new);
+            if (keys.length == 0) {
+                return;
+            }
+            throw new TableLocationRemovedException(
+                    "Source table does not support removed locations", keys);
+        }
+
+        filteredLocationStream.forEach(columnSourceManager::removeLocationKey);
     }
 
     private void initializeLocationSizes() {
@@ -238,16 +251,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                     locationBuffer.processPending()) {
                 if (locationUpdate != null) {
-                    if (!locationProvider.getUpdateMode().removeAllowed()
-                            && !locationUpdate.getPendingRemovedLocationKeys().isEmpty()) {
-                        // This TLP doesn't support removed locations, we need to throw an exception.
-                        final ImmutableTableLocationKey[] keys = locationUpdate.getPendingRemovedLocationKeys().stream()
-                                .map(LiveSupplier::get).toArray(ImmutableTableLocationKey[]::new);
-                        throw new TableLocationRemovedException(
-                                "Source table does not support removed locations", keys);
-                    }
-
-                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
+                    maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys(),
+                            locationProvider.getUpdateMode().removeAllowed());
                     maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                 }
             }
