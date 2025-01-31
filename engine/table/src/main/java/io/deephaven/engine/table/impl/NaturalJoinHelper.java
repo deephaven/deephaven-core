@@ -285,7 +285,7 @@ class NaturalJoinHelper {
                 rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
             } else {
                 rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
-                // re-direct to the appropriate RHS row
+                // immediately re-direct to the appropriate RHS row
                 updateRightRedirection(rightTable, rowRedirection, joinType);
             }
         } else if (rightTable.size() == 1) {
@@ -689,7 +689,7 @@ class NaturalJoinHelper {
                 return;
             }
 
-            long index = jsm.getRightIndex(updatedSlot);
+            long index = jsm.getRightRowKey(updatedSlot);
             if (index == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE
                         || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {

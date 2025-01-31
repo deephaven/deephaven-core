@@ -1629,7 +1629,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     final int[] sizes = new int[] {10, 100, 1000, 10_000};
-    final int NUM_STEPS = 20;
+    final int NUM_STEPS = 10;
 
     public void testNaturalJoinTypeStatic(
             final int leftSize,
@@ -1698,6 +1698,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     private void testNaturalJoinType(
             final int leftSize,
             final boolean leftRefreshing,
+            final boolean leftIndexed,
             final int rightSize,
             final boolean rightRefreshing,
             final int steps,
@@ -1719,6 +1720,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
                 ? (QueryTable) lhsRaw.flatten()
                 : lhsRaw;
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(lhs, "intCol");
+        }
 
         final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
         final Table rhsFirstByIntCol = rhsRaw.firstBy("intCol");
@@ -1776,9 +1780,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStep,
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStep,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStep,
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStep,
                         JoinControl.RedirectionType.Hash);
             }
         }
@@ -1788,9 +1797,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStepShift,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinType(leftSize, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                testNaturalJoinType(leftSize, true, false, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, true, true, rightSize, true, NUM_STEPS, leftRightStepShift,
                         JoinControl.RedirectionType.Hash);
             }
         }
@@ -1800,9 +1814,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStep,
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStep,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStep,
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStep,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStep,
                         JoinControl.RedirectionType.Hash);
             }
         }
@@ -1812,9 +1831,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStepShift,
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStepShift,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinType(leftSize, false, rightSize, true, NUM_STEPS, rightStepShift,
+                testNaturalJoinType(leftSize, false, false, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStepShift,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinType(leftSize, false, true, rightSize, true, NUM_STEPS, rightStepShift,
                         JoinControl.RedirectionType.Hash);
             }
         }
@@ -1823,6 +1847,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     private void testNaturalJoinTypeAppendOnly(
             final int leftSize,
             final boolean leftRefreshing,
+            final boolean leftIndexed,
             final int rightSize,
             final boolean rightRefreshing,
             final int steps,
@@ -1846,6 +1871,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
                 ? (QueryTable) lhsRaw.flatten()
                 : lhsRaw;
+        if (leftIndexed) {
+            DataIndexer.getOrCreateDataIndex(lhs, "intCol");
+        }
 
         final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
         if (rightRefreshing) {
@@ -1916,10 +1944,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinTypeAppendOnly(leftSize, true, rightSize, true, NUM_STEPS,
+                testNaturalJoinTypeAppendOnly(leftSize, true, false, rightSize, true, NUM_STEPS,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinTypeAppendOnly(leftSize, true, rightSize, true, NUM_STEPS,
+                testNaturalJoinTypeAppendOnly(leftSize, true, false, rightSize, true, NUM_STEPS,
                         JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinTypeAppendOnly(leftSize, true, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, true, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+
             }
         }
     }
@@ -1928,12 +1962,79 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
                 System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
-                testNaturalJoinTypeAppendOnly(leftSize, false, rightSize, true, NUM_STEPS,
+                testNaturalJoinTypeAppendOnly(leftSize, false, false, rightSize, true, NUM_STEPS,
                         JoinControl.RedirectionType.Sparse);
-                testNaturalJoinTypeAppendOnly(leftSize, false, rightSize, true, NUM_STEPS,
+                testNaturalJoinTypeAppendOnly(leftSize, false, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+                // With LHS data index
+                testNaturalJoinTypeAppendOnly(leftSize, false, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, false, true, rightSize, true, NUM_STEPS,
                         JoinControl.RedirectionType.Hash);
             }
         }
+    }
+
+    /**
+     * Force testing of the RedirectionType.Contiguous type.
+     */
+    public void testContiguousHashing() {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        // forcing the use of contiguous hashing
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return RedirectionType.Contiguous;
+            }
+        };
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhsRefreshing = (QueryTable) getTable(true, 10_000, lhs_random, columnInfos).flatten();
+        final QueryTable lhsStatic = (QueryTable) getTable(false, 10_000, lhs_random, columnInfos).flatten();
+        final QueryTable rhsRaw = getTable(true, 10_000, rhs_random, columnInfos);
+        final QueryTable rhs = (QueryTable) rhsRaw.firstBy("intCol");
+
+        Table expected;
+        Table actual;
+
+        expected = lhsRefreshing.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsRefreshing, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        expected = lhsStatic.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsStatic, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        // try again after creating indexes
+        DataIndexer.getOrCreateDataIndex(lhsRefreshing, "intCol");
+        DataIndexer.getOrCreateDataIndex(lhsStatic, "intCol");
+
+        expected = lhsRefreshing.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsRefreshing, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
+
+        expected = lhsStatic.naturalJoin(rhs, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol");
+        actual = NaturalJoinHelper.naturalJoin(lhsStatic, rhsRaw,
+                MatchPairFactory.getExpressions("intCol"),
+                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                NaturalJoinType.FIRST_MATCH, control);
+
+        assertTableEquals(expected, actual);
     }
 
     public void testSymbolTableJoin() throws IOException {

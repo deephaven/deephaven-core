@@ -223,7 +223,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public long getRightIndex(int slot) {
+    public long getRightRowKey(int slot) {
         final long key = rightRowKey.getUnsafe(slot);
         if (key <= FIRST_DUPLICATE) {
             return DUPLICATE_RIGHT_VALUE;
@@ -294,6 +294,24 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinType joinType,
             boolean addOnly);
 
+    private long getRightRowKeyFromState(
+            final long leftRowKey,
+            final long rightRowKeyForState,
+            final NaturalJoinType joinType) {
+        if (rightRowKeyForState <= FIRST_DUPLICATE) {
+            if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                throw new IllegalStateException("Natural Join found duplicate right key for "
+                        + extractKeyStringFromSourceTable(leftRowKey));
+            }
+            final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+            final WritableRowSet rightRowSet = rightSideDuplicateRowSets.getUnsafe(location);
+            return joinType == NaturalJoinType.FIRST_MATCH
+                    ? rightRowSet.firstRowKey()
+                    : rightRowSet.lastRowKey();
+        }
+        return rightRowKeyForState;
+    }
+
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
@@ -309,27 +327,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
+                        final long leftRowKey = leftRowSet.firstRowKey();
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
-                            leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
-                        } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
-                            // Multiple RHS rows, we may have an error state
-                            if (joinType == NaturalJoinType.FIRST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long firstKey = rightSideDuplicateRowSets.getUnsafe(location).firstRowKey();
-                                leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = firstKey);
-                            } else if (joinType == NaturalJoinType.LAST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long lastKey = rightSideDuplicateRowSets.getUnsafe(location).lastRowKey();
-                                leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = lastKey);
-                            } else {
-                                throw new IllegalStateException("Natural Join found duplicate right key for "
-                                        + extractKeyStringFromSourceTable(leftRowSet.firstRowKey()));
-                            }
-                        } else {
-                            leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
-                        }
+                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
+                        checkExactMatch(joinType, leftRowKey, key);
+                        // Set unconditionally, need to populate the entire array with NULL_ROW_KEY or the RHS key
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = key);
                     }
                 }
 
@@ -340,26 +343,13 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
+                        final long leftRowKey = leftRowSet.firstRowKey();
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-
-                        if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
-                        } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
-                            // Multiple RHS rows, we may have an error state
-                            if (joinType == NaturalJoinType.FIRST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long firstKey = rightSideDuplicateRowSets.getUnsafe(location).firstRowKey();
-                                leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, firstKey));
-                            } else if (joinType == NaturalJoinType.LAST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long lastKey = rightSideDuplicateRowSets.getUnsafe(location).lastRowKey();
-                                leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, lastKey));
-                            } else {
-                                throw new IllegalStateException("Natural Join found duplicate right key for "
-                                        + extractKeyStringFromSourceTable(leftRowSet.firstRowKey()));
-                            }
+                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
+                        if (key == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(joinType, leftRowKey, key);
                         } else {
-                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, key));
                         }
                     }
                 }
@@ -371,25 +361,13 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
+                        final long leftRowKey = leftRowSet.firstRowKey();
                         final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(joinType, leftRowSet.firstRowKey(), rightRowKeyForState);
-                        } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
-                            // Multiple RHS rows, we may have an error state
-                            if (joinType == NaturalJoinType.FIRST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long firstKey = rightSideDuplicateRowSets.getUnsafe(location).firstRowKey();
-                                leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, firstKey));
-                            } else if (joinType == NaturalJoinType.LAST_MATCH) {
-                                final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-                                final long lastKey = rightSideDuplicateRowSets.getUnsafe(location).lastRowKey();
-                                leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, lastKey));
-                            } else {
-                                throw new IllegalStateException("Natural Join found duplicate right key for "
-                                        + extractKeyStringFromSourceTable(leftRowSet.firstRowKey()));
-                            }
+                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
+                        if (key == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(joinType, leftRowKey, key);
                         } else {
-                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, key));
                         }
                     }
                 }
