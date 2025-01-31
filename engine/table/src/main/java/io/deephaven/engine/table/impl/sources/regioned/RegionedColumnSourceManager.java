@@ -604,9 +604,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         // If this logic changes, the `getTableAttributes()` logic needs to be updated.
         private final int regionIndex = nextRegionIndex++;
 
-        // Collection of column sources for which we have added a region, useful for invalidating together
-        private final Collection<RegionedColumnSource<?>> regionedColumnSources = new ArrayList<>();
-
         /**
          * RowSet in the region's space, not the table's space.
          */
@@ -637,7 +634,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                 final ColumnLocation columnLocation = location.getColumnLocation(columnDefinition.getName());
                 Assert.eq(regionIndex, "regionIndex", regionedColumnSource.addRegion(columnDefinition, columnLocation),
                         "regionedColumnSource.addRegion((definition, location)");
-                regionedColumnSources.add(regionedColumnSource);
             }
 
             rowSetAtLastUpdate = initialRowSet;
@@ -710,7 +706,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         }
 
         private void invalidate() {
-            regionedColumnSources.forEach(source -> source.invalidateRegion(regionIndex));
+            columnSources.values().forEach(source -> source.invalidateRegion(regionIndex));
         }
 
         @Override

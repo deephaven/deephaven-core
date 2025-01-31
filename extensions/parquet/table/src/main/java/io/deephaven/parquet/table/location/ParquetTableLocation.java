@@ -60,8 +60,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     // Access to all the following variables must be guarded by initialize()
     // -----------------------------------------------------------------------
-    private ParquetFileReader parquetFileReader;
-
     private ParquetColumnResolver resolver;
 
     private RegionedPageStore.Parameters regionParameters;
@@ -91,6 +89,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (isInitialized) {
                 return;
             }
+            final ParquetFileReader parquetFileReader;
             final ParquetMetadata parquetMetadata;
             final ParquetTableLocationKey tableLocationKey = getParquetKey();
             final int[] rowGroupIndices;
@@ -121,11 +120,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
             }
 
-            // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-            // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
-            // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-            // Obvious issues included data index table paths, codecs, etc.
-            // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
             tableInfo = ParquetSchemaReader
                     .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
                     .orElse(TableInfo.builder().build());
@@ -140,9 +134,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
-                handleUpdateInternal(computeIndex(rowGroups), TableLocationState.NULL_TIME);
+                handleUpdateInternal(computeRowSet(rowGroups), TableLocationState.NULL_TIME);
             } else {
-                handleUpdateInternal(computeIndex(rowGroups), new File(tableLocationKey.getURI()).lastModified());
+                handleUpdateInternal(computeRowSet(rowGroups), new File(tableLocationKey.getURI()).lastModified());
             }
 
             isInitialized = true;
@@ -212,7 +206,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 : Collections.unmodifiableList(Arrays.asList(columnPath));
     }
 
-    private RowSet computeIndex(@NotNull final RowGroup[] rowGroups) {
+    private RowSet computeRowSet(@NotNull final RowGroup[] rowGroups) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {

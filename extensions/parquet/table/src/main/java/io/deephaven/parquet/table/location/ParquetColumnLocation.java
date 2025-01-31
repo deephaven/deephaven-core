@@ -62,7 +62,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private final String columnName;
     private final String parquetColumnName;
 
-
     private volatile boolean readersInitialized;
 
     // Access to following variables must be guarded by initializeReaders()
