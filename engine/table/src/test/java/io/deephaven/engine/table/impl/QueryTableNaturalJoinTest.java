@@ -1820,6 +1820,122 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    private void testNaturalJoinTypeAppendOnly(
+            final int leftSize,
+            final boolean leftRefreshing,
+            final int rightSize,
+            final boolean rightRefreshing,
+            final int steps,
+            final JoinControl.RedirectionType redirectionType) {
+        final Random lhs_random = new Random(12345678);
+        final Random rhs_random = new Random(87654321);
+
+        final JoinControl control = new JoinControl() {
+            @Override
+            RedirectionType getRedirectionType(Table leftTable) {
+                return redirectionType;
+            }
+        };
+
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+
+        final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
+        if (leftRefreshing) {
+            lhsRaw.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
+        final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
+                ? (QueryTable) lhsRaw.flatten()
+                : lhsRaw;
+
+        final QueryTable rhsRaw = getTable(rightRefreshing, rightSize, rhs_random, columnInfos);
+        if (rightRefreshing) {
+            rhsRaw.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        }
+        final Table rhsFirstByIntCol = rhsRaw.firstBy("intCol");
+        final Table rhsLastByIntCol = rhsRaw.lastBy("intCol");
+        final Table rhsFirstByZeroKey = rhsRaw.firstBy();
+        final Table rhsLastByZeroKey = rhsRaw.lastBy();
+
+        final TableComparator[] tc = new TableComparator[] {
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByIntCol, "intCol", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPairFactory.getExpressions("intCol"),
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsFirstByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "firstBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.FIRST_MATCH, control),
+                        "nj + FIRST_MATCH"),
+                new TableComparator(
+                        lhsRaw.naturalJoin(rhsLastByZeroKey, "", "rhs_longCol=longCol, rhs_doubleCol=doubleCol"),
+                        "lastBy + naturalJoin",
+                        NaturalJoinHelper.naturalJoin(lhs, rhsRaw,
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                                MatchPairFactory.getExpressions("rhs_longCol=longCol", "rhs_doubleCol=doubleCol"),
+                                NaturalJoinType.LAST_MATCH, control),
+                        "nj + LAST_MATCH"),
+        };
+
+        final int leftStepSize = leftRefreshing ? (int) Math.ceil(Math.sqrt(leftSize)) : 0;
+        final int rightStepSize = rightRefreshing ? (int) Math.ceil(Math.sqrt(rightSize)) : 0;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        for (int i = 0; i < steps; i++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step " + i);
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (leftRefreshing) {
+                    generateAppends(leftStepSize, lhs_random, lhsRaw, columnInfos);
+                }
+                if (rightRefreshing) {
+                    generateAppends(rightStepSize, rhs_random, rhsRaw, columnInfos);
+                }
+                TstUtils.validate(toString(), tc);
+            });
+        }
+    }
+
+    public void testNaturalJoinTypeAppend() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeAppendOnly(leftSize, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, true, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
+    public void testNaturalJoinTypeRightAppend() {
+        for (final int leftSize : sizes) {
+            for (final int rightSize : sizes) {
+                System.out.println("  leftSize = " + leftSize + ", rightSize = " + rightSize);
+                testNaturalJoinTypeAppendOnly(leftSize, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Sparse);
+                testNaturalJoinTypeAppendOnly(leftSize, false, rightSize, true, NUM_STEPS,
+                        JoinControl.RedirectionType.Hash);
+            }
+        }
+    }
+
     public void testSymbolTableJoin() throws IOException {
         diskBackedTestHarness((left, right) -> {
             final Table result = left.naturalJoin(right, "Symbol");

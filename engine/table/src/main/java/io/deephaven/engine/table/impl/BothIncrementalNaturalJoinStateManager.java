@@ -16,7 +16,8 @@ import org.jetbrains.annotations.NotNull;
 public interface BothIncrementalNaturalJoinStateManager extends IncrementalNaturalJoinStateManager {
     InitialBuildContext makeInitialBuildContext();
 
-    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
+    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
+            boolean addOnly);
 
     void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc,
             NaturalJoinType joinType);
@@ -34,7 +35,8 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     Context makeBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 
     void addRightSide(Context bc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
+            boolean addOnly);
 
     void removeRight(final Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);

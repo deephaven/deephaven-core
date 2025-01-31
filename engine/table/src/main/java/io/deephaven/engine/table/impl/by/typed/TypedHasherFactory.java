@@ -135,6 +135,8 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
             final ParameterSpec joinTypeParam =
                     ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
+            final ParameterSpec rightAddOnlyParam =
+                    ParameterSpec.builder(boolean.class, "addOnly").build();
 
             builder.classPrefix("RightIncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("rightincopen")
@@ -155,7 +157,7 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRightFound,
-                    null, joinTypeParam));
+                    null, joinTypeParam, rightAddOnlyParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
@@ -165,7 +167,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalAddFound,
                     null,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam, joinTypeParam, rightAddOnlyParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalModify,
@@ -186,6 +188,8 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
             final ParameterSpec joinTypeParam =
                     ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
+            final ParameterSpec rightAddOnlyParam =
+                    ParameterSpec.builder(boolean.class, "addOnly").build();
 
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
@@ -209,7 +213,7 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
                     false, false, TypedNaturalJoinFactory::incrementalRightFound,
-                    TypedNaturalJoinFactory::incrementalRightInsert));
+                    TypedNaturalJoinFactory::incrementalRightInsert, joinTypeParam, rightAddOnlyParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
@@ -219,7 +223,7 @@ public class TypedHasherFactory {
             builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
                     true, true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam, joinTypeParam, rightAddOnlyParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
                     TypedNaturalJoinFactory::incrementalModifyRightFound,

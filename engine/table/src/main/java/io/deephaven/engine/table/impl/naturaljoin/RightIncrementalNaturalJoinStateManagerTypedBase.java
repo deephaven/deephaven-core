@@ -279,18 +279,20 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
+    public void addRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
+            boolean addOnly) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         final int chunkSize = (int) Math.min(rightRowSet.size(), CHUNK_SIZE);
         try (ProbeContext pc = makeProbeContext(rightSources, chunkSize)) {
             probeTable(pc, rightRowSet, false, rightSources,
-                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, joinType));
+                    (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, joinType, addOnly));
         }
     }
 
-    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinType joinType);
+    protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks, NaturalJoinType joinType,
+            boolean addOnly);
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
@@ -459,16 +461,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType, boolean addOnly) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         probeTable((ProbeContext) pc, rightRowSet, false, rightSources,
-                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType));
+                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType,
+                        addOnly));
     }
 
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType, boolean addOnly);
 
     @Override
     protected void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources,

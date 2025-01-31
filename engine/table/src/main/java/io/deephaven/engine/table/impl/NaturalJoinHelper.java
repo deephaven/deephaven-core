@@ -60,6 +60,7 @@ class NaturalJoinHelper {
                 leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
             final JoinControl.BuildParameters.From firstBuildFrom = bc.buildParameters.firstBuildFrom();
             final int initialHashTableSize = bc.buildParameters.hashTableSize();
+            final boolean rightAddOnly = rightTable.isAddOnly();
 
             // if we have a single column of unique values, and the range is small, we can use a simplified table
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
@@ -97,7 +98,7 @@ class NaturalJoinHelper {
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
                         initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor());
-                jsm.buildFromRightSide(rightTable, bc.rightSources);
+                jsm.buildFromRightSide(rightTable, bc.rightSources, joinType, rightAddOnly);
 
                 try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
                         jsm.makeInitialBuildContext()) {
@@ -123,7 +124,8 @@ class NaturalJoinHelper {
 
                 final ChunkedMergedJoinListener mergedJoinListener = new ChunkedMergedJoinListener(
                         leftTable, rightTable, bc.leftSources, bc.rightSources, columnsToMatch, columnsToAdd,
-                        leftRecorder, rightRecorder, result, rowRedirection, jsm, joinType, bc.listenerDescription);
+                        leftRecorder, rightRecorder, result, rowRedirection, jsm, joinType, rightAddOnly,
+                        bc.listenerDescription);
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
@@ -190,7 +192,7 @@ class NaturalJoinHelper {
                     jsm.buildFromLeftSide(leftTable, bc.leftSources, ibc);
                 }
 
-                jsm.addRightSide(rightTable.getRowSet(), bc.rightSources, joinType);
+                jsm.addRightSide(rightTable.getRowSet(), bc.rightSources, joinType, rightAddOnly);
 
                 if (firstBuildFrom == LeftDataIndex) {
                     rowRedirection = jsm.buildRowRedirectionFromHashSlotIndexed(leftTable,
@@ -213,7 +215,8 @@ class NaturalJoinHelper {
                                 rowRedirection,
                                 jsm,
                                 bc.rightSources,
-                                joinType));
+                                joinType,
+                                rightAddOnly));
                 return result;
             }
 
@@ -554,6 +557,7 @@ class NaturalJoinHelper {
         private final RightIncrementalNaturalJoinStateManager jsm;
         private final ColumnSource<?>[] rightSources;
         private final NaturalJoinType joinType;
+        private final boolean rightAddOnly;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
@@ -562,13 +566,14 @@ class NaturalJoinHelper {
         RightTickingListener(String description, QueryTable rightTable, MatchPair[] columnsToMatch,
                 MatchPair[] columnsToAdd, QueryTable result, WritableRowRedirection rowRedirection,
                 RightIncrementalNaturalJoinStateManager jsm, ColumnSource<?>[] rightSources,
-                NaturalJoinType joinType) {
+                NaturalJoinType joinType, boolean rightAddOnly) {
             super(description, rightTable, result);
             this.result = result;
             this.rowRedirection = rowRedirection;
             this.jsm = jsm;
             this.rightSources = rightSources;
             this.joinType = joinType;
+            this.rightAddOnly = rightAddOnly;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
@@ -632,12 +637,13 @@ class NaturalJoinHelper {
                 addedRightColumnsChanged = modifiedColumnSet.size() != 0;
 
                 if (rightKeysChanged) {
-                    jsm.addRightSide(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType);
+                    jsm.addRightSide(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType,
+                            rightAddOnly);
                 } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
                     jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker, joinType);
                 }
 
-                jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker, joinType);
+                jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker, joinType, rightAddOnly);
             }
 
             final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactory.builderRandom();
@@ -738,6 +744,7 @@ class NaturalJoinHelper {
         private final WritableRowRedirection rowRedirection;
         private final BothIncrementalNaturalJoinStateManager jsm;
         private final NaturalJoinType joinType;
+        private final boolean rightAddOnly;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet leftKeyColumns;
         private final ModifiedColumnSet allRightColumns;
@@ -759,6 +766,7 @@ class NaturalJoinHelper {
                 WritableRowRedirection rowRedirection,
                 BothIncrementalNaturalJoinStateManager jsm,
                 NaturalJoinType joinType,
+                boolean rightAddOnly,
                 String listenerDescription) {
             super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
             this.leftSources = leftSources;
@@ -768,6 +776,7 @@ class NaturalJoinHelper {
             this.rowRedirection = rowRedirection;
             this.jsm = jsm;
             this.joinType = joinType;
+            this.rightAddOnly = rightAddOnly;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             leftKeyColumns = leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
@@ -849,13 +858,13 @@ class NaturalJoinHelper {
                     }
 
                     if (rightKeysModified) {
-                        jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker, joinType);
+                        jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker, joinType, rightAddOnly);
                     } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
                         jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
                     }
 
                     if (rightAdded.isNonempty()) {
-                        jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker, joinType);
+                        jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker, joinType, rightAddOnly);
                     }
                 }
             } else {

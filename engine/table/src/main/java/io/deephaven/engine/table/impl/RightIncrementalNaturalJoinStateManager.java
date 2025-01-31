@@ -26,7 +26,8 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
     public abstract void convertLeftDataIndex(int groupingSize, InitialBuildContext initialBuildContext,
             ColumnSource<RowSet> rowSetSource);
 
-    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, NaturalJoinType joinType);
+    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
+            boolean addOnly);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             NaturalJoinType joinType, InitialBuildContext initialBuildContext,
@@ -48,7 +49,8 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     public abstract void addRightSide(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
+            boolean addOnly);
 
     public abstract Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 

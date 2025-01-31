@@ -475,8 +475,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         return extractKeyStringFromSourceTable(firstLeftRowKey);
     }
 
-    protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
-
     public WritableRowRedirection buildIndexedRowRedirection(
             QueryTable leftTable,
             NaturalJoinType joinType,
@@ -658,6 +656,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
+    protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinType joinType, boolean addOnly);
+
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker, ProbeContext pc);
 
@@ -688,13 +689,16 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
 
     @Override
-    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
+    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
+            boolean addOnly) {
         if (rightTable.isEmpty()) {
             return;
         }
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rightTable.size());
         try (BuildContext bc = new BuildContext(rightSources, chunkSize)) {
-            buildTable(true, bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide, null);
+            buildTable(true, bc, rightTable.getRowSet(), rightSources,
+                    (chunkOk, sourceKeyChunks) -> buildFromRightSide(chunkOk, sourceKeyChunks, joinType, addOnly),
+                    null);
         }
     }
 
@@ -719,17 +723,18 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void addRightSide(Context bc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType, boolean addOnly) {
         if (rightRowSet.isEmpty()) {
             return;
         }
         buildTable(false, (BuildContext) bc, rightRowSet, rightSources,
-                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType),
+                (chunkOk, sourceKeyChunks) -> addRightSide(chunkOk, sourceKeyChunks, modifiedSlotTracker, joinType,
+                        addOnly),
                 modifiedSlotTracker);
     }
 
     protected abstract void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType, boolean addOnly);
 
     @Override
     public void addLeftSide(Context bc, RowSequence leftRowSet, ColumnSource<?>[] leftSources,
