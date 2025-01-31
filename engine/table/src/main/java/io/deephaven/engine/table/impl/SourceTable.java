@@ -154,8 +154,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending()) {
                         if (locationUpdate != null) {
-                            // this is the first time we are coalescing; so we can ignore the things that were removed
-                            maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys(), true);
                             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
                         }
                     }
@@ -196,19 +194,20 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             return;
         }
 
-        final Stream<ImmutableTableLocationKey> filteredLocationStream = filterLocationKeys(removedKeys).stream()
-                .map(LiveSupplier::get);
-
-        if (!removedAllowed) {
-            final ImmutableTableLocationKey[] keys = filteredLocationStream.toArray(ImmutableTableLocationKey[]::new);
-            if (keys.length == 0) {
-                return;
-            }
-            throw new TableLocationRemovedException(
-                    "Source table does not support removed locations", keys);
+        final Collection<LiveSupplier<ImmutableTableLocationKey>> filteredSuppliers = filterLocationKeys(removedKeys);
+        if (filteredSuppliers.isEmpty()) {
+            return;
         }
 
-        filteredLocationStream.forEach(columnSourceManager::removeLocationKey);
+        if (removedAllowed) {
+            filteredSuppliers.stream().map(LiveSupplier::get).forEach(columnSourceManager::removeLocationKey);
+            return;
+        }
+
+        final ImmutableTableLocationKey[] keys = filteredSuppliers.stream()
+                .map(LiveSupplier::get)
+                .toArray(ImmutableTableLocationKey[]::new);
+        throw new TableLocationRemovedException("Source table does not support removed locations", keys);
     }
 
     private void initializeLocationSizes() {
