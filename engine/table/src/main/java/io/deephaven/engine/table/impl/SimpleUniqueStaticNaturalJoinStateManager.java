@@ -68,8 +68,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         if (joinType == NaturalJoinType.FIRST_MATCH) {
                             // no-op, already have the first match
                         } else {
-                        rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
-                    }
+                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                        }
                     }
                     return true;
                 });
