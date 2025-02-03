@@ -4,6 +4,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.NaturalJoinType;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
@@ -15,6 +16,8 @@ import java.util.Collection;
 @NodeStyle
 public abstract class NaturalJoinTable extends JoinBase {
 
+    public abstract NaturalJoinType joinType();
+
     public static Builder builder() {
         return ImmutableNaturalJoinTable.builder();
     }
@@ -25,6 +28,6 @@ public abstract class NaturalJoinTable extends JoinBase {
     }
 
     public interface Builder extends Join.Builder<NaturalJoinTable, Builder> {
-
+        Builder joinType(NaturalJoinType joinType);
     }
 }

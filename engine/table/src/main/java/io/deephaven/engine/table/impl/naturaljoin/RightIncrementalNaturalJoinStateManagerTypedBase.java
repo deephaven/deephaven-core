@@ -298,18 +298,18 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             final long leftRowKey,
             final long rightRowKeyForState,
             final NaturalJoinType joinType) {
-        if (rightRowKeyForState <= FIRST_DUPLICATE) {
-            if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                throw new IllegalStateException("Natural Join found duplicate right key for "
-                        + extractKeyStringFromSourceTable(leftRowKey));
-            }
-            final long location = duplicateLocationFromRowKey(rightRowKeyForState);
-            final WritableRowSet rightRowSet = rightSideDuplicateRowSets.getUnsafe(location);
-            return joinType == NaturalJoinType.FIRST_MATCH
-                    ? rightRowSet.firstRowKey()
-                    : rightRowSet.lastRowKey();
+        if (rightRowKeyForState > FIRST_DUPLICATE) {
+            return rightRowKeyForState;
         }
-        return rightRowKeyForState;
+        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+            throw new IllegalStateException("Natural Join found duplicate right key for "
+                    + extractKeyStringFromSourceTable(leftRowKey));
+        }
+        final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+        final WritableRowSet rightRowSet = rightSideDuplicateRowSets.getUnsafe(location);
+        return joinType == NaturalJoinType.FIRST_MATCH
+                ? rightRowSet.firstRowKey()
+                : rightRowSet.lastRowKey();
     }
 
     @Override
@@ -328,11 +328,11 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long leftRowKey = leftRowSet.firstRowKey();
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
-                        checkExactMatch(joinType, leftRowKey, key);
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState, joinType);
+                        checkExactMatch(joinType, leftRowKey, rightRowKey);
                         // Set unconditionally, need to populate the entire array with NULL_ROW_KEY or the RHS key
-                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = key);
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKey);
                     }
                 }
 
@@ -344,12 +344,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long leftRowKey = leftRowSet.firstRowKey();
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
-                        if (key == RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(joinType, leftRowKey, key);
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState, joinType);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(joinType, leftRowKey, rightRowKey);
                         } else {
-                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, key));
+                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKey));
                         }
                     }
                 }
@@ -362,12 +362,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
                     if (leftRowSet != null) {
                         final long leftRowKey = leftRowSet.firstRowKey();
-                        final long rightRowKeyForState = rightRowKey.getUnsafe(ii);
-                        final long key = getRightRowKeyFromState(leftRowKey, rightRowKeyForState, joinType);
-                        if (key == RowSet.NULL_ROW_KEY) {
-                            checkExactMatch(joinType, leftRowKey, key);
+                        final long rightState = rightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState, joinType);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(joinType, leftRowKey, rightRowKey);
                         } else {
-                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, key));
+                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKey));
                         }
                     }
                 }

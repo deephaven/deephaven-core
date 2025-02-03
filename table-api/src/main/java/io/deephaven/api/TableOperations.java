@@ -255,7 +255,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Perform an natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
+     * Perform a natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
      * {@link NaturalJoinType#ERROR_ON_DUPLICATE ERROR_ON_DUPLICATE}.
      *
      * <p>
@@ -269,7 +269,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS naturalJoin(TABLE rightTable, String columnsToMatch);
 
     /**
-     * Perform an natural-join with the {@code rightTable}.
+     * Perform a natural-join with the {@code rightTable}.
      *
      * <p>
      * Delegates to {@link #naturalJoin(Object, Collection, Collection)}.
@@ -302,7 +302,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a natural-join with the {@code rightTable}.
      *
      * <p>
-     * Delegates to {@link #naturalJoin(Object, Collection, Collection)}.
+     * Delegates to {@link #naturalJoin(Object, Collection, Collection, NaturalJoinType)}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
@@ -315,11 +315,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS naturalJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd, NaturalJoinType joinType);
 
     /**
-     * Perform an exact-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
+     * Perform a natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
      * {@link NaturalJoinType#ERROR_ON_DUPLICATE ERROR_ON_DUPLICATE}.
-     *
-     * <p>
-     * Requires zero or one match from the {@code rightTable}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch The match pair conditions.
@@ -331,10 +328,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
             Collection<? extends JoinAddition> columnsToAdd);
 
     /**
-     * Perform an exact-join with the {@code rightTable}.
-     *
-     * <p>
-     * Requires zero or one match from the {@code rightTable}.
+     * Perform a natural-join with the {@code rightTable}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch The match pair conditions.

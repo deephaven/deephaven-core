@@ -238,6 +238,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         public static NaturalJoinType adapt(NaturalJoinTablesRequest.JoinType joinType) {
             switch (joinType) {
+                // Defaulting to ERROR_ON_DUPLICATE for unspecified join types
+                case JOIN_TYPE_NOT_SPECIFIED:
                 case ERROR_ON_DUPLICATE:
                     return NaturalJoinType.ERROR_ON_DUPLICATE;
                 case FIRST_MATCH:

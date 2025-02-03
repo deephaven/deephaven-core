@@ -1614,13 +1614,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(pairMatch, njTable);
     }
 
-    private ColumnInfo[] createTestColumnInfos(final float nullFraction) {
+    private ColumnInfo[] createTestColumnInfos(final float nullFraction, final int maxValue) {
         final List<String> colsList = new ArrayList<>();
         final List<TestDataGenerator> generators = new ArrayList<>();
         colsList.addAll(Arrays.asList("intCol", "longCol", "doubleCol"));
         generators.addAll(Arrays.asList(
-                new IntGenerator(10, 100, nullFraction),
-                new LongGenerator(10, 100, nullFraction),
+                new IntGenerator(10, maxValue, nullFraction),
+                new LongGenerator(10, maxValue, nullFraction),
                 new DoubleGenerator(10.1, 20.1, nullFraction)));
 
         final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(ArrayTypeUtils.EMPTY_STRING_ARRAY),
@@ -1628,8 +1628,29 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return columnInfos;
     }
 
-    final int[] sizes = new int[] {10, 100, 1000, 10_000};
+    final int[] sizes = new int[] {10, 100, 1_000, 10_000};
     final int NUM_STEPS = 10;
+
+    public void testNaturalJoinTypeSimpleStatic() {
+        final Table lhs = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
+        final Table rhsRaw =
+                newTable(col("JBool", true, false, null, true, false), col("RightSentinel", 10, 11, 12, 13, 14));
+
+        Table expected;
+        Table actual;
+
+        final Table rhsFirstBy = rhsRaw.firstBy("JBool");
+        expected = lhs.naturalJoin(rhsFirstBy, "JBool");
+        actual = lhs.naturalJoin(rhsRaw, "JBool", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        final Table rhsLastBy = rhsRaw.lastBy("JBool");
+        expected = lhs.naturalJoin(rhsLastBy, "JBool");
+        actual = lhs.naturalJoin(rhsRaw, "JBool", NaturalJoinType.LAST_MATCH);
+
+        assertTableEquals(expected, actual);
+    }
 
     public void testNaturalJoinTypeStatic(
             final int leftSize,
@@ -1647,7 +1668,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         };
 
         // Compare naturalJoin with NaturalJoinType.LAST_BY to the distinct operations
-        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
 
         final QueryTable lhsRaw = getTable(false, leftSize, lhs_random, columnInfos);
         final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
@@ -1714,7 +1735,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         };
 
-        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
 
         final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
         final QueryTable lhs = redirectionType == JoinControl.RedirectionType.Contiguous
@@ -1765,8 +1786,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         "nj + LAST_MATCH"),
         };
 
-        final int leftStepSize = leftRefreshing ? (int) Math.ceil(Math.sqrt(leftSize)) : 0;
-        final int rightStepSize = rightRefreshing ? (int) Math.ceil(Math.sqrt(rightSize)) : 0;
+        final int leftStepSize = leftRefreshing ? leftSize / 2 : 0;
+        final int rightStepSize = rightRefreshing ? rightSize / 2 : 0;
 
         for (int i = 0; i < steps; i++) {
             if (RefreshingTableTestCase.printTableUpdates) {
@@ -1862,7 +1883,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         };
 
-        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
 
         final QueryTable lhsRaw = getTable(leftRefreshing, leftSize, lhs_random, columnInfos);
         if (leftRefreshing) {
@@ -1919,8 +1940,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         "nj + LAST_MATCH"),
         };
 
-        final int leftStepSize = leftRefreshing ? (int) Math.ceil(Math.sqrt(leftSize)) : 0;
-        final int rightStepSize = rightRefreshing ? (int) Math.ceil(Math.sqrt(rightSize)) : 0;
+        final int leftStepSize = leftRefreshing ? leftSize / 2 : 0;
+        final int rightStepSize = rightRefreshing ? rightSize / 2 : 0;
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -1990,10 +2011,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         };
 
-        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f);
+        final int leftSize = 10_000;
+        final int rightSize = 10_000;
 
-        final QueryTable lhsRefreshing = (QueryTable) getTable(true, 10_000, lhs_random, columnInfos).flatten();
-        final QueryTable lhsStatic = (QueryTable) getTable(false, 10_000, lhs_random, columnInfos).flatten();
+        final ColumnInfo[] columnInfos = createTestColumnInfos(0.0f, leftSize + rightSize);
+
+        final QueryTable lhsRefreshing = (QueryTable) getTable(true, leftSize, lhs_random, columnInfos).flatten();
+        final QueryTable lhsStatic = (QueryTable) getTable(false, rightSize, lhs_random, columnInfos).flatten();
         final QueryTable rhsRaw = getTable(true, 10_000, rhs_random, columnInfos);
         final QueryTable rhs = (QueryTable) rhsRaw.firstBy("intCol");
 

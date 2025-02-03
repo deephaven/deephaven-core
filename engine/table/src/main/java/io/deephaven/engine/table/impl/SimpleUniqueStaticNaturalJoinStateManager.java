@@ -44,7 +44,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         }
     }
 
-    void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
+    void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource, NaturalJoinType joinType) {
         try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext =
                         valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, rightRowSet.size()))) {
@@ -62,10 +62,14 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         return true;
                     }
                     final long existingRight = rightRowSetSource.getLong(tableLocation);
-                    if (existingRight == RowSequence.NULL_ROW_KEY) {
+                    if (existingRight == RowSequence.NULL_ROW_KEY || joinType == NaturalJoinType.LAST_MATCH) {
                         rightRowSetSource.set(tableLocation, keyIndex);
                     } else {
+                        if (joinType == NaturalJoinType.FIRST_MATCH) {
+                            // no-op, already have the first match
+                        } else {
                         rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                    }
                     }
                     return true;
                 });

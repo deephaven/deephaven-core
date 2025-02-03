@@ -5,7 +5,6 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
-import io.deephaven.api.NaturalJoinType;
 
 import java.util.List;
 
@@ -18,8 +17,6 @@ public interface Join extends TableSpec {
     List<JoinMatch> matches();
 
     List<JoinAddition> additions();
-
-    NaturalJoinType joinType();
 
     interface Builder<J extends Join, SELF extends Builder<J, SELF>> {
         SELF left(TableSpec left);
@@ -37,8 +34,6 @@ public interface Join extends TableSpec {
         SELF addAdditions(JoinAddition... elements);
 
         SELF addAllAdditions(Iterable<? extends JoinAddition> elements);
-
-        SELF joinType(NaturalJoinType joinType);
 
         J build();
     }

@@ -69,7 +69,7 @@ class NaturalJoinHelper {
                 Assert.neqNull(bc.uniqueFunctor, "uniqueFunctor");
                 final SimpleUniqueStaticNaturalJoinStateManager jsm = new SimpleUniqueStaticNaturalJoinStateManager(
                         bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueFunctor);
-                jsm.setRightSide(rightTable.getRowSet(), bc.rightSources[0]);
+                jsm.setRightSide(rightTable.getRowSet(), bc.rightSources[0], joinType);
                 final LongArraySource leftRedirections = new LongArraySource();
                 leftRedirections.ensureCapacity(leftTable.getRowSet().size());
                 jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
@@ -689,8 +689,8 @@ class NaturalJoinHelper {
                 return;
             }
 
-            long index = jsm.getRightRowKey(updatedSlot);
-            if (index == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
+            long rowKey = jsm.getRightRowKey(updatedSlot);
+            if (rowKey == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE
                         || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
                     throw new IllegalStateException(
@@ -698,13 +698,13 @@ class NaturalJoinHelper {
                 }
                 // Get the correct row key from the duplicates on the RHS
                 final RowSet rightRowSet = jsm.getRightRowSet(updatedSlot);
-                index = joinType == NaturalJoinType.FIRST_MATCH
+                rowKey = joinType == NaturalJoinType.FIRST_MATCH
                         ? rightRowSet.firstRowKey()
                         : rightRowSet.lastRowKey();
             }
-            final long rightIndex = index;
+            final long rightRowKey = rowKey;
 
-            final boolean unchangedRedirection = rightIndex == originalRightValue;
+            final boolean unchangedRedirection = rightRowKey == originalRightValue;
 
             // if we have no right columns that have changed, and our redirection is identical we can quit here
             if (unchangedRedirection && !rightAddedColumnsChanged
@@ -727,11 +727,11 @@ class NaturalJoinHelper {
 
             changedRedirection = true;
 
-            if (rightIndex == RowSequence.NULL_ROW_KEY) {
-                jsm.checkExactMatch(joinType, leftIndices.firstRowKey(), rightIndex);
+            if (rightRowKey == RowSequence.NULL_ROW_KEY) {
+                jsm.checkExactMatch(joinType, leftIndices.firstRowKey(), rightRowKey);
                 rowRedirection.removeAll(leftIndices);
             } else {
-                leftIndices.forAllRowKeys((long key) -> rowRedirection.putVoid(key, rightIndex));
+                leftIndices.forAllRowKeys((long key) -> rowRedirection.putVoid(key, rightRowKey));
             }
         }
     }
