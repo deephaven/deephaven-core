@@ -9,8 +9,9 @@ on:
 jobs:
   checks:
     strategy:
+      fail-fast: false
       matrix:
-        runs: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        run: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -50,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: check-ci-results
+          name: check-ci-results-${{ matrix.run }}
           path: |
             **/build/test-results/**
             **/build/reports/tests/**
