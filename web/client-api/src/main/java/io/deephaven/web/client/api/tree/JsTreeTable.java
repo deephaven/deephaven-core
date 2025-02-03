@@ -295,6 +295,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
+    @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     private TicketAndPromise<?> prepareFilter() {
         if (filteredTable != null) {
             return filteredTable;
@@ -302,7 +308,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         if (nextFilters.isEmpty()) {
             return new TicketAndPromise<>(widget.getTicket(), connection);
         }
-        Ticket ticket = connection.getConfig().newTicket();
+        Ticket ticket = connection.getTickets().newExportTicket();
         filteredTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
 
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
@@ -322,7 +328,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         if (nextSort.isEmpty()) {
             return prevTicket;
         }
-        Ticket ticket = connection.getConfig().newTicket();
+        Ticket ticket = connection.getTickets().newExportTicket();
         sortedTable = new TicketAndPromise<>(ticket, Callbacks.grpcUnaryPromise(c -> {
             HierarchicalTableApplyRequest applyFilter = new HierarchicalTableApplyRequest();
             applyFilter.setSortsList(nextSort.stream().map(Sort::makeDescriptor).toArray(
@@ -354,7 +360,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         if (viewTicket != null) {
             return viewTicket;
         }
-        Ticket ticket = connection.getConfig().newTicket();
+        Ticket ticket = connection.getTickets().newExportTicket();
         Promise<JsTable> keyTable = makeKeyTable();
         AbortController controller = new AbortController();
 

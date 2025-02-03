@@ -62,6 +62,11 @@ public class JsWidgetExportedObject implements ServerObject {
         });
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     /**
      * Returns the type of this export, typically one of {@link JsVariableType}, but may also include plugin types. If
      * null, this object cannot be fetched, but can be passed to the server, such as via
@@ -94,7 +99,7 @@ public class JsWidgetExportedObject implements ServerObject {
      */
     @JsMethod
     public Promise<JsWidgetExportedObject> reexport() {
-        Ticket reexportedTicket = connection.getConfig().newTicket();
+        Ticket reexportedTicket = connection.getTickets().newExportTicket();
 
         // Future optimization - we could "race" these by running the export in the background, to avoid
         // an extra round trip.
