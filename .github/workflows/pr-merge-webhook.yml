@@ -9,7 +9,7 @@ on:
       - closed
 
 jobs:
-  create-docs-ticket:
+  jira-webhook-pr-merge:
     # Only on merged PRs
     if: github.event.pull_request.merged
     runs-on: ubuntu-24.04
@@ -17,7 +17,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Trigger PR Merge Webhook
-        id: trigger-pr-merge-webhook
         env:
           # Push the PR details in the webhook data.
           WEBHOOK_DATA: ${{ toJSON(github.event.pull_request) }}
