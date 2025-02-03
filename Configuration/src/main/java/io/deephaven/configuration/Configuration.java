@@ -449,11 +449,11 @@ public abstract class Configuration extends PropertyFile {
      * @param name the Configuration name.
      */
     static void validateConfigName(final String name) {
-        if(name == null) {
+        if (name == null) {
             throw new ConfigurationException("Configuration name must not be null");
         }
 
-        if("Configuration".equals(name)) {
+        if ("Configuration".equals(name)) {
             throw new ConfigurationException("The name `Configuration` may not be used as a Configuration name");
         }
     }
