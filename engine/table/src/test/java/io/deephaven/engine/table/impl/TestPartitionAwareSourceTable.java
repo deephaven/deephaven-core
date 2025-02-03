@@ -225,7 +225,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
-                will(returnValue(true));
                 for (int li = 0; li < tableLocations.length; ++li) {
                     final TableLocation tableLocation = tableLocations[li];
                     allowing(tableLocation).supportsSubscriptions();
