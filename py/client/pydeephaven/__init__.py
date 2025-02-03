@@ -27,7 +27,7 @@ import importlib.metadata
 
 from .session import Session
 from .dherror import DHError
-from ._table_interface import SortDirection
+from ._table_interface import SortDirection, NaturalJoinType
 from .query import Query
 from .table import Table
 

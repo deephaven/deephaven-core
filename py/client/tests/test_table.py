@@ -6,10 +6,11 @@ import time
 import unittest
 
 import numpy as np
+import pandas as pd
 from pyarrow import csv
 
 from pydeephaven import DHError
-from pydeephaven import SortDirection
+from pydeephaven import SortDirection, NaturalJoinType
 from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, count_where, partition, median, unique, count_distinct, distinct, formula
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -130,6 +131,59 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             result_table = left_table.natural_join(right_table, on=["a"], joins=["RD = d", "e"])
             self.assertEqual(test_table.size, result_table.size)
+
+    def test_natural_join_output(self):
+        left_table = self.session.empty_table(10).update(formulas=["key=i", "index=i"])
+
+        # note that rhs has duplicates
+        right_table_raw = self.session.empty_table(10).update(formulas=["key=(int)(i / 2)", "index=i"])
+        right_table_first_by = right_table_raw.first_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_first_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.FIRST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = result_table_1.to_arrow().to_pandas()
+        df_2 = result_table_2.to_arrow().to_pandas()
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(df_1.loc[0, "rhs_index"], 0)
+        self.assertEqual(df_1.loc[1, "rhs_index"], 2)
+        self.assertEqual(df_1.loc[2, "rhs_index"], 4)
+        self.assertEqual(df_1.loc[3, "rhs_index"], 6)
+        self.assertEqual(df_1.loc[4, "rhs_index"], 8)
+        # the following rows have no match and should be null / NA
+        self.assertTrue(pd.isna(df_1.loc[5, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[6, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[7, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[8, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[9, "rhs_index"]))
+
+        right_table_last_by = right_table_raw.last_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_last_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.LAST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = result_table_1.to_arrow().to_pandas()
+        df_2 = result_table_2.to_arrow().to_pandas()
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(df_1.loc[0, "rhs_index"], 1)
+        self.assertEqual(df_1.loc[1, "rhs_index"], 3)
+        self.assertEqual(df_1.loc[2, "rhs_index"], 5)
+        self.assertEqual(df_1.loc[3, "rhs_index"], 7)
+        self.assertEqual(df_1.loc[4, "rhs_index"], 9)
+        # the following rows have no match and should be null / NA
+        self.assertTrue(pd.isna(df_1.loc[5, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[6, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[7, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[8, "rhs_index"]))
+        self.assertTrue(pd.isna(df_1.loc[9, "rhs_index"]))
 
     def test_exact_join(self):
         pa_table = csv.read_csv(self.csv_file)

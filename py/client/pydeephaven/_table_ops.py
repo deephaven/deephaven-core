@@ -21,6 +21,20 @@ class SortDirection(Enum):
     ASCENDING = table_pb2.SortDescriptor.SortDirection.ASCENDING
     """Ascending sort direction"""
 
+class NaturalJoinType(Enum):
+    """An Enum defining ways to handle duplicate right hand table values during natural join operations"""
+
+    ERROR_ON_DUPLICATE = table_pb2.NaturalJoinTablesRequest.JoinType.ERROR_ON_DUPLICATE
+    """Throw an error if a duplicate right hand table row is found. This is the default behavior if not specified"""
+
+    FIRST_MATCH = table_pb2.NaturalJoinTablesRequest.JoinType.FIRST_MATCH
+    """Match the first right hand table row and ignore later duplicates"""
+
+    LAST_MATCH = table_pb2.NaturalJoinTablesRequest.JoinType.LAST_MATCH
+    """Match the last right hand table row and ignore earlier duplicates"""
+
+    EXACTLY_ONE_MATCH = table_pb2.NaturalJoinTablesRequest.JoinType.EXACTLY_ONE_MATCH
+    """Match exactly one right hand table row; throw an error if there are zero or more than one matches"""
 
 class TableOp(ABC):
     @classmethod
@@ -357,10 +371,11 @@ class MergeTablesOp(TableOp):
 
 
 class NaturalJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str]):
+    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str], type: NaturalJoinType):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
+        self.type = type
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
@@ -373,7 +388,8 @@ class NaturalJoinOp(TableOp):
                                                   left_id=left_id,
                                                   right_id=right_id,
                                                   columns_to_match=self.keys,
-                                                  columns_to_add=self.columns_to_add)
+                                                  columns_to_add=self.columns_to_add,
+                                                  join_type=self.type.value)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(

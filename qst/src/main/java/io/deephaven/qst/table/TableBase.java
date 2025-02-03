@@ -100,7 +100,7 @@ public abstract class TableBase implements TableSpec {
             Collection<? extends JoinAddition> columnsToAdd,
             NaturalJoinType naturalJoinType) {
         return NaturalJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .addAllAdditions(columnsToAdd).build();
+                .addAllAdditions(columnsToAdd).joinType(naturalJoinType).build();
     }
 
     @Override
