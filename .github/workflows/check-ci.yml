@@ -6,12 +6,11 @@ on:
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   checks:
+    strategy:
+      matrix:
+        runs: ['a', 'b', 'c', 'd', 'e', 'f', 'g']
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
