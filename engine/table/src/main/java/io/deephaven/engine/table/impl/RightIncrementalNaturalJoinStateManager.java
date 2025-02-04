@@ -16,8 +16,11 @@ import org.jetbrains.annotations.NotNull;
 public abstract class RightIncrementalNaturalJoinStateManager extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager {
 
-    protected RightIncrementalNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
-        super(keySourcesForErrorMessages);
+    protected RightIncrementalNaturalJoinStateManager(
+            ColumnSource<?>[] keySourcesForErrorMessages,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
     }
 
     public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
@@ -26,31 +29,27 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
     public abstract void convertLeftDataIndex(int groupingSize, InitialBuildContext initialBuildContext,
             ColumnSource<RowSet> rowSetSource);
 
-    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
-            boolean addOnly);
+    public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
-            NaturalJoinType joinType, InitialBuildContext initialBuildContext,
-            JoinControl.RedirectionType redirectionType);
+            InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
-            ColumnSource<RowSet> rowSetSource, int groupingSize, NaturalJoinType joinType,
-            InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
+            ColumnSource<RowSet> rowSetSource, int groupingSize, InitialBuildContext initialBuildContext,
+            JoinControl.RedirectionType redirectionType);
 
     // modification probes
     public abstract void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet,
-            long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker,
-            NaturalJoinType joinType);
+            long shiftDelta, @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract void removeRight(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract void addRightSide(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
-            boolean addOnly);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 

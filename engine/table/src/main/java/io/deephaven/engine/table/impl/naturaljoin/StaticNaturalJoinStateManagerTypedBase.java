@@ -47,9 +47,14 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
 
-    protected StaticNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
-        super(keySourcesForErrorMessages);
+    protected StaticNaturalJoinStateManagerTypedBase(
+            ColumnSource<?>[] tableKeySources,
+            ColumnSource<?>[] keySourcesForErrorMessages,
+            int tableSize,
+            double maximumLoadFactor,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
 
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
@@ -132,18 +137,17 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             IntegerArraySource leftHashSlots, long hashSlotOffset);
 
     @Override
-    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
+    public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
         if (rightTable.isEmpty()) {
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
             buildTable(bc, rightTable.getRowSet(), rightSources,
-                    (chunkOk, sourceKeyChunks) -> buildFromRightSide(chunkOk, sourceKeyChunks, joinType));
+                    this::buildFromRightSide);
         }
     }
 
-    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType);
+    abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     @Override
     public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
@@ -159,18 +163,17 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             LongArraySource leftRedirections, long redirectionsOffset);
 
     @Override
-    public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType) {
+    public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
         if (rightTable.isEmpty()) {
             return;
         }
         try (final ProbeContext pc = makeProbeContext(rightSources, rightTable.size())) {
             probeTable(pc, rightTable.getRowSet(), false, rightSources,
-                    (chunkOk, sourceKeyChunks) -> decorateWithRightSide(chunkOk, sourceKeyChunks, joinType));
+                    this::decorateWithRightSide);
         }
     }
 
-    abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType);
+    abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
 
     protected void buildTable(
@@ -234,36 +237,34 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return hash & (tableSize - 1);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, NaturalJoinType joinType,
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, joinType,
-                position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
+        return buildRowRedirection(leftTable, position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)),
+                redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, NaturalJoinType joinType,
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, joinType, leftRedirections::getUnsafe, redirectionType);
+        return buildRowRedirection(leftTable, leftRedirections::getUnsafe, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromRedirections(
             QueryTable leftTable,
-            NaturalJoinType joinType,
             RowSet indexTableRowSet,
             LongArraySource leftRedirections,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, joinType, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, indexTableRowSet,
                 leftRedirections::getUnsafe, indexRowSets, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
             QueryTable leftTable,
-            NaturalJoinType joinType,
             RowSet indexTableRowSet,
             IntegerArraySource leftHashSlots,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, joinType, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, indexTableRowSet,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
                 redirectionType);
     }

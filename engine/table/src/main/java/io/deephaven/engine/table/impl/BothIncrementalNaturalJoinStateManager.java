@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -16,30 +15,27 @@ import org.jetbrains.annotations.NotNull;
 public interface BothIncrementalNaturalJoinStateManager extends IncrementalNaturalJoinStateManager {
     InitialBuildContext makeInitialBuildContext();
 
-    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources, NaturalJoinType joinType,
-            boolean addOnly);
+    void buildFromRightSide(final Table rightTable, ColumnSource<?>[] rightSources);
 
-    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc,
-            NaturalJoinType joinType);
+    void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, InitialBuildContext ibc);
 
     void compactAll();
 
-    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
-            InitialBuildContext ibc, ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
+    WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, InitialBuildContext ibc,
+            ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, NaturalJoinType joinType,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType);
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, InitialBuildContext ibc,
+            JoinControl.RedirectionType redirectionType);
 
     Context makeProbeContext(ColumnSource<?>[] probeSources, long maxSize);
 
     Context makeBuildContext(ColumnSource<?>[] buildSources, long maxSize);
 
     void addRightSide(Context bc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
-            boolean addOnly);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void removeRight(final Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
-            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType);
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void modifyByRight(Context pc, RowSet modified, ColumnSource<?>[] rightSources,
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
@@ -48,8 +44,7 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
-            NaturalJoinType joinType);
+            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources);
 

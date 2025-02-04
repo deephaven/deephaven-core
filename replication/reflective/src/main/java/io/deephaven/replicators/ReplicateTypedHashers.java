@@ -27,6 +27,7 @@ import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
@@ -55,20 +56,26 @@ public class ReplicateTypedHashers {
             doubleDispatch = null;
         }
 
+        final String extraInit = hasherConfig.extraConstructorParameters.isEmpty() ? ""
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
+                        .collect(Collectors.joining(", "));
+
         final MethodSpec.Builder dispatchMethodBuilder = MethodSpec.methodBuilder("dispatch")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC);
-        addHasherParametersAndReturnType(dispatchMethodBuilder, baseClass);
+        addHasherParametersAndReturnType(dispatchMethodBuilder, baseClass, hasherConfig.extraConstructorParameters);
         dispatchMethodBuilder.addStatement(
                 "final ChunkType[] chunkTypes = $T.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);",
                 java.util.Arrays.class);
         dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 1)");
         dispatchMethodBuilder.addStatement(
-                "return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                "return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor"
+                        + extraInit + ")");
         dispatchMethodBuilder.endControlFlow();
         if (doDouble) {
             dispatchMethodBuilder.beginControlFlow("if (chunkTypes.length == 2)");
             dispatchMethodBuilder.addStatement(
-                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                    "return dispatchDouble(chunkTypes[0], chunkTypes[1], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor"
+                            + extraInit + ")");
             dispatchMethodBuilder.endControlFlow();
         }
         dispatchMethodBuilder.addStatement("return null");
@@ -105,12 +112,16 @@ public class ReplicateTypedHashers {
         final MethodSpec.Builder singleDispatchBuilder = MethodSpec.methodBuilder("dispatchSingle")
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType");
-        addHasherParametersAndReturnType(singleDispatchBuilder, baseClass);
+        addHasherParametersAndReturnType(singleDispatchBuilder, baseClass, hasherConfig.extraConstructorParameters);
 
         singleDispatchBuilder.beginControlFlow("switch (chunkType)");
         singleDispatchBuilder.addCode("default: ");
         singleDispatchBuilder.addStatement("throw new UnsupportedOperationException($S + chunkType)",
                 "Invalid chunk type for typed hashers: ");
+
+        final String extraInit = hasherConfig.extraConstructorParameters.isEmpty() ? ""
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
+                        .collect(Collectors.joining(", "));
 
         final ChunkType[] array = new ChunkType[1];
         for (ChunkType chunkType : ChunkType.values()) {
@@ -125,8 +136,10 @@ public class ReplicateTypedHashers {
             System.out.println("Generating " + name + " to " + sourceRoot);
             javaFile.writeTo(sourceRoot);
             singleDispatchBuilder.addCode("case " + chunkType.name() + ": ");
+
             singleDispatchBuilder.addStatement(
-                    "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                    "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor"
+                            + extraInit + ")",
                     ClassName.get(packageName, name));
         }
 
@@ -142,7 +155,11 @@ public class ReplicateTypedHashers {
                 .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
                 .addParameter(ChunkType.class, "chunkType0")
                 .addParameter(ChunkType.class, "chunkType1");
-        addHasherParametersAndReturnType(doubleDispatchBuilder, baseClass);
+        addHasherParametersAndReturnType(doubleDispatchBuilder, baseClass, hasherConfig.extraConstructorParameters);
+
+        final String extraInit = hasherConfig.extraConstructorParameters.isEmpty() ? ""
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.type + " " + spec.name)
+                        .collect(Collectors.joining(", "));
 
         doubleDispatchBuilder.beginControlFlow("switch (chunkType0)");
         doubleDispatchBuilder.addCode("default: ");
@@ -178,7 +195,8 @@ public class ReplicateTypedHashers {
 
                 doubleDispatchBuilder.addCode("case " + chunkType1.name() + ": ");
                 doubleDispatchBuilder.addStatement(
-                        "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)",
+                        "return new $T(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor"
+                                + extraInit + ")",
                         ClassName.get(packageName, name));
             }
             doubleDispatchBuilder.endControlFlow();
@@ -189,13 +207,14 @@ public class ReplicateTypedHashers {
     }
 
     private static void addHasherParametersAndReturnType(MethodSpec.Builder dispatchBuilder,
-            Class<?> returnType) {
+            Class<?> returnType, List<ParameterSpec> extraConstructorParameters) {
         dispatchBuilder
                 .returns(returnType)
                 .addParameter(ColumnSource[].class, "tableKeySources")
                 .addParameter(ColumnSource[].class, "originalTableKeySources")
                 .addParameter(int.class, "tableSize")
                 .addParameter(double.class, "maximumLoadFactor")
-                .addParameter(double.class, "targetLoadFactor");
+                .addParameter(double.class, "targetLoadFactor")
+                .addParameters(extraConstructorParameters);
     }
 }

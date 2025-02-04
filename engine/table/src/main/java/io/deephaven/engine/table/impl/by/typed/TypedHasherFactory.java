@@ -75,6 +75,99 @@ public class TypedHasherFactory {
                 targetLoadFactor);
     }
 
+
+
+    /**
+     * Produce a hasher for a NaturalJoin base class and column sources while specifying the {@link NaturalJoinType join
+     * type} and whether the right hand side is add-only.
+     *
+     * @param <T> the base class
+     * @param baseClass the base class (e.g. {@link IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase}
+     *        that the generated hasher extends from
+     * @param tableKeySources the key sources
+     * @param tableSize the initial table size
+     * @param maximumLoadFactor the maximum load factor of the for the table
+     * @param targetLoadFactor the load factor that we will rehash to
+     * @param joinType the type of natural join to perform
+     * @param rightAddOnly whether the right hand side is add-only
+     * @return an instantiated hasher
+     */
+    public static <T> T makeNaturalJoin(Class<T> baseClass, ColumnSource<?>[] tableKeySources,
+            ColumnSource<?>[] originalKeySources, int tableSize, double maximumLoadFactor, double targetLoadFactor,
+            NaturalJoinType joinType, boolean rightAddOnly) {
+        HasherConfig<T> hasherConfig = hasherConfigForBase(baseClass);
+        if (USE_PREGENERATED_HASHERS) {
+            if (hasherConfig.baseClass
+                    .equals(StaticNaturalJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor, joinType, rightAddOnly);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(RightIncrementalNaturalJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor, joinType, rightAddOnly);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher =
+                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
+                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                                        targetLoadFactor, joinType, rightAddOnly);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            }
+        }
+
+        final ChunkType[] chunkTypes =
+                Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
+        final String className = hasherName(hasherConfig, chunkTypes);
+
+        JavaFile javaFile = generateHasher(hasherConfig, chunkTypes, className, Optional.of(Modifier.PUBLIC));
+
+        String[] javaStrings = javaFile.toString().split("\n");
+        final String javaString =
+                Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
+
+        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(QueryCompilerRequest.builder()
+                .description("TypedHasherFactory: " + className)
+                .className(className)
+                .classBody(javaString)
+                .packageNameRoot("io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen")
+                .build());
+
+        if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
+            throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
+        }
+
+        // noinspection unchecked
+        final Class<? extends T> castedClass = (Class<? extends T>) clazz;
+
+        T retVal;
+        try {
+            final Constructor<? extends T> constructor1 =
+                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class,
+                            double.class, double.class, NaturalJoinType.class, boolean.class);
+            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                    targetLoadFactor, joinType, rightAddOnly);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                | NoSuchMethodException e) {
+            throw new UncheckedDeephavenException("Could not instantiate " + castedClass.getCanonicalName(), e);
+        }
+        return retVal;
+    }
+
     @NotNull
     public static <T> HasherConfig<T> hasherConfigForBase(Class<T> baseClass) {
         final HasherConfig.Builder<T> builder = new HasherConfig.Builder<>(baseClass);
@@ -102,15 +195,14 @@ public class TypedHasherFactory {
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
-            final ParameterSpec joinTypeParam =
-                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
-
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
                     .stateType(long.class).mainStateName("mainRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
-                    .supportRehash(false);
+                    .supportRehash(false)
+                    .addConstructorParameter(ParameterSpec.builder(NaturalJoinType.class, "joinType").build())
+                    .addConstructorParameter(ParameterSpec.builder(boolean.class, "addOnly").build());
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
                     false, true, true, TypedNaturalJoinFactory::staticBuildLeftFound,
@@ -126,17 +218,13 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,
-                    TypedNaturalJoinFactory::staticBuildRightInsert, joinTypeParam));
+                    TypedNaturalJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
-                    true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null, joinTypeParam));
+                    true, TypedNaturalJoinFactory::staticProbeDecorateRightFound, null));
         } else if (baseClass.equals(RightIncrementalNaturalJoinStateManagerTypedBase.class)) {
             final ParameterSpec modifiedSlotTrackerParam =
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
-            final ParameterSpec joinTypeParam =
-                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
-            final ParameterSpec rightAddOnlyParam =
-                    ParameterSpec.builder(boolean.class, "addOnly").build();
 
             builder.classPrefix("RightIncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("rightincopen")
@@ -149,7 +237,9 @@ public class TypedHasherFactory {
                     .addExtraPartialRehashParameter(
                             ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build())
                     .alwaysMoveMain(true)
-                    .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup);
+                    .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup)
+                    .addConstructorParameter(ParameterSpec.builder(NaturalJoinType.class, "joinType").build())
+                    .addConstructorParameter(ParameterSpec.builder(boolean.class, "addOnly").build());
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "leftRowSetForState",
                     true, true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
@@ -157,22 +247,22 @@ public class TypedHasherFactory {
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRightFound,
-                    null, joinTypeParam, rightAddOnlyParam));
+                    null));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalRemoveFound,
                     null,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
                     TypedNaturalJoinFactory::rightIncrementalAddFound,
                     null,
-                    modifiedSlotTrackerParam, joinTypeParam, rightAddOnlyParam));
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, true,
                     TypedNaturalJoinFactory::rightIncrementalModify,
                     null,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam));
 
             ParameterSpec probeContextParam =
                     ParameterSpec.builder(RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext.class, "pc")
@@ -182,14 +272,10 @@ public class TypedHasherFactory {
                     TypedNaturalJoinFactory::rightIncrementalShift,
                     null,
                     ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    modifiedSlotTrackerParam, probeContextParam, joinTypeParam));
+                    modifiedSlotTrackerParam, probeContextParam));
         } else if (baseClass.equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
             final ParameterSpec modifiedSlotTrackerParam =
                     ParameterSpec.builder(NaturalJoinModifiedSlotTracker.class, "modifiedSlotTracker").build();
-            final ParameterSpec joinTypeParam =
-                    ParameterSpec.builder(NaturalJoinType.class, "joinType").build();
-            final ParameterSpec rightAddOnlyParam =
-                    ParameterSpec.builder(boolean.class, "addOnly").build();
 
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
@@ -205,25 +291,27 @@ public class TypedHasherFactory {
                     .moveMainFull(TypedNaturalJoinFactory::incrementalMoveMainFull)
                     .moveMainAlternate(TypedNaturalJoinFactory::incrementalMoveMainAlternate)
                     .alwaysMoveMain(true)
-                    .rehashFullSetup(TypedNaturalJoinFactory::incrementalRehashSetup);
+                    .rehashFullSetup(TypedNaturalJoinFactory::incrementalRehashSetup)
+                    .addConstructorParameter(ParameterSpec.builder(NaturalJoinType.class, "joinType").build())
+                    .addConstructorParameter(ParameterSpec.builder(boolean.class, "addOnly").build());
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightRowKeyForState",
                     true, false, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
-                    TypedNaturalJoinFactory::incrementalBuildLeftInsert, joinTypeParam));
+                    TypedNaturalJoinFactory::incrementalBuildLeftInsert));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
                     false, false, TypedNaturalJoinFactory::incrementalRightFound,
-                    TypedNaturalJoinFactory::incrementalRightInsert, joinTypeParam, rightAddOnlyParam));
+                    TypedNaturalJoinFactory::incrementalRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
                     TypedNaturalJoinFactory::incrementalRemoveRightMissing,
-                    modifiedSlotTrackerParam, joinTypeParam));
+                    modifiedSlotTrackerParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
                     true, true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
-                    modifiedSlotTrackerParam, joinTypeParam, rightAddOnlyParam));
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", "existingRightRowKey", false,
                     TypedNaturalJoinFactory::incrementalModifyRightFound,
@@ -242,7 +330,7 @@ public class TypedHasherFactory {
                     true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(LongArraySource.class, "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build(), joinTypeParam));
+                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
@@ -459,36 +547,6 @@ public class TypedHasherFactory {
                     return pregeneratedHasher;
                 }
             } else if (hasherConfig.baseClass
-                    .equals(StaticNaturalJoinStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher =
-                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.staticopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                                        targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
-                    .equals(RightIncrementalNaturalJoinStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher =
-                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                                        targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
-                    .equals(IncrementalNaturalJoinStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher =
-                        (T) io.deephaven.engine.table.impl.naturaljoin.typed.incopen.gen.TypedHashDispatcher
-                                .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                                        targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
                     .equals(StaticAsOfJoinStateManagerTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher =
@@ -670,11 +728,17 @@ public class TypedHasherFactory {
     private static <T> MethodSpec createConstructor(HasherConfig<T> hasherConfig, ChunkType[] chunkTypes,
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
+        final String extraSuper = hasherConfig.extraConstructorParameters.isEmpty() ? ""
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
+                        .collect(Collectors.joining(", "));
+
         if (hasherConfig.includeOriginalSources) {
             constructorCodeBuilder
-                    .addStatement("super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor)");
+                    .addStatement("super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor"
+                            + extraSuper + ")");
         } else {
-            constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
+            constructorCodeBuilder
+                    .addStatement("super(tableKeySources, tableSize, maximumLoadFactor" + extraSuper + ")");
         }
         addKeySourceFields(hasherConfig, chunkTypes, hasherBuilder, constructorCodeBuilder);
 
@@ -683,6 +747,7 @@ public class TypedHasherFactory {
                 .addParameter(ColumnSource[].class, "originalTableKeySources")
                 .addParameter(int.class, "tableSize").addParameter(double.class, "maximumLoadFactor")
                 .addParameter(double.class, "targetLoadFactor").addModifiers(Modifier.PUBLIC)
+                .addParameters(hasherConfig.extraConstructorParameters)
                 .addCode(constructorCodeBuilder.build())
                 .build();
     }

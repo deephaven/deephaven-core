@@ -34,8 +34,8 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
 
     public RightIncrementalNaturalJoinHasherChar(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
-        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, joinType, addOnly);
         this.mainKeySource0 = (ImmutableCharArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
@@ -75,8 +75,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
         }
     }
 
-    protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType, boolean addOnly) {
+    protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -123,7 +122,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
     }
 
     protected void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -166,8 +165,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
     }
 
     protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
-            boolean addOnly) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -233,7 +231,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
     }
 
     protected void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -256,8 +254,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
 
     protected void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
-            RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc,
-            NaturalJoinType joinType) {
+            RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc) {
         final CharChunk<Values> keyChunk0 = sourceKeyChunks[0].asCharChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();

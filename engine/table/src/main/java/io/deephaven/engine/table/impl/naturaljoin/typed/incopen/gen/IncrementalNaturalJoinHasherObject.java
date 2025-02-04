@@ -38,8 +38,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
 
     public IncrementalNaturalJoinHasherObject(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
-        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, joinType, addOnly);
         this.mainKeySource0 = (ImmutableObjectArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
@@ -52,8 +52,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         return (tableLocation + 1) & (alternateTableSize - 1);
     }
 
-    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType) {
+    protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         Assert.eqZero(rehashPointer, "rehashPointer");
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
@@ -87,8 +86,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         }
     }
 
-    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType, boolean addOnly) {
+    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         Assert.eqZero(rehashPointer, "rehashPointer");
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
@@ -136,8 +134,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     }
 
     protected void addRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType,
-            boolean addOnly) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -274,8 +271,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     }
 
     protected void addLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long leftRedirectionOffset,
-            NaturalJoinType joinType) {
+            LongArraySource leftRedirections, long leftRedirectionOffset) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -366,7 +362,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     }
 
     protected void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinModifiedSlotTracker modifiedSlotTracker, NaturalJoinType joinType) {
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();

@@ -33,9 +33,13 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
 
     private final LongArraySource rightRowSetSource = new LongArraySource();
 
-    SimpleUniqueStaticNaturalJoinStateManager(ColumnSource<?>[] tableKeySources, int tableSize,
-            ToIntFunctor<Values> transform) {
-        super(tableKeySources);
+    SimpleUniqueStaticNaturalJoinStateManager(
+            ColumnSource<?>[] tableKeySources,
+            int tableSize,
+            ToIntFunctor<Values> transform,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(tableKeySources, joinType, addOnly);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
         this.transform = transform;
         rightRowSetSource.ensureCapacity(tableSize);
@@ -44,7 +48,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         }
     }
 
-    void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource, NaturalJoinType joinType) {
+    void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
         try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext =
                         valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, rightRowSet.size()))) {
@@ -117,8 +121,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @NotNull
-    WritableRowRedirection buildRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, joinType, leftRedirections::getLong, redirectionType);
+        return buildRowRedirection(leftTable, leftRedirections::getLong, redirectionType);
     }
 }

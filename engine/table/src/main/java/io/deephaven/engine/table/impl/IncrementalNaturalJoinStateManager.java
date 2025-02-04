@@ -17,7 +17,7 @@ public interface IncrementalNaturalJoinStateManager {
 
     String keyString(int slot);
 
-    void checkExactMatch(NaturalJoinType joinType, long leftKeyIndex, long rightSide);
+    void checkExactMatch(long leftKeyIndex, long rightSide);
 
     /**
      * Given the join type, return the correct row key from the set of RHS duplicates.

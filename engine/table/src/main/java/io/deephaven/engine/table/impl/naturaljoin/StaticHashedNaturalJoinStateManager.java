@@ -20,8 +20,11 @@ import java.util.function.LongUnaryOperator;
 
 public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJoinStateManager {
 
-    protected StaticHashedNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
-        super(keySourcesForErrorMessages);
+    protected StaticHashedNaturalJoinStateManager(
+            ColumnSource<?>[] keySourcesForErrorMessages,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
     }
 
     public abstract void buildFromLeftSide(
@@ -31,8 +34,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
 
     public abstract void buildFromRightSide(
             final Table rightTable,
-            final ColumnSource<?>[] rightSources,
-            final NaturalJoinType joinType);
+            final ColumnSource<?>[] rightSources);
 
     public abstract void decorateLeftSide(
             final RowSet leftRowSet,
@@ -41,24 +43,23 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
 
     public abstract void decorateWithRightSide(
             final Table rightTable,
-            final ColumnSource<?>[] rightSources,
-            final NaturalJoinType joinType);
+            final ColumnSource<?>[] rightSources);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
-            NaturalJoinType joinType, IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
+            IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable,
-            NaturalJoinType joinType, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
+            LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildIndexedRowRedirectionFromRedirections(QueryTable leftTable,
-            NaturalJoinType joinType, RowSet indexTableRowSet, LongArraySource leftRedirections,
+            RowSet indexTableRowSet, LongArraySource leftRedirections,
             ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(QueryTable leftTable,
-            NaturalJoinType joinType, RowSet indexTableRowSet, IntegerArraySource leftHashSlots,
+            RowSet indexTableRowSet, IntegerArraySource leftHashSlots,
             ColumnSource<RowSet> indexRowSets, JoinControl.RedirectionType redirectionType);
 
-    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable, NaturalJoinType joinType,
+    protected WritableRowRedirection buildIndexedRowRedirection(QueryTable leftTable,
             RowSet indexTableRowSet, LongUnaryOperator groupPositionToRightSide, ColumnSource<RowSet> leftRowSets,
             JoinControl.RedirectionType redirectionType) {
         final int rowSetCount = indexTableRowSet.intSize();
@@ -71,7 +72,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
-                    checkExactMatch(joinType, ii, rightSide);
+                    checkExactMatch(ii, rightSide);
                     final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                     leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
@@ -83,7 +84,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
-                    checkExactMatch(joinType, ii, rightSide);
+                    checkExactMatch(ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
@@ -98,7 +99,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
                 for (int ii = 0; ii < rowSetCount; ++ii) {
                     final long rightSide = groupPositionToRightSide.applyAsLong(ii);
 
-                    checkExactMatch(joinType, ii, rightSide);
+                    checkExactMatch(ii, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         final RowSet leftRowSetForKey = leftRowSets.get(indexTableRowSet.get(ii));
                         leftRowSetForKey.forAllRowKeys((long ll) -> rowRedirection.put(ll, rightSide));

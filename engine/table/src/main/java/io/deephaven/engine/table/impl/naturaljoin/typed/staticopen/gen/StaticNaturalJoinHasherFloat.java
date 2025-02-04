@@ -31,8 +31,8 @@ final class StaticNaturalJoinHasherFloat extends StaticNaturalJoinStateManagerTy
 
     public StaticNaturalJoinHasherFloat(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
-        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, joinType, addOnly);
         this.mainKeySource0 = (ImmutableFloatArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
@@ -69,8 +69,7 @@ final class StaticNaturalJoinHasherFloat extends StaticNaturalJoinStateManagerTy
         }
     }
 
-    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType) {
+    protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final int chunkSize = keyChunk0.size();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -135,8 +134,7 @@ final class StaticNaturalJoinHasherFloat extends StaticNaturalJoinStateManagerTy
         }
     }
 
-    protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            NaturalJoinType joinType) {
+    protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
