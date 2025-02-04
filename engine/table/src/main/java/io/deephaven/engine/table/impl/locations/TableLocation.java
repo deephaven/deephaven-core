@@ -127,7 +127,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
 
     /**
      * @param name The column name
-     * @return The ColumnLocation for the defined column under this table location
+     * @return The ColumnLocation for the defined column under this table location. The exact same ColumnLocation object
+     *         should be returned for the same column name.
      */
     @NotNull
     ColumnLocation getColumnLocation(@NotNull CharSequence name);
