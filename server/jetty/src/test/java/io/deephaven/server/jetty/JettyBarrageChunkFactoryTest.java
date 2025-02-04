@@ -1510,8 +1510,8 @@ public class JettyBarrageChunkFactoryTest {
 
                 final Field innerField = schema.getFields().get(0);
                 final Map<String, String> attrs = new LinkedHashMap<>(innerField.getMetadata());
-                attrs.put(DH_TYPE_TAG, "java.lang.Object");
-                // TODO NATE NOCOMMIT rm attr?
+                attrs.remove(DH_TYPE_TAG);
+                attrs.remove(DH_COMPONENT_TYPE_TAG);
 
                 final ArrowType unionType = getWrappedModeType(wrapMode,
                         Types.getMinorTypeForArrowType(innerField.getType()));
@@ -1523,8 +1523,8 @@ public class JettyBarrageChunkFactoryTest {
 
                 final Field innerField = schema.getFields().get(0);
                 final Map<String, String> attrs = new LinkedHashMap<>(innerField.getMetadata());
-                attrs.put(DH_TYPE_TAG, "java.util.Map");
-                // TODO NATE NOCOMMIT rm attr?
+                attrs.remove(DH_TYPE_TAG);
+                attrs.remove(DH_COMPONENT_TYPE_TAG);
 
                 final ArrowType mapType = new ArrowType.Map(false);
 

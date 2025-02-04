@@ -513,8 +513,6 @@ public class BarrageUtil {
         }
 
         return new BarrageTypeInfo<>(columnType, columnComponentType, field);
-        // TODO NATE NOCOMMIT
-        // arrowFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata(), false));
     }
 
     private static Class<?> getDefaultType(
@@ -606,7 +604,10 @@ public class BarrageUtil {
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                                 " of intervalType(IntervalUnit=" + intervalType.getUnit() + ")");
                 }
-
+            case Map:
+                return Map.class;
+            case Union:
+                return Object.class;
             default:
                 if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List
                         || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.ListView
