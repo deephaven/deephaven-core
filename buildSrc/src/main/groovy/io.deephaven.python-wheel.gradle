@@ -13,7 +13,7 @@ spotless {
         target '**/*.py'
         targetExclude '**/proto/*_pb2*', '**/setup.py', 'docs/**'
         licenseHeader '#\n' +
-                '# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending\n' +
+                '# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n' +
                 '#', '[^#]'
     }
 }

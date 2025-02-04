@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.tree;
 
@@ -370,7 +370,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             viewRequest.setResultViewId(ticket);
             keyTable.then(t -> {
                 if (controller.signal.aborted) {
-                    return Promise.resolve(controller.signal.reason);
+                    return Promise.reject(controller.signal.reason);
                 }
                 if (keyTableData[0].length > 0) {
                     HierarchicalTableViewKeyTableDescriptor expansions = new HierarchicalTableViewKeyTableDescriptor();
@@ -382,7 +382,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                         connection.hierarchicalTableServiceClient().view(viewRequest, connection.metadata(), c::apply);
                 controller.signal.addEventListener("abort", e -> viewCreationCall.cancel());
                 return null;
-            }, error -> {
+            }).catch_(error -> {
                 c.apply(error, null);
                 return null;
             });

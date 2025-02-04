@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -1117,9 +1117,10 @@ public class TestParquetTools {
             // notice this earlier on.
             try {
                 table.select();
-                failBecauseExceptionWasNotThrown(IllegalStateException.class);
-            } catch (IllegalArgumentException e) {
-                assertThat(e).hasMessageContaining(
+                failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                assertThat(e).hasCauseInstanceOf(IllegalArgumentException.class);
+                assertThat(e.getCause()).hasMessageContaining(
                         "Parquet columns can't be unambigously mapped. Bar -> 31337 has multiple paths [Foo], [Bar]");
             }
         }
