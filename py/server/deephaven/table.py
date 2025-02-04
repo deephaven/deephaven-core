@@ -584,6 +584,11 @@ class Table(JObjectWrapper):
         """Whether this table is a blink table."""
         return _JBlinkTableTools.isBlink(self.j_table)
 
+    @property
+    def is_failed(self) -> bool:
+        """Whether this table is in a failure state and is no longer usable."""
+        return self.j_table.isFailed()
+
     @cached_property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""

@@ -93,7 +93,7 @@ class BarrageTestCase(BaseTestCase):
             # TODO this test is flaky because of https://github.com/deephaven/deephaven-core/issues/5416, re-enable it
             #  when the issue is fixed.
             # for _ in range(10):
-            #     if t.j_table.isFailed():
+            #     if t.is_failed():
             #         break
             #     time.sleep(1)
             # else:
