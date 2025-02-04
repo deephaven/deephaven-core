@@ -345,8 +345,7 @@ public class ReplicateUpdateBy {
                 "boolean previousVal", "byte previousVal",
                 "boolean currentVal", "byte currentVal",
                 "BooleanChunk", "ByteChunk",
-                "val != NULL_BOOLEAN", "BooleanUtils.isNull(val)"
-        );
+                "val != NULL_BOOLEAN", "BooleanUtils.isNull(val)");
         lines = replaceRegion(lines, "extra-methods",
                 Collections.singletonList(
                         "    @Override\n" +
