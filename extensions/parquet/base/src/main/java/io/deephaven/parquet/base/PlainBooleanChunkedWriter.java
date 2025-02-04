@@ -4,7 +4,6 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;

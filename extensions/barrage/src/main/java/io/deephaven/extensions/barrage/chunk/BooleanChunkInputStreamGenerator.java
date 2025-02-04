@@ -19,8 +19,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static io.deephaven.util.QueryConstants.*;
-
 public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Values>> {
     private static final String DEBUG_NAME = "BooleanChunkInputStreamGenerator";
 
