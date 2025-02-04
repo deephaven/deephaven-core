@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """ This module implements the Color class and provides a list of predefined colors that can be used to paint a plot.

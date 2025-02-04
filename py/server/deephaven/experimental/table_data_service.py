@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module defines a table service backend interface TableDataServiceBackend that users can implement to provide
 external data in the format of  pyarrow Table to Deephaven tables. The backend service implementation should be passed
