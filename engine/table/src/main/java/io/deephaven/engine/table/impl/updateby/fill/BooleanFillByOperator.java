@@ -21,6 +21,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
+import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -46,7 +47,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             byte val = booleanValueChunk.get(pos);
-            if(val != NULL_BOOLEAN_AS_BYTE) {
+            if (!BooleanUtils.isNull(val)) {
                 curVal = val;
             }
         }
