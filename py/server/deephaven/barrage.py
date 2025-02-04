@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """ This module defines the BarrageSession wrapper class and provides a factory function to create an instance of it
  for accessing resources on remote Deephaven servers."""
