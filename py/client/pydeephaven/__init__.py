@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 
 """Deephaven Python Client (`pydeephaven`) is a Python API built on top of Deephaven's highly efficient Open API which is

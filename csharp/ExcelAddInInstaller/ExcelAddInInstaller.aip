@@ -12,10 +12,10 @@
     <ROW Property="BannerBitmap" Value="banner.jpg" MultiBuildValue="DefaultBuild:Banner.jpg" Type="1" MsiKey="BannerBitmap"/>
     <ROW Property="DialogBitmap" Value="dialog.jpg" MultiBuildValue="DefaultBuild:Dialog.jpg" Type="1" MsiKey="DialogBitmap"/>
     <ROW Property="Manufacturer" Value="Deephaven Data Labs LLC"/>
-    <ROW Property="ProductCode" Value="1033:{5C1E1B63-CC23-4F4D-8564-A843AA5D7413} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{7CA02F46-8607-4C9B-8372-AAAACD94DAC4} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="Deephaven Excel Add-In"/>
-    <ROW Property="ProductVersion" Value="1.0.0" Options="32"/>
+    <ROW Property="ProductVersion" Value="0.8.0" Options="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{98EB9359-8BA3-44BA-A411-AED290E6EBD9}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -67,7 +67,7 @@
     <ROW Component="zstd.dll" ComponentId="{4DE80229-9EDC-40D0-9B91-4E6BCECAC0C9}" Directory_="APPDIR" Attributes="256" KeyPath="zstd.dll"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
-    <ROW Feature="A0BFC224E0E9125ADE0B2DBF343" Title=".NET Desktop Runtime 8.0.8 x64" Description=".NET Desktop Runtime 8.0.8 x64" Display="3" Level="1" Attributes="0"/>
+    <ROW Feature="A0BFC224E0E9125ADE0B2DBF343" Title=".NET Desktop Runtime 8.0.12 x64" Description=".NET Desktop Runtime 8.0.12 x64" Display="3" Level="1" Attributes="0"/>
     <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="1" Level="1" Directory_="APPDIR" Attributes="0"/>
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
@@ -351,7 +351,7 @@
     <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
-    <ROW PrereqKey="A0BFC224E0E9125ADE0B2DBF343" DisplayName=".NET Desktop Runtime 8.0.8 x64" VersionMin="8.0" SetupFileUrl="Prerequisites\.NET 8.0\windowsdesktop-runtime-8.0.8-win-x64.exe" Location="0" ExactSize="0" WinNTVersions="Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" WinNT64Versions="Windows 7 RTM x64, Windows 8 x64, Windows Server 2012 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64" Operator="1" NoUiComLine="/q /norestart" Options="fx" TargetName=".NET 8.0\windowsdesktop-runtime-8.0.8-win-x64.exe" Feature="A0BFC224E0E9125ADE0B2DBF343"/>
+    <ROW PrereqKey="A0BFC224E0E9125ADE0B2DBF343" DisplayName=".NET Desktop Runtime 8.0.12 x64" VersionMin="8.0" SetupFileUrl="Prerequisites\.NET 8.0\windowsdesktop-runtime-8.0.12-win-x64.exe" Location="0" ExactSize="0" WinNTVersions="Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" WinNT64Versions="Windows 7 RTM x64, Windows 8 x64, Windows Server 2012 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64" Operator="1" NoUiComLine="/q /norestart" Options="fx" TargetName=".NET 8.0\windowsdesktop-runtime-8.0.12-win-x64.exe" Feature="A0BFC224E0E9125ADE0B2DBF343"/>
     <ATTRIBUTE name="PrereqsOrder" value="A0BFC224E0E9125ADE0B2DBF343"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.input;
 
@@ -238,7 +238,7 @@ public class JsInputTable {
                 failureToReport = Promise.resolve((Object) null);
             } else {
                 // view the only table
-                ticketToDelete = table.getConnection().getConfig().newTicket();
+                ticketToDelete = table.getConnection().getTickets().newExportTicket();
                 cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
                 SelectOrUpdateRequest view = new SelectOrUpdateRequest();
@@ -250,7 +250,7 @@ public class JsInputTable {
             }
         } else {
             // there is more than one table here, construct a merge after making a view of each table
-            ticketToDelete = table.getConnection().getConfig().newTicket();
+            ticketToDelete = table.getConnection().getTickets().newExportTicket();
             cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
             BatchTableRequest batch = new BatchTableRequest();

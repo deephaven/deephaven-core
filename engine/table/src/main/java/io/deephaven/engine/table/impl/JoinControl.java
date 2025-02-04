@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -59,6 +59,10 @@ public class JoinControl {
 
     @Nullable
     DataIndex dataIndexToUse(Table table, ColumnSource<?>[] sources) {
+        // Configuration property that serves as an escape hatch
+        if (!QueryTable.USE_DATA_INDEX_FOR_JOINS) {
+            return null;
+        }
         final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
         return indexer == null ? null
                 : LivenessScopeStack.computeEnclosed(

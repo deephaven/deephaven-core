@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module allows user to enable/disable Deephaven systemic object marking. When enabled, Deephaven will mark
 all objects created in the current thread as systemic. These systemic objects will be tracked and if errors occur to
