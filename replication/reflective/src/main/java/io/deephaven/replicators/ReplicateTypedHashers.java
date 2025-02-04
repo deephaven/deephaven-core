@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
@@ -87,7 +87,7 @@ public class ReplicateTypedHashers {
 
         final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, dispatchBuilder.build()).indent("    ");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending\n");
+        fileBuilder.addFileComment("Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder.addFileComment("****** Run " + ReplicateTypedHashers.class.getSimpleName()

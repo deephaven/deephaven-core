@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.updategraph.impl;
 
@@ -629,7 +629,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
             runNotification(notificationForThisThread);
         }
 
-        // We can not proceed until all of the terminal notifications have executed.
+        // We can not proceed until all the terminal notifications have executed.
         notificationProcessor.doAllWork();
     }
 
@@ -836,6 +836,10 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
         }
     }
 
+    void reportLockWaitNanos(final long lockWaitNanos) {
+        currentCycleLockWaitTotalNanos += lockWaitNanos;
+    }
+
     /**
      * Is the provided cycle time on budget?
      *
@@ -907,7 +911,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
     private void doRefresh(@NotNull final Runnable refreshFunction) {
         final long lockStartTimeNanos = System.nanoTime();
         exclusiveLock().doLocked(() -> {
-            currentCycleLockWaitTotalNanos += System.nanoTime() - lockStartTimeNanos;
+            reportLockWaitNanos(System.nanoTime() - lockStartTimeNanos);
             if (!running) {
                 return;
             }

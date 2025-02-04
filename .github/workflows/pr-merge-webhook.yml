@@ -1,4 +1,4 @@
-name: Create documentation ticket
+name: PR Merge Webhook
 
 on:
   pull_request_target:
@@ -9,21 +9,19 @@ on:
       - closed
 
 jobs:
-  create-docs-ticket:
-    # Only on merged PRs that contain the DocumentationNeeded flag
-    if: github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded')
+  jira-webhook-pr-merge:
+    # Only on merged PRs
+    if: github.event.pull_request.merged
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Issues
-        id: create-issues
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.DOCS_ISSUES_PAT }}
-          script: |
-            const script = require('.github/workflows/create-docs-issues.js');
-            await script({github, context});
+      - name: Trigger PR Merge Webhook
+        env:
+          # Push the PR details in the webhook data.
+          WEBHOOK_DATA: ${{ toJSON(github.event.pull_request) }}
+        run: |
+          curl -X POST -H 'X-Automation-Webhook-Token: ${{ secrets.JIRA_WEBHOOK_SECRET_PR_MERGE }}' -H "Content-Type: application/json" --data "$WEBHOOK_DATA" ${{ secrets.JIRA_WEBHOOK_URL_PR_MERGE }}
 
       - name: Slack Failure Message
         uses: slackapi/slack-github-action@v2.0.0

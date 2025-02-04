@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -13,6 +13,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Indicates that this object is a local representation of an object that exists on the server. Similar to HasLifecycle,
@@ -24,6 +25,9 @@ public interface ServerObject {
     @JsIgnore
     TypedTicket typedTicket();
 
+    @JsIgnore
+    WorkerConnection getConnection();
+
     /**
      * Note that we don't explicitly use this as a union type, but sort of as a way to pretend that ServerObject is a
      * sealed type with this generated set of subtypes.
@@ -31,6 +35,11 @@ public interface ServerObject {
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     @TsUnion
     interface Union {
+        @JsOverlay
+        static Union of(Object object) {
+            return Js.uncheckedCast(object);
+        }
+
         @TsUnionMember
         @JsOverlay
         default JsTable asTable() {

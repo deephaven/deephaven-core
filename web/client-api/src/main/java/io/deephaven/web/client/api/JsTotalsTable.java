@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -65,6 +65,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         this.wrappedTable = wrappedTable;
         this.directive = directive;
         this.groupBy = Js.uncheckedCast(groupBy.slice());
+    }
+
+    @Override
+    public WorkerConnection getConnection() {
+        return wrappedTable.getConnection();
     }
 
     public void refreshViewport() {
