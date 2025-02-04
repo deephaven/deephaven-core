@@ -1157,9 +1157,15 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
-        lines = simpleFixup(lines, "nullByKeys", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "nullByRanges", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByKeys",
+                "oldValue != NULL_BOOLEAN", "!BooleanUtils.isNull(oldValue)",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges",
+                "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "setNull",
+                "blocks2\\[indexWithinBlock\\] == NULL_BOOLEAN", "BooleanUtils.isNull(blocks2[indexWithinBlock])",
+                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
                 "                    for (int jj = 0; jj < length; ++jj) {",
