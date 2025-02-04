@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -36,17 +35,20 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
     private final List<Class<?>> classMatchers;
     private final List<ChunkWriter<Chunk<Values>>> writers;
     private final List<ChunkType> writerChunkTypes;
+    private final int[] columnOfInterestMapping;
 
     public UnionChunkWriter(
             final UnionChunkReader.Mode mode,
             final List<Class<?>> classMatchers,
             final List<ChunkWriter<Chunk<Values>>> writers,
-            final List<ChunkType> writerChunkTypes) {
+            final List<ChunkType> writerChunkTypes,
+            final int[] columnOfInterestMapping) {
         super(null, ObjectChunk::getEmptyChunk, 0, false, false);
         this.mode = mode;
         this.classMatchers = classMatchers;
         this.writers = writers;
         this.writerChunkTypes = writerChunkTypes;
+        this.columnOfInterestMapping = columnOfInterestMapping;
         // the specification doesn't allow the union column to have more than signed byte number of types
         Assert.leq(classMatchers.size(), "classMatchers.size()", Byte.MAX_VALUE, "Byte.MAX_VALUE");
     }
@@ -119,7 +121,6 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 columnOffset = WritableIntChunk.makeWritableChunk(chunk.size());
             }
 
-
             // noinspection resource
             columnOfInterest = WritableByteChunk.makeWritableChunk(chunk.size());
             // noinspection unchecked
@@ -142,12 +143,11 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 final Object value = chunk.get(ii);
                 int jj;
                 for (jj = 0; jj < classMatchers.size(); ++jj) {
-                    if (value.getClass().isAssignableFrom(classMatchers.get(jj))) {
+                    if (value == null || classMatchers.get(jj).isAssignableFrom(value.getClass())) {
+                        columnOfInterest.set(ii, (byte) columnOfInterestMapping[jj]);
                         if (mode == UnionChunkReader.Mode.Sparse) {
-                            columnOfInterest.set(ii, (byte) jj);
                             innerChunks[jj].set(ii, value);
                         } else {
-                            columnOfInterest.set(ii, (byte) jj);
                             int size = innerChunks[jj].size();
                             columnOffset.set(ii, size);
                             if (innerChunks[jj].capacity() <= size) {
@@ -162,6 +162,9 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 }
 
                 if (jj == classMatchers.size()) {
+                    if (value == null) {
+                        throw new UnsupportedOperationException("UnionChunkWriter found null-value without null child");
+                    }
                     throw new UnsupportedOperationException("UnionChunkWriter found unexpected class: "
                             + value.getClass() + " allowed classes: " +
                             classMatchers.stream().map(Class::getSimpleName)
@@ -190,11 +193,6 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                 try (ChunkWriter.Context innerContext = writer.makeContext(kernel != null
                         ? (Chunk<Values>) kernel.unbox(innerChunk)
                         : innerChunk, 0)) {
-                    if (kernel != null) {
-                        // while we did steal the kernel's chunk after unboxing, now no one owns the original chunk
-                        innerChunk.close();
-                    }
-
                     innerColumns[ii] = writer.getInputStream(innerContext, null, options);
                 }
             }
@@ -226,7 +224,9 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         public void close() throws IOException {
             super.close();
             columnOfInterest.close();
-            columnOffset.close();
+            if (columnOffset != null) {
+                columnOffset.close();
+            }
             for (DrainableColumn innerColumn : innerColumns) {
                 innerColumn.close();
             }
@@ -237,7 +237,9 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             if (cachedSize == -1) {
                 long size = 0;
                 size += padBufferSize(subset.intSize(DEBUG_NAME));
-                size += padBufferSize(Integer.BYTES * subset.size());
+                if (columnOffset != null) {
+                    size += padBufferSize(Integer.BYTES * subset.size());
+                }
                 for (DrainableColumn innerColumn : innerColumns) {
                     size += innerColumn.available();
                 }
@@ -264,10 +266,12 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             bytesWritten += writePadBuffer(dos, bytesWritten);
 
             // must write out the column offset
-            for (int ii = 0; ii < columnOffset.size(); ++ii) {
-                dos.writeInt(columnOffset.get(ii));
+            if (columnOffset != null) {
+                for (int ii = 0; ii < columnOffset.size(); ++ii) {
+                    dos.writeInt(columnOffset.get(ii));
+                }
+                bytesWritten += LongSizedDataStructure.intSize(DEBUG_NAME, (long) Integer.BYTES * columnOffset.size());
             }
-            bytesWritten += LongSizedDataStructure.intSize(DEBUG_NAME, (long) Integer.BYTES * columnOffset.size());
             bytesWritten += writePadBuffer(dos, bytesWritten);
 
             for (DrainableColumn innerColumn : innerColumns) {

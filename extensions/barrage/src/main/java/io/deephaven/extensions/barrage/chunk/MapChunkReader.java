@@ -19,6 +19,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
@@ -112,12 +114,12 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
                     if ((nextValid & 0x1) == 0x1) {
                         chunk.set(outOffset + ii, null);
                     } else {
-                        final ImmutableMap.Builder<Object, Object> mapBuilder = ImmutableMap.builder();
+                        final Map<Object, Object> row = new LinkedHashMap<>();
                         for (int jj = offsets.get(ii); jj < offsets.get(ii + 1); ++jj) {
-                            mapBuilder.put(keys.get(jj), values.get(jj));
+                            row.put(keys.get(jj), values.get(jj));
                         }
                         // noinspection unchecked
-                        chunk.set(outOffset + ii, (T) mapBuilder.build());
+                        chunk.set(outOffset + ii, (T) row);
                     }
                 }
             }

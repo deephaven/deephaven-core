@@ -331,7 +331,7 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     : UnionChunkReader.Mode.Dense;
             // noinspection unchecked
             return (ChunkWriter<T>) new UnionChunkWriter<>(mode, childClassMatcher, childWriters,
-                    childChunkTypes);
+                    childChunkTypes, unionType.getTypeIds());
         }
 
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(

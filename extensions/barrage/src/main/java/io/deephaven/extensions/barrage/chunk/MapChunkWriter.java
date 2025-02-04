@@ -97,7 +97,8 @@ public class MapChunkWriter<T>
                 offsets.add(0);
             }
             for (int ii = 0; ii < chunk.size(); ++ii) {
-                numInnerElements += ((Map<?, ?>) chunk.get(ii)).size();
+                final Map<?, ?> row = (Map<?, ?>) chunk.get(ii);
+                numInnerElements += row == null ? 0 : row.size();
                 offsets.add(numInnerElements);
             }
 
@@ -108,7 +109,11 @@ public class MapChunkWriter<T>
                     WritableObjectChunk.makeWritableChunk(numInnerElements);
             valueObjChunk.setSize(0);
             for (int ii = 0; ii < chunk.size(); ++ii) {
-                ((Map<?, ?>) chunk.get(ii)).forEach((key, value) -> {
+                final Map<?, ?> row = (Map<?, ?>) chunk.get(ii);
+                if (row == null) {
+                    continue;
+                }
+                row.forEach((key, value) -> {
                     keyObjChunk.add(key);
                     valueObjChunk.add(value);
                 });

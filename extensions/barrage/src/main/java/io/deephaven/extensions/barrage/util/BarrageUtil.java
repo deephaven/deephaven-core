@@ -512,13 +512,18 @@ public class BarrageUtil {
             columnComponentType = columnType.getComponentType();
         }
 
-        return new BarrageTypeInfo<>(columnType, columnComponentType,
-                arrowFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata(), false));
+        return new BarrageTypeInfo<>(columnType, columnComponentType, field);
+        // TODO NATE NOCOMMIT
+        // arrowFieldFor(field.getName(), columnType, columnComponentType, field.getMetadata(), false));
     }
 
     private static Class<?> getDefaultType(
             final Field arrowField,
             final Class<?> explicitType) {
+        if (explicitType != null) {
+            return explicitType;
+        }
+
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field";
         switch (arrowField.getType().getTypeID()) {
             case Int:
@@ -578,9 +583,6 @@ public class BarrageUtil {
                     case DOUBLE:
                         return double.class;
                     default:
-                        if (explicitType != null) {
-                            return explicitType;
-                        }
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                                 " of floatingPointType(Precision=" + floatingPointType.getPrecision() + ")");
                 }
@@ -601,17 +603,11 @@ public class BarrageUtil {
                     case MONTH_DAY_NANO:
                         return PeriodDuration.class;
                     default:
-                        if (explicitType != null) {
-                            return explicitType;
-                        }
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                                 " of intervalType(IntervalUnit=" + intervalType.getUnit() + ")");
                 }
 
             default:
-                if (explicitType != null) {
-                    return explicitType;
-                }
                 if (arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.List
                         || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.ListView
                         || arrowField.getType().getTypeID() == ArrowType.ArrowTypeID.FixedSizeList) {

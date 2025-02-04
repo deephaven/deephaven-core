@@ -300,12 +300,19 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();
             final List<ChunkReader<? extends WritableChunk<Values>>> innerReaders = new ArrayList<>();
+            final Map<Byte, Integer> typeToIndex = new HashMap<>();
+
+            final int[] typeIds = unionType.getTypeIds();
+            for (int ii = 0; ii < typeIds.length; ++ii) {
+                typeToIndex.put((byte) typeIds[ii], ii);
+            }
 
             for (int ii = 0; ii < field.getChildren().size(); ++ii) {
                 final Field childField = field.getChildren().get(ii);
                 final BarrageTypeInfo<Field> childTypeInfo = BarrageUtil.getDefaultType(childField);
                 ChunkReader<? extends WritableChunk<Values>> childReader = newReaderPojo(childTypeInfo, options, false);
-                if (childField.getType().getTypeID() == ArrowType.ArrowTypeID.Bool) {
+                if ((childTypeInfo.type() == boolean.class || childTypeInfo.type() == Boolean.class)
+                        && childField.getType().getTypeID() == ArrowType.ArrowTypeID.Bool) {
                     childReader = ((BooleanChunkReader) childReader).transform(BooleanUtils::byteAsBoolean);
                 }
                 innerReaders.add(childReader);
@@ -313,7 +320,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
             // noinspection unchecked
             return (ChunkReader<T>) new UnionChunkReader<T>(
-                    UnionChunkReader.mode(unionType.getMode()), innerReaders);
+                    UnionChunkReader.mode(unionType.getMode()), innerReaders, typeToIndex);
         }
 
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(

@@ -21,8 +21,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Values>> {
@@ -38,12 +40,15 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
 
     private final Mode mode;
     private final List<ChunkReader<? extends WritableChunk<Values>>> readers;
+    private final Map<Byte, Integer> typeToIndex;
 
     public UnionChunkReader(
             final Mode mode,
-            final List<ChunkReader<? extends WritableChunk<Values>>> readers) {
+            final List<ChunkReader<? extends WritableChunk<Values>>> readers,
+            final Map<Byte, Integer> typeToIndex) {
         this.mode = mode;
         this.readers = readers;
+        this.typeToIndex = typeToIndex;
         // the specification doesn't allow the union column to have more than signed byte number of types
         Assert.leq(readers.size(), "readers.size()", Byte.MAX_VALUE, "Byte.MAX_VALUE");
     }
@@ -135,6 +140,10 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
 
             for (int ii = 0; ii < columnsOfInterest.size(); ++ii) {
                 final byte coi = columnsOfInterest.get(ii);
+                final Integer mappedIndex = typeToIndex.get(coi);
+                if (mappedIndex == null) {
+                    throw new IllegalStateException("union column uses unexpected column of interest: " + coi);
+                }
                 final int offset;
                 if (offsets != null) {
                     offset = offsets.get(ii);
@@ -142,7 +151,7 @@ public class UnionChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, 
                     offset = ii;
                 }
 
-                result.set(outOffset + ii, chunks[coi].get(offset));
+                result.set(outOffset + ii, chunks[mappedIndex].get(offset));
             }
             result.setSize(outOffset + columnsOfInterest.size());
 
