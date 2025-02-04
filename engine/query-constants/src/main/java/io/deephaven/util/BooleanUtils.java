@@ -9,17 +9,17 @@ package io.deephaven.util;
 public class BooleanUtils {
 
     /**
-     * The byte encoding of null booleans.
+     * The byte encoding of null booleans. Do not use to compare values, use {@link #isNull(byte)} instead.
      */
     public static final byte NULL_BOOLEAN_AS_BYTE = QueryConstants.NULL_BYTE;
 
     /**
-     * The byte encoding of true booleans.
+     * The byte encoding of true booleans. Do not use to compare values, use {@link #byteAsBoolean(byte)} instead.
      */
     public static final byte TRUE_BOOLEAN_AS_BYTE = (byte) 1;
 
     /**
-     * The byte encoding of false booleans.
+     * The byte encoding of false booleans. This is the only safe value to use when comparing byte representations.
      */
     public static final byte FALSE_BOOLEAN_AS_BYTE = (byte) 0;
 
@@ -36,7 +36,17 @@ public class BooleanUtils {
      * @return the boxed boolean represented by byteValue
      */
     public static Boolean byteAsBoolean(final byte byteValue) {
-        return byteValue == FALSE_BOOLEAN_AS_BYTE ? Boolean.FALSE : byteValue > 0 ? Boolean.TRUE : null;
+        return isNull(byteValue) ? null : byteValue > FALSE_BOOLEAN_AS_BYTE;
+    }
+
+    /**
+     * Check if a byte represents a null boolean.
+     *
+     * @param byteValue the byte to check if it represents a null boolean
+     * @return true if byteValue represents a null boolean
+     */
+    public static boolean isNull(final byte byteValue) {
+        return byteValue < 0;
     }
 
     /**
