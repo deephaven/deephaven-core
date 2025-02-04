@@ -603,7 +603,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         // New regions indices are assigned in order of insertion, starting from 0 with no re-use of removed indices.
         // If this logic changes, the `getTableAttributes()` logic needs to be updated.
         private final int regionIndex = nextRegionIndex++;
-        private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
         /**
          * RowSet in the region's space, not the table's space.
@@ -631,13 +630,10 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
 
             for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                // noinspection unchecked,rawtypes
-                final ColumnLocationState<?> state = new ColumnLocationState(
-                        columnDefinition,
-                        columnSources.get(columnDefinition.getName()),
-                        location.getColumnLocation(columnDefinition.getName()));
-                columnLocationStates.add(state);
-                state.regionAllocated(regionIndex);
+                final RegionedColumnSource<?> regionedColumnSource = columnSources.get(columnDefinition.getName());
+                final ColumnLocation columnLocation = location.getColumnLocation(columnDefinition.getName());
+                Assert.eq(regionIndex, "regionIndex", regionedColumnSource.addRegion(columnDefinition, columnLocation),
+                        "regionedColumnSource.addRegion((definition, location)");
             }
 
             rowSetAtLastUpdate = initialRowSet;
@@ -710,7 +706,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
         }
 
         private void invalidate() {
-            columnLocationStates.forEach(cls -> cls.source.invalidateRegion(regionIndex));
+            columnSources.values().forEach(source -> source.invalidateRegion(regionIndex));
         }
 
         @Override
@@ -733,30 +729,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager, Delegat
                     return includedTableLocationEntry.location.getKey();
                 }
             };
-
-    /**
-     * Batches up a definition, source, and location for ease of use. Implements grouping maintenance.
-     */
-    private static class ColumnLocationState<T> {
-
-        protected final ColumnDefinition<T> definition;
-        protected final RegionedColumnSource<T> source;
-        protected final ColumnLocation location;
-
-        private ColumnLocationState(
-                ColumnDefinition<T> definition,
-                RegionedColumnSource<T> source,
-                ColumnLocation location) {
-            this.definition = definition;
-            this.source = source;
-            this.location = location;
-        }
-
-        private void regionAllocated(final int regionIndex) {
-            Assert.eq(regionIndex, "regionIndex", source.addRegion(definition, location),
-                    "source.addRegion((definition, location)");
-        }
-    }
 
     public Map<String, Object> getTableAttributes(
             @NotNull TableUpdateMode tableUpdateMode,
