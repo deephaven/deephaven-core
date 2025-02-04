@@ -296,7 +296,7 @@ class Table(TableInterface, ServerObject):
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
-            joinType (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:

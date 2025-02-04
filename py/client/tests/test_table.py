@@ -149,17 +149,9 @@ class TableTestCase(BaseTestCase):
         # assert the values meet expectations
         self.assertTrue(df_1.equals(df_2))
 
-        self.assertEqual(df_1.loc[0, "rhs_index"], 0)
-        self.assertEqual(df_1.loc[1, "rhs_index"], 2)
-        self.assertEqual(df_1.loc[2, "rhs_index"], 4)
-        self.assertEqual(df_1.loc[3, "rhs_index"], 6)
-        self.assertEqual(df_1.loc[4, "rhs_index"], 8)
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [0, 2, 4, 6, 8])
         # the following rows have no match and should be null / NA
-        self.assertTrue(pd.isna(df_1.loc[5, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[6, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[7, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[8, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[9, "rhs_index"]))
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
 
         right_table_last_by = right_table_raw.last_by(by="key")
 
@@ -173,17 +165,9 @@ class TableTestCase(BaseTestCase):
         # assert the values meet expectations
         self.assertTrue(df_1.equals(df_2))
 
-        self.assertEqual(df_1.loc[0, "rhs_index"], 1)
-        self.assertEqual(df_1.loc[1, "rhs_index"], 3)
-        self.assertEqual(df_1.loc[2, "rhs_index"], 5)
-        self.assertEqual(df_1.loc[3, "rhs_index"], 7)
-        self.assertEqual(df_1.loc[4, "rhs_index"], 9)
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [1, 3, 5, 7, 9])
         # the following rows have no match and should be null / NA
-        self.assertTrue(pd.isna(df_1.loc[5, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[6, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[7, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[8, "rhs_index"]))
-        self.assertTrue(pd.isna(df_1.loc[9, "rhs_index"]))
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
 
     def test_exact_join(self):
         pa_table = csv.read_csv(self.csv_file)
