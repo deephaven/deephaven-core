@@ -9,11 +9,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -46,6 +42,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -1994,6 +1991,124 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         JoinControl.RedirectionType.Hash);
             }
         }
+    }
+
+    public void testAddOnlyFirstMatchIncremental() {
+        final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
+        lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        final QueryTable rhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S2"));
+        rhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table expected = lhsRaw.naturalJoin(rhsRaw.firstBy("Key"), "Key");
+        final Table actual = lhsRaw.naturalJoin(rhsRaw, "Key", "S2", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // keep these small enough to not trigger a rehash
+            start = 0;
+            end = 1_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(lhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).toArray()),
+                    intCol("S1", IntStream.rangeClosed(start, end).toArray()));
+            lhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+
+            start = 40_000;
+            end = 41_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 4_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // force a rehash, but delay some collisions until after the rehash starts. These need to come before the
+            // existing rows to trigger the redirection change
+            start = 1_000;
+            end = 17_000;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 16_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+    }
+
+    public void testAddOnlyFirstMatchRight() {
+        final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
+        lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        final QueryTable rhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S2"));
+        rhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            start = 0;
+            end = 1_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(lhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).toArray()),
+                    intCol("S1", IntStream.rangeClosed(start, end).toArray()));
+            lhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+
+        // We pushed data in the table, now declare it static
+        lhsRaw.setRefreshing(false);
+
+        final Table expected = lhsRaw.naturalJoin(rhsRaw.firstBy("Key"), "Key");
+        final Table actual = lhsRaw.naturalJoin(rhsRaw, "Key", "S2", NaturalJoinType.FIRST_MATCH);
+
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            start = 40_000;
+            end = 41_500;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 4_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            int start, end;
+            RowSet additions;
+
+            // These need to come before the existing rows to trigger the redirection change
+            start = 0;
+            end = 17_000;
+
+            additions = RowSetFactory.fromRange(start, end);
+            TstUtils.addToTable(rhsRaw, additions,
+                    intCol("Key", IntStream.rangeClosed(start, end).map(v -> v % 16_000).toArray()),
+                    intCol("S2", IntStream.rangeClosed(start, end).toArray()));
+            rhsRaw.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+        assertTableEquals(expected, actual);
     }
 
     /**
