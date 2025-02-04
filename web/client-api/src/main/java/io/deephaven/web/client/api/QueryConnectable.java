@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -146,9 +146,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public CancellablePromise<IdeSession> startSession(String type) {
         JsLog.debug("Starting", type, "console session");
         LazyPromise<Ticket> promise = new LazyPromise<>();
-        final ClientConfiguration config = connection.get().getConfig();
-        final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicketRaw());
+        final Tickets config = connection.get().getTickets();
+        final Ticket ticket = config.newExportTicket();
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);

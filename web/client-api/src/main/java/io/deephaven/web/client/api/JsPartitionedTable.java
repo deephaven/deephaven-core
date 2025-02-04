@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -68,6 +68,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public JsPartitionedTable(WorkerConnection connection, JsWidget widget) {
         this.connection = connection;
         this.widget = widget;
+    }
+
+    @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
     }
 
     @JsIgnore
