@@ -56,6 +56,7 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
+_JNaturalJoinType = jpy.get_type("io.deephaven.api.NaturalJoinType")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
@@ -102,6 +103,20 @@ class SearchDisplayMode(Enum):
     HIDE = _JSearchDisplayMode.Hide
     """Hide the search bar, regardless of user or system settings."""
 
+class NaturalJoinType(Enum):
+    """An Enum defining ways to handle duplicate right hand table values during natural join operations"""
+
+    ERROR_ON_DUPLICATE = _JNaturalJoinType.ERROR_ON_DUPLICATE
+    """Throw an error if a duplicate right hand table row is found. This is the default behavior if not specified"""
+
+    FIRST_MATCH = _JNaturalJoinType.FIRST_MATCH
+    """Match the first right hand table row and ignore later duplicates"""
+
+    LAST_MATCH = _JNaturalJoinType.LAST_MATCH
+    """Match the last right hand table row and ignore earlier duplicates"""
+
+    EXACTLY_ONE_MATCH = _JNaturalJoinType.EXACTLY_ONE_MATCH
+    """Match exactly one right hand table row; throw an error if there are zero or more than one matches"""
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
@@ -583,6 +598,11 @@ class Table(JObjectWrapper):
     def is_blink(self) -> bool:
         """Whether this table is a blink table."""
         return _JBlinkTableTools.isBlink(self.j_table)
+
+    @property
+    def is_failed(self) -> bool:
+        """Whether this table is in a failure state and is no longer usable."""
+        return self.j_table.isFailed()
 
     @cached_property
     def update_graph(self) -> UpdateGraph:
@@ -1357,7 +1377,8 @@ class Table(JObjectWrapper):
     # region Join
 
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
-                     joins: Union[str, Sequence[str]] = None) -> Table:
+                     joins: Union[str, Sequence[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Table:
         """The natural_join method creates a new table containing all the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
@@ -1369,6 +1390,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            joinType (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
             a new table
@@ -1383,12 +1406,12 @@ class Table(JObjectWrapper):
                 if joins:
                     return Table(
                         j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), ",".join(joins)
+                            table.j_table, ",".join(on), ",".join(joins), type.value
                         )
                     )
                 else:
                     return Table(
-                        j_table=self.j_table.naturalJoin(table.j_table, ",".join(on))
+                        j_table=self.j_table.naturalJoin(table.j_table, ",".join(on), type.value)
                     )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e

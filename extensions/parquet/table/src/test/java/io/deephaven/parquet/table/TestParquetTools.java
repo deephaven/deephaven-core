@@ -7,13 +7,19 @@ import com.google.common.io.BaseEncoding;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.sources.ByteArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -273,6 +279,24 @@ public class TestParquetTools {
                 ParquetInstructions.EMPTY.withTableDefinition(nullTable.getDefinition()));
         final Table result = ParquetTools.readTable(dest.getPath());
         assertTableEquals(nullTable, result);
+        result.close();
+    }
+
+    @Test
+    public void testWriteBooleanValues() {
+        TrackingRowSet rowSet = RowSetFactory.fromRange(0, 499).toTracking();
+        ByteArraySource source = new ByteArraySource();
+        source.ensureCapacity(rowSet.size(), false);
+        rowSet.forAllRowKeys(i -> {
+            source.set(i, (byte) i);
+        });
+        ColumnSource<Boolean> column = ReinterpretUtils.byteToBooleanSource(source);
+        Map<String, ? extends ColumnSource<?>> columns = Map.of("Bool", column);
+        QueryTable table = new QueryTable(rowSet, columns);
+        final File dest = new File(testRoot + File.separator + "boolean.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        final Table result = ParquetTools.readTable(dest.getPath());
+        assertTableEquals(table, result);
         result.close();
     }
 
@@ -1093,9 +1117,10 @@ public class TestParquetTools {
             // notice this earlier on.
             try {
                 table.select();
-                failBecauseExceptionWasNotThrown(IllegalStateException.class);
-            } catch (IllegalArgumentException e) {
-                assertThat(e).hasMessageContaining(
+                failBecauseExceptionWasNotThrown(TableDataException.class);
+            } catch (TableDataException e) {
+                assertThat(e).hasCauseInstanceOf(IllegalArgumentException.class);
+                assertThat(e.getCause()).hasMessageContaining(
                         "Parquet columns can't be unambigously mapped. Bar -> 31337 has multiple paths [Foo], [Bar]");
             }
         }

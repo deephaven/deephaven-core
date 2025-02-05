@@ -255,7 +255,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Perform an natural-join with the {@code rightTable}.
+     * Perform a natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
+     * {@link NaturalJoinType#ERROR_ON_DUPLICATE ERROR_ON_DUPLICATE}.
      *
      * <p>
      * Delegates to {@link #naturalJoin(Object, Collection, Collection)}.
@@ -276,6 +277,21 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param rightTable The right side table on the join.
      * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
      *        "columnFoundInBoth")
+     * @param joinType The {@link NaturalJoinType type} of join to perform
+     * @return the natural-joined table
+     */
+    TOPS naturalJoin(TABLE rightTable, String columnsToMatch, NaturalJoinType joinType);
+
+    /**
+     * Perform a natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
+     * {@link NaturalJoinType#ERROR_ON_DUPLICATE ERROR_ON_DUPLICATE}.
+     *
+     * <p>
+     * Delegates to {@link #naturalJoin(Object, Collection, Collection)}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
+     *        "columnFoundInBoth")
      * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
      * @return the natural-joined table
@@ -283,10 +299,24 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS naturalJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd);
 
     /**
-     * Perform an exact-join with the {@code rightTable}.
+     * Perform a natural-join with the {@code rightTable}.
      *
      * <p>
-     * Requires zero or one match from the {@code rightTable}.
+     * Delegates to {@link #naturalJoin(Object, Collection, Collection, NaturalJoinType)}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
+     *        "columnFoundInBoth")
+     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
+     *        side as a result of the match.
+     * @param joinType The {@link NaturalJoinType type} of join to perform
+     * @return the natural-joined table
+     */
+    TOPS naturalJoin(TABLE rightTable, String columnsToMatch, String columnsToAdd, NaturalJoinType joinType);
+
+    /**
+     * Perform a natural-join with the {@code rightTable} with {@link NaturalJoinType} defaulting to
+     * {@link NaturalJoinType#ERROR_ON_DUPLICATE ERROR_ON_DUPLICATE}.
      *
      * @param rightTable The right side table on the join.
      * @param columnsToMatch The match pair conditions.
@@ -296,6 +326,19 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      */
     TOPS naturalJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd);
+
+    /**
+     * Perform a natural-join with the {@code rightTable}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch The match pair conditions.
+     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
+     *        match.
+     * @param joinType The {@link NaturalJoinType type} of join to perform
+     * @return the natural-joined table
+     */
+    TOPS naturalJoin(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, NaturalJoinType joinType);
 
     // -------------------------------------------------------------------------------------------
 

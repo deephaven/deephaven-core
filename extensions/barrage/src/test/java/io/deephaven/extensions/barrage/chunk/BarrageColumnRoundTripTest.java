@@ -141,6 +141,35 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
+        for (final BarrageSubscriptionOptions opts : options) {
+            testRoundTripSerialization(opts, boolean.class, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, (byte) i);
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); ++i) {
+                        Boolean origBoolean = BooleanUtils.byteAsBoolean(original.get(i));
+                        Boolean computedBoolean = BooleanUtils.byteAsBoolean(computed.get(offset + i));
+                        Assert.nullSafeEquals(origBoolean, "origBoolean", computedBoolean, "computedBoolean");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        Boolean origBoolean = BooleanUtils.byteAsBoolean(original.get((int) key));
+                        Boolean computedBoolean =
+                                BooleanUtils.byteAsBoolean(computed.get(offset + off.getAndIncrement()));
+                        Assert.nullSafeEquals(origBoolean, "origBoolean", computedBoolean, "computedBoolean");
+                    });
+                }
+            });
+        }
+    }
+
     public void testByteChunkSerialization() throws IOException {
         final Random random = new Random(0);
         for (final BarrageSubscriptionOptions opts : options) {

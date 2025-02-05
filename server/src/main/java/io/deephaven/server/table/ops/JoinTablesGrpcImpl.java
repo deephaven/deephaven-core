@@ -6,6 +6,7 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.AsOfJoinRule;
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.api.expression.ExpressionException;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
@@ -235,10 +236,29 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                     NaturalJoinTablesGrpcImpl::doJoin);
         }
 
+        public static NaturalJoinType adapt(NaturalJoinTablesRequest.JoinType joinType) {
+            switch (joinType) {
+                // Defaulting to ERROR_ON_DUPLICATE for unspecified join types
+                case JOIN_TYPE_NOT_SPECIFIED:
+                case ERROR_ON_DUPLICATE:
+                    return NaturalJoinType.ERROR_ON_DUPLICATE;
+                case FIRST_MATCH:
+                    return NaturalJoinType.FIRST_MATCH;
+                case LAST_MATCH:
+                    return NaturalJoinType.LAST_MATCH;
+                case EXACTLY_ONE_MATCH:
+                    return NaturalJoinType.EXACTLY_ONE_MATCH;
+                default:
+                    throw new IllegalArgumentException("Unsupported join type: " + joinType);
+            }
+        }
+
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final NaturalJoinTablesRequest request) {
-            return lhs.naturalJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd));
+            // NJ allows the user to specify a join type for handling RHS duplicates
+            return lhs.naturalJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd),
+                    adapt(request.getJoinType()));
         }
     }
 }

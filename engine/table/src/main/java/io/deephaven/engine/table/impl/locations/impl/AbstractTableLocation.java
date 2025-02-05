@@ -87,6 +87,16 @@ public abstract class AbstractTableLocation
     // TableLocationState implementation
     // ------------------------------------------------------------------------------------------------------------------
 
+    /**
+     * No-op by default, can be overridden by subclasses to initialize state on first access.
+     * <p>
+     * The expectation for static locations that override this is to call {@link #handleUpdateInternal(RowSet, long)}
+     * instead of {@link #handleUpdate(RowSet, long)}, and {@link #handleUpdateInternal(TableLocationState)} instead of
+     * {@link #handleUpdate(TableLocationState)} from inside {@link #initializeState()}. Otherwise, the initialization
+     * logic will recurse infinitely.
+     */
+    protected void initializeState() {}
+
     @Override
     @NotNull
     public final Object getStateLock() {
@@ -95,16 +105,19 @@ public abstract class AbstractTableLocation
 
     @Override
     public final RowSet getRowSet() {
+        initializeState();
         return state.getRowSet();
     }
 
     @Override
     public final long getSize() {
+        initializeState();
         return state.getSize();
     }
 
     @Override
     public final long getLastModifiedTimeMillis() {
+        initializeState();
         return state.getLastModifiedTimeMillis();
     }
 
@@ -137,6 +150,11 @@ public abstract class AbstractTableLocation
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final RowSet rowSet, final long lastModifiedTimeMillis) {
+        initializeState();
+        handleUpdateInternal(rowSet, lastModifiedTimeMillis);
+    }
+
+    protected final void handleUpdateInternal(final RowSet rowSet, final long lastModifiedTimeMillis) {
         if (state.setValues(rowSet, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
@@ -149,6 +167,11 @@ public abstract class AbstractTableLocation
      * @param source The source to copy state values from
      */
     public void handleUpdate(@NotNull final TableLocationState source) {
+        initializeState();
+        handleUpdateInternal(source);
+    }
+
+    protected final void handleUpdateInternal(@NotNull final TableLocationState source) {
         if (source.copyStateValuesTo(state) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }

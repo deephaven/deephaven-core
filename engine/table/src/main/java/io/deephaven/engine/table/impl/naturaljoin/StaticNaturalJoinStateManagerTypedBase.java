@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -46,9 +47,14 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
 
-    protected StaticNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
-        super(keySourcesForErrorMessages);
+    protected StaticNaturalJoinStateManagerTypedBase(
+            ColumnSource<?>[] tableKeySources,
+            ColumnSource<?>[] keySourcesForErrorMessages,
+            int tableSize,
+            double maximumLoadFactor,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
 
         this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
@@ -136,7 +142,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
-            buildTable(bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide);
+            buildTable(bc, rightTable.getRowSet(), rightSources,
+                    this::buildFromRightSide);
         }
     }
 
@@ -161,7 +168,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             return;
         }
         try (final ProbeContext pc = makeProbeContext(rightSources, rightTable.size())) {
-            probeTable(pc, rightTable.getRowSet(), false, rightSources, this::decorateWithRightSide);
+            probeTable(pc, rightTable.getRowSet(), false, rightSources,
+                    this::decorateWithRightSide);
         }
     }
 
@@ -229,36 +237,34 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
         return hash & (tableSize - 1);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch,
-                position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
+        return buildRowRedirection(leftTable, position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)),
+                redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
+        return buildRowRedirection(leftTable, leftRedirections::getUnsafe, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromRedirections(
             QueryTable leftTable,
-            boolean exactMatch,
             RowSet indexTableRowSet,
             LongArraySource leftRedirections,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, indexTableRowSet,
                 leftRedirections::getUnsafe, indexRowSets, redirectionType);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
             QueryTable leftTable,
-            boolean exactMatch,
             RowSet indexTableRowSet,
             IntegerArraySource leftHashSlots,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
-        return buildIndexedRowRedirection(leftTable, exactMatch, indexTableRowSet,
+        return buildIndexedRowRedirection(leftTable, indexTableRowSet,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
                 redirectionType);
     }

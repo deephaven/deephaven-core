@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
-import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
@@ -34,7 +33,6 @@ import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
@@ -57,22 +55,24 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
     private final ParquetInstructions readInstructions;
-    private final ParquetFileReader parquetFileReader;
-    private final int[] rowGroupIndices;
 
-    private final ParquetColumnResolver resolver;
+    private volatile boolean isInitialized;
 
-    private final RowGroup[] rowGroups;
-    private final RegionedPageStore.Parameters regionParameters;
-    private final Map<String, String[]> parquetColumnNameToPath;
+    // Access to all the following variables must be guarded by initialize()
+    // -----------------------------------------------------------------------
+    private ParquetColumnResolver resolver;
 
-    private final TableInfo tableInfo;
-    private final Map<String, GroupingColumnInfo> groupingColumns;
-    private final List<DataIndexInfo> dataIndexes;
-    private final Map<String, ColumnTypeInfo> columnTypes;
-    private final List<SortColumn> sortingColumns;
+    private RegionedPageStore.Parameters regionParameters;
+    private Map<String, String[]> parquetColumnNameToPath;
 
-    private final String version;
+    private TableInfo tableInfo;
+    private Map<String, GroupingColumnInfo> groupingColumns;
+    private Map<String, ColumnTypeInfo> columnTypes;
+    private List<SortColumn> sortingColumns;
+
+    private ParquetFileReader parquetFileReader;
+    private int[] rowGroupIndices;
+    // -----------------------------------------------------------------------
 
     private volatile RowGroupReader[] rowGroupReaders;
 
@@ -81,53 +81,61 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
-        final ParquetMetadata parquetMetadata;
-        // noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (tableLocationKey) {
-            // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
-            // calls
-            parquetFileReader = tableLocationKey.getFileReader();
-            parquetMetadata = tableLocationKey.getMetadata();
-            rowGroupIndices = tableLocationKey.getRowGroupIndices();
-        }
-        resolver = readInstructions.getColumnResolverFactory()
-                .map(factory -> factory.of(tableKey, tableLocationKey))
-                .orElse(null);
-        final int rowGroupCount = rowGroupIndices.length;
-        rowGroups = IntStream.of(rowGroupIndices)
-                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
-                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
-                .toArray(RowGroup[]::new);
-        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
-        regionParameters = new RegionedPageStore.Parameters(
-                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
+        this.isInitialized = false;
+    }
 
-        parquetColumnNameToPath = new HashMap<>();
-        for (String[] path : ParquetSchemaUtil.paths(parquetFileReader.getSchema())) {
-            if (path.length > 1) {
-                parquetColumnNameToPath.put(path[0], path);
+    private void initialize() {
+        if (isInitialized) {
+            return;
+        }
+        synchronized (this) {
+            if (isInitialized) {
+                return;
             }
-        }
+            final ParquetMetadata parquetMetadata;
+            final ParquetTableLocationKey tableLocationKey = getParquetKey();
+            synchronized (tableLocationKey) {
+                // Following methods are internally synchronized, we synchronize them together here to minimize
+                // lock/unlock calls
+                parquetFileReader = tableLocationKey.getFileReader();
+                parquetMetadata = tableLocationKey.getMetadata();
+                rowGroupIndices = tableLocationKey.getRowGroupIndices();
+            }
 
-        // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
-        // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-        // Obvious issues included data index table paths, codecs, etc.
-        // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
-        tableInfo = ParquetSchemaReader
-                .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
-                .orElse(TableInfo.builder().build());
-        version = tableInfo.version();
-        groupingColumns = tableInfo.groupingColumnMap();
-        dataIndexes = tableInfo.dataIndexes();
-        columnTypes = tableInfo.columnTypeMap();
-        sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            resolver = readInstructions.getColumnResolverFactory()
+                    .map(factory -> factory.of(getTableKey(), tableLocationKey))
+                    .orElse(null);
+            final int rowGroupCount = rowGroupIndices.length;
+            final RowGroup[] rowGroups = IntStream.of(rowGroupIndices)
+                    .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
+                    .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
+                    .toArray(RowGroup[]::new);
+            final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
+            regionParameters = new RegionedPageStore.Parameters(
+                    RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
-        if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
-            // We do not have the last modified time for non-file URIs
-            handleUpdate(computeIndex(), TableLocationState.NULL_TIME);
-        } else {
-            handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
+            parquetColumnNameToPath = new HashMap<>();
+            for (String[] path : ParquetSchemaUtil.paths(parquetFileReader.getSchema())) {
+                if (path.length > 1) {
+                    parquetColumnNameToPath.put(path[0], path);
+                }
+            }
+
+            tableInfo = ParquetSchemaReader
+                    .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData())
+                    .orElse(TableInfo.builder().build());
+            groupingColumns = tableInfo.groupingColumnMap();
+            columnTypes = tableInfo.columnTypeMap();
+            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+
+            if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
+                // We do not have the last modified time for non-file URIs
+                handleUpdateInternal(computeRowSet(rowGroups), TableLocationState.NULL_TIME);
+            } else {
+                handleUpdateInternal(computeRowSet(rowGroups), new File(tableLocationKey.getURI()).lastModified());
+            }
+
+            isInitialized = true;
         }
     }
 
@@ -147,19 +155,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return readInstructions;
     }
 
-    SeekableChannelsProvider getChannelProvider() {
-        return parquetFileReader.getChannelsProvider();
-    }
-
     RegionedPageStore.Parameters getRegionParameters() {
+        initialize();
         return regionParameters;
     }
 
     public Map<String, ColumnTypeInfo> getColumnTypes() {
+        initialize();
         return columnTypes;
     }
 
-    private RowGroupReader[] getRowGroupReaders() {
+    RowGroupReader[] getRowGroupReaders() {
         RowGroupReader[] local;
         if ((local = rowGroupReaders) != null) {
             return local;
@@ -168,33 +174,42 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if ((local = rowGroupReaders) != null) {
                 return local;
             }
-            return rowGroupReaders = IntStream.of(rowGroupIndices)
-                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, version))
+            initialize();
+            local = IntStream.of(rowGroupIndices)
+                    .mapToObj(idx -> parquetFileReader.getRowGroup(idx, tableInfo.version()))
                     .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
                     .toArray(RowGroupReader[]::new);
+
+            // We don't need these anymore
+            parquetFileReader = null;
+            rowGroupIndices = null;
+
+            rowGroupReaders = local;
+            return local;
         }
     }
 
     @Override
     @NotNull
     public List<SortColumn> getSortedColumns() {
+        initialize();
         return sortingColumns;
+    }
+
+    @Override
+    protected final void initializeState() {
+        initialize();
     }
 
     @Override
     @NotNull
     protected ColumnLocation makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
-        final List<String> columnPath = getColumnPath(columnName, parquetColumnName);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
-                .toArray(ColumnChunkReader[]::new);
-        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
-        return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-                exists ? columnChunkReaders : null);
+        return new ParquetColumnLocation<>(this, columnName, parquetColumnName);
     }
 
-    private List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
+    List<String> getColumnPath(@NotNull String columnName, String parquetColumnNameOrDefault) {
+        initialize();
         if (resolver != null) {
             // empty list will result in exists=false
             return resolver.of(columnName).orElse(List.of());
@@ -206,7 +221,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 : Collections.unmodifiableList(Arrays.asList(columnPath));
     }
 
-    private RowSet computeIndex() {
+    private RowSet computeRowSet(@NotNull final RowGroup[] rowGroups) {
         final RowSetBuilderSequential sequentialBuilder = RowSetFactory.builderSequential();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
@@ -225,12 +240,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @NotNull
     public List<String[]> getDataIndexColumns() {
-        if (dataIndexes.isEmpty() && groupingColumns.isEmpty()) {
+        initialize();
+        if (tableInfo.dataIndexes().isEmpty() && groupingColumns.isEmpty()) {
             return List.of();
         }
-        final List<String[]> dataIndexColumns = new ArrayList<>(dataIndexes.size() + groupingColumns.size());
+        final List<String[]> dataIndexColumns =
+                new ArrayList<>(tableInfo.dataIndexes().size() + groupingColumns.size());
         // Add the data indexes to the list
-        dataIndexes.stream().map(di -> di.columns().toArray(String[]::new)).forEach(dataIndexColumns::add);
+        tableInfo.dataIndexes().stream()
+                .map(di -> di.columns().toArray(String[]::new))
+                .forEach(dataIndexColumns::add);
         // Add grouping columns to the list
         groupingColumns.keySet().stream().map(colName -> new String[] {colName}).forEach(dataIndexColumns::add);
         return dataIndexColumns;
@@ -238,20 +257,18 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
+        initialize();
         // Check if the column name matches any of the grouping columns
         if (columns.length == 1 && groupingColumns.containsKey(columns[0])) {
             // Validate the index file exists (without loading and parsing it)
-            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), tableInfo, columns);
+            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), columns);
             return metadata != null && parquetFileExists(metadata.fileURI);
         }
         // Check if the column names match any of the data indexes
-        for (final DataIndexInfo dataIndex : dataIndexes) {
+        for (final DataIndexInfo dataIndex : tableInfo.dataIndexes()) {
             if (dataIndex.matchesColumns(columns)) {
                 // Validate the index file exists (without loading and parsing it)
-                final IndexFileMetadata metadata = getIndexFileMetadata(
-                        getParquetKey().getURI(),
-                        tableInfo,
-                        columns);
+                final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), columns);
                 return metadata != null && parquetFileExists(metadata.fileURI);
             }
         }
@@ -266,10 +283,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
-        if (tableInfo == null) {
-            return null;
-        }
-        final IndexFileMetadata indexFileMetaData = getIndexFileMetadata(getParquetKey().getURI(), tableInfo, columns);
+        initialize();
+        final IndexFileMetadata indexFileMetaData = getIndexFileMetadata(getParquetKey().getURI(), columns);
         if (indexFileMetaData == null) {
             throw new TableDataException(
                     String.format(
@@ -315,13 +330,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
-    private static IndexFileMetadata getIndexFileMetadata(
+    private IndexFileMetadata getIndexFileMetadata(
             @NotNull final URI parentFileURI,
-            @NotNull final TableInfo info,
             @NotNull final String... keyColumnNames) {
         if (keyColumnNames.length == 1) {
             // If there's only one key column, there might be (legacy) grouping info
-            final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
+            final GroupingColumnInfo groupingColumnInfo = groupingColumns.get(keyColumnNames[0]);
             if (groupingColumnInfo != null) {
                 return new IndexFileMetadata(
                         makeRelativeURI(parentFileURI, groupingColumnInfo.groupingTablePath()),
@@ -332,7 +346,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
         // DataIndex.
-        final DataIndexInfo dataIndexInfo = info.dataIndexes().stream()
+        final DataIndexInfo dataIndexInfo = tableInfo.dataIndexes().stream()
                 .filter(item -> item.matchesColumns(keyColumnNames))
                 .findFirst()
                 .orElse(null);
