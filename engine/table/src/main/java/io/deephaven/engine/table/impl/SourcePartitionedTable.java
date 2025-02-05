@@ -3,10 +3,10 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.LiveSupplier;
-import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -15,6 +15,9 @@ import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
+import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
@@ -22,8 +25,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
-import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
-import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,6 +40,8 @@ import java.util.stream.Stream;
  */
 public class SourcePartitionedTable extends PartitionedTableImpl {
 
+    private static final String STATE_COLUMN_NAME = "LocationState";
+    private static final String EXISTS_COLUMN_NAME = "LocationExists";
     private static final String KEY_COLUMN_NAME = "TableLocationKey";
     private static final String CONSTITUENT_COLUMN_NAME = "LocationTable";
 
@@ -101,7 +104,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 refreshLocations,
                 refreshSizes,
                 locationKeyMatcher,
-                preCheckExistence).result(),
+                preCheckExistence).activateAndGetResult(),
                 Set.of(KEY_COLUMN_NAME),
                 true,
                 CONSTITUENT_COLUMN_NAME,
@@ -110,7 +113,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 false);
     }
 
-    private static final class UnderlyingTableMaintainer extends ReferenceCountedLivenessNode
+    private static class UnderlyingTableMaintainer
+            extends ReferenceCountedLivenessNode
             implements NotificationQueue.Dependency {
 
         private final TableDefinition constituentDefinition;
@@ -122,14 +126,11 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         private final TrackingWritableRowSet resultRows;
         private final String[] partitioningColumnNames;
         private final WritableColumnSource<?>[] resultPartitionValues;
-        private final WritableColumnSource<TableLocationKey> resultTableLocationKeys;
-        private final WritableColumnSource<Table> resultLocationTables;
+        private final WritableColumnSource<LocationState> resultLocationStates;
         private final QueryTable result;
 
         private final UpdateSourceCombiner refreshCombiner;
         private final TableLocationSubscriptionBuffer subscriptionBuffer;
-        private final IntrusiveDoublyLinkedQueue<PendingLocationState> pendingLocationStates;
-        private final IntrusiveDoublyLinkedQueue<PendingLocationState> readyLocationStates;
         @SuppressWarnings("FieldCanBeLocal") // We need to hold onto this reference for reachability purposes.
         private final Runnable processNewLocationsUpdateRoot;
 
@@ -160,22 +161,31 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             resultPartitionValues = partitioningColumns.stream()
                     .map(cd -> ArrayBackedColumnSource.getMemoryColumnSource(cd.getDataType(), cd.getComponentType()))
                     .toArray(WritableColumnSource[]::new);
-            resultTableLocationKeys = ArrayBackedColumnSource.getMemoryColumnSource(TableLocationKey.class, null);
-            resultLocationTables = ArrayBackedColumnSource.getMemoryColumnSource(Table.class, null);
+            resultLocationStates = ArrayBackedColumnSource.getMemoryColumnSource(LocationState.class, null);
 
-            final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(partitioningColumns.size() + 2);
+            final List<Selectable> resultColumns = new ArrayList<>(partitioningColumns.size() + 2);
+            final Map<String, ColumnSource<?>> rawResultSources = new LinkedHashMap<>(partitioningColumns.size() + 2);
             for (int pci = 0; pci < partitioningColumns.size(); ++pci) {
-                resultSources.put(partitioningColumnNames[pci], resultPartitionValues[pci]);
+                resultColumns.add(new SourceColumn(partitioningColumnNames[pci]));
+                rawResultSources.put(partitioningColumnNames[pci], resultPartitionValues[pci]);
             }
-            resultSources.put(KEY_COLUMN_NAME, resultTableLocationKeys);
-            resultSources.put(CONSTITUENT_COLUMN_NAME, resultLocationTables);
-            result = new QueryTable(resultRows, resultSources);
+            resultColumns.add(new FunctionalColumn<>(
+                    STATE_COLUMN_NAME, LocationState.class,
+                    KEY_COLUMN_NAME, TableLocationKey.class, null,
+                    LocationState::key));
+            resultColumns.add(new FunctionalColumn<>(
+                    STATE_COLUMN_NAME, LocationState.class,
+                    CONSTITUENT_COLUMN_NAME, Table.class, null,
+                    LocationState::table));
+            rawResultSources.put(STATE_COLUMN_NAME, resultLocationStates);
+
+            final QueryTable rawResult = new QueryTable(resultRows, rawResultSources);
 
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {
-                result.setRefreshing(true);
-                refreshCombiner = new UpdateSourceCombiner(result.getUpdateGraph());
-                result.addParentReference(this);
+                rawResult.setRefreshing(true);
+                refreshCombiner = new UpdateSourceCombiner(rawResult.getUpdateGraph());
+                rawResult.addParentReference(this);
                 manage(refreshCombiner);
             } else {
                 refreshCombiner = null;
@@ -183,22 +193,15 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (needToRefreshLocations) {
                 Arrays.stream(resultPartitionValues).forEach(ColumnSource::startTrackingPrevValues);
-                resultTableLocationKeys.startTrackingPrevValues();
-                resultLocationTables.startTrackingPrevValues();
+                resultLocationStates.startTrackingPrevValues();
 
                 subscriptionBuffer = new TableLocationSubscriptionBuffer(tableLocationProvider);
                 manage(subscriptionBuffer);
 
-                pendingLocationStates = preCheckExistence
-                        ? new IntrusiveDoublyLinkedQueue<>(
-                                IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance())
-                        : null;
-                readyLocationStates = new IntrusiveDoublyLinkedQueue<>(
-                        IntrusiveDoublyLinkedNode.Adapter.<PendingLocationState>getInstance());
                 processNewLocationsUpdateRoot = new InstrumentedTableUpdateSource(
-                        result,
+                        rawResult,
                         SourcePartitionedTable.class.getSimpleName() + '[' + tableLocationProvider + ']'
-                                + "-processPendingLocations") {
+                                + "-processBufferedLocationChanges") {
                     @Override
                     protected void instrumentedRefresh() {
                         processBufferedLocationChanges(true);
@@ -208,7 +211,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
                 this.removedLocationsCommitter = new UpdateCommitter<>(
                         this,
-                        result.getUpdateGraph(),
+                        rawResult.getUpdateGraph(),
                         ignored -> {
                             Assert.neqNull(removedConstituents, "removedConstituents");
                             result.unmanage(removedConstituents.stream());
@@ -217,8 +220,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 processBufferedLocationChanges(false);
             } else {
                 subscriptionBuffer = null;
-                pendingLocationStates = null;
-                readyLocationStates = null;
                 processNewLocationsUpdateRoot = null;
                 removedLocationsCommitter = null;
                 tableLocationProvider.refresh();
@@ -241,16 +242,28 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 }
             }
 
+            final Table filteredResult;
+            if (preCheckExistence) {
+                final List<Selectable> existenceColumns = List.of(new FunctionalColumn<>(
+                        STATE_COLUMN_NAME, LocationState.class,
+                        EXISTS_COLUMN_NAME, Boolean.class, null,
+                        LocationState::exists));
+                final Filter existsFilter = new MatchFilter(MatchFilter.MatchType.Regular, EXISTS_COLUMN_NAME, true);
+                filteredResult = rawResult.updateView(existenceColumns).where(existsFilter);
+            } else {
+                filteredResult = rawResult;
+            }
+            result = (QueryTable) filteredResult.view(resultColumns);
+        }
+
+        private QueryTable activateAndGetResult() {
             if (refreshCombiner != null) {
                 refreshCombiner.install();
             }
-        }
-
-        private QueryTable result() {
             return result;
         }
 
-        private RowSet sortAndAddLocations(@NotNull final Stream<TableLocation> locations) {
+        private RowSet sortAndAddLocations(@NotNull final Stream<ImmutableTableLocationKey> locationKeys) {
             final long initialLastRowKey = resultRows.lastRowKey();
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
             // Note that makeConstituentTable expects us to subsequently unmanage the TableLocations
@@ -262,8 +275,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                             constituentRowKey);
                 }
 
-                resultTableLocationKeys.ensureCapacity(constituentRowKey + 1);
-                resultTableLocationKeys.set(constituentRowKey, tl.getKey());
+                resultLocationStates.ensureCapacity(constituentRowKey + 1);
+                resultLocationStates.set(constituentRowKey, tl.getKey());
 
                 resultLocationTables.ensureCapacity(constituentRowKey + 1);
                 final Table constituentTable = makeConstituentTable(tl);
@@ -312,7 +325,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final RowSet added;
 
             try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
-                    subscriptionBuffer.processPending()) {
+                         subscriptionBuffer.processPending()) {
                 if (locationUpdate == null) {
                     removed = null;
                 } else {
@@ -351,13 +364,13 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private void processAdditions(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate) {
-            final Stream<PendingLocationState> newPendingLocations =
+            final Stream<LocationState> newPendingLocations =
                     locationUpdate.getPendingAddedLocationKeys().stream()
                             .map(LiveSupplier::get)
                             .filter(locationKeyMatcher)
                             .map(tableLocationProvider::getTableLocation)
                             .peek(this::manage)
-                            .map(PendingLocationState::new);
+                            .map(LocationState::new);
             if (pendingLocationStates != null) {
                 newPendingLocations.forEach(pendingLocationStates::offer);
             } else {
@@ -370,8 +383,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 return;
             }
 
-            for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
-                final PendingLocationState pendingLocationState = iter.next();
+            for (final Iterator<LocationState> iter = pendingLocationStates.iterator(); iter.hasNext(); ) {
+                final LocationState pendingLocationState = iter.next();
                 if (pendingLocationState.exists()) {
                     iter.remove();
                     readyLocationStates.offer(pendingLocationState);
@@ -384,7 +397,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 return null;
             }
 
-            final RowSet added = sortAndAddLocations(readyLocationStates.stream().map(PendingLocationState::release));
+            final RowSet added = sortAndAddLocations(readyLocationStates.stream().map(LocationState::release));
             readyLocationStates.clearFast();
             return added;
         }
@@ -404,8 +417,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             // Iterate through the pending locations and remove any that are in the removed set.
             if (pendingLocationStates != null) {
                 List<LivenessReferent> toUnmanage = null;
-                for (final Iterator<PendingLocationState> iter = pendingLocationStates.iterator(); iter.hasNext();) {
-                    final PendingLocationState pendingLocationState = iter.next();
+                for (final Iterator<LocationState> iter = pendingLocationStates.iterator(); iter.hasNext(); ) {
+                    final LocationState pendingLocationState = iter.next();
                     if (relevantRemovedLocations.contains(pendingLocationState.location.getKey())) {
                         iter.remove();
                         // Release the state and plan to unmanage the location
@@ -475,41 +488,89 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
             return refreshCombiner.getUpdateGraph();
         }
-    }
 
-    private static final class PendingLocationState extends IntrusiveDoublyLinkedNode.Impl<PendingLocationState> {
+        private final class LocationState implements LivenessNode, TableLocationProvider {
 
-        private final TableLocation location;
-        private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
+            private final LiveSupplier<ImmutableTableLocationKey> keySupplier;
 
-        private PendingLocationState(@NotNull final TableLocation location) {
-            this.location = location;
-            subscriptionBuffer = new TableLocationUpdateSubscriptionBuffer(location);
-        }
+            private volatile TableLocation location;
+            private volatile TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
+            private volatile Table table;
 
-        /**
-         * Test if the pending location is ready for inclusion in the result table. This means it must have non-null,
-         * non-zero size. We expect that this means the location will be immediately included in the resulting table's
-         * {@link ColumnSourceManager}, which is a
-         * {@link io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager} in all cases.
-         *
-         * @return Whether this location exists for purposes of inclusion in the result table
-         */
-        private boolean exists() {
-            subscriptionBuffer.processPending();
-            final long localSize = location.getSize();
-            // noinspection ConditionCoveredByFurtherCondition
-            return localSize != TableLocationState.NULL_SIZE && localSize > 0;
-        }
+            private LocationState(@NotNull final LiveSupplier<ImmutableTableLocationKey> keySupplier) {
+                this.keySupplier = keySupplier;
+                keySupplier.retainReference();
+            }
 
-        /**
-         * Get rid of the underlying subscription in this state, and return the location.
-         *
-         * @return The location
-         */
-        private TableLocation release() {
-            subscriptionBuffer.reset();
-            return location;
+            private TableLocationKey key() {
+                return keySupplier.get();
+            }
+
+            private TableLocation location() {
+                // We do not manage the location. It is sufficient for our purposes to manage the key supplier, because
+                // that keeps the location available from the source provider.
+                TableLocation localLocation;
+                if ((localLocation = location) == null) {
+                    synchronized (this) {
+                        if ((localLocation = location) == null) {
+                            location = localLocation = tableLocationProvider.getTableLocation(key());
+                        }
+                    }
+                }
+                return localLocation;
+            }
+
+            private TableLocationUpdateSubscriptionBuffer subscriptionBuffer() {
+                TableLocationUpdateSubscriptionBuffer localSubscriptionBuffer;
+                if ((localSubscriptionBuffer = subscriptionBuffer) == null) {
+                    final TableLocation localLocation = location();
+                    synchronized (this) {
+                        if ((localSubscriptionBuffer = subscriptionBuffer) == null) {
+                            subscriptionBuffer = localSubscriptionBuffer =
+                                    new TableLocationUpdateSubscriptionBuffer(localLocation);
+                        }
+                    }
+                }
+                return localSubscriptionBuffer;
+            }
+
+            /**
+             * Test if the pending location is ready for inclusion in the result table. This means it must have non-null,
+             * non-zero size. We expect that this means the location will be immediately included in the resulting table's
+             * {@link ColumnSourceManager}, which is a
+             * {@link io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager} in all cases.
+             *
+             * @return Whether this location exists for purposes of inclusion in the result table
+             */
+            private boolean exists() {
+                subscriptionBuffer().processPending();
+                final long localSize = location().getSize();
+                // noinspection ConditionCoveredByFurtherCondition
+                return localSize != TableLocationState.NULL_SIZE && localSize > 0;
+            }
+
+            private Table table() {
+                Table localTable;
+                if ((localTable = table) == null) {
+                    final TableLocation localLocation = location();
+                    synchronized (this) {
+                        if ((localTable = table) == null) {
+                            table = localTable = makeConstituentTable(localLocation);
+                        }
+                    }
+                }
+                return localTable;
+            }
+
+            /**
+             * Get rid of the underlying subscription in this state, and return the location.
+             *
+             * @return The location
+             */
+            private TableLocation release() {
+                subscriptionBuffer.reset();
+                return location;
+            }
         }
     }
 }
