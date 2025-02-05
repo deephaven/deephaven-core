@@ -291,6 +291,57 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
+    void appendWithWrongDefinition() {
+        final Table source = TableTools.emptyTable(10)
+                .update("dateCol = java.time.LocalDate.now()",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Try to build a writer with an unknown column
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("instantCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column instantCol not found in the schema");
+        }
+
+        // Try to build a writer with incorrect type
+        try {
+            tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("dateCol", Type.instantType())))
+                    .build());
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Column dateCol has type class java.time.Instant in table " +
+                    "definition but type date in Iceberg schema");
+        }
+
+        // Try to write a table with the correct type
+        final Table appendTableWithIncorrectType = TableTools.emptyTable(5)
+                .update("dateCol = java.time.Instant.now()");
+
+        try {
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(appendTableWithIncorrectType)
+                    .build());
+            failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+        } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+            assertThat(e).hasMessageContaining("this dataType 'class java.time.LocalDate' does not match " +
+                    "other dataType 'class java.time.Instant'");
+        }
+    }
+
+    @Test
     void appendToCatalogTableWithAllDataTypesTest() {
         final Schema schema = new Schema(
                 Types.NestedField.required(1, "booleanCol", Types.BooleanType.get()),
