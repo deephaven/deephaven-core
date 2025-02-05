@@ -13,6 +13,7 @@ import java.util.Collections;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ByteChunk;
@@ -23,7 +24,6 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
 public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // region extra-fields
@@ -46,7 +46,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             byte val = booleanValueChunk.get(pos);
-            if(val != NULL_BOOLEAN_AS_BYTE) {
+            if(!BooleanUtils.isNull(val)) {
                 curVal = val;
             }
         }
@@ -80,7 +80,7 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // region extra-methods
     @Override
     protected byte getNullValue() {
-        return NULL_BOOLEAN_AS_BYTE;
+        return BooleanUtils.NULL_BOOLEAN_AS_BYTE;
     }
     @Override
     protected WritableColumnSource<Byte> makeSparseSource() {
