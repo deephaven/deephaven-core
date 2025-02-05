@@ -75,8 +75,6 @@ public class TypedHasherFactory {
                 targetLoadFactor);
     }
 
-
-
     /**
      * Produce a hasher for a NaturalJoin base class and column sources while specifying the {@link NaturalJoinType join
      * type} and whether the right hand side is add-only.
@@ -130,29 +128,8 @@ public class TypedHasherFactory {
             }
         }
 
-        final ChunkType[] chunkTypes =
-                Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
-        final String className = hasherName(hasherConfig, chunkTypes);
-
-        JavaFile javaFile = generateHasher(hasherConfig, chunkTypes, className, Optional.of(Modifier.PUBLIC));
-
-        String[] javaStrings = javaFile.toString().split("\n");
-        final String javaString =
-                Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
-
-        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(QueryCompilerRequest.builder()
-                .description("TypedHasherFactory: " + className)
-                .className(className)
-                .classBody(javaString)
-                .packageNameRoot("io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen")
-                .build());
-
-        if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
-            throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
-        }
-
         // noinspection unchecked
-        final Class<? extends T> castedClass = (Class<? extends T>) clazz;
+        final Class<? extends T> castedClass = (Class<? extends T>) generateClass(tableKeySources, hasherConfig);
 
         T retVal;
         try {
@@ -599,6 +576,25 @@ public class TypedHasherFactory {
             }
         }
 
+        // noinspection unchecked
+        final Class<? extends T> castedClass = (Class<? extends T>) generateClass(tableKeySources, hasherConfig);
+
+        T retVal;
+        try {
+            final Constructor<? extends T> constructor1 =
+                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class,
+                            double.class, double.class);
+            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
+                    targetLoadFactor);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                | NoSuchMethodException e) {
+            throw new UncheckedDeephavenException("Could not instantiate " + castedClass.getCanonicalName(), e);
+        }
+        return retVal;
+    }
+
+    @NotNull
+    private static <T> Class<?> generateClass(ColumnSource<?>[] tableKeySources, HasherConfig<T> hasherConfig) {
         final ChunkType[] chunkTypes =
                 Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);
         final String className = hasherName(hasherConfig, chunkTypes);
@@ -619,22 +615,7 @@ public class TypedHasherFactory {
         if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
         }
-
-        // noinspection unchecked
-        final Class<? extends T> castedClass = (Class<? extends T>) clazz;
-
-        T retVal;
-        try {
-            final Constructor<? extends T> constructor1 =
-                    castedClass.getDeclaredConstructor(ColumnSource[].class, ColumnSource[].class, int.class,
-                            double.class, double.class);
-            retVal = constructor1.newInstance(tableKeySources, originalKeySources, tableSize, maximumLoadFactor,
-                    targetLoadFactor);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
-                | NoSuchMethodException e) {
-            throw new UncheckedDeephavenException("Could not instantiate " + castedClass.getCanonicalName(), e);
-        }
-        return retVal;
+        return clazz;
     }
 
     @NotNull
