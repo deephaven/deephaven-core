@@ -1163,9 +1163,7 @@ public class ReplicateSourcesAndChunks {
         lines = simpleFixup(lines, "nullByRanges",
                 "block\\[indexWithinBlock\\] != NULL_BOOLEAN", "!BooleanUtils.isNull(block[indexWithinBlock])",
                 "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "setNull",
-                "blocks2\\[indexWithinBlock\\] == NULL_BOOLEAN", "BooleanUtils.isNull(blocks2[indexWithinBlock])",
-                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
                 "                    for (int jj = 0; jj < length; ++jj) {",
