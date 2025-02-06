@@ -54,6 +54,8 @@ import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.doubleCol;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -293,9 +295,9 @@ public abstract class SqliteCatalogBase {
 
     @Test
     void appendWithWrongDefinition() {
-        final Table source = TableTools.emptyTable(10)
-                .update("dateCol = java.time.LocalDate.now()",
-                        "doubleCol = (double) 2.5 * i + 10");
+        final Table source = TableTools.newTable(
+                col("dateCol", java.time.LocalDate.now()),
+                doubleCol("doubleCol", 2.5));
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
 
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
@@ -329,8 +331,8 @@ public abstract class SqliteCatalogBase {
 
         // Try to write a table with the incorrect type using a correct writer
         {
-            final Table appendTableWithIncorrectType = TableTools.emptyTable(5)
-                    .update("dateCol = java.time.Instant.now()");
+            final Table appendTableWithIncorrectType = TableTools.newTable(
+                    col("dateCol", java.time.Instant.now()));
             try {
                 tableWriter.append(IcebergWriteInstructions.builder()
                         .addTables(appendTableWithIncorrectType)
@@ -347,12 +349,9 @@ public abstract class SqliteCatalogBase {
             final IcebergTableWriter tableWriterWithSubset = tableAdapter.tableWriter(writerOptionsBuilder()
                     .tableDefinition(TableDefinition.of(ColumnDefinition.of("doubleCol", Type.doubleType())))
                     .build());
-            final Table appendTableWithAllColumns = TableTools.emptyTable(5)
-                    .update("dateCol = java.time.LocalDate.now()",
-                            "doubleCol = (double) 3.5 * i + 20");
             try {
                 tableWriterWithSubset.append(IcebergWriteInstructions.builder()
-                        .addTables(appendTableWithAllColumns)
+                        .addTables(source)
                         .build());
                 failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
             } catch (TableDefinition.IncompatibleTableDefinitionException e) {
