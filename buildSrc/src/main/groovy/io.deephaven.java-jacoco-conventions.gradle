@@ -17,7 +17,6 @@ jacocoTestReport {
     }
 }
 
-task coverage {
-    dependsOn jacocoTestReport
+project.tasks.withType(Test).configureEach { Test t ->
+    t.jacoco.enabled = (project.findProperty('coverage.enabled') == 'true')
 }
-

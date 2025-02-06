@@ -2,10 +2,8 @@ plugins {
     id 'java'
 }
 
-// Apply Jacoco instrumentation and coverage reporting 
-if (project.findProperty('coverage.enabled') == 'true') {
-    project.apply plugin: 'io.deephaven.java-jacoco-conventions'
-}
+// Apply Jacoco coverage instrumentation (This can be disabled with -Pcoverage.enabled=false)
+project.apply plugin: 'io.deephaven.java-jacoco-conventions'
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
     jar.from project.sourceSets.test.output

@@ -1,7 +1,7 @@
 plugins {
     id 'io.deephaven.project.register'
     id 'java'
-    id 'jacoco-report-aggregation'
+    id 'jacoco'
 }
 
 jacoco {
