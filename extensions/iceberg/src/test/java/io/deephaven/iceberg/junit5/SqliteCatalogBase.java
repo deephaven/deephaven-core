@@ -283,10 +283,11 @@ public abstract class SqliteCatalogBase {
             tableWriter.append(IcebergWriteInstructions.builder()
                     .addTables(appendTable)
                     .build());
-            failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
+            failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
         } catch (TableDefinition.IncompatibleTableDefinitionException e) {
             // Table definition mismatch between table writer and append table
-            assertThat(e).hasMessageContaining("Table definition");
+            assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                    "expected definition");
         }
     }
 
@@ -326,18 +327,38 @@ public abstract class SqliteCatalogBase {
                     "definition but type date in Iceberg schema");
         }
 
-        // Try to write a table with the correct type
-        final Table appendTableWithIncorrectType = TableTools.emptyTable(5)
-                .update("dateCol = java.time.Instant.now()");
+        // Try to write a table with the incorrect type using a correct writer
+        {
+            final Table appendTableWithIncorrectType = TableTools.emptyTable(5)
+                    .update("dateCol = java.time.Instant.now()");
+            try {
+                tableWriter.append(IcebergWriteInstructions.builder()
+                        .addTables(appendTableWithIncorrectType)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
+        }
 
-        try {
-            tableWriter.append(IcebergWriteInstructions.builder()
-                    .addTables(appendTableWithIncorrectType)
+        // Make a tableWriter with a proper subset of the definition, but then try to append with the full definition
+        {
+            final IcebergTableWriter tableWriterWithSubset = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("doubleCol", Type.doubleType())))
                     .build());
-            failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
-        } catch (TableDefinition.IncompatibleTableDefinitionException e) {
-            assertThat(e).hasMessageContaining("this dataType 'class java.time.LocalDate' does not match " +
-                    "other dataType 'class java.time.Instant'");
+            final Table appendTableWithAllColumns = TableTools.emptyTable(5)
+                    .update("dateCol = java.time.LocalDate.now()",
+                            "doubleCol = (double) 3.5 * i + 20");
+            try {
+                tableWriterWithSubset.append(IcebergWriteInstructions.builder()
+                        .addTables(appendTableWithAllColumns)
+                        .build());
+                failBecauseExceptionWasNotThrown(TableDefinition.IncompatibleTableDefinitionException.class);
+            } catch (TableDefinition.IncompatibleTableDefinitionException e) {
+                assertThat(e).hasMessageContaining("Actual table definition is not compatible with the " +
+                        "expected definition");
+            }
         }
     }
 

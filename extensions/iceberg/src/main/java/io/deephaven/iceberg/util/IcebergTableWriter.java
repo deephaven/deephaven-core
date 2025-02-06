@@ -305,7 +305,13 @@ public class IcebergTableWriter {
             @NotNull final Iterable<Table> tables,
             @NotNull final TableDefinition expectedDefinition) {
         for (final Table table : tables) {
-            expectedDefinition.checkMutualCompatibility(table.getDefinition());
+            try {
+                expectedDefinition.checkMutualCompatibility(table.getDefinition());
+            } catch (final Exception e) {
+                throw new TableDefinition.IncompatibleTableDefinitionException("Actual table definition is not " +
+                        "compatible with the expected definition, actual = " + table.getDefinition() + ", expected = "
+                        + expectedDefinition, e);
+            }
         }
     }
 
