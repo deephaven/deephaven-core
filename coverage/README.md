@@ -10,7 +10,7 @@ A typical run looks like the following that is run from the root of the multi-pr
 ./gradlew -Pcoverage.enabled=true testSerial
 ./gradlew -Pcoverage.enabled=true testParallel
 ./gradlew -Pcoverage.enabled=true testOutOfBand
-./gradlew -Pcoverage.enabled=true coverage
+./gradlew -Pcoverage.enabled=true jacocoTestReport
 ./gradlew -Pcoverage.enabled=true coverage-merge
 ```
 Running the second command is not contingent upon the first command succeeding. It merely collects what coverage is available.
