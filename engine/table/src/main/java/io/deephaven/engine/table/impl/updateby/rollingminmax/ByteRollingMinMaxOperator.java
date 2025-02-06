@@ -168,4 +168,7 @@ public class ByteRollingMinMaxOperator extends BaseByteUpdateByOperator {
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

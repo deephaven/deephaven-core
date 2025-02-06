@@ -168,4 +168,7 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

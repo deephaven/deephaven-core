@@ -87,9 +87,10 @@ public class ReplicateUpdateBy {
         ReplicatePrimitiveCode.floatToAllFloatingPoints(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/FloatCumSumOperator.java");
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
-                null);
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/CharCumMinMaxOperator.java",
+                exemptions);
         for (final String f : files) {
             if (f.contains("Integer")) {
                 fixupInteger(f);
@@ -141,6 +142,9 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             } else if (f.contains("Float") || f.contains("Double")) {
                 fixupFloatDoubleMinMax(f);
+            }
+            if (f.contains("Long")) {
+                augmentLongWithReinterps(f);
             }
         }
 

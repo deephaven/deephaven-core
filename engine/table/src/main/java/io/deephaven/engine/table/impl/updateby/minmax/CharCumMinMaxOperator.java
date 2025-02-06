@@ -1,31 +1,27 @@
 //
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
-// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit CharCumMinMaxOperator and run "./gradlew replicateUpdateBy" to regenerate
-//
-// @formatter:off
 package io.deephaven.engine.table.impl.updateby.minmax;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
+public class CharCumMinMaxOperator extends BaseCharUpdateByOperator {
     private final boolean isMax;
 
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseShortUpdateByOperator.Context {
-        public ShortChunk<? extends Values> shortValueChunk;
+    protected class Context extends BaseCharUpdateByOperator.Context {
+        public CharChunk<? extends Values> charValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -33,18 +29,18 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
 
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            shortValueChunk = valueChunks[0].asShortChunk();
+            charValueChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
         public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
-            final short val = shortValueChunk.get(pos);
+            final char val = charValueChunk.get(pos);
 
-            if (curVal == NULL_SHORT) {
+            if (curVal == NULL_CHAR) {
                 curVal = val;
-            } else if (val != NULL_SHORT) {
+            } else if (val != NULL_CHAR) {
                 if ((isMax && val > curVal) ||
                         (!isMax && val < curVal)) {
                     curVal = val;
@@ -53,7 +49,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
         }
     }
 
-    public ShortCumMinMaxOperator(
+    public CharCumMinMaxOperator(
             @NotNull final MatchPair pair,
             final boolean isMax
     // region extra-constructor-args
@@ -67,7 +63,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
 
     @Override
     public UpdateByOperator copy() {
-        return new ShortCumMinMaxOperator(
+        return new CharCumMinMaxOperator(
                 pair,
                 isMax
         // region extra-copy-args
