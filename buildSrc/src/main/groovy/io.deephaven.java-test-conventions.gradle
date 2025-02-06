@@ -1,11 +1,6 @@
 plugins {
     id 'java'
-}
-
-if (project.findProperty('jacoco.enabled') == 'true') {
-    // Only load if jacoco enabled; otherwise
-    // instrumentation of the code is still done.
-    project.apply plugin: 'io.deephaven.java-jacoco-conventions'
+    id 'io.deephaven.java-jacoco-conventions'
 }
 
 def testJar = project.tasks.register 'testJar', Jar, { Jar jar ->
