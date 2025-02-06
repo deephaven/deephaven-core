@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
@@ -508,9 +508,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 // Indicates a very serious failure; debateable whether we should even try to send close.
                 safeClose(call, Status.INTERNAL, new Metadata(), false);
                 throw error;
-            } finally {
-                context.detach(previous);
             }
+        } finally {
+            context.detach(previous);
         }
     }
 

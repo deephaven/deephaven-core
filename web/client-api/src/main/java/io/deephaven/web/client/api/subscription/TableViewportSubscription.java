@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -12,8 +12,8 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.config_pb.ConfigValue;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -248,7 +248,11 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
+        // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
+            if (firstRow < 0 || firstRow > lastRow) {
+                throw new IllegalArgumentException("Invalid viewport row range: " + firstRow + " to " + lastRow);
+            }
             this.firstRow = firstRow;
             this.lastRow = lastRow;
             this.columns = columns;
@@ -272,8 +276,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             isReverseViewport = false;
         }
         RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
-        this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
-                isReverseViewport);
+        try {
+            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
+                    isReverseViewport);
+        } catch (Exception e) {
+            fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
+        }
     }
 
     /**
@@ -281,7 +289,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsMethod
     public void close() {
-        if (status == Status.DONE) {
+        if (isClosed()) {
             JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
         }
         retained = false;
@@ -300,13 +308,11 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
         reconnectSubscription.remove();
 
-        if (retained || status == Status.DONE) {
+        if (retained || isClosed()) {
             // the JsTable has indicated it is no longer interested in this viewport, but other calling
             // code has retained it, keep it open for now.
             return;
         }
-
-        status = Status.DONE;
 
         super.close();
     }

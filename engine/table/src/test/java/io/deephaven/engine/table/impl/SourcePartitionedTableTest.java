@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -62,34 +62,41 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
     private QueryTable p2;
     private QueryTable p3;
     private QueryTable p4;
+    private QueryTable p5;
 
     private DependentRegistrar registrar;
     private TableBackedTableLocationProvider tlp;
 
     private SourcePartitionedTable setUpData() {
-        p1 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+        p1 = testRefreshingTable(ir(0, 3).toTracking(),
                 stringCol("Sym", "aa", "bb", "aa", "bb"),
                 intCol("intCol", 10, 20, 40, 60),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p1.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        p2 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+        p2 = testRefreshingTable(ir(0, 3).toTracking(),
                 stringCol("Sym", "cc", "dd", "cc", "dd"),
                 intCol("intCol", 100, 200, 400, 600),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p2.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        p3 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+        p3 = testRefreshingTable(ir(0, 3).toTracking(),
                 stringCol("Sym", "ee", "ff", "ee", "ff"),
                 intCol("intCol", 1000, 2000, 4000, 6000),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p3.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
-        p4 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+        p4 = testRefreshingTable(ir(0, 3).toTracking(),
                 stringCol("Sym", "gg", "hh", "gg", "hh"),
                 intCol("intCol", 10000, 20000, 40000, 60000),
                 doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
         p4.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
+        p5 = testRefreshingTable(i().toTracking(), // Initially empty
+                stringCol("Sym"),
+                intCol("intCol"),
+                doubleCol("doubleCol"));
+        p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
         registrar = new DependentRegistrar();
         tlp = new TableBackedTableLocationProvider(
@@ -182,8 +189,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         // Add a new location (p3)
         ////////////////////////////////////////////
 
-        tlp.addPending(p3);
-        tlp.refresh();
+        tlp.add(p3);
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -210,9 +216,8 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         ////////////////////////////////////////////
 
         tlks = tlp.getTableLocationKeys().stream().sorted().toArray(ImmutableTableLocationKey[]::new);
-        tlp.addPending(p4);
         tlp.removeTableLocationKey(tlks[0]);
-        tlp.refresh();
+        tlp.add(p4);
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         updateGraph.refreshSources();
@@ -240,13 +245,12 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
          */
         final TableLocation location5;
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(), true)) {
-            final QueryTable p5 = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+            final QueryTable p5 = testRefreshingTable(ir(0, 3).toTracking(),
                     stringCol("Sym", "ii", "jj", "ii", "jj"),
                     intCol("intCol", 10000, 20000, 40000, 60000),
                     doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
             p5.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-            tlp.addPending(p5);
-            tlp.refresh();
+            tlp.add(p5);
 
             updateGraph.getDelegate().startCycleForUnitTests(false);
             updateGraph.refreshSources();
@@ -409,5 +413,28 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
                 errors.stream().anyMatch(e -> FindExceptionCause.isOrCausedBy(e,
                         TableLocationRemovedException.class).isPresent()));
         getUpdateErrors().clear();
+    }
+
+    @Test
+    public void testInitiallyEmptyLocation() {
+        final SourcePartitionedTable spt = setUpData();
+        final Table ptSummary = spt.merge().selectDistinct("Sym");
+        verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+        tlp.add(p5);
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
+            // We refreshed the source first, so it won't see a new size for the location backed by p5 on this cycle.
+            addToTable(p5, ir(0, 3),
+                    stringCol("Sym", "ii", "jj", "kk", "ll"),
+                    intCol("intCol", 10000, 20000, 40000, 60000),
+                    doubleCol("doubleCol", 0.1, 0.2, 0.4, 0.6));
+        }, true);
+        verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd");
+        updateGraph.getDelegate().runWithinUnitTestCycle(() -> {
+            updateGraph.refreshSources();
+            // Now the source has been refreshed, so it should see the new size of the location backed by p5, and
+            // include it in the result.
+        }, true);
+        verifyStringColumnContents(ptSummary, "Sym", "aa", "bb", "cc", "dd", "ii", "jj", "kk", "ll");
     }
 }

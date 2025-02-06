@@ -593,6 +593,24 @@ message UpdateByRequest {
           string param_token = 4;
         }
 
+        message UpdateByRollingCountWhere {
+          // The reverse window for the rolling operation, may be in ticks or time-based.
+          UpdateByWindowScale reverse_window_scale = 1;
+          // The forward window for the rolling operation, may be in ticks or time-based.
+          UpdateByWindowScale forward_window_scale = 2;
+          // The output column name
+          string result_column = 3;
+          // The filters tp apply before counting
+          repeated string filters = 4;
+        }
+
+        message UpdateByCumulativeCountWhere {
+          // The output column name
+          string result_column = 1;
+          // The filters tp apply before counting
+          repeated string filters = 2;
+        }
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -615,6 +633,8 @@ message UpdateByRequest {
           UpdateByRollingStd rolling_std = 19;
           UpdateByRollingWAvg rolling_wavg = 20;
           UpdateByRollingFormula rolling_formula = 21;
+          UpdateByRollingCountWhere rolling_count_where = 22;
+          UpdateByCumulativeCountWhere count_where = 23;
         }
       }
 
@@ -717,11 +737,24 @@ message CrossJoinTablesRequest {
 }
 
 message NaturalJoinTablesRequest {
+  enum JoinType {
+    JOIN_TYPE_NOT_SPECIFIED = 0;
+    // Throw an error if a duplicate right hand table row is found.
+    ERROR_ON_DUPLICATE = 1;
+    // Match the first right hand table row and ignore later duplicates.
+    FIRST_MATCH = 2;
+    // Match the last right hand table row and ignore earlier duplicates.
+    LAST_MATCH = 3;
+    // Match exactly one right hand table row; throw an error if there are zero or more than one matches. Equivalent
+    // to an ExactJoinTablesRequest
+    EXACTLY_ONE_MATCH = 4;
+  }
   Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string columns_to_match = 4;
   repeated string columns_to_add = 5;
+  JoinType join_type = 6;
 }
 
 message ExactJoinTablesRequest {
@@ -1055,6 +1088,13 @@ message Aggregation {
     string column_name = 1;
   }
 
+  message AggregationCountWhere {
+    // The output column name
+    string column_name = 1;
+
+    repeated string filters = 2;
+  }
+
   message AggregationRowKey {
     string column_name = 1;
   }
@@ -1075,6 +1115,7 @@ message Aggregation {
     AggregationRowKey last_row_key = 4;
     AggregationPartition partition = 5;
     AggregationFormula formula = 6;
+    AggregationCountWhere count_where = 7;
   }
 }
 

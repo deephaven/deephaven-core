@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharacterSparseArraySource and run "./gradlew replicateSourcesAndChunks" to regenerate
@@ -844,7 +844,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
                         boolean prevRequired = false;
                         for (int jj = 0; jj < length; ++jj) {
                             final int indexWithinBlock = sIndexWithinBlock + jj;
-                            if (block[indexWithinBlock] != NULL_BOOLEAN_AS_BYTE) {
+                            if (!BooleanUtils.isNull(block[indexWithinBlock])) {
                                 prevRequired = true;
                                 break;
                             }
@@ -916,7 +916,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
                     if (hasPrev) {
 
                         final byte oldValue = block[indexWithinBlock];
-                        if (oldValue != NULL_BOOLEAN_AS_BYTE) {
+                        if (!BooleanUtils.isNull(oldValue)) {
                             if (prevBlock.getValue() == null) {
                                 prevBlock.setValue(ensurePrevBlock(firstKey, block0, block1, block2));
                                 inUse.setValue(prevInUse.get(block0).get(block1).get(block2));

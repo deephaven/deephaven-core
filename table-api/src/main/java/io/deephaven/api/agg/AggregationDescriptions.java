@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.agg;
 
@@ -63,6 +63,11 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
     @Override
     public void visit(Count count) {
         out.put(count.column().name(), "count");
+    }
+
+    @Override
+    public void visit(CountWhere countWhere) {
+        out.put(countWhere.column().name(), "countWhere " + Strings.of(countWhere.filter()));
     }
 
     @Override

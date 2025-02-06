@@ -17,7 +17,7 @@ jobs:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
         test-jvm-version: ['11', '17', '21', '23']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     concurrency:
       group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -100,13 +100,14 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
         with:
+          webhook-type: webhook-trigger
           payload: |
             {
-              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }}"
+              "slack_message": "Nightly build failure in ${{ matrix.gradle-task }} on Java ${{ matrix.test-jvm-version }} @ ${{ github.head_ref }} ${{ github.sha }}" ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit FileTableLocationKey and run "./gradlew replicateTableLocationKey" to regenerate
@@ -29,8 +29,6 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
 
     protected final URI uri;
     protected final int order;
-
-    private int cachedHashCode;
 
     /**
      * Construct a new URITableLocationKey for the supplied {@code uri} and {@code partitions}.

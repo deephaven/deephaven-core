@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.agg;
 
@@ -47,6 +47,11 @@ public class AggregationOutputs implements Aggregation.Visitor {
     @Override
     public void visit(Count count) {
         out = Stream.of(count.column());
+    }
+
+    @Override
+    public void visit(CountWhere countWhere) {
+        out = Stream.of(countWhere.column());
     }
 
     @Override

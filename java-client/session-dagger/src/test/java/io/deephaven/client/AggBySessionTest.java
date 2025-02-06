@@ -1,19 +1,11 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.client;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.Aggregation.Visitor;
-import io.deephaven.api.agg.Aggregations;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.FirstRowKey;
-import io.deephaven.api.agg.Formula;
-import io.deephaven.api.agg.LastRowKey;
-import io.deephaven.api.agg.Partition;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
@@ -166,6 +158,11 @@ public class AggBySessionTest extends TableSpecTestBase {
         @Override
         public void visit(Count count) {
             out.add(Count.of("MyCount"));
+        }
+
+        @Override
+        public void visit(CountWhere countWhwere) {
+            out.add(CountWhere.of("CountWhere", "B > 0", "I <= 5"));
         }
 
         @Override

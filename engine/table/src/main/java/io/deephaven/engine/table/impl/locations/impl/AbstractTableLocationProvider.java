@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
@@ -331,7 +331,9 @@ public abstract class AbstractTableLocationProvider
         }
         // Release the keys that were removed after we have delivered the notifications and the
         // subscribers have had a chance to process them
-        removedKeys.forEach(livenessManager::unmanage);
+        if (!removedKeys.isEmpty()) {
+            livenessManager.unmanage(removedKeys.stream());
+        }
     }
 
     /**

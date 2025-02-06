@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/utility/utility.h"
 
@@ -172,7 +172,7 @@ std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
 std::string ReadPasswordFromStdinNoEcho() {
   SetStdinEcho(false);
   std::string password;
-  std::cin >> password;
+  std::getline(std::cin, password);
   SetStdinEcho(true);
   return password;
 }

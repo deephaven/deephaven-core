@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
@@ -91,7 +91,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
                 @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
                 @NotNull final IntChunk<? extends Values> pushChunk,
                 @NotNull final IntChunk<? extends Values> popChunk,
-                final int len) {
+                final int affectedCount, int influencerCount) {
 
             setValueChunks(influencerValueChunkArr);
             setPosChunks(affectedPosChunk, influencerPosChunk);
@@ -99,7 +99,7 @@ public class BooleanRollingFormulaOperator extends BaseRollingFormulaOperator {
             int pushIndex = 0;
 
             // chunk processing
-            for (int ii = 0; ii < len; ii++) {
+            for (int ii = 0; ii < affectedCount; ii++) {
                 final int pushCount = pushChunk.get(ii);
                 final int popCount = popChunk.get(ii);
 

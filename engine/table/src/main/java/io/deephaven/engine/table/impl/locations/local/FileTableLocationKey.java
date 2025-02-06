@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.local;
 
@@ -26,8 +26,6 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
 
     protected final File file;
     private final int order;
-
-    private int cachedHashCode;
 
     /**
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.

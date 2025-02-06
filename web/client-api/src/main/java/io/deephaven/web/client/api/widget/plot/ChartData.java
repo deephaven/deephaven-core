@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -72,7 +72,7 @@ public class ChartData {
 
     private void replaceDataRange(SubscriptionTableData tableData, Range positions) {
         RangeSet keys = tableData.getFullIndex().getRange()
-                .subsetForPositions(RangeSet.ofRange(positions.getFirst(), positions.getLast()), true);
+                .subsetForPositions(RangeSet.ofRange(positions.getFirst(), positions.getLast()), false);
         // we don't touch the indexes at all, only need to walk each column and replace values in this range
         for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             Column col = table.findColumn(columnMap.getKey());

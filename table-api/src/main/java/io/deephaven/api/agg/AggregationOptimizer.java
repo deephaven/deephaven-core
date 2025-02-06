@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.agg;
 
@@ -94,6 +94,12 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     @Override
     public void visit(Count count) {
         visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count.column());
+    }
+
+    @Override
+    public void visit(CountWhere countWhere) {
+        // Supplying a `null` entry value indicates that the key is already an aggregation.
+        visitOrder.putIfAbsent(countWhere, null);
     }
 
     @Override

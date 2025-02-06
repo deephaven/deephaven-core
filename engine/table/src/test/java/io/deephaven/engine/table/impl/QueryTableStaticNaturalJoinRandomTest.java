@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -193,7 +194,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         } else {
             joined = NaturalJoinHelper.naturalJoin((QueryTable) leftJoinTable, (QueryTable) rightJoinTable,
                     MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(matchKeys)),
-                    MatchPairFactory.getExpressions("RightSentinel"), false, control);
+                    MatchPairFactory.getExpressions("RightSentinel"), NaturalJoinType.ERROR_ON_DUPLICATE, control);
         }
 
         final Table updated = updateFixup.apply(leftTable.update(updateString));

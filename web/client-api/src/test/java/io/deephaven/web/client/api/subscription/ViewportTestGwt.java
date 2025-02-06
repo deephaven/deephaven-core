@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.subscription;
 
@@ -89,6 +89,35 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(75d, viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
                     }, 2103);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testChangePendingViewport() {
+        connect(tables)
+                .then(table("staticTable"))
+                .then(table -> {
+                    delayTestFinish(5001);
+
+                    table.setViewport(0, 25, null);
+                    assertEquals(100.0, table.getSize());
+                    return Promise.resolve(table);
+                })
+                .then(table -> {
+                    assertEquals(100.0, table.getSize());
+                    table.setViewport(5, 30, null);
+                    assertEquals(100.0, table.getSize());
+                    return assertUpdateReceived(table, viewport -> {
+                        assertEquals(100.0, table.getSize());
+
+                        assertEquals(5d, viewport.getOffset());
+                        assertEquals(26, viewport.getRows().length);
+                    }, 2500);
+                })
+                .then(table -> {
+                    assertEquals(100.0, table.getSize());
+                    table.close();
+                    return null;
                 })
                 .then(this::finish).catch_(this::report);
     }

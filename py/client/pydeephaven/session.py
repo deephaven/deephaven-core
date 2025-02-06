@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 """This module implements the Session class which provides methods to connect to and interact with the Deephaven
 server."""
@@ -494,16 +494,18 @@ class Session:
         self.session_service.release(ticket)
 
     # convenience/factory methods
-    def run_script(self, script: str) -> None:
+    def run_script(self, script: str, systemic: Optional[bool] = None) -> None:
         """Runs the supplied Python script on the server.
 
         Args:
             script (str): the Python script code
+            systemic (bool): Whether to treat the code as systemically important. Defaults to None which uses the
+                    default system behavior
 
         Raises:
             DHError
         """
-        response = self.console_service.run_script(script)
+        response = self.console_service.run_script(script, systemic)
         if response.error_message != '':
             raise DHError("could not run script: " + response.error_message)
 

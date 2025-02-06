@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst;
 
@@ -254,7 +254,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(naturalJoinTable.left());
         final TABLE right = table(naturalJoinTable.right());
         addOp(naturalJoinTable,
-                left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions()));
+                left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions(),
+                        naturalJoinTable.joinType()));
         return null;
     }
 

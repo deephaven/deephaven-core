@@ -1,12 +1,11 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
 import datetime
 import typing
 import unittest
 from typing import List, Union, Tuple, Sequence, Optional
 
-import numba as nb
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -206,6 +205,7 @@ foo = Foo()
             return np.array(x) + y
 
         # Testing https://github.com/deephaven/deephaven-core/issues/4562
+        import numba as nb
         @nb.guvectorize([(nb.int32[:], nb.int32, nb.int32[:])], "(m),()->(m)", nopython=True)
         def f4562_1(x, y, res):
             res[:] = x + y
@@ -320,6 +320,15 @@ def fn(col) -> Optional[{np_dtype}]:
             return [to_j_instant("2021-01-01T00:00:00Z")]
         t = empty_table(10).update(["X1 = udf()"])
         self.assertEqual(t.columns[0].data_type, dtypes.instant_array)
+
+    def test_alternative_np_typehint(self):
+        import numpy.typing as npt
+
+        def f() -> npt.NDArray[np.int64]:
+            return np.array([1, 2], dtype=np.int64)
+
+        t = empty_table(10).update(["X1 = f()"])
+        self.assertEqual(t.columns[0].data_type, dtypes.long_array)
 
 
 if __name__ == '__main__':

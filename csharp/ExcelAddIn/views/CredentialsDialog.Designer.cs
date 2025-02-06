@@ -24,7 +24,7 @@
     /// </summary>
     private void InitializeComponent() {
       corePlusPanel = new Panel();
-      label1 = new Label();
+      operateAsLabel = new Label();
       validateCertCheckBox = new CheckBox();
       operateAsBox = new TextBox();
       passwordBox = new TextBox();
@@ -35,11 +35,12 @@
       jsonUrlLabel = new Label();
       corePanel = new Panel();
       connectionStringBox = new TextBox();
-      label2 = new Label();
+      connectionStringLabel = new Label();
       groupBox1 = new GroupBox();
       sessionTypeIsGroovyButton = new RadioButton();
       sessionTypeIsPythonButton = new RadioButton();
       finalPanel = new Panel();
+      versionLabel = new Label();
       makeDefaultCheckBox = new CheckBox();
       testResultsTextBox = new TextBox();
       testResultsLabel = new Label();
@@ -61,7 +62,7 @@
       // 
       // corePlusPanel
       // 
-      corePlusPanel.Controls.Add(label1);
+      corePlusPanel.Controls.Add(operateAsLabel);
       corePlusPanel.Controls.Add(validateCertCheckBox);
       corePlusPanel.Controls.Add(operateAsBox);
       corePlusPanel.Controls.Add(passwordBox);
@@ -76,14 +77,14 @@
       corePlusPanel.Size = new Size(1054, 299);
       corePlusPanel.TabIndex = 2;
       // 
-      // label1
+      // operateAsLabel
       // 
-      label1.AutoSize = true;
-      label1.Location = new Point(75, 183);
-      label1.Name = "label1";
-      label1.Size = new Size(96, 25);
-      label1.TabIndex = 217;
-      label1.Text = "OperateAs";
+      operateAsLabel.AutoSize = true;
+      operateAsLabel.Location = new Point(75, 183);
+      operateAsLabel.Name = "operateAsLabel";
+      operateAsLabel.Size = new Size(96, 25);
+      operateAsLabel.TabIndex = 217;
+      operateAsLabel.Text = "OperateAs";
       // 
       // validateCertCheckBox
       // 
@@ -160,7 +161,7 @@
       // corePanel
       // 
       corePanel.Controls.Add(connectionStringBox);
-      corePanel.Controls.Add(label2);
+      corePanel.Controls.Add(connectionStringLabel);
       corePanel.Controls.Add(groupBox1);
       corePanel.Dock = DockStyle.Top;
       corePanel.Location = new Point(0, 490);
@@ -176,14 +177,14 @@
       connectionStringBox.Size = new Size(795, 31);
       connectionStringBox.TabIndex = 1;
       // 
-      // label2
+      // connectionStringLabel
       // 
-      label2.AutoSize = true;
-      label2.Location = new Point(27, 23);
-      label2.Name = "label2";
-      label2.Size = new Size(153, 25);
-      label2.TabIndex = 0;
-      label2.Text = "Connection String";
+      connectionStringLabel.AutoSize = true;
+      connectionStringLabel.Location = new Point(27, 23);
+      connectionStringLabel.Name = "connectionStringLabel";
+      connectionStringLabel.Size = new Size(153, 25);
+      connectionStringLabel.TabIndex = 0;
+      connectionStringLabel.Text = "Connection String";
       // 
       // groupBox1
       // 
@@ -220,6 +221,7 @@
       // 
       // finalPanel
       // 
+      finalPanel.Controls.Add(versionLabel);
       finalPanel.Controls.Add(makeDefaultCheckBox);
       finalPanel.Controls.Add(testResultsTextBox);
       finalPanel.Controls.Add(testResultsLabel);
@@ -230,6 +232,15 @@
       finalPanel.Name = "finalPanel";
       finalPanel.Size = new Size(1054, 106);
       finalPanel.TabIndex = 4;
+      // 
+      // versionLabel
+      // 
+      versionLabel.AutoSize = true;
+      versionLabel.Location = new Point(12, 72);
+      versionLabel.Name = "versionLabel";
+      versionLabel.Size = new Size(110, 25);
+      versionLabel.TabIndex = 8;
+      versionLabel.Text = "versionLabel";
       // 
       // makeDefaultCheckBox
       // 
@@ -377,7 +388,7 @@
     private Panel corePlusPanel;
     private Panel corePanel;
     private Label jsonUrlLabel;
-    private Label label2;
+    private Label connectionStringLabel;
     private TextBox jsonUrlBox;
     private TextBox connectionStringBox;
     private Label passwordLabel;
@@ -395,6 +406,7 @@
     private RadioButton sessionTypeIsGroovyButton;
     private RadioButton sessionTypeIsPythonButton;
     private Panel connectionIdPanel;
-    private Label label1;
+    private Label operateAsLabel;
+    private Label versionLabel;
   }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.rangejoin;
 
@@ -64,6 +64,11 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
 
     @Override
     public void visit(@NotNull final Count count) {
+        hasUnsupportedAggs = true;
+    }
+
+    @Override
+    public void visit(@NotNull final CountWhere countWhere) {
         hasUnsupportedAggs = true;
     }
 

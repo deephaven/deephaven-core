@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk;
 
@@ -18,8 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
-import static io.deephaven.util.QueryConstants.*;
 
 public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Values>> {
     private static final String DEBUG_NAME = "BooleanChunkInputStreamGenerator";
@@ -60,7 +58,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
                 subset.forAllRowKeys(row -> {
-                    if (chunk.get((int) row) == NULL_BYTE) {
+                    if (BooleanUtils.isNull(chunk.get((int) row))) {
                         ++cachedNullCount;
                     }
                 });
@@ -117,7 +115,7 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
 
             if (sendValidityBuffer()) {
                 subset.forAllRowKeys(row -> {
-                    if (chunk.get((int) row) != NULL_BYTE) {
+                    if (!BooleanUtils.isNull(chunk.get((int) row))) {
                         context.accumulator |= 1L << context.count;
                     }
                     if (++context.count == 64) {
@@ -132,9 +130,9 @@ public class BooleanChunkInputStreamGenerator extends BaseChunkInputStreamGenera
 
             // write the included values
             subset.forAllRowKeys(row -> {
-                final byte byteValue = chunk.get((int) row);
-                if (byteValue != NULL_BYTE) {
-                    context.accumulator |= (byteValue > 0 ? 1L : 0L) << context.count;
+                final Boolean value = BooleanUtils.byteAsBoolean(chunk.get((int) row));
+                if (value != null) {
+                    context.accumulator |= (value ? 1L : 0L) << context.count;
                 }
                 if (++context.count == 64) {
                     flush.run();

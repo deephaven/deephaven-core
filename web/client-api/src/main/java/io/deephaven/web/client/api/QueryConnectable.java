@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -7,14 +7,17 @@ import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.client.RpcOptions;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetConsoleTypesResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.GetHeapInfoResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.StartConsoleRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.web.client.api.event.HasEventHandling;
-import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
+import io.deephaven.web.client.api.grpc.GrpcTransportFactory;
 import io.deephaven.web.client.ide.IdeSession;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
@@ -143,9 +146,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public CancellablePromise<IdeSession> startSession(String type) {
         JsLog.debug("Starting", type, "console session");
         LazyPromise<Ticket> promise = new LazyPromise<>();
-        final ClientConfiguration config = connection.get().getConfig();
-        final Ticket ticket = new Ticket();
-        ticket.setTicket(config.newTicketRaw());
+        final Tickets config = connection.get().getTickets();
+        final Ticket ticket = config.newExportTicket();
 
         final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);
@@ -246,12 +248,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     public abstract void notifyServerShutdown(TerminationNotificationResponse success);
 
-    public boolean useWebsockets() {
-        Boolean useWebsockets = getOptions().useWebsockets;
-        if (useWebsockets == null) {
-            useWebsockets = getServerUrl().startsWith("http:");
-        }
-        return useWebsockets;
+    public boolean supportsClientStreaming() {
+        return getOptions().transportFactory.getSupportsClientStreaming();
     }
 
     public <T> T createClient(BiFunction<String, Object, T> constructor) {
@@ -261,12 +259,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public RpcOptions makeRpcOptions() {
         RpcOptions options = RpcOptions.create();
         options.setDebug(getOptions().debug);
-        if (useWebsockets()) {
-            // Replace with our custom websocket impl, with fallback to the built-in one
-            options.setTransport(o -> new MultiplexedWebsocketTransport(o, () -> {
-                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
-            }));
-        }
+        options.setTransport(GrpcTransportFactory.adapt(getOptions().transportFactory));
         return options;
     }
 }

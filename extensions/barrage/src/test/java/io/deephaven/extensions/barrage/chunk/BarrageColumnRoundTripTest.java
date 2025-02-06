@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.barrage.chunk;
 
@@ -136,6 +136,35 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
                             computed.get(offset + off.getAndIncrement()),
                             "computed.get(offset + off.getAndIncrement())"));
+                }
+            });
+        }
+    }
+
+    public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
+        for (final BarrageSubscriptionOptions opts : options) {
+            testRoundTripSerialization(opts, boolean.class, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, (byte) i);
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); ++i) {
+                        Boolean origBoolean = BooleanUtils.byteAsBoolean(original.get(i));
+                        Boolean computedBoolean = BooleanUtils.byteAsBoolean(computed.get(offset + i));
+                        Assert.nullSafeEquals(origBoolean, "origBoolean", computedBoolean, "computedBoolean");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> {
+                        Boolean origBoolean = BooleanUtils.byteAsBoolean(original.get((int) key));
+                        Boolean computedBoolean =
+                                BooleanUtils.byteAsBoolean(computed.get(offset + off.getAndIncrement()));
+                        Assert.nullSafeEquals(origBoolean, "origBoolean", computedBoolean, "computedBoolean");
+                    });
                 }
             });
         }
