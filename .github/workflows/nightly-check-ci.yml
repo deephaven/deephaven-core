@@ -22,7 +22,7 @@ jobs:
       group: ${{ matrix.gradle-task }}-${{ matrix.test-jvm-version }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     env:
-      iscoverage: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
+      COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,16 +68,11 @@ jobs:
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
 
-      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}
-        if: ${{ ! env.iscoverage }}
-        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
-
-      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage
-        if: ${{ env.iscoverage }}
-        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=true
+      - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
+        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
         
       - name: Upload Coverage Results
-        if: ${{ env.iscoverage }}
+        if: ${{ env.COVER == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.gradle-task }}-results
