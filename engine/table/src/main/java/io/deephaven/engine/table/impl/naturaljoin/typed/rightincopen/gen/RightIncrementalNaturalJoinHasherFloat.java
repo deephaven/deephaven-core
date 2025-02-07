@@ -9,6 +9,7 @@ package io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen;
 
 import static io.deephaven.util.compare.FloatComparisons.eq;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
@@ -18,6 +19,7 @@ import io.deephaven.chunk.util.hashing.FloatChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
@@ -32,8 +34,8 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
 
     public RightIncrementalNaturalJoinHasherFloat(ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
-        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor);
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
+        super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, joinType, addOnly);
         this.mainKeySource0 = (ImmutableFloatArraySource) super.mainKeySources[0];
         this.mainKeySource0.ensureCapacity(tableSize);
     }
@@ -84,10 +86,32 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long rightRowKeyForState = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
-                    if (rightRowKeyForState != RowSet.NULL_ROW_KEY && rightRowKeyForState != QueryConstants.NULL_LONG) {
-                        final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                    final long rightRowKeyForState = rightRowKey.getUnsafe(tableLocation);
+                    if (rightRowKeyForState == QueryConstants.NULL_LONG) {
+                        // no matching LHS row, ignore;
+                    } else if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
+                        // we have a matching LHS row, add this new RHS row;
+                        rightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                    } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
+                        // another duplicate, add it to the list;
+                        final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
+                        rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition));
+                    } else {
+                        // we have a duplicate, how to handle it?;
+                        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                            final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                        } else if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) {
+                            // nop, we already have the first match;
+                        } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
+                            // we have a later match;
+                            rightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        } else {
+                            // create a duplicate rowset and add the new row to it;
+                            final long duplicateLocation = allocateDuplicateLocation();
+                            rightSideDuplicateRowSets.set(duplicateLocation, RowSetFactory.fromKeys(rightRowKeyForState, rowKeyChunk.get(chunkPosition)));
+                            rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
+                        }
                     }
                     break;
                 }
@@ -109,9 +133,29 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, RowSet.NULL_ROW_KEY);
-                    Assert.eq(oldRightRow, "oldRightRow", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
-                    modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    final long rightRowKeyForState = rightRowKey.getUnsafe(tableLocation);
+                    if (rightRowKeyForState <= FIRST_DUPLICATE) {
+                        // remove from the duplicate row set;
+                        final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
+                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                        final long duplicateSize = duplicates.size();
+                        final long inputKey = rowKeyChunk.get(chunkPosition);
+                        final long originalKey = removeRightRowKeyFromDuplicates(duplicates, inputKey, joinType);
+                        Assert.eq(duplicateSize, "duplicateSize", duplicates.size() + 1, "duplicates.size() + 1");
+                        if (originalKey == inputKey) {
+                            // we have a new output key for the LHS rows;;
+                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        }
+                        if (duplicates.size() == 1) {
+                            final long newKey = getRightRowKeyFromDuplicates(duplicates, joinType);;
+                            rightRowKey.set(tableLocation, newKey);
+                            freeDuplicateLocation(duplicateLocation);;
+                        }
+                    } else {
+                        Assert.eq(rightRowKeyForState, "oldRightRow", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
+                        rightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    }
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
@@ -132,12 +176,52 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
-                    if (oldRightRow != RowSet.NULL_ROW_KEY && oldRightRow != QueryConstants.NULL_LONG) {
-                        final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                    final long rightRowKeyForState = rightRowKey.getUnsafe(tableLocation);
+                    if (rightRowKeyForState == QueryConstants.NULL_LONG) {
+                        // no matching LHS row, ignore;
+                    } else if (rightRowKeyForState == RowSet.NULL_ROW_KEY) {
+                        // we have a matching LHS row, add this new RHS row;
+                        rightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    } else if (rightRowKeyForState <= FIRST_DUPLICATE) {
+                        // another duplicate, add it to the list;
+                        final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
+                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                        final long duplicateSize = duplicates.size();
+                        final long inputKey = rowKeyChunk.get(chunkPosition);
+                        final long newKey = addRightRowKeyToDuplicates(duplicates, inputKey, joinType);
+                        Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
+                        if (inputKey == newKey) {
+                            // we have a new output key for the LHS rows;
+                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        }
+                    } else {
+                        // we have a duplicate, how to handle it?;
+                        final long inputKey = rowKeyChunk.get(chunkPosition);
+                        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+                            final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                        } else if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) {
+                            final long newKey = Math.min(rightRowKeyForState, inputKey);
+                            if (newKey != rightRowKeyForState) {
+                                rightRowKey.set(tableLocation, newKey);
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            }
+                        } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
+                            final long newKey = Math.max(rightRowKeyForState, inputKey);
+                            if (newKey != rightRowKeyForState) {
+                                rightRowKey.set(tableLocation, newKey);
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            }
+                        } else {
+                            // create a duplicate rowset and add the new row to it;
+                            final long duplicateLocation = allocateDuplicateLocation();
+                            final WritableRowSet duplicates = RowSetFactory.fromKeys(rightRowKeyForState, inputKey);
+                            rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
+                            rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
+                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        }
                     }
-                    modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
@@ -159,7 +243,6 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getUnsafe(tableLocation);
-                    Assert.eq(oldRightRow, "oldRightRow", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
                     modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
                     break;
                 }
@@ -170,7 +253,8 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
     }
 
     protected void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            long shiftDelta, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            RightIncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc) {
         final FloatChunk<Values> keyChunk0 = sourceKeyChunks[0].asFloatChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -181,9 +265,24 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
-                    Assert.eq(oldRightRow + shiftDelta, "oldRightRow + shiftDelta", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
-                    modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    final long existingRightRowKey = rightRowKey.getUnsafe(tableLocation);
+                    final long keyToShift = rowKeyChunk.get(chunkPosition);
+                     if (existingRightRowKey == keyToShift - shiftDelta) {
+                        rightRowKey.set(tableLocation, keyToShift);
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    } else if (existingRightRowKey <= FIRST_DUPLICATE) {
+                        final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
+                        if (shiftDelta < 0) {
+                            final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                            shiftOneKey(duplicates, keyToShift, shiftDelta);
+                        } else {
+                            pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
+                            pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);;
+                        }
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                    } else {
+                        throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");
+                    }
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);

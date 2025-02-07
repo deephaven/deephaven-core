@@ -14,10 +14,11 @@ from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff
+from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff, NaturalJoinType
 from deephaven.filters import Filter, and_, or_
 from tests.testbase import BaseTestCase, table_equals
 
+import pandas as pd
 
 # for scoping dependent table operation tests
 def global_fn() -> str:
@@ -309,8 +310,44 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.natural_join(
                 right_table, on=["a"], joins=["RD = d", "e"]
             )
-
         self.assertTrue(cm.exception.root_cause)
+
+    def test_natural_join_output(self):
+        left_table = empty_table(10).update(formulas=["key=i", "index=i"])
+
+        # note that rhs has duplicates
+        right_table_raw = empty_table(10).update(formulas=["key=(int)(i / 2)", "index=i"])
+        right_table_first_by = right_table_raw.first_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_first_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.FIRST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = to_pandas(result_table_1)
+        df_2 = to_pandas(result_table_2)
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [0, 2, 4, 6, 8])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
+
+        right_table_last_by = right_table_raw.last_by(by="key")
+
+        result_table_1 = left_table.natural_join(right_table_last_by, on="key", joins="rhs_index=index")
+        result_table_2 = left_table.natural_join(right_table_raw, on="key", joins="rhs_index=index", type=NaturalJoinType.LAST_MATCH)
+
+        # get the tables as a local pandas dataframes
+        df_1 = to_pandas(result_table_1)
+        df_2 = to_pandas(result_table_2)
+
+        # assert the values meet expectations
+        self.assertTrue(df_1.equals(df_2))
+
+        self.assertEqual(list(df_1.loc[0: 4, "rhs_index"]), [1, 3, 5, 7, 9])
+        # the following rows have no match and should be null / NA
+        self.assertTrue(all(pd.isna(df_1.loc[5:9, "rhs_index"])))
 
     def test_exact_join(self):
         left_table = self.test_table.drop_columns(["d", "e"]).group_by('a')
@@ -593,12 +630,12 @@ class TableTestCase(BaseTestCase):
         t = time_table("PT0.1S").update("X = i % 2 == 0 ? i : i - 1").sort("X").tail(10)
         with update_graph.shared_lock(t):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
-            self.assertFalse(snapshot_hist.j_table.isFailed())
+            self.assertFalse(snapshot_hist.is_failed)
         self.wait_ticking_table_update(t, row_count=10, timeout=2)
         # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
         # to ensure snapshot_hist has had the opportunity to process the update we just saw
         with update_graph.shared_lock(t):
-            self.assertTrue(snapshot_hist.j_table.isFailed())
+            self.assertTrue(snapshot_hist.is_failed)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)

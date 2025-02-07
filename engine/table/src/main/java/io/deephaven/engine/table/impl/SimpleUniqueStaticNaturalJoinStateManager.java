@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
@@ -32,9 +33,13 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
 
     private final LongArraySource rightRowSetSource = new LongArraySource();
 
-    SimpleUniqueStaticNaturalJoinStateManager(ColumnSource<?>[] tableKeySources, int tableSize,
-            ToIntFunctor<Values> transform) {
-        super(tableKeySources);
+    SimpleUniqueStaticNaturalJoinStateManager(
+            ColumnSource<?>[] tableKeySources,
+            int tableSize,
+            ToIntFunctor<Values> transform,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(tableKeySources, joinType, addOnly);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
         this.transform = transform;
         rightRowSetSource.ensureCapacity(tableSize);
@@ -61,10 +66,14 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         return true;
                     }
                     final long existingRight = rightRowSetSource.getLong(tableLocation);
-                    if (existingRight == RowSequence.NULL_ROW_KEY) {
+                    if (existingRight == RowSequence.NULL_ROW_KEY || joinType == NaturalJoinType.LAST_MATCH) {
                         rightRowSetSource.set(tableLocation, keyIndex);
                     } else {
-                        rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                        if (joinType == NaturalJoinType.FIRST_MATCH) {
+                            // no-op, already have the first match
+                        } else {
+                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                        }
                     }
                     return true;
                 });
@@ -112,8 +121,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @NotNull
-    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch,
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable,
             LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
-        return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
+        return buildRowRedirection(leftTable, leftRedirections::getLong, redirectionType);
     }
 }

@@ -7,11 +7,12 @@ import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.NaturalJoinType;
+import io.deephaven.api.Pair;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -266,7 +267,7 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd, NaturalJoinType joinType) {
         return throwUnsupported();
     }
 

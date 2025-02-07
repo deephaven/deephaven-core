@@ -15,6 +15,7 @@ import elemental2.core.JsDate;
 import elemental2.core.TypedArray;
 import elemental2.core.Uint16Array;
 import elemental2.core.Uint8Array;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
@@ -416,15 +417,11 @@ public enum JsDataHandler {
                     }
                 }
 
-                if (boolValue != FALSE_BOOLEAN_AS_BYTE && boolValue != TRUE_BOOLEAN_AS_BYTE
-                        && boolValue != NULL_BOOLEAN_AS_BYTE) {
-                    throw new IllegalArgumentException("Can't handle " + val + " as a boolean value");
-                }
-
                 // write the value, and mark non-null if necessary
-                if (boolValue != NULL_BOOLEAN_AS_BYTE) {
+                Boolean b = BooleanUtils.byteAsBoolean(boolValue);
+                if (b != null) {
                     validity.set(i);
-                    if (boolValue == TRUE_BOOLEAN_AS_BYTE) {
+                    if (b) {
                         payload.set(i);
                     }
                 } else {

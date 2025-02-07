@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.naturaljoin.typed.rightincopen.gen;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
@@ -22,10 +23,11 @@ public class TypedHashDispatcher {
 
     public static RightIncrementalNaturalJoinStateManagerTypedBase dispatch(
             ColumnSource[] tableKeySources, ColumnSource[] originalTableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+            double maximumLoadFactor, double targetLoadFactor, NaturalJoinType joinType,
+            boolean addOnly) {
         final ChunkType[] chunkTypes = Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);;
         if (chunkTypes.length == 1) {
-            return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
         }
         return null;
     }
@@ -33,17 +35,17 @@ public class TypedHashDispatcher {
     private static RightIncrementalNaturalJoinStateManagerTypedBase dispatchSingle(
             ChunkType chunkType, ColumnSource[] tableKeySources,
             ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
+            double targetLoadFactor, NaturalJoinType joinType, boolean addOnly) {
         switch (chunkType) {
             default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType);
-            case Char: return new RightIncrementalNaturalJoinHasherChar(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Byte: return new RightIncrementalNaturalJoinHasherByte(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Short: return new RightIncrementalNaturalJoinHasherShort(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Int: return new RightIncrementalNaturalJoinHasherInt(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Long: return new RightIncrementalNaturalJoinHasherLong(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Float: return new RightIncrementalNaturalJoinHasherFloat(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Double: return new RightIncrementalNaturalJoinHasherDouble(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-            case Object: return new RightIncrementalNaturalJoinHasherObject(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+            case Char: return new RightIncrementalNaturalJoinHasherChar(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Byte: return new RightIncrementalNaturalJoinHasherByte(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Short: return new RightIncrementalNaturalJoinHasherShort(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Int: return new RightIncrementalNaturalJoinHasherInt(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Long: return new RightIncrementalNaturalJoinHasherLong(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Float: return new RightIncrementalNaturalJoinHasherFloat(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Double: return new RightIncrementalNaturalJoinHasherDouble(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
+            case Object: return new RightIncrementalNaturalJoinHasherObject(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor, joinType, addOnly);
         }
     }
 }

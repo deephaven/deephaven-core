@@ -23,6 +23,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
@@ -33,6 +34,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -86,6 +88,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
@@ -104,6 +107,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -138,6 +142,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -3653,6 +3658,111 @@ public final class ParquetTableReadWriteTest {
         // Each byte array is of half the page size. So we exceed page size on hitting 3 byteArrays.
         // Therefore, we should have total 2 pages containing 2, 1 rows respectively.
         assertEquals(columnMetadata.getEncodingStats().getNumDataPagesEncodedAs(Encoding.PLAIN), 2);
+    }
+
+    private static void verifyMakeHandleException(final Runnable throwingRunnable) {
+        try {
+            throwingRunnable.run();
+            fail("Expected UncheckedIOException");
+        } catch (final UncheckedIOException e) {
+            assertTrue(e.getMessage().contains("makeHandle encountered exception"));
+        }
+    }
+
+    private static void makeNewTableLocationAndVerifyNoException(
+            final Consumer<ParquetTableLocation> parquetTableLocationConsumer) {
+        final File dest = new File(rootFile, "real.parquet");
+        final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
+        DataIndexer.getOrCreateDataIndex(table, "A");
+        writeTable(table, dest.getPath());
+
+        final ParquetTableLocationKey newTableLocationKey =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation newTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), newTableLocationKey, EMPTY);
+
+        // The following operations should not throw exceptions
+        parquetTableLocationConsumer.accept(newTableLocation);
+        dest.delete();
+    }
+
+    @Test
+    public void testTableLocationReading() {
+        // Make a new ParquetTableLocation for a non-existent parquet file
+        final File nonExistentParquetFile = new File(rootFile, "non-existent.parquet");
+        assertFalse(nonExistentParquetFile.exists());
+        final ParquetTableLocationKey nonExistentTableLocationKey =
+                new ParquetTableLocationKey(nonExistentParquetFile.toURI(), 0, null, ParquetInstructions.EMPTY);
+        final ParquetTableLocation nonExistentTableLocation =
+                new ParquetTableLocation(StandaloneTableKey.getInstance(), nonExistentTableLocationKey, EMPTY);
+
+        // Ensure operations don't touch the file or throw exceptions
+        assertEquals(nonExistentTableLocation.getTableKey(), StandaloneTableKey.getInstance());
+        assertEquals(nonExistentTableLocation.getKey(), nonExistentTableLocationKey);
+        assertNotNull(nonExistentTableLocation.toString());
+        assertNotNull(nonExistentTableLocation.asLivenessReferent());
+        assertNotNull(nonExistentTableLocation.getStateLock());
+        nonExistentTableLocation.refresh();
+
+        // Verify that we can get a column location for a non-existent column
+        final ColumnLocation nonExistentColumnLocation = nonExistentTableLocation.getColumnLocation("A");
+        assertNotNull(nonExistentColumnLocation);
+        assertEquals("A", nonExistentColumnLocation.getName());
+        assertEquals(nonExistentTableLocation, nonExistentColumnLocation.getTableLocation());
+        assertNotNull(nonExistentColumnLocation.toString());
+        assertNotNull(nonExistentColumnLocation.getImplementationName());
+
+        // Verify that all the following operations will fail when the file does not exist and pass when it does
+        // APIs from TableLocation
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndexColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getDataIndexColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
+
+        verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
+
+        verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);
+
+        // Assuming here there will be an index on column "A"
+        verifyMakeHandleException(nonExistentTableLocation::getDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.getDataIndex("A"));
+
+        verifyMakeHandleException(nonExistentTableLocation::loadDataIndex);
+        makeNewTableLocationAndVerifyNoException(tableLocation -> tableLocation.loadDataIndex("A"));
+
+        // APIs from TableLocationState
+        verifyMakeHandleException(nonExistentTableLocation::getRowSet);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getRowSet);
+
+        verifyMakeHandleException(nonExistentTableLocation::getSize);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSize);
+
+        verifyMakeHandleException(nonExistentTableLocation::getLastModifiedTimeMillis);
+        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getLastModifiedTimeMillis);
+
+        verifyMakeHandleException(() -> nonExistentTableLocation.handleUpdate(new TrackingWritableRowSetImpl(), 0));
+
+        // APIs from ColumnLocation
+        verifyMakeHandleException(nonExistentColumnLocation::exists);
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionChar(
+                ColumnDefinition.fromGenericType("A", char.class, Character.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionByte(
+                ColumnDefinition.fromGenericType("A", byte.class, Byte.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionShort(
+                ColumnDefinition.fromGenericType("A", short.class, Short.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionInt(
+                ColumnDefinition.fromGenericType("A", int.class, Integer.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionLong(
+                ColumnDefinition.fromGenericType("A", long.class, Long.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionFloat(
+                ColumnDefinition.fromGenericType("A", float.class, Float.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionDouble(
+                ColumnDefinition.fromGenericType("A", double.class, Double.class)));
+        verifyMakeHandleException(() -> nonExistentColumnLocation.makeColumnRegionObject(
+                ColumnDefinition.fromGenericType("A", String.class, String.class)));
     }
 
     @Test
