@@ -102,7 +102,7 @@ final class BoolMixin extends Mixin<BoolValue> {
         checkStringAllowed(parser);
         if (!allowNull()) {
             final byte res = Parsing.parseStringAsByteBool(parser, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
-            if (res == BooleanUtils.NULL_BOOLEAN_AS_BYTE) {
+            if (BooleanUtils.isNull(res)) {
                 throw nullNotAllowed(parser);
             }
             return res;

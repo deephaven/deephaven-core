@@ -348,7 +348,7 @@ class TableDataServiceTestCase(BaseTestCase):
         with self.assertRaises(Exception) as cm:
             # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
             self.wait_ticking_table_update(table, 600, 3)
-        self.assertTrue(table.j_table.isFailed())
+        self.assertTrue(table.is_failed)
 
     def test_partition_size_sub_failure(self):
         pc_schema = pa.schema(
@@ -361,7 +361,7 @@ class TableDataServiceTestCase(BaseTestCase):
             # failure_cb will be called in the background thread after 2 PUG cycles, 3 seconds timeout should be enough
             self.wait_ticking_table_update(table, 600, 3)
 
-        self.assertTrue(table.j_table.isFailed())
+        self.assertTrue(table.is_failed)
 
 
 if __name__ == '__main__':

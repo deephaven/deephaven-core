@@ -168,4 +168,7 @@ public class FloatRollingMinMaxOperator extends BaseFloatUpdateByOperator {
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    // endregion extra-methods
 }

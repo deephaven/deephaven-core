@@ -170,7 +170,8 @@ class Query(TableInterface):
         """
         return super().tail(num_rows)
 
-    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
+    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Query:
         """Adds a natural-join operation to the query.
 
         Args:
@@ -179,11 +180,13 @@ class Query(TableInterface):
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            type (NaturalJoinType, optional): the action to be taken when duplicate right hand rows are
+                encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
             self
         """
-        return super().natural_join(table, on, joins)
+        return super().natural_join(table, on, joins, type)
 
     def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
         """Adds an exact-join operation to the query.

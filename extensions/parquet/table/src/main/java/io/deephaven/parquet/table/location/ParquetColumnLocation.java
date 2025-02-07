@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongFunction;
@@ -58,48 +59,70 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
+    private final String columnName;
     private final String parquetColumnName;
+
+    private volatile boolean readersInitialized;
+    private final Object readersLock;
+
+    // Access to following variables must be guarded by initializeReaders()
+    // -----------------------------------------------------------------------
     /**
-     * Factory object needed for deferred initialization of the remaining fields. Reference serves as a barrier to
-     * ensure visibility of the derived fields.
+     * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
+     * itself till we need to read the column data.
      */
-    private volatile ColumnChunkReader[] columnChunkReaders;
+    private ColumnChunkReader[] columnChunkReaders;
 
-    // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
-    private volatile PageCache<ATTR> pageCache;
+    /**
+     * Whether the column location actually exists.
+     */
+    private boolean exists;
+    // -----------------------------------------------------------------------
 
+    private volatile boolean pagesInitialized;
+    private final Object pagesLock;
+
+    // Access to following variables must be guarded by initializePages()
+    // -----------------------------------------------------------------------
     private ColumnChunkPageStore<ATTR>[] pageStores;
     private Supplier<Chunk<ATTR>>[] dictionaryChunkSuppliers;
     private ColumnChunkPageStore<DictionaryKeys>[] dictionaryKeysPageStores;
+    // -----------------------------------------------------------------------
 
     /**
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
      *
      * @param tableLocation The table location enclosing this column location
      * @param parquetColumnName The Parquet file column name
-     * @param columnChunkReaders The {@link ColumnChunkReader column chunk readers} for this location
      */
     ParquetColumnLocation(
             @NotNull final ParquetTableLocation tableLocation,
             @NotNull final String columnName,
-            @NotNull final String parquetColumnName,
-            @Nullable final ColumnChunkReader[] columnChunkReaders) {
+            @NotNull final String parquetColumnName) {
         super(tableLocation, columnName);
+        this.columnName = columnName;
         this.parquetColumnName = parquetColumnName;
-        this.columnChunkReaders = columnChunkReaders;
+        this.readersInitialized = false;
+        this.readersLock = new Object();
+        this.pagesInitialized = false;
+        this.pagesLock = new Object();
     }
 
-    private PageCache<ATTR> ensurePageCache() {
-        PageCache<ATTR> localPageCache;
-        if ((localPageCache = pageCache) != null) {
-            return localPageCache;
+    private void initializeReaders() {
+        if (readersInitialized) {
+            return;
         }
-
-        synchronized (this) {
-            if ((localPageCache = pageCache) != null) {
-                return localPageCache;
+        synchronized (readersLock) {
+            if (readersInitialized) {
+                return;
             }
-            return pageCache = new PageCache<>(INITIAL_PAGE_CACHE_SIZE, MAX_PAGE_CACHE_SIZE);
+            final List<String> columnPath = tl().getColumnPath(columnName, parquetColumnName);
+            final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
+                    .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
+                    .toArray(ColumnChunkReader[]::new);
+            exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
+            this.columnChunkReaders = exists ? columnChunkReaders : null;
+            readersInitialized = true;
         }
     }
 
@@ -114,10 +137,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
     @Override
     public boolean exists() {
-        // If we see a null columnChunkReaders array, either we don't exist or we are guaranteed to
-        // see a non-null
-        // pageStores array
-        return columnChunkReaders != null || pageStores != null;
+        initializeReaders();
+        return exists;
     }
 
     private ParquetTableLocation tl() {
@@ -258,9 +279,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @return The page stores
      */
     @NotNull
-    public ColumnChunkPageStore<ATTR>[] getPageStores(
+    private ColumnChunkPageStore<ATTR>[] getPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        fetchValues(columnDefinition);
+        initializePages(columnDefinition);
         return pageStores;
     }
 
@@ -270,9 +291,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return The dictionary values chunk suppliers, or null if none exist
      */
-    public Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
+    private Supplier<Chunk<ATTR>>[] getDictionaryChunkSuppliers(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        fetchValues(columnDefinition);
+        initializePages(columnDefinition);
         return dictionaryChunkSuppliers;
     }
 
@@ -285,30 +306,35 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      */
     private ColumnChunkPageStore<DictionaryKeys>[] getDictionaryKeysPageStores(
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        fetchValues(columnDefinition);
+        initializePages(columnDefinition);
         return dictionaryKeysPageStores;
     }
 
     @SuppressWarnings("unchecked")
-    private void fetchValues(@NotNull final ColumnDefinition<?> columnDefinition) {
-        if (columnChunkReaders == null) {
+    private void initializePages(@NotNull final ColumnDefinition<?> columnDefinition) {
+        if (pagesInitialized) {
             return;
         }
-        synchronized (this) {
-            if (columnChunkReaders == null) {
+        synchronized (pagesLock) {
+            if (pagesInitialized) {
                 return;
             }
-
+            initializeReaders();
             final int pageStoreCount = columnChunkReaders.length;
             pageStores = new ColumnChunkPageStore[pageStoreCount];
             dictionaryChunkSuppliers = new Supplier[pageStoreCount];
             dictionaryKeysPageStores = new ColumnChunkPageStore[pageStoreCount];
+
+            // We should consider moving this page-cache to column level if needed.
+            // Column-location level likely allows more parallelism.
+            final PageCache<ATTR> pageCache = new PageCache<>(INITIAL_PAGE_CACHE_SIZE, MAX_PAGE_CACHE_SIZE);
+
             for (int psi = 0; psi < pageStoreCount; ++psi) {
                 final ColumnChunkReader columnChunkReader = columnChunkReaders[psi];
                 try {
                     final ColumnChunkPageStore.CreatorResult<ATTR> creatorResult =
                             ColumnChunkPageStore.create(
-                                    ensurePageCache(),
+                                    pageCache,
                                     columnChunkReader,
                                     tl().getRegionParameters().regionMask,
                                     makeToPage(tl().getColumnTypes().get(parquetColumnName),
@@ -325,6 +351,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             }
 
             columnChunkReaders = null;
+            pagesInitialized = true;
         }
     }
 

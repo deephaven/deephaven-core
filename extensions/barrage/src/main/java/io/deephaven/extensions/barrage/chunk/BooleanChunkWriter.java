@@ -44,7 +44,7 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
         final MutableInt nullCount = new MutableInt(0);
         final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
         subset.forAllRowKeys(row -> {
-            if (byteChunk.isNull((int) row)) {
+            if (BooleanUtils.isNull(byteChunk.get((int) row))) {
                 nullCount.increment();
             }
         });
@@ -55,7 +55,7 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
     protected void writeValidityBufferInternal(@NotNull Context context, @NotNull RowSequence subset,
             @NotNull SerContext serContext) {
         final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(byteChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> serContext.setNextIsNull(BooleanUtils.isNull(byteChunk.get((int) row))));
     }
 
     private class BooleanChunkInputStream extends BaseChunkInputStream<Context> {
@@ -108,7 +108,7 @@ public class BooleanChunkWriter extends BaseChunkWriter<ByteChunk<Values>> {
             try (final SerContext serContext = new SerContext(dos)) {
                 final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
                 subset.forAllRowKeys(row -> serContext.setNextIsNull(
-                        byteChunk.get((int) row) != BooleanUtils.TRUE_BOOLEAN_AS_BYTE));
+                        BooleanUtils.byteAsBoolean(byteChunk.get((int) row)) != Boolean.TRUE));
             }
             bytesWritten += getNumLongsForBitPackOfSize(subset.intSize(DEBUG_NAME)) * (long) Long.BYTES;
 

@@ -768,7 +768,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                             + ")",
                     sizeForInstrumentation(),
-                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
+                    () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, NaturalJoinType.EXACTLY_ONE_MATCH));
         }
     }
 
@@ -2263,29 +2263,38 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table naturalJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd,
+            NaturalJoinType joinType) {
         return naturalJoinImpl(
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
+                MatchPair.fromAddition(columnsToAdd),
+                joinType);
     }
 
-    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    private Table naturalJoinImpl(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         final UpdateGraph updateGraph = getUpdateGraph(rightTable);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget(
                     "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
-                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
+                    () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, joinType));
         }
     }
 
-    private Table naturalJoinInternal(final Table rightTable, final MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch) {
+    private Table naturalJoinInternal(
+            final Table rightTable,
+            final MatchPair[] columnsToMatch,
+            MatchPair[] columnsToAdd,
+            final NaturalJoinType joinType) {
         columnsToAdd = createColumnsToAddIfMissing(rightTable, columnsToMatch, columnsToAdd);
 
         final QueryTable rightTableCoalesced = (QueryTable) rightTable.coalesce();
 
-        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, exactMatch);
+        return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, joinType);
     }
 
     private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
@@ -2393,7 +2402,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
-                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
+                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
+                            NaturalJoinType.ERROR_ON_DUPLICATE);
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(String[]::new));
 

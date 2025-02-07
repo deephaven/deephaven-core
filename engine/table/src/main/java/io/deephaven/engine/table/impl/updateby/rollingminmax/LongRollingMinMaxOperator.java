@@ -7,6 +7,13 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
+import java.time.Instant;
+import java.util.Map;
+import java.util.Collections;
+
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+
 import io.deephaven.base.ringbuffer.AggregatingLongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -24,6 +31,7 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
     private final boolean isMax;
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
+    private final Class<?> type;
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
@@ -147,11 +155,13 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
             final long forwardWindowScaleUnits,
             final boolean isMax
     // region extra-constructor-args
+            ,@NotNull final Class<?> type
     // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;
         // region constructor
+        this.type = type;
         // endregion constructor
     }
 
@@ -165,7 +175,22 @@ public class LongRollingMinMaxOperator extends BaseLongUpdateByOperator {
                 forwardWindowScaleUnits,
                 isMax
         // region extra-copy-args
+                , type
         // endregion extra-copy-args
         );
     }
+
+    // region extra-methods
+    @NotNull
+    @Override
+    public Map<String, ColumnSource<?>> getOutputColumns() {
+        final ColumnSource<?> actualOutput;
+        if(type == Instant.class) {
+            actualOutput = ReinterpretUtils.longToInstantSource(outputSource);
+        } else {
+            actualOutput = outputSource;
+        }
+        return Collections.singletonMap(pair.leftColumn, actualOutput);
+    }
+    // endregion extra-methods
 }

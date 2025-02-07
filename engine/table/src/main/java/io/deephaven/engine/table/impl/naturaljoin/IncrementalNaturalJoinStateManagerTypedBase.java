@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -94,8 +95,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
 
     protected IncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
-            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor) {
-        super(keySourcesForErrorMessages);
+            ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor,
+            NaturalJoinType joinType, boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
 
         // we start out with a chunk sized table, and will grow by rehashing as states are added
         this.tableSize = CHUNK_SIZE;
@@ -425,7 +427,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public long getRightIndex(int slot) {
+    public long getRightRowKey(int slot) {
         final long rightRowKey;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             // slot needs to represent whether we are in the main or alternate using main insert mask!
@@ -440,12 +442,24 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public RowSet getLeftIndex(int slot) {
+    public RowSet getLeftRowSet(int slot) {
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             return mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         } else {
             return alternateLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
+    }
+
+    @Override
+    public RowSet getRightRowSet(int slot) {
+        final long rightRowKey;
+        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+            // slot needs to represent whether we are in the main or alternate using main insert mask!
+            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        } else {
+            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        }
+        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(rightRowKey));
     }
 
     @Override
@@ -462,11 +476,25 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         return extractKeyStringFromSourceTable(firstLeftRowKey);
     }
 
-    protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
+    private long getRightRowKeyFromState(
+            final long leftRowKey,
+            final long rightRowKeyForState) {
+        if (rightRowKeyForState > FIRST_DUPLICATE) {
+            return rightRowKeyForState;
+        }
+        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+            throw new IllegalStateException("Natural Join found duplicate right key for "
+                    + extractKeyStringFromSourceTable(leftRowKey));
+        }
+        final long location = duplicateLocationFromRowKey(rightRowKeyForState);
+        final WritableRowSet rightRowSet = rightSideDuplicateRowSets.getUnsafe(location);
+        return joinType == NaturalJoinType.FIRST_MATCH
+                ? rightRowSet.firstRowKey()
+                : rightRowSet.lastRowKey();
+    }
 
     public WritableRowRedirection buildIndexedRowRedirection(
             QueryTable leftTable,
-            boolean exactMatch,
             InitialBuildContext ibc,
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
@@ -488,9 +516,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
                         // Reset mainLeftRowSet to contain the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
-                        leftRowSetForKey.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
+                        final long leftRowKey = leftRowSetForKey.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        checkExactMatch(leftRowKey, rightRowKey);
+                        // Set unconditionally, need to populate the entire array with NULL_ROW_KEY or the RHS key
+                        leftRowSetForKey.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKey);
                     }
                 }
 
@@ -506,11 +537,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
                         // Reset mainLeftRowSet to contain the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            leftRowSetForKey.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSetForKey.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            leftRowSetForKey.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKey));
                         }
                     }
                 }
@@ -527,11 +560,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
                         // Reset mainLeftRowSet to contain the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            leftRowSetForKey.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSetForKey.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            leftRowSetForKey.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKey));
                         }
                     }
                 }
@@ -541,8 +576,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
 
-    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch,
-            InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
+    public WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, InitialBuildContext ibc,
+            JoinControl.RedirectionType redirectionType) {
         Assert.eqZero(rehashPointer, "rehashPointer");
 
         switch (redirectionType) {
@@ -556,12 +591,14 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
-                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKeyForState);
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        checkExactMatch(leftRowKey, rightRowKey);
+                        // Set unconditionally, need to populate the entire array with NULL_ROW_KEY or the RHS key
+                        leftRowSet.forAllRowKeys(pos -> innerIndex[(int) pos] = rightRowKey);
                     }
                 }
-
                 return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
@@ -569,11 +606,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            leftRowSet.forAllRowKeys(pos -> sparseRedirections.set(pos, rightRowKey));
                         }
                     }
                 }
@@ -585,11 +624,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 for (int ii = 0; ii < tableSize; ++ii) {
                     final WritableRowSet leftRowSet = this.mainLeftRowSet.getUnsafe(ii);
                     if (leftRowSet != null && !leftRowSet.isEmpty()) {
-                        final long rightRowKeyForState = mainRightRowKey.getUnsafe(ii);
-                        if (rightRowKeyForState != RowSet.NULL_ROW_KEY) {
-                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKeyForState));
+                        final long leftRowKey = leftRowSet.firstRowKey();
+                        final long rightState = mainRightRowKey.getUnsafe(ii);
+                        final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
+                        if (rightRowKey == RowSet.NULL_ROW_KEY) {
+                            checkExactMatch(leftRowKey, rightRowKey);
                         } else {
-                            checkExactMatch(exactMatch, leftRowSet.firstRowKey(), rightRowKeyForState);
+                            leftRowSet.forAllRowKeys(pos -> rowRedirection.put(pos, rightRowKey));
                         }
                     }
                 }
@@ -598,6 +639,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         throw new IllegalStateException("Bad redirectionType: " + redirectionType);
     }
+
+    protected abstract void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     protected abstract void applyRightShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker, ProbeContext pc);
@@ -635,7 +678,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         final int chunkSize = (int) Math.min(CHUNK_SIZE, rightTable.size());
         try (BuildContext bc = new BuildContext(rightSources, chunkSize)) {
-            buildTable(true, bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide, null);
+            buildTable(true, bc, rightTable.getRowSet(), rightSources,
+                    this::buildFromRightSide,
+                    null);
         }
     }
 
@@ -649,7 +694,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             // we are not actually decorating the left side in the initial build context, we allow rehashes to occur
             // which means that we do not want to go back and maintain the hash slots. we instead will iterate the
             // complete hash table at the end to build our redirection index
-            buildTable(true, bc, leftRows, leftSources, this::buildFromLeftSide, null);
+            buildTable(true, bc, leftRows, leftSources,
+                    this::buildFromLeftSide, null);
         }
     }
 
@@ -671,8 +717,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void addLeftSide(Context bc, RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections,
-            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            LongArraySource leftRedirections, @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -753,13 +798,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         final WritableRowSet existingLeftRowSet = alternateLeftRowSet.getUnsafe(tableLocation);
         Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
         shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
-    }
-
-    protected void shiftOneKey(WritableRowSet existingLeftRowSet, long shiftedKey, long shiftDelta) {
-        final long sizeBefore = existingLeftRowSet.size();
-        existingLeftRowSet.remove(shiftedKey - shiftDelta);
-        existingLeftRowSet.insert(shiftedKey);
-        Assert.eq(existingLeftRowSet.size(), "existingLeftRowSet.size()", sizeBefore, "sizeBefore");
     }
 
     protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,

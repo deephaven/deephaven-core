@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,8 +16,11 @@ import org.jetbrains.annotations.NotNull;
 public abstract class RightIncrementalNaturalJoinStateManager extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager {
 
-    protected RightIncrementalNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
-        super(keySourcesForErrorMessages);
+    protected RightIncrementalNaturalJoinStateManager(
+            ColumnSource<?>[] keySourcesForErrorMessages,
+            NaturalJoinType joinType,
+            boolean addOnly) {
+        super(keySourcesForErrorMessages, joinType, addOnly);
     }
 
     public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
@@ -27,12 +31,12 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
 
     public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources);
 
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable,
             InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
-            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
-            InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
+            ColumnSource<RowSet> rowSetSource, int groupingSize, InitialBuildContext initialBuildContext,
+            JoinControl.RedirectionType redirectionType);
 
     // modification probes
     public abstract void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet,

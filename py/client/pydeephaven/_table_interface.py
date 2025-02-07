@@ -15,7 +15,7 @@ from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
     ExactJoinOp, CrossJoinOp, AjOp, RajOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
-    SliceOp, AggregateAllOp, AggregateOp, SortDirection
+    SliceOp, AggregateAllOp, AggregateOp, SortDirection, NaturalJoinType
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.dherror import DHError
@@ -207,7 +207,8 @@ class TableInterface(ABC):
         table_op = TailOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
 
-    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[Table, Query]:
+    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+                     type: NaturalJoinType = NaturalJoinType.ERROR_ON_DUPLICATE) -> Union[Table, Query]:
         """The natural_join method creates a new table containing all the rows and columns of this table, 
         plus additional columns containing data from the right table. For columns appended to the left table (joins), 
         row values equal the row values from the right table where the key values in the left and right tables are 
@@ -227,7 +228,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = NaturalJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
+        table_op = NaturalJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), type=type)
         return self.table_op_handler(table_op)
 
     def exact_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[Table, Query]:
