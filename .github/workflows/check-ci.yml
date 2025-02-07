@@ -53,14 +53,14 @@ jobs:
         with:
           name: check-ci-results-${{ matrix.run }}
           path: |
-            **/build/test-results/**
-            **/build/reports/tests/**
+            go/build/test-results/**
+            py/build/test-results/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: check-ci-jvm-err
+          name: check-ci-jvm-err-${{ matrix.run }}
           path: |
             **/*_pid*.log
             **/core.*
