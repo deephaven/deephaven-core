@@ -8,6 +8,7 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
@@ -29,6 +30,7 @@ import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,11 +38,12 @@ import org.junit.experimental.categories.Category;
 import java.time.Duration;
 import java.util.*;
 
+import static io.deephaven.api.updateby.UpdateByOperation.CumMax;
+import static io.deephaven.api.updateby.UpdateByOperation.RollingMax;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 
 @Category(OutOfBandTest.class)
@@ -138,9 +141,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.RollingMax(50, 50,
+                                RollingMax(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
                                 // Excluding 'bigDecimalCol' because we need fuzzy matching which doesn't exist for BD
@@ -155,7 +158,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                                CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
                                 UpdateByOperation
                                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
                         final UpdateByControl control = UpdateByControl.builder().useRedirection(redirected).build();
@@ -292,16 +295,16 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
 
-                UpdateByOperation.RollingMax(100, 0,
+                RollingMax(100, 0,
                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
-                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
                 UpdateByOperation
                         .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
         final UpdateByControl control = UpdateByControl.builder().useRedirection(false).build();
@@ -321,5 +324,23 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 TestCase.fail(t.getMessage());
             }
         });
+    }
+
+    @Test
+    public void testResultColumnOrdering() {
+        QueryScope.addParam("baseTime", DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"));
+        final Table source = emptyTable(10).update("Timestamp = baseTime + i * SECOND", "X = ii % 10");
+
+        final Table result_1 = source.updateBy(List.of(
+                CumMax("cumMaxTime=Timestamp"),
+                RollingMax(20, "rollingMaxTime=Timestamp")), "X");
+        Assert.assertArrayEquals(result_1.getDefinition().getColumnNamesArray(),
+                new String[] {"Timestamp", "X", "cumMaxTime", "rollingMaxTime"});
+
+        final Table result_2 = source.updateBy(List.of(
+                RollingMax(20, "rollingMaxTime=Timestamp"),
+                CumMax("cumMaxTime=Timestamp")), "X");
+        Assert.assertArrayEquals(result_2.getDefinition().getColumnNamesArray(),
+                new String[] {"Timestamp", "X", "rollingMaxTime", "cumMaxTime"});
     }
 }
