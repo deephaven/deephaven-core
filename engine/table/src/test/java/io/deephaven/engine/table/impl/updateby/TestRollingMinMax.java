@@ -8,7 +8,11 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -30,7 +34,7 @@ import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Duration;
+import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -1242,5 +1246,81 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         // We can assert equality to the input table because the data values are constant.
         TstUtils.assertTableEquals(t, expected, TableDiff.DiffItems.DoublesExact);
+    }
+
+    @Test
+    public void testResultDataTypes() {
+        final Instant baseInstant = DateTimeUtils.parseInstant("2023-01-01T00:00:00 NY");
+        final ZoneId zone = ZoneId.of("America/Los_Angeles");
+
+        QueryScope.addParam("baseInstant", baseInstant);
+        QueryScope.addParam("baseLDT", LocalDateTime.ofInstant(baseInstant, zone));
+        QueryScope.addParam("baseZDT", baseInstant.atZone(zone));
+
+        final TableDefinition expectedDefinition = TableDefinition.of(
+                ColumnDefinition.ofByte("byteCol"),
+                ColumnDefinition.ofChar("charCol"),
+                ColumnDefinition.ofShort("shortCol"),
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofLong("longCol"),
+                ColumnDefinition.ofFloat("floatCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("stringCol"),
+                ColumnDefinition.fromGenericType("instantCol", Instant.class),
+                ColumnDefinition.fromGenericType("ldtCol", LocalDateTime.class),
+                ColumnDefinition.fromGenericType("zdtCol", ZonedDateTime.class));
+
+        final String[] columnNames = expectedDefinition.getColumnNamesArray();
+
+        final String[] updateStrings = new String[] {
+                "byteCol=(byte)i",
+                "charCol=(char)(i + 64)",
+                "shortCol=(short)i",
+                "intCol=i",
+                "longCol=ii",
+                "floatCol=(float)ii",
+                "doubleCol=(double)ii",
+                "stringCol=String.valueOf(i)",
+                "instantCol=baseInstant.plusSeconds(i)",
+                "ldtCol=baseLDT.plusSeconds(i)",
+                "zdtCol=baseZDT.plusSeconds(i)",
+        };
+
+        // NOTE: boolean is not supported by RollingMinMaxSpec.applicableTo()
+        final Table source = TableTools.emptyTable(20).update(updateStrings);
+
+        // Verify all the source columns are the expected types.
+        source.getDefinition().checkCompatibility(expectedDefinition);
+
+        final Table expected = source.updateBy(UpdateByOperation.RollingMax(5, columnNames));
+
+        // Verify all the result columns are the expected types.
+        expected.getDefinition().checkCompatibility(expectedDefinition);
+    }
+
+    @Test
+    public void testProxy() {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
+
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        Table actual;
+        Table expected;
+
+        PartitionedTable pt = t.partitionBy("Sym");
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks))
+                .target().merge().sort("Sym");
+        expected = t.sort("Sym").updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks), "Sym");
+        TstUtils.assertTableEquals(expected, actual);
+
+        actual = pt.proxy()
+                .updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks))
+                .target().merge().sort("Sym");
+        expected = t.sort("Sym").updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks), "Sym");
+        TstUtils.assertTableEquals(expected, actual);
     }
 }
