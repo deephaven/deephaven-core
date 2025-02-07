@@ -72,7 +72,7 @@ TEST_CASE("Uploaded Arrow Timestamp units get normalized to nanos at FillChunk t
   }
 }
 
-TEST_CASE("Uploaded Arrow Time64 units get normalized to nanos at FillChunk time x2", "[timeunit]") {
+TEST_CASE("Uploaded Arrow Time64 units get normalized to nanos at FillChunk time", "[timeunit]") {
   auto tm = TableMakerForTests::Create();
 
   std::vector<std::optional<InternalLocalTime<arrow::TimeUnit::MICRO>>> lt_micro;
