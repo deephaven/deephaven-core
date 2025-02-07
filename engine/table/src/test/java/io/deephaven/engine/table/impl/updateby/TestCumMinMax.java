@@ -253,7 +253,7 @@ public class TestCumMinMax extends BaseUpdateByTest {
                 "zdtCol=baseZDT.plusSeconds(i)",
         };
 
-        // NOTE: boolean is not supported by RollingMinMaxSpec.applicableTo()
+        // NOTE: boolean is not supported by CumMinMaxSpec.applicableTo()
         final Table source = TableTools.emptyTable(20).update(updateStrings);
 
         // Verify all the source columns are the expected types.
