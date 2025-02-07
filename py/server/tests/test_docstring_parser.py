@@ -1,140 +1,241 @@
 #
-# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 #
-from functools import wraps
+import inspect
 from typing import Callable
 
 from docstring_parser import parse, Docstring
 from jedi import Script, Interpreter
-from jedi.api.classes import Signature
 
 from deephaven_internal.auto_completer._signature_help import _get_params, _generate_description_markdown, _generate_display_sig
 from tests.testbase import BaseTestCase
 
-from .data.signatures import *
-
 
 class DocstringParser(BaseTestCase):
 
-    @staticmethod
-    def create_test(name: str, code: str, func: Callable, func_call_append: str = ""):
+    def get_script_signature(self, func: Callable, func_call_append=""):
         """
-        Wraps an autocomplete test to run it in a both Jedi Script and Interpreter.
+        Get the signature of the function passed in. using Jedi Script.
 
         Args:
-            name: the name of the function being autocompleted
-            code: the string version of the function, for Jedi Script
-            func: the function object, for Jedi Interpreter
+            func: the function object. Will be used with Jedi Interpreter, and source used for Jedi Script
             func_call_append: the string to append at the end of the function call
         """
-        def decorator(f):
-            @wraps(f)
-            def wrapper(self):
-                s = Script(f"{code}\n{name}({func_call_append}").get_signatures()
-                self.assertIsInstance(s, list)
-                self.assertEqual(len(s), 1)
-                f(self, s[0], parse(s[0].docstring(raw=True)))
-                
-                i = Interpreter(f"{name}({func_call_append}", [{name: func}]).get_signatures()
-                self.assertIsInstance(s, list)
-                self.assertEqual(len(s), 1)
-                f(self, i[0], parse(i[0].docstring(raw=True)))
+        code = inspect.getsource(func)
+        s = Script(f"{code}\n{func.__name__}({func_call_append}").get_signatures()
+        self.assertIsInstance(s, list)
+        self.assertEqual(len(s), 1)
+        return s[0]
 
-            return wrapper
-        return decorator
+    def get_interpreter_signature(self, func: Callable, func_call_append=""):
+        i = Interpreter(f"{func.__name__}({func_call_append}", [{func.__name__: func}]).get_signatures()
+        self.assertIsInstance(i, list)
+        self.assertEqual(len(i), 1)
+        return i[0]
 
-    @create_test("args", args_str, args)
-    def test_args(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
+    def expect_description(self, func: Callable, expected_result: str, func_call_append =""):
+        """
+        Test whether the function passed in results in the expected markdown docs. Tests both interpreter and script.
+
+        Args:
+            func: the function object. Will be used with Jedi Interpreter, and source used for Jedi Script
+            expected_result: the expected markdown result
+            func_call_append: the string to append at the end of the function call
+        """
+        script_signature = self.get_script_signature(func, func_call_append)
+        script_docstring = script_signature.docstring(raw=True)
         self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            args_str_result
+            _generate_description_markdown(parse(script_docstring), _get_params(script_signature, parse(script_docstring))),
+            expected_result
         )
 
-    @create_test("args_no_docs", args_no_docs_str, args_no_docs)
-    def test_args_no_docs(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
+        interpreter_signature = self.get_interpreter_signature(func, func_call_append)
+        interpreter_docstring = interpreter_signature.docstring(raw=True)
         self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            args_no_docs_result
+            # Need to use _generate_display_sig for the original_signature ones, not this method... grr.
+            _generate_description_markdown(parse(interpreter_docstring), _get_params(interpreter_signature, parse(interpreter_docstring))),
+            expected_result
         )
 
-    @create_test("raises_various", raises_various_str, raises_various)
-    def test_raises_various(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            raises_various_result
-        )
+    def expect_signature(self, func: Callable, expected_result: str, func_call_append = ""):
+        """
+        Test whether the function passed in results in the expected signature. Tests both interpreter and script.
 
-    @create_test("returns_various", returns_various_str, returns_various)
-    def test_returns_various(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            returns_various_result
-        )
+        Args:
+            func: the function object. Will be used with Jedi Interpreter, and source used for Jedi Script
+            expected_result: the expected signature result
+            func_call_append: the string to append at the end of the function call
+        """
+        script_signature = self.get_script_signature(func, func_call_append)
+        self.assertEqual(_generate_display_sig(script_signature), expected_result)
 
-    @create_test("example_string", example_string_str, example_string)
-    def test_example_string(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            example_string_result
-        )
+        interpreter_signature = self.get_interpreter_signature(func, func_call_append)
+        self.assertEqual(_generate_display_sig(interpreter_signature), expected_result)
 
-    @create_test("example_code", example_code_str, example_code)
-    def test_example_code(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(
-            _generate_description_markdown(docs, _get_params(signature, docs)),
-            example_code_result
-        )
+    def test_args(self):
+        def args(has_docs, has_type: str | int, *positional, has_default=1, has_type_default: str | int = 1, **keyword):
+            """
+            Description
 
-    @create_test("original_signature", original_signature_str, original_signature)
-    def test_original_signature(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(
-            _generate_display_sig(signature), 
-            "original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09)"
-        )
+            Args:
+                has_docs: Arg has docs
+                has_type: Arg has type
+                not_real: Arg does not exist in signature
+                *positional: Positional arg has docs
+                has_default: Arg has default
+                has_type_default: Arg has type and default
+                **keyword: Keyword arg has docs
+            """
 
-    @create_test("truncate_positional", truncate_positional_str, truncate_positional)
-    def test_truncate_positional_0(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_positional(aaaaaa00, aaaaaa01, aaaaaa02, ...)")
+        self.expect_description(args, """\
+Description
 
-    @create_test("truncate_positional", truncate_positional_str, truncate_positional, "1, ")
-    def test_truncate_positional_1(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_positional(..., aaaaaa01, aaaaaa02, aaaaaa03, ...)")
+#### **Parameters**
 
-    @create_test("truncate_positional", truncate_positional_str, truncate_positional, "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
-    def test_truncate_positional_10(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)")
+> **has_docs**  
+> Arg has docs
 
-    @create_test("truncate_positional", truncate_positional_str, truncate_positional, "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
-    def test_truncate_positional_11(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)")
+> **has_type**: *str | int*  
+> Arg has type
 
-    @create_test("truncate_positional", truncate_positional_str, truncate_positional, "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
-    def test_truncate_positional_12(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)")
+> ***positional**  
+> Positional arg has docs
 
-    @create_test("truncate_keyword", truncate_keyword_str, truncate_keyword)
-    def test_truncate_keyword_0(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_keyword(aaaaaa00, aaaaaa01=1, ...)")
+> **has_default** ⋅ (default: *1*)  
+> Arg has default
 
-    @create_test("truncate_keyword", truncate_keyword_str, truncate_keyword, "1, ")
-    def test_truncate_keyword_1(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_keyword(..., aaaaaa01=1, ...)")
+> **has_type_default**: *str | int* ⋅ (default: *1*)  
+> Arg has type and default
 
-    @create_test("truncate_keyword", truncate_keyword_str, truncate_keyword, "1, aaaaaa12=")
-    def test_truncate_keyword_1(self, signature: Signature, docs: Docstring):
-        self.assertNotEqual(len(docs.meta), 0)
-        self.assertEqual(_generate_display_sig(signature), "truncate_keyword(..., aaaaaa12=1)")
+> ****keyword**  
+> Keyword arg has docs""")
+
+    def test_args_no_docs(self):
+        def args_no_docs(no_docs, /, *, keyword_no_docs=None):
+            """
+            Description
+
+            Args:
+                not_real: Arg does not exist in signature
+                /: Should not show
+                *: Should not show
+            """
+
+        self.expect_description(args_no_docs, """\
+Description
+
+#### **Parameters**
+
+> **no_docs**  
+
+
+> **keyword_no_docs** ⋅ (default: *None*)""")
+
+    def test_raises_various(self):
+        def raises_various():
+            """
+            Description
+
+            Raises:
+                Exception: Exception description
+                ValueError: ValueError description.
+                  This is a continuation of ValueError
+            """
+
+        self.expect_description(raises_various, """\
+Description
+
+#### **Raises**
+
+> **Exception**  
+> Exception description
+
+> **ValueError**  
+> ValueError description.
+This is a continuation of ValueError""")
+
+    def test_returns_various(self):
+        def returns_various():
+            """
+            :returns: Return has docs
+            :returns foo: foo description
+            :returns bar: bar description
+            """
+
+        self.expect_description(returns_various, """\
+#### **Returns**
+
+> Return has docs
+
+> **foo**  
+> foo description
+
+> **bar**  
+> bar description""")
+
+    def test_example_string(self):
+        def example_string():
+            """
+            Description
+
+            Examples:
+                Plain text
+            """
+
+        self.expect_description(example_string, """\
+Description
+
+#### **Examples**
+
+Plain text""")
+
+    def test_example_code(self):
+        def example_code():
+            """
+            Description
+
+            Examples:
+                >>> Code
+                Still code
+            """
+
+        self.expect_description(example_code, """\
+Description
+
+#### **Examples**
+
+```
+>>> Code
+Still code
+```""")
+
+    def test_original_signature(self):
+        def original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09):
+            """
+            :returns a: b
+            """
+
+        self.expect_signature(original_signature, "original_signature(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09)")
+
+    def test_truncate_positional(self):
+        def truncate_positional(aaaaaa00, aaaaaa01, aaaaaa02, aaaaaa03, aaaaaa04, aaaaaa05, aaaaaa06, aaaaaa07, aaaaaa08, aaaaaa09,
+                                aaaaaa10, aaaaaa11, aaaaaa12):
+            """
+            :returns a: b
+            """
+
+        self.expect_signature(truncate_positional, "truncate_positional(aaaaaa00, aaaaaa01, aaaaaa02, ...)")
+        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa01, aaaaaa02, aaaaaa03, ...)", "1, ")
+        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)", "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
+        self.expect_signature(truncate_positional, "truncate_positional(..., aaaaaa10, aaaaaa11, aaaaaa12)", "1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ")
+
+    def test_truncate_keyword(self):
+        def truncate_keyword(aaaaaa00, *, aaaaaa01=1, aaaaaa02=1, aaaaaa03=1, aaaaaa04=1, aaaaaa05=1, aaaaaa06=1, aaaaaa07=1, aaaaaa08=1, aaaaaa09=1,
+                             aaaaaa10=1, aaaaaa11=1, aaaaaa12=1):
+            """
+            :returns a: b
+            """
+
+        self.expect_signature(truncate_keyword, "truncate_keyword(aaaaaa00, aaaaaa01=1, ...)")
+        self.expect_signature(truncate_keyword, "truncate_keyword(..., aaaaaa01=1, ...)", "1, ")
+        self.expect_signature(truncate_keyword, "truncate_keyword(..., aaaaaa12=1)", "1, aaaaaa12=")
