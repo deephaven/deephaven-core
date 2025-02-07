@@ -142,7 +142,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     public void testBooleanChunkSerializationNonStandardNulls() throws IOException {
-        for (final BarrageSubscriptionOptions opts : options) {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
             testRoundTripSerialization(opts, boolean.class, (utO) -> {
                 final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {

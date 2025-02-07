@@ -490,6 +490,7 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes,
             final boolean columnsAsList) {
+        boolean wireFormatSpecified = attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE);
 
         // Find columns that are sortable
         final Set<String> sortableColumns;
@@ -535,7 +536,7 @@ public class BarrageUtil {
             }
 
             // Add type information
-            if (isTypeNativelySupported(dataType)) {
+            if (wireFormatSpecified || isTypeNativelySupported(dataType)) {
                 putMetadata(metadata, ATTR_TYPE_TAG, dataType.getCanonicalName());
                 if (componentType != null) {
                     if (isTypeNativelySupported(componentType)) {
@@ -584,7 +585,7 @@ public class BarrageUtil {
             return arrowFieldFor(name, dataType, componentType, metadata, columnsAsList);
         };
 
-        if (attributes.containsKey(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+        if (wireFormatSpecified) {
             targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
             targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
 
