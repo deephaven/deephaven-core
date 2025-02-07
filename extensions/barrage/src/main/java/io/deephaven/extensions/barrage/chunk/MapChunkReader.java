@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.collect.ImmutableMap;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;

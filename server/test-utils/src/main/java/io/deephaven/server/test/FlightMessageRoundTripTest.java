@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.test;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
@@ -12,10 +11,6 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.*;
@@ -56,7 +51,6 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -72,7 +66,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.DateMilliVector;
 import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.FieldVector;
@@ -103,7 +96,6 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -114,7 +106,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
 
 /**
@@ -765,31 +756,8 @@ public abstract class FlightMessageRoundTripTest {
         try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-            final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-            // use 0 for batch size and max message size to use server-side defaults
-            int optOffset = BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, false, 0, 0, 0);
-
-            final int ticOffset =
-                    BarrageSnapshotRequest.createTicketVector(metadata,
-                            ScopeTicketHelper.nameToBytes(staticTableName));
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-            BarrageSnapshotRequest.addColumns(metadata, 0);
-            BarrageSnapshotRequest.addViewport(metadata, 0);
-            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-            final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-            final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-            wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                    wrapper,
-                    0x6E687064, // the numerical representation of the ASCII "dphn".
-                    BarrageMessageType.BarrageSnapshotRequest,
-                    innerOffset));
-
-            // extract the bytes and package them in an ArrowBuf for transmission
-            byte[] msg = wrapper.sizedByteArray();
+            byte[] msg = BarrageUtil.createSnapshotRequestMetadataBytes(ScopeTicketHelper.nameToBytes(staticTableName),
+                    io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build());
             ArrowBuf data = allocator.buffer(msg.length);
             data.writeBytes(msg);
 
@@ -1080,9 +1048,9 @@ public abstract class FlightMessageRoundTripTest {
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
             // make a subscription request for test
-            final ByteBuffer request = makeRequestInternal(null, null, false, options, ticket.ticket());
-            ArrowBuf data = allocator.buffer(request.remaining());
-            data.writeBytes(request.array(), request.arrayOffset() + request.position(), request.remaining());
+            final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(ticket.ticket(), options);
+            ArrowBuf data = allocator.buffer(request.length);
+            data.writeBytes(request);
             stream.getWriter().putMetadata(data);
 
             // read messages until we see at least one modification batch:

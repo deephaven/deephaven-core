@@ -3,11 +3,9 @@
 //
 package io.deephaven.client.impl;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
@@ -39,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -239,7 +236,8 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
+                .setAppMetadata(ByteStringAccess.wrap(BarrageUtil.createSnapshotRequestMetadataBytes(
+                        tableHandle.ticketId().bytes(), options, viewport, columns, reverseViewport)))
                 .build());
 
         observer.onCompleted();
@@ -280,46 +278,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append("Barrage/ClientSnapshot/").append(logName).append("/")
                 .append(System.identityHashCode(this)).append("/");
-    }
-
-    private ByteBuffer makeRequestInternal(
-            @Nullable final RowSet viewport,
-            @Nullable final BitSet columns,
-            boolean reverseViewport,
-            @Nullable BarrageSnapshotOptions options) {
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int colOffset = 0;
-        if (columns != null) {
-            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
-        }
-        int vpOffset = 0;
-        if (viewport != null) {
-            vpOffset = BarrageSnapshotRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
-        }
-        int optOffset = 0;
-        if (options != null) {
-            optOffset = options.appendTo(metadata);
-        }
-
-        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
-        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-        BarrageSnapshotRequest.addColumns(metadata, colOffset);
-        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
-        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-        BarrageSnapshotRequest.addReverseViewport(metadata, reverseViewport);
-        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                wrapper,
-                BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSnapshotRequest,
-                innerOffset));
-        return wrapper.dataBuffer();
     }
 
     /**

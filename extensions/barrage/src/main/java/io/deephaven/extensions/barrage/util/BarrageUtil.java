@@ -10,7 +10,10 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.chunk.Chunk;
@@ -50,11 +53,10 @@ import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
 import org.apache.arrow.flatbuf.Message;
@@ -75,6 +77,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -241,6 +244,136 @@ public class BarrageUtil {
             LocalDate.class,
             LocalTime.class,
             Schema.class));
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSubscriptionRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options) {
+        return createSubscriptionRequestMetadataBytes(ticketId, options, null, null, false);
+    }
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @param viewport the viewport to subscribe to
+     * @param columns the columns to subscribe to
+     * @param reverseViewport whether to reverse the viewport
+     * @return the subscription request payload
+     */
+    public static byte[] createSubscriptionRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSubscriptionOptions options,
+            @Nullable final RowSet viewport,
+            @Nullable final BitSet columns,
+            final boolean reverseViewport) {
+
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int colOffset = 0;
+        if (columns != null) {
+            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+        }
+        int vpOffset = 0;
+        if (viewport != null) {
+            vpOffset = BarrageSubscriptionRequest.createViewportVector(
+                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
+        }
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
+        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
+        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
+        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
+        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
+        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
+        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
+        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSubscriptionRequest,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
+
+    /**
+     * Create a snapshot request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @return the subscription request payload
+     */
+    public static byte[] createSnapshotRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSnapshotOptions options) {
+        return createSnapshotRequestMetadataBytes(ticketId, options, null, null, false);
+    }
+
+    /**
+     * Create a subscription request payload to be sent via DoExchange.
+     *
+     * @param ticketId the ticket id of the table to subscribe to
+     * @param options the barrage options
+     * @param viewport the viewport to subscribe to
+     * @param columns the columns to subscribe to
+     * @param reverseViewport whether to reverse the viewport
+     * @return the subscription request payload
+     */
+    static public byte[] createSnapshotRequestMetadataBytes(
+            @NotNull final byte[] ticketId,
+            @Nullable final BarrageSnapshotOptions options,
+            @Nullable final RowSet viewport,
+            @Nullable final BitSet columns,
+            final boolean reverseViewport) {
+
+        final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+        int colOffset = 0;
+        if (columns != null) {
+            colOffset = BarrageSnapshotRequest.createColumnsVector(metadata, columns.toByteArray());
+        }
+        int vpOffset = 0;
+        if (viewport != null) {
+            vpOffset = BarrageSnapshotRequest.createViewportVector(
+                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
+        }
+        int optOffset = 0;
+        if (options != null) {
+            optOffset = options.appendTo(metadata);
+        }
+
+        final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata, ticketId);
+        BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+        BarrageSnapshotRequest.addColumns(metadata, colOffset);
+        BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+        BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+        BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+        BarrageSnapshotRequest.addReverseViewport(metadata, reverseViewport);
+        metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+                wrapper,
+                BarrageUtil.FLATBUFFER_MAGIC,
+                BarrageMessageType.BarrageSnapshotRequest,
+                innerOffset));
+        return wrapper.sizedByteArray();
+    }
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -658,21 +791,6 @@ public class BarrageUtil {
                 @NotNull final ChunkReader.Factory chunkReaderFactory,
                 @NotNull final org.apache.arrow.flatbuf.Schema schema,
                 @NotNull final BarrageOptions barrageOptions) {
-            return computeChunkReaders(chunkReaderFactory, schema, barrageOptions, false);
-        }
-
-        public ChunkReader<? extends Values>[] computePrimitiveChunkReaders(
-                @NotNull final ChunkReader.Factory chunkReaderFactory,
-                @NotNull final org.apache.arrow.flatbuf.Schema schema,
-                @NotNull final BarrageOptions barrageOptions) {
-            return computeChunkReaders(chunkReaderFactory, schema, barrageOptions, true);
-        }
-
-        private ChunkReader<? extends Values>[] computeChunkReaders(
-                @NotNull final ChunkReader.Factory chunkReaderFactory,
-                @NotNull final org.apache.arrow.flatbuf.Schema schema,
-                @NotNull final BarrageOptions barrageOptions,
-                final boolean convertToPrimitive) {
             // noinspection unchecked
             final ChunkReader<? extends Values>[] readers =
                     (ChunkReader<? extends Values>[]) new ChunkReader[tableDef.numColumns()];

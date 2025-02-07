@@ -3,13 +3,9 @@
 //
 package io.deephaven.client.impl;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
@@ -29,7 +25,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -46,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -268,8 +262,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         // Send the initial subscription:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
-                        viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
+                .setAppMetadata(ByteStringAccess.wrap(BarrageUtil.createSubscriptionRequestMetadataBytes(
+                        tableHandle.ticketId().bytes(), options, viewport, columns, reverseViewport)))
                 .build());
 
         return future;
@@ -324,49 +318,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append("Barrage/ClientSubscription/").append(logName).append("/")
                 .append(System.identityHashCode(this)).append("/");
-    }
-
-    @VisibleForTesting
-    static public ByteBuffer makeRequestInternal(
-            @Nullable final RowSet viewport,
-            @Nullable final BitSet columns,
-            boolean reverseViewport,
-            @Nullable BarrageSubscriptionOptions options,
-            byte @NotNull [] ticketId) {
-
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int colOffset = 0;
-        if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
-        }
-        int vpOffset = 0;
-        if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
-        }
-        int optOffset = 0;
-        if (options != null) {
-            optOffset = options.appendTo(metadata);
-        }
-
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
-        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
-        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
-        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
-        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
-        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
-        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
-
-        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                wrapper,
-                BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
-                innerOffset));
-        return wrapper.dataBuffer();
     }
 
     /**
@@ -473,7 +424,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             if (isComplete) {
                 // remove all unpopulated rows from viewport snapshots
                 if (isSnapshot && serverViewport != null) {
-                    // noinspection resource
                     final WritableRowSet currentRowSet = localResultTable.getRowSet().writableCast();
                     try (final RowSet populated =
                             currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {

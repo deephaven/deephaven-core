@@ -25,6 +25,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.ArrowIpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
@@ -98,9 +99,7 @@ import org.apache.arrow.vector.complex.reader.FieldReader;
 import org.apache.arrow.vector.complex.writer.BaseWriter;
 import org.apache.arrow.vector.complex.writer.FieldWriter;
 import org.apache.arrow.vector.complex.writer.FixedSizeBinaryWriter;
-import org.apache.arrow.vector.holders.FixedSizeBinaryHolder;
 import org.apache.arrow.vector.holders.NullableDurationHolder;
-import org.apache.arrow.vector.holders.NullableFixedSizeBinaryHolder;
 import org.apache.arrow.vector.types.DateUnit;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.IntervalUnit;
@@ -164,7 +163,8 @@ public class JettyBarrageChunkFactoryTest {
     private static final String COLUMN_NAME = "test_col";
     private static final int NUM_ROWS = 1023;
     private static final int RANDOM_SEED = 42;
-    private static final int MAX_LIST_ITEM_LEN = 3;
+    private static final int MAX_LIST_ITEM_LEN = 5;
+    private static final int HEAD_LIST_ITEM_LEN = 2;
 
     private static final String DH_TYPE_TAG = BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_TYPE_TAG;
     private static final String DH_COMPONENT_TYPE_TAG =
@@ -809,7 +809,7 @@ public class JettyBarrageChunkFactoryTest {
             if (wrapMode == TestWrapMode.NONE || wrapMode.isVector() || wrapMode == TestWrapMode.MAP_KEY) {
                 continue;
             }
-            new BoolRoundTripTest(boolean.class).runTest(TestNullMode.NOT_NULLABLE, wrapMode);
+            new BoolRoundTripTest(boolean.class).runTest(wrapMode, TestNullMode.NOT_NULLABLE);
         }
     }
 
@@ -968,7 +968,7 @@ public class JettyBarrageChunkFactoryTest {
             @Override
             public void runTest() throws Exception {
                 // note that dense union requires a separate null column if you want null values
-                runTest(TestNullMode.NONE, TestWrapMode.NONE);
+                runTest(TestWrapMode.NONE, TestNullMode.NONE);
                 // for (TestArrayMode wrapMode : TestArrayMode.values()) {
                 // runTest(TestNullMode.NONE, wrapMode);
                 // }
@@ -1165,6 +1165,18 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testBinaryCustomMappings() throws Exception {
+        new CustomBinaryRoundTripTest(BigInteger.class) {
+            @Override
+            public int initializeRoot(@NotNull final VarBinaryVector source) {
+                for (int ii = 0; ii < NUM_ROWS; ++ii) {
+                    final BigInteger bi = new BigInteger(rnd.nextInt(100), rnd);
+                    source.set(ii, bi.toByteArray());
+                }
+
+                return NUM_ROWS;
+            }
+        }.runTest(TestWrapMode.MAP_KEY, TestNullMode.NOT_NULLABLE);
+
         new Utf8RoundTripTest(String.class, new ArrowType.Binary()).runTest();
         new CustomBinaryRoundTripTest(BigDecimal.class) {
             @Override
@@ -1315,6 +1327,19 @@ public class JettyBarrageChunkFactoryTest {
         return values.length;
     }
 
+    protected enum TestArrayPreviewMode {
+        NONE, DO_EXCHANGE_NO_FILTER, HEAD, TAIL;
+
+        boolean isEnabled() {
+            switch (this) {
+                case HEAD:
+                case TAIL:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
     protected enum TestNullMode {
         EMPTY, ALL, NONE, SOME, NOT_NULLABLE
     }
@@ -1332,6 +1357,18 @@ public class JettyBarrageChunkFactoryTest {
         MAP_KEY,
         MAP_VALUE;
         // @formatter:on
+
+        boolean isArrayLike() {
+            switch (this) {
+                case VAR_ARRAY:
+                case VIEW_ARRAY:
+                case VAR_VECTOR:
+                case VIEW_VECTOR:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         boolean isVector() {
             switch (this) {
@@ -1464,7 +1501,7 @@ public class JettyBarrageChunkFactoryTest {
                             continue;
                         }
                     }
-                    runTest(nullMode, wrapMode);
+                    runTest(wrapMode, nullMode);
                 }
             }
 
@@ -1492,12 +1529,27 @@ public class JettyBarrageChunkFactoryTest {
                             continue;
                         }
                     }
-                    runTest(nullMode, wrapMode);
+                    runTest(wrapMode, nullMode);
                 }
             }
         }
 
-        public void runTest(final TestNullMode nullMode, final TestWrapMode wrapMode) throws Exception {
+        public void runTest(
+                final TestWrapMode wrapMode,
+                final TestNullMode nullMode) throws Exception {
+            if (!wrapMode.isArrayLike()) {
+                runTest(wrapMode, nullMode, TestArrayPreviewMode.NONE);
+                return;
+            }
+            for (TestArrayPreviewMode previewMode : TestArrayPreviewMode.values()) {
+                runTest(wrapMode, nullMode, previewMode);
+            }
+        }
+
+        public void runTest(
+                final TestWrapMode wrapMode,
+                final TestNullMode nullMode,
+                final TestArrayPreviewMode previewMode) throws Exception {
             final boolean isNullable = nullMode != TestNullMode.NOT_NULLABLE;
             final boolean hasNulls = isNullable && nullMode != TestNullMode.NONE;
             final int listItemLength;
@@ -1683,6 +1735,7 @@ public class JettyBarrageChunkFactoryTest {
                                 }
                             }
                             source.setRowCount(realRows);
+                            numRows = realRows;
                         } else if (wrapMode.isVariableLength()) {
                             int itemsConsumed = 0;
                             final ListVector listVector = (ListVector) source.getVector(0);
@@ -1767,11 +1820,36 @@ public class JettyBarrageChunkFactoryTest {
                     assertEquals(dhType, columnSource.getComponentType());
                 }
 
-                try (FlightStream stream = flightClient.getStream(flightTicketFor(flightDescriptorTicketValue))) {
-                    VectorSchemaRoot dest = stream.getRoot();
+                final boolean doExch = previewMode != TestArrayPreviewMode.NONE;
+                try (FlightStream stream = doExch
+                        ? null
+                        : flightClient.getStream(flightTicketFor(flightDescriptorTicketValue));
+                        FlightClient.ExchangeReaderWriter xStream = doExch
+                                ? flightClient.doExchange(flightDescriptorFor(flightDescriptorTicketValue))
+                                : null) {
+                    final VectorSchemaRoot dest;
+                    if (!doExch) {
+                        dest = stream.getRoot();
+                    } else {
+                        final BarrageSubscriptionOptions.Builder options = BarrageSubscriptionOptions.builder();
+                        if (previewMode == TestArrayPreviewMode.HEAD) {
+                            options.previewListLengthLimit(HEAD_LIST_ITEM_LEN);
+                        } else if (previewMode == TestArrayPreviewMode.TAIL) {
+                            options.previewListLengthLimit(-HEAD_LIST_ITEM_LEN);
+                        }
+
+                        final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(
+                                flightTicketFor(flightDescriptorTicketValue).getBytes(),
+                                options.build());
+                        final ArrowBuf metadata = allocator.buffer(request.length);
+                        metadata.writeBytes(request);
+                        xStream.getWriter().putMetadata(metadata);
+
+                        dest = xStream.getReader().getRoot();
+                    }
 
                     int numPayloads = 0;
-                    while (stream.next()) {
+                    while (doExch ? xStream.getReader().next() : stream.next()) {
                         assertEquals(source.getRowCount(), dest.getRowCount());
 
                         if (wrapMode == TestWrapMode.UNION_DENSE) {
@@ -1783,7 +1861,7 @@ public class JettyBarrageChunkFactoryTest {
                                     (UnionVector) source.getVector(0),
                                     (UnionVector) dest.getVector(0));
                         } else if (wrapMode != TestWrapMode.NONE) {
-                            validateList(wrapMode,
+                            validateList(wrapMode, previewMode,
                                     (BaseListVector) source.getVector(0),
                                     (BaseListVector) dest.getVector(0));
                         }
@@ -1805,7 +1883,11 @@ public class JettyBarrageChunkFactoryTest {
                                         // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
                                         // totalLen += sourceArr.getElementEndIndex(ii) -
                                         // sourceArr.getElementStartIndex(ii);
-                                        totalLen += sourceArr.getObject(ii).size();
+                                        int size = sourceArr.getObject(ii).size();
+                                        if (previewMode.isEnabled()) {
+                                            size = Math.min(size, HEAD_LIST_ITEM_LEN);
+                                        }
+                                        totalLen += size;
                                     }
                                 }
                                 Assert.geqZero(totalLen, "totalLen");
@@ -1813,16 +1895,18 @@ public class JettyBarrageChunkFactoryTest {
                                 newView.getDataVector().setValueCount(totalLen);
                                 if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZonedDateTimeSource(wrapMode, sourceArr, newView, source, listItemLength);
+                                    filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
+                                            listItemLength);
                                 } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
-                                    filterDurationSource(wrapMode, sourceArr, newView, source, listItemLength);
+                                    filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
+                                            listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
                                             newView.setNull(ii);
                                         } else {
-                                            copyListItem(newView, sourceArr, ii);
+                                            copyListItem(previewMode, newView, sourceArr, ii);
                                         }
                                     }
                                 }
@@ -1850,8 +1934,12 @@ public class JettyBarrageChunkFactoryTest {
                                 int totalLen = 0;
                                 for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                     if (!sourceArr.isNull(ii)) {
-                                        totalLen +=
+                                        int size =
                                                 sourceArr.getElementEndIndex(ii) - sourceArr.getElementStartIndex(ii);
+                                        if (previewMode.isEnabled()) {
+                                            size = Math.min(size, HEAD_LIST_ITEM_LEN);
+                                        }
+                                        totalLen += size;
                                     }
                                 }
                                 Assert.geqZero(totalLen, "totalLen");
@@ -1860,10 +1948,12 @@ public class JettyBarrageChunkFactoryTest {
                                 newView.getChildrenFromFields().forEach(c -> c.setValueCount(finTotalLen));
                                 if (dhType == ZonedDateTime.class || dhType == LocalDateTime.class) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/551 is fixed
-                                    filterZonedDateTimeSource(wrapMode, sourceArr, newView, source, listItemLength);
+                                    filterZonedDateTimeSource(wrapMode, previewMode, sourceArr, newView, source,
+                                            listItemLength);
                                 } else if (dhType == Duration.class && !(this instanceof IntervalRoundTripTest)) {
                                     // TODO: remove branch when https://github.com/apache/arrow-java/issues/558 is fixed
-                                    filterDurationSource(wrapMode, sourceArr, newView, source, listItemLength);
+                                    filterDurationSource(wrapMode, previewMode, sourceArr, newView, source,
+                                            listItemLength);
                                 } else {
                                     for (int ii = 0; ii < source.getRowCount(); ++ii) {
                                         if (sourceArr.isNull(ii)) {
@@ -1871,7 +1961,7 @@ public class JettyBarrageChunkFactoryTest {
                                         } else {
                                             // TODO: use when https://github.com/apache/arrow-java/issues/559 is fixed
                                             // newView.copyFrom(ii, ii, sourceArr);
-                                            copyListItem(newView, sourceArr, ii);
+                                            copyListItem(previewMode, newView, sourceArr, ii);
                                         }
                                     }
                                 }
@@ -1892,10 +1982,17 @@ public class JettyBarrageChunkFactoryTest {
                             }
                         }
                         ++numPayloads;
+
+                        if (doExch) {
+                            // need to manually stop the subscription
+                            xStream.getWriter().completed();
+                            xStream.getReader().cancel("done", null);
+                            break; // otherwise .next() will throw our cancellation exception
+                        }
                     }
 
                     // if there is data, we should be able to encode in a single payload
-                    assertEquals(nullMode == TestNullMode.EMPTY ? 0 : 1, numPayloads);
+                    assertEquals(!doExch && nullMode == TestNullMode.EMPTY ? 0 : 1, numPayloads);
                 }
             }
         }
@@ -1903,6 +2000,7 @@ public class JettyBarrageChunkFactoryTest {
 
     private static void filterZonedDateTimeSource(
             final TestWrapMode wrapMode,
+            final TestArrayPreviewMode previewMode,
             @NotNull final BaseListVector sourceArr,
             @NotNull final BaseListVector newView,
             @NotNull final VectorSchemaRoot source,
@@ -1925,10 +2023,16 @@ public class JettyBarrageChunkFactoryTest {
                     newChildOffset += listItemLength;
                 }
             } else {
-                final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                int srcStartOffset = sourceArr.getElementStartIndex(ii);
                 // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
-                // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
-                final int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                // int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                if (previewMode.isEnabled()) {
+                    if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                        srcStartOffset += len - HEAD_LIST_ITEM_LEN;
+                    }
+                    len = Math.min(len, HEAD_LIST_ITEM_LEN);
+                }
                 if (listItemLength != 0) {
                     ((FixedSizeListVector) newView).setNotNull(ii);
                 } else if (wrapMode.isVariableLength()) {
@@ -1951,6 +2055,7 @@ public class JettyBarrageChunkFactoryTest {
 
     private static void filterDurationSource(
             final TestWrapMode wrapMode,
+            final TestArrayPreviewMode previewMode,
             @NotNull final BaseListVector sourceArr,
             @NotNull final BaseListVector newView,
             @NotNull final VectorSchemaRoot source,
@@ -1973,10 +2078,16 @@ public class JettyBarrageChunkFactoryTest {
                     newChildOffset += listItemLength;
                 }
             } else {
-                final int srcStartOffset = sourceArr.getElementStartIndex(ii);
+                int srcStartOffset = sourceArr.getElementStartIndex(ii);
                 // TODO: use when https://github.com/apache/arrow-java/issues/470 is fixed
-                // final int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
-                final int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                // int len = sourceArr.getElementEndIndex(ii) - srcStartOffset;
+                int len = ((Collection<?>) sourceArr.getObject(ii)).size();
+                if (previewMode.isEnabled()) {
+                    if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                        srcStartOffset += len - HEAD_LIST_ITEM_LEN;
+                    }
+                    len = Math.min(len, HEAD_LIST_ITEM_LEN);
+                }
                 if (listItemLength != 0) {
                     ((FixedSizeListVector) newView).setNotNull(ii);
                 } else if (wrapMode.isVariableLength()) {
@@ -2000,6 +2111,7 @@ public class JettyBarrageChunkFactoryTest {
     }
 
     private void copyListItem(
+            final TestArrayPreviewMode previewMode,
             @NotNull final BaseListVector dest,
             @NotNull final BaseListVector source,
             final int index) {
@@ -2010,7 +2122,10 @@ public class JettyBarrageChunkFactoryTest {
             // TODO: remove branch when https://github.com/apache/arrow-java/issues/559 is fixed
             final FixedSizeBinaryVector srcChild = (FixedSizeBinaryVector) srcChildVector;
             final FixedSizeBinaryVector dstChild = (FixedSizeBinaryVector) dest.getChildrenFromFields().get(0);
-            final int len = ((Collection<?>) source.getObject(index)).size();
+            int len = ((Collection<?>) source.getObject(index)).size();
+            if (previewMode.isEnabled()) {
+                len = Math.min(len, HEAD_LIST_ITEM_LEN);
+            }
 
             if (dest instanceof FixedSizeListVector) {
                 ((FixedSizeListVector) dest).setNotNull(index);
@@ -2022,7 +2137,10 @@ public class JettyBarrageChunkFactoryTest {
                 ((ListViewVector) dest).endValue(index, len);
             }
 
-            final int srcOffset = source.getElementStartIndex(index);
+            int srcOffset = source.getElementStartIndex(index);
+            if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                srcOffset += len - HEAD_LIST_ITEM_LEN;
+            }
             final int dstOffset = dest.getElementStartIndex(index);
             for (int jj = 0; jj < len; ++jj) {
                 if (srcChild.isNull(srcOffset + jj)) {
@@ -2047,7 +2165,14 @@ public class JettyBarrageChunkFactoryTest {
         out.startList();
         FieldReader childReader = in.reader();
         FieldWriter childWriter = getListWriterForReader(childReader, out);
-        for (int ii = 0; ii < in.size(); ++ii) {
+        int endOffset = in.size();
+        int startOffset = 0;
+        if (previewMode == TestArrayPreviewMode.TAIL && endOffset > HEAD_LIST_ITEM_LEN) {
+            startOffset = endOffset - HEAD_LIST_ITEM_LEN;
+        } else if (previewMode == TestArrayPreviewMode.HEAD) {
+            endOffset = Math.min(endOffset, HEAD_LIST_ITEM_LEN);
+        }
+        for (int ii = startOffset; ii < endOffset; ++ii) {
             childReader.setPosition(source.getElementStartIndex(index) + ii);
             if (!childReader.isSet()) {
                 childWriter.writeNull();
@@ -2243,6 +2368,7 @@ public class JettyBarrageChunkFactoryTest {
 
     private static void validateList(
             final TestWrapMode wrapMode,
+            final TestArrayPreviewMode previewMode,
             final BaseListVector source,
             final BaseListVector dest) {
         assertEquals(source.getValueCount(), dest.getValueCount());
@@ -2259,6 +2385,9 @@ public class JettyBarrageChunkFactoryTest {
                 }
                 int srcLen = source.getElementEndIndex(ii) - source.getElementStartIndex(ii);
                 int dstLen = dest.getElementEndIndex(ii) - dest.getElementStartIndex(ii);
+                if (previewMode.isEnabled()) {
+                    srcLen = Math.min(srcLen, HEAD_LIST_ITEM_LEN);
+                }
                 assertEquals(srcLen, dstLen);
             }
         }
@@ -3121,6 +3250,10 @@ public class JettyBarrageChunkFactoryTest {
     private static Ticket flightTicketFor(int flightDescriptorTicketValue) {
         return new Ticket(FlightExportTicketHelper.exportIdToFlightTicket(flightDescriptorTicketValue).getTicket()
                 .toByteArray());
+    }
+
+    private static FlightDescriptor flightDescriptorFor(int flightDescriptorTicketValue) {
+        return FlightDescriptor.path("e", Integer.toString(flightDescriptorTicketValue));
     }
 
     private static long integralMin(final Class<?> dhType) {

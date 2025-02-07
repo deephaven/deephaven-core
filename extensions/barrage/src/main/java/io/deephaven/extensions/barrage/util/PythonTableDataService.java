@@ -483,7 +483,7 @@ public class PythonTableDataService extends AbstractTableDataService {
                 }
 
                 final ArrayList<WritableChunk<Values>> resultChunks = new ArrayList<>(messages.length - 1);
-                final ChunkReader<? extends Values> reader = schemaPlus.computePrimitiveChunkReaders(
+                final ChunkReader<? extends Values> reader = schemaPlus.computeChunkReaders(
                         chunkReaderFactory, schema, streamReaderOptions)[0];
                 int mi = 1;
                 try {
