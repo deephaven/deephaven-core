@@ -56,8 +56,6 @@ test_that("is_static returns the correct value", {
 })
 
 test_that("nrow returns the correct number of rows", {
-  skip()
-
   data <- setup()
 
   expect_equal(nrow(data$th1), nrow(data$df1))
@@ -69,8 +67,6 @@ test_that("nrow returns the correct number of rows", {
 })
 
 test_that("ncol returns the correct number of columns", {
-  skip()
-
   data <- setup()
 
   expect_equal(ncol(data$th1), ncol(data$df1))
@@ -82,8 +78,6 @@ test_that("ncol returns the correct number of columns", {
 })
 
 test_that("dim returns the correct dimension", {
-  skip()
-
   data <- setup()
 
   expect_equal(dim(data$th1), dim(data$df1))
