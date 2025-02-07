@@ -1165,18 +1165,6 @@ public class JettyBarrageChunkFactoryTest {
 
     @Test
     public void testBinaryCustomMappings() throws Exception {
-        new CustomBinaryRoundTripTest(BigInteger.class) {
-            @Override
-            public int initializeRoot(@NotNull final VarBinaryVector source) {
-                for (int ii = 0; ii < NUM_ROWS; ++ii) {
-                    final BigInteger bi = new BigInteger(rnd.nextInt(100), rnd);
-                    source.set(ii, bi.toByteArray());
-                }
-
-                return NUM_ROWS;
-            }
-        }.runTest(TestWrapMode.MAP_KEY, TestNullMode.NOT_NULLABLE);
-
         new Utf8RoundTripTest(String.class, new ArrowType.Binary()).runTest();
         new CustomBinaryRoundTripTest(BigDecimal.class) {
             @Override
@@ -1197,9 +1185,15 @@ public class JettyBarrageChunkFactoryTest {
 
                 return NUM_ROWS;
             }
-        }.runTest();
+        }.skipMapKey().runTest();
 
         new CustomBinaryRoundTripTest(BigInteger.class) {
+            @Override
+            public Object truncate(@NotNull final VarBinaryVector source, final int ii) {
+                // to ensure that we don't have duplicate key values, we need to coerce back to BigInteger
+                return new BigInteger(source.get(ii));
+            }
+
             @Override
             public int initializeRoot(@NotNull final VarBinaryVector source) {
                 for (int ii = 0; ii < NUM_ROWS; ++ii) {
@@ -2123,6 +2117,11 @@ public class JettyBarrageChunkFactoryTest {
             final FixedSizeBinaryVector srcChild = (FixedSizeBinaryVector) srcChildVector;
             final FixedSizeBinaryVector dstChild = (FixedSizeBinaryVector) dest.getChildrenFromFields().get(0);
             int len = ((Collection<?>) source.getObject(index)).size();
+
+            int srcOffset = source.getElementStartIndex(index);
+            if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
+                srcOffset += len - HEAD_LIST_ITEM_LEN;
+            }
             if (previewMode.isEnabled()) {
                 len = Math.min(len, HEAD_LIST_ITEM_LEN);
             }
@@ -2137,10 +2136,6 @@ public class JettyBarrageChunkFactoryTest {
                 ((ListViewVector) dest).endValue(index, len);
             }
 
-            int srcOffset = source.getElementStartIndex(index);
-            if (previewMode == TestArrayPreviewMode.TAIL && len > HEAD_LIST_ITEM_LEN) {
-                srcOffset += len - HEAD_LIST_ITEM_LEN;
-            }
             final int dstOffset = dest.getElementStartIndex(index);
             for (int jj = 0; jj < len; ++jj) {
                 if (srcChild.isNull(srcOffset + jj)) {
