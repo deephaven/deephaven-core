@@ -9,7 +9,9 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
@@ -59,7 +61,6 @@ public class WebBarrageMessageReader {
 
     public WebBarrageMessage parseFrom(
             final BarrageOptions options,
-            ChunkType[] columnChunkTypes,
             Class<?>[] columnTypes,
             Class<?>[] componentTypes,
             FlightData flightData) throws IOException {
@@ -121,7 +122,7 @@ public class WebBarrageMessageReader {
 
                     // create an initial chunk of the correct size
                     final int chunkSize = (int) (Math.min(msg.rowsIncluded.size(), MAX_CHUNK_SIZE));
-                    final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                    final WritableChunk<Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
                     chunk.setSize(0);
                     msg.addColumnData[ci].data.add(chunk);
                 }
@@ -142,7 +143,7 @@ public class WebBarrageMessageReader {
                     // create an initial chunk of the correct size
                     final int chunkSize = (int) (Math.min(msg.modColumnData[ci].rowsModified.size(),
                             MAX_CHUNK_SIZE));
-                    final WritableChunk<Values> chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                    final WritableChunk<Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
                     chunk.setSize(0);
                     msg.modColumnData[ci].data.add(chunk);
 
@@ -217,7 +218,7 @@ public class WebBarrageMessageReader {
                 if (batch.length() > chunk.capacity() - chunk.size()) {
                     // reading the rows from this batch will overflow the existing chunk; create a new one
                     final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                    chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                    chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
                     acd.data.add(chunk);
 
                     chunk.setSize(0);
@@ -248,7 +249,7 @@ public class WebBarrageMessageReader {
                 if (numRowsToRead > chunk.capacity() - chunk.size()) {
                     // reading the rows from this batch will overflow the existing chunk; create a new one
                     final int chunkSize = (int) (Math.min(remaining, MAX_CHUNK_SIZE));
-                    chunk = columnChunkTypes[ci].makeWritableChunk(chunkSize);
+                    chunk = WritableObjectChunk.makeWritableChunk(chunkSize);
                     mcd.data.add(chunk);
 
                     chunk.setSize(0);
