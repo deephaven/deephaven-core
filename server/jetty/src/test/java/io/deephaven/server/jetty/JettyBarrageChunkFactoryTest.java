@@ -967,10 +967,16 @@ public class JettyBarrageChunkFactoryTest {
 
             @Override
             public void runTest() throws Exception {
-                // note that dense union requires a separate null column if you want null values
+                // TODO: revisit this test once https://github.com/apache/arrow-java/issues/399 is fixed
+                // since arrow-java has significant bugs w.r.t. Lists of Unions
                 runTest(TestWrapMode.NONE, TestNullMode.NONE);
-                // for (TestArrayMode wrapMode : TestArrayMode.values()) {
-                // runTest(TestNullMode.NONE, wrapMode);
+                // for (TestWrapMode wrapMode : TestWrapMode.values()) {
+                // if (wrapMode == TestWrapMode.FIXED_ARRAY || wrapMode == TestWrapMode.FIXED_VECTOR) {
+                // // it appears that VectorSchemaRoot#create loses the inner dense union types; another bug
+                // continue;
+                // }
+                // // note that dense union requires a separate null column if you want null values
+                // runTest(wrapMode, TestNullMode.NONE);
                 // }
             }
 
