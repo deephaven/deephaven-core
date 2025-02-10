@@ -17,7 +17,7 @@ commons-text = "1.13.0"
 # confluent and confluent-kafak-clients should be kept in-sync
 confluent = "7.8.0"
 confluent-kafka-clients = "7.8.0-ccs"
-dagger = "2.54"
+dagger = "2.55"
 deephaven-barrage = "0.7.2"
 deephaven-csv = "0.15.0"
 deephaven-hash = "0.2.0"
