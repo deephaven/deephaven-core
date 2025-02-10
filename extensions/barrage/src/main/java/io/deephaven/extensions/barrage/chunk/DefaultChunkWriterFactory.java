@@ -261,10 +261,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
             if (useVectorKernels) {
                 Class<?> componentType =
                         VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
-                if (componentType == Boolean.class) {
-                    // Boolean's are stored in ObjectVector and should use ObjectVectorExpansionKernel
-                    componentType = Object.class;
-                }
                 componentTypeInfo = new BarrageTypeInfo<>(
                         componentType,
                         componentType.getComponentType(),
