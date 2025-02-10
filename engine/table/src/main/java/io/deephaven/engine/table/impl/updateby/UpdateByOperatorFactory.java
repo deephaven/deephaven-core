@@ -225,6 +225,7 @@ public class UpdateByOperatorFactory {
                 // The presence of the paramToken indicates that this is a multi-column formula and we have a single
                 // output column in #selectable()
                 outputColumns.add(((RollingFormulaSpec) spec).selectable().newColumn().name());
+                return null;
             }
             final MatchPair[] pairs =
                     createColumnsToAddIfMissing(tableDef, parseMatchPairs(clause.columns()), spec, groupByColumns);
