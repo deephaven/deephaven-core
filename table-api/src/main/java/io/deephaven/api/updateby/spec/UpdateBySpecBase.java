@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 public abstract class UpdateBySpecBase implements UpdateBySpec {
 
-
     @Override
     public final ColumnUpdateOperation clause(String pair) {
         return clause(Pair.parse(pair));
