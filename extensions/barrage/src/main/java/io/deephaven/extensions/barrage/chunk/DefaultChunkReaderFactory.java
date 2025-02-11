@@ -283,7 +283,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
             // TODO: https://github.com/deephaven/deephaven-core/issues/6637
-            //  should we allow the user to supply the collector?
+            // should we allow the user to supply the collector?
             final Field structField = field.getChildren().get(0);
             final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
             final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
