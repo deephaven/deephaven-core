@@ -40,15 +40,14 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
         final ObjectChunk<Boolean[], A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
-        for (int ii = 0; ii < typedSource.size(); ++ii) {
-            int rowLen;
-            if (fixedSizeLength > 0) {
-                rowLen = Math.abs(fixedSizeLength);
-            } else {
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
                 final Boolean[] row = typedSource.get(ii);
-                rowLen = row == null ? 0 : row.length;
+                final int rowLen = row == null ? 0 : row.length;
+                totalSize += rowLen;
             }
-            totalSize += rowLen;
         }
         final WritableByteChunk<A> result = WritableByteChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
@@ -64,27 +63,22 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel<Bo
             }
             int written = 0;
             if (row != null) {
-                int offset = 0;
                 if (fixedSizeLength != 0) {
                     // limit length to fixedSizeLength
-                    written = Math.min(row.length, Math.abs(fixedSizeLength));
-                    if (fixedSizeLength < 0 && written < row.length) {
-                        // read from the end of the array when fixedSizeLength is negative
-                        offset = row.length - written;
-                    }
+                    written = Math.min(row.length, fixedSizeLength);
                 } else {
                     written = row.length;
                 }
 
                 // copy the row into the result
                 for (int j = 0; j < written; ++j) {
-                    final byte value = BooleanUtils.booleanAsByte(row[offset + j]);
+                    final byte value = BooleanUtils.booleanAsByte(row[j]);
                     result.set(lenWritten + j, value);
                 }
             }
             if (fixedSizeLength != 0) {
                 final int toNull = LongSizedDataStructure.intSize(
-                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - written));
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - written));
                 if (toNull > 0) {
                     // fill the rest of the row with nulls
                     result.fillWithNullValue(lenWritten + written, toNull);

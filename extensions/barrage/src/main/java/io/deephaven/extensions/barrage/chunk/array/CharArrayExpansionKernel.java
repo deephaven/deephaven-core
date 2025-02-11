@@ -37,15 +37,14 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel<char[]> {
         }
 
         long totalSize = 0;
-        for (int ii = 0; ii < source.size(); ++ii) {
-            final int rowLen;
-            if (fixedSizeLength != 0) {
-                rowLen = Math.abs(fixedSizeLength);
-            } else {
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
                 final char[] row = source.get(ii);
-                rowLen = row == null ? 0 : row.length;
+                final int rowLen = row == null ? 0 : row.length;
+                totalSize += rowLen;
             }
-            totalSize += rowLen;
         }
         final WritableCharChunk<A> result = WritableCharChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
@@ -61,23 +60,18 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel<char[]> {
             }
             int written = 0;
             if (row != null) {
-                int offset = 0;
                 if (fixedSizeLength != 0) {
                     // limit length to fixedSizeLength
-                    written = Math.min(row.length, Math.abs(fixedSizeLength));
-                    if (fixedSizeLength < 0 && written < row.length) {
-                        // read from the end of the array when fixedSizeLength is negative
-                        offset = row.length - written;
-                    }
+                    written = Math.min(row.length, fixedSizeLength);
                 } else {
                     written = row.length;
                 }
                 // copy the row into the result
-                result.copyFromArray(row, offset, lenWritten, written);
+                result.copyFromArray(row, 0, lenWritten, written);
             }
             if (fixedSizeLength != 0) {
                 final int toNull = LongSizedDataStructure.intSize(
-                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - written));
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - written));
                 if (toNull > 0) {
                     // fill the rest of the row with nulls
                     result.fillWithNullValue(lenWritten + written, toNull);

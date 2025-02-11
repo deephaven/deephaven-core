@@ -40,15 +40,14 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
         final ObjectChunk<T[], A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
-        for (int ii = 0; ii < typedSource.size(); ++ii) {
-            final int rowLen;
-            if (fixedSizeLength != 0) {
-                rowLen = Math.abs(fixedSizeLength);
-            } else {
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
                 final T[] row = typedSource.get(ii);
-                rowLen = row == null ? 0 : row.length;
+                final int rowLen = row == null ? 0 : row.length;
+                totalSize += rowLen;
             }
-            totalSize += rowLen;
         }
         final WritableObjectChunk<T, A> result = WritableObjectChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
@@ -64,14 +63,9 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
             }
             int written = 0;
             if (row != null) {
-                int offset = 0;
                 if (fixedSizeLength != 0) {
                     // limit length to fixedSizeLength
-                    written = Math.min(row.length, Math.abs(fixedSizeLength));
-                    if (fixedSizeLength < 0 && written < row.length) {
-                        // read from the end of the array when fixedSizeLength is negative
-                        offset = row.length - written;
-                    }
+                    written = Math.min(row.length, fixedSizeLength);
                 } else {
                     written = row.length;
                 }
@@ -80,7 +74,7 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
             }
             if (fixedSizeLength != 0) {
                 final int toNull = LongSizedDataStructure.intSize(
-                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - written));
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - written));
                 if (toNull > 0) {
                     // fill the rest of the row with nulls
                     result.fillWithNullValue(lenWritten + written, toNull);
@@ -115,7 +109,6 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
             return chunk;
         }
 
-        sizePerElement = Math.abs(sizePerElement);
         final int itemsInBatch = offsets == null
                 ? source.size() / sizePerElement
                 : (offsets.size() - (lengths == null ? 1 : 0));

@@ -168,7 +168,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
          * @formatter:on
          */
         protected boolean sendValidityBuffer() {
-            return fieldNullable && nullCount() != 0;
+            return nullCount() != 0;
         }
 
         @Override

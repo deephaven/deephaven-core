@@ -91,7 +91,7 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 }
 
                 final BigInteger truncatedValue;
-                boolean isNegative = value.compareTo(BigDecimal.ZERO) < 0;
+                boolean isNegative = value.signum() < 0;
                 if (isNegative) {
                     // negative values are sign extended to match truncationMask's byte length; operate on abs-value
                     truncatedValue = value.unscaledValue().negate().and(truncationMask).negate();

@@ -20,7 +20,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
@@ -51,15 +51,14 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
         final ObjectChunk<LongVector, A> typedSource = source.asObjectChunk();
 
         long totalSize = 0;
-        for (int ii = 0; ii < typedSource.size(); ++ii) {
-            final LongVector row = typedSource.get(ii);
-            long rowLen;
-            if (fixedSizeLength != 0) {
-                rowLen = Math.abs(fixedSizeLength);
-            } else {
-                rowLen = row == null ? 0 : row.size();
+        if (fixedSizeLength != 0) {
+            totalSize = source.size() * (long) fixedSizeLength;
+        } else {
+            for (int ii = 0; ii < source.size(); ++ii) {
+                final LongVector row = typedSource.get(ii);
+                final long rowLen = row == null ? 0 : row.size();
+                totalSize += rowLen;
             }
-            totalSize += rowLen;
         }
         final WritableLongChunk<A> result = WritableLongChunk.makeWritableChunk(
                 LongSizedDataStructure.intSize(DEBUG_NAME, totalSize));
@@ -75,7 +74,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
             }
             if (row != null) {
                 final LongConsumer consumer = result::add;
-                try (final CloseablePrimitiveIteratorOfLong iter = row.iterator()) {
+                try (final CloseableIterator<Long> iter = row.iterator()) {
                     Stream<Long> stream = iter.stream();
                     if (fixedSizeLength > 0) {
                         // limit length to fixedSizeLength
@@ -93,7 +92,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel<LongVect
             }
             if (fixedSizeLength != 0) {
                 final int toNull = LongSizedDataStructure.intSize(
-                        DEBUG_NAME, Math.max(0, Math.abs(fixedSizeLength) - (row == null ? 0 : row.size())));
+                        DEBUG_NAME, Math.max(0, fixedSizeLength - (row == null ? 0 : row.size())));
                 if (toNull > 0) {
                     // fill the rest of the row with nulls
                     result.fillWithNullValue(result.size(), toNull);

@@ -716,7 +716,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         final short value = src.get(ii);
                         dst.set(dstOffset + ii, value == QueryConstants.NULL_SHORT
                                 ? null
-                                : BigInteger.valueOf((long) Float16.toFloat(value)));
+                                : BigDecimal.valueOf(Float16.toFloat(value)).toBigInteger());
                     }
                 });
 
@@ -726,7 +726,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         final float value = src.get(ii);
                         dst.set(dstOffset + ii, value == QueryConstants.NULL_FLOAT
                                 ? null
-                                : BigInteger.valueOf((long) value));
+                                : BigDecimal.valueOf(value).toBigInteger());
                     }
                 });
             case DOUBLE:
@@ -735,7 +735,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                         final double value = src.get(ii);
                         dst.set(dstOffset + ii, value == QueryConstants.NULL_DOUBLE
                                 ? null
-                                : BigInteger.valueOf((long) value));
+                                : BigDecimal.valueOf(value).toBigInteger());
                     }
                 });
 

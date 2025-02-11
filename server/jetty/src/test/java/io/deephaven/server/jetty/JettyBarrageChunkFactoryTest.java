@@ -803,7 +803,8 @@ public class JettyBarrageChunkFactoryTest {
     @Test
     public void testBit() throws Exception {
         // note that dh does not support primitive boolean columns because there would be no way to represent null
-        new BoolRoundTripTest(Boolean.class).runTest();
+        new BoolRoundTripTest(Boolean.class).runTest(TestWrapMode.FIXED_VECTOR, TestNullMode.NONE,
+                TestArrayPreviewMode.NONE);
         new BoolRoundTripTest(byte.class).runTest();
         for (TestWrapMode wrapMode : TestWrapMode.values()) {
             if (wrapMode == TestWrapMode.NONE || wrapMode.isVector() || wrapMode == TestWrapMode.MAP_KEY) {

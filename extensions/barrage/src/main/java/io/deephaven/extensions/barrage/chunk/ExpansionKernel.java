@@ -67,7 +67,8 @@ public interface ExpansionKernel<T> {
      * <li>If {@code offsets} is {@code null}, each row is assumed to have a fixed size defined by
      * {@code sizePerElement}.</li>
      * <li>If {@code lengths} is {@code null}, each row's size is determined by differences between adjacent elements in
-     * {@code offsets}.</li>
+     * {@code offsets}. An element's length is determined by subtracting its offset from the next offset, therefore
+     * offsets must contain one more element than the number of elements.</li>
      * <li>If both {@code offsets} and {@code lengths} are provided, {@code lengths} determines the row sizes.</li>
      * </ul>
      *

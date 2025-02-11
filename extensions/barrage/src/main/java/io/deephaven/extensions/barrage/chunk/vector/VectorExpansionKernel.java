@@ -60,6 +60,10 @@ public interface VectorExpansionKernel<T extends Vector<T>> extends ExpansionKer
     @SuppressWarnings("unchecked")
     static <T extends Vector<T>> VectorExpansionKernel<T> makeExpansionKernel(
             final ChunkType chunkType, final Class<?> componentType) {
+        if (componentType == boolean.class || componentType == Boolean.class) {
+            return (VectorExpansionKernel<T>) BooleanVectorExpansionKernel.INSTANCE;
+        }
+
         switch (chunkType) {
             case Char:
                 return (VectorExpansionKernel<T>) CharVectorExpansionKernel.INSTANCE;

@@ -32,7 +32,8 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
     /**
      * Creator of {@link ChunkWriter} instances.
      * <p>
-     * This API may not be stable, while the JS API's usages of it are implemented.
+     * TODO: https://github.com/deephaven/deephaven-core/issues/5927 This API may not be stable, while the JS API's
+     * usages of it are implemented.
      */
     interface Factory {
         /**

@@ -232,7 +232,7 @@ public class MapChunkWriter<T>
             }
             listener.noteLogicalBuffer(padBufferSize(numOffsetBytes));
 
-            // a validity buffer for the inner struct ??
+            // a validity buffer for the inner struct; (the buffer is odd since each entry needs to be valid)
             listener.noteLogicalBuffer(0);
 
             // payload
