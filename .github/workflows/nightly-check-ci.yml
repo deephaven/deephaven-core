@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle-task: ['check', 'testSerial']
+        gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
         test-jvm-version: ['11', '17', '21', '23']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
@@ -67,10 +67,6 @@ jobs:
         run: |
           .github/scripts/gradle-properties.sh >> gradle.properties
           cat gradle.properties
-          
-      - name: Fail On JVM 17 Check
-        if: ${{ matrix.test-jvm-version == '17' &&  matrix.gradle-task == 'check' }}
-        run: boguscommand
 
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }} with coverage=${{ env.COVER }}
         run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }} -Pcoverage.enabled=$COVER
