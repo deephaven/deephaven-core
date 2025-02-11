@@ -166,7 +166,7 @@ jobs:
       - name: Run gradle ${{ matrix.gradle-task }}
         run: |
           ./gradlew -Pcoverage.enabled=true jacocoTestReport
-          ./gradlew -Pcoverage.enabled=true coverage-merge
+          ./gradlew -Pcoverage.enabled=true coverage:coverage-merge
           
       - name: Upload Combined Coverage Results
         uses: actions/upload-artifact@v4
