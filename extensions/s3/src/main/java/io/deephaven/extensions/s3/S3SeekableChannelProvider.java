@@ -73,11 +73,22 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
+    /**
+     * The scheme to apply to the children URIs in the returned stream.
+     */
+    private final String childScheme;
+
+
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
+        this(s3Instructions, S3_URI_SCHEME);
+    }
+
+    S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions, @NotNull final String childScheme) {
         this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
         this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
+        this.childScheme = childScheme;
     }
 
     @Override
@@ -99,7 +110,10 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(
             @NotNull final SeekableChannelContext channelContext,
-            @NotNull final URI uri) {
+            @NotNull URI uri) {
+        if (uri.getScheme().equals("s3a")) {
+            uri = URI.create("s3://" + uri.getAuthority() + uri.getPath());
+        }
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
         final long cachedSize = getCachedSize(uri);
@@ -141,7 +155,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Fetching child URIs for directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, false, S3_URI_SCHEME);
+        return createStream(directory, false);
     }
 
     @Override
@@ -149,7 +163,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (log.isDebugEnabled()) {
             log.debug().append("Performing recursive traversal from directory: ").append(directory.toString()).endl();
         }
-        return createStream(directory, true, S3_URI_SCHEME);
+        return createStream(directory, true);
     }
 
     /**
@@ -157,12 +171,10 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
      *
      * @param directory The parent directory to list.
      * @param isRecursive Whether to list the entries recursively.
-     * @param childScheme The scheme to apply to the children URIs in the returned stream.
      */
     Stream<URI> createStream(
             @NotNull final URI directory,
-            final boolean isRecursive,
-            @NotNull final String childScheme) {
+            final boolean isRecursive) {
         // The following iterator fetches URIs from S3 in batches and creates a stream
         final Iterator<URI> iterator = new Iterator<>() {
             private final String bucketName;
