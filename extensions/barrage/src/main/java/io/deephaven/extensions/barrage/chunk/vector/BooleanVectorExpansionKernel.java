@@ -40,7 +40,7 @@ public class BooleanVectorExpansionKernel implements VectorExpansionKernel<Objec
             if (offsetsDest != null) {
                 offsetsDest.setSize(0);
             }
-            return WritableObjectChunk.makeWritableChunk(0);
+            return WritableByteChunk.makeWritableChunk(0);
         }
 
         final ObjectChunk<ObjectVector<Boolean>, A> typedSource = source.asObjectChunk();

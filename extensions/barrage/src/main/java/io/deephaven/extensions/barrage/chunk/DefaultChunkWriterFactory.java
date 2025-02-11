@@ -294,7 +294,6 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
-            // TODO: should we allow the user to supply the collector?
             final Field structField = field.getChildren().get(0);
             final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
             final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
@@ -307,8 +306,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     keyWriter, valueWriter, keyTypeInfo.chunkType(), valueTypeInfo.chunkType(), field.isNullable());
         }
 
-        // TODO: if (typeId == ArrowType.ArrowTypeID.Struct) {
-        // expose transformer API of Map<String, Chunk<Values>> -> T
+        // TODO: struct support - https://github.com/deephaven/deephaven-core/issues/6636
+        // expose @FunctionalInterface of Map<String, Chunk<Values>> -> T?
+        // if (typeId == ArrowType.ArrowTypeID.Struct) {
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();
@@ -418,8 +418,9 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
                     chunk.set(ii, longChunk.isNull(ii) ? value : value / factor);
                 }
             } else {
+                final ObjectChunk<ZonedDateTime, Values> zdtChunk = source.asObjectChunk();
                 for (int ii = 0; ii < source.size(); ++ii) {
-                    final ZonedDateTime value = source.<ZonedDateTime>asObjectChunk().get(ii);
+                    final ZonedDateTime value = zdtChunk.get(ii);
                     chunk.set(ii, value == null
                             ? QueryConstants.NULL_LONG
                             : DateTimeUtils.epochNanos(value) / factor);

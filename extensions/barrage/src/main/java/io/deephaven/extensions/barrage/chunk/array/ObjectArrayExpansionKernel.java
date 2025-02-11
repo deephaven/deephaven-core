@@ -125,11 +125,6 @@ public class ObjectArrayExpansionKernel<T> implements ArrayExpansionKernel<T[]> 
         for (int ii = 0; ii < itemsInBatch; ++ii) {
             final int offset = offsets == null ? ii * sizePerElement : offsets.get(ii);
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
-            if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
-                continue;
-            }
 
             // noinspection unchecked
             final T[] row = (T[]) ArrayReflectUtil.newInstance(componentType, rowLen);

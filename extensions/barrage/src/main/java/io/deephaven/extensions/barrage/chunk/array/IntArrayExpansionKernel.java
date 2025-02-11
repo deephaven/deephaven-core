@@ -129,9 +129,6 @@ public class IntArrayExpansionKernel implements ArrayExpansionKernel<int[]> {
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LEN_ARRAY);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 final int[] row = new int[rowLen];
                 typedSource.copyToArray(offset, row, 0, rowLen);

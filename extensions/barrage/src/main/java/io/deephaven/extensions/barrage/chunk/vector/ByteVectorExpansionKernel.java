@@ -78,12 +78,6 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel<ByteVect
                     if (fixedSizeLength > 0) {
                         // limit length to fixedSizeLength
                         stream = stream.limit(fixedSizeLength);
-                    } else if (fixedSizeLength < 0) {
-                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
-                        if (numToSkip > 0) {
-                            // read from the end of the array when fixedSizeLength is negative
-                            stream = stream.skip(numToSkip);
-                        }
                     }
                     // copy the row into the result
                     stream.forEach(consumer::accept);
@@ -141,9 +135,6 @@ public class ByteVectorExpansionKernel implements VectorExpansionKernel<ByteVect
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LENGTH_VECTOR);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 final byte[] row = new byte[rowLen];
                 typedSource.copyToArray(offset, row, 0, rowLen);

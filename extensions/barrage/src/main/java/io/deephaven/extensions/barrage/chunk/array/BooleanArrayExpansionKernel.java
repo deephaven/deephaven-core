@@ -128,9 +128,6 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel<boolean
             final int rowLen = computeSize(ii, sizePerElement, offsets, lengths);
             if (rowLen == 0) {
                 result.set(outOffset + ii, ZERO_LEN_ARRAY);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 final boolean[] row = new boolean[rowLen];
                 for (int j = 0; j < rowLen; ++j) {

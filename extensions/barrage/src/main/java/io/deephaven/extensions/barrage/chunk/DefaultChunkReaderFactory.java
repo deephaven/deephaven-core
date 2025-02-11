@@ -93,7 +93,7 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
     }
 
     // allow subclasses to modify this as they wish
-    protected final Map<ArrowType.ArrowTypeID, Map<Class<?>, ChunkReaderFactory>> registeredFactories =
+    private final Map<ArrowType.ArrowTypeID, Map<Class<?>, ChunkReaderFactory>> registeredFactories =
             new HashMap<>();
 
     protected DefaultChunkReaderFactory() {
@@ -282,6 +282,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
         }
 
         if (typeId == ArrowType.ArrowTypeID.Map) {
+            // TODO: https://github.com/deephaven/deephaven-core/issues/6637
+            //  should we allow the user to supply the collector?
             final Field structField = field.getChildren().get(0);
             final BarrageTypeInfo<Field> keyTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(0));
             final BarrageTypeInfo<Field> valueTypeInfo = BarrageUtil.getDefaultType(structField.getChildren().get(1));
@@ -293,9 +295,10 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
             return (ChunkReader<T>) new MapChunkReader<>(keyReader, valueReader);
         }
 
-        // TODO: if (typeId == ArrowType.ArrowTypeID.Struct) {
-        // expose transformer API of Map<String, Chunk<Values>> -> T
-        // maybe defaults to Map<String, Object>
+        // TODO: struct support - https://github.com/deephaven/deephaven-core/issues/6636
+        // expose @FunctionInterface of Map<String, Chunk<Values>> -> T
+        // maybe defaults to Map<String, Object>?
+        // if (typeId == ArrowType.ArrowTypeID.Struct) {
 
         if (typeId == ArrowType.ArrowTypeID.Union) {
             final ArrowType.Union unionType = (ArrowType.Union) field.getType();

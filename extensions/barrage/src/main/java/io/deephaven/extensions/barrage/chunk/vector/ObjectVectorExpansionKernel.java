@@ -73,12 +73,6 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
                     if (fixedSizeLength > 0) {
                         // limit length to fixedSizeLength
                         stream = stream.limit(fixedSizeLength);
-                    } else if (fixedSizeLength < 0) {
-                        final long numToSkip = Math.max(0, row.size() + fixedSizeLength);
-                        if (numToSkip > 0) {
-                            // read from the end of the array when fixedSizeLength is negative
-                            stream = stream.skip(numToSkip);
-                        }
                     }
 
                     // copy the row into the result
@@ -139,9 +133,6 @@ public class ObjectVectorExpansionKernel<T> implements VectorExpansionKernel<Obj
             if (rowLen == 0) {
                 // noinspection unchecked
                 result.set(outOffset + ii, (ObjectVector<T>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
-            } else if (rowLen < 0) {
-                // note that this may occur when data sent from a native arrow client is null
-                result.set(outOffset + ii, null);
             } else {
                 // noinspection unchecked
                 final T[] row = (T[]) Array.newInstance(componentType, rowLen);
