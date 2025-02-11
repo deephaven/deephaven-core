@@ -411,9 +411,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     subscription.getServerViewport(), subscription.isReversed()));
         }
 
-        // for ViewportData
+        // for ViewportData, TreeViewportData
         @JsProperty
-        public Double getOffset() {
+        public double getOffset() {
             return offset;
         }
 
