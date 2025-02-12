@@ -179,10 +179,16 @@ public interface Table extends
      * implementation.
      */
     String AGGREGATION_ROW_LOOKUP_ATTRIBUTE = "AggregationRowLookup";
+
     /**
      * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
+    /**
+     * Attribute on sort results used for hierarchical table construction. Specificaiton is left to the implementation.
+     */
+    String SORT_ROW_REDIRECTION_ATTRIBUTE = "SortRowRedirection";
+
     String SNAPSHOT_VIEWPORT_TYPE = "Snapshot";
     /**
      * This attribute is used internally by TableTools.merge to detect successive merges. Its presence indicates that it
