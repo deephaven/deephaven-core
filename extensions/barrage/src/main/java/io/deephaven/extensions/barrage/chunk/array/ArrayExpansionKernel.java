@@ -3,73 +3,58 @@
 //
 package io.deephaven.extensions.barrage.chunk.array;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 
-public interface ArrayExpansionKernel {
+/**
+ * The {@code ArrayExpansionKernel} interface provides a mechanism for expanding chunks containing arrays into a pair of
+ * {@code LongChunk} and {@code Chunk<T>}, enabling efficient handling of array-typed columnar data. This interface is
+ * part of the Deephaven Barrage extensions for processing structured data in Flight/Barrage streams.
+ * <p>
+ * An {@code ArrayExpansionKernel} is specialized for handling array-like data, where each element in the source chunk
+ * may itself be an array. The kernel performs the transformation to a flattened format, suitable for further processing
+ * or serialization.
+ *
+ * @param <T> The type of elements within the array being expanded.
+ */
+public interface ArrayExpansionKernel<T> extends ExpansionKernel<T> {
     /**
-     * @return a kernel that expands a {@code Chunk<T[]>} to pair of {@code LongChunk, Chunk<T>}
+     * Creates an {@code ArrayExpansionKernel} for the specified {@link ChunkType} and component type.
+     * <p>
+     * The implementation is chosen based on the provided {@code chunkType} and {@code componentType}, with specialized
+     * kernels for primitive types and boxed types, including {@code boolean} handling for packed bit representations.
+     *
+     * @param chunkType The {@link ChunkType} representing the type of data in the chunk.
+     * @param componentType The class of the component type within the array.
+     * @param <T> The type of elements within the array being expanded.
+     * @return An {@code ArrayExpansionKernel} capable of expanding chunks of the specified type.
      */
-    static ArrayExpansionKernel makeExpansionKernel(final ChunkType chunkType, final Class<?> componentType) {
+    @SuppressWarnings("unchecked")
+    static <T> ArrayExpansionKernel<T> makeExpansionKernel(final ChunkType chunkType, final Class<?> componentType) {
+        // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
+        if (componentType == boolean.class) {
+            return (ArrayExpansionKernel<T>) BooleanArrayExpansionKernel.INSTANCE;
+        } else if (componentType == Boolean.class) {
+            return (ArrayExpansionKernel<T>) BoxedBooleanArrayExpansionKernel.INSTANCE;
+        }
+
         switch (chunkType) {
             case Char:
-                return CharArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) CharArrayExpansionKernel.INSTANCE;
             case Byte:
-                // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
-                if (componentType == boolean.class) {
-                    return BooleanArrayExpansionKernel.INSTANCE;
-                } else if (componentType == Boolean.class) {
-                    return BoxedBooleanArrayExpansionKernel.INSTANCE;
-                }
-                return ByteArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) ByteArrayExpansionKernel.INSTANCE;
             case Short:
-                return ShortArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) ShortArrayExpansionKernel.INSTANCE;
             case Int:
-                return IntArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) IntArrayExpansionKernel.INSTANCE;
             case Long:
-                return LongArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) LongArrayExpansionKernel.INSTANCE;
             case Float:
-                return FloatArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) FloatArrayExpansionKernel.INSTANCE;
             case Double:
-                return DoubleArrayExpansionKernel.INSTANCE;
+                return (ArrayExpansionKernel<T>) DoubleArrayExpansionKernel.INSTANCE;
             default:
-                return new ObjectArrayExpansionKernel(componentType);
+                return (ArrayExpansionKernel<T>) new ObjectArrayExpansionKernel<>(componentType);
         }
     }
-
-    /**
-     * This expands the source from a {@code T[]} per element to a flat {@code T} per element. The kernel records the
-     * number of consecutive elements that belong to a row in {@code perElementLengthDest}. The returned chunk is owned
-     * by the caller.
-     *
-     * @param source the source chunk of T[] to expand
-     * @param perElementLengthDest the destination IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is
-     *        equivalent to {@code source.get(i).length}
-     * @return an unrolled/flattened chunk of T
-     */
-    <T, A extends Any> WritableChunk<A> expand(ObjectChunk<T, A> source,
-            WritableIntChunk<ChunkPositions> perElementLengthDest);
-
-    /**
-     * This contracts the source from a pair of {@code LongChunk} and {@code Chunk<T>} and produces a
-     * {@code Chunk<T[]>}. The returned chunk is owned by the caller.
-     *
-     * @param source the source chunk of T to contract
-     * @param perElementLengthDest the source IntChunk for which {@code dest.get(i + 1) - dest.get(i)} is equivalent to
-     *        {@code source.get(i).length}
-     * @param outChunk the returned chunk from an earlier record batch
-     * @param outOffset the offset to start writing into {@code outChunk}
-     * @param totalRows the total known rows for this column; if known (else 0)
-     * @return a result chunk of T[]
-     */
-    <T, A extends Any> WritableObjectChunk<T, A> contract(
-            Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest, WritableChunk<A> outChunk, int outOffset,
-            int totalRows);
 }

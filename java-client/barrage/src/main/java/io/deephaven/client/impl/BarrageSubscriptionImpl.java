@@ -3,13 +3,9 @@
 //
 package io.deephaven.client.impl;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.exceptions.RequestCancelledException;
@@ -29,7 +25,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -46,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -68,7 +62,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private final CheckForCompletion checkForCompletion;
     private final BarrageUtil.ConvertedArrowSchema schema;
     private final ScheduledExecutorService executorService;
-    private final BarrageStreamReader barrageStreamReader;
+    private final BarrageMessageReaderImpl barrageMessageReader;
     private volatile BarrageTable resultTable;
 
     private LivenessScope constructionScope;
@@ -106,10 +100,10 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         schema = BarrageUtil.convertArrowSchema(tableHandle.response());
         checkForCompletion = new CheckForCompletion();
 
-        barrageStreamReader = new BarrageStreamReader();
+        barrageMessageReader = new BarrageMessageReaderImpl();
         final MethodDescriptor<FlightData, BarrageMessage> subscribeDescriptor =
                 getClientDoExchangeDescriptor(options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
-                        schema.computeWireComponentTypes(), barrageStreamReader);
+                        schema.computeWireComponentTypes(), barrageMessageReader);
 
         // We need to ensure that the DoExchange RPC does not get attached to the server RPC when this is being called
         // from a Deephaven server RPC thread. If we need to generalize this in the future, we may wrap this logic in a
@@ -239,7 +233,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         boolean isFullSubscription = viewport == null;
         final BarrageTable localResultTable = BarrageTable.make(
-                executorService, schema.tableDef, schema.attributes, isFullSubscription, checkForCompletion);
+                executorService, schema, isFullSubscription, checkForCompletion);
         resultTable = localResultTable;
 
         // we must create the future before checking `isConnected` to guarantee `future` visibility in `destroy`
@@ -259,7 +253,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 columns == null ? null : (BitSet) (columns.clone()),
                 reverseViewport);
 
-        barrageStreamReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
+        barrageMessageReader.setDeserializeTmConsumer(localResultTable.getDeserializationTmConsumer());
 
         if (!isSnapshot) {
             localResultTable.addSourceToRegistrar();
@@ -268,8 +262,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         // Send the initial subscription:
         observer.onNext(FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(
-                        viewport, columns, reverseViewport, options, tableHandle.ticketId().bytes())))
+                .setAppMetadata(ByteStringAccess.wrap(BarrageUtil.createSubscriptionRequestMetadataBytes(
+                        tableHandle.ticketId().bytes(), options, viewport, columns, reverseViewport)))
                 .build());
 
         return future;
@@ -326,49 +320,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 .append(System.identityHashCode(this)).append("/");
     }
 
-    @VisibleForTesting
-    static public ByteBuffer makeRequestInternal(
-            @Nullable final RowSet viewport,
-            @Nullable final BitSet columns,
-            boolean reverseViewport,
-            @Nullable BarrageSubscriptionOptions options,
-            byte @NotNull [] ticketId) {
-
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int colOffset = 0;
-        if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
-        }
-        int vpOffset = 0;
-        if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(
-                    metadata, BarrageProtoUtil.toByteBuffer(viewport));
-        }
-        int optOffset = 0;
-        if (options != null) {
-            optOffset = options.appendTo(metadata);
-        }
-
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, ticketId);
-        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
-        BarrageSubscriptionRequest.addColumns(metadata, colOffset);
-        BarrageSubscriptionRequest.addViewport(metadata, vpOffset);
-        BarrageSubscriptionRequest.addSubscriptionOptions(metadata, optOffset);
-        BarrageSubscriptionRequest.addTicket(metadata, ticOffset);
-        BarrageSubscriptionRequest.addReverseViewport(metadata, reverseViewport);
-        metadata.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata));
-
-        final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-        final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-        wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                wrapper,
-                BarrageUtil.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
-                innerOffset));
-        return wrapper.dataBuffer();
-    }
-
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
@@ -384,7 +335,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
-            final StreamReader streamReader) {
+            final BarrageMessageReader streamReader) {
         final MethodDescriptor.Marshaller<FlightData> requestMarshaller =
                 ProtoUtils.marshaller(FlightData.getDefaultInstance());
         final MethodDescriptor<?, ?> descriptor = FlightServiceGrpc.getDoExchangeMethod();
@@ -405,14 +356,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
         private final Class<?>[] componentTypes;
-        private final StreamReader streamReader;
+        private final BarrageMessageReader streamReader;
 
         public BarrageDataMarshaller(
                 final BarrageSubscriptionOptions options,
                 final ChunkType[] columnChunkTypes,
                 final Class<?>[] columnTypes,
                 final Class<?>[] componentTypes,
-                final StreamReader streamReader) {
+                final BarrageMessageReader streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -473,7 +424,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             if (isComplete) {
                 // remove all unpopulated rows from viewport snapshots
                 if (isSnapshot && serverViewport != null) {
-                    // noinspection resource
                     final WritableRowSet currentRowSet = localResultTable.getRowSet().writableCast();
                     try (final RowSet populated =
                             currentRowSet.subSetForPositions(serverViewport, serverReverseViewport)) {

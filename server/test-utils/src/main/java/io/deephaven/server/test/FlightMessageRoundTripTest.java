@@ -3,7 +3,6 @@
 //
 package io.deephaven.server.test;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
@@ -12,11 +11,6 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.barrage.flatbuf.ColumnConversionMode;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.*;
@@ -72,8 +66,8 @@ import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.DateMilliVector;
+import org.apache.arrow.vector.DurationVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.TimeStampMicroVector;
@@ -102,8 +96,8 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -112,7 +106,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
 
 /**
@@ -763,31 +756,8 @@ public abstract class FlightMessageRoundTripTest {
         try (FlightClient.ExchangeReaderWriter erw = flightClient.doExchange(fd);
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
-            final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-            // use 0 for batch size and max message size to use server-side defaults
-            int optOffset = BarrageSnapshotOptions.createBarrageSnapshotOptions(metadata, false, 0, 0, 0);
-
-            final int ticOffset =
-                    BarrageSnapshotRequest.createTicketVector(metadata,
-                            ScopeTicketHelper.nameToBytes(staticTableName));
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
-            BarrageSnapshotRequest.addColumns(metadata, 0);
-            BarrageSnapshotRequest.addViewport(metadata, 0);
-            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
-            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
-            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
-
-            final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-            final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-            wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-                    wrapper,
-                    0x6E687064, // the numerical representation of the ASCII "dphn".
-                    BarrageMessageType.BarrageSnapshotRequest,
-                    innerOffset));
-
-            // extract the bytes and package them in an ArrowBuf for transmission
-            byte[] msg = wrapper.sizedByteArray();
+            byte[] msg = BarrageUtil.createSnapshotRequestMetadataBytes(ScopeTicketHelper.nameToBytes(staticTableName),
+                    io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build());
             ArrowBuf data = allocator.buffer(msg.length);
             data.writeBytes(msg);
 
@@ -1078,9 +1048,9 @@ public abstract class FlightMessageRoundTripTest {
                 final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE)) {
 
             // make a subscription request for test
-            final ByteBuffer request = makeRequestInternal(null, null, false, options, ticket.ticket());
-            ArrowBuf data = allocator.buffer(request.remaining());
-            data.writeBytes(request.array(), request.arrayOffset() + request.position(), request.remaining());
+            final byte[] request = BarrageUtil.createSubscriptionRequestMetadataBytes(ticket.ticket(), options);
+            ArrowBuf data = allocator.buffer(request.length);
+            data.writeBytes(request);
             stream.getWriter().putMetadata(data);
 
             // read messages until we see at least one modification batch:
@@ -1104,9 +1074,9 @@ public abstract class FlightMessageRoundTripTest {
 
     private void testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit timeUnit, long factor) {
         final int exportId = nextTicket++;
-        final Field field = Field.notNullable("Duration", new ArrowType.Duration(timeUnit));
+        final Field field = Field.nullable("Duration", new ArrowType.Duration(timeUnit));
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final BigIntVector vector = new BigIntVector(field, allocator);
+                final DurationVector vector = new DurationVector(field, allocator);
                 final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
@@ -1114,9 +1084,12 @@ public abstract class FlightMessageRoundTripTest {
             final int numRows = 12;
             vector.allocateNew(numRows);
             for (int ii = 0; ii < numRows; ++ii) {
-                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+                if (ii % 3 == 0) {
+                    vector.setNull(ii);
+                } else {
+                    vector.set(ii, ii);
+                }
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1127,14 +1100,13 @@ public abstract class FlightMessageRoundTripTest {
             Assert.eq(result.getState(), "result.getState()",
                     ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
             Assert.eq(result.get().size(), "result.get().size()", numRows);
-            final ColumnSource<Long> duration = result.get().getColumnSource("Duration");
+            final ColumnSource<Duration> duration = result.get().getColumnSource("Duration");
 
             for (int ii = 0; ii < numRows; ++ii) {
                 if (ii % 3 == 0) {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", QueryConstants.NULL_LONG,
-                            "QueryConstants.NULL_LONG");
+                    Assert.eqNull(duration.get(ii), "duration.get(ii)");
                 } else {
-                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", ii * factor, "ii * factor");
+                    Assert.eq(duration.get(ii).toNanos(), "duration.get(ii).toNanos()", ii * factor, "ii * factor");
                 }
             }
         }
@@ -1171,7 +1143,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1225,7 +1196,6 @@ public abstract class FlightMessageRoundTripTest {
             for (int ii = 0; ii < numRows; ++ii) {
                 vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
             }
-            vector.setValueCount(numRows);
 
             root.setRowCount(numRows);
             stream.putNext();
@@ -1272,12 +1242,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+
+            final UnionListWriter listWriter = outerVector.getWriter();
             listWriter.writeNull();
-            listWriter.setValueCount(numRows);
+
             root.setRowCount(numRows);
 
             stream.putNext();
@@ -1305,13 +1275,12 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             listWriter.startList();
             listWriter.endList();
-            listWriter.setValueCount(numRows);
 
             root.setRowCount(numRows);
 
@@ -1342,15 +1311,15 @@ public abstract class FlightMessageRoundTripTest {
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
                     FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
 
-            outerVector.allocateNew();
-            UnionListWriter listWriter = new UnionListWriter(outerVector);
-
             final int numRows = 1;
+            outerVector.allocateNew();
+            final UnionListWriter listWriter = outerVector.getWriter();
+
             // We want to recreate this structure:
             // new double[][] { null, new double[] {}, new double[] { 42.42f, 43.43f } }
 
             listWriter.startList();
-            BaseWriter.ListWriter innerListWriter = listWriter.list();
+            final BaseWriter.ListWriter innerListWriter = listWriter.list();
 
             // null inner list
             innerListWriter.writeNull();
@@ -1366,7 +1335,6 @@ public abstract class FlightMessageRoundTripTest {
             innerListWriter.endList();
 
             listWriter.endList();
-            listWriter.setValueCount(numRows);
             root.setRowCount(numRows);
 
             stream.putNext();
