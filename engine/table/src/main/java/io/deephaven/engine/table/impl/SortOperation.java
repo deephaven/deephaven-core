@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.LongChunkColumnSource;
+import io.deephaven.engine.table.impl.util.IdentityRowRedirection;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -26,14 +27,20 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.table.Table.SORT_REVERSE_LOOKUP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.SORT_ROW_REDIRECTION_ATTRIBUTE;
 
 public class SortOperation implements QueryTable.MemoizableOperation<QueryTable> {
+    static final Map<String, Object> IDENTITY_REDIRECTION_ATTRIBUTES;
+    static {
+        final HashMap<String, Object> identityRedirectionAttributes = new HashMap<>();
+        identityRedirectionAttributes.put(SORT_REVERSE_LOOKUP_ATTRIBUTE, LongUnaryOperator.identity());
+        identityRedirectionAttributes.put(SORT_ROW_REDIRECTION_ATTRIBUTE, IdentityRowRedirection.INSTANCE);
+        IDENTITY_REDIRECTION_ATTRIBUTES = Collections.unmodifiableMap(identityRedirectionAttributes);
+    }
 
     private final QueryTable parent;
     private QueryTable resultTable;
@@ -143,6 +150,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         resultTable = new QueryTable(resultRowSet, resultMap);
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
         resultTable.setFlat();
+        resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMapping);
         setSorted(resultTable);
         return resultTable;
     }
@@ -228,7 +236,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
     }
 
     private QueryTable withSorted(QueryTable table) {
-        return (QueryTable) SortedColumnsAttribute.withOrderForColumn(table, sortColumnNames[0], sortOrder[0]);
+        return (QueryTable) SortedColumnsAttribute.withOrderForColumn(table, sortColumnNames[0], sortOrder[0], IDENTITY_REDIRECTION_ATTRIBUTES);
     }
 
     @Override
@@ -298,6 +306,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             resultTable = new QueryTable(resultRowSet, resultMap);
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
+            resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMapping);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
                 return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
@@ -324,15 +333,14 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * Get the row redirection for a sort result.
      *
      * @param sortResult The sort result table; <em>must</em> be the direct result of a sort.
-     * @return The row redirection if at least one column required redirection, otherwise {@code null}
+     * @return The row redirection for this table.
      */
     public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
-        for (final ColumnSource<?> columnSource : sortResult.getColumnSources()) {
-            if (columnSource instanceof RedirectedColumnSource) {
-                return ((RedirectedColumnSource<?>) columnSource).getRowRedirection();
-            }
+        final RowRedirection attribute = (RowRedirection) sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
+        if (attribute == null) {
+            throw new IllegalStateException("getRowRedirection argument is not the result of a sort.");
         }
-        return null;
+        return attribute;
     }
 
     /**
@@ -365,10 +373,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return (LongUnaryOperator) value;
         }
         final RowRedirection sortRedirection = getRowRedirection(sortResult);
-        if (sortRedirection == null || sortRedirection == getRowRedirection(parent)) {
-            // Static table was already sorted
-            return LongUnaryOperator.identity();
-        }
         final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());

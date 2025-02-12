@@ -4,10 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
@@ -20,6 +23,8 @@ import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 
 import org.jetbrains.annotations.NotNull;
@@ -47,10 +52,7 @@ import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.maybeConve
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
-import static io.deephaven.engine.util.TableTools.booleanCol;
-import static io.deephaven.engine.util.TableTools.byteCol;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -199,6 +201,46 @@ public class TestHierarchicalTableSnapshots {
         freeSnapshotTableChunks(updatedSnapshot);
 
         concurrentExecutor.shutdown();
+    }
+
+    @Test
+    public void testSortedExpandAll() {
+        final Table source = ParquetTools.readTable("/Users/charleswright/tmp/export1.parquet");
+        TableTools.show(source);
+        final RollupTable rollupTable = source.updateView("Dollars=Size*Price").rollup(List.of(Aggregation.of(AggSpec.sum(), "Dollars", "Size")), "Sym", "Date", "Exchange");
+        final RollupTable sortedRollup = rollupTable.withNodeOperations(rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("Dollars"));
+
+        final String [] arrayWithNull = new String[1];
+        final Table keyTable = newTable(
+                intCol(rollupTable.getRowDepthColumn().name(), 0),
+                stringCol("Sym", arrayWithNull),
+                stringCol("Date", arrayWithNull),
+                stringCol("Exchange", arrayWithNull),
+                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
+
+//        final SnapshotState ss = rollupTable.makeSnapshotState();
+//        final Table snapshot = snapshotToTable(rollupTable, ss, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+//        TableTools.showWithRowSet(snapshot);
+
+        final SnapshotState ssSort = sortedRollup.makeSnapshotState();
+
+        final Table snapshotSort = snapshotToTable(sortedRollup, ssSort, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshotSort);
+
+//        final Table keyTable2 = newTable(
+//                intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 3),
+//                stringCol("Sym", null, "TSLA", "TSLA"),
+//                stringCol("Date", null, null, "2025-01-02"),
+//                stringCol("Exchange", null, null, null),
+//                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND, HierarchicalTable.KEY_TABLE_ACTION_EXPAND, HierarchicalTable.KEY_TABLE_ACTION_EXPAND)
+//                );
+//
+//        final Table snapshotSort2 = snapshotToTable(sortedRollup, ssSort, keyTable2, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+//        TableTools.showWithRowSet(snapshotSort2);
+
+//        freeSnapshotTableChunks(snapshot);
+        freeSnapshotTableChunks(snapshotSort);
+//        freeSnapshotTableChunks(snapshotSort2);
     }
 
     @SuppressWarnings("SameParameterValue")
