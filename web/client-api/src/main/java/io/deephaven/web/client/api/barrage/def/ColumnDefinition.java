@@ -100,8 +100,8 @@ public class ColumnDefinition {
     }
 
     public boolean isVisible() {
-        return !isStyleColumn() && !isFormatColumn() && !isRollupConstituentNodeColumn()
-                && !isHierarchicalRowDepthColumn() && !isHierarchicalRowExpandedColumn();
+        return !isStyleColumn() && !isFormatColumn() && !isHierarchicalRowDepthColumn()
+                && !isHierarchicalRowExpandedColumn();
     }
 
     public boolean isForRow() {
