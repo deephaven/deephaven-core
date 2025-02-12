@@ -110,10 +110,7 @@ class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(
             @NotNull final SeekableChannelContext channelContext,
-            @NotNull URI uri) {
-        if (uri.getScheme().equals("s3a")) {
-            uri = URI.create("s3://" + uri.getAuthority() + uri.getPath());
-        }
+            @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
         final long cachedSize = getCachedSize(uri);
