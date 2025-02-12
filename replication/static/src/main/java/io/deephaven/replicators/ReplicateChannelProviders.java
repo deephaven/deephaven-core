@@ -13,18 +13,10 @@ public class ReplicateChannelProviders {
 
     private static final String BASE_CHANNEL_PROVIDER_DIR =
             "extensions/s3/src/main/java/io/deephaven/extensions/s3/";
-
     private static final String S3A_CHANNEL_PROVIDER_PATH =
             BASE_CHANNEL_PROVIDER_DIR + "S3ASeekableChannelProvider.java";
-    private static final String GCS_CHANNEL_PROVIDER_PATH =
-            BASE_CHANNEL_PROVIDER_DIR + "GCSSeekableChannelProvider.java";
-    private static final String S3N_CHANNEL_PROVIDER_PATH =
-            BASE_CHANNEL_PROVIDER_DIR + "S3NSeekableChannelProvider.java";
-
     private static final String S3A_CHANNEL_PROVIDER_PLUGIN_PATH =
             BASE_CHANNEL_PROVIDER_DIR + "S3ASeekableChannelProviderPlugin.java";
-    private static final String GCS_CHANNEL_PROVIDER_PLUGIN_PATH =
-            BASE_CHANNEL_PROVIDER_DIR + "S3NSeekableChannelProviderPlugin.java";
 
     public static void main(String... args) throws IOException {
         // S3A -> GCS
