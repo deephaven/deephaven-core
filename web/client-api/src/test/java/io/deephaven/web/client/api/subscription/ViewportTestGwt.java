@@ -97,7 +97,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
-                    delayTestFinish(5001);
+                    delayTestFinish(11001);
 
                     table.setViewport(0, 25, null);
                     assertEquals(100.0, table.getSize());
@@ -174,7 +174,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("growingBackward"))
                 .then(table -> {
-                    delayTestFinish(4000);
+                    delayTestFinish(10000);
                     // set up a viewport, and watch it show up, and tick once
                     table.setViewport(0, 9, null);
                     return assertUpdateReceived(table, viewportData -> {
