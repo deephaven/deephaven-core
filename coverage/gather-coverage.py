@@ -19,16 +19,17 @@ if os.path.exists(coverage_dir):
 os.makedirs(coverage_dir)
 
 # Aggregate and normalize coverage for java projects
+print("Aggregating Java Coverage")
 input_glob = proj_root_dir + '/build/reports/jacoco/jacoco-merge/jacoco-merge.csv'
 with open(f'{coverage_dir}/java-coverage.csv', 'w', newline='') as outfile:
     csv_writer = csv.writer(outfile)
-    csv_writer.writerow(['Language','Project','Package','Class','Missed','Covered'])
+    csv_writer.writerow(['Language','Package','Class','Missed','Covered'])
     for filename in glob.glob(input_glob, recursive = True):
         with open(filename, 'r') as csv_in:
             csv_reader = csv.reader(csv_in)
             next(csv_reader, None)
             for row in csv_reader:
-                new_row = ['java',row[0],row[1],row[2],row[3],row[4]]
+                new_row = ['java',row[1],row[2],row[3],row[4]]
                 csv_writer.writerow(new_row)
 
 # Load packages to be excluded from the aggregated coverage CSV
@@ -39,8 +40,10 @@ with open(exclude_path) as f:
 with open(coverage_output_path, 'w', newline='') as outfile:
     csv_writer = csv.writer(outfile)
     for csv_file in glob.glob(coverage_input_glob):
+        if os.path.basename(csv_file) == "all-coverage.csv": continue
+        print('Merging', os.path.basename(csv_file))
         with open(csv_file, 'r') as csv_in:
             for row in csv.reader(csv_in):
-                if row[2] in excludes: continue
-                new_row = [row[0],row[1],row[2],row[3],row[4],row[5]]
+                if row[1] in excludes: continue
+                new_row = [row[0],row[1],row[2],row[3],row[4]]
                 csv_writer.writerow(new_row)
