@@ -348,7 +348,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return null;
         }
 
-        return ((RedirectedColumnSource<?>)sortResult.getColumnSource((String)columnName)).getRowRedirection();
+        return ((RedirectedColumnSource<?>) sortResult.getColumnSource((String) columnName)).getRowRedirection();
     }
 
     /**
