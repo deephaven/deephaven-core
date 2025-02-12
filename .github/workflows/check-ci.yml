@@ -14,6 +14,17 @@ jobs:
   checks:
     runs-on: ubuntu-24.04
     steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+          swap-storage: true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
