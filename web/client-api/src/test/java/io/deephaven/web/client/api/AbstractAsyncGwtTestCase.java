@@ -56,8 +56,8 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     public static class TableSourceBuilder {
         private final List<String> pythonScripts = new ArrayList<>();
 
-        public TableSourceBuilder script(String script) {
-            pythonScripts.add(script);
+        public TableSourceBuilder script(String... script) {
+            pythonScripts.addAll(Arrays.asList(script));
             return this;
         }
 
@@ -156,7 +156,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                             return ideSession.then(session -> {
 
                                 if (consoleTypes.includes("python")) {
-                                    return runAllScriptsInOrder(ideSession, session, tables.pythonScripts);
+                                    return runAllScriptsInOrder(session, tables.pythonScripts);
                                 }
                                 throw new IllegalStateException("Unsupported script type " + consoleTypes);
                             });
@@ -165,23 +165,10 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         });
     }
 
-    private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session,
-            List<String> code) {
-        Promise<IdeSession> result = ideSession;
-        for (int i = 0; i < code.size(); i++) {
-            final int index = i;
-            result = result.then(ignore -> {
-                delayTestFinish(4000 + index);
-
-                return session.runCode(code.get(index));
-            }).then(r -> {
-                if (r.getError() != null) {
-                    return Promise.reject(r.getError());
-                }
-                return ideSession;
-            });
-        }
-        return result;
+    private Promise<IdeSession> runAllScriptsInOrder(IdeSession session, List<String> code) {
+        String block = String.join("\n", code);
+        delayTestFinish(4000);
+        return session.runCode(block).then(ignore -> Promise.resolve(session));
     }
 
     public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
