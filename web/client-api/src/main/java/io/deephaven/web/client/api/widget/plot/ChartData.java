@@ -7,7 +7,6 @@ import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
-import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
@@ -35,7 +34,7 @@ public class ChartData {
         this.table = table;
     }
 
-    public void update(AbstractTableSubscription.SubscriptionEventData tableData) {
+    public void update(SubscriptionTableData tableData) {
         RangeSet positionsForAddedKeys = tableData.getFullIndex().getRange().invert(tableData.getAdded().getRange());
         RangeSet positionsForRemovedKeys = prevRanges.invert(tableData.getRemoved().getRange());
         RangeSet positionsForModifiedKeys =
@@ -82,14 +81,14 @@ public class ChartData {
 
                 // rather than getting a slice and splicing it in, just update each value
                 PrimitiveIterator.OfLong iter = keys.indexIterator();
-                int i = 0;
+                int i = (int) positions.getFirst();
                 if (func == null) {
                     while (iter.hasNext()) {
                         arr.setAt(i++, tableData.getData(iter.next(), col));
                     }
                 } else {
                     while (iter.hasNext()) {
-                        arr.setAt(i++, tableData.getData(iter.next(), col));
+                        arr.setAt(i++, func.apply(tableData.getData(iter.next(), col)));
                     }
                 }
             }
