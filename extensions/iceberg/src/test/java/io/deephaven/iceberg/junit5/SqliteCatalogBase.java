@@ -35,7 +35,6 @@ import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -88,7 +87,7 @@ public abstract class SqliteCatalogBase {
         engineCleanup.tearDown();
     }
 
-    private TableParquetWriterOptions.Builder writerOptionsBuilder() {
+    protected TableParquetWriterOptions.Builder writerOptionsBuilder() {
         final TableParquetWriterOptions.Builder builder = TableParquetWriterOptions.builder();
         final Object dataInstructions;
         if ((dataInstructions = dataInstructions()) != null) {
@@ -633,7 +632,7 @@ public abstract class SqliteCatalogBase {
         verifyDataFiles(tableIdentifier, List.of(source, anotherSource, moreData));
 
         {
-            // Verify thaty we read the data files in the correct order
+            // Verify that we read the data files in the correct order
             final Table fromIceberg = tableAdapter.table();
             assertTableEquals(TableTools.merge(moreData, source, anotherSource), fromIceberg);
         }

@@ -9,11 +9,11 @@ package io.deephaven.extensions.s3;
 
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.extensions.s3.GCSSeekableChannelProviderPlugin.GCS_URI_SCHEME;
+import static io.deephaven.extensions.s3.S3NSeekableChannelProviderPlugin.S3N_URI_SCHEME;
 
-final class GCSSeekableChannelProvider extends UriToS3SeekableChannelProvider {
+final class S3NSeekableChannelProvider extends UriToS3SeekableChannelProvider {
 
-    GCSSeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        super(s3Instructions, GCS_URI_SCHEME);
+    S3NSeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
+        super(s3Instructions, S3N_URI_SCHEME);
     }
 }
