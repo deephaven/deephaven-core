@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.apache.iceberg.catalog.TableIdentifier;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -67,12 +69,28 @@ abstract class S3WarehouseSqliteCatalogBase extends SqliteCatalogBase {
         final String catalogName = methodName + "-catalog";
         final String bucket = methodName.toLowerCase(Locale.US) + "-bucket";
         try (final S3AsyncClient client = s3AsyncClient()) {
-            client.createBucket(CreateBucketRequest.builder().bucket(bucket).build())
-                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (!doesBucketExist(client, bucket)) {
+                client.createBucket(CreateBucketRequest.builder().bucket(bucket).build())
+                        .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            }
         }
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, scheme + "://" + bucket + "/warehouse");
         properties.put(CatalogProperties.FILE_IO_IMPL, S3FileIO.class.getName());
         return IcebergToolsS3.createAdapter(catalogName, properties, Map.of(), s3Instructions());
+    }
+
+    private boolean doesBucketExist(final S3AsyncClient client, final String bucketName)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        try {
+            client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build())
+                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return true;
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof NoSuchBucketException) {
+                return false;
+            }
+            throw e;
+        }
     }
 
     @Test
