@@ -8,6 +8,8 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.csv.CsvTools;
+import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -24,15 +26,16 @@ import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSourc
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 
+import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.ByteArrayInputStream;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -49,9 +52,7 @@ import static io.deephaven.api.agg.Aggregation.AggMax;
 import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.byteToBooleanSource;
 import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.longToInstantSource;
 import static io.deephaven.engine.table.impl.sources.ReinterpretUtils.maybeConvertToPrimitiveChunkType;
-import static io.deephaven.engine.testutil.TstUtils.addToTable;
-import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
-import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -204,43 +205,56 @@ public class TestHierarchicalTableSnapshots {
     }
 
     @Test
-    public void testSortedExpandAll() {
-        final Table source = ParquetTools.readTable("/Users/charleswright/tmp/export1.parquet");
+    public void testSortedExpandAll() throws CsvReaderException {
+        final String data = "A,B,C,N\n" +
+                "Apple,One,Alpha,1\n" +
+                "Apple,One,Alpha,2\n" +
+                "Apple,One,Bravo,3\n" +
+                "Apple,One,Bravo,4\n" +
+                "Apple,One,Bravo,5\n" +
+                "Apple,One,Bravo,6\n" +
+                "Banana,Two,Alpha,7\n" +
+                "Banana,Two,Alpha,8\n" +
+                "Banana,Two,Bravo,3\n" +
+                "Banana,Two,Bravo,4\n" +
+                "Banana,Three,Bravo,1\n" +
+                "Banana,Three,Bravo,1\n";
+        
+        final Table source = CsvTools.readCsv(new ByteArrayInputStream(data.getBytes()));
+
         TableTools.show(source);
-        final RollupTable rollupTable = source.updateView("Dollars=Size*Price").rollup(List.of(Aggregation.of(AggSpec.sum(), "Dollars", "Size")), "Sym", "Date", "Exchange");
-        final RollupTable sortedRollup = rollupTable.withNodeOperations(rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("Dollars"));
+        final RollupTable rollupTable = source.rollup(List.of(Aggregation.of(AggSpec.sum(), "N")), "A", "B", "C");
+        final RollupTable sortedRollup = rollupTable.withNodeOperations(rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("N"));
 
         final String [] arrayWithNull = new String[1];
         final Table keyTable = newTable(
                 intCol(rollupTable.getRowDepthColumn().name(), 0),
-                stringCol("Sym", arrayWithNull),
-                stringCol("Date", arrayWithNull),
-                stringCol("Exchange", arrayWithNull),
+                stringCol("A", arrayWithNull),
+                stringCol("B", arrayWithNull),
+                stringCol("C", arrayWithNull),
                 byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND_ALL));
 
-//        final SnapshotState ss = rollupTable.makeSnapshotState();
-//        final Table snapshot = snapshotToTable(rollupTable, ss, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
-//        TableTools.showWithRowSet(snapshot);
+        final SnapshotState ss = rollupTable.makeSnapshotState();
+        final Table snapshot = snapshotToTable(rollupTable, ss, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot);
 
         final SnapshotState ssSort = sortedRollup.makeSnapshotState();
 
         final Table snapshotSort = snapshotToTable(sortedRollup, ssSort, keyTable, ColumnName.of("Action"), null, RowSetFactory.flat(30));
         TableTools.showWithRowSet(snapshotSort);
 
-//        final Table keyTable2 = newTable(
-//                intCol(rollupTable.getRowDepthColumn().name(), 1, 2, 3),
-//                stringCol("Sym", null, "TSLA", "TSLA"),
-//                stringCol("Date", null, null, "2025-01-02"),
-//                stringCol("Exchange", null, null, null),
-//                byteCol("Action", HierarchicalTable.KEY_TABLE_ACTION_EXPAND, HierarchicalTable.KEY_TABLE_ACTION_EXPAND, HierarchicalTable.KEY_TABLE_ACTION_EXPAND)
-//                );
-//
-//        final Table snapshotSort2 = snapshotToTable(sortedRollup, ssSort, keyTable2, ColumnName.of("Action"), null, RowSetFactory.flat(30));
-//        TableTools.showWithRowSet(snapshotSort2);
+        // first we know that the size of the tables must be the same
+        TestCase.assertEquals(snapshot.size(), snapshotSort.size());
+        // and the first row must be the same, because it is the parent
+        assertTableEquals(snapshot.head(1), snapshotSort.head(1));
+        // then we have six rows of banana, and that should be identical
+        assertTableEquals(snapshot.slice(5, 11), snapshotSort.slice(1, 7));
+        // then we need to check on the apple rows, but those are not actually identical because of sorting
+        Table appleExpected = snapshot.where("A=`Apple`").sortDescending("N");
+        assertTableEquals(appleExpected, snapshotSort.slice(7, 11));
 
-//        freeSnapshotTableChunks(snapshot);
+        freeSnapshotTableChunks(snapshot);
         freeSnapshotTableChunks(snapshotSort);
-//        freeSnapshotTableChunks(snapshotSort2);
     }
 
     @SuppressWarnings("SameParameterValue")
