@@ -34,7 +34,8 @@ import static io.deephaven.engine.table.Table.SORT_ROW_REDIRECTION_ATTRIBUTE;
 
 public class SortOperation implements QueryTable.MemoizableOperation<QueryTable> {
     static final Map<String, Object> IDENTITY_REDIRECTION_ATTRIBUTES;
-    static final Object IDENTITY_REDIRECTION_VALUE = new String();
+    // The "+" sign is not valid in a column, therefore we can be sure that this is a proper sentinel value.
+    static final String IDENTITY_REDIRECTION_VALUE = "+IDENTITY_REDIRECTION";
     static {
         final HashMap<String, Object> identityRedirectionAttributes = new HashMap<>();
         identityRedirectionAttributes.put(SORT_ROW_REDIRECTION_ATTRIBUTE, IDENTITY_REDIRECTION_VALUE);
@@ -343,12 +344,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * @return The row redirection for this table.
      */
     public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
-        final Object columnName = sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
-        if (columnName == null || columnName == IDENTITY_REDIRECTION_VALUE) {
+        final String columnName = (String)sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
+        if (columnName == null || columnName.equals(IDENTITY_REDIRECTION_VALUE)) {
             return null;
         }
 
-        return ((RedirectedColumnSource<?>) sortResult.getColumnSource((String) columnName)).getRowRedirection();
+        return ((RedirectedColumnSource<?>) sortResult.getColumnSource(columnName)).getRowRedirection();
     }
 
     /**
