@@ -138,7 +138,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return withSorted(parent);
         }
 
-
         final WritableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
