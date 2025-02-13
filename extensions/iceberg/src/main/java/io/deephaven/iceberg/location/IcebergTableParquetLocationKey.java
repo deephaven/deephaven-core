@@ -41,6 +41,9 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @Nullable
     private final TableIdentifier tableIdentifier;
 
+    @NotNull
+    private final DataFile dataFile;
+
     /**
      * The {@link DataFile#dataSequenceNumber()} of the data file backing this keyed location.
      */
@@ -102,6 +105,8 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
         // tableUUID was null
         this.tableIdentifier = tableUuid != null ? null : tableIdentifier;
 
+        this.dataFile = dataFile;
+
         // Files with unknown sequence numbers should be ordered first
         dataSequenceNumber = dataFile.dataSequenceNumber() != null ? dataFile.dataSequenceNumber() : Long.MIN_VALUE;
         fileSequenceNumber = dataFile.fileSequenceNumber() != null ? dataFile.fileSequenceNumber() : Long.MIN_VALUE;
@@ -122,6 +127,11 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     @Override
     public ParquetInstructions readInstructions() {
         return readInstructions;
+    }
+
+    @NotNull
+    DataFile dataFile() {
+        return dataFile;
     }
 
     /**

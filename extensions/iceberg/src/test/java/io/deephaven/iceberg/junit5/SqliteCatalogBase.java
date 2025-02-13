@@ -4,16 +4,22 @@
 package io.deephaven.iceberg.junit5;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.base.IcebergUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.iceberg.location.IcebergTableParquetLocation;
+import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.sqlite.SqliteHelper;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
@@ -27,15 +33,17 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +56,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,6 +65,9 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.doubleCol;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
+import static io.deephaven.iceberg.base.IcebergUtils.locationUri;
 import static org.apache.parquet.schema.LogicalTypeAnnotation.intType;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
@@ -1036,5 +1048,67 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    @Test
+    void appendSortedTableBasicTest() {
+        final Table source = TableTools.newTable(
+                intCol("intCol", 10, 20, 30, 40, 50),
+                doubleCol("doubleCol", 10.5, 20.5, 30.5, 40.5, 50.5));
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+
+        // Verify that the data file is not sorted
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(List.of()));
+
+        // Append a sorted table
+        final Table sortedSource = source.sort("intCol");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(sortedSource)
+                .build());
+
+        // Verify that one data file is sorted and one is not
+        verifySortOrder(tableAdapter, tableIdentifier, List.of(
+                List.of(SortColumn.asc(ColumnName.of("intCol"))),
+                List.of()));
+    }
+
+    /**
+     * Verify that the sort order for the data files in the table match the expected sort order.
+     */
+    private void verifySortOrder(
+            final IcebergTableAdapter tableAdapter,
+            final TableIdentifier tableIdentifier,
+            final List<List<SortColumn>> expectedSortOrders) {
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final String uriScheme = locationUri(icebergTable).getScheme();
+        final SeekableChannelsProvider seekableChannelsProvider =
+                SeekableChannelsProviderLoader.getInstance().load(uriScheme, dataInstructions());
+
+        final Map<ManifestFile, List<DataFile>> manifestToDataFiles =
+                IcebergUtils.manifestToDataFiles(icebergTable, icebergTable.currentSnapshot());
+        final List<List<SortColumn>> actualSortOrders = new ArrayList<>();
+        for (final Map.Entry<ManifestFile, List<DataFile>> entry : manifestToDataFiles.entrySet()) {
+            final ManifestFile manifestFile = entry.getKey();
+            final List<DataFile> dataFiles = entry.getValue();
+            for (final DataFile dataFile : dataFiles) {
+                final TableLocation tableLocation = new IcebergTableParquetLocation(
+                        tableAdapter,
+                        StandaloneTableKey.getInstance(),
+                        new IcebergTableParquetLocationKey(
+                                null, null, tableIdentifier, manifestFile, dataFile,
+                                dataFileUri(icebergTable, dataFile), 0, Map.of(), ParquetInstructions.EMPTY,
+                                seekableChannelsProvider),
+                        ParquetInstructions.EMPTY);
+                actualSortOrders.add(tableLocation.getSortedColumns());
+            }
+        }
+        assertThat(actualSortOrders).containsExactlyInAnyOrderElementsOf(expectedSortOrders);
     }
 }
