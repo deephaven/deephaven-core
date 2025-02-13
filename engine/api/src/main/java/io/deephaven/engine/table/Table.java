@@ -185,7 +185,7 @@ public interface Table extends
      */
     String SORT_REVERSE_LOOKUP_ATTRIBUTE = "SortReverseLookup";
     /**
-     * Attribute on sort results used for hierarchical table construction. Specificaiton is left to the implementation.
+     * Attribute on sort results used for hierarchical table construction. Specification is left to the implementation.
      */
     String SORT_ROW_REDIRECTION_ATTRIBUTE = "SortRowRedirection";
 
