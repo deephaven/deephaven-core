@@ -344,7 +344,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * Get the row redirection for a sort result.
      *
      * @param sortResult The sort result table; <em>must</em> be the direct result of a sort.
-     * @return The row redirection for this table.
+     * @return The row redirection for this table if at least one column required redirection, otherwise {@code null}
      */
     public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
         final String columnName = (String) sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
@@ -371,7 +371,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      *
      * @param parent The sort input table; must have been sorted in order to produce {@code sortResult}
      * @param sortResult The sort result table; <em>must</em> be the direct result of a sort on {@code parent}
-     * @return The reverse lookup
+     * @return The reverse lookup, or null if no redirection is performed.
      */
     public static LongUnaryOperator getReverseLookup(@NotNull final Table parent, @NotNull final Table sortResult) {
         if (BlinkTableTools.isBlink(parent)) {
