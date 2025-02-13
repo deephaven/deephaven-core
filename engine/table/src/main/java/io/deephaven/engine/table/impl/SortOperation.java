@@ -138,21 +138,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return withSorted(parent);
         }
 
-        // if nothing is actually redirected, we can use the identity value
-        Object sortMappingColumnName = IDENTITY_REDIRECTION_VALUE;
 
         final WritableRowRedirection sortMapping = sortedKeys.makeHistoricalRowRedirection();
         final TrackingRowSet resultRowSet = RowSetFactory.flat(sortedKeys.size()).toTracking();
 
         final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
-        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-            final ColumnSource<?> innerSource = stringColumnSourceEntry.getValue();
-            ColumnSource<?> redirectedSource = RedirectedColumnSource.maybeRedirect(sortMapping, innerSource);
-            resultMap.put(stringColumnSourceEntry.getKey(), redirectedSource);
-            if (redirectedSource != innerSource) {
-                sortMappingColumnName = stringColumnSourceEntry.getKey();
-            }
-        }
+        final String sortMappingColumnName = populateRedirectedColumns(resultMap, sortMapping);
 
         resultTable = new QueryTable(resultRowSet, resultMap);
         parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
@@ -296,10 +287,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             sortMapping.writableCast().fillFromChunk(fillFromContext, LongChunk.chunkWrap(sortedKeys),
                     closer.add(resultRowSet.copy()));
 
-            for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
-                resultMap.put(stringColumnSourceEntry.getKey(),
-                        RedirectedColumnSource.maybeRedirect(sortMapping, stringColumnSourceEntry.getValue()));
-            }
+            String sortMappingColumnName = populateRedirectedColumns(resultMap, sortMapping);
 
             // noinspection unchecked
             final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy =
@@ -314,7 +302,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
             resultTable = new QueryTable(resultRowSet, resultMap);
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
-            resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMapping);
+            resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
                 final long outerRowKey = reverseLookup.get(innerRowKey);
                 return outerRowKey == reverseLookup.getNoEntryValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
@@ -337,6 +325,21 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
     }
 
+    private String populateRedirectedColumns(Map<String, ColumnSource<?>> resultMap, RowRedirection sortMapping) {
+        // if nothing is actually redirected, we can use the identity value
+        String sortMappingColumnName = IDENTITY_REDIRECTION_VALUE;
+
+        for (Map.Entry<String, ColumnSource<?>> stringColumnSourceEntry : parent.getColumnSourceMap().entrySet()) {
+            final ColumnSource<?> innerSource = stringColumnSourceEntry.getValue();
+            final ColumnSource<?> redirectedSource = RedirectedColumnSource.maybeRedirect(sortMapping, innerSource);
+            resultMap.put(stringColumnSourceEntry.getKey(), redirectedSource);
+            if (redirectedSource != innerSource) {
+                sortMappingColumnName = stringColumnSourceEntry.getKey();
+            }
+        }
+        return sortMappingColumnName;
+    }
+
     /**
      * Get the row redirection for a sort result.
      *
@@ -344,7 +347,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * @return The row redirection for this table.
      */
     public static RowRedirection getRowRedirection(@NotNull final Table sortResult) {
-        final String columnName = (String)sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
+        final String columnName = (String) sortResult.getAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE);
         if (columnName == null || columnName.equals(IDENTITY_REDIRECTION_VALUE)) {
             return null;
         }
