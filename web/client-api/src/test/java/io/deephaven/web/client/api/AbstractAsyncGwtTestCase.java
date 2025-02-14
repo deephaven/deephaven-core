@@ -56,8 +56,8 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     public static class TableSourceBuilder {
         private final List<String> pythonScripts = new ArrayList<>();
 
-        public TableSourceBuilder script(String script) {
-            pythonScripts.add(script);
+        public TableSourceBuilder script(String... script) {
+            pythonScripts.addAll(Arrays.asList(script));
             return this;
         }
 
@@ -156,7 +156,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                             return ideSession.then(session -> {
 
                                 if (consoleTypes.includes("python")) {
-                                    return runAllScriptsInOrder(ideSession, session, tables.pythonScripts);
+                                    return runAllScriptsInOrder(session, tables.pythonScripts);
                                 }
                                 throw new IllegalStateException("Unsupported script type " + consoleTypes);
                             });
@@ -165,9 +165,8 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         });
     }
 
-    private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session,
-            List<String> code) {
-        Promise<IdeSession> result = ideSession;
+    private Promise<IdeSession> runAllScriptsInOrder(IdeSession session, List<String> code) {
+        Promise<IdeSession> result = Promise.resolve(session);
         for (int i = 0; i < code.size(); i++) {
             final int index = i;
             result = result.then(ignore -> {
@@ -178,7 +177,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
                 if (r.getError() != null) {
                     return Promise.reject(r.getError());
                 }
-                return ideSession;
+                return Promise.resolve(session);
             });
         }
         return result;
